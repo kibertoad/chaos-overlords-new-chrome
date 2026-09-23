@@ -488,6 +488,14 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       }
       expect(await storage.turns.submitOrders(match.id, 1, a.id, submission)).toBe(true)
       expect(await storage.turns.submitOrders(match.id, 1, 'stranger', submission)).toBe(false)
+      // A draft never replaces a ready document: it can only be one that arrived late.
+      expect(
+        await storage.turns.submitOrders(match.id, 1, a.id, {
+          ...submission,
+          ordersHash: 'd'.repeat(64),
+          ready: false,
+        }),
+      ).toBe(false)
       expect(await storage.turns.getOrders(match.id, 1, a.id)).toEqual({
         matchId: match.id,
         turn: 1,

@@ -18,7 +18,8 @@ public sealed partial class ChaosGame
     private static readonly Rectangle StopReconnectButton = new(222, 354, 196, 28);
 
     /// <summary>
-    /// Marks every opponent still drafting this turn, under their portrait on the city top bar.
+    /// Marks every seat still drafting this turn, the player's own included, under its portrait on
+    /// the city top bar.
     /// </summary>
     /// <remarks>
     /// Drawn on black because the eight rows under the portraits are background art, which lime
@@ -31,10 +32,12 @@ public sealed partial class ChaosGame
         if (_session is null) return;
         var turnIsOpen = _online.Stage
             is MultiplayerStage.Playing or MultiplayerStage.WaitingForSeal;
+        var ownTurnSent = _online.Stage == MultiplayerStage.WaitingForSeal;
         for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
             if (!OpponentPlanningPresentation.IsDrafting(
-                    slot, _session.Slot, turnIsOpen, _online.AwaitedSlots, _online.ReadySlots))
+                    slot, _session.Slot, turnIsOpen, ownTurnSent,
+                    _online.AwaitedSlots, _online.ReadySlots))
                 continue;
             var caption = PlayerPortraitLayout.CityCaption(
                 slot, OpponentPlanningPresentation.WaitingCaption.Length);

@@ -638,10 +638,11 @@ describe('desync verdicts, snapshots and recovery', () => {
       await h.submit(await h.principalOf(host.token), 1, 3 + repeat, true)
     }
     expect(readiness()).toHaveLength(1)
+    // A draft after the final document is one that arrived late, and takes nothing back.
     await h.submit(await h.principalOf(host.token), 1, 9, false)
-    expect(readiness()).toHaveLength(2)
+    expect(readiness()).toHaveLength(1)
     await h.submit(await h.principalOf(guest.token), 1, 10, true)
-    expect(readiness()).toHaveLength(3)
+    expect(readiness()).toHaveLength(2)
   })
 
   /**

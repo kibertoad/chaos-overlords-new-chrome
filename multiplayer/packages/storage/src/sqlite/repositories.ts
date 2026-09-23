@@ -468,6 +468,8 @@ function sqliteTurnOrderMethods(
             eq(turnOrders.turn, number),
             eq(turnOrders.playerId, playerId),
             turnIsOpen,
+            // A draft never takes back readiness; see the port.
+            submission.ready ? undefined : eq(turnOrders.ready, false),
           ),
         )
         .returning({ playerId: turnOrders.playerId })

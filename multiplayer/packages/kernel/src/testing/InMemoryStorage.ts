@@ -265,6 +265,7 @@ export class InMemoryStorage implements MultiplayerStorage {
       const turn = this.turnRows.get(turnKey(matchId, number))
       const row = this.orderRows.get(orderKey(matchId, number, playerId))
       if (turn?.status !== 'open' || !row) return false
+      if (row.ready && !submission.ready) return false
       Object.assign(row, submission)
       return true
     },

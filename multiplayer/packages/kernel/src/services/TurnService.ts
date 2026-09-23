@@ -113,6 +113,8 @@ export class TurnService {
       submittedAt: this.deps.clock.now(),
     })
     if (!accepted) {
+      const settled = await this.lateDraftAnswer(match.id, number, player.id, request.ready)
+      if (settled) return settled
       throw new ConflictError('The turn is no longer accepting orders', { reason: 'turn_not_open' })
     }
     if (previous?.ready !== request.ready) {
@@ -130,6 +132,32 @@ export class TurnService {
     }
     if (request.ready) await this.trySeal(match.id, number, 'ready')
     return own
+  }
+
+  /**
+   * The answer to a draft the storage refused because the seat's final document is already in.
+   *
+   * Such a draft left the client before its final document did and arrived after it — see
+   * `TurnRepository.submitOrders` — so it is not a write to refuse but one that has been
+   * overtaken. Answering it with the document that stands keeps the client from reporting a sync
+   * error over a turn it has in fact finished. Null when the refusal was for any other reason.
+   */
+  private async lateDraftAnswer(
+    matchId: string,
+    number: number,
+    playerId: string,
+    ready: boolean,
+  ): Promise<OwnSubmissionView | null> {
+    if (ready) return null
+    const standing = await this.deps.storage.turns.getOrders(matchId, number, playerId)
+    if (!standing?.ready || standing.orders === null || standing.ordersHash === null) return null
+    this.deps.logger.info('late draft dropped', { matchId, turn: number, playerId })
+    return {
+      turn: number,
+      orders: standing.orders,
+      ready: true,
+      ordersHash: standing.ordersHash,
+    }
   }
 
   /**
