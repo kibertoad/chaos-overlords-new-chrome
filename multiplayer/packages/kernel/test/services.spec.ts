@@ -681,6 +681,31 @@ describe('the lobby, the roster and the turn barrier', () => {
     })
   })
 
+  /**
+   * A draft the host's client sent just before its final document, arriving after it.
+   *
+   * Applied, it put the host back to drafting with the older document: the guest's ready then
+   * sealed nothing, and the turn waited until the host submitted a second time.
+   */
+  it('keeps a late draft from taking back a finished turn, so the next ready seals it', async () => {
+    const { host, guest } = await h.startedMatch()
+    const hostP = await h.principalOf(host.token)
+    const guestP = await h.principalOf(guest.token)
+    await h.submit(hostP, 1, 1, true)
+
+    await expect(h.submit(hostP, 1, 7, false)).resolves.toMatchObject({ turn: 1, ready: true })
+    const standing = await h.storage.turns.getOrders(hostP.match.id, 1, hostP.player.id)
+    expect(standing?.ready).toBe(true)
+    expect(standing?.orders && gangOf(standing.orders)).toBe(1)
+
+    await h.submit(guestP, 1, 2, true)
+    const sealed = await h.kernel.query.sealedOrders(hostP.match, 1)
+    expect(sealed.players.map((p) => [p.slot, gangOf(p.orders)])).toEqual([
+      [0, 1],
+      [1, 2],
+    ])
+  })
+
   it('confirms a turn on unanimous hashes and finishes the match when all report the end', async () => {
     const { host, guest } = await h.startedMatch()
     await h.submit(await h.principalOf(host.token), 1, 1, true)

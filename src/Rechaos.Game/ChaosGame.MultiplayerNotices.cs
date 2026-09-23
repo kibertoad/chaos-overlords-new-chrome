@@ -311,7 +311,9 @@ public sealed partial class ChaosGame
                 _online.TurnSyncError = refused.Reason.ToUpperInvariant();
                 _online.ReadySubmissionPending = false;
                 _online.ResolutionExpectedSince = null;
-                if (_online.Stage == MultiplayerStage.WaitingForSeal)
+                if (refused.ReadinessWithdrawn && ReopenRefusedTurn(refused.Turn))
+                    _online.Status = "FINISHED TURN REFUSED  CHANGE IT AND END THE TURN AGAIN";
+                else if (_online.Stage == MultiplayerStage.WaitingForSeal)
                     _online.Status = refused.Reason.ToUpperInvariant();
                 return;
             case MultiplayerNotice.ConnectionChanged connection:

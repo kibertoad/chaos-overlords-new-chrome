@@ -27,7 +27,8 @@ import type {
  * could race on is a single conditional statement whose row count says who won. Each `transition`
  * is such a compare-and-swap; `claimSeat`/`releaseSeat` and `claimLateJoinOrder` are atomic
  * counters; `submitOrders` is
- * conditional on the turn still being open; `append` allocates its own sequence number.
+ * conditional on the turn still being open and on a draft not replacing a ready document; `append`
+ * allocates its own sequence number.
  *
  * Writes that a unique constraint can refuse answer `false` instead of throwing, so the services
  * can retry (a join code collision) without knowing anything about a driver's error shapes.
@@ -194,7 +195,16 @@ export interface TurnRepository {
   get(matchId: string, number: number): Promise<Turn | null>
   /**
    * Overwrite a player's orders only while the turn is `open`, in ONE statement.
-   * Returns false when the turn is no longer open or the player has no row.
+   * Returns false when the turn is no longer open, the player has no row, or the row is already
+   * ready and the submission is not.
+   *
+   * The last condition is what keeps a stale draft from reopening a finished turn. A client never
+   * takes readiness back: once it has sent its final document for a turn, any non-ready document
+   * for that turn is one it sent earlier, which arrived late — a draft whose request was superseded
+   * but had already left, or a timed-out attempt the server still ran. Applied, it put the seat
+   * back to drafting with an older document, and the turn then waited on a player whose screen
+   * said they were done until they submitted again. It has to be part of the same statement:
+   * checking the previous row first leaves the window in which the two requests run side by side.
    */
   submitOrders(
     matchId: string,

@@ -181,7 +181,16 @@ public abstract record MultiplayerNotice
     /// which costs them that turn and nothing more — so this says what happened and the match
     /// carries on.
     /// </remarks>
-    public sealed record OrdersRefused(int Turn, string Reason) : MultiplayerNotice;
+    /// <param name="Turn">The turn the document was for.</param>
+    /// <param name="Reason">What the server said, for the player.</param>
+    /// <param name="ReadinessWithdrawn">
+    /// The refused document was this player's finished turn, and the server refused the document
+    /// itself rather than the turn: it failed validation or was too large. The turn is still open
+    /// and still waiting on this seat, and the session has stopped carrying readiness forward for
+    /// it, so the player can change the turn and end it again.
+    /// </param>
+    public sealed record OrdersRefused(int Turn, string Reason, bool ReadinessWithdrawn = false)
+        : MultiplayerNotice;
 
     /// <summary>
     /// Whether the server is answering.

@@ -176,7 +176,7 @@ public sealed partial class ChaosGame
                     OriginalSpriteLayout.ActivePlayerMarker(
                         ActivePlayerMarkerPresentation.Frame(_inputTime)), Color.White);
         }
-        DrawOpponentPlanning(batch, pixel, font);
+        DrawSeatPlanning(batch, pixel, font);
         var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
         var player = state.Players[playerIndex];
         if (drawMapLayer)

@@ -173,7 +173,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 
 | Call | Who | Effect |
 |---|---|---|
-| `PUT /matches/:id/turns/:n/orders` | member | Replaces the caller's order document for the open turn and sets `ready`. The write is one statement conditional on the turn still being open, so a new order landing after the seal is refused (`409 turn_not_open`), never silently folded in. An exact retry of the persisted document is acknowledged even after the turn advances, covering a lost success response. When `ready` completes the roster, the turn seals in the same call. |
+| `PUT /matches/:id/turns/:n/orders` | member | Replaces the caller's order document for the open turn and sets `ready`. The write is one statement conditional on the turn still being open, so a new order landing after the seal is refused (`409 turn_not_open`), never silently folded in. An exact retry of the persisted document is acknowledged even after the turn advances, covering a lost success response. Readiness is never taken back: a `ready: false` document for a seat that is already ready is a draft that arrived after the final one, so the same statement leaves the row alone and the call answers with the document that stands. When `ready` completes the roster, the turn seals in the same call. |
 | `GET /matches/:id/turns/:n/orders/mine` | member | The caller's own submission (for a reconnecting client). |
 | `GET /matches/:id/turns/:n/orders` | member | The sealed set: the documents of the players the seal froze, in slot order, plus `orderSetHash`. Refused while open (`409 turn_open`). |
 | `POST /matches/:id/turns/:n/report` | member | `{ stateHash, finished }` after applying the sealed turn locally. |
@@ -557,19 +557,36 @@ What the generator cannot mirror, `Rechaos.Multiplayer` writes by hand and pins 
 canonical JSON. `packages/kernel/test/logic.spec.ts` and `MultiplayerCanonicalJsonTests` hold the
 same golden document, the same canonical text and the same digest, on both sides of the wire.
 
-Client-side readiness is monotonic for one open turn. Once any queued or
-in-flight order replacement says `ready: true`, later drafts for that same turn
-continue sending `true` until the server seals it; document replacement must
-not retract readiness merely because the earlier request has left the outbox.
+Readiness is monotonic for one open turn, on both sides of the wire. Once any
+queued or in-flight order replacement says `ready: true`, later drafts for that
+same turn continue sending `true` until the server seals it; document
+replacement must not retract readiness merely because the earlier request has
+left the outbox. The client alone cannot promise that, though: a superseded
+draft is cancelled locally, and a timed-out attempt is retried, while the
+request itself may already have reached the server. Such a draft used to land
+after the final document, put the seat back to drafting with the older orders,
+and leave the turn waiting on a player whose screen said they were done — the
+next player's ready sealed nothing until the first submitted again. The server
+therefore refuses to let a non-ready document replace a ready one, in the same
+conditional write that checks the turn is open.
+
+The one way readiness is taken back is a finished document the server refuses
+outright — `validation_failed`, `payload_too_large` or `bad_request`. The server
+recorded none of it and the turn still waits on the seat, so the session stops
+carrying readiness for the turn (`OrdersRefused.ReadinessWithdrawn`) and the
+client hands the player the turn they planned, to change and end again. A
+refusal of the turn itself, such as `turn_not_open`, changes nothing.
 
 Readiness reaches the interface as the seats that have finished, not as a count
-of them. The city top bar marks every opponent the turn is still waiting on with
-a green `WAIT` under their portrait, so "waiting for the other players" says
-which ones; the footer's tally is the same fact counted. A seat the turn does not
-seal against — a computer empire, a kicked player, a player who left with no vote
-open on their seat, or one voted onto computer control — is never marked, and
-neither is the player's own. A departed seat whose vote is still open is waited
-on, and marked, until the vote closes.
+of them. The city top bar marks every seat the turn is still waiting on with a
+green `WAIT` under its portrait, so "waiting for the other players" says which
+ones; the footer's tally is the same fact counted. The player's own seat is
+marked too, until they end the turn, and it follows what this client did rather
+than the server's echo, so the mark goes the moment the turn is sent. A seat the
+turn does not seal against — a computer empire, a kicked player, a player who
+left with no vote open on their seat, or one voted onto computer control — is
+never marked. A departed seat whose vote is still open is waited on, and marked,
+until the vote closes.
 
 ## Client integration contract
 

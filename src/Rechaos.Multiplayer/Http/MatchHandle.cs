@@ -75,7 +75,10 @@ public sealed class MatchHandle
     /// </summary>
     /// <remarks>
     /// The write is refused once the turn has sealed (<c>409 turn_not_open</c>) rather than folded
-    /// in late, so a caller that loses this race has to re-plan against the next turn.
+    /// in late, so a caller that loses this race has to re-plan against the next turn. Readiness is
+    /// never taken back: a <c>ready: false</c> document for a seat that is already ready is
+    /// treated as a draft that arrived late, left unapplied, and answered with the document that
+    /// stands, so the returned view is not always an echo of <paramref name="request"/>.
     /// </remarks>
     public Task<OwnSubmissionView> SubmitOrdersAsync(
         int turn,

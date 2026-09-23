@@ -177,8 +177,11 @@ public sealed partial class MultiplayerMatchSession
             {
                 // The server had its say. A turn that sealed while the player was still
                 // planning is the ordinary case, and re-sending would be refused again.
+                var withdrawn = next.Ready
+                    && RefusesTheDocument(exception)
+                    && WithdrawReadiness(next.Turn);
                 _notices.Enqueue(
-                    new MultiplayerNotice.OrdersRefused(next.Turn, Describe(exception)));
+                    new MultiplayerNotice.OrdersRefused(next.Turn, Describe(exception), withdrawn));
             }
             finally
             {
@@ -213,6 +216,38 @@ public sealed partial class MultiplayerMatchSession
             };
         }
         _outboxSignal.Release();
+    }
+
+    /// <summary>
+    /// Whether a refusal was of the document itself, which the server never recorded, rather than
+    /// of the turn it was sent for.
+    /// </summary>
+    /// <remarks>
+    /// A malformed response is not one: the server may have taken the document before its answer
+    /// went wrong, so nothing is known about what it holds.
+    /// </remarks>
+    private static bool RefusesTheDocument(Exception exception) =>
+        exception is MultiplayerApiException
+        {
+            Code: ErrorCode.ValidationFailed or ErrorCode.PayloadTooLarge or ErrorCode.BadRequest,
+        };
+
+    /// <summary>
+    /// Stops carrying readiness forward for a turn whose finished document the server refused.
+    /// </summary>
+    /// <remarks>
+    /// Readiness otherwise accumulates, so the next draft of the turn would say "done" for a player
+    /// who is being handed the turn back to change. A newer ready document already queued for the
+    /// turn speaks for itself, and nothing is withdrawn under it.
+    /// </remarks>
+    private bool WithdrawReadiness(int turn)
+    {
+        lock (_outboxGate)
+        {
+            if (_pending is { Ready: true } pending && pending.Turn == turn) return false;
+            _locallyReadyTurns.Remove(turn);
+            return true;
+        }
     }
 
     /// <summary>An order document waiting to be sent, and whether it completes the player's turn.</summary>
