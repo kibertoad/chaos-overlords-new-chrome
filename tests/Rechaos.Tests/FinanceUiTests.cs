@@ -61,6 +61,61 @@ public sealed class FinanceUiTests
     }
 
     [Fact]
+    public void UnspentCashListsEveryPurchaseInSubmissionOrder()
+    {
+        var state = CreatePlanningMatch();
+        var player = state.Players[0];
+        var first = player.Gangs.Single(gang => gang.IsActive);
+        var second = new MatchGangState(new GangId(900), player.Id,
+            first.DefinitionId, first.SectorId, 5);
+        player.AddGang(second);
+        var item = state.Definitions.Items[0];
+
+        Assert.True(state.Submit(new GameCommand(player.Id, second.Id,
+            GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
+        Assert.True(state.Submit(new GameCommand(player.Id, first.Id,
+            GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
+
+        var spends = StatusConsolePresentation.QueuedCashSpends(state, player);
+        Assert.Equal([second.Id, first.Id], spends.Select(spend => spend.Gang).ToArray());
+        Assert.Equal([1, 2], spends.Select(spend => spend.Position).ToArray());
+        Assert.Equal(player.Cash - spends.Sum(spend => spend.Price),
+            StatusConsolePresentation.UnspentCash(state, player));
+
+        Assert.True(state.Submit(new GameCommand(player.Id, second.Id,
+            GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
+        Assert.Equal([first.Id, second.Id],
+            StatusConsolePresentation.QueuedCashSpends(state, player)
+                .Select(spend => spend.Gang).ToArray());
+    }
+
+    [Fact]
+    public void UnspentCashChargesBribesBeforeEarlierSubmittedEquips()
+    {
+        var state = CreatePlanningMatch();
+        var player = state.Players[0];
+        var briber = player.Gangs.Single(gang => gang.IsActive);
+        var buyer = new MatchGangState(new GangId(900), player.Id,
+            briber.DefinitionId, briber.SectorId, 5);
+        player.AddGang(buyer);
+        var item = state.Definitions.Items[0];
+
+        Assert.True(state.Submit(new GameCommand(player.Id, buyer.Id,
+            GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
+        Assert.True(state.Submit(new GameCommand(player.Id, briber.Id,
+            GangAction.Bribe, CommandTarget.None)).Accepted);
+
+        var spends = StatusConsolePresentation.QueuedCashSpends(state, player);
+        Assert.Equal([(briber.Id, GangAction.Bribe), (buyer.Id, GangAction.Equip)],
+            spends.Select(spend => (spend.Gang, spend.Action)).ToArray());
+        Assert.Equal("BRIBE", spends[0].Description);
+        Assert.Equal(ManualRules.OriginalBribeCost, spends[0].Price);
+        Assert.Equal(SpecialSiteRules.EquipmentCost(state, buyer, item), spends[1].Price);
+        Assert.Equal(player.Cash - ManualRules.OriginalBribeCost - spends[1].Price,
+            StatusConsolePresentation.UnspentCash(state, player));
+    }
+
+    [Fact]
     public void SectorProjectionExcludesOtherSectorsAndEstimatesQueuedChaos()
     {
         var state = CreatePlanningMatch();

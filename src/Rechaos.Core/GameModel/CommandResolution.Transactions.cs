@@ -43,8 +43,12 @@ public static partial class CommandResolver
         MatchState state,
         IReadOnlyList<QueuedCommand> commands)
     {
-        var ordered = InRosterOrder(state, commands);
-        var prepared = ordered.Where(queued => queued.Command.Action == GangAction.Give)
+        // Cash-affecting transactions follow the player's visible order sequence. Give retains
+        // the original roster ordering for its deferred recipient writes and overwrite rule.
+        var ordered = commands.OrderBy(queued => queued.Command.Player.Value)
+            .ThenBy(queued => queued.Sequence).ToArray();
+        var rosterOrdered = InRosterOrder(state, commands);
+        var prepared = rosterOrdered.Where(queued => queued.Command.Action == GangAction.Give)
             .ToDictionary(queued => queued.Sequence, queued => PrepareGive(state, queued.Command));
         foreach (var give in prepared.Values.Where(give => give.Available))
             UnequipGivenItems(state, give);
@@ -64,7 +68,7 @@ public static partial class CommandResolver
             };
         }
 
-        foreach (var queued in ordered.Where(queued => queued.Command.Action == GangAction.Give))
+        foreach (var queued in rosterOrdered.Where(queued => queued.Command.Action == GangAction.Give))
         {
             var give = prepared[queued.Sequence];
             if (give.Available) details[queued.Sequence] = ApplyGive(state, give.Command, give.Items);
