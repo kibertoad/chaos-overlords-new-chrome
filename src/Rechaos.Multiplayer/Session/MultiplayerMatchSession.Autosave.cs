@@ -59,9 +59,13 @@ public sealed partial class MultiplayerMatchSession
     private void UploadBootstrapSnapshotIfDue()
     {
         if (!_uploadInitialSnapshot) return;
-        _uploadInitialSnapshot = false;
-        // See above: a bootstrap nobody is waiting on.
-        StartBackgroundUpload(0, MatchStateHasher.ComputeFingerprint(_replay.State));
+        // See above: a bootstrap nobody is waiting on. Owed until one actually starts: a restore
+        // re-arms this while the first upload may still be retrying behind the pump, and that one
+        // can yet give up, so a re-arm met by a busy upload is kept for the next offer rather than
+        // spent on nothing. An offer that comes after turn 1 has sealed is refused `unknown_turn`
+        // and dropped like any other refusal.
+        _uploadInitialSnapshot = !StartBackgroundUpload(
+            0, MatchStateHasher.ComputeFingerprint(_replay.State));
     }
 
     /// <summary>
@@ -89,7 +93,7 @@ public sealed partial class MultiplayerMatchSession
             return;
         }
         // A checkpoint nobody is waiting for. The next reconnect replays from an older one.
-        StartBackgroundUpload(confirmedTurn, stateHash);
+        _ = StartBackgroundUpload(confirmedTurn, stateHash);
     }
 
     /// <summary>
@@ -109,9 +113,10 @@ public sealed partial class MultiplayerMatchSession
     /// due is a server that is not taking them, and a second would only queue behind it.
     /// </para>
     /// </remarks>
-    private void StartBackgroundUpload(int turn, string stateHash)
+    /// <returns>Whether the upload started; false while an earlier one is still running.</returns>
+    private bool StartBackgroundUpload(int turn, string stateHash)
     {
-        if (!_backgroundUpload.IsCompleted) return;
+        if (!_backgroundUpload.IsCompleted) return false;
         var request = new UploadSnapshotRequest(
             turn,
             NativeSaveSerializer.CurrentFormatVersion,
@@ -123,6 +128,7 @@ public sealed partial class MultiplayerMatchSession
         var cancellationToken = _stoppingToken;
         _backgroundUpload = Task.Run(
             () => TryUploadSnapshotAsync(request, cancellationToken), cancellationToken);
+        return true;
     }
 
     /// <summary>Uploads a snapshot nothing on this client waits for, so a refusal is dropped.</summary>

@@ -29,8 +29,15 @@ public sealed partial class ChaosGame
     /// </remarks>
     internal static readonly TimeSpan DraftInterval = TimeSpan.FromSeconds(1);
 
-    /// <summary>When the last draft was queued; drafts wait out <see cref="DraftInterval"/> after it.</summary>
-    private DateTimeOffset _lastDraftQueuedAt = DateTimeOffset.MinValue;
+    /// <summary>
+    /// When the last draft was queued, as a <see cref="System.Diagnostics.Stopwatch"/> timestamp, or
+    /// null before the first; drafts wait out <see cref="DraftInterval"/> after it.
+    /// </summary>
+    /// <remarks>
+    /// Monotonic, not the wall clock: a clock set back by the system would otherwise hold every
+    /// draft for as long as it was set back.
+    /// </remarks>
+    private long? _lastDraftQueuedAt;
 
     /// <summary>
     /// The planning handle of the turn the player last ended, kept until that turn is replaced.
@@ -101,14 +108,17 @@ public sealed partial class ChaosGame
         if (turn.Orders.Version == _sentOrderVersion) return;
         // Left unsent rather than dropped: the version still differs next frame, so the latest
         // document goes as soon as the interval is up, carrying every change made in between.
-        var now = DateTimeOffset.UtcNow;
-        if (now - _lastDraftQueuedAt < DraftInterval) return;
+        if (_lastDraftQueuedAt is { } last
+            && System.Diagnostics.Stopwatch.GetElapsedTime(last) < DraftInterval)
+        {
+            return;
+        }
         _sentOrderVersion = turn.Orders.Version;
         var document = turn.Build();
         var digest = OrderDigest.OfDocument(document);
         if (string.Equals(digest, _online.SentOrderDigest, StringComparison.Ordinal)) return;
         _online.SentOrderDigest = digest;
-        _lastDraftQueuedAt = now;
+        _lastDraftQueuedAt = System.Diagnostics.Stopwatch.GetTimestamp();
         _session.QueueOrders(_online.PlanningTurn, document, ready: false);
     }
 }

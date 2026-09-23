@@ -31,10 +31,7 @@ public sealed partial class ChaosGame
         PumpOnlineNotices();
         // The session stops retrying a draft once its turn seals, so its line goes with the turn.
         if (_online.DelayedDraftTurn is { } delayedTurn && delayedTurn != _online.PlanningTurn)
-        {
-            _online.DelayedDraftTurn = null;
-            if (_message == DelayedDraftMessage) _message = string.Empty;
-        }
+            ClearDelayedDraft();
         if (_online.UpdateReconnectPopup(DateTimeOffset.UtcNow)) _message = ReconnectingMessage();
         SendOnlineDraft();
         UpdateOnlineDeadlineWarnings();
@@ -47,6 +44,13 @@ public sealed partial class ChaosGame
 
     /// <summary>The message line while a draft of the open turn is being retried in the background.</summary>
     private const string DelayedDraftMessage = "ORDERS NOT SAVED ON THE SERVER YET  RETRYING";
+
+    /// <summary>Forgets the delayed draft, and takes back its message line if it is still showing.</summary>
+    private void ClearDelayedDraft()
+    {
+        _online.DelayedDraftTurn = null;
+        if (_message == DelayedDraftMessage) _message = string.Empty;
+    }
 
     /// <summary>
     /// Drains what the sessions have to say, on the game thread.
@@ -308,10 +312,7 @@ public sealed partial class ChaosGame
                 // A draft needs no announcement; the submission that ends a turn already said so.
                 _online.TurnSyncError = string.Empty;
                 if (_online.DelayedDraftTurn is { } delayedTurn && accepted.Turn >= delayedTurn)
-                {
-                    _online.DelayedDraftTurn = null;
-                    if (_message == DelayedDraftMessage) _message = string.Empty;
-                }
+                    ClearDelayedDraft();
                 if (accepted.Ready && accepted.Turn == _online.PlanningTurn)
                 {
                     _online.ReadySubmissionPending = false;
