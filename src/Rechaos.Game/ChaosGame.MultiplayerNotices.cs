@@ -321,17 +321,18 @@ public sealed partial class ChaosGame
                 if (connection.IsConnected)
                 {
                     _online.ReconnectLog.Clear();
+                    _online.ReconnectCopyStatus = string.Empty;
                     _online.ReconnectAttempt = 0;
                     _message = string.Empty;
                     UpdateOnlineResolutionExpectation();
                 }
-                else if (connection.Detail is { } detail)
+                else if (connection.Detail is not null)
                 {
                     _online.ResolutionExpectedSince = null;
                     _online.ReconnectAttempt = Math.Max(1, connection.Attempt);
-                    var entry = $"ATTEMPT {Math.Max(1, connection.Attempt)}  {detail}";
-                    _online.ReconnectLog.Add(entry.ToUpperInvariant());
-                    while (_online.ReconnectLog.Count > 6) _online.ReconnectLog.RemoveAt(0);
+                    _online.ReconnectLog.Add(ReconnectAttemptEntry.From(connection, DateTimeOffset.Now));
+                    while (_online.ReconnectLog.Count > ReconnectPopupLayout.MaxRows)
+                        _online.ReconnectLog.RemoveAt(0);
                     _message = "CONNECTION LOST  AUTOMATICALLY RECONNECTING";
                 }
                 return;

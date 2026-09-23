@@ -23,13 +23,13 @@ public sealed class ConnectionHealth
 {
     private readonly Lock _gate = new();
     private readonly List<Lane> _lanes = [];
-    private readonly Action<bool, string?, int> _onChanged;
+    private readonly Action<ConnectionFailure?> _onChanged;
     private bool _connected = true;
 
     /// <param name="onChanged">
-    /// Told whether the server is answering, what went wrong when it is not, and which attempt.
+    /// Told about each failed attempt, or <see langword="null"/> once the server is answering again.
     /// </param>
-    public ConnectionHealth(Action<bool, string?, int> onChanged)
+    public ConnectionHealth(Action<ConnectionFailure?> onChanged)
     {
         ArgumentNullException.ThrowIfNull(onChanged);
         _onChanged = onChanged;
@@ -53,13 +53,13 @@ public sealed class ConnectionHealth
         return lane;
     }
 
-    private void Failed(Lane lane, string detail, int attempt)
+    private void Failed(Lane lane, string detail, int attempt, Exception? error)
     {
         lock (_gate)
         {
             lane.Healthy = false;
             _connected = false;
-            _onChanged(false, detail, attempt);
+            _onChanged(new ConnectionFailure(lane.Name, detail, attempt, error));
         }
     }
 
@@ -74,7 +74,7 @@ public sealed class ConnectionHealth
                 if (!other.Healthy) return;
             }
             _connected = true;
-            _onChanged(true, null, 0);
+            _onChanged(null);
         }
     }
 
@@ -95,9 +95,20 @@ public sealed class ConnectionHealth
         internal bool Healthy { get; set; } = true;
 
         /// <summary>An attempt failed and will be retried.</summary>
-        public void Failed(string detail, int attempt) => _owner.Failed(this, detail, attempt);
+        /// <param name="detail">Text for the player.</param>
+        /// <param name="attempt">Which attempt this was.</param>
+        /// <param name="error">What was thrown, kept whole for a diagnostic the player can copy.</param>
+        public void Failed(string detail, int attempt, Exception? error = null) =>
+            _owner.Failed(this, detail, attempt, error);
 
         /// <summary>An attempt reached the server, or the failing work was abandoned.</summary>
         public void Recovered() => _owner.Recovered(this);
     }
 }
+
+/// <summary>One failed attempt to reach the server, as a lane reported it.</summary>
+/// <param name="Lane">The retry loop that failed.</param>
+/// <param name="Detail">Text for the player.</param>
+/// <param name="Attempt">Which attempt this was.</param>
+/// <param name="Error">What was thrown, when the failure came from an exception.</param>
+public sealed record ConnectionFailure(string Lane, string Detail, int Attempt, Exception? Error);

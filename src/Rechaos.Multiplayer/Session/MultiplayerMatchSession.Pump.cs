@@ -75,7 +75,8 @@ public sealed partial class MultiplayerMatchSession
             _streamLane.Failed(
                 $"Still trying to reach the server, {outage.Elapsed.TotalMinutes:0.#} minutes "
                 + "so far. The match resumes as soon as it answers.",
-                attemptsThisOutage);
+                attemptsThisOutage,
+                exhausted);
             return true;
         }
         while (true)
@@ -179,7 +180,7 @@ public sealed partial class MultiplayerMatchSession
             onReconnect: (exception, attempt) =>
             {
                 if (!outage.IsRunning) outage.Restart();
-                _streamLane.Failed(Describe(exception), attempt);
+                _streamLane.Failed(Describe(exception), attempt, exception);
             },
             onConnected: () =>
             {

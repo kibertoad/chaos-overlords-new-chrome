@@ -158,7 +158,7 @@ public sealed partial class MultiplayerMatchSession
                 // retry window expires. The order PUT remains an idempotent whole-document
                 // replacement, so retain it and start a new window instead of ending the match
                 // (or silently throwing away a turn the player already closed locally).
-                _outboxLane.Failed(Describe(exception), exception.Attempts);
+                _outboxLane.Failed(Describe(exception), exception.Attempts, exception);
                 Requeue(next);
             }
             catch (MultiplayerApiException exception) when (exception.Reason == "not_active")
