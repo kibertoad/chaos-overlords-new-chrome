@@ -57,15 +57,9 @@ public sealed partial class MultiplayerMatchSession
         // `finally`, and on into the next submission's synchronous prologue, all while this lock
         // was still held. It is reentrant, so nothing deadlocked; what it did was run the outbox's
         // own bookkeeping under a lock taken by the interface, from the interface's thread.
-        try
-        {
-            superseded?.Cancel();
-        }
-        catch (ObjectDisposedException)
-        {
-            // The old request finished and disposed its source after we read it. Its cancellation
-            // is no longer needed; the replacement is already queued and its wake follows below.
-        }
+        // The old request may also finish and dispose its source after the read above; it then
+        // needs no cancelling, and the replacement is already queued with its wake just below.
+        CancelUnlessDisposed(superseded);
         _outboxSignal.Release();
     }
 
