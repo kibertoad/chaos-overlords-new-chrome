@@ -31,8 +31,11 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
     /// <para>
     /// Eight megabytes covers the largest answer a server legitimately gives with room to spare: a
     /// snapshot is a megabyte of base64, and a sealed set is six players at a quarter of a megabyte
-    /// of orders each. Event streams are unaffected — they are read with
-    /// <see cref="HttpCompletionOption.ResponseHeadersRead"/>, which does not buffer.
+    /// of orders each. <see cref="MultiplayerClient"/> applies it itself, reading every answer with
+    /// <see cref="HttpCompletionOption.ResponseHeadersRead"/> and then a bounded read, so it holds
+    /// on a client that was not built here too. A refusal's body is held to the much smaller
+    /// <see cref="MultiplayerApiException.MaximumBodyBytes"/>, and a successful event stream is
+    /// never buffered at all.
     /// </para>
     /// </remarks>
     public const long MaximumResponseBytes = 8L * 1024 * 1024;
@@ -174,27 +177,76 @@ public sealed class MultiplayerClient
         }
 
         using var timeout = Deadline(cancellationToken);
-        using var response = await SendWithDeadlineAsync(
-            request, HttpCompletionOption.ResponseContentRead, timeout, cancellationToken)
+        using var response = await SendWithDeadlineAsync(request, timeout, cancellationToken)
             .ConfigureAwait(false);
         _handshake.ObserveServerDate(response.Headers.Date);
         if (!response.IsSuccessStatusCode)
-        {
-            throw await MultiplayerApiException
-                .FromResponseAsync(response, cancellationToken).ConfigureAwait(false);
-        }
+            throw await RefusalAsync(response, cancellationToken).ConfigureAwait(false);
         if (typeof(T) == typeof(Unit)) return (T)(object)Unit.Value;
         if (response.StatusCode == HttpStatusCode.NoContent)
         {
             throw new MultiplayerProtocolException(
                 $"the server answered 204 where a {typeof(T).Name} was expected");
         }
-        var payload = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        var payload = await ReadPayloadAsync(response, timeout, cancellationToken)
+            .ConfigureAwait(false);
         return exactRoundTrip ? WireJson.ReadExact<T>(payload) : WireJson.Read<T>(payload);
     }
 
     /// <summary>
-    /// Sends a request, telling its own deadline apart from the caller's cancellation.
+    /// Sends a request and waits for its headers, never its body.
+    /// </summary>
+    /// <remarks>
+    /// Headers only, so that every body is read through <see cref="BoundedBody"/> — see
+    /// <see cref="MultiplayerClientOptions.MaximumResponseBytes"/>.
+    /// </remarks>
+    private Task<HttpResponseMessage> SendWithDeadlineAsync(
+        HttpRequestMessage request,
+        CancellationTokenSource timeout,
+        CancellationToken cancellationToken) =>
+        WithDeadlineAsync(
+            token => _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token),
+            timeout,
+            cancellationToken);
+
+    /// <summary>
+    /// A successful answer's body, under the request's deadline and the response ceiling.
+    /// </summary>
+    private Task<string> ReadPayloadAsync(
+        HttpResponseMessage response,
+        CancellationTokenSource timeout,
+        CancellationToken cancellationToken)
+    {
+        // The smaller ceiling, so a caller that bounded its own client tighter keeps that bound.
+        var limit = (int)Math.Min(
+            _http.MaxResponseContentBufferSize, MultiplayerClientOptions.MaximumResponseBytes);
+        return WithDeadlineAsync(
+            async token => await BoundedBody
+                .ReadStringAsync(response.Content, limit, token)
+                .ConfigureAwait(false)
+                // The same exception HttpClient raises when its own buffer ceiling is exceeded.
+                ?? throw new HttpRequestException(
+                    $"the server answered more than {limit} bytes"),
+            timeout,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// A refusal, read under a deadline of its own.
+    /// </summary>
+    /// <remarks>
+    /// Its own, rather than what the header phase left over: a status that arrives a moment before
+    /// the request deadline would otherwise leave its envelope no time at all, and a permanent
+    /// verdict would be read as silence. A body that stalls past it still yields the status.
+    /// </remarks>
+    private Task<MultiplayerApiException> RefusalAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken) =>
+        MultiplayerApiException.FromResponseAsync(
+            response, _options.EffectiveTimeout, cancellationToken);
+
+    /// <summary>
+    /// Runs one step of a request, telling its own deadline apart from the caller's cancellation.
     /// </summary>
     /// <remarks>
     /// Both arrive from the HTTP stack as an <see cref="OperationCanceledException"/> and they mean
@@ -202,15 +254,14 @@ public sealed class MultiplayerClient
     /// never be retried. Only the linked source can tell them apart, and only here, so this is
     /// where the distinction is made — see <see cref="MultiplayerTimeoutException"/>.
     /// </remarks>
-    private async Task<HttpResponseMessage> SendWithDeadlineAsync(
-        HttpRequestMessage request,
-        HttpCompletionOption completion,
+    private async Task<T> WithDeadlineAsync<T>(
+        Func<CancellationToken, Task<T>> operation,
         CancellationTokenSource timeout,
         CancellationToken cancellationToken)
     {
         try
         {
-            return await _http.SendAsync(request, completion, timeout.Token).ConfigureAwait(false);
+            return await operation(timeout.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException exception)
             when (!cancellationToken.IsCancellationRequested && timeout.IsCancellationRequested)
@@ -224,9 +275,9 @@ public sealed class MultiplayerClient
     /// </summary>
     /// <remarks>
     /// <para>
-    /// It reads with <see cref="HttpCompletionOption.ResponseHeadersRead"/>, so the BODY is outside
-    /// the request deadline: a stream that has said nothing for a minute is healthy, and buffering
-    /// it to completion would mean never seeing an event at all.
+    /// A successful stream's BODY is outside the request deadline and is never buffered: a stream
+    /// that has said nothing for a minute is healthy, and buffering it to completion would mean
+    /// never seeing an event at all.
     /// </para>
     /// <para>
     /// The HEADER phase keeps the ordinary deadline. Without one the only bound was
@@ -234,6 +285,11 @@ public sealed class MultiplayerClient
     /// a <see cref="TaskCanceledException"/> the retry policy reads as fatal — so a reconnect
     /// through a captive network that never answers ended the match instead of spending the
     /// five-minute reconnect window the docs promise.
+    /// </para>
+    /// <para>
+    /// A REFUSAL's body is the exception: it is an envelope, not a stream, so it is buffered like
+    /// any other — bounded, and under a deadline of its own (see <see cref="RefusalAsync"/>). A
+    /// proxy that sends a 502 and then never finishes its page used to hang the reconnect loop.
     /// </para>
     /// </remarks>
     internal async Task<HttpResponseMessage> OpenStreamAsync(
@@ -249,18 +305,13 @@ public sealed class MultiplayerClient
         Authorize(request);
         // Disposed once the headers are in, never before: tying the body to it would cancel the
         // stream fifteen seconds after it opened.
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(_options.EffectiveTimeout);
-        var response = await SendWithDeadlineAsync(
-            request, HttpCompletionOption.ResponseHeadersRead, timeout, cancellationToken)
+        using var timeout = Deadline(cancellationToken);
+        var response = await SendWithDeadlineAsync(request, timeout, cancellationToken)
             .ConfigureAwait(false);
         _handshake.ObserveServerDate(response.Headers.Date);
         if (response.IsSuccessStatusCode) return response;
         using (response)
-        {
-            throw await MultiplayerApiException
-                .FromResponseAsync(response, cancellationToken).ConfigureAwait(false);
-        }
+            throw await RefusalAsync(response, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>How far the server's clock is ahead of this machine's; see `HandshakeState`.</summary>
@@ -314,15 +365,11 @@ public sealed class MultiplayerClient
                 Encoding.UTF8,
                 "application/json");
             using var timeout = Deadline(cancellationToken);
-            using var response = await SendWithDeadlineAsync(
-                request, HttpCompletionOption.ResponseContentRead, timeout, cancellationToken)
+            using var response = await SendWithDeadlineAsync(request, timeout, cancellationToken)
                 .ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
-            {
-                throw await MultiplayerApiException
-                    .FromResponseAsync(response, cancellationToken).ConfigureAwait(false);
-            }
-            var payload = await response.Content.ReadAsStringAsync(cancellationToken)
+                throw await RefusalAsync(response, cancellationToken).ConfigureAwait(false);
+            var payload = await ReadPayloadAsync(response, timeout, cancellationToken)
                 .ConfigureAwait(false);
             var handshake = WireJson.Read<HandshakeResponse>(payload);
             if (handshake.ProtocolVersion != MultiplayerProtocolVersion.Current)
