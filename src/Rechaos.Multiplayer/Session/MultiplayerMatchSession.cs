@@ -249,14 +249,28 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     public void RequestResync()
     {
         if (Interlocked.Exchange(ref _resyncRequested, 1) != 0) return;
+        // The cycle may end on its own between the read and the cancel; the flag is what matters
+        // and the next cycle will see it.
+        CancelUnlessDisposed(Volatile.Read(ref _streamCycle));
+    }
+
+    /// <summary>
+    /// Cancels a source read from a field its owner clears and disposes when its work ends.
+    /// </summary>
+    /// <remarks>
+    /// The read and the cancel cannot share a lock — <c>Cancel</c> runs registrations inline on the
+    /// calling thread — so the owner can finish in between. A source already disposed has nothing
+    /// left to cancel, and saying so must not throw on the interface's thread.
+    /// </remarks>
+    private static void CancelUnlessDisposed(CancellationTokenSource? source)
+    {
         try
         {
-            Volatile.Read(ref _streamCycle)?.Cancel();
+            source?.Cancel();
         }
         catch (ObjectDisposedException)
         {
-            // The cycle ended on its own between the read and the cancel; the flag is what matters
-            // and the next cycle will see it.
+            // Its work finished and it was disposed after the caller read it.
         }
     }
 
