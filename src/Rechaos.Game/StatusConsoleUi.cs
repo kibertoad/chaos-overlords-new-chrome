@@ -35,7 +35,7 @@ public static class StatusConsoleLayout
     public const int ScoreY = 24;
     public const int CashDeltaY = 33;
     public const int CashY = 42;
-    public const int EquipCashY = 51;
+    public const int UnspentCashY = 51;
 
     public static int SectorValueY(int row)
     {
@@ -85,9 +85,9 @@ public static class StatusConsoleTooltip
             return [
                 "CASH: MONEY ON HAND NOW.",
                 "DELTA: WHOLE-CYCLE ESTIMATE, INCLUDING LATER INCOME.",
-                "EQ LEFT: CASH MINUS ALL QUEUED EQUIP PRICES.",
-                "EQ LEFT IS A PREVIEW; EARLIER SALES MAY FUND EQUIPS.",
-                "EACH EQUIP CHECKS ACTUAL CASH IN SUBMISSION ORDER."
+                "UNSPENT: CASH MINUS QUEUED BRIBES AND EQUIPS.",
+                "UNSPENT IS A PREVIEW; EARLIER SALES MAY FUND EQUIPS.",
+                "BRIBES PAY FIRST, THEN EACH EQUIP IN SUBMISSION ORDER."
             ];
         if (StatusConsoleLayout.SectorEntry(0).Contains(point))
             return ["SECTOR", "THE COORDINATES OF THE CURRENTLY SELECTED SECTOR."];
@@ -164,26 +164,29 @@ public static class StatusConsolePresentation
     public static string ProjectedChange(int projectedChange) =>
         projectedChange.ToString("+#;-#;0");
 
-    public static IReadOnlyList<QueuedEquipPurchase> QueuedEquipPurchases(
+    public static IReadOnlyList<QueuedCashSpend> QueuedCashSpends(
         MatchState state, MatchPlayerState player) => state.Commands.ExecutionPlan()
-        // The plan is already ordered by phase and then by sequence, and every Equip resolves in
-        // Transaction, so filtering it keeps the submission order the resolver uses.
+        // The plan is ordered by phase and then by sequence, so Instant Bribes precede every
+        // Transaction Equip and each group keeps the submission order the resolver uses.
         .Where(entry => entry.Command.Player == player.Id
-            && entry.Command.Action == GangAction.Equip)
+            && entry.Command.Action is GangAction.Bribe or GangAction.Equip)
         .Select((entry, index) =>
         {
             var gang = state.FindGang(entry.Command.Gang)!;
+            var gangName = state.Definitions.Gang(gang.DefinitionId).Name;
+            if (entry.Command.Action == GangAction.Bribe)
+                return new QueuedCashSpend(index + 1, gang.Id, gangName, GangAction.Bribe,
+                    "BRIBE", CommandRules.ByAction[GangAction.Bribe].CashCost);
             var item = state.Definitions.Items[entry.Command.Target.Id];
-            return new QueuedEquipPurchase(index + 1, gang.Id,
-                state.Definitions.Gang(gang.DefinitionId).Name, item.Id, item.Name,
-                SpecialSiteRules.EquipmentCost(state, gang, item));
+            return new QueuedCashSpend(index + 1, gang.Id, gangName, GangAction.Equip,
+                item.Name, SpecialSiteRules.EquipmentCost(state, gang, item));
         }).ToArray();
 
-    public static int CashLessQueuedEquip(MatchState state, MatchPlayerState player) =>
-        CashLess(player, QueuedEquipPurchases(state, player));
+    public static int UnspentCash(MatchState state, MatchPlayerState player) =>
+        UnspentCash(player, QueuedCashSpends(state, player));
 
-    public static int CashLess(MatchPlayerState player, IEnumerable<QueuedEquipPurchase> purchases) =>
-        checked(player.Cash - purchases.Sum(entry => entry.Price));
+    public static int UnspentCash(MatchPlayerState player, IEnumerable<QueuedCashSpend> spends) =>
+        checked(player.Cash - spends.Sum(entry => entry.Price));
 
     public static int SectorCash(PlayerId? owner, PlayerId activePlayer, int cash) =>
         owner == activePlayer ? cash : 0;
@@ -211,8 +214,8 @@ public static class StatusConsolePresentation
     }
 }
 
-public sealed record QueuedEquipPurchase(
-    int Position, GangId Gang, string GangName, short Item, string ItemName, int Price);
+public sealed record QueuedCashSpend(
+    int Position, GangId Gang, string GangName, GangAction Action, string Description, int Price);
 
 public static class HoverTooltipLayout
 {

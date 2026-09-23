@@ -259,10 +259,10 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.CashY), Color.Lime, 1);
         DrawPanelValue(font, batch, player.Cash.ToString(),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashY);
-        font.Draw(batch, "EQ LEFT", new Vector2(StatusConsoleLayout.LabelLeft,
-            StatusConsoleLayout.EquipCashY), Color.Lime, 1);
-        DrawPanelValue(font, batch, StatusConsolePresentation.CashLessQueuedEquip(state, player).ToString(),
-            StatusConsoleLayout.ValueRight, StatusConsoleLayout.EquipCashY);
+        font.Draw(batch, "UNSPENT", new Vector2(StatusConsoleLayout.LabelLeft,
+            StatusConsoleLayout.UnspentCashY), Color.Lime, 1);
+        DrawPanelValue(font, batch, StatusConsolePresentation.UnspentCash(state, player).ToString(),
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.UnspentCashY);
         DrawPanelValue(font, batch, SectorCode(_cursor),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(0));
         DrawPanelValue(font, batch, $"${SectorIncome(state, selectedSector)}",
@@ -329,7 +329,7 @@ public sealed partial class ChaosGame
             var player = ViewingPlayer(state);
             if (StatusConsoleLayout.Cash.Contains(statusHover))
             {
-                DrawCashPurchaseTooltip(batch, pixel, font, statusHover,
+                DrawCashSpendingTooltip(batch, pixel, font, statusHover,
                     state, state.FindPlayer(player)!);
                 return;
             }
@@ -349,24 +349,25 @@ public sealed partial class ChaosGame
         }
     }
 
-    private static void DrawCashPurchaseTooltip(SpriteBatch batch, Texture2D pixel, PixelFont font,
+    private static void DrawCashSpendingTooltip(SpriteBatch batch, Texture2D pixel, PixelFont font,
         Point point, MatchState state, MatchPlayerState player)
     {
         const int maxRowsPerColumn = 40;
-        var purchases = StatusConsolePresentation.QueuedEquipPurchases(state, player);
+        var spends = StatusConsolePresentation.QueuedCashSpends(state, player);
         string[] header =
         [
-            "CASH AND PURCHASE RESERVES",
+            "CASH AND QUEUED SPENDING",
             $"CASH {player.Cash}  DELTA {StatusConsolePresentation.ProjectedChange(FinanceProjection.Project(state, player, null).CashAdjustment)}",
-            $"EQ LEFT = CASH - QUEUED EQUIP = {StatusConsolePresentation.CashLess(player, purchases)}",
+            $"UNSPENT = CASH - QUEUED BRIBES AND EQUIPS = {StatusConsolePresentation.UnspentCash(player, spends)}",
             "NO CASH IS RESERVED UNTIL AN ORDER RESOLVES.",
-            "PURCHASES USE CLICK ORDER; EARLIER SELLS MAY FUND THEM.",
-            "QUEUED PURCHASES IN RESOLUTION ORDER:"
+            "BRIBES PAY FIRST; EQUIPS FOLLOW IN CLICK ORDER.",
+            "EARLIER SELLS MAY FUND EQUIPS.",
+            "QUEUED SPENDING IN RESOLUTION ORDER:"
         ];
-        string[] rows = purchases.Count == 0
+        string[] rows = spends.Count == 0
             ? ["NONE"]
-            : purchases.Select(entry =>
-                $"{entry.Position:00} {entry.GangName} {entry.ItemName} ${entry.Price}").ToArray();
+            : spends.Select(entry =>
+                $"{entry.Position:00} {entry.GangName} {entry.Description} ${entry.Price}").ToArray();
         var rowCount = Math.Min(maxRowsPerColumn, rows.Length);
         var columnCount = (rows.Length + maxRowsPerColumn - 1) / maxRowsPerColumn;
         var columnWidth = rows.Max(row => row.Length) * OriginalFontLayout.CellWidth + 12;

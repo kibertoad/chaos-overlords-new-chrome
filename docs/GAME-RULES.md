@@ -475,10 +475,12 @@ claim about original-game behavior.
   nets all of those components across the whole cycle, so it is not an
   affordability test: `cash + delta >= 0` can hold while an Equip fails. For
   example, with $10 cash, one queued $12 Equip, $5 of sector tax, and no other
-  projected component, the console shows `CASH 10`, `DELTA -7`, and `EQ LEFT -2`;
-  the Equip fails. `EQ LEFT` subtracts all queued Equip prices from current
-  cash, while its tooltip lists the full purchase order. It is a preview, not
-  a cash reservation: earlier Sells may fund a purchase and later ones cannot.
+  projected component, the console shows `CASH 10`, `DELTA -7`, and `UNSPENT -2`;
+  the Equip fails. `UNSPENT` subtracts every queued Bribe and Equip price from
+  current cash, because both debit cash before or during the Transaction scan,
+  while its tooltip lists them in resolution order: Bribes first, then Equips
+  in submission order. It is a preview, not a cash reservation: earlier Sells
+  may fund a purchase and later ones cannot.
 - Confidence: High for cost, categories, research, tech gates, the statically
   verified zero-difficulty initialization, Factory division/rounding, controlled/influenced locality,
   original fixed player/roster-slot resolution order, signed execution-time cash check,

@@ -39,8 +39,9 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 submitted those orders. Replacing an order moves it to the end. Transactions
 still resolve by player slot, and Give retains its deferred roster-ordered
 recipient writes. The city console shows current cash, the whole-cycle Delta,
-and `EQ LEFT = cash - sum(queued Equip prices)` separately. Hovering the cash
-figures shows the complete numbered purchase sequence and prices.
+and `UNSPENT = cash - sum(queued Bribe and Equip prices)` separately. Hovering
+the cash figures shows every queued Bribe and Equip, numbered in resolution
+order with its price: Instant Bribes first, then Equips in submission order.
 
 **Original behavior.** `BIN-EQUIP-002` and `BIN-EQUIP-006` establish that the
 shipped resolver instead scans fixed gang roster slots. An earlier-slot Sell
