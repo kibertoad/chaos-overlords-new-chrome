@@ -32,6 +32,9 @@ export type SealTrigger = 'ready' | 'deadline'
 /** Turns are numbered from 1; 0 is the lobby's `currentTurn`, before any turn exists. */
 export const FIRST_TURN = 1
 
+/** The soonest an early deadline timer is retried; see `rearmEarlyDeadline`. */
+const EARLY_DEADLINE_RETRY_MS = 250
+
 /**
  * How recently a match must have been touched for the ordinary sweep pass to visit it.
  *
@@ -148,7 +151,10 @@ export class TurnService {
     const turn = await this.deps.storage.turns.get(matchId, number)
     if (turn?.status !== 'open') return false
     if (trigger === 'deadline') {
-      if (turn.deadlineAt === null || turn.deadlineAt.getTime() > this.deps.clock.now().getTime()) {
+      if (turn.deadlineAt === null) return false
+      const now = this.deps.clock.now()
+      if (turn.deadlineAt.getTime() > now.getTime()) {
+        await this.rearmEarlyDeadline(matchId, number, turn.deadlineAt, now)
         return false
       }
       // A second guard behind `pauseAbandonedMatch`: a deadline that survived it, or one armed
@@ -173,6 +179,37 @@ export class TurnService {
     this.deps.logger.info('turn sealed', { matchId, turn: number, trigger })
     await this.completeSeal(match, number)
     return true
+  }
+
+  /**
+   * Put a deadline timer that fired before its deadline back on the clock.
+   *
+   * A timer is not an exact instrument. `setTimeout` can fire a millisecond early by the wall
+   * clock, and a Durable Object's alarm runs on a different machine from the isolate that computed
+   * the deadline, so any skew between the two clocks reads as an early alarm. Refusing the seal is
+   * right — sealing before `deadlineAt` would misjudge who missed the turn — but refusing it and
+   * doing nothing else spent the only timer the turn had. The turn then waited on the sweep: 15
+   * seconds on Node and up to five minutes on Cloudflare's cron, with every client showing an
+   * expired clock the whole time. The retry is floored so a clock that lags by more than a few
+   * milliseconds is polled at a bounded rate rather than in a tight loop.
+   */
+  private async rearmEarlyDeadline(
+    matchId: string,
+    number: number,
+    deadlineAt: Date,
+    now: Date,
+  ): Promise<void> {
+    const dueAt = new Date(Math.max(deadlineAt.getTime(), now.getTime() + EARLY_DEADLINE_RETRY_MS))
+    try {
+      await this.deps.scheduler.schedule({ matchId, turn: number, dueAt })
+    } catch (error) {
+      // The same safety net as a deadline that could not be armed when the turn opened.
+      this.deps.logger.warn('could not re-arm an early turn deadline; the sweep will seal it', {
+        matchId,
+        turn: number,
+        error: String(error),
+      })
+    }
   }
 
   /**

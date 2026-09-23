@@ -302,7 +302,7 @@ public sealed partial class ChaosGame
             return;
         }
         switch (_onlineDeadlineWarnings.Advance(
-            _online.PlanningTurn, _online.DeadlineAt, DateTimeOffset.UtcNow))
+            _online.PlanningTurn, _online.DeadlineAt, OnlineServerNow()))
         {
             case PlanningTimerSignal.LongWarning:
                 PlayGeneralSound(GeneralSoundSlot.CountdownWarning);
@@ -330,7 +330,7 @@ public sealed partial class ChaosGame
         var seconds = _online.Match?.Settings.TurnTimerSeconds ?? 0;
         if (seconds <= 0) return null;
         return PlanningTimerPolicy.VisibleBarWidth(
-            TimeSpan.FromSeconds(seconds), deadline - DateTimeOffset.UtcNow);
+            TimeSpan.FromSeconds(seconds), deadline - OnlineServerNow());
     }
 
     private void DrawPlanningTimer(SpriteBatch batch, Texture2D pixel)

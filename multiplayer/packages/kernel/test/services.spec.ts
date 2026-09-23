@@ -705,6 +705,43 @@ describe('the lobby, the roster and the turn barrier', () => {
     expect(await h.kernel.turns.sweep()).toEqual({ sealed: 1, repaired: 0 })
     expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
     expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
-    expect(h.scheduler.scheduled).toHaveLength(2)
+    // Turn 1's deadline, its re-arm after the early call above, and turn 2's deadline.
+    expect(h.scheduler.scheduled).toHaveLength(3)
+  })
+
+  it('re-arms a deadline timer that fires before the deadline instead of dropping it', async () => {
+    const { host } = await h.startedMatch(60)
+    const deadline = new Date(h.clock.now().getTime() + 60_000)
+    h.clock.advance(60_000 - 5_000)
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect(h.scheduler.scheduled).toEqual([{ matchId: host.match.id, turn: 1, dueAt: deadline }])
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(1)
+  })
+
+  it('retries an alarm that fires a hair early no sooner than the retry floor', async () => {
+    const { host } = await h.startedMatch(60)
+    h.clock.advance(60_000 - 1)
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect(h.scheduler.scheduled).toEqual([
+      { matchId: host.match.id, turn: 1, dueAt: new Date(h.clock.now().getTime() + 250) },
+    ])
+    h.clock.advance(250)
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(true)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+  })
+
+  it('does not re-arm a paused turn, which has no deadline to wait for', async () => {
+    const { host } = await h.startedMatch(0)
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect(h.scheduler.scheduled).toEqual([])
   })
 })

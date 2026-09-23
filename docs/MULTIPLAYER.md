@@ -262,7 +262,9 @@ is still unseated and publishes `match.started` if the log does not carry it, th
 `turnTimerSeconds` (0, or 30 to 86400) puts a `deadlineAt` on every opened turn. Node arms a timer
 per open turn; Cloudflare sets a Durable Object alarm. Both runtimes also sweep the table for
 expired open turns (a 15-second interval on Node, a cron on Cloudflare) so a lost timer costs at
-most that interval. Sealing on the deadline includes whatever each player last submitted; a player
+most that interval. A timer that fires before `deadlineAt` (a `setTimeout` a millisecond early, or a
+Durable Object whose clock is behind the isolate that set the deadline) does not seal; it re-arms
+itself for the deadline, at least 250 ms out, rather than leaving the turn to the sweep. Sealing on the deadline includes whatever each player last submitted; a player
 who submitted nothing contributes no orders.
 
 ## Bug reports: the same deployment, a different database
