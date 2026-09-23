@@ -93,8 +93,10 @@ public sealed partial class MultiplayerMatchSession
             AdoptResumeSnapshot(snapshot, view.CurrentTurn);
         // A host that crashed before its bootstrap upload completed never tried again, because the
         // flag that drives it is only set for a session that is NOT restoring — and the server then
-        // answered `late_join_not_ready` to every late join for the life of the match.
-        _uploadInitialSnapshot |= IsHost && snapshot is null && view.CurrentTurn == 1;
+        // answered `late_join_not_ready` to every late join for the life of the match. Assigned,
+        // not accumulated: a bootstrap still owed from before is due only while the server says it
+        // is, so one kept past turn 1 is dropped here rather than sent as a later turn's state.
+        _uploadInitialSnapshot = IsHost && snapshot is null && view.CurrentTurn == 1;
 
         await ReplayEventHistoryAsync(replayFromSeq, view.LastEventSeq, cancellationToken)
             .ConfigureAwait(false);
@@ -153,6 +155,9 @@ public sealed partial class MultiplayerMatchSession
         _notices.Enqueue(new MultiplayerNotice.Resumed(view, state, submission, turn));
         foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
             PublishTakeoverVote(vote);
+        // The interface counts the seats from the roster alone, which cannot see a departed seat the
+        // server is still holding the turn for while the vote on it is open.
+        if (_takeoverVotes.Keys.Any(_departedPlayerIds.Contains)) PublishReadiness();
         // Last, on a state that is now caught up, the caller resolves a pause the history carried
         // — adopt a repair somebody posted while this client was away, or post one if this client
         // turns out to be holding the state the others agreed on. Until that existed, every

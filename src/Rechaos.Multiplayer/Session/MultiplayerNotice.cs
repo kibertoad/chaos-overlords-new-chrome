@@ -181,7 +181,28 @@ public abstract record MultiplayerNotice
     /// which costs them that turn and nothing more — so this says what happened and the match
     /// carries on.
     /// </remarks>
-    public sealed record OrdersRefused(int Turn, string Reason) : MultiplayerNotice;
+    /// <param name="Turn">The turn the document was for.</param>
+    /// <param name="Reason">What the server said, for the player.</param>
+    /// <param name="ReadinessWithdrawn">
+    /// The refused document was this player's finished turn, and the server refused the document
+    /// itself rather than the turn: it failed validation or was too large. The turn is still open
+    /// and still waiting on this seat, and the session has stopped carrying readiness forward for
+    /// it, so the player can change the turn and end it again.
+    /// </param>
+    public sealed record OrdersRefused(int Turn, string Reason, bool ReadinessWithdrawn = false)
+        : MultiplayerNotice;
+
+    /// <summary>
+    /// A draft of the open turn has not reached the server yet, and is being retried.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not a <see cref="ConnectionChanged"/>. A draft only protects work the player
+    /// has not finished, and the next change sends a fresh one, so a failed attempt is worth a quiet
+    /// line and never the reconnect modal. <see cref="OrdersAccepted"/> for the same turn clears it.
+    /// </remarks>
+    /// <param name="Turn">The turn the draft was for.</param>
+    /// <param name="Detail">What went wrong with the last attempt, for the diagnostics log.</param>
+    public sealed record DraftDelayed(int Turn, string Detail) : MultiplayerNotice;
 
     /// <summary>
     /// Whether the server is answering.
@@ -194,10 +215,15 @@ public abstract record MultiplayerNotice
     /// </remarks>
     /// <param name="IsConnected">Whether the last attempt reached the server.</param>
     /// <param name="Detail">What went wrong, when it did not.</param>
+    /// <param name="Attempt">Which attempt failed.</param>
+    /// <param name="Lane">The retry loop that failed: the event stream, the pump, the outbox or the reporter.</param>
+    /// <param name="Error">What was thrown, kept whole so the player can copy the full diagnostic.</param>
     public sealed record ConnectionChanged(
         bool IsConnected,
         string? Detail,
-        int Attempt = 0) : MultiplayerNotice;
+        int Attempt = 0,
+        string? Lane = null,
+        Exception? Error = null) : MultiplayerNotice;
 
     /// <summary>
     /// The session stopped and will not recover on its own.

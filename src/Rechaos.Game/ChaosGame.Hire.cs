@@ -20,14 +20,10 @@ public sealed partial class ChaosGame
         for (var slot = 0; slot < entries.Count; slot++)
         {
             if (entries[slot] is not { } entry) continue;
-            var portrait = HireDockLayout.Portrait(slot);
             if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, portrait,
+                batch.Draw(_gangPortraits, HireDockLayout.Portrait(slot),
                     OriginalSpriteLayout.GangPortrait(entry.GangDefinitionId), Color.White);
-            if (entry.Hired && _uiKeyedSprites is not null)
-                batch.Draw(_uiKeyedSprites,
-                    new Rectangle(portrait.X + 2, portrait.Y + 2, 60, 60),
-                    OriginalSpriteLayout.HiredStamp, Color.White);
+            DrawHireDockMark(batch, entry.Mark, HireDockLayout.Stamp(slot));
             if (!entry.Hired)
             {
                 var definition = state.Definitions.Gang(entry.GangDefinitionId);
@@ -35,6 +31,19 @@ public sealed partial class ChaosGame
                 font.Draw(batch, HireDockLayout.PriceText(HireRules.InitialCost(definition)),
                     price.ToVector2(), Color.Lime, 1);
             }
+        }
+    }
+
+    private void DrawHireDockMark(SpriteBatch batch, HireDockMark mark, Rectangle stamp)
+    {
+        switch (mark)
+        {
+            case HireDockMark.Hired when _uiKeyedSprites is not null:
+                batch.Draw(_uiKeyedSprites, stamp, OriginalSpriteLayout.HiredStamp, Color.White);
+                break;
+            case HireDockMark.Snubbed when _uiKeyedSprites is not null:
+                batch.Draw(_uiKeyedSprites, stamp, OriginalSpriteLayout.SnubbedStamp, Color.White);
+                break;
         }
     }
 
@@ -133,7 +142,8 @@ public sealed partial class ChaosGame
     }
 
     private IReadOnlyList<HireDockEntry?> CurrentHireDock(MatchPlayerState player) =>
-        HireDockLayout.Project(player.HireOfferSlots, player.PendingHires.FirstOrDefault());
+        HireDockLayout.Project(
+            player.HireOfferSlots, player.PendingHires.FirstOrDefault(), player.SnubbedHireOfferSlot);
 
     private void BeginHireDrag(int slot, Point point)
     {

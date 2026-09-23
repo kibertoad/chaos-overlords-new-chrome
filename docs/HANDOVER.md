@@ -1,7 +1,7 @@
 # Development handover
 
 Status: active at a validated local checkpoint
-Last updated: 2026-09-20
+Last updated: 2026-09-24
 
 <!-- doc-index:begin toc depth=3 -->
 - [Repository state](#repository-state)
@@ -40,7 +40,7 @@ Last updated: 2026-09-20
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v24, replays are v28, canonical hashes are v27, asset
+- Native saves are format v27, replays are v31, canonical fingerprint encoding is v2, asset
   manifests are v6, extracted help is v3, and client preferences are v11. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
@@ -546,8 +546,9 @@ status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
 
 - Give now uses the original `PX05015` Equipment to Give panel before its
   compatible same-sector recipient list. One command can carry any combination
-  of the source gang's exact three equipped items. Transactions now scan fixed
-  player and roster slots, reserve outgoing items, and apply incoming gifts only
+  of the source gang's exact three equipped items. Cash-affecting transactions
+  now use player submission order as a documented deviation. Give reserves
+  outgoing items in roster order and applies incoming gifts only
   after recipient transactions, allowing swaps and overwriting same-turn buys
   exactly as the resolver does. Native saves are v22, replays are v24 and canonical hashes
   are v25; the immediately previous formats

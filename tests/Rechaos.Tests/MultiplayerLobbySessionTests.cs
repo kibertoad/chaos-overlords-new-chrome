@@ -140,6 +140,108 @@ public sealed class MultiplayerLobbySessionTests
         Assert.Equal(2, server.CallsTo(HttpMethod.Get, "/matches/m1"));
     }
 
+    [Fact]
+    public async Task StartConflictStillFailsWhileTheServerIsHalfwayThroughStarting()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        server.Answer(HttpMethod.Get, "/matches/m1", new MatchDetail(View(MatchStatus.Lobby), "CODE1234", "p1"));
+
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await WaitFor<LobbyNotice.Seated>(lobby, cancellationToken);
+
+        server.Answer(HttpMethod.Post, "/start", """
+            {"error":{"code":"conflict","message":"The match has already started","details":{"reason":"match_not_in_lobby"}}}
+            """, HttpStatusCode.Conflict);
+        // Committed `running` with its seed, but turn 1 is not open yet: handing this on would fail
+        // the host's bootstrap for good.
+        var running = View(MatchStatus.Running);
+        server.Answer(HttpMethod.Get, "/matches/m1",
+            new MatchDetail(running with { CurrentTurn = 0 }, "CODE1234", "p1"));
+
+        lobby.Start();
+
+        var failed = await WaitFor<LobbyNotice.Failed>(lobby, cancellationToken);
+        Assert.Equal(nameof(MultiplayerLobbySession.Start), failed.Operation);
+        Assert.False(lobby.TryDequeueNotice(out _));
+    }
+
+    [Fact]
+    public void AMatchCaughtHalfwayThroughStartingHasNotFinishedStarting()
+    {
+        var running = View(MatchStatus.Running);
+        // The server commits `running` on turn 0 before it seats anyone or opens turn 1.
+        var committed = running with
+        {
+            CurrentTurn = 0,
+            Players = [running.Players[0] with { Slot = -1 }],
+        };
+        var seated = committed with { Players = running.Players };
+
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(View(MatchStatus.Lobby)));
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(committed));
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(seated));
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(running with
+        {
+            Players = [running.Players[0] with { Slot = -1 }],
+        }));
+        Assert.True(MultiplayerMatchSession.HasFinishedStarting(running));
+        // A seat past the board is a started match this client cannot play, not an early one: the
+        // bootstrap has to see it to refuse it with a reason instead of waiting forever.
+        Assert.True(MultiplayerMatchSession.HasFinishedStarting(running with
+        {
+            Players = [running.Players[0] with { Slot = 99 }],
+        }));
+    }
+
+    [Fact]
+    public async Task ProfileChangeIsSentForTheOwnSeatAndTheLobbyIsReadBack()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        server.Answer(HttpMethod.Get, "/matches/m1", new MatchDetail(View(MatchStatus.Lobby), "CODE1234", "p1"));
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await WaitFor<LobbyNotice.Seated>(lobby, cancellationToken);
+        server.Answer(HttpMethod.Put, "/matches/m1/profile", null, HttpStatusCode.NoContent);
+
+        lobby.UpdateProfile(new UpdatePlayerProfileRequest("RENAMED", 7));
+
+        await WaitFor<LobbyNotice.Updated>(lobby, cancellationToken);
+        var sent = Assert.Single(server.Requests, request =>
+            request.Method == HttpMethod.Put && request.Path.EndsWith("/matches/m1/profile", StringComparison.Ordinal));
+        using var body = JsonDocument.Parse(sent.Body);
+        Assert.Equal("RENAMED", body.RootElement.GetProperty("displayName").GetString());
+        Assert.Equal(7, body.RootElement.GetProperty("portraitId").GetInt32());
+        Assert.Equal(2, server.CallsTo(HttpMethod.Get, "/matches/m1"));
+    }
+
+    [Fact]
+    public async Task RefusedProfileChangeIsReportedUnderItsOwnOperation()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        server.Answer(HttpMethod.Get, "/matches/m1", new MatchDetail(View(MatchStatus.Lobby), "CODE1234", "p1"));
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await WaitFor<LobbyNotice.Seated>(lobby, cancellationToken);
+        server.Answer(HttpMethod.Put, "/matches/m1/profile", """
+            {"error":{"code":"conflict","message":"Somebody in this match already plays under that name","details":{"reason":"display_name_taken"}}}
+            """, HttpStatusCode.Conflict);
+
+        lobby.UpdateProfile(new UpdatePlayerProfileRequest("TAKEN", 0));
+
+        var failed = await WaitFor<LobbyNotice.Failed>(lobby, cancellationToken);
+        Assert.Equal(nameof(MultiplayerLobbySession.UpdateProfile), failed.Operation);
+    }
+
     private static MatchView View(MatchStatus status) => new(
         "m1",
         MultiplayerProtocolVersion.Current,

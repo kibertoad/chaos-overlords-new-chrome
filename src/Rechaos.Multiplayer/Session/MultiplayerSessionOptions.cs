@@ -67,6 +67,11 @@ namespace Rechaos.Multiplayer.Session;
 /// test without waiting out the real five minutes.
 /// </para>
 /// </param>
+/// <param name="BackgroundRetryPolicy">
+/// How uploads nothing waits on — the host's checkpoint and bootstrap snapshots — retry, or null
+/// for <see cref="RetryPolicy.Background"/>. A few attempts, then the upload is given up; a
+/// reconnect replays from an older snapshot instead.
+/// </param>
 /// <param name="ReportFlushGrace">
 /// How long disposing the session waits for state-hash reports it has not sent, or null for
 /// <see cref="MultiplayerMatchSession.DefaultReportFlushGrace"/>.
@@ -88,4 +93,5 @@ public sealed record MultiplayerSessionOptions(
     TimeSpan? StreamOutageBudget = null,
     RetryPolicy? StreamRetryPolicy = null,
     RetryPolicy? CallRetryPolicy = null,
-    TimeSpan? ReportFlushGrace = null);
+    TimeSpan? ReportFlushGrace = null,
+    RetryPolicy? BackgroundRetryPolicy = null);

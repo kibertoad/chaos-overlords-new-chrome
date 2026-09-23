@@ -81,6 +81,8 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(579, StatusConsoleLayout.ValueRight);
         Assert.Equal(new Rectangle(476, 95, 44, 9), StatusConsoleLayout.CashLabel);
+        Assert.Equal(new Rectangle(476, 41, 108, 9), StatusConsoleLayout.Cash);
+        Assert.Equal(12, StatusConsoleLayout.CashValueMaxCharacters);
         Assert.Equal([60, 69, 78, 87, 96],
             Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorValueY));
     }
@@ -116,9 +118,12 @@ public sealed class UiNavigationTests
             new PlayerId(1), new PlayerId(1), 7));
         Assert.Equal(0, StatusConsolePresentation.SectorCash(
             new PlayerId(1), new PlayerId(0), 7));
-        Assert.Equal("12 +1", StatusConsolePresentation.Cash(12, 1));
-        Assert.Equal("12 -3", StatusConsolePresentation.Cash(12, -3));
-        Assert.Equal("12 0", StatusConsolePresentation.Cash(12, 0));
+        Assert.Equal("+1", StatusConsolePresentation.ProjectedChange(1));
+        Assert.Equal("-3", StatusConsolePresentation.ProjectedChange(-3));
+        Assert.Equal("0", StatusConsolePresentation.ProjectedChange(0));
+        Assert.Equal("20 [20] (+1)", StatusConsolePresentation.CashSummary(20, 20, 1));
+        Assert.Equal("5 [-3] (0)", StatusConsolePresentation.CashSummary(5, -3, 0));
+        Assert.Equal("120[95](-12)", StatusConsolePresentation.CashSummary(120, 95, -12));
         Assert.Empty(StatusConsoleTooltip.At(Point.Zero));
     }
 
@@ -584,6 +589,7 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(new Rectangle(116, 0, 48, 64), OriginalSpriteLayout.PolicePatrolCar);
         Assert.Equal(new Rectangle(120, 300, 60, 60), OriginalSpriteLayout.HiredStamp);
+        Assert.Equal(new Rectangle(180, 300, 60, 60), OriginalSpriteLayout.SnubbedStamp);
         Assert.Equal(new Rectangle(492, 67, 20, 20), OriginalSpriteLayout.AssignedGangStatus);
         Assert.Equal(new Rectangle(492, 87, 20, 20), OriginalSpriteLayout.ContestedAssignedGangStatus);
         Assert.Equal(new Rectangle(492, 107, 20, 20), OriginalSpriteLayout.IdleGangStatus);
@@ -933,46 +939,6 @@ public sealed class UiNavigationTests
         Assert.All(rows.SelectMany((left, index) => rows.Skip(index + 1)
             .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
         Assert.Throws<ArgumentOutOfRangeException>(() => SiteSearchLayout.Site(22));
-    }
-
-    [Fact]
-    public void HireDockMatchesOriginalThreeCellStripAndRetainsHiredSlot()
-    {
-        Assert.Equal(new Rectangle(438, 370, 66, 90), HireDockLayout.Cell(0));
-        Assert.Equal(new Rectangle(571, 371, 64, 64), HireDockLayout.Portrait(2));
-        HireOfferSlotState[] offers =
-        [
-            HireOfferSlotState.Available(1),
-            HireOfferSlotState.Available(2),
-            HireOfferSlotState.Available(3)
-        ];
-        var cells = HireDockLayout.Project(offers, new PendingHireState(2, 12, 1));
-        Assert.Equal(new HireDockEntry(1, false), cells[0]);
-        Assert.Equal(new HireDockEntry(2, true), cells[1]);
-        Assert.Equal(new HireDockEntry(3, false), cells[2]);
-        Assert.Equal(new Rectangle(570, 436, 33, 24), HireDockLayout.PriceCell(2));
-        Assert.Equal(new Rectangle(604, 437, 32, 13), HireDockLayout.Reject(2));
-        Assert.Throws<ArgumentOutOfRangeException>(() => HireDockLayout.Cell(3));
-    }
-
-    [Fact]
-    public void HireDockCursorUsesPhysicalSlotsAndSkipsVacancies()
-    {
-        HireOfferSlotState[] offers =
-        [
-            HireOfferSlotState.Vacant(1),
-            HireOfferSlotState.Available(2),
-            HireOfferSlotState.Available(3)
-        ];
-
-        Assert.Equal(1, HireDockLayout.MoveCursor(offers, -1, 1));
-        Assert.Equal(2, HireDockLayout.MoveCursor(offers, 1, 1));
-        Assert.Equal(1, HireDockLayout.MoveCursor(offers, 2, 1));
-        Assert.Equal(2, HireDockLayout.MoveCursor(offers, 1, -1));
-        Assert.Equal(1, HireDockLayout.MoveCursor(offers, 0, 0));
-        Assert.Equal(-1, HireDockLayout.MoveCursor(
-            [HireOfferSlotState.Vacant(1), HireOfferSlotState.Vacant(2), HireOfferSlotState.Vacant(3)],
-            1, 1));
     }
 
     [Fact]

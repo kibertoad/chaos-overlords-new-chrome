@@ -164,12 +164,15 @@ public sealed partial class ChaosGame
     {
         DrawPanelArtwork(batch, pixel, _rankingBackground, PlayerRankingLayout.Panel);
         if (_uiSprites is null) return;
-        foreach (var entry in PlayerRankingPresentation.Project(state))
+        var entries = PlayerRankingPresentation.Project(state);
+        foreach (var entry in entries)
         {
             var player = state.FindPlayer(entry.Player)!;
             batch.Draw(_uiSprites,
                 PlayerRankingLayout.Portrait(entry.Player.Value, entry.Standing),
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         }
+        if (_hoverPoint is { } hover)
+            DrawHoverTooltip(batch, pixel, font, hover, PlayerRankingTooltip.At(hover, state, entries));
     }
 }

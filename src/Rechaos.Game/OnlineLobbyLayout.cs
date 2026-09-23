@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
@@ -49,6 +50,22 @@ public static class OnlineLobbyLayout
     /// </remarks>
     public const int RosterCaptionY = 116;
     public static Rectangle RosterPortrait(int row) => new(RosterLeft, 128 + row * 20, 16, 16);
+
+    /// <summary>
+    /// The name beside one roster row: where the player clicks their own name to change it, and
+    /// where it is edited in place.
+    /// </summary>
+    public static Rectangle RosterName(int row)
+    {
+        var face = RosterPortrait(row);
+        return new Rectangle(face.Right + 2, face.Y, RosterRight - face.Right - 2, face.Height);
+    }
+
+    /// <summary>
+    /// The line under the roster saying the player's own entry can still be changed.
+    /// </summary>
+    /// <remarks>Below the sixth row, so a full lobby does not draw over it.</remarks>
+    public static int ProfileHintY => RosterPortrait(MatchLimits.PlayerCount).Y + 5;
 
     /// <summary>The line telling the player what the lobby is waiting for.</summary>
     /// <remarks>

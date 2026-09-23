@@ -194,10 +194,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             // read is authoritative: treat that state as success rather than leaving the host on a
             // misleading error solely because the original transition was no longer available.
             var detail = await handle.GetAsync(token).ConfigureAwait(false);
-            if (detail.Match.Status != MatchStatus.Running
-                || detail.Match.Seed is null
-                || detail.Match.CurrentTurn < 1
-                || detail.Match.Players.Any(player => player.Status == PlayerStatus.Active && player.Slot < 0))
+            if (detail.Match.Seed is null || !MultiplayerMatchSession.HasFinishedStarting(detail.Match))
                 throw;
             _notices.Enqueue(new LobbyNotice.Updated(detail.Match));
             return;
@@ -211,6 +208,18 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         await handle.UpdateSettingsAsync(settings, token).ConfigureAwait(false);
         await PublishLobbyAsync(handle, token).ConfigureAwait(false);
     });
+
+    /// <summary>Changes this player's own name and portrait while the lobby has not started.</summary>
+    public void UpdateProfile(UpdatePlayerProfileRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Run(async token =>
+        {
+            if (_handle is not { } handle) return;
+            await handle.UpdateProfileAsync(request, token).ConfigureAwait(false);
+            await PublishLobbyAsync(handle, token).ConfigureAwait(false);
+        });
+    }
 
     /// <summary>Re-reads the lobby, for the roster and for the moment it starts running.</summary>
     public void Refresh() => Run(async token =>

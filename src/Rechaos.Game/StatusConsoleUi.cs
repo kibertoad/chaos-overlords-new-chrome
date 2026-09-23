@@ -35,6 +35,9 @@ public static class StatusConsoleLayout
     public const int ScoreY = 24;
     public const int CashY = 42;
 
+    // The template prints its four-cell CASH label at LabelLeft; the value fills the rest of the row.
+    public const int CashValueMaxCharacters = (ValueRight - LabelLeft) / OriginalFontLayout.CellWidth - 4;
+
     public static int SectorValueY(int row)
     {
         if (row is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(row));
@@ -81,9 +84,13 @@ public static class StatusConsoleTooltip
             return ["SCORE", "CURRENT SCENARIO PROGRESS USED FOR RANKING AND VICTORY."];
         if (StatusConsoleLayout.Cash.Contains(point))
             return [
-                "CASH / PROJECTED CHANGE",
-                "FIRST VALUE IS AVAILABLE CASH; THE SIGNED VALUE IS CASHFLOW.",
-                "IT INCLUDES QUEUED COSTS AND ESTIMATED CHAOS PROCEEDS."
+                "CASH  N [UNSPENT] (DELTA)",
+                "",
+                "N: MONEY ON HAND RIGHT NOW.",
+                "",
+                "[UNSPENT]: CASH LEFT AFTER QUEUED BRIBES AND EQUIPS.",
+                "",
+                "(DELTA): ESTIMATED CHANGE OVER THE WHOLE TURN."
             ];
         if (StatusConsoleLayout.SectorEntry(0).Contains(point))
             return ["SECTOR", "THE COORDINATES OF THE CURRENTLY SELECTED SECTOR."];
@@ -157,8 +164,97 @@ public static class StatusConsolePresentation
     public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>
         range.CanTriggerCrackdown(tolerance) ? Color.Red : Color.Lime;
 
-    public static string Cash(int current, int projectedChange) =>
-        $"{current} {projectedChange:+#;-#;0}";
+    public static string ProjectedChange(int projectedChange) =>
+        projectedChange.ToString("+#;-#;0");
+
+    /// <summary>
+    /// The status-console cash row, <c>CASH 20 [18] (+1)</c>: cash on hand, unspent cash in
+    /// brackets and the whole-turn delta in parentheses. The spaces are dropped when the spaced
+    /// form would run into the template's CASH label.
+    /// </summary>
+    public static string CashSummary(int cash, int unspent, int projectedChange)
+    {
+        var delta = ProjectedChange(projectedChange);
+        var spaced = $"{cash} [{unspent}] ({delta})";
+        return spaced.Length <= StatusConsoleLayout.CashValueMaxCharacters
+            ? spaced
+            : $"{cash}[{unspent}]({delta})";
+    }
+
+    /// <summary>
+    /// The cash tooltip above the queued purchase list: one blank-line separated section per
+    /// figure of <see cref="CashSummary"/>, each saying what the figure means and how it is
+    /// calculated from the current orders.
+    /// </summary>
+    public static IReadOnlyList<string> CashTooltip(
+        int cash, IReadOnlyList<QueuedCashSpend> spends, FinanceProjection projection)
+    {
+        ArgumentNullException.ThrowIfNull(spends);
+        ArgumentNullException.ThrowIfNull(projection);
+        var bribes = spends.Where(spend => spend.Action == GangAction.Bribe).Sum(spend => spend.Price);
+        var equips = spends.Where(spend => spend.Action == GangAction.Equip).Sum(spend => spend.Price);
+        var unspent = checked(cash - bribes - equips);
+        var delta = ProjectedChange(projection.CashAdjustment);
+        List<string> lines =
+        [
+            $"CASH  {CashSummary(cash, unspent, projection.CashAdjustment)}",
+            "",
+            $"{cash} - CASH: MONEY ON HAND RIGHT NOW.",
+            "",
+            $"[{unspent}] - UNSPENT: CASH LEFT AFTER QUEUED BRIBES AND EQUIPS.",
+            $"  {cash} CASH - {bribes} BRIBES - {equips} EQUIPS = {unspent}",
+            "  BRIBES PAY FIRST, THEN EQUIPS IN SUBMISSION ORDER.",
+            "  NO CASH IS RESERVED; EARLIER SELLS MAY FUND EQUIPS.",
+            "  BELOW ZERO, A QUEUED PURCHASE MAY FAIL.",
+            "",
+            $"({delta}) - DELTA: ESTIMATED CHANGE OVER THE WHOLE TURN."
+        ];
+        var components = DeltaComponents(projection).Where(component => component.Value != 0).ToArray();
+        if (components.Length == 0) lines.Add("  NO PROJECTED INCOME OR COSTS.");
+        lines.AddRange(components.Select(component =>
+            $"  {component.Label,-18}{ProjectedChange(component.Value)}"));
+        lines.Add($"  {"TOTAL",-18}{delta}");
+        lines.Add("  TAX, SITE CASH AND CHAOS ARRIVE AFTER PURCHASES,");
+        lines.Add("  SO A POSITIVE DELTA CANNOT PAY FOR AN EQUIP.");
+        lines.Add("");
+        lines.Add("QUEUED SPENDING IN RESOLUTION ORDER:");
+        return lines;
+    }
+
+    private static IEnumerable<(string Label, int Value)> DeltaComponents(FinanceProjection projection) =>
+    [
+        ("GANG UPKEEP", projection.GangUpkeep),
+        ("NEW CONTRACTS", projection.NewContracts),
+        ("EQUIPMENT", projection.Equipment),
+        ("CITY OFFICIALS", projection.CityOfficials),
+        ("SECTOR TAX", projection.SectorTax),
+        ("SITE CASH", projection.SiteProtection),
+        ("CHAOS ESTIMATE", projection.ChaosEstimate)
+    ];
+
+    public static IReadOnlyList<QueuedCashSpend> QueuedCashSpends(
+        MatchState state, MatchPlayerState player) => state.Commands.ExecutionPlan()
+        // The plan is ordered by phase and then by sequence, so Instant Bribes precede every
+        // Transaction Equip and each group keeps the submission order the resolver uses.
+        .Where(entry => entry.Command.Player == player.Id
+            && entry.Command.Action is GangAction.Bribe or GangAction.Equip)
+        .Select((entry, index) =>
+        {
+            var gang = state.FindGang(entry.Command.Gang)!;
+            var gangName = state.Definitions.Gang(gang.DefinitionId).Name;
+            if (entry.Command.Action == GangAction.Bribe)
+                return new QueuedCashSpend(index + 1, gang.Id, gangName, GangAction.Bribe,
+                    "BRIBE", CommandRules.ByAction[GangAction.Bribe].CashCost);
+            var item = state.Definitions.Items[entry.Command.Target.Id];
+            return new QueuedCashSpend(index + 1, gang.Id, gangName, GangAction.Equip,
+                item.Name, SpecialSiteRules.EquipmentCost(state, gang, item));
+        }).ToArray();
+
+    public static int UnspentCash(MatchState state, MatchPlayerState player) =>
+        UnspentCash(player, QueuedCashSpends(state, player));
+
+    public static int UnspentCash(MatchPlayerState player, IEnumerable<QueuedCashSpend> spends) =>
+        checked(player.Cash - spends.Sum(entry => entry.Price));
 
     public static int SectorCash(PlayerId? owner, PlayerId activePlayer, int cash) =>
         owner == activePlayer ? cash : 0;
@@ -185,6 +281,9 @@ public static class StatusConsolePresentation
         return lines;
     }
 }
+
+public sealed record QueuedCashSpend(
+    int Position, GangId Gang, string GangName, GangAction Action, string Description, int Price);
 
 public static class HoverTooltipLayout
 {

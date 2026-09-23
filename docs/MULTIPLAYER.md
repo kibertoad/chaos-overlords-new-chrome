@@ -67,7 +67,11 @@ so every client bootstraps the same city.
 
 A departure or a timed turn with no submitted document opens a takeover vote. Every currently
 present player must choose `USE AI` before control changes; any `WAIT` choice keeps the seat human,
-and there is no server-side timeout that approves takeover implicitly. While any such prompt is
+and there is no server-side timeout that approves takeover implicitly. Leaving does not decide the
+seat either: while the vote on a departed seat is open, whether anyone has answered it yet or
+somebody chose `WAIT`, the turn waits on that seat's readiness like any other, so it cannot seal
+before the player returns and finishes it or the vote hands the seat to the computer. A kicked seat
+is not waited on, since its player cannot come back. While any such prompt is
 open, the open turn has no deadline, so time spent in the modal cannot consume planning time. The
 clock restarts when the last prompt closes. Opening a prompt is what stops the clock, wherever the
 prompt comes from — a departure, a seal that found an empty seat, a returning player being asked
@@ -158,6 +162,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings`: the match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
+| `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
 | `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the departure and opens a takeover vote; it does not transfer control. A leaving host hands the role to the lowest active slot. The durable membership token is retained for later rejoin. |
 | `POST /matches/:id/rejoin` | former member | Reactivates the caller's durable seat, restores host authority when appropriate, and transfers an AI-controlled reserved seat back to its owner. |
@@ -168,7 +173,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 
 | Call | Who | Effect |
 |---|---|---|
-| `PUT /matches/:id/turns/:n/orders` | member | Replaces the caller's order document for the open turn and sets `ready`. The write is one statement conditional on the turn still being open, so a new order landing after the seal is refused (`409 turn_not_open`), never silently folded in. An exact retry of the persisted document is acknowledged even after the turn advances, covering a lost success response. When `ready` completes the roster, the turn seals in the same call. |
+| `PUT /matches/:id/turns/:n/orders` | member | Replaces the caller's order document for the open turn and sets `ready`. The write is one statement conditional on the turn still being open, so a new order landing after the seal is refused (`409 turn_not_open`), never silently folded in. An exact retry of the persisted document is acknowledged even after the turn advances, covering a lost success response. Readiness is never taken back: a `ready: false` document for a seat that is already ready is a draft that arrived after the final one, so the same statement leaves the row alone and the call answers with the document that stands. When `ready` completes the roster, the turn seals in the same call. |
 | `GET /matches/:id/turns/:n/orders/mine` | member | The caller's own submission (for a reconnecting client). |
 | `GET /matches/:id/turns/:n/orders` | member | The sealed set: the documents of the players the seal froze, in slot order, plus `orderSetHash`. Refused while open (`409 turn_open`). |
 | `POST /matches/:id/turns/:n/report` | member | `{ stateHash, finished }` after applying the sealed turn locally. |
@@ -214,9 +219,10 @@ open ──(all ready | deadline)──> sealed ──(unanimous reports)──>
 
 Sealing opens the next turn immediately, so players plan turn n+1 while reports for turn n arrive.
 The seal also **freezes its participant set** on the turn row, beside the digest taken over it. The
-set a client fetches is therefore always the set the digest was computed from: a player who left
-after submitting but before the seal is absent from both, and one who leaves after the seal stays in
-both. A slot absent from the set contributes no human document. The first wholly missed timed turn
+set a client fetches is therefore always the set the digest was computed from: a player who leaves
+after marking ready, while the vote on their seat is still open, is in both, because the seal waited
+on them; one whose seat was kicked or handed to the computer before the seal is absent from both;
+and one who leaves after the seal stays in both. A slot absent from the set contributes no human document. The first wholly missed timed turn
 marks an otherwise active seat `takeoverPending` and opens a vote. It remains idle and human while
 players wait; only a later `match.playerTakenOver` makes it computer-planned.
 
@@ -262,8 +268,13 @@ is still unseated and publishes `match.started` if the log does not carry it, th
 `turnTimerSeconds` (0, or 30 to 86400) puts a `deadlineAt` on every opened turn. Node arms a timer
 per open turn; Cloudflare sets a Durable Object alarm. Both runtimes also sweep the table for
 expired open turns (a 15-second interval on Node, a cron on Cloudflare) so a lost timer costs at
-most that interval. Sealing on the deadline includes whatever each player last submitted; a player
-who submitted nothing contributes no orders.
+most that interval. A timer that fires before `deadlineAt` (a `setTimeout` a millisecond early, or a
+Durable Object whose clock is behind the isolate that set the deadline) does not seal; it re-arms
+itself for the deadline, at least 250 ms out, rather than leaving the turn to the sweep. On
+Cloudflare the retry also lands at least 250 ms past the time the alarm fired at, since the alarm
+scheduler keeps its own clock and would otherwise refire at once while the object's clock lags.
+Sealing on the deadline includes whatever each player last submitted; a player who submitted
+nothing contributes no orders.
 
 ## Bug reports: the same deployment, a different database
 
@@ -361,7 +372,11 @@ Snapshot storage is independently bounded to the newest five snapshots per match
 checkpoint every ten confirmed turns, and the exceptional desync repairs. A checkpoint is what
 bounds how far a reconnect has to replay; the server takes one only from the host, only for a turn
 already CONFIRMED, and only at exactly the hash that verdict settled on, so it can restate the
-match's own conclusion and nothing else.
+match's own conclusion and nothing else. Nothing on the client waits for one: the host serialises
+the state on the event pump and uploads it in the background, off the connection-health lanes, with
+a few attempts over at most two minutes, so a checkpoint the server is slow to take or rate limits
+neither holds the next seal nor raises the reconnect modal. A checkpoint given up costs the next
+reconnect a longer replay from an older snapshot.
 
 **SQLite runs with `synchronous = NORMAL`.** "Published after durable" therefore holds against a
 process crash and not against losing power: a handful of the most recent writes can be lost with
@@ -502,9 +517,12 @@ seed one fair match.
 create or join, and it rides their roster row from there: `playerView.portraitId`, one of the
 original atlas's sixteen. Every client builds its city from that roster, and the setup a city was
 generated from is hashed into every turn verdict, so the face is as load-bearing as the name beside
-it. Three consequences follow, and all three are enforced rather than assumed. A face is set once,
-by the request that claims the seat, and nothing changes it afterwards — a face that moved
-mid-match would read as a desync on every client that had already bootstrapped. A seat nobody
+it. Three consequences follow, and all three are enforced rather than assumed. A face is set by
+the request that claims the seat, and only `PUT /matches/:id/profile` changes it — together with
+the name, and only while the match is in the lobby. The write is conditional on the lobby in the
+same statement, and `start` reads the roster it seats after its own transition, so a change either
+makes it into the roster every client bootstraps from or is refused; a face that moved mid-match
+would read as a desync on every client that had already bootstrapped. A seat nobody
 claimed keeps the portrait the host's `gameSettings` dressed it in, because there is no player to
 ask; a latecomer taking such a seat over sends that same face back rather than their own. And a
 value outside the atlas stops the bootstrap (`MatchBootstrapFactory`) instead of being clamped to
@@ -543,17 +561,36 @@ What the generator cannot mirror, `Rechaos.Multiplayer` writes by hand and pins 
 canonical JSON. `packages/kernel/test/logic.spec.ts` and `MultiplayerCanonicalJsonTests` hold the
 same golden document, the same canonical text and the same digest, on both sides of the wire.
 
-Client-side readiness is monotonic for one open turn. Once any queued or
-in-flight order replacement says `ready: true`, later drafts for that same turn
-continue sending `true` until the server seals it; document replacement must
-not retract readiness merely because the earlier request has left the outbox.
+Readiness is monotonic for one open turn, on both sides of the wire. Once any
+queued or in-flight order replacement says `ready: true`, later drafts for that
+same turn continue sending `true` until the server seals it; document
+replacement must not retract readiness merely because the earlier request has
+left the outbox. The client alone cannot promise that, though: a superseded
+draft is cancelled locally, and a timed-out attempt is retried, while the
+request itself may already have reached the server. Such a draft used to land
+after the final document, put the seat back to drafting with the older orders,
+and leave the turn waiting on a player whose screen said they were done — the
+next player's ready sealed nothing until the first submitted again. The server
+therefore refuses to let a non-ready document replace a ready one, in the same
+conditional write that checks the turn is open.
+
+The one way readiness is taken back is a finished document the server refuses
+outright — `validation_failed`, `payload_too_large` or `bad_request`. The server
+recorded none of it and the turn still waits on the seat, so the session stops
+carrying readiness for the turn (`OrdersRefused.ReadinessWithdrawn`) and the
+client hands the player the turn they planned, to change and end again. A
+refusal of the turn itself, such as `turn_not_open`, changes nothing.
 
 Readiness reaches the interface as the seats that have finished, not as a count
-of them. The city top bar marks every opponent the turn is still waiting on with
-a green `WAIT` under their portrait, so "waiting for the other players" says
-which ones; the footer's tally is the same fact counted. A seat the turn does not
-seal against — a computer empire, a player who left, or one voted onto computer
-control — is never marked, and neither is the player's own.
+of them. The city top bar marks every seat the turn is still waiting on with a
+green `WAIT` under its portrait, so "waiting for the other players" says which
+ones; the footer's tally is the same fact counted. The player's own seat is
+marked too, until they end the turn, and it follows what this client did rather
+than the server's echo, so the mark goes the moment the turn is sent. A seat the
+turn does not seal against — a computer empire, a kicked player, a player who
+left with no vote open on their seat, or one voted onto computer control — is
+never marked. A departed seat whose vote is still open is waited on, and marked,
+until the vote closes.
 
 ## Client integration contract
 
@@ -577,11 +614,17 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    whenever its digest changes, with `ready: true` when the player presses Done. A `ready: false`
    draft means a turn the clock seals still uses what the player planned. The outbox retains only
    the newest pending whole-document replacement while one request is in flight, so rapid edits
-   cannot build a backlog of obsolete drafts. A transient request is retried for the shared
+   cannot build a backlog of obsolete drafts. Drafts are paced to at most one a second, because the
+   per-player rate limit they spend is the one the stream, the reports and every read share; the
+   finished turn is never paced. A transient request is retried for the shared
    five-minute call window; if that window expires without an answer, the outbox retains the same
    idempotent document and starts another window. Only a server refusal, a revoked membership, or
    caller shutdown discards it, so a connectivity outage cannot silently turn a submitted draft
-   into an empty sealed turn.
+   into an empty sealed turn. A draft's failed attempts are retried as quietly as they are
+   persistently: they put a line on the message bar, never the reconnect modal, which answers only
+   for the stream, the pump's calls, the reporter and a finished turn. A draft is retried only
+   while it can still matter: a newer draft cancels it, and so does the seal of its turn, since the
+   server holds nothing a sealed turn's draft could still change.
 4. On `turn.sealed`, fetch the sealed set and verify both the digest announced by that exact event
    and the set's internally recomputed digest: SHA-256 over `slot:ordersHash`
    lines joined by `\n` in slot order, each `ordersHash` being SHA-256 of that player's canonical
@@ -644,8 +687,12 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    holds and an order document replaces what was held — so a server having a bad moment costs latency
    and nothing else. Draft submissions are whole-document replacements: an unsent older draft is
    discarded, and queuing a newer draft cancels retries of the superseded in-flight document so
-   only the latest plan consumes server work. While retrying, the client shows a modal attempt log with the concrete timeout,
-   HTTP status/request id, stream closure, or network exception and lets the player stop early. If
+   only the latest plan consumes server work. A retried call waits at least as long as a
+   `Retry-After` asks, up to a minute, so a rate limit is not spent on attempts its window will
+   refuse. While retrying, the status line says so from the first failed attempt; once the server
+   has gone unanswered for five seconds the client shows a modal attempt log with the concrete timeout,
+   HTTP status/request id, stream closure, or network exception and lets the player stop early. A
+   rate limit is titled as the server limiting requests rather than as a lost connection. If
    the window expires, the terminal error reports the attempt count, elapsed time, and last failure.
    A refusal that will keep being refused (a revoked token, a body the server will never accept) or a
    payload that cannot be made sense of still ends immediately. The city screen distinguishes an

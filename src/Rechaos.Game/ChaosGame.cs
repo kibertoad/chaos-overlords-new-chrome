@@ -19,6 +19,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     /// </summary>
     private static readonly Color GangDragSectorHighlight =
         Color.FromNonPremultiplied(74, 156, 92, 160);
+    /// <summary>
+    /// The translucent wash and inner outline a legal minimap destination is painted with. Every
+    /// minimap cell already carries a 1-pixel green frame, so an outline on that frame alone is
+    /// lost in it; the wash tints the whole tile and the outline sits just inside the frame.
+    /// </summary>
+    private static readonly Color GangDragDestinationWash =
+        Color.FromNonPremultiplied(120, 255, 140, 60);
+    private static readonly Color GangDragDestinationOutline =
+        Color.FromNonPremultiplied(150, 255, 165, 210);
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
     private static readonly Rectangle[] SetupScenarios =
     [
@@ -112,6 +121,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly IndexedDoubleClickTracker _sectorSiteClicks = new();
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
+    private readonly IndexedDoubleClickTracker _equipmentPortraitClicks = new();
     private readonly IndexedDoubleClickTracker _gangEquipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _hirePortraitClicks = new();
     private readonly short[] _playerPortraits = Enumerable.Range(0, MatchLimits.PlayerCount)

@@ -2,7 +2,7 @@ import { type OrderDocument, orderDocumentSchema } from '@chaos-overlords/contra
 import { safeParse } from 'valibot'
 import { describe, expect, it } from 'vitest'
 import type { Player, TurnReport } from '../src'
-import { allActiveReady, sealedByDeadline } from '../src/logic/turn-logic'
+import { allAwaitedReady, awaitedSeats, sealedByDeadline } from '../src/logic/turn-logic'
 import {
   assignSlots,
   authoritativeCandidates,
@@ -37,12 +37,27 @@ function report(playerId: string, stateHash: string, finished = false): TurnRepo
 const HASH_A = 'a'.repeat(32)
 const HASH_B = 'b'.repeat(32)
 
-describe('allActiveReady', () => {
+describe('allAwaitedReady', () => {
   it('waits only on seats that have an orders row', () => {
     const players = [player('host', 0), player('late', 1)]
-    expect(allActiveReady(players, [{ playerId: 'host', ready: true }])).toBe(true)
-    expect(allActiveReady(players, [{ playerId: 'host', ready: false }])).toBe(false)
-    expect(allActiveReady(players, [])).toBe(false)
+    expect(allAwaitedReady(players, [{ playerId: 'host', ready: true }])).toBe(true)
+    expect(allAwaitedReady(players, [{ playerId: 'host', ready: false }])).toBe(false)
+    expect(allAwaitedReady(players, [])).toBe(false)
+  })
+})
+
+describe('awaitedSeats', () => {
+  it('keeps a departed seat only while its absence vote is open', () => {
+    const players = [
+      player('host', 0),
+      player('left', 1, 'left'),
+      player('kicked', 2, 'kicked'),
+      player('pending', 3, 'takeoverPending'),
+      player('ai', 4, 'computer'),
+    ]
+    const ids = (open: string[]) => awaitedSeats(players, new Set(open)).map((seat) => seat.id)
+    expect(ids([])).toEqual(['host', 'pending'])
+    expect(ids(['left', 'kicked'])).toEqual(['host', 'left', 'pending'])
   })
 })
 

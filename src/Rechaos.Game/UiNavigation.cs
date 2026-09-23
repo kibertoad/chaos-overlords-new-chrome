@@ -31,19 +31,30 @@ public static class OriginalFontLayout
     public static Rectangle AtlasBounds => new(0, 0,
         (LastCharacter - FirstCharacter + 1) * CellWidth, GlyphHeight);
 
+    /// <summary>
+    /// Width of the glyph mask <see cref="PixelFont"/> builds: the original strip followed by one
+    /// cell per <see cref="SupplementalFontGlyphs"/> character.
+    /// </summary>
+    public static int MaskWidth => AtlasBounds.Width + SupplementalFontGlyphs.Characters.Length * CellWidth;
+
+    /// <summary>Source cell of <paramref name="character"/> in the glyph mask.</summary>
     public static bool TryGlyph(char character, out Rectangle source)
     {
         character = char.ToUpperInvariant(character);
-        if (character is < FirstCharacter or > LastCharacter)
+        if (character is >= FirstCharacter and <= LastCharacter)
         {
-            source = Rectangle.Empty;
-            return false;
+            source = Cell((character - FirstCharacter) * CellWidth);
+            return true;
         }
 
-        source = new Rectangle((character - FirstCharacter) * CellWidth, 0,
-            CellWidth, GlyphHeight);
-        return true;
+        var supplemental = SupplementalFontGlyphs.Characters.IndexOf(character);
+        source = supplemental < 0
+            ? Rectangle.Empty
+            : Cell(AtlasBounds.Width + supplemental * CellWidth);
+        return supplemental >= 0;
     }
+
+    private static Rectangle Cell(int x) => new(x, 0, CellWidth, GlyphHeight);
 }
 
 public static class SetupButtonLayout
@@ -345,6 +356,7 @@ public static partial class OriginalSpriteLayout
     public const int ActivePlayerMarkerFrameCount = 12;
     public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);
     public static Rectangle HiredStamp => new(120, 300, 60, 60);
+    public static Rectangle SnubbedStamp => new(180, 300, 60, 60);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
     public static Rectangle SectorBackArrow => new(120, 211, 30, 47);

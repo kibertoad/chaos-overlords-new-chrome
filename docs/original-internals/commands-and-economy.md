@@ -1,7 +1,7 @@
 # Commands, gangs, and economy
 
 Status: active clean-room research log
-Last updated: 2026-09-20
+Last updated: 2026-09-24
 
 The commands a gang can be given and the money that pays for them: hire offers
 and their comparison panel, the Instant commands resolved before the board, the
@@ -37,6 +37,7 @@ reference executable fingerprinted there.
   - [BIN-EQUIP-003 - Give item-selection hit targets](#bin-equip-003---give-item-selection-hit-targets)
   - [BIN-EQUIP-004 - Sell item-toggle hit targets](#bin-equip-004---sell-item-toggle-hit-targets)
   - [BIN-EQUIP-005 - Equip and Research category/list targets](#bin-equip-005---equip-and-research-categorylist-targets)
+  - [BIN-EQUIP-006 - cash check at resolution, not in the picker](#bin-equip-006---cash-check-at-resolution-not-in-the-picker)
   - [BIN-GANG-DEFINITION-001 - PX05022 alternate definition panel](#bin-gang-definition-001---px05022-alternate-definition-panel)
   - [BIN-GANG-RETIRE-001 - death and Terminate preserve inactive record payload](#bin-gang-retire-001---death-and-terminate-preserve-inactive-record-payload)
   - [BIN-GANG-VALUES-001 - fixed two-cell gang values replace template padding](#bin-gang-values-001---fixed-two-cell-gang-values-replace-template-padding)
@@ -585,6 +586,43 @@ navigation.
 sixteen-entry backing table, and row calculation from `0x0043dad9`,
 `0x0043f136`, `0x0043efe5`, and `0x004427fa`; native interactive capture
 remains useful for pressed-state presentation.
+
+### BIN-EQUIP-006 - cash check at resolution, not in the picker
+
+**Observation:** In EXE-GOG-1.1 (SHA-256
+`a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`),
+Ghidra 12.1.3 shows the action-5 branch of `0x00472775` loading the signed item
+Cost at `0x00474998` and applying the Factory division at
+`0x004749e1..0x004749f3`. At `0x00474a05`, `CMP` compares the current player's
+32-bit cash word in `0x004a25e8[player]` with that adjusted price. The signed
+`JL` at `0x00474a0c` takes the failure path when cash is lower. The success
+path subtracts the price from that same word at `0x00474a22` and adds it to
+cash spent at `0x00474a35`. Equal cash therefore succeeds. The action-12 Sell
+branch credits that cash word at `0x00474bf3` in the same ascending gang scan;
+the later Chaos payout credits it at `0x0047506b`. The subsequent Hire branch
+compares contract cost with the same cash word at `0x00475a0e` and uses signed
+`JG` at `0x00475a15` for failure, then debits at `0x00475ce4` on success.
+
+The Equip list builder `0x0043f136` examines the 64 item records, testing
+category, tech level, research state, and whether the item already occupies
+one of the acting gang's three equipment slots. It computes and draws the
+Factory-adjusted price but does not read `0x004a25e8` or compare price with
+cash. The picker `0x0043dad9` writes the selected list entry into the gang's
+queued item field on keyboard confirmation (decompiled lines 233-249) and
+pointer confirmation (lines 301-319); neither branch tests cash or the cost
+of other queued purchases.
+
+**Interpretation:** Unaffordable items remain visible and can be queued.
+Purchases are paid from actual cash at each gang's Transaction position, not
+from the console's whole-turn forecast. An earlier-slot Sell may fund a later
+Equip; a later-slot Sell, Chaos payout, or next-turn Upkeep income cannot.
+Hire runs after Chaos, so those earlier credits can fund its contract, but
+future Upkeep income cannot. The picker excludes an item already equipped on
+the acting gang, independently of affordability.
+
+**Confidence:** High static evidence for the signed comparison, exact-equality
+boundary, cash address, debit/credit order, list filters, and both confirmation
+paths. Controlled runtime captures remain useful corroboration.
 
 ### BIN-GANG-DEFINITION-001 - `PX05022` alternate definition panel
 

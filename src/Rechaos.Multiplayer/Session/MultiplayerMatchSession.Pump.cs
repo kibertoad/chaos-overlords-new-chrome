@@ -60,7 +60,7 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private async Task PumpAsync(CancellationToken cancellationToken)
     {
-        await UploadBootstrapSnapshotIfDueAsync(cancellationToken).ConfigureAwait(false);
+        UploadBootstrapSnapshotIfDue();
         // How long the stream has been down across consecutive windows, reset by any connection
         // that opens. Only `_streamOutageBudget` ends the session over it; see the option.
         var outage = new System.Diagnostics.Stopwatch();
@@ -75,7 +75,8 @@ public sealed partial class MultiplayerMatchSession
             _streamLane.Failed(
                 $"Still trying to reach the server, {outage.Elapsed.TotalMinutes:0.#} minutes "
                 + "so far. The match resumes as soon as it answers.",
-                attemptsThisOutage);
+                attemptsThisOutage,
+                exhausted);
             return true;
         }
         while (true)
@@ -145,9 +146,9 @@ public sealed partial class MultiplayerMatchSession
                 }
             }
             // The restore re-arms the bootstrap upload for a host that never completed one, so it
-            // is offered again here rather than only on the way into the loop. It swallows its own
-            // failures, so it sits outside the retry above.
-            await UploadBootstrapSnapshotIfDueAsync(cancellationToken).ConfigureAwait(false);
+            // is offered again here rather than only on the way into the loop. It runs behind the
+            // pump and answers for its own failures, so it sits outside the retry above.
+            UploadBootstrapSnapshotIfDue();
             outage.Reset();
             attemptsThisOutage = 0;
             _streamLane.Recovered();
@@ -179,7 +180,7 @@ public sealed partial class MultiplayerMatchSession
             onReconnect: (exception, attempt) =>
             {
                 if (!outage.IsRunning) outage.Restart();
-                _streamLane.Failed(Describe(exception), attempt);
+                _streamLane.Failed(Describe(exception), attempt, exception);
             },
             onConnected: () =>
             {

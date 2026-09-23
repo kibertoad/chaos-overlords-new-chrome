@@ -157,6 +157,7 @@ public sealed partial class ChaosGame
         if (_screens.Current == ClientScreen.Lobby)
         {
             if (_online.IsHost && _online.SessionName.IsFocused) _online.SessionName.Type(character);
+            else if (EditingLobbyName) _online.DisplayName.Type(character);
             return;
         }
         if (_screens.Current != ClientScreen.Online) return;
@@ -302,14 +303,43 @@ public sealed partial class ChaosGame
         _lobby.Start();
     }
 
+    /// <summary>
+    /// Starts the match once the server has finished starting it; false while it has not.
+    /// </summary>
+    /// <remarks>
+    /// The server commits `running` on turn 0 before it seats anyone or opens turn 1, and a lobby
+    /// poll or a resumed seat can read the match in between. Bootstrapping that view would fail, and
+    /// a failed bootstrap is final, so an early view is refused here, before anything is changed,
+    /// and the caller keeps the player in the lobby, whose poll brings the finished match back.
+    /// </remarks>
+    /// <param name="view">The match as the server last described it.</param>
+    /// <param name="resumingSeat">
+    /// A saved seat taken back in a running match: it is restored on the online screen, as a
+    /// player who joined in progress, rather than opened from the lobby.
+    /// </param>
+    private bool TryStartOnlineMatch(MatchView view, bool resumingSeat = false)
+    {
+        if (!MultiplayerMatchSession.HasFinishedStarting(view)) return false;
+        if (resumingSeat)
+        {
+            _online.JoinedInProgress = true;
+            _online.Stage = MultiplayerStage.Busy;
+            _online.Status = "RESTORING THE MATCH";
+            _screens.Show(ClientScreen.Online);
+        }
+        BootstrapOnlineMatch(view);
+        return true;
+    }
+
     /// <summary>Bootstraps the match from the server's seed and roster, and opens turn 1.</summary>
     /// <remarks>
     /// A bootstrap that fails is the end of this client's match: the seed, the roster or the settings
     /// were something it cannot build a city from, and there is no version of that which playing on
     /// would improve. It says so and lets the player leave rather than starting a match it knows is
-    /// not the one everyone else is in.
+    /// not the one everyone else is in. Reached only through <see cref="TryStartOnlineMatch"/>, so a
+    /// view that is merely early never gets here.
     /// </remarks>
-    private void StartOnlineMatch(MatchView view)
+    private void BootstrapOnlineMatch(MatchView view)
     {
         if (_session is not null || _online.BootstrapFailed || _lobby?.Handle is null) return;
         if (_definitions is null)
@@ -358,9 +388,10 @@ public sealed partial class ChaosGame
     /// </summary>
     /// <remarks>
     /// The same rule the session applies to the event stream, for the two moments the interface
-    /// holds a roster before any readiness has been reported. A seat that left or was handed to the
-    /// computer is no longer waited on; a temporarily absent one still is, until its takeover vote
-    /// says otherwise.
+    /// holds a roster before any readiness has been reported. A seat handed to the computer is no
+    /// longer waited on; a temporarily absent one still is, until its takeover vote says otherwise.
+    /// A seat that left is waited on while its vote is open too, which the roster cannot show: the
+    /// session corrects the count with a readiness notice once it knows the votes.
     /// </remarks>
     private static IReadOnlySet<int> AwaitedSeats(IEnumerable<PlayerView> players) =>
         players
@@ -462,6 +493,7 @@ public sealed partial class ChaosGame
         }
         var turn = restored ?? SpeculativeTurn.For(authoritative, _definitions, _session.Slot);
         _actions = new MatchActions(turn);
+        _submittedPlanning = null;
         _state = turn.State;
         _online.PlanningTurn = authoritative.Coordinator.Turn;
         _online.Stage = submission?.Ready == true
@@ -544,9 +576,18 @@ public sealed partial class ChaosGame
 
     private bool HandleReconnectPopupClick(Point point)
     {
-        if (_session is null || _online.IsConnected) return false;
-        if (StopReconnectButton.Contains(point))
+        if (_session is null || !_online.ReconnectPopupShown) return false;
+        if (ReconnectPopupLayout.StopRetrying.Contains(point))
+        {
             EndOnlineMatch("AUTOMATIC RECONNECT CANCELLED");
+        }
+        else if (ReconnectPopupLayout.CopyErrorAt(point, _online.ReconnectLog.Count) is { } row)
+        {
+            var attempt = _online.ReconnectLog[row];
+            _online.ReconnectCopyStatus = DesktopClipboard.TrySetText(attempt.Details)
+                ? $"ATTEMPT {attempt.Attempt} ERROR COPIED"
+                : "COULD NOT ACCESS THE CLIPBOARD";
+        }
         return true;
     }
 
@@ -704,12 +745,15 @@ public sealed partial class ChaosGame
     {
         if (CanConfigureOnlineLobby() && LobbySessionName.Contains(point))
         {
+            FinishLobbyNameEdit(cancel: false);
             _online.SessionName.IsFocused = true;
             return;
         }
-        // Anywhere else finishes an edit of the name: the setting it belongs to is about to be sent,
-        // or the player is leaving the screen the caret was on.
+        if (HandleLobbyProfileClick(point)) return;
+        // Anywhere else finishes an edit of either name: the setting it belongs to is about to be
+        // sent, or the player is leaving the screen the caret was on.
         CommitLobbySessionName();
+        FinishLobbyNameEdit(cancel: false);
         if (LobbyCopyCode.Contains(point)) CopyLobbyJoinCode();
         else if (LobbySetup.Contains(point)) OpenOnlineSetup();
         else if (LobbyStart.Contains(point)) StartHostedMatch();
@@ -740,15 +784,33 @@ public sealed partial class ChaosGame
         ? ClassicOnlineLobbyLayout.LateJoinAllowed : OnlineLobbyLayout.LateJoinAllowed;
     private Rectangle LobbyLateJoinRefused => UsesClassicLobby
         ? ClassicOnlineLobbyLayout.LateJoinRefused : OnlineLobbyLayout.LateJoinRefused;
+    private Rectangle LobbyRosterPortrait(int row) => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.RosterPortrait(row) : OnlineLobbyLayout.RosterPortrait(row);
+    private Rectangle LobbyRosterName(int row) => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.RosterName(row) : OnlineLobbyLayout.RosterName(row);
 
     private void UpdateLobby(KeyboardState keyboard, GameTime gameTime)
     {
+        // The match started under an edit: the roster is final, so what was being typed goes.
+        if (_online.DisplayName.IsFocused && !CanEditLobbyProfile())
+            FinishLobbyNameEdit(cancel: true);
+        if (_online.DisplayName.IsFocused)
+        {
+            if (Pressed(keyboard, Keys.Enter)) FinishLobbyNameEdit(cancel: false);
+            else if (Pressed(keyboard, Keys.Escape)) FinishLobbyNameEdit(cancel: true);
+            PollLobby(gameTime);
+            return;
+        }
+        SendPendingLobbyProfile();
         if (_online.SessionName.IsFocused)
         {
             if (Pressed(keyboard, Keys.Enter)) CommitLobbySessionName();
             PollLobby(gameTime);
             return;
         }
+        // The arrows turn the player's own face, as they do on the connect form.
+        if (Pressed(keyboard, Keys.Left)) CycleLobbyPortrait(-1);
+        else if (Pressed(keyboard, Keys.Right)) CycleLobbyPortrait(1);
         if (Pressed(keyboard, Keys.Enter)) StartHostedMatch();
         else PollLobby(gameTime);
     }

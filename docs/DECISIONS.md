@@ -1,7 +1,7 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-23
+Last updated: 2026-09-24
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-24 | [Resolve cash transactions in player order](#2026-09-24--resolve-cash-transactions-in-player-order) |
 | 2026-09-23 | [Do not animate the panel slide-out](#2026-09-23--do-not-animate-the-panel-slide-out) |
 | 2026-09-22 | [Fold the definition set into a fingerprint as a digest](#2026-09-22--fold-the-definition-set-into-a-fingerprint-as-a-digest) |
 | 2026-09-21 | [Fingerprint match state with XxHash128, not SHA-256](#2026-09-21--fingerprint-match-state-with-xxhash128-not-sha-256) |
@@ -32,6 +33,33 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-24 — Resolve cash transactions in player order
+
+**Decision.** Equip and Sell debit or credit cash in the order the player last
+submitted those orders. Replacing an order moves it to the end. Transactions
+still resolve by player slot, and Give retains its deferred roster-ordered
+recipient writes. The city console shows current cash, the whole-cycle Delta,
+and `UNSPENT = cash - sum(queued Bribe and Equip prices)` on one row as
+`CASH 20 [18] (+1)`: cash, unspent cash in brackets, and the delta in
+parentheses. Hovering the row explains each figure in its own section, breaks
+the delta down by component, and shows every queued Bribe and Equip, numbered in resolution
+order with its price: Instant Bribes first, then Equips in submission order.
+
+**Original behavior.** `BIN-EQUIP-002` and `BIN-EQUIP-006` establish that the
+shipped resolver instead scans fixed gang roster slots. An earlier-slot Sell
+can fund a later-slot Equip regardless of which was queued first. The original
+picker neither hides unaffordable researched items nor checks cash when an
+item is chosen. The later Equip comparison is signed `cash < adjusted price`,
+with equality permitted.
+
+**Reasoning and compatibility.** A player can see and control submission order,
+while the fixed roster index is hidden. Cash timing remains execution-time:
+an earlier submitted Sell can fund Equip, but a later Sell, Chaos payout, or
+next Upkeep income cannot. This deliberate rule deviation changes deterministic
+turn outcomes, so multiplayer session version 9 retires sessions started under
+version 8. Native saves and replay journals retain their format gates because
+their schema and fingerprint encoding have not changed.
 
 ## 2026-09-23 — Do not animate the panel slide-out
 

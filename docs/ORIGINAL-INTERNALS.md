@@ -1,7 +1,7 @@
 # Original executable internals research
 
 Status: active clean-room research log
-Last updated: 2026-09-20
+Last updated: 2026-09-24
 Reference executable SHA-256:
 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
 
@@ -66,7 +66,7 @@ are grouped by subsystem, each group names the document that holds it, and rows
 are in ID order.
 
 <!-- doc-index:begin finding-index -->
-106 findings.
+108 findings.
 
 **Executable image** — [executable-and-platform.md](original-internals/executable-and-platform.md)
 
@@ -169,6 +169,7 @@ are in ID order.
 | [BIN-EQUIP-003](original-internals/commands-and-economy.md#bin-equip-003---give-item-selection-hit-targets) | Give item-selection hit targets |
 | [BIN-EQUIP-004](original-internals/commands-and-economy.md#bin-equip-004---sell-item-toggle-hit-targets) | Sell item-toggle hit targets |
 | [BIN-EQUIP-005](original-internals/commands-and-economy.md#bin-equip-005---equip-and-research-categorylist-targets) | Equip and Research category/list targets |
+| [BIN-EQUIP-006](original-internals/commands-and-economy.md#bin-equip-006---cash-check-at-resolution-not-in-the-picker) | cash check at resolution, not in the picker |
 | [BIN-GANG-DEFINITION-001](original-internals/commands-and-economy.md#bin-gang-definition-001---px05022-alternate-definition-panel) | PX05022 alternate definition panel |
 | [BIN-GANG-RETIRE-001](original-internals/commands-and-economy.md#bin-gang-retire-001---death-and-terminate-preserve-inactive-record-payload) | death and Terminate preserve inactive record payload |
 | [BIN-GANG-VALUES-001](original-internals/commands-and-economy.md#bin-gang-values-001---fixed-two-cell-gang-values-replace-template-padding) | fixed two-cell gang values replace template padding |
@@ -196,6 +197,7 @@ are in ID order.
 |---|---|
 | [BIN-CHAOS-001](original-internals/combat-and-police.md#bin-chaos-001---roster-order-rolls-and-grouped-uncontrolled-payout) | roster-order rolls and grouped uncontrolled payout |
 | [BIN-POLICE-001](original-internals/combat-and-police.md#bin-police-001---occurrence-window-neutralization-and-duration-order) | occurrence window, neutralization, and duration order |
+| [BIN-POLICE-002](original-internals/combat-and-police.md#bin-police-002---crackdown-report-recipients-and-ordering) | Crackdown report recipients and ordering |
 | [BIN-POLICE-COMBAT-001](original-internals/combat-and-police.md#bin-police-combat-001---exact-detection-and-damage-formulas) | exact detection and damage formulas |
 
 **Objectives, ranking, and awards** — [objectives-and-awards.md](original-internals/objectives-and-awards.md)
@@ -291,6 +293,10 @@ Useful static work which remains is narrower:
 3. Match the linker/runtime fingerprints against a known compiler signature only
    if this becomes useful to interpret generated-code artifacts; it is not a
    gameplay-parity dependency.
+
+The Equip affordability predicate and picker are closed statically in
+`BIN-EQUIP-006`. Runtime boundary captures remain useful corroboration under
+[RULE-EQUIP-001](GAME-RULES.md#rule-equip-001--purchase-and-equip).
 
 The fixed original save/load envelope is closed in `BIN-API-003`. Every live AI
 family, including family 1's unavailable-command policy and family 11's late

@@ -81,6 +81,17 @@ export const joinRunningMatchRequestSchema = strictObject({
   slot: slotSchema,
 })
 
+/**
+ * A lobby member's new name and face, sent as a whole so the two can never be half-applied.
+ *
+ * Only while the match is in the lobby: once it starts, the roster is what every client generates
+ * its city from, and a name or face that moved afterwards would read as a desync.
+ */
+export const updatePlayerProfileRequestSchema = strictObject({
+  displayName: displayNameInputSchema,
+  portraitId: portraitIdSchema,
+})
+
 export const submitOrdersRequestSchema = strictObject({
   orders: orderDocumentSchema,
   /** `true` = the player has finished planning; the turn seals once every human is ready. */
@@ -153,6 +164,7 @@ export const uploadSnapshotRequestSchema = strictObject({
 export type CreateMatchRequest = InferOutput<typeof createMatchRequestSchema>
 export type JoinMatchRequest = InferOutput<typeof joinMatchRequestSchema>
 export type JoinRunningMatchRequest = InferOutput<typeof joinRunningMatchRequestSchema>
+export type UpdatePlayerProfileRequest = InferOutput<typeof updatePlayerProfileRequestSchema>
 export type SubmitOrdersRequest = InferOutput<typeof submitOrdersRequestSchema>
 export type TakeoverVoteRequest = InferOutput<typeof takeoverVoteRequestSchema>
 export type TurnReportRequest = InferOutput<typeof turnReportRequestSchema>

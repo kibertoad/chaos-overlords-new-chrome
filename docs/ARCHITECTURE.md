@@ -1,7 +1,7 @@
 # Architecture
 
 Status: evolving implementation architecture
-Last updated: 2026-09-20
+Last updated: 2026-09-24
 
 <!-- doc-index:begin toc depth=3 -->
 - [Dependency direction](#dependency-direction)
@@ -255,7 +255,7 @@ The item workflow projects research/equipment state and submits Research,
 Equip, Give, and Sell through the replay recorder and authoritative Core
 validator. Give first uses the original three-slot equipment selection panel,
 then expands only recipients in the same sector who can accept every selected
-item. The transaction resolver uses the binary's player/roster-slot scan,
+item. The transaction resolver uses submission order for cash-affecting Equip/Sell as a documented deviation from the binary's player/roster-slot scan,
 reserves outgoing Give items, processes recipient transactions, and applies
 incoming gifts afterward. This preserves two-gang swaps and the original rule
 that an incoming gift overwrites a recipient's same-turn purchase. Multi-slot

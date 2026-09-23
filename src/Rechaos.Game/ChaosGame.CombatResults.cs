@@ -337,12 +337,8 @@ public static class CombatResultProjection
 
     private static CombatResultEntry? Describe(MatchState state, GameEvent gameEvent)
     {
-        if (gameEvent.Kind == GameEventKind.PoliceAttackResolved
-            && gameEvent.Gang is { } policeTarget
-            && state.FindGang(policeTarget) is { } target
-            && gameEvent.PoliceAttack is { } police)
-            return new CombatResultEntry(
-                gameEvent, police.SectorId, target.Owner, target.Id, null, null, true);
+        if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
+            return DescribePolice(state, gameEvent);
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution is null
             || gameEvent.Gang is not { } attackerId
             || gameEvent.Target.Kind != CommandTargetKind.Gang
@@ -353,6 +349,21 @@ public static class CombatResultProjection
             gameEvent, attacker.SectorId, attacker.Owner, attacker.Id,
             defender.Owner, defender.Id, false);
     }
+
+    /// <summary>The police encounter a detected gang suffered, or nothing for an undetected one.</summary>
+    /// <remarks>
+    /// Every gang in a crackdown sector gets a police detection roll, including a gang that leaves
+    /// in the same turn's Movement. A failed roll is recorded for the simulation, but the police
+    /// never engaged that gang and the original has no presentation for it. Listing it would draw
+    /// the police against a gang they did not attack, give Combat Summary a page with nothing to
+    /// replay, and open the automatic combat presentation for a turn without any combat.
+    /// </remarks>
+    private static CombatResultEntry? DescribePolice(MatchState state, GameEvent gameEvent) =>
+        gameEvent is { Gang: { } policeTarget, PoliceAttack: { Detected: true } police }
+        && state.FindGang(policeTarget) is { } target
+            ? new CombatResultEntry(
+                gameEvent, police.SectorId, target.Owner, target.Id, null, null, true)
+            : null;
 }
 
 public sealed record CombatResultEntry(

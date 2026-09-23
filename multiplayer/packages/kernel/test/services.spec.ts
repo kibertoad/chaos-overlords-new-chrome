@@ -119,6 +119,84 @@ describe('the lobby, the roster and the turn barrier', () => {
     ])
   })
 
+  it('lets any lobby member change their own name and face until the match starts', async () => {
+    const host = await h.kernel.lobby.createMatch({
+      settings: {
+        name: 'Makeover',
+        maxPlayers: 3,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Host',
+      hostPortraitId: 1,
+    })
+    const guest = await h.kernel.lobby.join({
+      joinCode: host.joinCode,
+      displayName: 'Guest',
+      portraitId: 2,
+    })
+    await h.kernel.lobby.updateProfile(await h.principalOf(guest.token), {
+      displayName: 'Renamed',
+      portraitId: 11,
+    })
+    expect(h.notifier.events.at(-1)).toMatchObject({
+      type: 'lobby.playerUpdated',
+      payload: { player: { id: guest.player.id, displayName: 'Renamed', portraitId: 11 } },
+    })
+    // A different case of one's own name is still one's own name, not somebody else's.
+    await h.kernel.lobby.updateProfile(await h.principalOf(host.token), {
+      displayName: 'HOST',
+      portraitId: 4,
+    })
+    await expect(
+      h.kernel.lobby.updateProfile(await h.principalOf(guest.token), {
+        displayName: 'host',
+        portraitId: 11,
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'display_name_taken' } })
+
+    await h.kernel.lobby.start(await h.principalOf(host.token))
+    const started = h.notifier.events.find((event) => event.type === 'match.started')
+    expect(
+      started?.type === 'match.started' &&
+        started.payload.players.map((player) => [player.displayName, player.portraitId]),
+    ).toEqual([
+      ['HOST', 4],
+      ['Renamed', 11],
+    ])
+    await expect(
+      h.kernel.lobby.updateProfile(await h.principalOf(guest.token), {
+        displayName: 'Too Late',
+        portraitId: 3,
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'match_not_in_lobby' } })
+    expect((await h.storage.players.get(guest.player.id))?.displayName).toBe('Renamed')
+  })
+
+  it('refuses a profile change that lands after the start transition', async () => {
+    const host = await h.kernel.lobby.createMatch({
+      settings: {
+        name: 'Race',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Host',
+    })
+    // Authenticated while the lobby was open, then the match started under it.
+    const stale = await h.principalOf(host.token)
+    await h.storage.matches.transition(host.match.id, ['lobby'], {
+      status: 'running',
+      updatedAt: new Date(),
+    })
+    await expect(
+      h.kernel.lobby.updateProfile(stale, { displayName: 'Sneaky', portraitId: 5 }),
+    ).rejects.toMatchObject({ details: { reason: 'match_not_in_lobby' } })
+    expect((await h.storage.players.get(host.player.id))?.displayName).toBe('Host')
+  })
+
   it('allows late joining only into a never-human computer slot', async () => {
     const host = await h.kernel.lobby.createMatch({
       settings: {
@@ -603,6 +681,31 @@ describe('the lobby, the roster and the turn barrier', () => {
     })
   })
 
+  /**
+   * A draft the host's client sent just before its final document, arriving after it.
+   *
+   * Applied, it put the host back to drafting with the older document: the guest's ready then
+   * sealed nothing, and the turn waited until the host submitted a second time.
+   */
+  it('keeps a late draft from taking back a finished turn, so the next ready seals it', async () => {
+    const { host, guest } = await h.startedMatch()
+    const hostP = await h.principalOf(host.token)
+    const guestP = await h.principalOf(guest.token)
+    await h.submit(hostP, 1, 1, true)
+
+    await expect(h.submit(hostP, 1, 7, false)).resolves.toMatchObject({ turn: 1, ready: true })
+    const standing = await h.storage.turns.getOrders(hostP.match.id, 1, hostP.player.id)
+    expect(standing?.ready).toBe(true)
+    expect(standing?.orders && gangOf(standing.orders)).toBe(1)
+
+    await h.submit(guestP, 1, 2, true)
+    const sealed = await h.kernel.query.sealedOrders(hostP.match, 1)
+    expect(sealed.players.map((p) => [p.slot, gangOf(p.orders)])).toEqual([
+      [0, 1],
+      [1, 2],
+    ])
+  })
+
   it('confirms a turn on unanimous hashes and finishes the match when all report the end', async () => {
     const { host, guest } = await h.startedMatch()
     await h.submit(await h.principalOf(host.token), 1, 1, true)
@@ -705,6 +808,70 @@ describe('the lobby, the roster and the turn barrier', () => {
     expect(await h.kernel.turns.sweep()).toEqual({ sealed: 1, repaired: 0 })
     expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
     expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
-    expect(h.scheduler.scheduled).toHaveLength(2)
+    // Turn 1's deadline, its re-arm after the early call above, and turn 2's deadline.
+    expect(h.scheduler.scheduled).toHaveLength(3)
+  })
+
+  it('re-arms a deadline timer that fires before the deadline instead of dropping it', async () => {
+    const { host } = await h.startedMatch(60)
+    const deadline = new Date(h.clock.now().getTime() + 60_000)
+    h.clock.advance(60_000 - 5_000)
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect(h.scheduler.scheduled).toEqual([{ matchId: host.match.id, turn: 1, dueAt: deadline }])
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(1)
+  })
+
+  it('retries an alarm that fires a hair early no sooner than the retry floor', async () => {
+    const { host } = await h.startedMatch(60)
+    h.clock.advance(60_000 - 1)
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect(h.scheduler.scheduled).toEqual([
+      { matchId: host.match.id, turn: 1, dueAt: new Date(h.clock.now().getTime() + 250) },
+    ])
+    h.clock.advance(250)
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(true)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+  })
+
+  it('does not leave the successor without a timer when a ready seal races an early re-arm', async () => {
+    const { host, guest } = await h.startedMatch(60)
+    h.clock.advance(30_000)
+    const record = h.scheduler.schedule.bind(h.scheduler)
+    let raced = false
+    h.scheduler.schedule = async (input) => {
+      if (!raced && input.turn === 1) {
+        raced = true
+        // Everyone readies between the early fire's read of turn 1 and its re-arm landing: the
+        // seal arms turn 2, and the re-arm for turn 1 then replaces it.
+        await h.submit(await h.principalOf(host.token), 1, 1, true)
+        await h.submit(await h.principalOf(guest.token), 1, 2, true)
+      }
+      await record(input)
+    }
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+    expect(h.scheduler.scheduled.at(-1)).toEqual({
+      matchId: host.match.id,
+      turn: 2,
+      dueAt: new Date(h.clock.now().getTime() + 60_000),
+    })
+  })
+
+  it('does not re-arm a paused turn, which has no deadline to wait for', async () => {
+    const { host } = await h.startedMatch(0)
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect(h.scheduler.scheduled).toEqual([])
   })
 })

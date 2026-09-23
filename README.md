@@ -85,7 +85,7 @@ Tracking issues are linked from each area below.
 
 | Area | Remaining work |
 |---|---|
-| [Exact gameplay parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/135) | Capture native launch/setup/city fixtures that correlate the uptime-derived seed, startup `serialNum` state, and resulting RNG stream. Add runtime corroboration for the recovered transaction flow and the remaining Crackdown notification and special-objective edges that currently rely on static or manual evidence. |
+| [Exact gameplay parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/135) | Capture native launch/setup/city fixtures that correlate the uptime-derived seed, startup `serialNum` state, and resulting RNG stream. Add runtime corroboration for the recovered transaction flow, Crackdown report timing, and special-objective edges that currently rely on static or manual evidence. |
 | [Original AI parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136) | Compare full native AI decisions and RNG consumption against fixed reference traces, expand multi-seed tournament coverage, and establish reliable evidence-led completion behavior for Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon. Current AI is playable and deterministic, but complete outer-planner parity is not proven. |
 | [Visual and input parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137) | Complete the remaining management-workflow hit maps and golden-screen comparisons, especially Search and the city view; validate the remaining offsets, transparency/color keys, bare-hand style, endgame/hot-seat sequencing, and per-screen right-click behavior against native captures. Configurable key bindings and broader accessibility work are not implemented. |
 | [Online experience](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138) | Late joining is limited to eligible AI seats that have never belonged to a human. Spectating, lobby chat, and online Comlink integration are not implemented. A desync still depends on the host supplying a snapshot, and live-runtime recovery coverage will grow as more failure modes are identified. Security and deployment limitations are documented in [Multiplayer](docs/MULTIPLAYER.md). |
@@ -114,8 +114,9 @@ presentation-only conveniences that make the original systems easier to read:
   compatible help pack receives a clearly named listed subject for any missing one.
 - Hover tooltips explain the practical effects of city statistics, gang and
   site attributes, item modifiers, every game mode and duration, setup
-  difficulty, and every Options entry. Resting the pointer on a gang command
-  for two seconds explains what that order does before it is queued.
+  difficulty, every Options entry, and how each overlord's Ranking score is
+  built. Resting the pointer on a gang command for two seconds explains what
+  that order does before it is queued.
 - The city console shows projected turn cashflow beside current Cash, with
   finance panels breaking down upkeep, purchases, taxes, site income, Chaos,
   and the resulting adjustment.

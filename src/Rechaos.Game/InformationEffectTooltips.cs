@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
@@ -64,8 +65,14 @@ public static class InformationEffectTooltips
             "GANG STAT; EQUIPMENT AND OWNED LOCAL SITES CAN MODIFY IT.", modifiers);
     }
 
-    public static IReadOnlyList<string> SiteAt(Point point)
+    /// <param name="special">
+    /// The site definition's special value; a special site explains its effect when its portrait
+    /// is hovered.
+    /// </param>
+    public static IReadOnlyList<string> SiteAt(Point point, short special = 0)
     {
+        if (SiteInformationLayout.Portrait.Contains(point))
+            return SpecialSite(special);
         if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(0), 122).Contains(point))
             return ["RESISTANCE", "INFLUENCE SUCCESSES REDUCE THIS VALUE.",
                 "AT ZERO, THE ACTING PLAYER INFLUENCES THE SITE."];
@@ -106,6 +113,27 @@ public static class InformationEffectTooltips
         }
         return [];
     }
+
+    public static IReadOnlyList<string> SpecialSite(short special) => special switch
+    {
+        SpecialSiteRules.Factory =>
+        [
+            "FACTORY",
+            "WHILE INFLUENCED, EQUIPMENT BOUGHT BY THE OWNER'S",
+            $"GANGS IN THIS SECTOR COSTS 1/{SpecialSiteRules.FactoryDiscountDivisor} LESS."
+        ],
+        SpecialSiteRules.ScienceCenter => ResearchSite("SCIENCE CENTER", SpecialSiteRules.ScienceCenterTechLimit),
+        SpecialSiteRules.ResearchLab => ResearchSite("RESEARCH LAB", SpecialSiteRules.ResearchLabTechLimit),
+        _ => []
+    };
+
+    private static IReadOnlyList<string> ResearchSite(string name, int techLimit) =>
+    [
+        name,
+        "WHILE INFLUENCED, THE OWNER'S GANGS IN THIS SECTOR",
+        $"CAN RESEARCH UP TO TECH {techLimit} INSTEAD OF {SpecialSiteRules.BaseResearchTechLimit}.",
+        "EACH GANG'S OWN TECH LEVEL STILL APPLIES."
+    ];
 
     public static IReadOnlyList<string> Describe(InformationEffect effect, string scope) =>
     [Name(effect), Effect(effect), scope];

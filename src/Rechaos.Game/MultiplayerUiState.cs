@@ -161,11 +161,17 @@ internal sealed class MultiplayerUiState
     /// The overlord face this player takes into the session they create or join.
     /// </summary>
     /// <remarks>
-    /// Sent once, with the request that claims the seat, and never changed afterwards: the roster is
-    /// what every client generates its city from, and the setup a city was generated from is part of
-    /// the state hash a turn is settled on, so a face that moved mid-match would read as a desync.
+    /// Sent with the request that claims the seat, and changeable in the lobby until the match
+    /// starts — never afterwards: the roster is what every client generates its city from, and the
+    /// setup a city was generated from is part of the state hash a turn is settled on, so a face
+    /// that moved mid-match would read as a desync. <see cref="DisplayName"/> follows the same rule.
     /// </remarks>
     internal short Portrait { get; set; }
+
+    /// <summary>
+    /// Whether the lobby holds a name or face the player chose that the server has not been sent.
+    /// </summary>
+    internal bool ProfilePending { get; set; }
 
     internal TextField Server { get; } = new(
         "SERVER", 96, GamePreferences.DefaultCustomMultiplayerServer);
@@ -242,8 +248,61 @@ internal sealed class MultiplayerUiState
     /// </remarks>
     internal bool IsConnected { get; set; } = true;
 
+    /// <summary>
+    /// When the server last stopped answering, on the <see cref="MonotonicClock"/>, or null while
+    /// it is answering.
+    /// </summary>
+    internal TimeSpan? DisconnectedSince { get; set; }
+
+    /// <summary>
+    /// How long the server may go unanswered before the reconnect modal covers the screen.
+    /// </summary>
+    /// <remarks>
+    /// Most failures are one attempt long: a dropped keep-alive socket, a 502 while a server
+    /// restarts, a stream the server recycled. Each used to put a modal in front of a player in the
+    /// middle of their turn, blocking every click, for an outage that was over before they could
+    /// read it. The status line still says the connection is being retried from the first attempt.
+    /// </remarks>
+    internal static readonly TimeSpan ReconnectPopupGrace = TimeSpan.FromSeconds(5);
+
+    /// <summary>Whether the reconnect modal is up. Recomputed once a frame; see <see cref="UpdateReconnectPopup"/>.</summary>
+    internal bool ReconnectPopupShown { get; private set; }
+
+    /// <summary>
+    /// Raises the reconnect modal once the server has been unanswered for longer than the grace.
+    /// </summary>
+    /// <param name="now">The <see cref="MonotonicClock"/> reading for this frame.</param>
+    /// <returns>True on the frame the modal first appears.</returns>
+    internal bool UpdateReconnectPopup(TimeSpan now)
+    {
+        var shown = !IsConnected
+            && DisconnectedSince is { } since
+            && now - since >= ReconnectPopupGrace;
+        var appeared = shown && !ReconnectPopupShown;
+        ReconnectPopupShown = shown;
+        return appeared;
+    }
+
+    /// <summary>Whether the latest failed attempt was the server limiting this client, not an outage.</summary>
+    internal bool IsRateLimited => ReconnectLog.Count > 0 && ReconnectLog[^1].IsRateLimited;
+
+    /// <summary>The turn whose draft has not reached the server yet, if one is being retried.</summary>
+    internal int? DelayedDraftTurn { get; set; }
+
+    /// <summary>
+    /// Whether the turn on screen has a draft the server has not taken yet.
+    /// </summary>
+    /// <remarks>
+    /// Worked out from the turn rather than cleared when it changes: the session stops retrying a
+    /// draft once its turn seals, and a delayed draft of an earlier turn simply stops matching.
+    /// </remarks>
+    internal bool OpenTurnDraftUnsaved => DelayedDraftTurn is { } turn && turn == PlanningTurn;
+
     /// <summary>Recent automatic reconnect attempts, newest last, for the modal status log.</summary>
-    internal List<string> ReconnectLog { get; } = [];
+    internal List<ReconnectAttemptEntry> ReconnectLog { get; } = [];
+
+    /// <summary>Feedback from the reconnect modal's per-attempt clipboard action.</summary>
+    internal string ReconnectCopyStatus { get; set; } = string.Empty;
     internal int ReconnectAttempt { get; set; }
 
     /// <summary>Digest of the last draft queued for the server, or null before the first change.</summary>
@@ -255,8 +314,11 @@ internal sealed class MultiplayerUiState
     /// <summary>Whether the server explicitly acknowledged this turn's ready document.</summary>
     internal bool ReadySubmissionAcknowledged { get; set; }
 
-    /// <summary>When an acknowledged all-ready turn first failed to produce its sealed successor.</summary>
-    internal DateTimeOffset? ResolutionExpectedSince { get; set; }
+    /// <summary>
+    /// When an acknowledged all-ready turn first failed to produce its sealed successor, on the
+    /// <see cref="MonotonicClock"/>.
+    /// </summary>
+    internal TimeSpan? ResolutionExpectedSince { get; set; }
 
     /// <summary>A refused submission for the turn still shown on the city screen.</summary>
     internal string TurnSyncError { get; set; } = string.Empty;
@@ -319,6 +381,8 @@ internal sealed class MultiplayerUiState
         PublicListing = true;
         Role = OnlineConnectRole.Host;
         Portrait = 0;
+        ProfilePending = false;
+        DisplayName.IsFocused = false;
         Match = null;
         LobbySettingsReadable = true;
         JoinCodeShown = string.Empty;
@@ -329,7 +393,11 @@ internal sealed class MultiplayerUiState
         ReadySlots = NoSeats;
         AwaitedSlots = NoSeats;
         IsConnected = true;
+        DisconnectedSince = null;
+        ReconnectPopupShown = false;
+        DelayedDraftTurn = null;
         ReconnectLog.Clear();
+        ReconnectCopyStatus = string.Empty;
         ReconnectAttempt = 0;
         SentOrderDigest = null;
         ReadySubmissionPending = false;

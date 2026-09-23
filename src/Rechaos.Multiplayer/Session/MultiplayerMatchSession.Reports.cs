@@ -177,7 +177,7 @@ public sealed partial class MultiplayerMatchSession
             catch (RetryExhaustedException exception)
                 when (TransientFailure.CanRetryAfterExhaustion(exception))
             {
-                _reportLane.Failed(Describe(exception), exception.Attempts);
+                _reportLane.Failed(Describe(exception), exception.Attempts, exception);
             }
         }
     }

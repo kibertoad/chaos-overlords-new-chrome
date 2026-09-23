@@ -47,6 +47,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private readonly TimeSpan? _streamOutageBudget;
     private readonly RetryPolicy _streamRetryPolicy;
     private readonly RetryPolicy _callRetryPolicy;
+    private readonly RetryPolicy _backgroundRetryPolicy;
     private readonly Dictionary<string, int> _slotsByPlayerId;
     private readonly Dictionary<string, PendingTakeoverVote> _takeoverVotes = new(StringComparer.Ordinal);
 
@@ -86,11 +87,21 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// The seats the server is still waiting on before readiness alone seals a turn.
     /// </summary>
     /// <remarks>
-    /// Active seats plus temporarily absent seats whose vote still says to wait. Explicit leavers
-    /// and approved computer seats are excluded. Kept from the match view, which the pump refreshes whenever the roster
-    /// changes, and only ever read for what is on screen — nothing about the turn depends on it.
+    /// Active seats plus temporarily absent seats whose vote still says to wait. A seat that left is
+    /// added on top by <see cref="AwaitedSlots"/> while its absence vote is open, and approved
+    /// computer seats are excluded. Kept from the match view, which the pump refreshes whenever the
+    /// roster changes, and only ever read for what is on screen — nothing about the turn depends on it.
     /// </remarks>
     private HashSet<int> _awaitedSlots;
+
+    /// <summary>The seated players the roster last said had left the match.</summary>
+    /// <remarks>
+    /// The server waits on such a seat for as long as the vote on it is open: leaving does not
+    /// decide the seat, the vote does. Counting it out here instead had the host's tally read
+    /// "ALL PLAYERS READY" over a turn the server was still holding, and the watchdog resynchronise
+    /// every grace period until the vote closed.
+    /// </remarks>
+    private HashSet<string> _departedPlayerIds = new(StringComparer.Ordinal);
 
     private bool _uploadInitialSnapshot;
 
@@ -131,6 +142,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _streamOutageBudget = options.StreamOutageBudget;
         _streamRetryPolicy = options.StreamRetryPolicy ?? RetryPolicy.Stream;
         _callRetryPolicy = options.CallRetryPolicy ?? RetryPolicy.Call;
+        _backgroundRetryPolicy = options.BackgroundRetryPolicy ?? RetryPolicy.Background;
         _reportFlushGrace = options.ReportFlushGrace ?? DefaultReportFlushGrace;
         _stoppingToken = _stopping.Token;
         _replay = replay;
@@ -142,8 +154,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _isHost = self.IsHost;
         IsRestoring = isRestoring;
         _uploadInitialSnapshot = IsHost && !isRestoring;
-        _health = new ConnectionHealth((connected, detail, attempt) =>
-            _notices.Enqueue(new MultiplayerNotice.ConnectionChanged(connected, detail, attempt)));
+        _health = new ConnectionHealth(failure => _notices.Enqueue(failure is null
+            ? new MultiplayerNotice.ConnectionChanged(true, null)
+            : new MultiplayerNotice.ConnectionChanged(
+                false, failure.Detail, failure.Attempt, failure.Lane, failure.Error)));
         _streamLane = _health.Open("stream");
         _pumpLane = _health.Open("pump");
         _outboxLane = _health.Open("outbox");
@@ -359,6 +373,15 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 // Stopping is how a session ends; both tasks are meant to be cancelled.
             }
         }
+        // Read after the pump has finished, since the pump is what starts one.
+        try
+        {
+            await _backgroundUpload.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled before it ran; it answers for everything else itself.
+        }
         _stopping.Dispose();
         _outboxSignal.Dispose();
         _reportSignal.Dispose();
@@ -386,6 +409,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         {
             case TurnSealedEvent sealedTurn:
                 lock (_outboxGate) _locallyReadyTurns.Remove(sealedTurn.Payload.Turn);
+                RetireDraftsThrough(sealedTurn.Payload.Turn);
                 await ResolveSealedTurnAsync(
                         sealedTurn.Payload.Turn,
                         sealedTurn.Payload.OrderSetHash,
@@ -397,9 +421,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 // a settled turn's repair announcement, which every reconnect replays, from being
                 // treated as an open question again.
                 if (_pendingDesync?.Turn == confirmed.Payload.Turn) _pendingDesync = null;
-                await CheckpointIfDueAsync(
-                        confirmed.Payload.Turn, confirmed.Payload.StateHash, cancellationToken)
-                    .ConfigureAwait(false);
+                CheckpointIfDue(confirmed.Payload.Turn, confirmed.Payload.StateHash);
                 return;
             case TurnDesyncedEvent desynced:
                 await HandleDesyncAsync(desynced, cancellationToken).ConfigureAwait(false);
@@ -466,7 +488,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot);
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
-            case LobbyPlayerJoinedEvent or LobbyHostChangedEvent:
+            case LobbyPlayerJoinedEvent or LobbyPlayerUpdatedEvent or LobbyHostChangedEvent:
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
             default:
@@ -705,7 +727,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         // A seat that has gone quiet is also no longer one the turn is waiting on, so drop any
         // readiness it had left behind rather than counting it towards a total it is not part of.
         _readyPlayerIds.RemoveWhere(
-            ready => !view.Players.Any(player => player.Id == ready && IsAwaitedHuman(player)));
+            ready => !view.Players.Any(player => player.Id == ready && IsAwaited(player)));
         // What is on screen changes when a seat is vacated, not only when somebody toggles
         // readiness, so it is said here too — otherwise "READY 2/4" keeps a seat count that is no
         // longer true, and a vacated seat keeps its WAIT, until the next player happens to toggle.
@@ -726,6 +748,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             .Where(player => MatchBootstrapFactory.IsSeated(player) && IsAwaitedHuman(player))
             .Select(player => player.Slot)
             .ToHashSet();
+        _departedPlayerIds = view.Players
+            .Where(player => MatchBootstrapFactory.IsSeated(player) && player.Status == WirePlayerStatus.Left)
+            .Select(player => player.Id)
+            .ToHashSet(StringComparer.Ordinal);
         return view;
     }
 
@@ -762,7 +788,17 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// whenever it next draws; handing out the live set would let a frame see a roster from after
     /// the tally it is drawn beside.
     /// </remarks>
-    private HashSet<int> AwaitedSlots() => [.. _awaitedSlots];
+    private HashSet<int> AwaitedSlots()
+    {
+        var slots = new HashSet<int>(_awaitedSlots);
+        foreach (var playerId in _takeoverVotes.Keys)
+        {
+            if (_departedPlayerIds.Contains(playerId)
+                && _slotsByPlayerId.TryGetValue(playerId, out var slot))
+                slots.Add(slot);
+        }
+        return slots;
+    }
 
     /// <summary>
     /// One protocol call, retried while the failure is only this attempt's.
@@ -776,10 +812,16 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// <param name="lane">
     /// Whose health the attempts report into, or null for a one-off the caller answers for itself.
     /// </param>
+    /// <param name="onQuietRetry">
+    /// Told about each retried attempt when there is no lane to report it to.
+    /// </param>
+    /// <param name="retryPolicy">The retry window, or null for the session's call policy.</param>
     private async Task<T> CallAsync<T>(
         Func<CancellationToken, Task<T>> call,
         ConnectionHealth.Lane? lane,
         CancellationToken cancellationToken,
+        Action<Exception, int>? onQuietRetry = null,
+        RetryPolicy? retryPolicy = null,
         [CallerMemberName] string operation = "")
     {
         if (ReferenceEquals(lane, _pumpLane)) Volatile.Write(ref _pumpOperation, operation);
@@ -788,10 +830,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         {
             var result = await TransientFailure.CallAsync(
                 call,
-                _callRetryPolicy,
+                retryPolicy ?? _callRetryPolicy,
                 onRetry: lane is null
-                    ? null
-                    : (exception, attempt) => lane.Failed(Describe(exception), attempt),
+                    ? onQuietRetry
+                    : (exception, attempt) => lane.Failed(Describe(exception), attempt, exception),
                 cancellationToken).ConfigureAwait(false);
             lane?.Recovered();
             return result;
@@ -859,6 +901,26 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     }
 
     /// <summary>
+    /// Whether the server has finished starting a match, so a session can be built from the view.
+    /// </summary>
+    /// <remarks>
+    /// Starting is several writes at the server: the match turns <c>running</c> on turn 0 first, and
+    /// only then seats the roster and opens turn 1. A lobby poll that lands between them reads a
+    /// running match that is not playable yet. That view is not a broken match, only an early one,
+    /// and the next poll brings the finished one.
+    /// </remarks>
+    public static bool HasFinishedStarting(MatchView view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        return view.Status is MatchStatus.Running or MatchStatus.Desynced
+            && view.CurrentTurn >= 1
+            // Only the lobby's slot -1 means "not seated yet". A slot past the board is a finished
+            // start this client cannot play, which the bootstrap refuses with a reason; counting it
+            // as unfinished would leave the player waiting on a start that has already happened.
+            && !view.Players.Any(player => player.Status == WirePlayerStatus.Active && player.Slot < 0);
+    }
+
+    /// <summary>
     /// Refuses a running match whose initial authoritative view contradicts itself before a city is
     /// generated or the interface is allowed to issue an order against it.
     /// </summary>
@@ -896,6 +958,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
 
     private static bool IsAwaitedHuman(PlayerView player) =>
         player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending;
+
+    /// <summary>Whether the server waits on this seat; see <see cref="_departedPlayerIds"/>.</summary>
+    private bool IsAwaited(PlayerView player) =>
+        IsAwaitedHuman(player)
+        || (player.Status == WirePlayerStatus.Left && _takeoverVotes.ContainsKey(player.Id));
 
     /// <summary>
     /// An ISO instant, or null when there is none to read.

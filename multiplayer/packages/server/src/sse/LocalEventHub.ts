@@ -7,7 +7,12 @@ import {
   RateLimitedError,
   type StreamCloser,
 } from '@chaos-overlords/kernel'
-import { abandonedSseResponse, createSseResponse } from './createSseResponse'
+import {
+  abandonedSseResponse,
+  createSseResponse,
+  type HubCloseReason,
+  type SseCloseReason,
+} from './createSseResponse'
 import { MatchLog } from './MatchLog'
 
 /**
@@ -52,13 +57,20 @@ export interface EventHubObserver {
    * that client is reconnecting in a loop.
    */
   abandoned?(matchId: string, playerId: string): void
+  /**
+   * A stream ended, with why and how long it had been open.
+   *
+   * The client cannot tell these apart — its body just ends — so this is where "the connection was
+   * lost although the server was up" gets its explanation; see `isUnexpectedClose`.
+   */
+  closed?(matchId: string, playerId: string, reason: SseCloseReason, openMs: number): void
 }
 
 interface Subscription {
   playerId: string
   lobby: boolean
   wake: () => void
-  close: () => void
+  close: (reason: HubCloseReason) => void
 }
 
 /**
@@ -122,7 +134,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     // Snapshot deliberately: `close()` removes the subscription from the set being walked.
     // oxlint-disable-next-line unicorn/no-useless-spread
     for (const subscription of [...(this.listeners.get(input.matchId) ?? [])]) {
-      if (subscription.playerId === input.playerId) subscription.close()
+      if (subscription.playerId === input.playerId) subscription.close('revoked')
     }
   }
 
@@ -139,7 +151,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     // oxlint-disable-next-line unicorn/no-useless-spread
     for (const subscriptions of [...this.listeners.values()]) {
       // oxlint-disable-next-line unicorn/no-useless-spread
-      for (const subscription of [...subscriptions]) subscription.close()
+      for (const subscription of [...subscriptions]) subscription.close('shutdown')
     }
   }
 
@@ -170,7 +182,8 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     this.makeRoom(input.matchId, input.playerId, lobby)
     const log = this.logOf(input.matchId)
     let subscription: Subscription | undefined
-    const revalidate = this.observer.revalidate
+    const { revalidate, closed } = this.observer
+    const openedAt = Date.now()
     return createSseResponse(
       {
         page: async (afterSeq, force) => {
@@ -193,6 +206,12 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
         signal: input.signal,
         onUnreadable: (seq) => this.observer.unreadable?.(input.matchId, seq),
         ...(revalidate ? { revalidate: () => revalidate(input.matchId, input.playerId) } : {}),
+        ...(closed
+          ? {
+              onClose: (reason: SseCloseReason) =>
+                closed(input.matchId, input.playerId, reason, Date.now() - openedAt),
+            }
+          : {}),
       },
     )
   }
@@ -249,7 +268,9 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     const set = this.listeners.get(matchId)
     if (set) {
       const mine = [...set].filter((subscription) => subscription.playerId === playerId)
-      for (const stale of mine.slice(0, mine.length - this.limits.perPlayer + 1)) stale.close()
+      for (const stale of mine.slice(0, mine.length - this.limits.perPlayer + 1)) {
+        stale.close('replaced')
+      }
     }
     if (this.open_ >= this.limits.perProcess) {
       throw new RateLimitedError('This server is holding as many event streams as it can', {

@@ -16,10 +16,11 @@ namespace Rechaos.Multiplayer.Http;
 /// client may already hold, so every handler must be idempotent.
 /// </para>
 /// <para>
-/// A connection counts as made when its first frame arrives, not when the server accepts it. A
-/// server that accepts and then closes, or accepts and then says nothing, would otherwise reset the
-/// retry budget on every attempt and be reconnected to forever; and the interface would be told the
-/// connection was back before anything had come down it.
+/// A connection counts as made when it has carried an event or outlived a heartbeat (see
+/// <see cref="KeepalivesToProve"/>), not when the server accepts it. A server that accepts and
+/// then closes, or accepts and then says nothing, would otherwise reset the retry budget on every
+/// attempt and be reconnected to forever; and the interface would be told the connection was back
+/// before anything had come down it.
 /// </para>
 /// </remarks>
 /// <param name="match">The token-bound handle the stream is opened through.</param>
@@ -48,7 +49,8 @@ public sealed class MatchEventStream(
     public static readonly TimeSpan DefaultIdleTimeout = ServerHeartbeat * 2.5;
 
     /// <summary>
-    /// How long a connection that has carried only keepalives must last before it counts as one.
+    /// How many data-less frames a connection that has carried no event must deliver before it
+    /// counts as one: the server's <c>: connected</c> comment, then a heartbeat keepalive.
     /// </summary>
     /// <remarks>
     /// The first frame of any kind used to be enough, which made a whole class of broken middlebox
@@ -60,12 +62,19 @@ public sealed class MatchEventStream(
     /// the opposite: a server that accepts the connection and closes it at once is an outage like
     /// any other.
     ///
-    /// One heartbeat is the shortest interval that tells a working stream from that one. A healthy
-    /// server sends a keepalive every <see cref="ServerHeartbeat"/>, so a connection that survives
-    /// to the second one is carrying traffic; and any real EVENT proves it immediately, whenever
-    /// it arrives.
+    /// The server opens every stream with <c>: connected</c> and then writes a keepalive every
+    /// <see cref="ServerHeartbeat"/>, so a second data-less frame means the connection outlived a
+    /// heartbeat; and any real EVENT proves it immediately, whenever it arrives.
+    ///
+    /// This is counted rather than timed. A stopwatch here starts only once the response headers
+    /// have arrived, after the server has already started its heartbeat timer, so the first
+    /// keepalive lands short of a full heartbeat on the client's clock by however long the headers
+    /// took. A threshold of one heartbeat missed it on every reconnect and held the "connection
+    /// lost" dialog up for some forty seconds over a stream that had been working since the first;
+    /// shaving the threshold only moved the problem to a slow TLS handshake, proxy or cold start.
+    /// The count does not depend on either clock, nor on the server's heartbeat interval.
     /// </remarks>
-    public static readonly TimeSpan ProvenAfter = ServerHeartbeat;
+    public const int KeepalivesToProve = 2;
 
     private readonly RetryPolicy _policy = policy ?? RetryPolicy.Stream;
     private readonly TimeSpan _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
@@ -100,8 +109,8 @@ public sealed class MatchEventStream(
                 await using var reader = connected.Connection;
                 await using var frames = reader
                     .FramesAsync(_idleTimeout, cancellationToken).GetAsyncEnumerator(cancellationToken);
-                // A connection has to LAST to count as one; see `ProvenAfter`.
-                var opened = System.Diagnostics.Stopwatch.StartNew();
+                // A connection has to LAST to count as one; see `KeepalivesToProve`.
+                var keepalives = 0;
                 var proven = false;
                 while (true)
                 {
@@ -117,11 +126,12 @@ public sealed class MatchEventStream(
                         if (!outage.IsRunning) outage.Start();
                         break;
                     }
-                    if (!proven && (frames.Current.Event is not null || opened.Elapsed >= ProvenAfter))
+                    if (frames.Current.IsKeepalive) keepalives++;
+                    if (!proven && (!frames.Current.IsKeepalive || keepalives >= KeepalivesToProve))
                     {
                         // An EVENT proves the connection at once — the server is talking, and the
-                        // client is reading a live match. A keepalive alone does not: see
-                        // `ProvenAfter` for what that used to cost.
+                        // client is reading a live match. The opening comment alone does not: see
+                        // `KeepalivesToProve` for what that used to cost.
                         proven = true;
                         attempt = 0;
                         outage.Reset();
@@ -140,12 +150,12 @@ public sealed class MatchEventStream(
             }
             if (cancellationToken.IsCancellationRequested) yield break;
             attempt++;
-            if (!_policy.AllowsAnother(attempt, outage.Elapsed))
+            if (_policy.NextDelay(lastFailure, attempt, outage.Elapsed) is not { } delay)
                 throw new RetryExhaustedException(
                     attempt,
                     outage.Elapsed,
                     lastFailure ?? new IOException("the server event stream did not reconnect"));
-            await Task.Delay(_policy.Backoff(attempt), cancellationToken).ConfigureAwait(false);
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
         }
     }
 

@@ -1,7 +1,7 @@
 # Game rules and evidence
 
 Status: partial, active research
-Last updated: 2026-09-20
+Last updated: 2026-09-24
 
 This document separates intended rules stated by the original manual from
 behavior verified against the fingerprinted version 1.1 executable. A manual
@@ -459,16 +459,45 @@ claim about original-game behavior.
 - Factory rule: an influenced Factory in the acting gang's controlled sector
   reduces purchase price to `Cost - trunc(Cost / 3)`. This is a one-third
   discount rounded toward the full price; for example, an $11 Katana costs $8.
+- Affordability: the original picker shows unaffordable researched items and
+  queues them without checking cash; it hides an item already equipped on the
+  acting gang. In the original, each Equip is checked at its fixed player and
+  roster slot in the Transaction scan against then-current cash and its own
+  Factory-adjusted price (`BIN-EQUIP-006`). The recreation deliberately uses
+  the player's submission sequence for Equip and Sell instead
+  ([decision](DECISIONS.md#2026-09-24--resolve-cash-transactions-in-player-order)).
+  It fails a purchase without mutation when `cash < price`, so an exact balance
+  buys the item. Cash at that point reflects Instant Bribes, earlier submitted
+  purchases, and earlier submitted Sells. It does not include later Sells,
+  the post-Transaction Chaos payout, or the
+  sector tax, site Cash, and gang Upkeep collected at the next Upkeep. The
+  city console's parenthesised delta (`FinanceProjection.CashAdjustment`)
+  nets all of those components across the whole cycle, so it is not an
+  affordability test: `cash + delta >= 0` can hold while an Equip fails. For
+  example, with $10 cash, one queued $12 Equip, $5 of sector tax, and no other
+  projected component, the console's cash row reads `CASH 10 [-2] (-7)`: cash,
+  unspent cash in brackets, and the delta in parentheses; the Equip fails.
+  Unspent cash subtracts every queued Bribe and Equip price from
+  current cash, because both debit cash before or during the Transaction scan,
+  while its tooltip lists them in resolution order: Bribes first, then Equips
+  in submission order. It is a preview, not a cash reservation: earlier Sells
+  may fund a purchase and later ones cannot.
 - Confidence: High for cost, categories, research, tech gates, the statically
   verified zero-difficulty initialization, Factory division/rounding, controlled/influenced locality,
-  fixed player/roster-slot resolution order, and same-slot replacement; Medium
-  for repeat commands.
+  original fixed player/roster-slot resolution order, signed execution-time cash check,
+  equality boundary, queue-time picker behavior, and same-slot replacement;
+  Medium for repeat commands. The cash predicate and picker are recorded in
+  `BIN-EQUIP-006`.
 - Implementation: `EquipmentRules`, `SpecialSiteRules.EquipmentCost`,
   transaction validation, and `CommandResolver.ResolveEquip`.
 - Tests: `TransactionResolutionTests` covers purchase, replacement, cash and
-  statistics, research/tech validation, insufficient funds, replay hashes, and
+  statistics, research/tech validation, insufficient funds, ordered Sell funding,
+  replay hashes, and
   a Factory completed during Instant not discounting a same-turn
   Transaction-phase replacement; all decoded item costs exercise the recovered division formula.
+- Next experiment: capture an Equip with cash exactly equal to the price, one
+  dollar short, and one dollar short with a lower-slot Sell queued in the same
+  turn to corroborate the static control flow at runtime.
 
 ### RULE-GIVE-001 — Transfer equipped item
 
@@ -532,7 +561,7 @@ claim about original-game behavior.
 ### RULE-CHAOS-001 — Cooperative Chaos and crackdown
 
 - Source: `MANUAL-GOG-1`; Chaos and Crackdown descriptions, including the
-  Math of the Game section.
+  Math of the Game section; `BIN-POLICE-002` for report recipients.
 - Observed statement: each player rolls the Force plus Chaos skill of their
   participating gangs with sector Income. Each success earns $1 in a
   controlled sector and counts toward crackdown; activity outside a controlled
@@ -549,7 +578,8 @@ claim about original-game behavior.
   threshold during this phase, pays no group; otherwise controlled groups earn
   all successes and uncontrolled groups earn `floor(group successes / 2)` after
   all same-player gangs in that sector have been aggregated. A newly
-  triggered crackdown notifies every active player. The executable physically
+  triggered crackdown reports to each player with a gang in that sector at
+  the opening roster scan, including players who did not order Chaos. The executable physically
   rolls Chaos and creates Crackdowns immediately after the Instant pass, before
   Combat, then resolves Combat and Transactions before paying the stored Chaos
   successes. The recreation preserves the public six-boundary interface while
@@ -581,7 +611,7 @@ claim about original-game behavior.
 ### RULE-POLICE-001 — Crackdown detection and combat
 
 - Source: `MANUAL-GOG-1`; Crackdown and Math of the Game descriptions, plus
-  `BIN-COMBAT-ORDER-001` and `BIN-POLICE-COMBAT-001`.
+  `BIN-COMBAT-ORDER-001`, `BIN-POLICE-COMBAT-001`, and `BIN-POLICE-002`.
 - Observed statement: during a crackdown, police attack every gang in the
   sector with Combat 20. Police detection is certain through Stealth 5 and
   drops five percentage points per additional Stealth point, reaching zero at
@@ -616,7 +646,8 @@ claim about original-game behavior.
   sites, Support, Tolerance modifiers, and resistance just like an overthrow,
   then writes the current turn into both slots. Reacquired control can be lost
   again on another recent trigger. The displaced owner receives a distinct
-  `ControlLost` notification in addition to the global Crackdown notification.
+  `ControlLost` notification after the sector-occupant Crackdown reports, even
+  without a gang in that sector.
   History mutation and ownership cleanup precede the duration-extension draw.
   A newly created Crackdown therefore attacks in the same turn's following
   police pass; the common end-of-Combat decrement immediately consumes one of

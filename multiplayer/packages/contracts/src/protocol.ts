@@ -9,7 +9,7 @@ import { notNegativeZero } from './primitives'
  * this server can talk at all, and a match already stored is described by
  * {@link MULTIPLAYER_SESSION_VERSION} instead.
  */
-export const MULTIPLAYER_PROTOCOL_VERSION = 18
+export const MULTIPLAYER_PROTOCOL_VERSION = 20
 
 /**
  * Version of the session as it is stored: the match row, its turns, its orders and its snapshots,
@@ -21,7 +21,7 @@ export const MULTIPLAYER_PROTOCOL_VERSION = 18
  * {@link MULTIPLAYER_PROTOCOL_VERSION} and leaves this where it is, so an in-flight match survives
  * the client and server being updated underneath it. The C# mirror is MultiplayerSessionVersion.
  */
-export const MULTIPLAYER_SESSION_VERSION = 7
+export const MULTIPLAYER_SESSION_VERSION = 9
 
 export const protocolVersionSchema = pipe(
   number(),

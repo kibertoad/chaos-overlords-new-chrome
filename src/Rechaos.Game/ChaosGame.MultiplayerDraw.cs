@@ -5,7 +5,7 @@ using Rechaos.Core.GameModel;
 namespace Rechaos.Game;
 
 /// <summary>
-/// What an online match draws once it is running: the opponents still drafting, the line that says
+/// What an online match draws once it is running: the seats still drafting, the line that says
 /// where the turn stands, and the two modals that take the screen when the server stops answering.
 /// </summary>
 /// <remarks>
@@ -15,10 +15,9 @@ namespace Rechaos.Game;
 /// </remarks>
 public sealed partial class ChaosGame
 {
-    private static readonly Rectangle StopReconnectButton = new(222, 354, 196, 28);
-
     /// <summary>
-    /// Marks every opponent still drafting this turn, under their portrait on the city top bar.
+    /// Marks every seat still drafting this turn, the player's own included, under its portrait on
+    /// the city top bar.
     /// </summary>
     /// <remarks>
     /// Drawn on black because the eight rows under the portraits are background art, which lime
@@ -26,21 +25,22 @@ public sealed partial class ChaosGame
     /// match is paused by a desync or over altogether nobody is drafting anything, so the captions
     /// go with the turn they describe rather than lingering as a state that cannot change.
     /// </remarks>
-    private void DrawOpponentPlanning(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    private void DrawSeatPlanning(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         if (_session is null) return;
-        var turnIsOpen = _online.Stage
-            is MultiplayerStage.Playing or MultiplayerStage.WaitingForSeal;
+        var ownTurnSent = _online.PlanningIsSubmitted;
+        var turnIsOpen = _online.PlanningIsOpen || ownTurnSent;
         for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
-            if (!OpponentPlanningPresentation.IsDrafting(
-                    slot, _session.Slot, turnIsOpen, _online.AwaitedSlots, _online.ReadySlots))
+            if (!SeatPlanningPresentation.IsDrafting(
+                    slot, _session.Slot, turnIsOpen, ownTurnSent,
+                    _online.AwaitedSlots, _online.ReadySlots))
                 continue;
             var caption = PlayerPortraitLayout.CityCaption(
-                slot, OpponentPlanningPresentation.WaitingCaption.Length);
+                slot, SeatPlanningPresentation.WaitingCaption.Length);
             batch.Draw(pixel, caption, Color.Black);
-            font.Draw(batch, OpponentPlanningPresentation.WaitingCaption,
-                new Vector2(caption.X, caption.Y), OpponentPlanningPresentation.WaitingColor, 1);
+            font.Draw(batch, SeatPlanningPresentation.WaitingCaption,
+                new Vector2(caption.X, caption.Y), SeatPlanningPresentation.WaitingColor, 1);
         }
     }
 
@@ -54,11 +54,7 @@ public sealed partial class ChaosGame
     private string OnlineCountdown()
     {
         if (_online.DeadlineAt is not { } deadline) return string.Empty;
-        // Against the SERVER's clock. The deadline is an instant on it, and a machine thirty
-        // seconds fast on a thirty-second timer showed the turn expiring before the server sealed
-        // it, while one that was slow was sealed on with time still on the screen.
-        var offset = _session?.ServerTimeOffset ?? TimeSpan.Zero;
-        var remaining = deadline - (DateTimeOffset.UtcNow + offset);
+        var remaining = deadline - OnlineServerNow();
         if (remaining <= TimeSpan.Zero) return "SEALING";
         // Built when the second changes, not every frame: the string is identical in between, and
         // this runs in the draw loop of every frame a timed online turn is on screen.
@@ -70,6 +66,17 @@ public sealed partial class ChaosGame
         }
         return _onlineCountdownText;
     }
+
+    /// <summary>
+    /// The time now on the SERVER's clock, which every online deadline is an instant on.
+    /// </summary>
+    /// <remarks>
+    /// A machine thirty seconds fast on a thirty-second timer showed the turn expiring before the
+    /// server sealed it, while one that was slow was sealed on with time still on the screen. The
+    /// footer and the countdown bar both read this, so the two can never disagree.
+    /// </remarks>
+    private DateTimeOffset OnlineServerNow() =>
+        DateTimeOffset.UtcNow + (_session?.ServerTimeOffset ?? TimeSpan.Zero);
 
     /// <summary>The whole second <see cref="_onlineCountdownText"/> was built for.</summary>
     private int _onlineCountdownSeconds = -1;
@@ -93,7 +100,11 @@ public sealed partial class ChaosGame
     private string OnlineTurnStatus()
     {
         if (!_online.IsConnected)
-            return $"RECONNECTING TO THE SERVER  ATTEMPT {_online.ReconnectAttempt}";
+        {
+            return _online.IsRateLimited
+                ? $"THE SERVER IS LIMITING REQUESTS  RETRY {_online.ReconnectAttempt}"
+                : $"RECONNECTING TO THE SERVER  ATTEMPT {_online.ReconnectAttempt}";
+        }
         if (_online.TurnSyncError.Length > 0)
             return $"TURN SYNC ERROR  {_online.TurnSyncError}";
         return _online.Stage switch
@@ -110,6 +121,10 @@ public sealed partial class ChaosGame
                         ? $"SERVER ACKNOWLEDGED  ALL PLAYERS READY {OnlineSeatTally()}"
                         : $"SERVER ACKNOWLEDGED  WAITING FOR OTHER PLAYERS "
                             + $"{OnlineSeatTally()} {OnlineCountdown()}",
+            // Here rather than on the message line, which anything else said since would have
+            // taken over: the warning lasts exactly as long as the draft it is about.
+            MultiplayerStage.Playing when _online.OpenTurnDraftUnsaved =>
+                $"TURN {_online.PlanningTurn}  ORDERS NOT SAVED YET  RETRYING  {OnlineCountdown()}",
             MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineCountdown()}",
             _ => string.Empty,
         };
@@ -134,25 +149,33 @@ public sealed partial class ChaosGame
             DrawOnlineErrorPopup(batch, pixel, font);
             return;
         }
-        if (_session is null || _online.IsConnected) return;
+        if (_session is null || !_online.ReconnectPopupShown) return;
         batch.Draw(pixel, new Rectangle(0, 0, 640, 460), new Color(0, 0, 0, 190));
-        var panel = new Rectangle(82, 82, 476, 316);
+        var panel = ReconnectPopupLayout.Panel;
         batch.Draw(pixel, panel, new Color(12, 22, 20));
         DrawBorder(batch, pixel, panel, Color.Gold, 2);
-        DrawCentered(font, batch, "CONNECTION LOST  RECONNECTING", 102, Color.Gold, 1);
+        // A rate limit is the server answering, not the connection going; saying "connection lost"
+        // over it sent players looking at their network.
+        var title = _online.IsRateLimited
+            ? "THE SERVER IS LIMITING REQUESTS  RETRYING"
+            : "CONNECTION LOST  RECONNECTING";
+        DrawCentered(font, batch, title, 102, Color.Gold, 1);
         font.Draw(batch, "AUTOMATIC RETRIES CONTINUE FOR UP TO FIVE MINUTES.",
             new Vector2(104, 132), Color.White, 1);
         font.Draw(batch, "RECENT ATTEMPTS", new Vector2(104, 162), new Color(150, 165, 165), 1);
-        IReadOnlyList<string> lines = _online.ReconnectLog.Count == 0
-            ? ["WAITING FOR THE NEXT ATTEMPT"]
-            : _online.ReconnectLog;
-        for (var index = 0; index < lines.Count; index++)
+        var log = _online.ReconnectLog;
+        if (log.Count == 0)
+            font.Draw(batch, "WAITING FOR THE NEXT ATTEMPT", ReconnectPopupLayout.RowText(0), Color.White, 1);
+        const int columns = ReconnectPopupLayout.SummaryColumns;
+        for (var index = 0; index < log.Count; index++)
         {
-            var line = lines[index];
-            if (line.Length > 66) line = line[..63] + "...";
-            font.Draw(batch, line, new Vector2(104, 184 + index * 22), Color.White, 1);
+            var line = log[index].Summary;
+            if (line.Length > columns) line = line[..(columns - 3)] + "...";
+            font.Draw(batch, line, ReconnectPopupLayout.RowText(index), Color.White, 1);
+            DrawButton(batch, pixel, font, ReconnectPopupLayout.CopyError(index), "COPY ERROR", false);
         }
-        DrawButton(batch, pixel, font, StopReconnectButton, "STOP RETRYING", true);
+        DrawCentered(font, batch, _online.ReconnectCopyStatus, ReconnectPopupLayout.CopyStatusTop, Color.Lime, 1);
+        DrawButton(batch, pixel, font, ReconnectPopupLayout.StopRetrying, "STOP RETRYING", true);
     }
 
     /// <summary>A modal error that keeps the complete diagnostic available without overflowing.</summary>
@@ -198,7 +221,7 @@ public sealed partial class ChaosGame
     private void DrawBlockingOnlineOverlays(Viewport viewport)
     {
         if (_batch is null || _pixel is null || _font is null || _session is null) return;
-        if (_online.IsConnected && _online.CurrentTakeoverVote is null) return;
+        if (!_online.ReconnectPopupShown && _online.CurrentTakeoverVote is null) return;
         _batch.Begin(
             samplerState: SamplerState.PointClamp,
             transformMatrix: VirtualInput.Transform(viewport));
