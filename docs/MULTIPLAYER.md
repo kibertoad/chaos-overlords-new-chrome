@@ -264,9 +264,11 @@ per open turn; Cloudflare sets a Durable Object alarm. Both runtimes also sweep 
 expired open turns (a 15-second interval on Node, a cron on Cloudflare) so a lost timer costs at
 most that interval. A timer that fires before `deadlineAt` (a `setTimeout` a millisecond early, or a
 Durable Object whose clock is behind the isolate that set the deadline) does not seal; it re-arms
-itself for the deadline, at least 250 ms out, rather than leaving the turn to the sweep. Sealing on
-the deadline includes whatever each player last submitted; a player who submitted nothing
-contributes no orders.
+itself for the deadline, at least 250 ms out, rather than leaving the turn to the sweep. On
+Cloudflare the retry also lands at least 250 ms past the time the alarm fired at, since the alarm
+scheduler keeps its own clock and would otherwise refire at once while the object's clock lags.
+Sealing on the deadline includes whatever each player last submitted; a player who submitted
+nothing contributes no orders.
 
 ## Bug reports: the same deployment, a different database
 

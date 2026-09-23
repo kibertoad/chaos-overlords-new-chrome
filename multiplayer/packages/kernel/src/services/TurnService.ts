@@ -32,8 +32,11 @@ export type SealTrigger = 'ready' | 'deadline'
 /** Turns are numbered from 1; 0 is the lobby's `currentTurn`, before any turn exists. */
 export const FIRST_TURN = 1
 
-/** The soonest an early deadline timer is retried; see `rearmEarlyDeadline`. */
-const EARLY_DEADLINE_RETRY_MS = 250
+/**
+ * The soonest an early deadline timer is retried; see `rearmEarlyDeadline`. Exported so a runtime
+ * whose timer runs on a clock of its own can apply the same floor against that clock.
+ */
+export const EARLY_DEADLINE_RETRY_MS = 250
 
 /**
  * How recently a match must have been touched for the ordinary sweep pass to visit it.
@@ -190,8 +193,9 @@ export class TurnService {
    * right — sealing before `deadlineAt` would misjudge who missed the turn — but refusing it and
    * doing nothing else spent the only timer the turn had. The turn then waited on the sweep: 15
    * seconds on Node and up to five minutes on Cloudflare's cron, with every client showing an
-   * expired clock the whole time. The retry is floored so a clock that lags by more than a few
-   * milliseconds is polled at a bounded rate rather than in a tight loop.
+   * expired clock the whole time. The retry is floored against this clock, which bounds the poll
+   * rate only while the timer runs on the same clock. A runtime whose timer keeps its own time
+   * (Cloudflare's alarms) has to floor the retry against that clock as well; see `MatchHub.arm`.
    */
   private async rearmEarlyDeadline(
     matchId: string,
