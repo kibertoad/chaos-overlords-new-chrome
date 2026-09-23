@@ -250,6 +250,8 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
         let beats = 0
         let stalledBeats = 0
         let validating = false
+        /** The pending check already counted as failed by an overdue beat; see below. */
+        let pendingCounted = false
         let failedChecks = 0
         /** A check that learned nothing; enough of them in a row and the stream is not trusted. */
         const checkFailed = () => {
@@ -280,10 +282,12 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
             // without counting it left the stream never checked again for as long as that query
             // hung; it is left to settle rather than raced by a second one.
             if (validating) {
+              pendingCounted = true
               checkFailed()
               if (closed) return
             } else {
               validating = true
+              pendingCounted = false
               void Promise.resolve()
                 .then(options.revalidate)
                 .then(
@@ -294,7 +298,9 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
                   },
                   () => {
                     validating = false
-                    checkFailed()
+                    // One lookup is one failure: a check that hung past a catch-up cycle was
+                    // counted then, and its eventual rejection is the same failure, not a second.
+                    if (!pendingCounted) checkFailed()
                   },
                 )
             }
@@ -320,7 +326,11 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
           } catch {
             // Already errored, or cancelled by the consumer.
           }
-          options.onClose?.(reason)
+          try {
+            options.onClose?.(reason)
+          } catch {
+            // An observer that throws must not escape into a timer or abort a hub's close loop.
+          }
         }
         options.signal.addEventListener('abort', aborted, { once: true })
         send(': connected\n\n')

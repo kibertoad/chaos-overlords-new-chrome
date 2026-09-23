@@ -60,10 +60,10 @@ public sealed class MatchEventStream(
     /// the opposite: a server that accepts the connection and closes it at once is an outage like
     /// any other.
     ///
-    /// One heartbeat is the shortest interval that tells a working stream from that one. A healthy
-    /// server sends a keepalive every <see cref="ServerHeartbeat"/>, so a connection that survives
-    /// to the second one is carrying traffic; and any real EVENT proves it immediately, whenever
-    /// it arrives.
+    /// Roughly one heartbeat is the shortest interval that tells a working stream from that one. A
+    /// healthy server sends a keepalive every <see cref="ServerHeartbeat"/>, so a connection that
+    /// survives to the first one after <c>: connected</c> is carrying traffic; and any real EVENT
+    /// proves it immediately, whenever it arrives.
     ///
     /// The threshold sits a quarter of a heartbeat short of one, not on it. The server starts its
     /// heartbeat timer when it builds the stream, and this side starts its stopwatch only once the

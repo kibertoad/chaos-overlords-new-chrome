@@ -1,5 +1,5 @@
 import type { EventRepository, PersistedEvent } from '@chaos-overlords/kernel'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { LocalEventHub, MatchLog, type SseCloseReason } from '../src'
 
 /** An empty log: these tests are about the subscriptions, not about what comes down them. */
@@ -42,13 +42,6 @@ async function open(hub: LocalEventHub, matchId: string, playerId: string, lobby
     },
     abort: () => controller.abort(),
   }
-}
-
-async function until(condition: () => boolean): Promise<void> {
-  for (let i = 0; i < 500 && !condition(); i += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 2))
-  }
-  expect(condition()).toBe(true)
 }
 
 describe('LocalEventHub stream caps', () => {
@@ -151,11 +144,46 @@ describe('LocalEventHub stream caps', () => {
     })
     const stream = await open(hub, 'm', 'p1')
     const reading = stream.readUntilEnded()
-    await until(() => checks >= 6)
+    await vi.waitFor(() => expect(checks).toBeGreaterThanOrEqual(6), { interval: 2 })
     expect(hub.connectionCount('m')).toBe(1)
     expect(reasons).toEqual([])
     stream.abort()
     await reading
+    expect(reasons).toEqual(['client_gone'])
+  })
+
+  /** A lookup that hangs past a catch-up cycle and then fails is one failure, not two. */
+  it('counts a check that hangs and then fails once', async () => {
+    let checks = 0
+    let rejectFirst: (error: Error) => void = () => {}
+    const reasons: SseCloseReason[] = []
+    const hub = new LocalEventHub(emptyEvents, 5, undefined, {
+      revalidate: () => {
+        checks += 1
+        if (checks > 1) return Promise.resolve(true)
+        return new Promise<boolean>((_resolve, reject) => {
+          rejectFirst = reject
+        })
+      },
+      closed: (_matchId, _playerId, reason) => reasons.push(reason),
+    })
+    const controller = new AbortController()
+    const response = await hub.open({
+      matchId: 'm',
+      playerId: 'p1',
+      afterSeq: 0,
+      signal: controller.signal,
+    })
+    const reader = (response.body as ReadableStream<Uint8Array>).getReader()
+    // `: connected`, then one keepalive per beat; the tenth beat counts the still-pending check.
+    for (let frames = 0; frames < 11; frames += 1) {
+      expect((await reader.read()).done).toBe(false)
+    }
+    rejectFirst(new Error('D1_ERROR: Network connection lost'))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(hub.connectionCount('m')).toBe(1)
+    expect(reasons).toEqual([])
+    controller.abort()
     expect(reasons).toEqual(['client_gone'])
   })
 
