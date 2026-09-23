@@ -98,6 +98,28 @@ describe.skipIf(!url)('postgres', () => {
     return { storage, match, player }
   }
 
+  // Polls until `waiters` backends are queued behind the holder's transaction, directly or
+  // behind another waiter. A guard that skips its lock never queues, so this times out instead
+  // of letting the write run after the commit and pass by accident.
+  async function waitUntilBlocked(holder: pg.Client, waiters = 1, timeoutMs = 5_000) {
+    const deadline = Date.now() + timeoutMs
+    for (;;) {
+      const { rows } = await holder.query<{ n: number }>(
+        `with recursive blocked(pid) as (
+           select pid from pg_stat_activity where pg_backend_pid() = any(pg_blocking_pids(pid))
+           union
+           select a.pid from pg_stat_activity a, blocked b where b.pid = any(pg_blocking_pids(a.pid))
+         )
+         select count(*)::int as n from blocked`,
+      )
+      if ((rows[0]?.n ?? 0) >= waiters) return
+      if (Date.now() > deadline) {
+        throw new Error(`expected ${waiters} backend(s) blocked on the holding transaction`)
+      }
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    }
+  }
+
   async function holdingUpdate(
     query: string,
     params: unknown[],
@@ -110,17 +132,14 @@ describe.skipIf(!url)('postgres', () => {
       await client.query(query, params)
       const result = operation()
       // A guarded write must wait for the status update, rather than use its old snapshot.
-      let settled = false
-      void result.then(
-        () => {
-          settled = true
-        },
-        () => {
-          settled = true
-        },
-      )
-      await new Promise((resolve) => setTimeout(resolve, 75))
-      expect(settled).toBe(false)
+      const first = await Promise.race([
+        waitUntilBlocked(client).then(() => 'blocked' as const),
+        result.then(
+          () => 'settled' as const,
+          () => 'settled' as const,
+        ),
+      ])
+      expect(first).toBe('blocked')
       await client.query('COMMIT')
       expect(await result).toBe(false)
     } finally {
@@ -144,7 +163,7 @@ describe.skipIf(!url)('postgres', () => {
       await client.query('BEGIN')
       await client.query('SELECT id FROM matches WHERE id = $1 FOR UPDATE', [match.id])
       const joins = [storage.players.createLate(player(2)), storage.players.createLate(player(3))]
-      await new Promise((resolve) => setTimeout(resolve, 75))
+      await waitUntilBlocked(client, 2)
       await client.query('COMMIT')
       expect((await Promise.all(joins)).sort()).toEqual([false, true])
       expect((await storage.players.listByMatch(match.id)).length).toBe(3)
