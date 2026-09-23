@@ -9,6 +9,7 @@ import {
   DEFAULT_SERVER_CONFIG,
   isActiveMember,
   LocalEventHub,
+  logStreamClosed,
 } from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import type { DurableObjectState } from '@cloudflare/workers-types'
@@ -71,6 +72,7 @@ export class MatchHub {
           workerLogger.info('answered an already abandoned event stream', { matchId, playerId }),
         revalidate: (matchId, playerId) =>
           isActiveMember(this.repositories.players, matchId, playerId),
+        closed: logStreamClosed(workerLogger),
       },
     )
   }
