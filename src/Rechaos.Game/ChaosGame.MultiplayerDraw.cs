@@ -30,9 +30,8 @@ public sealed partial class ChaosGame
     private void DrawOpponentPlanning(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         if (_session is null) return;
-        var turnIsOpen = _online.Stage
-            is MultiplayerStage.Playing or MultiplayerStage.WaitingForSeal;
-        var ownTurnSent = _online.Stage == MultiplayerStage.WaitingForSeal;
+        var ownTurnSent = _online.PlanningIsSubmitted;
+        var turnIsOpen = _online.PlanningIsOpen || ownTurnSent;
         for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
             if (!OpponentPlanningPresentation.IsDrafting(
