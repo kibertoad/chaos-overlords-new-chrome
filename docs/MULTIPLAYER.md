@@ -570,6 +570,13 @@ next player's ready sealed nothing until the first submitted again. The server
 therefore refuses to let a non-ready document replace a ready one, in the same
 conditional write that checks the turn is open.
 
+The one way readiness is taken back is a finished document the server refuses
+outright — `validation_failed`, `payload_too_large` or `bad_request`. The server
+recorded none of it and the turn still waits on the seat, so the session stops
+carrying readiness for the turn (`OrdersRefused.ReadinessWithdrawn`) and the
+client hands the player the turn they planned, to change and end again. A
+refusal of the turn itself, such as `turn_not_open`, changes nothing.
+
 Readiness reaches the interface as the seats that have finished, not as a count
 of them. The city top bar marks every seat the turn is still waiting on with a
 green `WAIT` under its portrait, so "waiting for the other players" says which
