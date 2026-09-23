@@ -140,6 +140,28 @@ public sealed class MultiplayerLobbySessionTests
         Assert.Equal(2, server.CallsTo(HttpMethod.Get, "/matches/m1"));
     }
 
+    [Fact]
+    public void AMatchCaughtHalfwayThroughStartingHasNotFinishedStarting()
+    {
+        var running = View(MatchStatus.Running);
+        // The server commits `running` on turn 0 before it seats anyone or opens turn 1.
+        var committed = running with
+        {
+            CurrentTurn = 0,
+            Players = [running.Players[0] with { Slot = -1 }],
+        };
+        var seated = committed with { Players = running.Players };
+
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(View(MatchStatus.Lobby)));
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(committed));
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(seated));
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(running with
+        {
+            Players = [running.Players[0] with { Slot = -1 }],
+        }));
+        Assert.True(MultiplayerMatchSession.HasFinishedStarting(running));
+    }
+
     private static MatchView View(MatchStatus status) => new(
         "m1",
         MultiplayerProtocolVersion.Current,

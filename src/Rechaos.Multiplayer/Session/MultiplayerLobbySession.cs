@@ -196,8 +196,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             var detail = await handle.GetAsync(token).ConfigureAwait(false);
             if (detail.Match.Status != MatchStatus.Running
                 || detail.Match.Seed is null
-                || detail.Match.CurrentTurn < 1
-                || detail.Match.Players.Any(player => player.Status == PlayerStatus.Active && player.Slot < 0))
+                || !MultiplayerMatchSession.HasFinishedStarting(detail.Match))
                 throw;
             _notices.Enqueue(new LobbyNotice.Updated(detail.Match));
             return;

@@ -96,8 +96,14 @@ public sealed partial class ChaosGame
                 // Not while the host is editing them: the poll that carries a settings change back
                 // is the same poll that would type over the name being written next to it.
                 if (!_online.IsHost) AdoptLobbySettings(updated.Match);
-                if (_session is null && updated.Match.Status == MatchStatus.Running)
+                // Only once the server has finished starting it. A poll that reads the match between
+                // `running` and turn 1 opening would fail the bootstrap, and a failed bootstrap is
+                // final, so the joiner sat on WAITING FOR THE HOST while the host played on.
+                if (_session is null && updated.Match.Status == MatchStatus.Running
+                    && MultiplayerMatchSession.HasFinishedStarting(updated.Match))
+                {
                     StartOnlineMatch(updated.Match);
+                }
                 return;
             case LobbyNotice.Listed listed:
                 _online.Listings = Describe(listed.Matches);
