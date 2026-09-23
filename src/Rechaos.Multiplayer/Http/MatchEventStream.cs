@@ -29,6 +29,8 @@ namespace Rechaos.Multiplayer.Http;
 /// <param name="idleTimeout">
 /// How long a connection may carry nothing before it is dropped and reopened, or null for
 /// <see cref="DefaultIdleTimeout"/>. The server heartbeats every <see cref="ServerHeartbeat"/>.
+/// Only time spent waiting on the connection counts; time the consumer spends on an event it was
+/// given is not silence.
 /// </param>
 public sealed class MatchEventStream(
     MatchHandle match,
