@@ -1,7 +1,7 @@
 # Recreation-native save format
 
-Status: implemented format version 26
-Last updated: 2026-09-21
+Status: implemented format version 27
+Last updated: 2026-09-23
 
 This format belongs to the recreation. It is deliberately separate from the
 original *Chaos Overlords* fixed-memory save envelopes and makes no claim of
@@ -15,14 +15,14 @@ original's address-shaped layout or partial-read behavior.
 
 <!-- doc-index:begin toc depth=2 -->
 - [Container and limits](#container-and-limits)
-- [Version 26 document](#version-26-document)
+- [Version 27 document](#version-27-document)
 - [Compatibility policy](#compatibility-policy)
-- [Replay format version 30](#replay-format-version-30)
+- [Replay format version 31](#replay-format-version-31)
 <!-- doc-index:end -->
 
 ## Container and limits
 
-- UTF-8 JSON with camel-case property names and `formatVersion: 26`.
+- UTF-8 JSON with camel-case property names and `formatVersion: 27`.
 - Maximum accepted size: 16 MiB.
 - Unknown properties, missing constructor fields, invalid identifiers, invalid
   enum/phase combinations, and inconsistent sequence counters are rejected.
@@ -41,13 +41,13 @@ serializer, then atomically promotes it. A valid previous primary becomes
 good backup. Recovery loads the backup only when the primary is missing,
 unreadable, or invalid.
 
-## Version 26 document
+## Version 27 document
 
 The top-level members are:
 
 | Member | Contents |
 |---|---|
-| `formatVersion` | Schema discriminator; currently `26` |
+| `formatVersion` | Schema discriminator; currently `27` |
 | `definitionsSha256` | Gameplay-definition compatibility fingerprint |
 | `stateFingerprint` | Canonical authoritative-state fingerprint |
 | `setup` | Scenario, duration, initial seed, global AI mentality, Original/Advanced AI policy, and ordered player definitions including portrait IDs |
@@ -76,7 +76,8 @@ is refused as `NewerFormat`; one declaring an older version is refused as
 save browser leaves the file where it is instead of treating it as a corrupt
 slot to overwrite.
 
-Format 26 is where the migration ladder ends. Every earlier version was
+Format 26 ended the pre-release migration ladder. Format 27 changed the
+fingerprint encoding again. Every earlier version was
 verified through a preserved projection of the SHA-256 state hash of its day,
 and formats 21 and later also carry the whole phase-boundary history in that
 hash; once the fingerprint became XxHash128, none of those documents could be
@@ -84,15 +85,23 @@ checked against their contents any more, and the game had not been released,
 so there was nobody whose saves a migration would have rescued. The decision is
 recorded in `DECISIONS.md` under 2026-09-21.
 
-Starting with 1.0.0, incompatible changes must increment `formatVersion` and
-provide either deterministic migration with fixtures or an explicitly
-documented safe rejection path; the bounded reader and the incompatibility
-marker are the structure that policy builds on.
+The first 1.0.0 release establishes the stable baseline. During the 1.x release
+line, later builds must load saves from every earlier public 1.x release through
+bounded, deterministic migrations covered by fixtures. A change that cannot
+honor that guarantee requires a new major release. Replays authenticate each
+recorded step under the rules and fingerprints of their build, so a new build
+does not promise to play journals from an older release unless it retains that
+verifier and its rule implementation. Both file types always retain explicit
+format gates: incompatible files are identified, left untouched, and never
+treated as corrupt backup candidates or silently converted. A release must
+document any replay version it stops accepting before publication. This policy
+is a release requirement; the current pre-1.0 reader accepts only today's
+versions and does not yet implement stable-release migrations.
 
 Original-save import/export is an explicit non-goal. Native snapshots must never
 be presented as converted original saves.
 
-## Replay format version 30
+## Replay format version 31
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
@@ -143,7 +152,9 @@ native snapshot version 24 and canonical hash version 27, removing synthetic
 sector Chaos from newly recorded state while retaining legacy verification.
 
 Version 30 embeds native snapshot version 26 and replaces every SHA-256 step
-fingerprint with the XxHash128 state fingerprint. Only version 30 is played
+fingerprint with the XxHash128 state fingerprint. Version 31 embeds native
+snapshot version 27 and folds gameplay definitions into a digest in each state
+fingerprint. Only version 31 is played
 back: a journal declaring another version is refused as `NewerFormat` or
 `OlderFormat`, for the reason the compatibility policy above gives, and the
 per-version operation and target boundaries the older schemas needed went with
@@ -163,7 +174,9 @@ members, missing values, unknown versions, and malformed operations are rejected
 `MatchReplayStore` applies the same read-back-before-promotion and
 last-valid-generation backup policy to replay files. The game client
 records all of its mutations and exposes atomic save plus verified primary or
-backup playback through F6 and F10.
+backup playback through F6 and F10. F10 verifies the complete journal before
+showing its opening state. Playback can then pause, change speed, move one step
+at a time, jump to either end, and exit without changing the live match.
 
 Replay version 3 embeds a native-save version 4 initial snapshot and records
 planning-time hire-offer preparation so opening the persistent Hire dock does
@@ -187,7 +200,8 @@ version 11 uses the version-13 hash and
 derives placement anchors; version 10 uses the version-12 hash and migrates the
 new modifier to false; version 9 uses its version-11 hash, versions 7 and 8
 use version 10, and version 6 uses version 9. Version 2 through 5 replay
-documents remain accepted through their legacy hash paths. Replay versions 18
+documents were accepted through their legacy hash paths before the pre-1.0
+format reset. Replay versions 18
 and 19 retain their version-20 and version-21 hash projections respectively;
 replay versions 20 and 21 use the preserved canonical state hash version 22.
 Replay version 22 uses canonical state hash version 23; replay version 23 uses

@@ -425,6 +425,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             return;
         }
         UpdateSoundtrack(gameTime);
+        if (_replayPlayback is not null)
+        {
+            UpdateReplayPlayback(gameTime, keyboard, mouse);
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
+        }
         UpdateComlinkAlert(gameTime.TotalGameTime);
         UpdateComlinkCaret(gameTime.TotalGameTime);
         PumpBugReportSend();
