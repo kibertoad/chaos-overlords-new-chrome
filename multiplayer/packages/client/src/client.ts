@@ -73,8 +73,8 @@ export interface StreamOptions {
   idleTimeoutMs?: number
   /**
    * How long the stream may keep failing to deliver anything before it gives up. The clock starts
-   * at the first failure and is reset by the first event of a connection, not by the connection
-   * itself: a server that accepts and then closes at once is still an outage. `0` retries forever.
+   * at the first failure and is reset by an event or sustained stream activity. A server that
+   * accepts and then closes at once is still an outage. `0` retries forever.
    */
   maxOutageMs?: number
 }
@@ -367,16 +367,20 @@ export class MatchHandle {
   }
 
   /** One connection's worth of events; ends when the server closes it. */
-  async *streamOnce(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
+  async *streamOnce(
+    options: StreamOptions & { onActivity?: (connectionAgeMs: number) => void } = {},
+  ): AsyncGenerator<MatchEvent> {
     const { response, release } = await this.client.openStream(
       streamEventsContract,
       streamEventsContract.pathResolver({ matchId: this.matchId }),
       options.after ?? 0,
       options.signal,
     )
+    const connectedAt = Date.now()
     try {
       yield* parseEventStream(response.body as ReadableStream<Uint8Array>, {
         idleTimeoutMs: options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS,
+        onActivity: () => options.onActivity?.(Date.now() - connectedAt),
       })
     } finally {
       // Runs on a `break` or a `return` from the consumer as well, so every connection gives its
@@ -398,9 +402,8 @@ export class MatchHandle {
    *
    * Every other failure — a dropped socket, a mangled frame, a proxy answering with HTML, a
    * connection that went silent — is retried within `maxOutageMs`, after which the stream ends
-   * with a `StreamOutageError` naming the last failure. The outage clock is reset only by an
-   * event actually arriving, so a server that accepts the connection and closes it at once cannot
-   * keep the loop alive forever.
+   * with a `StreamOutageError` naming the last failure. Events or sustained keepalive traffic
+   * reset the clock; accepting and immediately closing connections does not.
    */
   async *stream(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
     let after = options.after ?? 0
@@ -414,7 +417,18 @@ export class MatchHandle {
       // same kind as a dropped one for the purposes of the budget: nothing arrived.
       let failure: unknown = new Error('the server closed the event stream')
       try {
-        for await (const event of this.streamOnce({ ...options, after })) {
+        const idleMs = options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS
+        const healthyAfterMs = Math.min(idleMs > 0 ? idleMs : maxOutageMs, maxOutageMs) / 2
+        for await (const event of this.streamOnce({
+          ...options,
+          after,
+          onActivity: (connectionAgeMs) => {
+            if (maxOutageMs > 0 && connectionAgeMs >= healthyAfterMs) {
+              attempt = 0
+              outageStartedAt = null
+            }
+          },
+        })) {
           after = Math.max(after, event.seq)
           attempt = 0
           outageStartedAt = null

@@ -168,6 +168,47 @@ describe('MatchHandle.stream outage budget', () => {
     expect(seen).toEqual([1, 2])
     expect(afters.slice(0, 3)).toEqual(['0', '1', '2'])
   })
+
+  it('resets the outage clock after sustained keepalives without match events', async () => {
+    let connections = 0
+    const encoder = new TextEncoder()
+    const client = new MultiplayerClient({
+      baseUrl: 'https://example.invalid',
+      token: 'cop_x',
+      fetch: async () => {
+        connections += 1
+        if (connections === 1) return sseResponse(': connected\n\n')
+        if (connections === 2) {
+          const body = new ReadableStream<Uint8Array>({
+            async start(controller) {
+              controller.enqueue(encoder.encode(': connected\n\n'))
+              await new Promise((resolve) => setTimeout(resolve, 40))
+              controller.enqueue(encoder.encode(': keepalive\n\n'))
+              await new Promise((resolve) => setTimeout(resolve, 40))
+              controller.close()
+            },
+          })
+          return new Response(body, {
+            status: 200,
+            headers: { 'content-type': 'text/event-stream' },
+          })
+        }
+        return sseResponse(frameOf(1))
+      },
+    })
+    const seen: number[] = []
+    for await (const event of client.match('m').stream({
+      reconnectDelayMs: 1,
+      maxReconnectDelayMs: 1,
+      maxOutageMs: 60,
+      idleTimeoutMs: 100,
+    })) {
+      seen.push(event.seq)
+      break
+    }
+    expect(connections).toBe(3)
+    expect(seen).toEqual([1])
+  })
 })
 
 describe('isFatalStreamError', () => {
