@@ -20,15 +20,18 @@ The D1 migration lineages ship in `@chaos-overlords/storage` and `@chaos-overlor
 
 `PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
 `UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
-`ABANDONED_RETENTION_DAYS`, `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars. The
+`LOBBY_RETENTION_DAYS`, `ABANDONED_RETENTION_DAYS`, `SILENT_RETENTION_DAYS`, `RETENTION_BATCH_SIZE`,
+`BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars; unset, each retention window
+takes the kernel's default for a shared public server (see the multiplayer README). The
 `scheduled` handler expects a cron trigger; five minutes is the interval its sweeper is written for.
 
 **A deployment without a cron trigger has no safety net.** The sweeper is what seals a turn whose
 Durable Object alarm never fired, finishes a seal whose isolate died halfway through, re-runs the
 verdict of a match left paused by an interrupted one, and collects retention. Nothing else does any
 of it, and nothing fails loudly when it is missing: matches simply stop advancing for the players in
-them. `wrangler.dev.toml` deliberately carries no `[triggers]` block, because it is not a
-deployment — so the first thing to add to a real one is:
+them. `wrangler.dev.toml` carries the trigger so `wrangler dev --test-scheduled` exercises the same
+path, but it is not a deployment and triggers are not inherited — so the first thing to add to a
+real one is:
 
 ```toml
 [triggers]

@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { defineHttpConformance } from '@chaos-overlords/conformance'
+import { DEFAULT_RETENTION_DAYS } from '@chaos-overlords/kernel'
 import { ManualClock } from '@chaos-overlords/kernel/testing'
 import { type ServerType, serve } from '@hono/node-server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -64,6 +65,37 @@ describe('node runtime configuration', () => {
     expect(() => loadConfig({ SWEEP_INTERVAL_MS: '0' })).toThrow(/at least 1000/)
     expect(() => loadConfig({ MAX_EVENT_STREAMS: '0' })).toThrow(/at least 1/)
     expect(loadConfig({ RETENTION_DAYS: '0' }).retentionDays).toBe(0)
+  })
+
+  it('reads every retention window, defaulting to the kernel public-server values', () => {
+    const defaults = loadConfig({})
+    expect(defaults.retentionDays).toBe(DEFAULT_RETENTION_DAYS.finished)
+    // Unset rather than defaulted, so the kernel can follow `RETENTION_DAYS=0` for lobbies.
+    expect(defaults.lobbyRetentionDays).toBeUndefined()
+    expect(defaults.abandonedRetentionDays).toBe(DEFAULT_RETENTION_DAYS.abandonedLive)
+    // Unset rather than defaulted, so the kernel can derive it from the abandoned window.
+    expect(defaults.silentRetentionDays).toBeUndefined()
+    expect(defaults.retentionBatchSize).toBeUndefined()
+
+    const tuned = loadConfig({
+      RETENTION_DAYS: '365',
+      LOBBY_RETENTION_DAYS: '0',
+      ABANDONED_RETENTION_DAYS: '120',
+      SILENT_RETENTION_DAYS: '400',
+      RETENTION_BATCH_SIZE: '5',
+      RETENTION_INTERVAL_MS: '300000',
+    })
+    expect(tuned).toMatchObject({
+      retentionDays: 365,
+      lobbyRetentionDays: 0,
+      abandonedRetentionDays: 120,
+      silentRetentionDays: 400,
+      retentionBatchSize: 5,
+      retentionIntervalMs: 300_000,
+    })
+    expect(() => loadConfig({ RETENTION_BATCH_SIZE: '0' })).toThrow(/at least 1/)
+    expect(() => loadConfig({ RETENTION_INTERVAL_MS: '10' })).toThrow(/at least 1000/)
+    expect(() => loadConfig({ LOBBY_RETENTION_DAYS: '-1' })).toThrow(/at least 0/)
   })
 
   it('serves the public lobby list unless it is explicitly turned off', () => {

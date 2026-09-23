@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { hashOrderSet } from '../src'
+import { DEFAULT_RETENTION, hashOrderSet } from '../src'
 import { createHarness, HASH_A, HASH_B, type Harness } from './harness'
 
 describe('absent seats, departures and the repair sweeps', () => {
@@ -496,13 +496,13 @@ describe('absent seats, departures and the repair sweeps', () => {
     await h.kernel.lobby.leave(await h.principalOf(guest.token))
     expect(h.storage.statusOf(host.match.id)).toBe('running')
 
-    // Thirty-one days is the terminated-match window and leaves it alone: the match is kept running
-    // precisely so somebody can rejoin it.
-    h.clock.advance(31 * 24 * 60 * 60 * 1000)
+    // Past the terminated-match window it is left alone: the match is kept running precisely so
+    // somebody can rejoin it.
+    h.clock.advance(DEFAULT_RETENTION.finishedMaxAgeMs + 1)
     expect(await h.kernel.retention.collect()).toBe(0)
     expect(h.storage.statusOf(host.match.id)).toBe('running')
 
-    h.clock.advance(60 * 24 * 60 * 60 * 1000)
+    h.clock.advance(DEFAULT_RETENTION.abandonedLiveMaxAgeMs - DEFAULT_RETENTION.finishedMaxAgeMs)
     expect(await h.kernel.retention.collect()).toBe(1)
     expect(h.storage.statusOf(host.match.id)).toBeUndefined()
   })
@@ -641,7 +641,7 @@ describe('absent seats, departures and the repair sweeps', () => {
     expect(h.storage.statusOf(abandoned.match.id)).toBe('abandoned')
 
     expect(await h.kernel.retention.collect()).toBe(0)
-    h.clock.advance(31 * 24 * 60 * 60 * 1000)
+    h.clock.advance(DEFAULT_RETENTION.finishedMaxAgeMs + 1)
     expect(await h.kernel.retention.collect()).toBe(1)
     expect(h.storage.statusOf(abandoned.match.id)).toBeUndefined()
     expect(h.storage.statusOf(host.match.id)).toBe('running')
