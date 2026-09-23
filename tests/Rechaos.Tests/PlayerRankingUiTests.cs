@@ -62,6 +62,56 @@ public sealed class PlayerRankingUiTests
         ], PlayerRankingPresentation.Project(state));
     }
 
+    [Fact]
+    public void TooltipExplainsBasisScoreAndEveryStanding()
+    {
+        var state = CreateMatch(ScenarioId.Greed, [100, 2_500, 2_500, 50]);
+        var entries = PlayerRankingPresentation.Project(state);
+
+        var lines = PlayerRankingTooltip.Lines(state, entries[1], entries);
+
+        Assert.Equal(
+        [
+            "PLAYER 2",
+            "PLACE 1 OF 4 (TIED)",
+            "GREED RATES: CASH ON HAND",
+            "SCORE: 2,500",
+            "  CASH: $2,500",
+            "",
+            "ALL SCORES:",
+            "> 1. PLAYER 2              2,500",
+            "  1. PLAYER 3              2,500",
+            "  3. PLAYER 1                100",
+            "  4. PLAYER 4                 50"
+        ], lines);
+    }
+
+    [Fact]
+    public void DominanceTooltipShowsWeightedComponentsBehindTheScore()
+    {
+        var state = CreateMatch(ScenarioId.Dominance, [400, 0], sectorOwners: [0, 0]);
+        state.Players[0].Support = 3;
+        var entries = PlayerRankingPresentation.Project(state);
+
+        var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
+
+        Assert.Equal("SCORE: 49", lines[3]);
+        Assert.Equal("  CASH          $400 X 1    = 400", lines[4]);
+        Assert.Equal("  SUPPORT          3 X 10   = 30", lines[5]);
+        Assert.Equal("  SECTORS          2 X 30   = 60", lines[6]);
+        Assert.Equal("  TOTAL / 10 = SCORE", lines[7]);
+    }
+
+    [Fact]
+    public void TooltipAppearsOnlyOverAPortrait()
+    {
+        var state = CreateMatch(ScenarioId.Power, [0, 0], sectorOwners: [1]);
+        var portrait = PlayerRankingLayout.Portrait(1, 0);
+
+        Assert.Equal("PLAYER 2", PlayerRankingTooltip.At(portrait.Center, state)[0]);
+        Assert.Empty(PlayerRankingTooltip.At(new Point(0, 0), state));
+    }
+
     private static MatchState CreateMatch(
         ScenarioId scenario,
         int[] cash,

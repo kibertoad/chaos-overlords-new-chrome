@@ -171,5 +171,7 @@ public sealed partial class ChaosGame
                 PlayerRankingLayout.Portrait(entry.Player.Value, entry.Standing),
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         }
+        if (_hoverPoint is { } hover)
+            DrawHoverTooltip(batch, pixel, font, hover, PlayerRankingTooltip.At(hover, state));
     }
 }
