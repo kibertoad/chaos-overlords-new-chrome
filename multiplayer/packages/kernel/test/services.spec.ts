@@ -197,6 +197,42 @@ describe('the lobby, the roster and the turn barrier', () => {
     return host.match.id
   }
 
+  it('tops up a late joiner when a new turn opens across the seat claim', async () => {
+    const matchId = await lateJoinableMatch()
+    await h.storage.turns.transition(matchId, 1, ['open'], { status: 'sealed' })
+    const originalOpen = h.storage.turns.open
+    let releaseOpen!: () => void
+    const blocked = new Promise<void>((resolve) => {
+      releaseOpen = resolve
+    })
+    let reachedOpen!: () => void
+    const entered = new Promise<void>((resolve) => {
+      reachedOpen = resolve
+    })
+    let paused = false
+    h.storage.turns.open = async (turn, playerIds) => {
+      if (turn.number === 2 && !paused) {
+        paused = true
+        reachedOpen()
+        await blocked
+      }
+      return originalOpen(turn, playerIds)
+    }
+    const match = await h.storage.matches.get(matchId)
+    if (!match) throw new Error('the running match disappeared')
+    const opening = h.kernel.turns.openTurn(match, 2)
+    await entered
+    const joined = await h.kernel.lobby.joinRunning({
+      match: matchId,
+      displayName: 'Late',
+      slot: 3,
+    })
+    expect(await h.storage.turns.getOrderSummary(matchId, 2, joined.player.id)).toBeNull()
+    releaseOpen()
+    await opening
+    expect(await h.storage.turns.getOrderSummary(matchId, 2, joined.player.id)).not.toBeNull()
+  })
+
   async function joinOrderOf(playerId: string) {
     return (await h.storage.players.get(playerId))?.joinOrder
   }

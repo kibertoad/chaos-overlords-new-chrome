@@ -2,6 +2,7 @@ import { type OrderDocument, orderDocumentSchema } from '@chaos-overlords/contra
 import { safeParse } from 'valibot'
 import { describe, expect, it } from 'vitest'
 import type { Player, TurnReport } from '../src'
+import { allActiveReady } from '../src/logic/turn-logic'
 import {
   assignSlots,
   authoritativeCandidates,
@@ -35,6 +36,15 @@ function report(playerId: string, stateHash: string, finished = false): TurnRepo
 
 const HASH_A = 'a'.repeat(32)
 const HASH_B = 'b'.repeat(32)
+
+describe('allActiveReady', () => {
+  it('waits only on seats that have an orders row', () => {
+    const players = [player('host', 0), player('late', 1)]
+    expect(allActiveReady(players, [{ playerId: 'host', ready: true }])).toBe(true)
+    expect(allActiveReady(players, [{ playerId: 'host', ready: false }])).toBe(false)
+    expect(allActiveReady(players, [])).toBe(false)
+  })
+})
 
 describe('canonicalJson', () => {
   it('is independent of key order and nested', () => {

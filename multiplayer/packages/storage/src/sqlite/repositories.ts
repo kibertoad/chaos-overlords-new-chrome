@@ -505,13 +505,30 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
     ...sqliteTurnOrderMethods(db),
     async open(turn, playerIds) {
       const created = await insertUnlessTaken(() => db.insert(turns).values(turn))
-      if (playerIds.length > 0) {
+      for (const playerId of playerIds) {
         // Topped up rather than assumed: a re-run of the open step (a repaired seal) fills any row
-        // an interrupted one never wrote, and a player who already has a row keeps it untouched.
+        // an interrupted one never wrote. Only an open turn may receive a new row.
         await db
           .insert(turnOrders)
-          .values(
-            playerIds.map((playerId) => ({ matchId: turn.matchId, turn: turn.number, playerId })),
+          .select(
+            db
+              .select({
+                matchId: sql`${turn.matchId}`.as('match_id'),
+                turn: sql`${turn.number}`.as('turn'),
+                playerId: sql`${playerId}`.as('player_id'),
+                orders: sql`null`.as('orders'),
+                ordersHash: sql`null`.as('orders_hash'),
+                ready: sql`0`.as('ready'),
+                submittedAt: sql`null`.as('submitted_at'),
+              })
+              .from(turns)
+              .where(
+                and(
+                  eq(turns.matchId, turn.matchId),
+                  eq(turns.number, turn.number),
+                  eq(turns.status, 'open'),
+                ),
+              ),
           )
           .onConflictDoNothing()
       }

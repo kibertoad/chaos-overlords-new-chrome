@@ -11,7 +11,8 @@ export function allActiveReady(
   players: readonly Player[],
   orders: ReadonlyArray<Pick<TurnOrders, 'playerId' | 'ready'>>,
 ): boolean {
-  const active = humanParticipants(players)
+  const asked = new Set(orders.map((row) => row.playerId))
+  const active = humanParticipants(players).filter((player) => asked.has(player.id))
   if (active.length === 0) return false
   const readyIds = new Set(orders.filter((row) => row.ready).map((row) => row.playerId))
   return active.every((player) => readyIds.has(player.id))

@@ -280,24 +280,35 @@ export class TurnService {
     const deadlineAt = hasAbsenceVote
       ? null
       : turnDeadline(openedAt, match.settings.turnTimerSeconds)
+    const turn = {
+      matchId: match.id,
+      number,
+      status: 'open' as const,
+      openedAt,
+      deadlineAt,
+      sealedAt: null,
+      orderSetHash: null,
+      sealedSlots: null,
+      stateHash: null,
+      desyncedAt: null,
+    }
     const created = await this.deps.storage.turns.open(
-      {
-        matchId: match.id,
-        number,
-        status: 'open',
-        openedAt,
-        deadlineAt,
-        sealedAt: null,
-        orderSetHash: null,
-        sealedSlots: null,
-        stateHash: null,
-        desyncedAt: null,
-      },
+      turn,
       players.map((player) => player.id),
     )
     // A desynced match counts: a repaired seal must still point `currentTurn` at the turn that is
     // actually open, even though nobody may submit to it until the pause lifts.
     const advanced = await this.deps.storage.matches.advanceCurrentTurn(match.id, number, openedAt)
+    if (created) {
+      // A late seat can commit after the first roster read and top up the previous turn before
+      // this one exists. Re-read after publishing the new currentTurn so either this pass or the
+      // joiner's post-commit pass sees the seat and creates its orders row.
+      const current = await this.deps.storage.players.listByMatch(match.id)
+      await this.deps.storage.turns.open(
+        turn,
+        humanParticipants(current).map((player) => player.id),
+      )
+    }
     if (created) {
       await this.publisher.publish(match.id, {
         type: 'turn.opened',
