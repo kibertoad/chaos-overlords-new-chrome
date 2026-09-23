@@ -212,6 +212,18 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         await PublishLobbyAsync(handle, token).ConfigureAwait(false);
     });
 
+    /// <summary>Changes this player's own name and portrait while the lobby has not started.</summary>
+    public void UpdateProfile(UpdatePlayerProfileRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Run(async token =>
+        {
+            if (_handle is not { } handle) return;
+            await handle.UpdateProfileAsync(request, token).ConfigureAwait(false);
+            await PublishLobbyAsync(handle, token).ConfigureAwait(false);
+        });
+    }
+
     /// <summary>Re-reads the lobby, for the roster and for the moment it starts running.</summary>
     public void Refresh() => Run(async token =>
     {

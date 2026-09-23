@@ -417,6 +417,11 @@ describe('server app over in-memory storage', () => {
         },
       },
       {
+        path: `/api/v1/matches/${match.id}/profile`,
+        method: 'PUT',
+        body: { displayName: 'h', portraitId: 1, padding },
+      },
+      {
         path: `/api/v1/matches/${match.id}/players/${player.id}/takeover-vote`,
         method: 'POST',
         body: { decision: 'computer', padding },

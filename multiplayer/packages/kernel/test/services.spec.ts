@@ -119,6 +119,84 @@ describe('the lobby, the roster and the turn barrier', () => {
     ])
   })
 
+  it('lets any lobby member change their own name and face until the match starts', async () => {
+    const host = await h.kernel.lobby.createMatch({
+      settings: {
+        name: 'Makeover',
+        maxPlayers: 3,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Host',
+      hostPortraitId: 1,
+    })
+    const guest = await h.kernel.lobby.join({
+      joinCode: host.joinCode,
+      displayName: 'Guest',
+      portraitId: 2,
+    })
+    await h.kernel.lobby.updateProfile(await h.principalOf(guest.token), {
+      displayName: 'Renamed',
+      portraitId: 11,
+    })
+    expect(h.notifier.events.at(-1)).toMatchObject({
+      type: 'lobby.playerUpdated',
+      payload: { player: { id: guest.player.id, displayName: 'Renamed', portraitId: 11 } },
+    })
+    // A different case of one's own name is still one's own name, not somebody else's.
+    await h.kernel.lobby.updateProfile(await h.principalOf(host.token), {
+      displayName: 'HOST',
+      portraitId: 4,
+    })
+    await expect(
+      h.kernel.lobby.updateProfile(await h.principalOf(guest.token), {
+        displayName: 'host',
+        portraitId: 11,
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'display_name_taken' } })
+
+    await h.kernel.lobby.start(await h.principalOf(host.token))
+    const started = h.notifier.events.find((event) => event.type === 'match.started')
+    expect(
+      started?.type === 'match.started' &&
+        started.payload.players.map((player) => [player.displayName, player.portraitId]),
+    ).toEqual([
+      ['HOST', 4],
+      ['Renamed', 11],
+    ])
+    await expect(
+      h.kernel.lobby.updateProfile(await h.principalOf(guest.token), {
+        displayName: 'Too Late',
+        portraitId: 3,
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'match_not_in_lobby' } })
+    expect((await h.storage.players.get(guest.player.id))?.displayName).toBe('Renamed')
+  })
+
+  it('refuses a profile change that lands after the start transition', async () => {
+    const host = await h.kernel.lobby.createMatch({
+      settings: {
+        name: 'Race',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Host',
+    })
+    // Authenticated while the lobby was open, then the match started under it.
+    const stale = await h.principalOf(host.token)
+    await h.storage.matches.transition(host.match.id, ['lobby'], {
+      status: 'running',
+      updatedAt: new Date(),
+    })
+    await expect(
+      h.kernel.lobby.updateProfile(stale, { displayName: 'Sneaky', portraitId: 5 }),
+    ).rejects.toMatchObject({ details: { reason: 'match_not_in_lobby' } })
+    expect((await h.storage.players.get(host.player.id))?.displayName).toBe('Host')
+  })
+
   it('allows late joining only into a never-human computer slot', async () => {
     const host = await h.kernel.lobby.createMatch({
       settings: {

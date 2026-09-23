@@ -390,6 +390,27 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
         .returning({ id: players.id })
       return rows.length === 1
     },
+    /**
+     * "The match is still in the lobby" is tested by the statement that writes the profile, so an
+     * update racing `start` either lands before the roster is seated or not at all.
+     * The share lock on the match row is what makes that hold under READ COMMITTED: a `start`
+     * racing this either waits for it, or makes it re-read the row and find the match running.
+     */
+    async updateProfile(playerId, profile) {
+      const inLobby = exists(
+        db
+          .select({ one: sql`1` })
+          .from(matches)
+          .where(and(eq(matches.id, players.matchId), eq(matches.status, 'lobby')))
+          .for('share'),
+      )
+      const rows = await db
+        .update(players)
+        .set({ displayName: profile.displayName, portraitId: profile.portraitId })
+        .where(and(eq(players.id, playerId), eq(players.status, 'active'), inLobby))
+        .returning({ id: players.id })
+      return rows.length === 1
+    },
     async revokeToken(playerId) {
       await db.update(players).set({ tokenHash: null }).where(eq(players.id, playerId))
     },

@@ -33,6 +33,13 @@ public sealed class MatchHandle
         _client.SendAsync<Unit>(
             HttpMethod.Put, ApiRoutes.UpdateMatchSettings(MatchId), settings, cancellationToken);
 
+    /// <summary>Changes this player's own name and portrait; refused once the match has started.</summary>
+    public Task<Unit> UpdateProfileAsync(
+        UpdatePlayerProfileRequest request,
+        CancellationToken cancellationToken) =>
+        _client.SendAsync<Unit>(
+            HttpMethod.Put, ApiRoutes.UpdatePlayerProfile(MatchId), request, cancellationToken);
+
     /// <summary>
     /// Leaves the active roster while retaining the durable membership needed to rejoin.
     /// </summary>

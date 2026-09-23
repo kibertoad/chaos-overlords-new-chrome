@@ -466,7 +466,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot);
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
-            case LobbyPlayerJoinedEvent or LobbyHostChangedEvent:
+            case LobbyPlayerJoinedEvent or LobbyPlayerUpdatedEvent or LobbyHostChangedEvent:
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
             default:

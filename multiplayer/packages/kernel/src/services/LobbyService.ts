@@ -8,6 +8,7 @@ import {
   type MatchSettings,
   type MembershipView,
   type TakeoverVoteRequest,
+  type UpdatePlayerProfileRequest,
 } from '@chaos-overlords/contracts'
 import {
   ABSENT_HUMAN_STATUSES,
@@ -408,6 +409,33 @@ export class LobbyService {
         reason: 'players_exceed_limit',
       })
     }
+  }
+
+  /**
+   * Change the caller's own name and portrait while the match is still in the lobby.
+   *
+   * Any seated member may, not only the host: it is their own seat. The name is held to the same
+   * uniqueness a join is, against everybody but the caller, so renaming to a different case of
+   * one's own name is allowed. Refused once the match has started, because the roster is then what
+   * every client has generated its city from.
+   */
+  async updateProfile(principal: Principal, request: UpdatePlayerProfileRequest): Promise<void> {
+    const { match, player } = principal
+    if (match.status !== 'lobby') {
+      throw new ConflictError('The match has already started', { reason: 'match_not_in_lobby' })
+    }
+    const others = (await this.deps.storage.players.listByMatch(match.id)).filter(
+      (candidate) => candidate.id !== player.id,
+    )
+    this.assertNameIsFree(others, request.displayName)
+    const profile = { displayName: request.displayName, portraitId: request.portraitId }
+    if (!(await this.deps.storage.players.updateProfile(player.id, profile))) {
+      throw new ConflictError('The match has already started', { reason: 'match_not_in_lobby' })
+    }
+    await this.publisher.publish(match.id, {
+      type: 'lobby.playerUpdated',
+      payload: { player: toPlayerView({ ...player, ...profile }, match.hostPlayerId) },
+    })
   }
 
   async kick(principal: Principal, targetPlayerId: string): Promise<void> {
