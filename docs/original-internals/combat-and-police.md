@@ -1,7 +1,7 @@
 # Combat, chaos, and police
 
 Status: active clean-room research log
-Last updated: 2026-09-20
+Last updated: 2026-09-24
 
 How the board resolves violence: the fixed player and roster order the attack
 and police rolls run in, the exact detection and damage formulas, how opening
@@ -25,6 +25,7 @@ reference executable fingerprinted there.
 - [Chaos and police](#chaos-and-police)
   - [BIN-CHAOS-001 - roster-order rolls and grouped uncontrolled payout](#bin-chaos-001---roster-order-rolls-and-grouped-uncontrolled-payout)
   - [BIN-POLICE-001 - occurrence window, neutralization, and duration order](#bin-police-001---occurrence-window-neutralization-and-duration-order)
+  - [BIN-POLICE-002 - Crackdown report recipients and ordering](#bin-police-002---crackdown-report-recipients-and-ordering)
   - [BIN-POLICE-COMBAT-001 - exact detection and damage formulas](#bin-police-combat-001---exact-detection-and-damage-formulas)
 <!-- doc-index:end -->
 
@@ -202,7 +203,7 @@ single post-aggregation division. Runtime seed correlation remains pending.
 shorts live at `0x004abcc0` and `0x004abcc2`. Before evaluating a new trigger,
 lines 268-276 replace a non--100 slot with -100 only when it is strictly less
 than `current turn - 5`. Lines 303-312 fill the first empty slot and then the
-second. If neither is empty, lines 313-321 notify the owner, set the sector
+second. If neither is empty, lines 313-321 report control loss to the owner, set the sector
 owner to -1, clear its three influence-derived totals, and write the current
 turn into both occurrence slots.
 
@@ -228,6 +229,42 @@ police Combat phases from the initially drawn three through five.
 **Confidence:** High static evidence for sentinels, strict expiration comparison,
 slot-fill/reset order, cleanup fields, duration range/addition, and RNG call
 order. Runtime corroboration of notification presentation remains pending.
+
+### BIN-POLICE-002 - Crackdown report recipients and ordering
+
+**Observation:** The whole-turn resolver `0x00472775` clears a local
+64-sector-by-six-player presence table at lines 65-74. It scans all 81 roster
+slots per player and sets a sector/player byte when a slot's sector matches;
+inactive native slots carry the out-of-board sector sentinel 100. This table is
+built before the Instant and Chaos action passes. After the Chaos rolls, the
+sector pass at lines 268-327 traverses sectors in ascending ID. For a sector
+whose total exceeds Tolerance, lines 291-301 clear participating gangs' Chaos
+results and call report recorder `0x00477748` with type 1 only for player bytes
+set in that opening presence table. A player need not have ordered Chaos to
+receive the report, and an active player without a gang in the sector receives
+none. If the two occurrence slots are already occupied, lines 313-321 then call
+the same recorder with type 3 for the sector's previous owner before clearing
+ownership. This control-loss report follows the type-1 reports in the sector
+pass, and the branch does not require the previous owner to have a local gang.
+
+**Interpretation:** The visible `POLICE CRACKDOWN.` report is scoped to players
+with a gang in the affected sector at the beginning of resolution, while
+`SECTOR CONTROL LOST.` separately reaches a displaced owner on the third
+retained occurrence. The report table retains the first 32 entries per player,
+as documented in `BIN-EVENT-001`.
+
+**Confidence:** High static evidence for presence-table construction, type-1
+recipient gate, type-3 owner call, and per-sector ordering. Exact native display
+timing remains unverified.
+
+**Recreation status:** `PrepareChaosPhase` selects Crackdown notification
+recipients from the sector's active roster occupants before its Chaos rolls,
+including non-participants. `CrackdownResolver` separately emits Control Lost
+for the displaced owner. This change alters stored notification history, so
+online session version 8 retires earlier matches.
+
+**Next validation:** Compare multi-player Crackdown report pages with a native
+reference at the first and third occurrence boundaries.
 
 ### BIN-POLICE-COMBAT-001 - exact detection and damage formulas
 

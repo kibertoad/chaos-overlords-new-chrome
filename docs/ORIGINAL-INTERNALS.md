@@ -66,7 +66,7 @@ are grouped by subsystem, each group names the document that holds it, and rows
 are in ID order.
 
 <!-- doc-index:begin finding-index -->
-105 findings.
+106 findings.
 
 **Executable image** — [executable-and-platform.md](original-internals/executable-and-platform.md)
 
@@ -196,6 +196,7 @@ are in ID order.
 |---|---|
 | [BIN-CHAOS-001](original-internals/combat-and-police.md#bin-chaos-001---roster-order-rolls-and-grouped-uncontrolled-payout) | roster-order rolls and grouped uncontrolled payout |
 | [BIN-POLICE-001](original-internals/combat-and-police.md#bin-police-001---occurrence-window-neutralization-and-duration-order) | occurrence window, neutralization, and duration order |
+| [BIN-POLICE-002](original-internals/combat-and-police.md#bin-police-002---crackdown-report-recipients-and-ordering) | Crackdown report recipients and ordering |
 | [BIN-POLICE-COMBAT-001](original-internals/combat-and-police.md#bin-police-combat-001---exact-detection-and-damage-formulas) | exact detection and damage formulas |
 
 **Objectives, ranking, and awards** — [objectives-and-awards.md](original-internals/objectives-and-awards.md)
