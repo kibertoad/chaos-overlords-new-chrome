@@ -12,13 +12,14 @@ describe('RateLimiter reservations', () => {
 
     release?.()
     expect(limiter.spent('key')).toBe(0)
-    expect(limiter.reserve('key')).not.toBeNull()
+    const held = limiter.reserve('key')
+    expect(held).not.toBeNull()
     release?.()
     expect(limiter.spent('key')).toBe(1)
 
     clock.advance(1_000)
     expect(limiter.reserve('key')).not.toBeNull()
-    release?.()
+    held?.()
     expect(limiter.spent('key')).toBe(1)
   })
 })

@@ -47,14 +47,7 @@ export class RateLimiter {
   /** Returns the retry delay in seconds when over the limit, or null when the call is allowed. */
   take(key: string): number | null {
     const now = this.tick()
-    const entry = this.live(key, now)
-    if (!entry) {
-      // `live` removed any rolled window, so this appends at the tail and keeps the Map ordered.
-      this.windows.set(key, { windowStart: now, count: 1 })
-      this.prune(now)
-      this.evictOldest()
-      return null
-    }
+    const entry = this.open(key, now)
     if (entry.count >= this.options.limit) return this.retryAfter(entry, now)
     entry.count += 1
     return null
@@ -66,17 +59,9 @@ export class RateLimiter {
    * window is never decremented on behalf of an older request.
    */
   reserve(key: string): (() => void) | null {
-    const now = this.tick()
-    let entry = this.live(key, now)
-    if (!entry) {
-      entry = { windowStart: now, count: 0 }
-      this.windows.set(key, entry)
-      this.prune(now)
-      this.evictOldest()
-    }
-    if (entry.count >= this.options.limit) return null
-    entry.count += 1
-    const reserved = entry
+    const reserved = this.open(key, this.tick())
+    if (reserved.count >= this.options.limit) return null
+    reserved.count += 1
     let released = false
     return () => {
       if (released) return
@@ -125,6 +110,18 @@ export class RateLimiter {
     if (!entry || !this.expired(entry, now)) return entry
     this.windows.delete(key)
     return undefined
+  }
+
+  /** The window `key` is spending from, opening an empty one at the tail when none is live. */
+  private open(key: string, now: number): WindowEntry {
+    const live = this.live(key, now)
+    if (live) return live
+    // `live` removed any rolled window, so this appends at the tail and keeps the Map ordered.
+    const entry = { windowStart: now, count: 0 }
+    this.windows.set(key, entry)
+    this.prune(now)
+    this.evictOldest()
+    return entry
   }
 
   private expired(entry: WindowEntry, now: number): boolean {
