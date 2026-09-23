@@ -93,7 +93,11 @@ export class InMemoryStorage implements MultiplayerStorage {
     claimLateJoinOrder: async (matchId) => {
       const match = this.matchRows.get(matchId)
       if (match?.status !== 'running') return null
-      match.joinCounter += 1
+      // Never below a position a stored player already holds; see the SQLite adapter.
+      const nextFree = [...this.playerRows.values()]
+        .filter((player) => player.matchId === matchId)
+        .reduce((next, player) => Math.max(next, player.joinOrder + 1), 0)
+      match.joinCounter = Math.max(match.joinCounter, nextFree) + 1
       return match.joinCounter - 1
     },
     releaseSeat: async (matchId) => {

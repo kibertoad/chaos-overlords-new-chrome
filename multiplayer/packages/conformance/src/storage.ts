@@ -119,8 +119,22 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         storage.matches.claimLateJoinOrder(match.id),
         storage.matches.claimLateJoinOrder(match.id),
       ])
-      expect(lateOrders.sort()).toEqual([4, 5])
+      expect(lateOrders.map(Number).sort((a, b) => a - b)).toEqual([4, 5])
       expect((await storage.matches.get(match.id))?.joinCounter).toBe(6)
+    })
+
+    it('never hands a late joiner a join position a stored player already holds', async () => {
+      // A late joiner seated before the counter covered late joins took `joinCounter` as its
+      // position without advancing it.
+      const match = matchFixture({ status: 'running', joinCounter: 3 })
+      await storage.matches.create(match)
+      expect(
+        await storage.players.createLate(playerFixture(match, { slot: 2, joinOrder: 3 })),
+      ).toBe(true)
+      expect(await storage.matches.claimLateJoinOrder(match.id)).toBe(4)
+      expect(await storage.matches.claimLateJoinOrder(match.id)).toBe(5)
+      expect((await storage.matches.get(match.id))?.joinCounter).toBe(6)
+      expect(await storage.matches.claimLateJoinOrder(uid('missing'))).toBeNull()
     })
 
     it('transitions only from the expected statuses and patches the given fields', async () => {

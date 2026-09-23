@@ -22,6 +22,7 @@ import {
   ne,
   notExists,
   or,
+  type SQL,
   type SQLWrapper,
   sql,
 } from 'drizzle-orm'
@@ -63,6 +64,26 @@ export function createPostgresStorage(db: PostgresDatabase): MultiplayerStorage 
 
 function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
   const { matches, players, snapshots } = schema
+
+  /**
+   * The one statement both join doors take a `joinOrder` from: when `condition` holds, move
+   * `joinCounter` to `next` (setting `extra` alongside) and return the position just taken, or null
+   * when the condition refused the claim.
+   */
+  async function takeJoinOrder(
+    condition: SQL | undefined,
+    next: SQL,
+    extra: { seatCount?: SQL } = {},
+  ): Promise<number | null> {
+    const rows = await db
+      .update(matches)
+      .set({ ...extra, joinCounter: next })
+      .where(condition)
+      .returning({ joinCounter: matches.joinCounter })
+    const row = rows[0]
+    return row ? row.joinCounter - 1 : null
+  }
+
   // Children cascade from the match row, so one delete takes the whole match with it.
   const deleteCollectable = async (collectable: SQLWrapper): Promise<number> => {
     const rows = await db
@@ -120,31 +141,25 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
       return rows.map(toPublicLobbyRow)
     },
     async claimSeat(matchId) {
-      const rows = await db
-        .update(matches)
-        .set({
-          seatCount: sql`${matches.seatCount} + 1`,
-          joinCounter: sql`${matches.joinCounter} + 1`,
-        })
-        .where(
-          and(
-            eq(matches.id, matchId),
-            eq(matches.status, 'lobby'),
-            sql`${matches.seatCount} < ${matches.maxPlayers}`,
-          ),
-        )
-        .returning({ joinCounter: matches.joinCounter })
-      const row = rows[0]
-      return row ? row.joinCounter - 1 : null
+      return takeJoinOrder(
+        and(
+          eq(matches.id, matchId),
+          eq(matches.status, 'lobby'),
+          sql`${matches.seatCount} < ${matches.maxPlayers}`,
+        ),
+        sql`${matches.joinCounter} + 1`,
+        { seatCount: sql`${matches.seatCount} + 1` },
+      )
     },
     async claimLateJoinOrder(matchId) {
-      const rows = await db
-        .update(matches)
-        .set({ joinCounter: sql`${matches.joinCounter} + 1` })
-        .where(and(eq(matches.id, matchId), eq(matches.status, 'running')))
-        .returning({ joinCounter: matches.joinCounter })
-      const row = rows[0]
-      return row ? row.joinCounter - 1 : null
+      // Never below a position a stored player already holds: late joiners seated before the
+      // counter covered them took `joinCounter` without advancing it, so the counter alone could
+      // hand one of their positions out again.
+      const nextFree = sql`(select coalesce(max(${players.joinOrder}) + 1, 0) from ${players} where ${players.matchId} = ${matchId})`
+      return takeJoinOrder(
+        and(eq(matches.id, matchId), eq(matches.status, 'running')),
+        sql`greatest(${matches.joinCounter}, ${nextFree}) + 1`,
+      )
     },
     async releaseSeat(matchId) {
       await db
