@@ -121,6 +121,10 @@ public sealed partial class ChaosGame
                         ? $"SERVER ACKNOWLEDGED  ALL PLAYERS READY {OnlineSeatTally()}"
                         : $"SERVER ACKNOWLEDGED  WAITING FOR OTHER PLAYERS "
                             + $"{OnlineSeatTally()} {OnlineCountdown()}",
+            // Here rather than on the message line, which anything else said since would have
+            // taken over: the warning lasts exactly as long as the draft it is about.
+            MultiplayerStage.Playing when _online.OpenTurnDraftUnsaved =>
+                $"TURN {_online.PlanningTurn}  ORDERS NOT SAVED YET  RETRYING  {OnlineCountdown()}",
             MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineCountdown()}",
             _ => string.Empty,
         };

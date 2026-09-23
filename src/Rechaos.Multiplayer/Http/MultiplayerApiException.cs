@@ -66,6 +66,21 @@ public sealed class MultiplayerApiException : Exception
     public bool IsRateLimited => Status == HttpStatusCode.TooManyRequests;
 
     /// <summary>
+    /// The server's answer a failure carries, looking through a retry that ran out on one; null
+    /// when the failure is not the server answering.
+    /// </summary>
+    /// <remarks>
+    /// The one definition of where that answer sits, so the retry delay and the text a player
+    /// reads cannot disagree about whether the server asked for a wait.
+    /// </remarks>
+    public static MultiplayerApiException? AnswerIn(Exception? failure) => failure switch
+    {
+        MultiplayerApiException api => api,
+        RetryExhaustedException exhausted => AnswerIn(exhausted.LastError),
+        _ => null,
+    };
+
+    /// <summary>
     /// The most of a refusal's body that is read before it is judged not to be an envelope.
     /// </summary>
     /// <remarks>

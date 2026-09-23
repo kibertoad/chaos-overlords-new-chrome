@@ -85,7 +85,7 @@ public sealed class ReconnectPopupTests
     [Fact]
     public void TheModalWaitsOutTheGraceBeforeCoveringTheScreen()
     {
-        var lost = new DateTimeOffset(2026, 9, 23, 12, 0, 0, TimeSpan.Zero);
+        var lost = TimeSpan.FromHours(3);
         var state = new MultiplayerUiState { IsConnected = false, DisconnectedSince = lost };
 
         Assert.False(state.UpdateReconnectPopup(lost + MultiplayerUiState.ReconnectPopupGrace / 2));

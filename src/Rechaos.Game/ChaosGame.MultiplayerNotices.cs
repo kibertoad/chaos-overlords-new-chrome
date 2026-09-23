@@ -29,10 +29,7 @@ public sealed partial class ChaosGame
     private void UpdateOnlineSession()
     {
         PumpOnlineNotices();
-        // The session stops retrying a draft once its turn seals, so its line goes with the turn.
-        if (_online.DelayedDraftTurn is { } delayedTurn && delayedTurn != _online.PlanningTurn)
-            ClearDelayedDraft();
-        if (_online.UpdateReconnectPopup(DateTimeOffset.UtcNow)) _message = ReconnectingMessage();
+        if (_online.UpdateReconnectPopup(MonotonicClock.Now)) _message = ReconnectingMessage();
         SendOnlineDraft();
         UpdateOnlineDeadlineWarnings();
     }
@@ -41,16 +38,6 @@ public sealed partial class ChaosGame
     private string ReconnectingMessage() => _online.IsRateLimited
         ? "THE SERVER IS LIMITING REQUESTS  AUTOMATICALLY RETRYING"
         : "CONNECTION LOST  AUTOMATICALLY RECONNECTING";
-
-    /// <summary>The message line while a draft of the open turn is being retried in the background.</summary>
-    private const string DelayedDraftMessage = "ORDERS NOT SAVED ON THE SERVER YET  RETRYING";
-
-    /// <summary>Forgets the delayed draft, and takes back its message line if it is still showing.</summary>
-    private void ClearDelayedDraft()
-    {
-        _online.DelayedDraftTurn = null;
-        if (_message == DelayedDraftMessage) _message = string.Empty;
-    }
 
     /// <summary>
     /// Drains what the sessions have to say, on the game thread.
@@ -303,16 +290,15 @@ public sealed partial class ChaosGame
                         ["detail"] = delayed.Detail,
                     });
                 // Quietly: the draft is retried on its own and superseded by the next change, and
-                // the player can go on planning. Only a draft of the turn on screen is worth a line.
-                if (delayed.Turn != _online.PlanningTurn) return;
+                // the player can go on planning. The footer says so while it is the turn on screen;
+                // see `OnlineTurnStatus`.
                 _online.DelayedDraftTurn = delayed.Turn;
-                if (_message.Length == 0) _message = DelayedDraftMessage;
                 return;
             case MultiplayerNotice.OrdersAccepted accepted:
                 // A draft needs no announcement; the submission that ends a turn already said so.
                 _online.TurnSyncError = string.Empty;
                 if (_online.DelayedDraftTurn is { } delayedTurn && accepted.Turn >= delayedTurn)
-                    ClearDelayedDraft();
+                    _online.DelayedDraftTurn = null;
                 if (accepted.Ready && accepted.Turn == _online.PlanningTurn)
                 {
                     _online.ReadySubmissionPending = false;
@@ -358,7 +344,7 @@ public sealed partial class ChaosGame
                     // blip that recovered within the grace leaves whatever the player was reading.
                     var wasShown = _online.ReconnectPopupShown;
                     _online.DisconnectedSince = null;
-                    _online.UpdateReconnectPopup(DateTimeOffset.UtcNow);
+                    _online.UpdateReconnectPopup(MonotonicClock.Now);
                     _online.ReconnectLog.Clear();
                     _online.ReconnectCopyStatus = string.Empty;
                     _online.ReconnectAttempt = 0;
@@ -367,7 +353,7 @@ public sealed partial class ChaosGame
                 }
                 else if (connection.Detail is not null)
                 {
-                    _online.DisconnectedSince ??= DateTimeOffset.UtcNow;
+                    _online.DisconnectedSince ??= MonotonicClock.Now;
                     _online.ResolutionExpectedSince = null;
                     _online.ReconnectAttempt = Math.Max(1, connection.Attempt);
                     _online.ReconnectLog.Add(ReconnectAttemptEntry.From(connection, DateTimeOffset.Now));

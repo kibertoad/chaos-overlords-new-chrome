@@ -248,8 +248,11 @@ internal sealed class MultiplayerUiState
     /// </remarks>
     internal bool IsConnected { get; set; } = true;
 
-    /// <summary>When the server last stopped answering, or null while it is answering.</summary>
-    internal DateTimeOffset? DisconnectedSince { get; set; }
+    /// <summary>
+    /// When the server last stopped answering, on the <see cref="MonotonicClock"/>, or null while
+    /// it is answering.
+    /// </summary>
+    internal TimeSpan? DisconnectedSince { get; set; }
 
     /// <summary>
     /// How long the server may go unanswered before the reconnect modal covers the screen.
@@ -268,8 +271,9 @@ internal sealed class MultiplayerUiState
     /// <summary>
     /// Raises the reconnect modal once the server has been unanswered for longer than the grace.
     /// </summary>
+    /// <param name="now">The <see cref="MonotonicClock"/> reading for this frame.</param>
     /// <returns>True on the frame the modal first appears.</returns>
-    internal bool UpdateReconnectPopup(DateTimeOffset now)
+    internal bool UpdateReconnectPopup(TimeSpan now)
     {
         var shown = !IsConnected
             && DisconnectedSince is { } since
@@ -282,8 +286,17 @@ internal sealed class MultiplayerUiState
     /// <summary>Whether the latest failed attempt was the server limiting this client, not an outage.</summary>
     internal bool IsRateLimited => ReconnectLog.Count > 0 && ReconnectLog[^1].IsRateLimited;
 
-    /// <summary>The open turn's draft that has not reached the server yet, if one is being retried.</summary>
+    /// <summary>The turn whose draft has not reached the server yet, if one is being retried.</summary>
     internal int? DelayedDraftTurn { get; set; }
+
+    /// <summary>
+    /// Whether the turn on screen has a draft the server has not taken yet.
+    /// </summary>
+    /// <remarks>
+    /// Worked out from the turn rather than cleared when it changes: the session stops retrying a
+    /// draft once its turn seals, and a delayed draft of an earlier turn simply stops matching.
+    /// </remarks>
+    internal bool OpenTurnDraftUnsaved => DelayedDraftTurn is { } turn && turn == PlanningTurn;
 
     /// <summary>Recent automatic reconnect attempts, newest last, for the modal status log.</summary>
     internal List<ReconnectAttemptEntry> ReconnectLog { get; } = [];
@@ -301,8 +314,11 @@ internal sealed class MultiplayerUiState
     /// <summary>Whether the server explicitly acknowledged this turn's ready document.</summary>
     internal bool ReadySubmissionAcknowledged { get; set; }
 
-    /// <summary>When an acknowledged all-ready turn first failed to produce its sealed successor.</summary>
-    internal DateTimeOffset? ResolutionExpectedSince { get; set; }
+    /// <summary>
+    /// When an acknowledged all-ready turn first failed to produce its sealed successor, on the
+    /// <see cref="MonotonicClock"/>.
+    /// </summary>
+    internal TimeSpan? ResolutionExpectedSince { get; set; }
 
     /// <summary>A refused submission for the turn still shown on the city screen.</summary>
     internal string TurnSyncError { get; set; } = string.Empty;

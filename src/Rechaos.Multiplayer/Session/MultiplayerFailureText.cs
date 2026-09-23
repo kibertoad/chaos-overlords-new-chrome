@@ -55,12 +55,8 @@ public static class MultiplayerFailureText
     /// Not a lost connection: the server answered, and it will answer again once the window turns
     /// over. The interface says so rather than telling the player their network is down.
     /// </remarks>
-    public static bool IsRateLimited(Exception? exception) => exception switch
-    {
-        MultiplayerApiException api => api.IsRateLimited,
-        RetryExhaustedException exhausted => IsRateLimited(exhausted.LastError),
-        _ => false,
-    };
+    public static bool IsRateLimited(Exception? exception) =>
+        MultiplayerApiException.AnswerIn(exception)?.IsRateLimited == true;
 
     private static string RateLimited(MultiplayerApiException api)
     {

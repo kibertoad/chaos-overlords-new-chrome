@@ -78,22 +78,29 @@ public sealed record RetryPolicy(
     public TimeSpan DelayAfter(Exception? failure, int attempt)
     {
         var backoff = Backoff(attempt);
-        if (RetryAfterOf(failure) is not { } asked) return backoff;
+        if (MultiplayerApiException.AnswerIn(failure)?.RetryAfter is not { } asked) return backoff;
         var honoured = asked < MaxHonouredRetryAfter ? asked : MaxHonouredRetryAfter;
         return honoured > backoff ? honoured : backoff;
     }
 
-    private static TimeSpan? RetryAfterOf(Exception? failure) => failure switch
+    /// <summary>
+    /// How long to wait before the attempt after <paramref name="attempt"/>, or null when there is
+    /// to be none.
+    /// </summary>
+    /// <remarks>
+    /// There is none once the attempts are spent, or when the wait itself would end past
+    /// <see cref="MaxElapsed"/>. The wait is never cut short to fit: an attempt made before the
+    /// <c>Retry-After</c> a server asked for is refused again for nothing. Giving up at once is what
+    /// keeps a window closing when it says it does; a 429 asking for a minute used to carry the
+    /// two-minute <see cref="Background"/> window to three.
+    /// </remarks>
+    /// <param name="elapsed">How long this window has been open, first failure included.</param>
+    public TimeSpan? NextDelay(Exception? failure, int attempt, TimeSpan elapsed)
     {
-        MultiplayerApiException api => api.RetryAfter,
-        RetryExhaustedException exhausted => RetryAfterOf(exhausted.LastError),
-        _ => null,
-    };
-
-    /// <summary>Whether <paramref name="attempt"/> may be followed by another one.</summary>
-    internal bool AllowsAnother(int attempt, TimeSpan elapsed) =>
-        (MaxAttempts <= 0 || attempt < MaxAttempts)
-        && (MaxElapsed is null || elapsed < MaxElapsed.Value);
+        if (MaxAttempts > 0 && attempt >= MaxAttempts) return null;
+        var delay = DelayAfter(failure, attempt);
+        return MaxElapsed is { } window && elapsed + delay > window ? null : delay;
+    }
 }
 
 /// <summary>
@@ -180,10 +187,10 @@ public static class TransientFailure
             }
             catch (Exception exception) when (IsTransient(exception))
             {
-                if (!policy.AllowsAnother(attempt, started.Elapsed))
+                if (policy.NextDelay(exception, attempt, started.Elapsed) is not { } delay)
                     throw new RetryExhaustedException(attempt, started.Elapsed, exception);
                 onRetry?.Invoke(exception, attempt);
-                await Task.Delay(policy.DelayAfter(exception, attempt), cancellationToken).ConfigureAwait(false);
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
             }
         }
     }

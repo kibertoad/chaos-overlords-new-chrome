@@ -150,12 +150,12 @@ public sealed class MatchEventStream(
             }
             if (cancellationToken.IsCancellationRequested) yield break;
             attempt++;
-            if (!_policy.AllowsAnother(attempt, outage.Elapsed))
+            if (_policy.NextDelay(lastFailure, attempt, outage.Elapsed) is not { } delay)
                 throw new RetryExhaustedException(
                     attempt,
                     outage.Elapsed,
                     lastFailure ?? new IOException("the server event stream did not reconnect"));
-            await Task.Delay(_policy.DelayAfter(lastFailure, attempt), cancellationToken).ConfigureAwait(false);
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
         }
     }
 

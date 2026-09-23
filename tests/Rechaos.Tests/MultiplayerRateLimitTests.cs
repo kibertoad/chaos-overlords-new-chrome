@@ -67,6 +67,35 @@ public sealed class MultiplayerRateLimitTests
         Assert.InRange(delay, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4));
     }
 
+    /// <summary>
+    /// A wait the server asked for is kept whole, so a window with no room left for it closes now
+    /// instead of running past its end.
+    /// </summary>
+    [Fact]
+    public async Task AWaitThatWouldOutlastTheWindowEndsItInstead()
+    {
+        var policy = new RetryPolicy(
+            TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(10), 0,
+            MaxElapsed: TimeSpan.FromMinutes(2));
+        var failure = await RateLimitedAsync(TimeSpan.FromSeconds(60));
+
+        Assert.Equal(TimeSpan.FromSeconds(60), policy.NextDelay(failure, 1, TimeSpan.FromSeconds(10)));
+        Assert.Equal(TimeSpan.FromSeconds(60), policy.NextDelay(failure, 1, TimeSpan.FromSeconds(60)));
+        Assert.Null(policy.NextDelay(failure, 1, TimeSpan.FromSeconds(61)));
+    }
+
+    [Fact]
+    public void SpentAttemptsEndTheWindowWhateverTimeIsLeft()
+    {
+        var policy = new RetryPolicy(
+            TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(10), MaxAttempts: 3,
+            MaxElapsed: TimeSpan.FromMinutes(2));
+        var failure = new IOException("gone");
+
+        Assert.NotNull(policy.NextDelay(failure, 2, TimeSpan.Zero));
+        Assert.Null(policy.NextDelay(failure, 3, TimeSpan.Zero));
+    }
+
     [Fact]
     public async Task ThePlayerIsToldTheServerIsLimitingRequestsAndForHowLong()
     {
