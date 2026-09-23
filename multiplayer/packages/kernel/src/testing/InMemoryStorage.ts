@@ -158,6 +158,14 @@ export class InMemoryStorage implements MultiplayerStorage {
       Object.assign(match, definedOnly(patch))
       return true
     },
+    advanceCurrentTurn: async (matchId, number, updatedAt) => {
+      const match = this.matchRows.get(matchId)
+      if (!match || !['running', 'desynced'].includes(match.status) || match.currentTurn >= number)
+        return false
+      match.currentTurn = number
+      match.updatedAt = updatedAt
+      return true
+    },
   }
 
   readonly players: PlayerRepository = {

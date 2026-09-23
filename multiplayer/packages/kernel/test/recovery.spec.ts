@@ -328,6 +328,15 @@ describe('desync verdicts, snapshots and recovery', () => {
     expect(await h.kernel.turns.sweep()).toEqual({ sealed: 0, repaired: 0 })
   })
 
+  it('does not rewind the current turn when a late sweep reopens an older turn', async () => {
+    const { host } = await h.startedMatchOfThree()
+    const stale = await h.principalOf(host.token)
+    await h.storage.matches.advanceCurrentTurn(host.match.id, 3, h.clock.now())
+
+    expect(await h.kernel.turns.openTurn(stale.match, 1)).toBe(false)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(3)
+  })
+
   /**
    * A seat claimed a moment before the host pressed start must not become an unseated player in a
    * running match: they would hold a seat, count towards readiness, and have no slot to play.

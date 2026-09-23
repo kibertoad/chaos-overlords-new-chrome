@@ -297,10 +297,7 @@ export class TurnService {
     )
     // A desynced match counts: a repaired seal must still point `currentTurn` at the turn that is
     // actually open, even though nobody may submit to it until the pause lifts.
-    await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
-      currentTurn: number,
-      updatedAt: openedAt,
-    })
+    await this.deps.storage.matches.advanceCurrentTurn(match.id, number, openedAt)
     if (created) {
       await this.publisher.publish(match.id, {
         type: 'turn.opened',

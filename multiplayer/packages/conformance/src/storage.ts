@@ -160,6 +160,22 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(stored?.hostPlayerId).toBe(match.hostPlayerId)
     })
 
+    it('advances the current turn atomically without accepting a stale lower turn', async () => {
+      const match = matchFixture({ status: 'running', currentTurn: 1 })
+      await storage.matches.create(match)
+      const at = new Date('2026-03-02T00:00:00.000Z')
+      expect(await storage.matches.advanceCurrentTurn(match.id, 2, at)).toBe(true)
+      expect(await storage.matches.advanceCurrentTurn(match.id, 1, new Date())).toBe(false)
+      expect((await storage.matches.get(match.id))?.currentTurn).toBe(2)
+      expect((await storage.matches.get(match.id))?.updatedAt).toEqual(at)
+
+      await Promise.all([
+        storage.matches.advanceCurrentTurn(match.id, 3, new Date()),
+        storage.matches.advanceCurrentTurn(match.id, 4, new Date()),
+      ])
+      expect((await storage.matches.get(match.id))?.currentTurn).toBe(4)
+    })
+
     it('updates runtime game metadata without changing the lobby policy', async () => {
       const match = matchFixture({ status: 'running' })
       await storage.matches.create(match)
