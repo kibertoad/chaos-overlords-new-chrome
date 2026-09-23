@@ -1,7 +1,7 @@
 # Audio and video
 
 Status: active media map
-Last updated: 2026-09-13
+Last updated: 2026-09-23
 
 All files described here come from a user-owned, extractor-verified original
 asset pack. None are distributed by this repository.
@@ -26,11 +26,13 @@ absent in the source table. Confirmed ownership is:
 | 4 | Rejected selection and attempts to move beyond a page boundary |
 | 6 | Unread Comlink entry and four-second reminder cadence |
 | 7/8 | Planning-clock warnings |
-| 9 | Loaded but no supported executable call site has been proven |
+| 9 | Turn-start cue after the initial turn in local and legacy-network play; calls the lower playback helper directly |
 
 Effects use an independent 0-10 preference, default 6, and the recovered
-amplitude conversion. Remaining native overlap/interruption behavior and any
-unmapped call sites remain evidence work.
+amplitude conversion. The original's `PlaySoundA` call omits `SND_NOSTOP`,
+allowing a new effect to interrupt the previous one. The client uses a single
+effect voice for general and combat cues, separate from music. Native timing,
+priority handling, and any unmapped call sites remain evidence work.
 
 ## Music
 

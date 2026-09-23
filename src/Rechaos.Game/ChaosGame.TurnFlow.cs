@@ -39,15 +39,18 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
+        var previousTurn = _state.Coordinator.Turn;
         if (_state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
+            // Starting outside Command (a load mid-phase) can still roll into the next turn, which
+            // earns the same autosave and cue as the ordinary advance below.
             GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             _message = string.Empty;
+            CompleteTurnAdvance(previousTurn);
             return;
         }
 
-        var previousTurn = _state.Coordinator.Turn;
         var advance = GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
         QueueHotSeatEliminations(advance);
         _diagnostics?.Write("planning.finished", new Dictionary<string, string?>
@@ -58,7 +61,7 @@ public sealed partial class ChaosGame
             ["phase"] = _state.Coordinator.Phase.ToString()
         });
         _message = string.Empty;
-        if (_state.Coordinator.Turn != previousTurn) WriteAutoSave();
+        CompleteTurnAdvance(previousTurn);
 
         if (_state.Outcome is not null)
             _screens.Show(ClientScreen.Endgame);
@@ -87,6 +90,31 @@ public sealed partial class ChaosGame
     {
         if (_state is null) return;
         _autoSave.Capture(_state);
+    }
+
+    /// <summary>Autosaves and cues the turn that has just begun, if one has.</summary>
+    private void CompleteTurnAdvance(int previousTurn)
+    {
+        if (_state is null || _state.Coordinator.Turn == previousTurn) return;
+        WriteAutoSave();
+        PlayTurnStartCue(previousTurn);
+    }
+
+    /// <summary>Plays the recovered later-turn cue when a local turn has just begun.</summary>
+    /// <remarks>
+    /// Once every local human is out, the computers play on at one turn per frame; restarting the
+    /// cue on each of those frames would only stutter its first few milliseconds, so it waits for a
+    /// turn someone is still planning.
+    /// </remarks>
+    private void PlayTurnStartCue(int previousTurn)
+    {
+        if (_state is not { } state) return;
+        var humanPlaying = state.Players.Any(player =>
+            player.Setup.Controller == PlayerController.Human
+            && player.Status == PlayerStatus.Active);
+        if (AudioRouting.TurnStartSound(previousTurn, state.Coordinator.Turn,
+                state.Outcome is not null, humanPlaying) is { } cue)
+            PlayGeneralSound(cue);
     }
 
     /// <summary>
@@ -120,6 +148,7 @@ public sealed partial class ChaosGame
             return;
         }
         var previousActivePlayer = _state.Coordinator.ActivePlayer;
+        var previousTurn = _state.Coordinator.Turn;
         var completedTurn = _state.Coordinator.Phase == TurnPhase.PlayerElimination;
         var transition = _state.Coordinator.Phase switch
         {
@@ -131,7 +160,11 @@ public sealed partial class ChaosGame
             _ => throw new InvalidOperationException("Unknown turn phase.")
         };
         _message = string.Empty;
-        if (completedTurn) WriteAutoSave();
+        if (completedTurn)
+        {
+            WriteAutoSave();
+            PlayTurnStartCue(previousTurn);
+        }
         if (_state.Outcome is not null)
             _screens.Show(ClientScreen.Endgame);
         else if (transition.ActivePlayer is not null && transition.ActivePlayer != previousActivePlayer)
@@ -213,7 +246,7 @@ public sealed partial class ChaosGame
         if (!acted) return;
         _selectedGangIndex = 0;
         _message = string.Empty;
-        if (_state.Coordinator.Turn != startingTurn) WriteAutoSave();
+        CompleteTurnAdvance(startingTurn);
         if (_state.Outcome is not null)
         {
             _screens.Show(ClientScreen.Endgame);

@@ -671,10 +671,13 @@ public static class ComlinkSendLayout
     /// <summary>
     /// PX00129 source used by native caret helper <c>0x0046023c</c>. The normal
     /// glyph strip is row zero; the same glyphs at y=441 carry the inverse cell.
+    /// Only the original strip has that inverse row, so the supplemental glyphs
+    /// drawn after it (the status console's brackets) have no caret cell.
     /// </summary>
     public static Rectangle CaretSource(char character, bool inverse)
     {
-        if (!OriginalFontLayout.TryGlyph(character, out var glyph))
+        if (!OriginalFontLayout.TryGlyph(character, out var glyph)
+            || glyph.X >= OriginalFontLayout.AtlasBounds.Width)
             throw new ArgumentOutOfRangeException(nameof(character));
         return new Rectangle(glyph.X, inverse ? InverseCaretGlyphY : glyph.Y,
             glyph.Width, glyph.Height);

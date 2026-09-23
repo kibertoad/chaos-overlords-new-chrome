@@ -139,14 +139,31 @@ public sealed partial class ChaosGame
     private void TryPlaySound(SoundEffect sound)
     {
         if (_soundEffectVolumeLevel == 0) return;
+        SoundEffectInstance? next = null;
         try
         {
-            sound.Play(AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel), 0, 0);
+            next = sound.CreateInstance();
+            next.Volume = AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel);
+            // Native effects go through PlaySoundA without SND_NOSTOP. Its next sound
+            // interrupts the preceding one, while MCI music is a separate path.
+            StopEffectVoice();
+            next.Play();
+            _activeEffectVoice = next;
         }
         catch
         {
+            try { next?.Dispose(); } catch { }
             // Optional presentation audio must never interrupt gameplay.
         }
+    }
+
+    private void StopEffectVoice()
+    {
+        var voice = _activeEffectVoice;
+        _activeEffectVoice = null;
+        if (voice is null) return;
+        try { voice.Stop(); } catch { }
+        try { voice.Dispose(); } catch { }
     }
 
     private void CaptureNewCombatAnimations()

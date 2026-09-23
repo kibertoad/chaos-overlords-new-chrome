@@ -66,7 +66,7 @@ are grouped by subsystem, each group names the document that holds it, and rows
 are in ID order.
 
 <!-- doc-index:begin finding-index -->
-107 findings.
+108 findings.
 
 **Executable image** — [executable-and-platform.md](original-internals/executable-and-platform.md)
 
@@ -269,6 +269,7 @@ are in ID order.
 |---|---|
 | [BIN-MUSIC-001](original-internals/audio-and-video.md#bin-music-001---cd-track-programs-and-lifecycle) | CD track programs and lifecycle |
 | [BIN-SOUND-001](original-internals/audio-and-video.md#bin-sound-001---effect-slots-volume-and-setup-cues) | effect slots, volume and setup cues |
+| [BIN-SOUND-002](original-internals/audio-and-video.md#bin-sound-002---turn-start-cue-and-effect-interruption) | turn-start cue and effect interruption |
 <!-- doc-index:end -->
 
 ## Remaining static-analysis queue
