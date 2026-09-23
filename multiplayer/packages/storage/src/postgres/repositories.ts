@@ -303,9 +303,8 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
   return {
     /**
      * An insert fed by a select over the match row, so "the match is still in the lobby" is tested
-     * by the same statement that writes the player. The seat counter was claimed a moment earlier
-     * and the match may have started since; without this the player would land in a running match
-     * that had already seated its roster, holding a seat nobody can play.
+     * by the same statement that writes the player. A row lock makes this guard hold through the
+     * insert under READ COMMITTED, including when the match starts concurrently.
      */
     async create(player) {
       const rows = await db
@@ -314,35 +313,48 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
           db
             .select(playerValues(player))
             .from(matches)
-            .where(and(eq(matches.id, player.matchId), eq(matches.status, 'lobby'))),
+            .where(and(eq(matches.id, player.matchId), eq(matches.status, 'lobby')))
+            .for('share'),
         )
         .returning({ id: players.id })
       return rows.length === 1
     },
     async createLate(player) {
-      const occupied = db
-        .select({ id: players.id })
-        .from(players)
-        .where(and(eq(players.matchId, player.matchId), eq(players.slot, player.slot)))
-      const rows = await db
-        .insert(players)
-        .select(
-          db
-            .select(playerValues(player))
-            .from(matches)
-            .where(
-              and(
-                eq(matches.id, player.matchId),
-                eq(matches.status, 'running'),
-                notExists(occupied),
-                // Capacity in the same statement as the insert; see the SQLite twin.
-                sql`(select count(*) from ${players} where ${players.matchId} = ${player.matchId}) < ${matches.maxPlayers}`,
+      // Lock first, then run the guarded insert as a new READ COMMITTED statement. Putting the
+      // count in the locking SELECT would still let two joins evaluate it against the same old
+      // snapshot. `no key update` serializes late joins without blocking the foreign-key checks
+      // every other insert under this match takes.
+      return db.transaction(async (tx) => {
+        const locked = await tx
+          .select({ id: matches.id })
+          .from(matches)
+          .where(and(eq(matches.id, player.matchId), eq(matches.status, 'running')))
+          .for('no key update')
+        if (locked.length === 0) return false
+        const occupied = tx
+          .select({ id: players.id })
+          .from(players)
+          .where(and(eq(players.matchId, player.matchId), eq(players.slot, player.slot)))
+        const rows = await tx
+          .insert(players)
+          .select(
+            tx
+              .select(playerValues(player))
+              .from(matches)
+              .where(
+                and(
+                  eq(matches.id, player.matchId),
+                  eq(matches.status, 'running'),
+                  notExists(occupied),
+                  // Capacity in the same statement as the insert; see the SQLite twin.
+                  sql`(select count(*) from ${players} where ${players.matchId} = ${player.matchId}) < ${matches.maxPlayers}`,
+                ),
               ),
-            ),
-        )
-        .onConflictDoNothing()
-        .returning({ id: players.id })
-      return rows.length === 1
+          )
+          .onConflictDoNothing()
+          .returning({ id: players.id })
+        return rows.length === 1
+      })
     },
     async get(id) {
       return firstOrNull((await db.select().from(players).where(eq(players.id, id))).map(toPlayer))
@@ -431,7 +443,8 @@ function postgresTurnOrderMethods(
           .from(turns)
           .where(
             and(eq(turns.matchId, matchId), eq(turns.number, number), eq(turns.status, 'open')),
-          ),
+          )
+          .for('share'),
       )
       const rows = await db
         .update(turnOrders)
@@ -590,7 +603,8 @@ function postgresTurnRepository(db: PostgresDatabase): TurnRepository {
                 eq(turns.number, report.turn),
                 inArray(turns.status, ['sealed', 'desynced']),
               ),
-            ),
+            )
+            .for('share'),
         )
         .onConflictDoUpdate({
           target: [turnReports.matchId, turnReports.turn, turnReports.playerId],

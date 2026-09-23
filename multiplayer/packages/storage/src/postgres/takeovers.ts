@@ -89,7 +89,10 @@ export function postgresTakeoverRepository(db: PostgresDatabase): TakeoverReposi
                 eq(takeoverPrompts.matchId, matchId),
                 eq(takeoverPrompts.playerId, targetPlayerId),
               ),
-            ),
+            )
+            // Holds "the prompt is open" through the insert under READ COMMITTED: a prompt delete
+            // that commits while this waits is seen, rather than voting against an old snapshot.
+            .for('share'),
         )
         .onConflictDoUpdate({
           target: [
