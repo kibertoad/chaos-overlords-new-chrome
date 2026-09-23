@@ -56,11 +56,7 @@ public sealed partial class ChaosGame
     private string OnlineCountdown()
     {
         if (_online.DeadlineAt is not { } deadline) return string.Empty;
-        // Against the SERVER's clock. The deadline is an instant on it, and a machine thirty
-        // seconds fast on a thirty-second timer showed the turn expiring before the server sealed
-        // it, while one that was slow was sealed on with time still on the screen.
-        var offset = _session?.ServerTimeOffset ?? TimeSpan.Zero;
-        var remaining = deadline - (DateTimeOffset.UtcNow + offset);
+        var remaining = deadline - OnlineServerNow();
         if (remaining <= TimeSpan.Zero) return "SEALING";
         // Built when the second changes, not every frame: the string is identical in between, and
         // this runs in the draw loop of every frame a timed online turn is on screen.
@@ -72,6 +68,17 @@ public sealed partial class ChaosGame
         }
         return _onlineCountdownText;
     }
+
+    /// <summary>
+    /// The time now on the SERVER's clock, which every online deadline is an instant on.
+    /// </summary>
+    /// <remarks>
+    /// A machine thirty seconds fast on a thirty-second timer showed the turn expiring before the
+    /// server sealed it, while one that was slow was sealed on with time still on the screen. The
+    /// footer and the countdown bar both read this, so the two can never disagree.
+    /// </remarks>
+    private DateTimeOffset OnlineServerNow() =>
+        DateTimeOffset.UtcNow + (_session?.ServerTimeOffset ?? TimeSpan.Zero);
 
     /// <summary>The whole second <see cref="_onlineCountdownText"/> was built for.</summary>
     private int _onlineCountdownSeconds = -1;

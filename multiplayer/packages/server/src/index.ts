@@ -13,8 +13,12 @@ export {
   createSseResponse,
   type EventStreamSource,
   formatEvent,
+  type HubCloseReason,
   isReadableEvent,
+  isUnexpectedClose,
+  type SseCloseReason,
 } from './sse/createSseResponse'
+export { logStreamClosed } from './sse/closeLog'
 export { type EventFrame, MatchLog } from './sse/MatchLog'
 export { isActiveMember } from './sse/membership'
 export {

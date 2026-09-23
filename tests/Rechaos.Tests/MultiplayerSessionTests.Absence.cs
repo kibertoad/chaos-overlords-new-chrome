@@ -5,6 +5,7 @@ using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Session;
 using Xunit;
+using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
 namespace Rechaos.Tests;
 
@@ -129,6 +130,46 @@ public sealed partial class MultiplayerSessionTests
 
         Assert.Equal(1, resolved.Turn);
         Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+    }
+
+    /// <summary>
+    /// A departed seat is waited on for as long as the vote on it is open.
+    /// </summary>
+    /// <remarks>
+    /// Leaving does not decide the seat, the vote does, and the server holds the turn for it until
+    /// then. Counting the seat out had the host read "ALL PLAYERS READY" over a turn the server was
+    /// still holding, and the watchdog resynchronise every grace period until the vote closed.
+    /// </remarks>
+    [Fact]
+    public async Task KeepsWaitingOnADepartedSeatWhileItsVoteIsOpen()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+        IReadOnlyList<PlayerView> afterLeaving =
+        [
+            Roster[0],
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false),
+        ];
+        server.Answer(
+            HttpMethod.Get,
+            $"/matches/{MatchId}",
+            new MatchDetail(View() with { Players = afterLeaving }, "CODE1234", "p1"));
+
+        server.Events.Write(Frame(8, "lobby.playerLeft", """{"playerId":"p2","reason":"left"}"""));
+        await WaitFor<MultiplayerNotice.MatchUpdated>(session);
+        server.Events.Write(Frame(9, "match.takeoverVoteRequested", """{"playerId":"p2","turn":1}"""));
+        await WaitFor<MultiplayerNotice.TakeoverVoteChanged>(session);
+        server.Events.Write(Frame(10, "turn.readiness", """{"turn":1,"playerId":"p1","ready":true}"""));
+        var held = await WaitFor<MultiplayerNotice.ReadinessChanged>(session);
+
+        Assert.Equal(1, held.Ready);
+        Assert.Equal([0, 1], held.AwaitedSlots.Order());
+
+        server.Events.Write(Frame(11, "match.playerTakenOver", """{"playerId":"p2"}"""));
+        var released = await WaitFor<MultiplayerNotice.ReadinessChanged>(session);
+
+        Assert.Equal([0], released.AwaitedSlots.Order());
     }
 
     /// <summary>

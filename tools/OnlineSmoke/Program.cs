@@ -135,6 +135,14 @@ public static class Program
             "the first player returning to an empty match did not become host");
         Console.WriteLine("rejoined the AI-held seat and inherited host control");
 
+        // The returning player is asked about the host's empty seat, and the open turn waits on
+        // that seat until the vote decides it, exactly as the game's modal makes them answer.
+        await guestMatch.VoteOnTakeoverAsync(
+            host.Player.Id,
+            new TakeoverVoteRequest(TakeoverVoteRequestDecision.Computer),
+            CancellationToken.None);
+        await WaitForPlayer(guestMatch, host.Player.Id, WirePlayerStatus.Computer);
+
         var recoveryTurn = turns + 1;
         var recoveredPlan = SpeculativeTurn.For(guestState, definitions, guestSession.Slot);
         Hide(recoveredPlan);

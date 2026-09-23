@@ -86,11 +86,21 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// The seats the server is still waiting on before readiness alone seals a turn.
     /// </summary>
     /// <remarks>
-    /// Active seats plus temporarily absent seats whose vote still says to wait. Explicit leavers
-    /// and approved computer seats are excluded. Kept from the match view, which the pump refreshes whenever the roster
-    /// changes, and only ever read for what is on screen — nothing about the turn depends on it.
+    /// Active seats plus temporarily absent seats whose vote still says to wait. A seat that left is
+    /// added on top by <see cref="AwaitedSlots"/> while its absence vote is open, and approved
+    /// computer seats are excluded. Kept from the match view, which the pump refreshes whenever the
+    /// roster changes, and only ever read for what is on screen — nothing about the turn depends on it.
     /// </remarks>
     private HashSet<int> _awaitedSlots;
+
+    /// <summary>The seated players the roster last said had left the match.</summary>
+    /// <remarks>
+    /// The server waits on such a seat for as long as the vote on it is open: leaving does not
+    /// decide the seat, the vote does. Counting it out here instead had the host's tally read
+    /// "ALL PLAYERS READY" over a turn the server was still holding, and the watchdog resynchronise
+    /// every grace period until the vote closed.
+    /// </remarks>
+    private HashSet<string> _departedPlayerIds = new(StringComparer.Ordinal);
 
     private bool _uploadInitialSnapshot;
 
@@ -705,7 +715,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         // A seat that has gone quiet is also no longer one the turn is waiting on, so drop any
         // readiness it had left behind rather than counting it towards a total it is not part of.
         _readyPlayerIds.RemoveWhere(
-            ready => !view.Players.Any(player => player.Id == ready && IsAwaitedHuman(player)));
+            ready => !view.Players.Any(player => player.Id == ready && IsAwaited(player)));
         // What is on screen changes when a seat is vacated, not only when somebody toggles
         // readiness, so it is said here too — otherwise "READY 2/4" keeps a seat count that is no
         // longer true, and a vacated seat keeps its WAIT, until the next player happens to toggle.
@@ -726,6 +736,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             .Where(player => MatchBootstrapFactory.IsSeated(player) && IsAwaitedHuman(player))
             .Select(player => player.Slot)
             .ToHashSet();
+        _departedPlayerIds = view.Players
+            .Where(player => MatchBootstrapFactory.IsSeated(player) && player.Status == WirePlayerStatus.Left)
+            .Select(player => player.Id)
+            .ToHashSet(StringComparer.Ordinal);
         return view;
     }
 
@@ -762,7 +776,17 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// whenever it next draws; handing out the live set would let a frame see a roster from after
     /// the tally it is drawn beside.
     /// </remarks>
-    private HashSet<int> AwaitedSlots() => [.. _awaitedSlots];
+    private HashSet<int> AwaitedSlots()
+    {
+        var slots = new HashSet<int>(_awaitedSlots);
+        foreach (var playerId in _takeoverVotes.Keys)
+        {
+            if (_departedPlayerIds.Contains(playerId)
+                && _slotsByPlayerId.TryGetValue(playerId, out var slot))
+                slots.Add(slot);
+        }
+        return slots;
+    }
 
     /// <summary>
     /// One protocol call, retried while the failure is only this attempt's.
@@ -916,6 +940,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
 
     private static bool IsAwaitedHuman(PlayerView player) =>
         player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending;
+
+    /// <summary>Whether the server waits on this seat; see <see cref="_departedPlayerIds"/>.</summary>
+    private bool IsAwaited(PlayerView player) =>
+        IsAwaitedHuman(player)
+        || (player.Status == WirePlayerStatus.Left && _takeoverVotes.ContainsKey(player.Id));
 
     /// <summary>
     /// An ISO instant, or null when there is none to read.

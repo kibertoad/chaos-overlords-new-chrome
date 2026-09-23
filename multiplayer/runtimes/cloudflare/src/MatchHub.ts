@@ -1,4 +1,5 @@
 import {
+  EARLY_DEADLINE_RETRY_MS,
   isDomainError,
   type MultiplayerStorage,
   type PersistedEvent,
@@ -8,6 +9,7 @@ import {
   DEFAULT_SERVER_CONFIG,
   isActiveMember,
   LocalEventHub,
+  logStreamClosed,
 } from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import type { DurableObjectState } from '@cloudflare/workers-types'
@@ -18,9 +20,32 @@ import { buildKernel, HUB_PATHS, workerLogger } from './kernel'
 interface PendingDeadline {
   matchId: string
   turn: number
+  /** When the alarm was set for. Absent on keys written before it was recorded. */
+  dueAtMs?: number
 }
 
 const DEADLINE_KEY = 'deadline'
+
+/**
+ * Where a deadline the kernel re-arms from inside an alarm may be set for.
+ *
+ * An alarm that the kernel finds early is re-armed for the same turn, floored against the object's
+ * `Date.now()`. That floor means nothing to the alarm scheduler when the object's clock lags it:
+ * the scheduler has already passed the time the alarm fired at, so a deadline at or before that
+ * time fires again at once, and again, building a kernel and reading D1 each time until the
+ * object's clock catches up. Having fired proves the scheduler's clock reached `fired.dueAtMs`, so
+ * the retry goes at least the kernel's retry interval past that, which bounds the rate on the
+ * scheduler's own clock. Any other turn's deadline (the successor a seal opened) is set as asked.
+ */
+function retryFloor(
+  fired: PendingDeadline,
+  next: { matchId: string; turn: number },
+  dueAtMs: number,
+): number {
+  const sameTurn = next.matchId === fired.matchId && next.turn === fired.turn
+  if (!sameTurn || fired.dueAtMs === undefined) return dueAtMs
+  return Math.max(dueAtMs, fired.dueAtMs + EARLY_DEADLINE_RETRY_MS)
+}
 
 /**
  * One instance per match. It holds the open event streams of that match (so a notification from
@@ -47,6 +72,7 @@ export class MatchHub {
           workerLogger.info('answered an already abandoned event stream', { matchId, playerId }),
         revalidate: (matchId, playerId) =>
           isActiveMember(this.repositories.players, matchId, playerId),
+        closed: logStreamClosed(workerLogger),
       },
     )
   }
@@ -102,7 +128,8 @@ export class MatchHub {
       notifier: { notify: async (event) => this.hub.notify(event) },
       streams: this.hub,
       scheduler: {
-        schedule: async (input) => this.arm(input.matchId, input.turn, input.dueAt.getTime()),
+        schedule: async (input) =>
+          this.arm(input.matchId, input.turn, retryFloor(pending, input, input.dueAt.getTime())),
       },
     })
     const sealed = await kernel.turns.trySeal(pending.matchId, pending.turn, 'deadline')
@@ -112,7 +139,7 @@ export class MatchHub {
 
   /** Record which turn the alarm is for, then set the alarm. One deadline is pending at a time. */
   private async arm(matchId: string, turn: number, dueAtMs: number): Promise<void> {
-    await this.state.storage.put<PendingDeadline>(DEADLINE_KEY, { matchId, turn })
+    await this.state.storage.put<PendingDeadline>(DEADLINE_KEY, { matchId, turn, dueAtMs })
     await this.state.storage.setAlarm(dueAtMs)
   }
 

@@ -6,16 +6,17 @@ import {
 } from '@chaos-overlords/contracts'
 import {
   activePlayers,
-  humanParticipants,
   isInProgress,
   type Match,
+  type Player,
   type SealedSlot,
 } from '../domain/entities'
 import { ConflictError, ValidationError } from '../domain/errors'
 import { hashOrderDocument, hashOrderSet } from '../logic/crypto'
 import {
-  allActiveReady,
+  allAwaitedReady,
   assignSlots,
+  awaitedSeats,
   evaluateConsensus,
   sealedByDeadline,
   turnDeadline,
@@ -31,6 +32,12 @@ export type SealTrigger = 'ready' | 'deadline'
 
 /** Turns are numbered from 1; 0 is the lobby's `currentTurn`, before any turn exists. */
 export const FIRST_TURN = 1
+
+/**
+ * The soonest an early deadline timer is retried; see `rearmEarlyDeadline`. Exported so a runtime
+ * whose timer runs on a clock of its own can apply the same floor against that clock.
+ */
+export const EARLY_DEADLINE_RETRY_MS = 250
 
 /**
  * How recently a match must have been touched for the ordinary sweep pass to visit it.
@@ -176,7 +183,10 @@ export class TurnService {
     const turn = await this.deps.storage.turns.get(matchId, number)
     if (turn?.status !== 'open') return false
     if (trigger === 'deadline') {
-      if (turn.deadlineAt === null || turn.deadlineAt.getTime() > this.deps.clock.now().getTime()) {
+      if (turn.deadlineAt === null) return false
+      const now = this.deps.clock.now()
+      if (turn.deadlineAt.getTime() > now.getTime()) {
+        await this.rearmEarlyDeadline(matchId, number, turn.deadlineAt, now)
         return false
       }
       // A second guard behind `pauseAbandonedMatch`: a deadline that survived it, or one armed
@@ -187,11 +197,11 @@ export class TurnService {
         return false
       }
     } else {
-      const [players, orders] = await Promise.all([
-        this.deps.storage.players.listByMatch(matchId),
+      const [awaited, orders] = await Promise.all([
+        this.awaitedRoster(matchId),
         this.deps.storage.turns.listOrderSummaries(matchId, number),
       ])
-      if (!allActiveReady(players, orders)) return false
+      if (!allAwaitedReady(awaited, orders)) return false
     }
     const won = await this.deps.storage.turns.transition(matchId, number, ['open'], {
       status: 'sealed',
@@ -201,6 +211,62 @@ export class TurnService {
     this.deps.logger.info('turn sealed', { matchId, turn: number, trigger })
     await this.completeSeal(match, number)
     return true
+  }
+
+  /**
+   * Put a deadline timer that fired before its deadline back on the clock.
+   *
+   * A timer is not an exact instrument. `setTimeout` can fire a millisecond early by the wall
+   * clock, and a Durable Object's alarm runs on a different machine from the isolate that computed
+   * the deadline, so any skew between the two clocks reads as an early alarm. Refusing the seal is
+   * right — sealing before `deadlineAt` would misjudge who missed the turn — but refusing it and
+   * doing nothing else spent the only timer the turn had. The turn then waited on the sweep: 15
+   * seconds on Node and up to five minutes on Cloudflare's cron, with every client showing an
+   * expired clock the whole time. The retry is floored against this clock, which bounds the poll
+   * rate only while the timer runs on the same clock. A runtime whose timer keeps its own time
+   * (Cloudflare's alarms) has to floor the retry against that clock as well; see `MatchHub.arm`.
+   */
+  private async rearmEarlyDeadline(
+    matchId: string,
+    number: number,
+    deadlineAt: Date,
+    now: Date,
+  ): Promise<void> {
+    const dueAt = new Date(Math.max(deadlineAt.getTime(), now.getTime() + EARLY_DEADLINE_RETRY_MS))
+    if (!(await this.armDeadline(matchId, number, dueAt))) return
+    // Both runtimes keep one pending deadline per match. A seal on readiness that ran between this
+    // call's read of the turn and the schedule above has already armed its successor's deadline,
+    // and the schedule above just replaced it with a timer for a turn that is no longer open. Put
+    // the live turn's timer back. A successor that opens after this read arms itself afterwards.
+    const match = await this.deps.storage.matches.get(matchId)
+    if (match?.status !== 'running' || match.currentTurn === number) return
+    const live = await this.deps.storage.turns.get(matchId, match.currentTurn)
+    if (live?.status === 'open' && live.deadlineAt !== null) {
+      await this.armDeadline(matchId, live.number, live.deadlineAt)
+    }
+  }
+
+  /**
+   * Hand a deadline to the scheduler, logging rather than raising if it cannot be reached. Returns
+   * whether it was armed.
+   *
+   * The deadline is durable on the turn row and `listExpiredOpen` is the safety net behind every
+   * timer, so a scheduler that cannot be reached costs at most one sweep interval of lateness. It
+   * used to cost the submitter a 500 on a seal that had already completed, which left them retrying
+   * a request the server had in fact finished.
+   */
+  private async armDeadline(matchId: string, turn: number, dueAt: Date): Promise<boolean> {
+    try {
+      await this.deps.scheduler.schedule({ matchId, turn, dueAt })
+      return true
+    } catch (error) {
+      this.deps.logger.warn('could not arm a turn deadline; the sweep will seal it', {
+        matchId,
+        turn,
+        error: String(error),
+      })
+      return false
+    }
   }
 
   /**
@@ -243,9 +309,9 @@ export class TurnService {
           await this.openTakeoverPrompt(match.id, player.id, number)
         }
       }
-      const currentPlayers = await this.deps.storage.players.listByMatch(match.id)
+      // A departed seat the turn waited on counts: the seal needed its ready orders to happen.
       const slotOf = new Map(
-        humanParticipants(currentPlayers).map((player) => [player.id, player.slot]),
+        (await this.awaitedRoster(match.id)).map((player) => [player.id, player.slot]),
       )
       const sealedSlots: SealedSlot[] = []
       const entries: Array<{ slot: number; ordersHash: string }> = []
@@ -318,22 +384,23 @@ export class TurnService {
   }
 
   /**
-   * Opens turn `number` for every active player and arms its deadline. Idempotent: the insert is
+   * Opens turn `number` for every awaited seat and arms its deadline. Idempotent: the insert is
    * refused if the turn already exists, and only the caller that created it announces it. Returns
    * whether this call created the turn.
    */
   async openTurn(match: Match, number: number): Promise<boolean> {
     const openedAt = this.deps.clock.now()
-    const roster = await this.deps.storage.players.listByMatch(match.id)
-    const players = humanParticipants(roster)
+    const openPrompts = await this.deps.storage.takeovers.listOpenPrompts(match.id)
+    const players = awaitedSeats(
+      await this.deps.storage.players.listByMatch(match.id),
+      new Set(openPrompts),
+    )
     // An absence decision owns the screen on every remaining client. Starting the successor's
     // clock behind that modal would spend planning time nobody can use, so an open vote opens the
     // turn paused. The clock is restarted when the last absent seat returns or becomes computer
     // controlled.
-    const hasAbsenceVote = await this.deps.storage.takeovers.hasOpenPrompts(match.id)
-    const deadlineAt = hasAbsenceVote
-      ? null
-      : turnDeadline(openedAt, match.settings.turnTimerSeconds)
+    const deadlineAt =
+      openPrompts.length > 0 ? null : turnDeadline(openedAt, match.settings.turnTimerSeconds)
     const turn = {
       matchId: match.id,
       number,
@@ -359,7 +426,7 @@ export class TurnService {
       // joiner's post-commit pass sees the seat and creates its orders row. Only seats the first
       // read missed need a row; everyone else got one above.
       const asked = new Set(players.map((player) => player.id))
-      const missed = humanParticipants(await this.deps.storage.players.listByMatch(match.id))
+      const missed = (await this.awaitedRoster(match.id))
         .map((player) => player.id)
         .filter((id) => !asked.has(id))
       if (missed.length > 0) await this.deps.storage.turns.open(turn, missed)
@@ -373,21 +440,18 @@ export class TurnService {
     // has already moved past would otherwise replace the live turn's timer with one for a sealed
     // turn, leaving the live deadline to the next sweep.
     if (deadlineAt && (created || advanced)) {
-      try {
-        await this.deps.scheduler.schedule({ matchId: match.id, turn: number, dueAt: deadlineAt })
-      } catch (error) {
-        // The deadline is durable on the turn row and `listExpiredOpen` is the safety net behind
-        // every timer, so a scheduler that cannot be reached costs at most one sweep interval of
-        // lateness. It used to cost the submitter a 500 on a seal that had already completed,
-        // which left them retrying a request the server had in fact finished.
-        this.deps.logger.warn('could not arm a turn deadline; the sweep will seal it', {
-          matchId: match.id,
-          turn: number,
-          error: String(error),
-        })
-      }
+      await this.armDeadline(match.id, number, deadlineAt)
     }
     return created
+  }
+
+  /** The seats the open turn waits on, as the roster and the open absence votes now stand. */
+  private async awaitedRoster(matchId: string): Promise<Player[]> {
+    const [players, openPrompts] = await Promise.all([
+      this.deps.storage.players.listByMatch(matchId),
+      this.deps.storage.takeovers.listOpenPrompts(matchId),
+    ])
+    return awaitedSeats(players, new Set(openPrompts))
   }
 
   /**

@@ -153,6 +153,9 @@ public sealed partial class MultiplayerMatchSession
         _notices.Enqueue(new MultiplayerNotice.Resumed(view, state, submission, turn));
         foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
             PublishTakeoverVote(vote);
+        // The interface counts the seats from the roster alone, which cannot see a departed seat the
+        // server is still holding the turn for while the vote on it is open.
+        if (_takeoverVotes.Keys.Any(_departedPlayerIds.Contains)) PublishReadiness();
         // Last, on a state that is now caught up, the caller resolves a pause the history carried
         // — adopt a repair somebody posted while this client was away, or post one if this client
         // turns out to be holding the state the others agreed on. Until that existed, every
