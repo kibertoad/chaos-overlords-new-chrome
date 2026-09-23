@@ -120,6 +120,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly IndexedDoubleClickTracker _sectorSiteClicks = new();
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
+    private readonly IndexedDoubleClickTracker _equipmentPortraitClicks = new();
     private readonly IndexedDoubleClickTracker _gangEquipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _hirePortraitClicks = new();
     private readonly short[] _playerPortraits = Enumerable.Range(0, MatchLimits.PlayerCount)

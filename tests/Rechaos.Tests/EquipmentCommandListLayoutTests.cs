@@ -16,6 +16,23 @@ public sealed class EquipmentCommandListLayoutTests
     }
 
     [Fact]
+    public void HeldItemBoxesSitBeneathThePortraitAboveCancel()
+    {
+        var portrait = EquipmentCommandLayout.Portrait;
+        Assert.Equal(3, EquipmentCommandLayout.EquippedItemCount);
+        for (var slot = 0; slot < EquipmentCommandLayout.EquippedItemCount; slot++)
+        {
+            var box = EquipmentCommandLayout.EquippedItem(slot);
+            Assert.True(box.Y >= portrait.Bottom);
+            Assert.True(box.Bottom < EquipmentCommandLayout.Cancel.Y);
+            Assert.InRange(box.X, portrait.X, portrait.Right - box.Width);
+        }
+        Assert.Equal(portrait.X, EquipmentCommandLayout.EquippedItem(0).X);
+        Assert.Equal(portrait.Right, EquipmentCommandLayout.EquippedItem(2).Right);
+        Assert.Throws<ArgumentOutOfRangeException>(() => EquipmentCommandLayout.EquippedItem(3));
+    }
+
+    [Fact]
     public void OriginalListTargetsUseSixteenNinePixelRows()
     {
         Assert.Equal(16, EquipmentCommandLayout.VisibleItemCount);

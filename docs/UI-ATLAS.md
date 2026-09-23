@@ -352,6 +352,12 @@ silently exposed as compatible online modes.
   miscellaneous; the list contains only legal items in the selected category.
   Equipment is not expanded
   into separate entries in the top-level action menu.
+  As recreation QoL, the purchase overlay draws the gang's held weapon, armor
+  and miscellaneous items in a row of three 20-by-20 boxes under its portrait
+  whenever the gang holds at least one item, and double-clicking the portrait
+  on either overlay opens `PX05000` for that gang; closing it returns to the
+  same overlay and selection, with gang cycling disabled so the order's gang
+  cannot change underneath it.
 - `PX05000` is the gang-information overlay. Double-clicking an owned gang card
   or a stationary Hire-dock portrait opens it over the current view. Hire art is
   not promoted to a drag token until the pointer moves beyond the click
