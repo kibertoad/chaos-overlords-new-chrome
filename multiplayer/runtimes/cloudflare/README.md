@@ -18,8 +18,9 @@ Object namespace, whose migration lineage starts at tag `v1` with `new_sqlite_cl
 The D1 migration lineages ship in `@chaos-overlords/storage` and `@chaos-overlords/bug-reports`; point
 `wrangler d1 migrations apply` at them rather than copying them.
 
-`PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
-`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
+`PUBLIC_LISTING`, `CORS_ORIGINS`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
+`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`,
+`MATCH_CREATION_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
 `LOBBY_RETENTION_DAYS`, `ABANDONED_RETENTION_DAYS`, `SILENT_RETENTION_DAYS`, `RETENTION_BATCH_SIZE`,
 `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars; unset, each retention window
 takes the kernel's default for a shared public server (see the multiplayer README). The

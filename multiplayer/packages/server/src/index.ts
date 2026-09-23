@@ -1,4 +1,5 @@
 export { API_PREFIX, createApp } from './app'
+export { configFlag, configInteger, configList } from './configEnv'
 export {
   DEFAULT_RATE_LIMITS,
   DEFAULT_SERVER_CONFIG,
