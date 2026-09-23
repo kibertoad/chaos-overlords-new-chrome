@@ -6,16 +6,17 @@ import {
 } from '@chaos-overlords/contracts'
 import {
   activePlayers,
-  humanParticipants,
   isInProgress,
   type Match,
+  type Player,
   type SealedSlot,
 } from '../domain/entities'
 import { ConflictError, ValidationError } from '../domain/errors'
 import { hashOrderDocument, hashOrderSet } from '../logic/crypto'
 import {
-  allActiveReady,
+  allAwaitedReady,
   assignSlots,
+  awaitedSeats,
   evaluateConsensus,
   sealedByDeadline,
   turnDeadline,
@@ -159,11 +160,11 @@ export class TurnService {
         return false
       }
     } else {
-      const [players, orders] = await Promise.all([
-        this.deps.storage.players.listByMatch(matchId),
+      const [awaited, orders] = await Promise.all([
+        this.awaitedRoster(matchId),
         this.deps.storage.turns.listOrderSummaries(matchId, number),
       ])
-      if (!allActiveReady(players, orders)) return false
+      if (!allAwaitedReady(awaited, orders)) return false
     }
     const won = await this.deps.storage.turns.transition(matchId, number, ['open'], {
       status: 'sealed',
@@ -215,9 +216,9 @@ export class TurnService {
           await this.openTakeoverPrompt(match.id, player.id, number)
         }
       }
-      const currentPlayers = await this.deps.storage.players.listByMatch(match.id)
+      // A departed seat the turn waited on counts: the seal needed its ready orders to happen.
       const slotOf = new Map(
-        humanParticipants(currentPlayers).map((player) => [player.id, player.slot]),
+        (await this.awaitedRoster(match.id)).map((player) => [player.id, player.slot]),
       )
       const sealedSlots: SealedSlot[] = []
       const entries: Array<{ slot: number; ordersHash: string }> = []
@@ -290,22 +291,23 @@ export class TurnService {
   }
 
   /**
-   * Opens turn `number` for every active player and arms its deadline. Idempotent: the insert is
+   * Opens turn `number` for every awaited seat and arms its deadline. Idempotent: the insert is
    * refused if the turn already exists, and only the caller that created it announces it. Returns
    * whether this call created the turn.
    */
   async openTurn(match: Match, number: number): Promise<boolean> {
     const openedAt = this.deps.clock.now()
-    const roster = await this.deps.storage.players.listByMatch(match.id)
-    const players = humanParticipants(roster)
+    const openPrompts = await this.deps.storage.takeovers.listOpenPrompts(match.id)
+    const players = awaitedSeats(
+      await this.deps.storage.players.listByMatch(match.id),
+      new Set(openPrompts),
+    )
     // An absence decision owns the screen on every remaining client. Starting the successor's
     // clock behind that modal would spend planning time nobody can use, so an open vote opens the
     // turn paused. The clock is restarted when the last absent seat returns or becomes computer
     // controlled.
-    const hasAbsenceVote = await this.deps.storage.takeovers.hasOpenPrompts(match.id)
-    const deadlineAt = hasAbsenceVote
-      ? null
-      : turnDeadline(openedAt, match.settings.turnTimerSeconds)
+    const deadlineAt =
+      openPrompts.length > 0 ? null : turnDeadline(openedAt, match.settings.turnTimerSeconds)
     const turn = {
       matchId: match.id,
       number,
@@ -331,7 +333,7 @@ export class TurnService {
       // joiner's post-commit pass sees the seat and creates its orders row. Only seats the first
       // read missed need a row; everyone else got one above.
       const asked = new Set(players.map((player) => player.id))
-      const missed = humanParticipants(await this.deps.storage.players.listByMatch(match.id))
+      const missed = (await this.awaitedRoster(match.id))
         .map((player) => player.id)
         .filter((id) => !asked.has(id))
       if (missed.length > 0) await this.deps.storage.turns.open(turn, missed)
@@ -360,6 +362,15 @@ export class TurnService {
       }
     }
     return created
+  }
+
+  /** The seats the open turn waits on, as the roster and the open absence votes now stand. */
+  private async awaitedRoster(matchId: string): Promise<Player[]> {
+    const [players, openPrompts] = await Promise.all([
+      this.deps.storage.players.listByMatch(matchId),
+      this.deps.storage.takeovers.listOpenPrompts(matchId),
+    ])
+    return awaitedSeats(players, new Set(openPrompts))
   }
 
   /**
