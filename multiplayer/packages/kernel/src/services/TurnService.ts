@@ -302,14 +302,13 @@ export class TurnService {
     if (created) {
       // A late seat can commit after the first roster read and top up the previous turn before
       // this one exists. Re-read after publishing the new currentTurn so either this pass or the
-      // joiner's post-commit pass sees the seat and creates its orders row.
-      const current = await this.deps.storage.players.listByMatch(match.id)
-      await this.deps.storage.turns.open(
-        turn,
-        humanParticipants(current).map((player) => player.id),
-      )
-    }
-    if (created) {
+      // joiner's post-commit pass sees the seat and creates its orders row. Only seats the first
+      // read missed need a row; everyone else got one above.
+      const asked = new Set(players.map((player) => player.id))
+      const missed = humanParticipants(await this.deps.storage.players.listByMatch(match.id))
+        .map((player) => player.id)
+        .filter((id) => !asked.has(id))
+      if (missed.length > 0) await this.deps.storage.turns.open(turn, missed)
       await this.publisher.publish(match.id, {
         type: 'turn.opened',
         payload: { turn: number, deadlineAt: deadlineAt?.toISOString() ?? null },

@@ -176,8 +176,10 @@ export interface PlayerRepository {
 
 export interface TurnRepository {
   /**
-   * Insert the turn and one empty orders row per player. False when the turn already exists, which
-   * is how the seal repair can re-run the open step without publishing a second `turn.opened`.
+   * Insert the turn and one empty orders row per player that has none yet. Rows are only added while
+   * the stored turn is still `open`: a top-up that races a seal must not land in the sealed turn.
+   * False when the turn already exists, which is how the seal repair can re-run the open step
+   * without publishing a second `turn.opened`.
    */
   open(turn: Turn, playerIds: readonly string[]): Promise<boolean>
   get(matchId: string, number: number): Promise<Turn | null>
