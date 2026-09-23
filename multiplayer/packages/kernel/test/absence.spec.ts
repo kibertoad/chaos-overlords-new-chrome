@@ -130,6 +130,71 @@ describe('absent seats, departures and the repair sweeps', () => {
     expect((await h.principalOf(host.token)).match.currentTurn).toBe(3)
   })
 
+  it('seats a player who missed the turn 1 deadline into turn 2 after it sealed without them', async () => {
+    const { host, guest } = await h.startedMatch(60)
+    await h.submit(await h.principalOf(host.token), 1, 1, true)
+    h.clock.advance(60_000)
+    await h.kernel.turns.sweep()
+
+    // The deadline sealed turn 1 on the host's orders alone and put the quiet seat to a vote.
+    const first = await h.storage.turns.get(host.match.id, 1)
+    expect(first?.status).toBe('sealed')
+    expect(first?.sealedSlots?.map((seat) => seat.playerId)).toEqual([host.player.id])
+    expect((await h.storage.players.get(guest.player.id))?.status).toBe('takeoverPending')
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+    // Still a human seat while the vote is open, so turn 2 opened with a row waiting for it.
+    const waiting = await h.storage.turns.listOrders(host.match.id, 2)
+    expect(waiting.find((row) => row.playerId === guest.player.id)?.ready).toBe(false)
+
+    await h.kernel.lobby.rejoin(await h.principalOf(guest.token))
+    const returned = await h.principalOf(guest.token)
+    expect(returned.player.status).toBe('active')
+    expect(returned.match.currentTurn).toBe(2)
+    expect(await h.kernel.query.ownSubmission(returned.match, guest.player.id, 2)).toEqual({
+      turn: 2,
+      orders: null,
+      ready: false,
+      ordersHash: null,
+    })
+
+    await h.submit(await h.principalOf(host.token), 2, 1, true)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+    await h.submit(await h.principalOf(guest.token), 2, 2, true)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(3)
+  })
+
+  it('seats a player who reclaims a computer seat into turn 2 after turn 1 sealed without them', async () => {
+    const { host, guest } = await h.startedMatch()
+    await h.kernel.lobby.leave(await h.principalOf(guest.token))
+    await h.kernel.lobby.voteOnTakeover(await h.principalOf(host.token), guest.player.id, {
+      decision: 'computer',
+    })
+    expect((await h.storage.players.get(guest.player.id))?.status).toBe('computer')
+    await h.submit(await h.principalOf(host.token), 1, 1, true)
+
+    const first = await h.storage.turns.get(host.match.id, 1)
+    expect(first?.status).toBe('sealed')
+    expect(first?.sealedSlots?.map((seat) => seat.playerId)).toEqual([host.player.id])
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+
+    await h.kernel.lobby.rejoin(await h.principalOf(guest.token))
+    const returned = await h.principalOf(guest.token)
+    expect(returned.player.status).toBe('active')
+    expect(returned.match.currentTurn).toBe(2)
+    expect(await h.kernel.query.ownSubmission(returned.match, guest.player.id, 2)).toEqual({
+      turn: 2,
+      orders: null,
+      ready: false,
+      ordersHash: null,
+    })
+
+    // Back from the computer, the seat is a human one again and turn 2 waits for it.
+    await h.submit(await h.principalOf(host.token), 2, 1, true)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+    await h.submit(await h.principalOf(guest.token), 2, 2, true)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(3)
+  })
+
   it('requires every present player to approve computer control exactly once', async () => {
     const { host, guest, third } = await h.startedMatchOfThree(60)
     await h.submit(await h.principalOf(host.token), 1, 1, true)
