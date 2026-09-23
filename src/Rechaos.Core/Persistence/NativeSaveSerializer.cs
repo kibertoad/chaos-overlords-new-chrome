@@ -171,7 +171,8 @@ public static class NativeSaveSerializer
                     entry.NextSequence,
                     entry.ReadSequences
                         ?? throw new InvalidDataException(
-                            "Native save Comlink read flags are missing.")));
+                            "Native save Comlink read flags are missing."),
+                    entry.ReadThroughSequence));
         var aiStrategy = document.Runtime.AiStrategy is { } savedStrategy
             ? AiStrategicState.Restore(savedStrategy.Reactions, savedStrategy.Attitudes)
             : throw new InvalidDataException("Native save AI strategic state is missing.");
