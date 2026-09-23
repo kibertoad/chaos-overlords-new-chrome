@@ -32,6 +32,8 @@ export interface ParseOptions {
    * keepalive, which is tens of minutes away, while the player misses every seal. `0` disables it.
    */
   idleTimeoutMs?: number
+  /** Called for each complete, well-formed frame the stream delivers, keepalive comments included. */
+  onActivity?: () => void
 }
 
 export class StreamIdleError extends Error {
@@ -75,6 +77,9 @@ export async function* parseEventStream(
       }
       for (const frame of takeFrames()) {
         const event = parseFrame(frame)
+        // Only a whole frame that parsed counts: bytes of a frame that never ends, or of one that is
+        // refused, are not the server talking.
+        options.onActivity?.()
         if (event) yield event
       }
     }
