@@ -250,19 +250,10 @@ public sealed partial class ChaosGame
             new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
         DrawPanelValue(font, batch, ScenarioScore(state, player).ToString(),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.ScoreY);
-        var projectedCashflow = FinanceProjection.Project(state, player, sectorId: null).CashAdjustment;
-        font.Draw(batch, "DELTA", new Vector2(StatusConsoleLayout.LabelLeft,
-            StatusConsoleLayout.CashDeltaY), Color.Lime, 1);
-        DrawPanelValue(font, batch, StatusConsolePresentation.ProjectedChange(projectedCashflow),
-            StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashDeltaY);
-        font.Draw(batch, "CASH", new Vector2(StatusConsoleLayout.LabelLeft,
-            StatusConsoleLayout.CashY), Color.Lime, 1);
-        DrawPanelValue(font, batch, player.Cash.ToString(),
+        DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
+                StatusConsolePresentation.UnspentCash(state, player),
+                FinanceProjection.Project(state, player, sectorId: null).CashAdjustment),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashY);
-        font.Draw(batch, "UNSPENT", new Vector2(StatusConsoleLayout.LabelLeft,
-            StatusConsoleLayout.UnspentCashY), Color.Lime, 1);
-        DrawPanelValue(font, batch, StatusConsolePresentation.UnspentCash(state, player).ToString(),
-            StatusConsoleLayout.ValueRight, StatusConsoleLayout.UnspentCashY);
         DrawPanelValue(font, batch, SectorCode(_cursor),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(0));
         DrawPanelValue(font, batch, $"${SectorIncome(state, selectedSector)}",
@@ -354,16 +345,8 @@ public sealed partial class ChaosGame
     {
         const int maxRowsPerColumn = 40;
         var spends = StatusConsolePresentation.QueuedCashSpends(state, player);
-        string[] header =
-        [
-            "CASH AND QUEUED SPENDING",
-            $"CASH {player.Cash}  DELTA {StatusConsolePresentation.ProjectedChange(FinanceProjection.Project(state, player, null).CashAdjustment)}",
-            $"UNSPENT = CASH - QUEUED BRIBES AND EQUIPS = {StatusConsolePresentation.UnspentCash(player, spends)}",
-            "NO CASH IS RESERVED UNTIL AN ORDER RESOLVES.",
-            "BRIBES PAY FIRST; EQUIPS FOLLOW IN CLICK ORDER.",
-            "EARLIER SELLS MAY FUND EQUIPS.",
-            "QUEUED SPENDING IN RESOLUTION ORDER:"
-        ];
+        var header = StatusConsolePresentation.CashTooltip(
+            player.Cash, spends, FinanceProjection.Project(state, player, sectorId: null));
         string[] rows = spends.Count == 0
             ? ["NONE"]
             : spends.Select(entry =>
@@ -373,20 +356,20 @@ public sealed partial class ChaosGame
         var columnWidth = rows.Max(row => row.Length) * OriginalFontLayout.CellWidth + 12;
         var width = Math.Max(header.Max(line => line.Length) * OriginalFontLayout.CellWidth + 16,
             columnCount * columnWidth + 16);
-        var height = (header.Length + rowCount) * OriginalFontLayout.LineHeight + 16;
+        var height = (header.Count + rowCount) * OriginalFontLayout.LineHeight + 16;
         var x = Math.Clamp(point.X + 10, 4, Math.Max(4, VirtualInput.Width - width - 4));
         var y = Math.Clamp(point.Y + 12, 4, Math.Max(4, VirtualInput.Height - height - 4));
         var panel = new Rectangle(x, y, width, height);
         batch.Draw(pixel, panel, new Color(8, 18, 16, 252));
         DrawBorder(batch, pixel, panel, Color.Lime, 2);
-        for (var row = 0; row < header.Length; row++)
+        for (var row = 0; row < header.Count; row++)
             font.Draw(batch, header[row],
                 new Vector2(x + 8, y + 8 + row * OriginalFontLayout.LineHeight),
                 row == 0 ? Color.Gold : Color.White, 1);
         for (var index = 0; index < rows.Length; index++)
             font.Draw(batch, rows[index],
                 new Vector2(x + 8 + index / maxRowsPerColumn * columnWidth,
-                    y + 8 + (header.Length + index % maxRowsPerColumn)
+                    y + 8 + (header.Count + index % maxRowsPerColumn)
                     * OriginalFontLayout.LineHeight), Color.White, 1);
     }
 
