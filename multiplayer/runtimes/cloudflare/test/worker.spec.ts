@@ -119,9 +119,21 @@ describe('worker configuration', () => {
     'MEMBER_RATE_LIMIT_PER_MINUTE',
     'UPLOAD_RATE_LIMIT_PER_MINUTE',
     'BUG_REPORT_RATE_LIMIT_PER_MINUTE',
+    'MATCH_CREATION_RATE_LIMIT_PER_MINUTE',
   ] as const)('refuses invalid %s instead of silently using the default', (name) => {
     expect(() => buildContainer({ ...env, [name]: '0' })).toThrow(/at least 1/)
     expect(() => buildContainer({ ...env, [name]: 'bad' })).toThrow(/at least 1/)
+    expect(() => buildContainer({ ...env, [name]: ' ' })).toThrow(new RegExp(`^${name}:`))
+  })
+
+  /** An unquoted `[vars]` entry reaches the Worker as a number or a boolean, not a string. */
+  it('reads unquoted vars the way it reads their quoted spelling', () => {
+    const typed = {
+      ...env,
+      PUBLIC_LISTING: false,
+      RATE_LIMIT_PER_MINUTE: 30,
+    } as unknown as typeof env
+    expect(buildContainer(typed).config.publicListing).toBe(false)
   })
 })
 

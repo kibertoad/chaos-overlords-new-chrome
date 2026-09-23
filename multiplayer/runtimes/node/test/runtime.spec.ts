@@ -108,6 +108,11 @@ describe('node runtime configuration', () => {
     expect(loadConfig({ PUBLIC_LISTING: 'FALSE' }).publicListing).toBe(false)
     expect(loadConfig({ PUBLIC_LISTING: '0' }).publicListing).toBe(false)
     expect(() => loadConfig({ PUBLIC_LISTING: 'sometimes' })).toThrow(/Expected a boolean/)
+    // A blank or non-decimal number is refused rather than read as 0 or as hex/exponent notation.
+    expect(() => loadConfig({ RETENTION_DAYS: ' ' })).toThrow(/at least 0/)
+    expect(() => loadConfig({ LOBBY_RETENTION_DAYS: ' ' })).toThrow(/at least 0/)
+    expect(() => loadConfig({ PORT: '0x1f90' })).toThrow(/at least 0/)
+    expect(loadConfig({ PORT: ' 9000 ' }).port).toBe(9000)
   })
 
   it('bounds connections and request deadlines, refusing settings that defeat them', () => {

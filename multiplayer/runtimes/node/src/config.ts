@@ -228,11 +228,6 @@ function requestTimeouts(
  */
 const MIN_SWEEP_INTERVAL_MS = 1_000
 
-/**
- * A rate limit of `0` is not "unlimited" and not "closed" — the limiter admits one call per
- * window and refuses the rest, which nobody means — so every budget has a floor of one, and the
- * refusal names it rather than letting a misconfiguration run.
- */
 /** An integer when the variable is set, `undefined` when it is not, so a derived default can apply. */
 function optionalInteger(raw: string | undefined, minimum = 0): number | undefined {
   return raw === undefined || raw === '' ? undefined : configInteger(raw, 0, minimum)
