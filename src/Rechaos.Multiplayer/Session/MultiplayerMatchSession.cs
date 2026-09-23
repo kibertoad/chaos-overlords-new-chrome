@@ -872,8 +872,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(view);
         return view.Status is MatchStatus.Running or MatchStatus.Desynced
             && view.CurrentTurn >= 1
-            && !view.Players.Any(player =>
-                player.Status == WirePlayerStatus.Active && !MatchBootstrapFactory.IsSeated(player));
+            // Only the lobby's slot -1 means "not seated yet". A slot past the board is a finished
+            // start this client cannot play, which the bootstrap refuses with a reason; counting it
+            // as unfinished would leave the player waiting on a start that has already happened.
+            && !view.Players.Any(player => player.Status == WirePlayerStatus.Active && player.Slot < 0);
     }
 
     /// <summary>

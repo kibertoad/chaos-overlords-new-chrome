@@ -63,7 +63,11 @@ public sealed partial class ChaosGame
                     EndOnlineMatch("THE SAVED ONLINE MATCH HAS ALREADY ENDED");
                     return;
                 }
-                if (seated.Membership.Match.Status is MatchStatus.Running or MatchStatus.Desynced)
+                // A seat resumed while the server is still starting the match reads it `running` on
+                // turn 0. Bootstrapping that view fails for good, so it waits in the lobby instead,
+                // where the poll brings the finished match to the start below.
+                if (seated.Membership.Match.Status is MatchStatus.Running or MatchStatus.Desynced
+                    && MultiplayerMatchSession.HasFinishedStarting(seated.Membership.Match))
                 {
                     _online.JoinedInProgress = true;
                     _online.Stage = MultiplayerStage.Busy;

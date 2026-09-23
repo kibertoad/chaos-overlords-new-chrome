@@ -160,6 +160,12 @@ public sealed class MultiplayerLobbySessionTests
             Players = [running.Players[0] with { Slot = -1 }],
         }));
         Assert.True(MultiplayerMatchSession.HasFinishedStarting(running));
+        // A seat past the board is a started match this client cannot play, not an early one: the
+        // bootstrap has to see it to refuse it with a reason instead of waiting forever.
+        Assert.True(MultiplayerMatchSession.HasFinishedStarting(running with
+        {
+            Players = [running.Players[0] with { Slot = 99 }],
+        }));
     }
 
     private static MatchView View(MatchStatus status) => new(
