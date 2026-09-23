@@ -221,6 +221,30 @@ describe('desync verdicts, snapshots and recovery', () => {
     ).rejects.toMatchObject({ details: { reason: 'takeover_not_pending' } })
   })
 
+  it('does not reopen a prompt when the target returns during a vote', async () => {
+    const { host, guest } = await h.startedMatch()
+    await h.kernel.lobby.leave(await h.principalOf(guest.token))
+    await h.storage.takeovers.closePrompt(host.match.id, guest.player.id)
+    const castVote = h.storage.takeovers.castVote
+    let firstCast = true
+    h.storage.takeovers.castVote = async (vote) => {
+      if (firstCast) {
+        firstCast = false
+        await h.storage.players.setStatus(guest.player.id, 'active')
+        return false
+      }
+      return castVote(vote)
+    }
+
+    await expect(
+      h.kernel.lobby.voteOnTakeover(await h.principalOf(host.token), guest.player.id, {
+        decision: 'computer',
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'takeover_not_pending' } })
+    expect(await h.storage.takeovers.hasOpenPrompts(host.match.id)).toBe(false)
+    expect((await h.storage.players.get(guest.player.id))?.status).toBe('active')
+  })
+
   it('waits for a seat that merely missed a deadline before confirming its turn', async () => {
     const { host, guest } = await h.startedMatch(60)
     await h.submit(await h.principalOf(host.token), 1, 1, true)

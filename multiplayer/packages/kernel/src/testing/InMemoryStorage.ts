@@ -402,6 +402,12 @@ export class InMemoryStorage implements MultiplayerStorage {
 
   readonly takeovers: TakeoverRepository = {
     openPrompt: async (matchId, playerId) => {
+      const player = this.playerRows.get(playerId)
+      if (
+        player?.matchId !== matchId ||
+        !['takeoverPending', 'left', 'kicked'].includes(player.status)
+      )
+        return false
       const key = promptKey(matchId, playerId)
       if (this.promptRows.has(key)) return false
       this.promptRows.set(key, { matchId, playerId })

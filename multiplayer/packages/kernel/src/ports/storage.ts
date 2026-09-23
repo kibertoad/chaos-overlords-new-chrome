@@ -344,7 +344,7 @@ export interface CastVoteInput {
  * are one indexed read instead of a scan of every event the match ever logged.
  */
 export interface TakeoverRepository {
-  /** Opens a prompt for the seat; false when one is already open, so a caller can announce only the first. */
+  /** Opens a prompt only while the seat is absent; false when active or already open. */
   openPrompt(matchId: string, playerId: string, turn: number, openedAt: Date): Promise<boolean>
   /** Closes the prompt and discards its votes. A no-op when none is open. */
   closePrompt(matchId: string, playerId: string): Promise<void>
