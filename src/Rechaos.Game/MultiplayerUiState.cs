@@ -249,7 +249,10 @@ internal sealed class MultiplayerUiState
     internal bool IsConnected { get; set; } = true;
 
     /// <summary>Recent automatic reconnect attempts, newest last, for the modal status log.</summary>
-    internal List<string> ReconnectLog { get; } = [];
+    internal List<ReconnectAttemptEntry> ReconnectLog { get; } = [];
+
+    /// <summary>Feedback from the reconnect modal's per-attempt clipboard action.</summary>
+    internal string ReconnectCopyStatus { get; set; } = string.Empty;
     internal int ReconnectAttempt { get; set; }
 
     /// <summary>Digest of the last draft queued for the server, or null before the first change.</summary>
@@ -338,6 +341,7 @@ internal sealed class MultiplayerUiState
         AwaitedSlots = NoSeats;
         IsConnected = true;
         ReconnectLog.Clear();
+        ReconnectCopyStatus = string.Empty;
         ReconnectAttempt = 0;
         SentOrderDigest = null;
         ReadySubmissionPending = false;

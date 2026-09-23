@@ -152,8 +152,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _isHost = self.IsHost;
         IsRestoring = isRestoring;
         _uploadInitialSnapshot = IsHost && !isRestoring;
-        _health = new ConnectionHealth((connected, detail, attempt) =>
-            _notices.Enqueue(new MultiplayerNotice.ConnectionChanged(connected, detail, attempt)));
+        _health = new ConnectionHealth(failure => _notices.Enqueue(failure is null
+            ? new MultiplayerNotice.ConnectionChanged(true, null)
+            : new MultiplayerNotice.ConnectionChanged(
+                false, failure.Detail, failure.Attempt, failure.Lane, failure.Error)));
         _streamLane = _health.Open("stream");
         _pumpLane = _health.Open("pump");
         _outboxLane = _health.Open("outbox");
@@ -815,7 +817,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 _callRetryPolicy,
                 onRetry: lane is null
                     ? null
-                    : (exception, attempt) => lane.Failed(Describe(exception), attempt),
+                    : (exception, attempt) => lane.Failed(Describe(exception), attempt, exception),
                 cancellationToken).ConfigureAwait(false);
             lane?.Recovered();
             return result;

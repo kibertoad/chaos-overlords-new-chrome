@@ -577,8 +577,17 @@ public sealed partial class ChaosGame
     private bool HandleReconnectPopupClick(Point point)
     {
         if (_session is null || _online.IsConnected) return false;
-        if (StopReconnectButton.Contains(point))
+        if (ReconnectPopupLayout.StopRetrying.Contains(point))
+        {
             EndOnlineMatch("AUTOMATIC RECONNECT CANCELLED");
+        }
+        else if (ReconnectPopupLayout.CopyErrorAt(point, _online.ReconnectLog.Count) is { } row)
+        {
+            var attempt = _online.ReconnectLog[row];
+            _online.ReconnectCopyStatus = DesktopClipboard.TrySetText(attempt.Details)
+                ? $"ATTEMPT {attempt.Attempt} ERROR COPIED"
+                : "COULD NOT ACCESS THE CLIPBOARD";
+        }
         return true;
     }
 

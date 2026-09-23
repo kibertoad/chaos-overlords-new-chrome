@@ -15,8 +15,6 @@ namespace Rechaos.Game;
 /// </remarks>
 public sealed partial class ChaosGame
 {
-    private static readonly Rectangle StopReconnectButton = new(222, 354, 196, 28);
-
     /// <summary>
     /// Marks every seat still drafting this turn, the player's own included, under its portrait on
     /// the city top bar.
@@ -145,23 +143,26 @@ public sealed partial class ChaosGame
         }
         if (_session is null || _online.IsConnected) return;
         batch.Draw(pixel, new Rectangle(0, 0, 640, 460), new Color(0, 0, 0, 190));
-        var panel = new Rectangle(82, 82, 476, 316);
+        var panel = ReconnectPopupLayout.Panel;
         batch.Draw(pixel, panel, new Color(12, 22, 20));
         DrawBorder(batch, pixel, panel, Color.Gold, 2);
         DrawCentered(font, batch, "CONNECTION LOST  RECONNECTING", 102, Color.Gold, 1);
         font.Draw(batch, "AUTOMATIC RETRIES CONTINUE FOR UP TO FIVE MINUTES.",
             new Vector2(104, 132), Color.White, 1);
         font.Draw(batch, "RECENT ATTEMPTS", new Vector2(104, 162), new Color(150, 165, 165), 1);
-        IReadOnlyList<string> lines = _online.ReconnectLog.Count == 0
-            ? ["WAITING FOR THE NEXT ATTEMPT"]
-            : _online.ReconnectLog;
-        for (var index = 0; index < lines.Count; index++)
+        var log = _online.ReconnectLog;
+        if (log.Count == 0)
+            font.Draw(batch, "WAITING FOR THE NEXT ATTEMPT", ReconnectPopupLayout.RowText(0), Color.White, 1);
+        const int columns = ReconnectPopupLayout.SummaryColumns;
+        for (var index = 0; index < log.Count; index++)
         {
-            var line = lines[index];
-            if (line.Length > 66) line = line[..63] + "...";
-            font.Draw(batch, line, new Vector2(104, 184 + index * 22), Color.White, 1);
+            var line = log[index].Summary;
+            if (line.Length > columns) line = line[..(columns - 3)] + "...";
+            font.Draw(batch, line, ReconnectPopupLayout.RowText(index), Color.White, 1);
+            DrawButton(batch, pixel, font, ReconnectPopupLayout.CopyError(index), "COPY ERROR", false);
         }
-        DrawButton(batch, pixel, font, StopReconnectButton, "STOP RETRYING", true);
+        DrawCentered(font, batch, _online.ReconnectCopyStatus, ReconnectPopupLayout.CopyStatusTop, Color.Lime, 1);
+        DrawButton(batch, pixel, font, ReconnectPopupLayout.StopRetrying, "STOP RETRYING", true);
     }
 
     /// <summary>A modal error that keeps the complete diagnostic available without overflowing.</summary>

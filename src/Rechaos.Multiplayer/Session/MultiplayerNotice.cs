@@ -203,10 +203,15 @@ public abstract record MultiplayerNotice
     /// </remarks>
     /// <param name="IsConnected">Whether the last attempt reached the server.</param>
     /// <param name="Detail">What went wrong, when it did not.</param>
+    /// <param name="Attempt">Which attempt failed.</param>
+    /// <param name="Lane">The retry loop that failed: the event stream, the pump, the outbox or the reporter.</param>
+    /// <param name="Error">What was thrown, kept whole so the player can copy the full diagnostic.</param>
     public sealed record ConnectionChanged(
         bool IsConnected,
         string? Detail,
-        int Attempt = 0) : MultiplayerNotice;
+        int Attempt = 0,
+        string? Lane = null,
+        Exception? Error = null) : MultiplayerNotice;
 
     /// <summary>
     /// The session stopped and will not recover on its own.
