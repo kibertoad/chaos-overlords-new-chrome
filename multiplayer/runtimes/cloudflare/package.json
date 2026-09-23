@@ -1,6 +1,6 @@
 {
   "name": "@chaos-overlords/worker",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "Cloudflare Workers runtime facade: the shared Hono app over D1, with one Durable Object per match for SSE fan-out and turn-deadline alarms.",
   "keywords": [
     "chaos-overlords",
