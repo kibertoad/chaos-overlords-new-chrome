@@ -246,8 +246,8 @@ public sealed class MultiplayerEventStreamTests
     /// Time the consumer spends handling a frame is not silence on the wire.
     /// </summary>
     /// <remarks>
-    /// The deadline is paused while the iterator is suspended at <c>yield return</c>, not dropped:
-    /// the next read that waits past it still gives up on the connection.
+    /// No deadline runs while the iterator is suspended at <c>yield return</c>, but the next read
+    /// arms a fresh one: a read that then waits past it still gives up on the connection.
     /// </remarks>
     [Fact]
     public async Task ConsumerWorkLongerThanIdleWindowDoesNotExpireNextRead()

@@ -84,12 +84,12 @@ public static class EventStreamParser
     {
         ArgumentNullException.ThrowIfNull(body);
         using var reader = new StreamReader(body, Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
-        var lines = new BoundedLineReader(reader, MaximumFrameChars);
+        var lines = new BoundedLineReader(reader, MaximumFrameChars, idleTimeout);
         var frame = new StringBuilder();
         var firstLine = true;
         while (true)
         {
-            var line = await ReadLineAsync(lines, idleTimeout, cancellationToken).ConfigureAwait(false);
+            var line = await lines.ReadLineAsync(cancellationToken).ConfigureAwait(false);
             if (line is null)
             {
                 // The connection ended. A frame with no blank line after it was cut mid-write, and
@@ -119,33 +119,6 @@ public static class EventStreamParser
         }
     }
 
-    /// <summary>One line, with the idle deadline told apart from the caller's cancellation.</summary>
-    /// <remarks>
-    /// Each read gets its own deadline, which exists only while that read waits on the body. An
-    /// async iterator is suspended at <c>yield return</c> while its consumer handles the frame, and
-    /// that time must not count as silence. A single source shared across reads cannot be disarmed
-    /// safely: if its timer fired in the instant after a read completed, the source would stay
-    /// cancelled, and the next read would fail as idle before it began.
-    /// </remarks>
-    private static async Task<string?> ReadLineAsync(
-        BoundedLineReader reader,
-        TimeSpan? idleTimeout,
-        CancellationToken cancellationToken)
-    {
-        if (idleTimeout is not { } timeout)
-            return await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-        using var idle = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        idle.CancelAfter(timeout);
-        try
-        {
-            return await reader.ReadLineAsync(idle.Token).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
-        {
-            throw new EventStreamIdleException(timeout, exception);
-        }
-    }
-
     /// <summary>
     /// Reads lines in chunks, refusing one longer than the frame limit.
     /// </summary>
@@ -153,11 +126,20 @@ public static class EventStreamParser
     /// <see cref="StreamReader.ReadLineAsync(CancellationToken)"/> grows its own buffer until it
     /// finds a newline, so the frame ceiling the caller applies afterwards bounded nothing: a
     /// server writing bytes with no newline could deliver gigabytes into this process first, and
-    /// the idle timer is re-armed per line rather than per byte, so it does not help either.
+    /// the idle timer only watches for silence, so it does not help either.
     /// <see cref="HttpClient.MaxResponseContentBufferSize"/> does not apply to a
     /// <see cref="HttpCompletionOption.ResponseHeadersRead"/> body.
+    /// <para>
+    /// The idle deadline is armed around each refill of the buffer and nowhere else: that is the
+    /// only point that waits on the body. Lines already buffered cost no timer, and a long line
+    /// still arriving chunk by chunk is not mistaken for silence. An async iterator is suspended at
+    /// <c>yield return</c> while its consumer handles the frame, and that time must not count as
+    /// silence either. A single source shared across refills cannot be disarmed safely: if its
+    /// timer fired in the instant after a refill completed, the source would stay cancelled, and
+    /// the next refill would fail as idle before it began.
+    /// </para>
     /// </remarks>
-    private sealed class BoundedLineReader(StreamReader reader, int maximumLineChars)
+    private sealed class BoundedLineReader(StreamReader reader, int maximumLineChars, TimeSpan? idleTimeout)
     {
         private readonly char[] _buffer = new char[8192];
         private readonly StringBuilder _line = new();
@@ -192,12 +174,28 @@ public static class EventStreamParser
                     _line.Append(character);
                 }
                 _start = 0;
-                _length = await reader.ReadAsync(_buffer.AsMemory(), cancellationToken)
-                    .ConfigureAwait(false);
+                _length = await FillAsync(cancellationToken).ConfigureAwait(false);
                 if (_length != 0) continue;
                 // End of stream. A trailing partial line is dropped: the caller treats an
                 // unterminated frame as one that was cut mid-write.
                 return null;
+            }
+        }
+
+        /// <summary>One refill, with the idle deadline told apart from the caller's cancellation.</summary>
+        private async Task<int> FillAsync(CancellationToken cancellationToken)
+        {
+            if (idleTimeout is not { } timeout)
+                return await reader.ReadAsync(_buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+            using var idle = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            idle.CancelAfter(timeout);
+            try
+            {
+                return await reader.ReadAsync(_buffer.AsMemory(), idle.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new EventStreamIdleException(timeout, exception);
             }
         }
 
