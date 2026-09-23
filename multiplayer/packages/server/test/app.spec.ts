@@ -3,6 +3,7 @@ import {
   type BugReportService,
   createBugReportService,
   createMemoryBlobStore,
+  DEFAULT_BUG_REPORT_RETENTION,
 } from '@chaos-overlords/bug-reports'
 import { defineHttpConformance } from '@chaos-overlords/conformance'
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@chaos-overlords/contracts'
@@ -48,7 +49,7 @@ type LimitWindow = { limit: number; windowMs: number }
 interface BuildLimits {
   anonymous?: LimitWindow
   member?: LimitWindow
-  bugReports?: { enabled?: boolean; limit?: number; statePerDay?: number }
+  bugReports?: { enabled?: boolean; limit?: number; statePerDay?: number; dailyStateBytes?: number }
   matchCreationPerMinute?: number
 }
 
@@ -76,6 +77,11 @@ function build(overrides: Partial<ServerContainer['config']> = {}, limits: Build
           clock,
           logger: new RecordingLogger(),
           blobs: createMemoryBlobStore(),
+          retention: {
+            ...DEFAULT_BUG_REPORT_RETENTION,
+            dailyStateBytes:
+              bugReportOptions.dailyStateBytes ?? DEFAULT_BUG_REPORT_RETENTION.dailyStateBytes,
+          },
         })
   const container: ServerContainer = {
     kernel,
@@ -429,6 +435,11 @@ describe('server app over in-memory storage', () => {
 
   it('closes the stream and drops the listener when the client disconnects', async () => {
     const { app: fresh, hub } = build()
+    const originalOpen = hub.open.bind(hub)
+    hub.open = async (input) => {
+      expect(input.lobby).toBe(true)
+      return originalOpen(input)
+    }
     const created = await fresh.request('/api/v1/matches', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -459,6 +470,37 @@ describe('server app over in-memory storage', () => {
     let done = false
     for (let reads = 0; reads < 5 && !done; reads += 1) done = (await reader.read()).done
     expect(done).toBe(true)
+    expect(hub.connectionCount(match.id)).toBe(0)
+  })
+
+  it('refuses a stream when the token is revoked after the initial auth check', async () => {
+    const { app: fresh, hub, kernel: localKernel } = build()
+    const created = await fresh.request('/api/v1/matches', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        settings: {
+          name: 'x',
+          maxPlayers: 2,
+          turnTimerSeconds: 0,
+          visibility: 'private',
+          gameSettings: {},
+        },
+        hostDisplayName: 'h',
+      }),
+    })
+    const { token, match } = (await created.json()) as { token: string; match: { id: string } }
+    const playerId = (await localKernel.auth.authenticate(token)).player.id
+    const originalOpen = hub.open.bind(hub)
+    hub.open = async (input) => {
+      await localKernel.deps.storage.players.revokeToken(playerId)
+      return originalOpen(input)
+    }
+
+    const response = await fresh.request(`/api/v1/matches/${match.id}/stream`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(response.status).toBe(401)
     expect(hub.connectionCount(match.id)).toBe(0)
   })
 })
@@ -535,6 +577,50 @@ describe('bug report intake', () => {
       error: { code: 'validation_failed', details: { reason: 'state_digest_mismatch' } },
     })
     expect(reports.rows).toHaveLength(0)
+  })
+
+  it('charges the address allowance only for journals that are stored', async () => {
+    const { app } = build({}, { bugReports: { statePerDay: 1, dailyStateBytes: 64 } })
+    const headers = { 'x-forwarded-for': '203.0.113.51' }
+    const state = async (bytes: Uint8Array, digest?: string) => ({
+      codec: 'brotli',
+      replayFormatVersion: 24,
+      uncompressedBytes: 4_096,
+      sha256: digest ?? (await sha256Hex(bytes)),
+      anonymized: true,
+      body: encodeBase64(bytes),
+    })
+
+    const corrupt = await post(
+      app,
+      report({ state: await state(new Uint8Array(8).fill(1), 'f'.repeat(64)) }),
+      headers,
+    )
+    expect(corrupt.status).toBe(422)
+
+    const tooLarge = await post(
+      app,
+      report({ state: await state(new Uint8Array(96).fill(2)) }),
+      headers,
+    )
+    expect(tooLarge.status).toBe(201)
+    expect(await tooLarge.json()).toMatchObject({ stateStored: 'omitted' })
+
+    const valid = await post(
+      app,
+      report({ state: await state(new Uint8Array(32).fill(3)) }),
+      headers,
+    )
+    expect(valid.status).toBe(201)
+    expect(await valid.json()).toMatchObject({ stateStored: 'stored' })
+
+    const spent = await post(
+      app,
+      report({ state: await state(new Uint8Array(32).fill(4)) }),
+      headers,
+    )
+    expect(spent.status).toBe(201)
+    expect(await spent.json()).toMatchObject({ stateStored: 'omitted' })
   })
 
   it('refuses an empty message through the contract rather than storing one', async () => {

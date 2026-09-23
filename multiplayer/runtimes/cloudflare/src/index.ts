@@ -1,6 +1,9 @@
 import { RateLimitedError, RateLimiter } from '@chaos-overlords/kernel'
 import {
   type AppEnv,
+  configFlag,
+  configInteger,
+  configList,
   createApp,
   DEFAULT_RATE_LIMITS,
   DEFAULT_SERVER_CONFIG,
@@ -15,6 +18,13 @@ import { buildBugReports, buildKernel, HUB_PATHS, hubFor, workerLogger } from '.
 export { MatchHub } from './MatchHub'
 
 type Built = { container: ServerContainer; app: Hono<AppEnv> }
+
+type RateLimitVar =
+  | 'RATE_LIMIT_PER_MINUTE'
+  | 'MEMBER_RATE_LIMIT_PER_MINUTE'
+  | 'UPLOAD_RATE_LIMIT_PER_MINUTE'
+  | 'BUG_REPORT_RATE_LIMIT_PER_MINUTE'
+  | 'MATCH_CREATION_RATE_LIMIT_PER_MINUTE'
 
 /**
  * One container per isolate, held in module scope.
@@ -48,11 +58,10 @@ export function resetContainerForTests(): void {
 
 export function buildContainer(env: Env): ServerContainer {
   const clock = { now: () => new Date() }
-  const perMinute = (raw: string | undefined, fallback: number) => {
-    const limit = Number(raw ?? fallback)
-    const effective = Number.isInteger(limit) && limit > 0 ? limit : fallback
-    return new RateLimiter(clock, { limit: effective, windowMs: 60_000 })
-  }
+  // A misconfigured var refuses every request and every cron run until it is fixed, so the error
+  // names the variable: a Worker has no startup log for it to go unnoticed in, only request errors.
+  const perMinute = (name: RateLimitVar, fallback: number) =>
+    new RateLimiter(clock, { limit: configInteger(env[name], fallback, 1, name), windowMs: 60_000 })
   const bugReports = buildBugReports(env)
   return {
     kernel: buildKernel(env),
@@ -80,11 +89,11 @@ export function buildContainer(env: Env): ServerContainer {
       },
     },
     rateLimiters: {
-      anonymous: perMinute(env.RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMITS.anonymousPerMinute),
-      member: perMinute(env.MEMBER_RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMITS.memberPerMinute),
-      upload: perMinute(env.UPLOAD_RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMITS.uploadPerMinute),
+      anonymous: perMinute('RATE_LIMIT_PER_MINUTE', DEFAULT_RATE_LIMITS.anonymousPerMinute),
+      member: perMinute('MEMBER_RATE_LIMIT_PER_MINUTE', DEFAULT_RATE_LIMITS.memberPerMinute),
+      upload: perMinute('UPLOAD_RATE_LIMIT_PER_MINUTE', DEFAULT_RATE_LIMITS.uploadPerMinute),
       bugReport: perMinute(
-        env.BUG_REPORT_RATE_LIMIT_PER_MINUTE,
+        'BUG_REPORT_RATE_LIMIT_PER_MINUTE',
         DEFAULT_RATE_LIMITS.bugReportPerMinute,
       ),
       bugReportState: new RateLimiter(clock, {
@@ -92,13 +101,17 @@ export function buildContainer(env: Env): ServerContainer {
         windowMs: 24 * 60 * 60 * 1000,
       }),
       matchCreation: perMinute(
-        env.MATCH_CREATION_RATE_LIMIT_PER_MINUTE,
+        'MATCH_CREATION_RATE_LIMIT_PER_MINUTE',
         DEFAULT_RATE_LIMITS.matchCreationPerMinute,
       ),
     },
     // Listing is on unless a deployment turns it off: an unset var means the Browse screen works,
     // rather than every client being told the server lists nothing.
-    config: { ...DEFAULT_SERVER_CONFIG, publicListing: env.PUBLIC_LISTING !== 'false' },
+    config: {
+      ...DEFAULT_SERVER_CONFIG,
+      publicListing: configFlag(env.PUBLIC_LISTING, true, 'PUBLIC_LISTING'),
+      corsOrigins: configList(env.CORS_ORIGINS),
+    },
     // `CF-Connecting-IP` is authoritative here and only here: Cloudflare sets it on every request
     // that reaches a Worker and a client cannot forge it through the edge. Off Cloudflare it is a
     // header anyone can write, which is why the default resolver ignores it unless told otherwise.

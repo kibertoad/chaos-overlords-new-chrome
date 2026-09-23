@@ -54,6 +54,25 @@ public sealed partial class MultiplayerMatchSession
     /// <returns>False when the match is over and there is nothing left to pump.</returns>
     private async Task<bool> RestoreAsync(int replayFromSeq, CancellationToken cancellationToken)
     {
+        if (!await RebuildFromHistoryAsync(replayFromSeq, cancellationToken).ConfigureAwait(false))
+            return false;
+        await ResolvePendingDesyncAsync(lookForAPostedRepair: true, cancellationToken)
+            .ConfigureAwait(false);
+        return true;
+    }
+
+    /// <summary>
+    /// Everything <see cref="RestoreAsync"/> does up to and including handing the interface the
+    /// result, without the desync resolution that follows it.
+    /// </summary>
+    /// <remarks>
+    /// Separate so that a caller retrying a restore whose last step ran out of its retry window
+    /// can retry only that step. Re-running the whole rebuild after <c>Resumed</c> has gone out
+    /// announces the match a second time, minutes later, over whatever the player planned since.
+    /// </remarks>
+    /// <returns>False when the match is over and there is nothing left to pump.</returns>
+    private async Task<bool> RebuildFromHistoryAsync(int replayFromSeq, CancellationToken cancellationToken)
+    {
         var (view, snapshot) = await ReadViewAndLatestSnapshotAsync(cancellationToken).ConfigureAwait(false);
         if (view.Status == MatchStatus.Abandoned)
         {
@@ -134,12 +153,10 @@ public sealed partial class MultiplayerMatchSession
         _notices.Enqueue(new MultiplayerNotice.Resumed(view, state, submission, turn));
         foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
             PublishTakeoverVote(vote);
-        // Last, on a state that is now caught up: a pause the history carried is picked back up
-        // here — adopt a repair somebody posted while this client was away, or post one if this
-        // client turns out to be holding the state the others agreed on. Until this existed, every
+        // Last, on a state that is now caught up, the caller resolves a pause the history carried
+        // — adopt a repair somebody posted while this client was away, or post one if this client
+        // turns out to be holding the state the others agreed on. Until that existed, every
         // restart during a desync simply rejoined the wait.
-        await ResolvePendingDesyncAsync(lookForAPostedRepair: true, cancellationToken)
-            .ConfigureAwait(false);
         return true;
     }
 

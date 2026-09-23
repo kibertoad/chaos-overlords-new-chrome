@@ -297,17 +297,18 @@ export class TurnService {
     )
     // A desynced match counts: a repaired seal must still point `currentTurn` at the turn that is
     // actually open, even though nobody may submit to it until the pause lifts.
-    await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
-      currentTurn: number,
-      updatedAt: openedAt,
-    })
+    const advanced = await this.deps.storage.matches.advanceCurrentTurn(match.id, number, openedAt)
     if (created) {
       await this.publisher.publish(match.id, {
         type: 'turn.opened',
         payload: { turn: number, deadlineAt: deadlineAt?.toISOString() ?? null },
       })
     }
-    if (deadlineAt) {
+    // Only the call that created the turn or moved `currentTurn` onto it arms the deadline. Both
+    // runtimes keep one pending deadline per match, so a late sweep re-opening a turn the match
+    // has already moved past would otherwise replace the live turn's timer with one for a sealed
+    // turn, leaving the live deadline to the next sweep.
+    if (deadlineAt && (created || advanced)) {
       try {
         await this.deps.scheduler.schedule({ matchId: match.id, turn: number, dueAt: deadlineAt })
       } catch (error) {

@@ -72,6 +72,48 @@ public sealed partial class MultiplayerSessionTests
         await WaitFor<MultiplayerNotice.OrdersAccepted>(session);
     }
 
+    [Fact]
+    public async Task AServerRefusalAfterAnOutboxRetryRecoversTheConnectionLane()
+    {
+        var (session, server, http) = Running(callRetryPolicy: new RetryPolicy(
+            TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1),
+            MaxAttempts: 3, MaxElapsed: TimeSpan.FromSeconds(1)));
+        using var _ = http;
+        await using var __ = session;
+        var seen = new List<MultiplayerNotice>();
+        server.AnswerOnce(HttpMethod.Put, "/orders", null, HttpStatusCode.BadGateway);
+        server.AnswerOnce(HttpMethod.Put, "/orders", Envelope("turn_not_open"), HttpStatusCode.Conflict);
+
+        session.QueueOrders(1, new OrderDocument(1, []), ready: true);
+        await WaitFor<MultiplayerNotice.OrdersRefused>(session, seen);
+
+        Assert.Contains(seen, notice => notice is MultiplayerNotice.ConnectionChanged
+            { IsConnected: false });
+        Assert.Contains(seen, notice => notice is MultiplayerNotice.ConnectionChanged
+            { IsConnected: true });
+    }
+
+    [Fact]
+    public async Task AnUnreadableAnswerAfterAnOutboxRetryRecoversTheConnectionLane()
+    {
+        var (session, server, http) = Running(callRetryPolicy: new RetryPolicy(
+            TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1),
+            MaxAttempts: 3, MaxElapsed: TimeSpan.FromSeconds(1)));
+        using var _ = http;
+        await using var __ = session;
+        var seen = new List<MultiplayerNotice>();
+        server.AnswerOnce(HttpMethod.Put, "/orders", null, HttpStatusCode.BadGateway);
+        server.AnswerOnce(HttpMethod.Put, "/orders", "not json", HttpStatusCode.OK);
+
+        session.QueueOrders(1, new OrderDocument(1, []), ready: true);
+        await WaitFor<MultiplayerNotice.OrdersRefused>(session, seen);
+
+        Assert.Contains(seen, notice => notice is MultiplayerNotice.ConnectionChanged
+            { IsConnected: false });
+        Assert.Contains(seen, notice => notice is MultiplayerNotice.ConnectionChanged
+            { IsConnected: true });
+    }
+
     /// <summary>
     /// A resync asked for from outside drops the connection and rebuilds from the durable log.
     /// </summary>
@@ -286,6 +328,144 @@ public sealed partial class MultiplayerSessionTests
             seen.OfType<MultiplayerNotice.ConnectionChanged>(),
             change => change.Detail?.Contains("Still trying", StringComparison.Ordinal) == true);
         Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+    }
+
+    [Fact]
+    public async Task AnExhaustedRestoreWindowDoesNotEndTheSession()
+    {
+        var window = new RetryPolicy(
+            TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1), MaxAttempts: 1);
+        var (session, server, http) = Running(
+            streamRetryPolicy: window,
+            callRetryPolicy: window,
+            configure: fake =>
+            {
+                fake.Answer(
+                    HttpMethod.Get, "/snapshots/latest", Envelope("no_snapshot"), HttpStatusCode.NotFound);
+                fake.Answer(HttpMethod.Get, "/events", new EventPage([]));
+                fake.Answer(
+                    HttpMethod.Get, "/turns/1/orders/mine",
+                    new OwnSubmissionView(1, null, Ready: false, OrdersHash: null));
+            });
+        using var _ = http;
+        await using var __ = session;
+        var seen = new List<MultiplayerNotice>();
+
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") >= 1, "the first stream opened");
+        server.AnswerOnce(HttpMethod.Get, "/stream", null, HttpStatusCode.BadGateway);
+        server.AnswerOnce(HttpMethod.Get, $"/matches/{MatchId}", null, HttpStatusCode.BadGateway);
+        server.DropStream();
+
+        await WaitFor<MultiplayerNotice.Resumed>(session, seen);
+        await Until(
+            () => server.CallsTo(HttpMethod.Get, "/stream") >= 3,
+            "the stream reopened after the restore retried");
+        Assert.True(server.CallsTo(HttpMethod.Get, $"/matches/{MatchId}") >= 2);
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+        // One for the stream's closed window and one for the restore's: the player is told the
+        // outage is still being ridden out rather than seeing the restore's failure as the last word.
+        Assert.True(
+            seen.OfType<MultiplayerNotice.ConnectionChanged>()
+                .Count(change => change.Detail?.Contains("Still trying", StringComparison.Ordinal) == true)
+            >= 2);
+    }
+
+    /// <summary>
+    /// A restore whose last step runs out of its window retries that step alone.
+    /// </summary>
+    /// <remarks>
+    /// The rebuild has already handed the interface <c>Resumed</c> by the time the desync it found
+    /// in history is resolved. Re-running the rebuild when the repair upload fails would announce
+    /// the match a second time, over whatever the player planned in between.
+    /// </remarks>
+    [Fact]
+    public async Task ARestoreRetriesOnlyItsDesyncResolutionOnceItHasResumed()
+    {
+        var afterOne = HashAfterTurns(1);
+        var view = ViewAtTurn(2) with { LastEventSeq = 3, Status = MatchStatus.Desynced };
+        MatchEvent[] history =
+        [
+            new TurnOpenedEvent(1, MatchId, "2026-09-10T12:00:00.000Z", new(1, null)),
+            new TurnSealedEvent(
+                2, MatchId, "2026-09-10T12:01:00.000Z", new(1, SealedOrders(1).OrderSetHash)),
+            new TurnDesyncedEvent(
+                3,
+                MatchId,
+                "2026-09-10T12:02:00.000Z",
+                new(1, [new("p1", afterOne), new("p2", new string('7', 64))], [afterOne])),
+        ];
+        var window = new RetryPolicy(
+            TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1), MaxAttempts: 1);
+        var (session, server, http) = Running(
+            matchView: view,
+            streamRetryPolicy: window,
+            callRetryPolicy: window,
+            configure: fake =>
+            {
+                fake.Answer(
+                    HttpMethod.Get, "/snapshots/latest", Envelope("no_snapshot"), HttpStatusCode.NotFound);
+                fake.Answer(
+                    HttpMethod.Get, "/snapshots/1", Envelope("no_snapshot"), HttpStatusCode.NotFound);
+                fake.Answer(HttpMethod.Get, "/events", new EventPage(history));
+                fake.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/turns/2/orders/mine",
+                    new OwnSubmissionView(2, null, Ready: false, OrdersHash: null));
+            });
+        using var _ = http;
+        await using var __ = session;
+        var seen = new List<MultiplayerNotice>();
+
+        await WaitFor<MultiplayerNotice.Resumed>(session, seen);
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") >= 1, "the first stream opened");
+        var uploadsBefore = server.CallsTo(HttpMethod.Post, "/snapshots");
+
+        // A one-attempt window closes on the drop itself; the repair upload's closes on the rebuild
+        // that follows.
+        server.AnswerOnce(HttpMethod.Post, "/snapshots", null, HttpStatusCode.BadGateway);
+        server.DropStream();
+
+        await Until(
+            () => server.CallsTo(HttpMethod.Post, "/snapshots") >= uploadsBefore + 2,
+            "the repair upload retried after its window closed");
+        await Until(
+            () => server.CallsTo(HttpMethod.Get, "/stream") >= 2,
+            "the stream reopened after the restore finished");
+        while (session.TryDequeueNotice(out var notice)) seen.Add(notice);
+
+        // Once at startup and once for the rebuild — not again for the retried upload.
+        Assert.Equal(2, seen.OfType<MultiplayerNotice.Resumed>().Count());
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+    }
+
+    /// <summary>A restore spends the same outage budget the stream does.</summary>
+    [Fact]
+    public async Task AnExhaustedRestoreWindowEndsTheSessionWhenABudgetSaysSo()
+    {
+        var window = new RetryPolicy(
+            TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1), MaxAttempts: 1);
+        var (session, server, http) = Running(
+            streamOutageBudget: TimeSpan.FromMilliseconds(200),
+            streamRetryPolicy: window,
+            callRetryPolicy: window);
+        using var _ = http;
+        await using var __ = session;
+        var seen = new List<MultiplayerNotice>();
+
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") >= 1, "the first stream opened");
+        var viewReadsBefore = server.CallsTo(HttpMethod.Get, $"/matches/{MatchId}");
+        server.AnswerOnce(HttpMethod.Get, "/stream", null, HttpStatusCode.BadGateway);
+        server.Answer(HttpMethod.Get, $"/matches/{MatchId}", null, HttpStatusCode.BadGateway);
+        server.DropStream();
+
+        var failed = await WaitFor<MultiplayerNotice.Failed>(session, seen);
+        Assert.IsType<RetryExhaustedException>(failed.Error);
+        // It rode the outage out until the budget was spent, rather than ending on the first window.
+        Assert.True(server.CallsTo(HttpMethod.Get, $"/matches/{MatchId}") >= viewReadsBefore + 2);
+        Assert.Contains(
+            seen.OfType<MultiplayerNotice.ConnectionChanged>(),
+            change => change.Detail?.Contains("Still trying", StringComparison.Ordinal) == true);
     }
 
     /// <summary>And with a budget — what the headless smoke test wants — it does end.</summary>

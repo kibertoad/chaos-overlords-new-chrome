@@ -57,24 +57,29 @@ export interface ClientOptions {
   requestTimeoutMs?: number
 }
 
-export interface StreamOptions {
+/** Options for a single connection (`streamOnce`). */
+export interface StreamOnceOptions {
   /** Resume after this sequence number (the last event seen). */
   after?: number
   signal?: AbortSignal
+  /**
+   * A connection that carries nothing, not even the server's keepalive comment, for this long is
+   * dropped and reconnected. The default is two and a half server heartbeats; `0` disables it.
+   */
+  idleTimeoutMs?: number
+}
+
+export interface StreamOptions extends StreamOnceOptions {
   /** First reconnect delay; it doubles up to `maxReconnectDelayMs`, with jitter. */
   reconnectDelayMs?: number
   maxReconnectDelayMs?: number
   /** Called for each dropped connection, so a caller can surface "reconnecting" to the player. */
   onReconnect?: (error: unknown, attempt: number) => void
   /**
-   * A connection that carries nothing, not even the server's keepalive comment, for this long is
-   * dropped and reconnected. The default is two and a half server heartbeats; `0` disables it.
-   */
-  idleTimeoutMs?: number
-  /**
    * How long the stream may keep failing to deliver anything before it gives up. The clock starts
-   * at the first failure and is reset by the first event of a connection, not by the connection
-   * itself: a server that accepts and then closes at once is still an outage. `0` retries forever.
+   * at the first failure and is reset by an event, or by a keepalive on a connection that has lasted
+   * a server heartbeat. A server that accepts and then closes at once is still an outage. `0`
+   * retries forever.
    */
   maxOutageMs?: number
 }
@@ -93,8 +98,10 @@ export class StreamOutageError extends Error {
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000
 const DEFAULT_RECONNECT_DELAY_MS = 1_000
 const DEFAULT_MAX_RECONNECT_DELAY_MS = 30_000
-/** Two and a half of the server's 20-second heartbeats. */
-const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 50_000
+/** The server's default keepalive interval (`sseHeartbeatMs`). */
+const SERVER_HEARTBEAT_MS = 20_000
+/** Two and a half of the server's heartbeats. */
+const DEFAULT_STREAM_IDLE_TIMEOUT_MS = SERVER_HEARTBEAT_MS * 2.5
 const DEFAULT_MAX_OUTAGE_MS = 5 * 60_000
 
 const API = '/api/v1'
@@ -367,16 +374,29 @@ export class MatchHandle {
   }
 
   /** One connection's worth of events; ends when the server closes it. */
-  async *streamOnce(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
+  streamOnce(options: StreamOnceOptions = {}): AsyncGenerator<MatchEvent> {
+    return this.connect(options)
+  }
+
+  /**
+   * `streamOnce`, plus a hook for every well-formed frame with the connection's age, which `stream`
+   * uses to tell a working connection from one that keeps dropping.
+   */
+  private async *connect(
+    options: StreamOnceOptions,
+    onActivity: (connectionAgeMs: number) => void = () => {},
+  ): AsyncGenerator<MatchEvent> {
     const { response, release } = await this.client.openStream(
       streamEventsContract,
       streamEventsContract.pathResolver({ matchId: this.matchId }),
       options.after ?? 0,
       options.signal,
     )
+    const connectedAt = Date.now()
     try {
       yield* parseEventStream(response.body as ReadableStream<Uint8Array>, {
         idleTimeoutMs: options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS,
+        onActivity: () => onActivity(Date.now() - connectedAt),
       })
     } finally {
       // Runs on a `break` or a `return` from the consumer as well, so every connection gives its
@@ -398,9 +418,9 @@ export class MatchHandle {
    *
    * Every other failure — a dropped socket, a mangled frame, a proxy answering with HTML, a
    * connection that went silent — is retried within `maxOutageMs`, after which the stream ends
-   * with a `StreamOutageError` naming the last failure. The outage clock is reset only by an
-   * event actually arriving, so a server that accepts the connection and closes it at once cannot
-   * keep the loop alive forever.
+   * with a `StreamOutageError` naming the last failure. An event resets the clock, and so does a
+   * keepalive on a connection that has lasted a heartbeat; accepting and immediately closing
+   * connections does not.
    */
   async *stream(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
     let after = options.after ?? 0
@@ -409,12 +429,25 @@ export class MatchHandle {
     const base = options.reconnectDelayMs ?? DEFAULT_RECONNECT_DELAY_MS
     const ceiling = options.maxReconnectDelayMs ?? DEFAULT_MAX_RECONNECT_DELAY_MS
     const maxOutageMs = options.maxOutageMs ?? DEFAULT_MAX_OUTAGE_MS
+    // A connection that is still carrying keepalives a heartbeat after it opened is a working one,
+    // the same line the C# client draws (`MatchEventStream.ProvenAfter`). The heartbeat is read off
+    // the idle timeout, which is two and a half of them, and capped so a short outage budget can
+    // still be reset by a connection that lasts half of it.
+    const idleMs = options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS
+    const heartbeatMs = idleMs > 0 ? idleMs / 2.5 : SERVER_HEARTBEAT_MS
+    const provenAfterMs = maxOutageMs > 0 ? Math.min(heartbeatMs, maxOutageMs / 2) : heartbeatMs
     while (!options.signal?.aborted) {
       // A connection the server closes cleanly without delivering anything is a failure of the
       // same kind as a dropped one for the purposes of the budget: nothing arrived.
       let failure: unknown = new Error('the server closed the event stream')
       try {
-        for await (const event of this.streamOnce({ ...options, after })) {
+        const connection = this.connect({ ...options, after }, (connectionAgeMs) => {
+          if (connectionAgeMs >= provenAfterMs) {
+            attempt = 0
+            outageStartedAt = null
+          }
+        })
+        for await (const event of connection) {
           after = Math.max(after, event.seq)
           attempt = 0
           outageStartedAt = null

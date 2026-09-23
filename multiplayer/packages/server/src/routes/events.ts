@@ -1,10 +1,12 @@
 import { INT32_MAX, listEventsContract, streamEventsContract } from '@chaos-overlords/contracts'
+import { UnauthorizedError } from '@chaos-overlords/kernel'
 import type { Hono } from 'hono'
 import { answering } from '../http/contractJson'
 import { requireMember } from '../http/guards'
 import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
 import { isReadableEvent } from '../sse/createSseResponse'
+import { isActiveMember } from '../sse/membership'
 
 /** The event log: a paged REST read (the fallback) and the SSE stream over the same log. */
 export function registerEventRoutes(api: Hono<AppEnv>): void {
@@ -43,7 +45,24 @@ export function registerEventRoutes(api: Hono<AppEnv>): void {
       playerId: principal.player.id,
       afterSeq,
       signal: c.req.raw.signal,
+      lobby: principal.match.status === 'lobby',
     })
+    // The kick may have revoked the token and run hangUp after bearerAuth but before the hub
+    // subscribed. That hangUp saw no listener. Re-read the row after open and cancel the new stream
+    // before returning any of its buffered frames when the membership is already gone.
+    let stillMember = false
+    try {
+      stillMember = await isActiveMember(
+        c.get('container').kernel.deps.storage.players,
+        principal.match.id,
+        principal.player.id,
+      )
+    } finally {
+      if (!stillMember) await stream.body?.cancel()
+    }
+    if (!stillMember) {
+      throw new UnauthorizedError('Invalid or expired player token', { reason: 'invalid_token' })
+    }
     // The stream is a raw `Response`, and Hono does not merge the headers the middleware prepared
     // into one of those — so the one response an operator most wants to correlate, a stream that
     // misbehaved for an hour, was the only one without an `X-Request-Id`.

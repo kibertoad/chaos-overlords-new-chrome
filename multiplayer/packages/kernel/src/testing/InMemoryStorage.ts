@@ -1,5 +1,5 @@
 import type { MatchStatus, TurnStatus } from '@chaos-overlords/contracts'
-import { humanParticipants } from '../domain/entities'
+import { ABSENT_HUMAN_STATUSES, humanParticipants } from '../domain/entities'
 import type {
   Match,
   PersistedEvent,
@@ -156,6 +156,14 @@ export class InMemoryStorage implements MultiplayerStorage {
       const match = this.matchRows.get(matchId)
       if (!match || !from.includes(match.status)) return false
       Object.assign(match, definedOnly(patch))
+      return true
+    },
+    advanceCurrentTurn: async (matchId, number, updatedAt) => {
+      const match = this.matchRows.get(matchId)
+      if (!match || !['running', 'desynced'].includes(match.status) || match.currentTurn >= number)
+        return false
+      match.currentTurn = number
+      match.updatedAt = updatedAt
       return true
     },
   }
@@ -394,6 +402,9 @@ export class InMemoryStorage implements MultiplayerStorage {
 
   readonly takeovers: TakeoverRepository = {
     openPrompt: async (matchId, playerId) => {
+      const player = this.playerRows.get(playerId)
+      if (player?.matchId !== matchId || !ABSENT_HUMAN_STATUSES.includes(player.status))
+        return false
       const key = promptKey(matchId, playerId)
       if (this.promptRows.has(key)) return false
       this.promptRows.set(key, { matchId, playerId })

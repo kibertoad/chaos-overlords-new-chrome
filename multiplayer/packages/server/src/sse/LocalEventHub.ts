@@ -24,6 +24,8 @@ import { MatchLog } from './MatchLog'
  * predecessor is still being torn down. Reaching it closes that player's oldest stream rather than
  * refusing the new one, because the new one is the live client and the old one is the corpse.
  * `perMatch` and `perProcess` are the ceilings a client cannot talk its way past, and they refuse.
+ * Lobby streams may use at most one quarter of the process ceiling, so cheaply minted host tokens
+ * cannot fill every stream slot needed by running matches.
  */
 export interface EventHubLimits {
   perPlayer: number
@@ -37,8 +39,10 @@ export const DEFAULT_EVENT_HUB_LIMITS: EventHubLimits = {
   perProcess: 512,
 }
 
-/** What the hub tells its runtime about, so an operator can find out it happened. */
+/** Runtime hooks for stream diagnostics and membership checks. */
 export interface EventHubObserver {
+  /** A false result or failed lookup ends the stream. */
+  revalidate?(matchId: string, playerId: string): Promise<boolean>
   /** A stored event a stream had to skip because this build cannot read it. */
   unreadable?(matchId: string, seq: number): void
   /**
@@ -52,6 +56,7 @@ export interface EventHubObserver {
 
 interface Subscription {
   playerId: string
+  lobby: boolean
   wake: () => void
   close: () => void
 }
@@ -71,15 +76,27 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
    */
   private readonly logs = new Map<string, MatchLog>()
   private open_ = 0
+  private lobbyOpen_ = 0
+  /** The share of `perProcess` lobby streams may hold; see `makeRoom`. */
+  private readonly lobbyCap: number
 
   constructor(
     private readonly events: EventRepository,
     private readonly heartbeatMs: number,
     private readonly limits: EventHubLimits = DEFAULT_EVENT_HUB_LIMITS,
     private readonly observer: EventHubObserver = {},
-  ) {}
+  ) {
+    this.lobbyCap = Math.max(1, Math.floor(limits.perProcess / 4))
+  }
 
   async notify(event: PersistedEvent): Promise<void> {
+    // A stream opened in the lobby stays connected when play starts. Release its lobby quota now
+    // rather than waiting for a reconnect that may never happen.
+    if (event.type === 'match.started') {
+      for (const subscription of this.listeners.get(event.matchId) ?? []) {
+        this.releaseLobby(subscription)
+      }
+    }
     // The notification carries the durable row, so its frame is formatted once here and every
     // stream one event behind — which is every healthy stream of the match — is served from it
     // without reading anything. See `MatchLog`.
@@ -97,9 +114,9 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
   /**
    * End every stream a membership holds.
    *
-   * Revoking a token stops the next request; a stream that is already open is never authenticated
-   * again, so without this a kicked player keeps being handed every sealed set, every desync report
-   * (which names each player's state hash) and every host change until they choose to disconnect.
+   * Revoking a token stops the next request, and an open stream only re-checks its membership on
+   * the catch-up heartbeat; until then a kicked player keeps being handed every sealed set, every
+   * desync report (which names each player's state hash) and every host change.
    */
   async close(input: { matchId: string; playerId: string }): Promise<void> {
     // Snapshot deliberately: `close()` removes the subscription from the set being walked.
@@ -140,6 +157,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     playerId: string
     afterSeq: number
     signal: AbortSignal
+    lobby?: boolean
   }): Promise<Response> {
     // Before the caps, not only inside the response: making room closes the caller's oldest
     // stream, and a request nobody is waiting on must not cost that player a live one (or be
@@ -148,19 +166,33 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
       this.observer.abandoned?.(input.matchId, input.playerId)
       return abandonedSseResponse()
     }
-    this.makeRoom(input.matchId, input.playerId)
+    const lobby = input.lobby === true
+    this.makeRoom(input.matchId, input.playerId, lobby)
     const log = this.logOf(input.matchId)
+    let subscription: Subscription | undefined
+    const revalidate = this.observer.revalidate
     return createSseResponse(
       {
-        page: (afterSeq, force) => log.page(afterSeq, force),
+        page: async (afterSeq, force) => {
+          const frames = await log.page(afterSeq, force)
+          // `lobby` was read when the request authenticated. A match that started in between
+          // announced it before this stream subscribed, so the release in `notify` missed it; the
+          // stream's own read of the log is where it learns the match is running.
+          if (subscription?.lobby && log.started) this.releaseLobby(subscription)
+          return frames
+        },
         caughtUp: (lastSeq) => log.caughtUp(lastSeq),
-        subscribe: (wake, close) => this.subscribe(input.matchId, input.playerId, wake, close),
+        subscribe: (wake, close) => {
+          subscription = { playerId: input.playerId, lobby: lobby && !log.started, wake, close }
+          return this.subscribe(input.matchId, subscription)
+        },
       },
       {
         afterSeq: input.afterSeq,
         heartbeatMs: this.heartbeatMs,
         signal: input.signal,
         onUnreadable: (seq) => this.observer.unreadable?.(input.matchId, seq),
+        ...(revalidate ? { revalidate: () => revalidate(input.matchId, input.playerId) } : {}),
       },
     )
   }
@@ -173,20 +205,17 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     return log
   }
 
-  private subscribe(
-    matchId: string,
-    playerId: string,
-    wake: () => void,
-    close: () => void,
-  ): () => void {
+  private subscribe(matchId: string, subscription: Subscription): () => void {
     const set = this.listeners.get(matchId) ?? new Set<Subscription>()
-    const subscription: Subscription = { playerId, wake, close }
     set.add(subscription)
     this.listeners.set(matchId, set)
     this.open_ += 1
+    if (subscription.lobby) this.lobbyOpen_ += 1
     return () => {
       if (!set.delete(subscription)) return
       this.open_ -= 1
+      // Clears the flag as well, so a page still in flight at close cannot release it twice.
+      this.releaseLobby(subscription)
       if (set.size === 0) {
         this.listeners.delete(matchId)
         // Nothing reads this match any more, so its frames are only memory. The next stream of it
@@ -196,8 +225,15 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     }
   }
 
+  /** Stop charging a stream to the lobby share once its match is running. */
+  private releaseLobby(subscription: Subscription): void {
+    if (!subscription.lobby) return
+    subscription.lobby = false
+    this.lobbyOpen_ -= 1
+  }
+
   /**
-   * Enforce the three caps before a stream is built.
+   * Enforce the stream caps before a stream is built.
    *
    * The caller's own stale streams are closed FIRST, before either ceiling is read. Closing them is
    * not a concession to the caller, it is bookkeeping: a reconnect whose predecessor has not
@@ -209,7 +245,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
    * `perMatch` and `perProcess` then refuse whatever is still over, which is the case no client can
    * talk its way past.
    */
-  private makeRoom(matchId: string, playerId: string): void {
+  private makeRoom(matchId: string, playerId: string, lobby: boolean): void {
     const set = this.listeners.get(matchId)
     if (set) {
       const mine = [...set].filter((subscription) => subscription.playerId === playerId)
@@ -219,6 +255,16 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
       throw new RateLimitedError('This server is holding as many event streams as it can', {
         reason: 'too_many_streams',
         scope: 'process',
+      })
+    }
+    // Creating a lobby is unauthenticated. A caller can mint hundreds of host tokens and hold
+    // three streams per token, so lobby streams cannot be allowed to occupy the whole process cap.
+    // Running matches retain the other three quarters even when a single source spreads creation
+    // across many IPv6 /64s and exhausts the lobby pool.
+    if (lobby && this.lobbyOpen_ >= this.lobbyCap) {
+      throw new RateLimitedError('This server is holding as many lobby streams as it can', {
+        reason: 'too_many_streams',
+        scope: 'lobby',
       })
     }
     if ((this.listeners.get(matchId)?.size ?? 0) >= this.limits.perMatch) {

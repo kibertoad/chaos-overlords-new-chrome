@@ -221,6 +221,35 @@ describe('desync verdicts, snapshots and recovery', () => {
     ).rejects.toMatchObject({ details: { reason: 'takeover_not_pending' } })
   })
 
+  it('does not reopen a prompt when the target returns during a vote', async () => {
+    const { host, guest } = await h.startedMatch()
+    await h.kernel.lobby.leave(await h.principalOf(guest.token))
+    await h.storage.takeovers.closePrompt(host.match.id, guest.player.id)
+    const requested = () =>
+      h.notifier.events.filter((event) => event.type === 'match.takeoverVoteRequested').length
+    const requestedBefore = requested()
+    const castVote = h.storage.takeovers.castVote
+    let firstCast = true
+    h.storage.takeovers.castVote = async (vote) => {
+      if (firstCast) {
+        firstCast = false
+        await h.storage.players.setStatus(guest.player.id, 'active')
+        return false
+      }
+      return castVote(vote)
+    }
+
+    await expect(
+      h.kernel.lobby.voteOnTakeover(await h.principalOf(host.token), guest.player.id, {
+        decision: 'computer',
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'takeover_not_pending' } })
+    expect(await h.storage.takeovers.hasOpenPrompts(host.match.id)).toBe(false)
+    // Nothing was announced for the returned seat, so no client shows a modal for it.
+    expect(requested()).toBe(requestedBefore)
+    expect((await h.storage.players.get(guest.player.id))?.status).toBe('active')
+  })
+
   it('waits for a seat that merely missed a deadline before confirming its turn', async () => {
     const { host, guest } = await h.startedMatch(60)
     await h.submit(await h.principalOf(host.token), 1, 1, true)
@@ -326,6 +355,24 @@ describe('desync verdicts, snapshots and recovery', () => {
     expect((await h.kernel.auth.authenticate(created.token)).match.currentTurn).toBe(1)
     // Idempotent: a second sweep has nothing left to repair.
     expect(await h.kernel.turns.sweep()).toEqual({ sealed: 0, repaired: 0 })
+  })
+
+  it('does not rewind the current turn when a late sweep reopens an older turn', async () => {
+    const { host, guest, third } = await h.startedMatchOfThree(60)
+    const stale = await h.principalOf(host.token)
+    for (const turn of [1, 2]) {
+      await h.submit(await h.principalOf(host.token), turn, 1, true)
+      await h.submit(await h.principalOf(guest.token), turn, 2, true)
+      await h.submit(await h.principalOf(third.token), turn, 3, true)
+    }
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(3)
+    const armed = h.scheduler.scheduled.length
+    expect(h.scheduler.scheduled.at(-1)?.turn).toBe(3)
+
+    expect(await h.kernel.turns.openTurn(stale.match, 2)).toBe(false)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(3)
+    // The live turn keeps its timer: a stale re-open must not replace it with one for turn 2.
+    expect(h.scheduler.scheduled).toHaveLength(armed)
   })
 
   /**

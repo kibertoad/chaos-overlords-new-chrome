@@ -27,7 +27,9 @@ namespace Rechaos.Multiplayer.Session;
 /// How long the event stream may carry nothing — not even a keepalive — before the connection is
 /// dropped and reopened from the last sequence seen, or null for
 /// <see cref="MatchEventStream.DefaultIdleTimeout"/>. A socket the network has forgotten about
-/// never says so; this is how the session finds out.
+/// never says so; this is how the session finds out. Only time spent waiting on the connection
+/// counts: while the session handles an event nothing is timed, so a dead socket is found at most
+/// this long after the handler returns.
 /// </param>
 /// <param name="StreamOutageBudget">
 /// How long the event stream may stay down before the session gives up, or null to keep trying for

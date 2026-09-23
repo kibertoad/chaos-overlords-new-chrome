@@ -6,6 +6,7 @@ import {
 import {
   DEFAULT_EVENT_HUB_LIMITS,
   DEFAULT_SERVER_CONFIG,
+  isActiveMember,
   LocalEventHub,
 } from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
@@ -44,6 +45,8 @@ export class MatchHub {
         // so a run of these is where a signal that only looks aborted would show up.
         abandoned: (matchId, playerId) =>
           workerLogger.info('answered an already abandoned event stream', { matchId, playerId }),
+        revalidate: (matchId, playerId) =>
+          isActiveMember(this.repositories.players, matchId, playerId),
       },
     )
   }

@@ -88,7 +88,7 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `MAX_CONNECTIONS` | `1024`, or 2 × `MAX_EVENT_STREAMS` if that is larger | Sockets the HTTP server holds at once; further connections are closed as they arrive. Must be above `MAX_EVENT_STREAMS`, since every stream is a connection. Without it, the only limit on idle or trickling sockets is the file descriptor limit. |
 | `HTTP_HEADERS_TIMEOUT_MS` | `15000` | How long a client may take to send its request headers (Node's own default is a minute). At least `1000` and no more than `HTTP_REQUEST_TIMEOUT_MS`. |
 | `HTTP_REQUEST_TIMEOUT_MS` | `120000` | How long a client may take to send a whole request, body included. Sized for an 8 MiB bug report on a slow uplink. Event streams are unaffected: their request is complete once the headers arrive. |
-| `MAX_EVENT_STREAMS` | `512` | Event streams this process holds at once, across every match; further opens answer 429. A stream lives until its client closes it and costs one read per published event, so this is what stops one member from holding thousands. Raise it and the file descriptor limit together. |
+| `MAX_EVENT_STREAMS` | `512` | Event streams this process holds at once, across every match; further opens answer 429. At most one quarter of this cap may be occupied by lobby streams, leaving capacity for running matches even if unauthenticated lobby creation is abused. A lobby stream stops using that share when its match starts. Raise the cap and the file descriptor limit together. |
 | `CORS_ORIGINS` | *(none)* | Comma-separated browser origins allowed to call the API. The game is not a browser and needs none; a web front end using `@chaos-overlords/client` lists its origin here, which also permits the preflighted `Authorization` and `Last-Event-ID` headers. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 
@@ -157,7 +157,7 @@ deployment has to satisfy:
 | `BUG_BLOBS` | R2 | Compressed match journals. Leave it unbound and only journals under 256 KiB are kept. |
 | `MATCH_HUB` | Durable Object | `MatchHub`, one per match: SSE fan-out and the turn deadline alarm. Its migration lineage starts at tag `v1`, `new_sqlite_classes = ["MatchHub"]`. |
 
-`PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
+`PUBLIC_LISTING`, `CORS_ORIGINS`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
 `UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`,
 `MATCH_CREATION_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
 `LOBBY_RETENTION_DAYS`, `ABANDONED_RETENTION_DAYS`, `SILENT_RETENTION_DAYS`, `RETENTION_BATCH_SIZE`

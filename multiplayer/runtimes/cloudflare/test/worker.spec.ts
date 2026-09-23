@@ -1,5 +1,6 @@
 import { env, SELF } from 'cloudflare:test'
 import { defineHttpConformance, defineStorageConformance } from '@chaos-overlords/conformance'
+import { createApp } from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import { drizzle } from 'drizzle-orm/d1'
 import { describe, expect, it } from 'vitest'
@@ -81,15 +82,58 @@ describe('bug reports', () => {
 })
 
 describe('worker configuration', () => {
-  /**
-   * A deployment that never set the var still serves the list the game's Browse screen reads; only
-   * an explicit `"false"` turns the route off.
-   */
+  /** Both runtimes read the same listing flag and browser origin list. */
   it('serves the public lobby list unless PUBLIC_LISTING says otherwise', () => {
     const { PUBLIC_LISTING: _unset, ...unconfigured } = env
     expect(buildContainer(unconfigured).config.publicListing).toBe(true)
     expect(buildContainer({ ...env, PUBLIC_LISTING: 'true' }).config.publicListing).toBe(true)
     expect(buildContainer({ ...env, PUBLIC_LISTING: 'false' }).config.publicListing).toBe(false)
+    expect(buildContainer({ ...env, PUBLIC_LISTING: '0' }).config.publicListing).toBe(false)
+    expect(buildContainer({ ...env, PUBLIC_LISTING: 'FALSE' }).config.publicListing).toBe(false)
+    expect(buildContainer({ ...env, PUBLIC_LISTING: 'TRUE' }).config.publicListing).toBe(true)
+    expect(buildContainer({ ...env, PUBLIC_LISTING: 'yes' }).config.publicListing).toBe(true)
+    expect(() => buildContainer({ ...env, PUBLIC_LISTING: 'sometimes' })).toThrow(
+      /Expected a boolean/,
+    )
+    expect(
+      buildContainer({ ...env, CORS_ORIGINS: ' https://a.example, https://b.example ,' }).config
+        .corsOrigins,
+    ).toEqual(['https://a.example', 'https://b.example'])
+  })
+
+  it('answers browser preflight for a configured Cloudflare origin', async () => {
+    const app = createApp(buildContainer({ ...env, CORS_ORIGINS: 'https://client.example' }))
+    const response = await app.request('/api/v1/matches', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://client.example',
+        'Access-Control-Request-Method': 'GET',
+      },
+    })
+    expect(response.status).toBe(204)
+    expect(response.headers.get('access-control-allow-origin')).toBe('https://client.example')
+  })
+
+  it.each([
+    'RATE_LIMIT_PER_MINUTE',
+    'MEMBER_RATE_LIMIT_PER_MINUTE',
+    'UPLOAD_RATE_LIMIT_PER_MINUTE',
+    'BUG_REPORT_RATE_LIMIT_PER_MINUTE',
+    'MATCH_CREATION_RATE_LIMIT_PER_MINUTE',
+  ] as const)('refuses invalid %s instead of silently using the default', (name) => {
+    expect(() => buildContainer({ ...env, [name]: '0' })).toThrow(/at least 1/)
+    expect(() => buildContainer({ ...env, [name]: 'bad' })).toThrow(/at least 1/)
+    expect(() => buildContainer({ ...env, [name]: ' ' })).toThrow(new RegExp(`^${name}:`))
+  })
+
+  /** An unquoted `[vars]` entry reaches the Worker as a number or a boolean, not a string. */
+  it('reads unquoted vars the way it reads their quoted spelling', () => {
+    const typed = {
+      ...env,
+      PUBLIC_LISTING: false,
+      RATE_LIMIT_PER_MINUTE: 30,
+    } as unknown as typeof env
+    expect(buildContainer(typed).config.publicListing).toBe(false)
   })
 })
 

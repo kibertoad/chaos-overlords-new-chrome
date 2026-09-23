@@ -1,5 +1,11 @@
 import { DEFAULT_RETENTION_DAYS } from '@chaos-overlords/kernel'
-import { DEFAULT_EVENT_HUB_LIMITS, DEFAULT_RATE_LIMITS } from '@chaos-overlords/server'
+import {
+  configFlag,
+  configInteger,
+  configList,
+  DEFAULT_EVENT_HUB_LIMITS,
+  DEFAULT_RATE_LIMITS,
+} from '@chaos-overlords/server'
 
 export interface NodeConfig {
   host: string
@@ -137,42 +143,46 @@ export interface NodeConfig {
  * hosts chose to be discoverable, and port 8787.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
-  const maxEventStreams = integer(env.MAX_EVENT_STREAMS, DEFAULT_EVENT_HUB_LIMITS.perProcess, 1)
+  const maxEventStreams = configInteger(
+    env.MAX_EVENT_STREAMS,
+    DEFAULT_EVENT_HUB_LIMITS.perProcess,
+    1,
+  )
   return {
     host: env.HOST ?? '0.0.0.0',
-    port: integer(env.PORT, 8787),
+    port: configInteger(env.PORT, 8787),
     databaseUrl: env.DATABASE_URL ?? 'sqlite:./chaos-overlords.db',
     bugReportDatabaseUrl: env.BUG_REPORT_DATABASE_URL ?? '',
     bugReportBlobDirectory: env.BUG_REPORT_BLOB_DIR ?? '',
-    publicListing: flag(env.PUBLIC_LISTING, true),
+    publicListing: configFlag(env.PUBLIC_LISTING, true),
     logLevel: level(env.LOG_LEVEL),
-    sweepIntervalMs: integer(env.SWEEP_INTERVAL_MS, 15_000, MIN_SWEEP_INTERVAL_MS),
-    rateLimitPerMinute: integer(env.RATE_LIMIT_PER_MINUTE, 30, 1),
-    memberRateLimitPerMinute: integer(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240, 1),
-    uploadRateLimitPerMinute: integer(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10, 1),
-    bugReportRateLimitPerMinute: integer(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5, 1),
-    matchCreationRateLimitPerMinute: integer(
+    sweepIntervalMs: configInteger(env.SWEEP_INTERVAL_MS, 15_000, MIN_SWEEP_INTERVAL_MS),
+    rateLimitPerMinute: configInteger(env.RATE_LIMIT_PER_MINUTE, 30, 1),
+    memberRateLimitPerMinute: configInteger(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240, 1),
+    uploadRateLimitPerMinute: configInteger(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10, 1),
+    bugReportRateLimitPerMinute: configInteger(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5, 1),
+    matchCreationRateLimitPerMinute: configInteger(
       env.MATCH_CREATION_RATE_LIMIT_PER_MINUTE,
       DEFAULT_RATE_LIMITS.matchCreationPerMinute,
       1,
     ),
-    retentionDays: integer(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
+    retentionDays: configInteger(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
     lobbyRetentionDays: optionalInteger(env.LOBBY_RETENTION_DAYS),
-    abandonedRetentionDays: integer(
+    abandonedRetentionDays: configInteger(
       env.ABANDONED_RETENTION_DAYS,
       DEFAULT_RETENTION_DAYS.abandonedLive,
     ),
     silentRetentionDays: optionalInteger(env.SILENT_RETENTION_DAYS),
     retentionBatchSize: optionalInteger(env.RETENTION_BATCH_SIZE, 1),
-    retentionIntervalMs: integer(env.RETENTION_INTERVAL_MS, 60_000, MIN_SWEEP_INTERVAL_MS),
-    bugReportRetentionDays: integer(env.BUG_REPORT_RETENTION_DAYS, 90),
-    bugReportDailyStateMb: integer(env.BUG_REPORT_DAILY_STATE_MB, 512),
+    retentionIntervalMs: configInteger(env.RETENTION_INTERVAL_MS, 60_000, MIN_SWEEP_INTERVAL_MS),
+    bugReportRetentionDays: configInteger(env.BUG_REPORT_RETENTION_DAYS, 90),
+    bugReportDailyStateMb: configInteger(env.BUG_REPORT_DAILY_STATE_MB, 512),
     trustedProxyHops: proxyHops(env.TRUST_PROXY),
-    shutdownGraceMs: integer(env.SHUTDOWN_GRACE_MS, 5_000),
+    shutdownGraceMs: configInteger(env.SHUTDOWN_GRACE_MS, 5_000),
     maxEventStreams,
     maxConnections: connectionCap(env.MAX_CONNECTIONS, maxEventStreams),
     ...requestTimeouts(env),
-    corsOrigins: list(env.CORS_ORIGINS),
+    corsOrigins: configList(env.CORS_ORIGINS),
   }
 }
 
@@ -186,7 +196,7 @@ const MIN_CONNECTIONS = 1_024
 /** `MAX_CONNECTIONS`, which must leave room for requests above every allowed event stream. */
 function connectionCap(raw: string | undefined, maxEventStreams: number): number {
   const fallback = Math.max(MIN_CONNECTIONS, maxEventStreams * CONNECTION_HEADROOM_PER_STREAM)
-  const value = integer(raw, fallback, 1)
+  const value = configInteger(raw, fallback, 1)
   if (value <= maxEventStreams) {
     throw new Error(
       `MAX_CONNECTIONS (${value}) must be above MAX_EVENT_STREAMS (${maxEventStreams}), or the streams alone can take every connection`,
@@ -202,8 +212,8 @@ function connectionCap(raw: string | undefined, maxEventStreams: number): number
 function requestTimeouts(
   env: NodeJS.ProcessEnv,
 ): Pick<NodeConfig, 'headersTimeoutMs' | 'requestTimeoutMs'> {
-  const headersTimeoutMs = integer(env.HTTP_HEADERS_TIMEOUT_MS, 15_000, 1_000)
-  const requestTimeoutMs = integer(env.HTTP_REQUEST_TIMEOUT_MS, 120_000, 1_000)
+  const headersTimeoutMs = configInteger(env.HTTP_HEADERS_TIMEOUT_MS, 15_000, 1_000)
+  const requestTimeoutMs = configInteger(env.HTTP_REQUEST_TIMEOUT_MS, 120_000, 1_000)
   if (headersTimeoutMs > requestTimeoutMs) {
     throw new Error(
       `HTTP_HEADERS_TIMEOUT_MS (${headersTimeoutMs}) must not exceed HTTP_REQUEST_TIMEOUT_MS (${requestTimeoutMs})`,
@@ -218,31 +228,9 @@ function requestTimeouts(
  */
 const MIN_SWEEP_INTERVAL_MS = 1_000
 
-/**
- * A rate limit of `0` is not "unlimited" and not "closed" — the limiter admits one call per
- * window and refuses the rest, which nobody means — so every budget has a floor of one, and the
- * refusal names it rather than letting a misconfiguration run.
- */
-function integer(raw: string | undefined, fallback: number, minimum = 0): number {
-  if (raw === undefined || raw === '') return fallback
-  const value = Number(raw)
-  if (!Number.isInteger(value) || value < minimum) {
-    throw new Error(`Expected an integer of at least ${minimum}, got "${raw}"`)
-  }
-  return value
-}
-
 /** An integer when the variable is set, `undefined` when it is not, so a derived default can apply. */
 function optionalInteger(raw: string | undefined, minimum = 0): number | undefined {
-  return raw === undefined || raw === '' ? undefined : integer(raw, 0, minimum)
-}
-
-/** A comma-separated list, trimmed, with empty entries dropped. */
-function list(raw: string | undefined): string[] {
-  return (raw ?? '')
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0)
+  return raw === undefined || raw === '' ? undefined : configInteger(raw, 0, minimum)
 }
 
 /**
@@ -260,11 +248,6 @@ function proxyHops(raw: string | undefined): number {
     throw new Error(`Expected TRUST_PROXY to be true, false or a hop count, got "${raw}"`)
   }
   return value
-}
-
-function flag(raw: string | undefined, fallback: boolean): boolean {
-  if (raw === undefined || raw === '') return fallback
-  return raw === 'true' || raw === '1'
 }
 
 function level(raw: string | undefined): NodeConfig['logLevel'] {

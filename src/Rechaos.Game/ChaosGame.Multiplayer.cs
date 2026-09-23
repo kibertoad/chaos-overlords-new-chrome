@@ -24,6 +24,12 @@ public sealed partial class ChaosGame
     /// killed; the stream notices at <see cref="MatchEventStream.DefaultIdleTimeout"/>, fifty
     /// seconds, and comes back from its `Last-Event-ID`. At thirty seconds this watchdog was tearing
     /// the session down twenty seconds before the mechanism that fixes it even woke up.
+    /// <para>
+    /// The margin covers the stream's detector only while the pump is reading: time a handler spends
+    /// on an event is not silence, so a dead socket found during a long handler — a desync repair
+    /// waiting on its reports — can outlast this grace. Losing that race costs a resync and nothing
+    /// more: <see cref="MultiplayerMatchSession.RequestResync"/> also ends that wait.
+    /// </para>
     /// </remarks>
     private static readonly TimeSpan OnlineResolutionGrace =
         MatchEventStream.DefaultIdleTimeout + TimeSpan.FromSeconds(25);
