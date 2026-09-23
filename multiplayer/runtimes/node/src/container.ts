@@ -11,6 +11,7 @@ import {
   type Kernel,
   type Logger,
   RateLimiter,
+  retentionPolicyFromDays,
 } from '@chaos-overlords/kernel'
 import {
   type AppEnv,
@@ -26,6 +27,7 @@ import { type OpenedStorage, openStorage, parseStorageTarget } from '@chaos-over
 import { getConnInfo } from '@hono/node-server/conninfo'
 import type { Hono } from 'hono'
 import type { NodeConfig } from './config.js'
+import { startCleanup } from './cleanup.js'
 import { createLogger } from './logger.js'
 import { startSweeper, TimerDeadlineScheduler } from './TimerDeadlineScheduler.js'
 
@@ -85,6 +87,21 @@ export async function buildNodeRuntime(
     },
   )
 
+  const retention = retentionPolicyFromDays(
+    {
+      finished: config.retentionDays,
+      ...(config.lobbyRetentionDays === undefined ? {} : { lobby: config.lobbyRetentionDays }),
+      abandonedLive: config.abandonedRetentionDays,
+      ...(config.silentRetentionDays === undefined
+        ? {}
+        : { silentLive: config.silentRetentionDays }),
+    },
+    // Retention runs on the request thread when the driver is synchronous, and a match is
+    // everything it owns: up to five megabytes of snapshot and its whole event log. Smaller
+    // batches every pass bound how long one pass can hold every stream and request still.
+    config.retentionBatchSize ?? (opened.dialect === 'sqlite' ? 10 : 50),
+  )
+
   let scheduler: TimerDeadlineScheduler | undefined
   let warnedAboutProxy = false
   const kernel = createKernel(
@@ -97,23 +114,13 @@ export async function buildNodeRuntime(
       scheduler: { schedule: (input) => (scheduler as TimerDeadlineScheduler).schedule(input) },
     },
     {
-      retention: {
-        maxAgeMs: config.retentionDays * DAY_MS,
-        abandonedLiveMaxAgeMs: config.abandonedRetentionDays * DAY_MS,
-        // Twice the abandoned window, and without its roster test. The roster test alone never
-        // collects an untimed match whose players' clients died without a `leave`, which is the
-        // ordinary end of one.
-        silentLiveMaxAgeMs: config.abandonedRetentionDays * 2 * DAY_MS,
-        // Retention runs on the request thread when the driver is synchronous, and a match is
-        // everything it owns: up to five megabytes of snapshot and its whole event log. Smaller
-        // batches every sweep bound how long one pass can hold every stream and request still.
-        batchSize: opened.dialect === 'sqlite' ? 10 : 50,
-      },
+      retention,
     },
   )
   scheduler = new TimerDeadlineScheduler(kernel.turns, clock, logger)
   const bugReports = openBugReports(config, clock, logger)
-  const stopSweeper = startSweeper(kernel, config.sweepIntervalMs, logger, bugReports?.service)
+  const stopSweeper = startSweeper(kernel, config.sweepIntervalMs, logger)
+  const stopCleanup = startCleanup(kernel, config.retentionIntervalMs, logger, bugReports?.service)
 
   const perMinute = (limit: number) => new RateLimiter(clock, { limit, windowMs: 60_000 })
   const container: ServerContainer = {
@@ -158,11 +165,20 @@ export async function buildNodeRuntime(
   logger.info('runtime ready', {
     databaseUrl: redactUrl(config.databaseUrl),
     publicListing: config.publicListing,
-    retentionDays: config.retentionDays,
+    retention: {
+      // The effective windows, so a derived one is logged as what it resolved to.
+      finishedDays: retention.finishedMaxAgeMs / DAY_MS,
+      lobbyDays: retention.lobbyMaxAgeMs / DAY_MS,
+      abandonedDays: retention.abandonedLiveMaxAgeMs / DAY_MS,
+      silentDays: retention.silentLiveMaxAgeMs / DAY_MS,
+      batchSize: retention.batchSize,
+      intervalMs: config.retentionIntervalMs,
+    },
     bugReports: bugReports ? 'on' : 'off',
   })
   const closeStreams = (): void => {
     stopSweeper()
+    stopCleanup()
     scheduler?.stop()
     hub.closeAll()
   }

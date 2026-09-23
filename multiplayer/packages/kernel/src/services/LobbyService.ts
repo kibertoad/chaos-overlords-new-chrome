@@ -315,6 +315,7 @@ export class LobbyService {
         reason: 'seat_reserved',
       })
     }
+    await this.refreshRetention(match.id)
     const openTurn = await this.deps.storage.turns.get(match.id, match.currentTurn)
     if (openTurn?.status === 'open') await this.deps.storage.turns.open(openTurn, [player.id])
     await this.publisher.publish(match.id, {
@@ -334,6 +335,7 @@ export class LobbyService {
     if (player.status === 'kicked') {
       throw new ForbiddenError('A kicked player cannot rejoin', { reason: 'kicked' })
     }
+    await this.refreshRetention(match.id)
     if (player.status === 'active') return
     const replacedComputer = player.status === 'computer'
     if (
@@ -662,6 +664,20 @@ export class LobbyService {
     // A departure can complete readiness or a consensus that was waiting on the leaver.
     await this.turns.reevaluate(match.id)
     await this.retallyOpenPrompts(match)
+  }
+
+  /**
+   * Restart a running or desynced match's retention age: somebody has just come (back) to it.
+   *
+   * The abandoned and silent windows both run from `updatedAt`, and neither a join nor a rejoin
+   * otherwise moves it — a player returning to an untimed match whose partner is still away opens
+   * no turn and changes no status — so a match somebody was demonstrably playing could be collected
+   * on the age it had before they came back. A no-op on any other status.
+   */
+  private async refreshRetention(matchId: string): Promise<void> {
+    await this.deps.storage.matches.transition(matchId, ['running', 'desynced'], {
+      updatedAt: this.deps.clock.now(),
+    })
   }
 
   /**
