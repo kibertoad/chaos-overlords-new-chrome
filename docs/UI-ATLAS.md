@@ -288,7 +288,11 @@ silently exposed as compatible online modes.
   64-by-64 `PX03000` portraits at x 439, 505, and 571. Dragging an available
   portrait shows a 36-by-36 token and highlights valid controlled-sector drops;
   a reserved recruit retains its cell under the color-keyed original `HIRED`
-  stamp from `PX00129`. Available candidates show their two-digit initial hire
+  stamp from `PX00129`. A snubbed candidate (the Reject selection) likewise
+  retains its cell under a red cross in the same 60-by-60 stamp aperture. The
+  original draws that cross from a `PX00129` rectangle not yet recovered, so
+  the recreation composites a generated stand-in (`HireSnubMark`) until the
+  native source is identified. Available candidates show their two-digit initial hire
   price with a minimum width of two digits (`06`, but `11` remains `11`),
   centered in the left 33-by-24 footer half at y 436. The right-footer Reject
   action is a deliberately compact 32-by-13 target at `(472 + 66*slot,437)`,
