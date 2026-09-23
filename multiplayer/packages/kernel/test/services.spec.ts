@@ -783,6 +783,70 @@ describe('the lobby, the roster and the turn barrier', () => {
     expect(await h.kernel.turns.sweep()).toEqual({ sealed: 1, repaired: 0 })
     expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
     expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
-    expect(h.scheduler.scheduled).toHaveLength(2)
+    // Turn 1's deadline, its re-arm after the early call above, and turn 2's deadline.
+    expect(h.scheduler.scheduled).toHaveLength(3)
+  })
+
+  it('re-arms a deadline timer that fires before the deadline instead of dropping it', async () => {
+    const { host } = await h.startedMatch(60)
+    const deadline = new Date(h.clock.now().getTime() + 60_000)
+    h.clock.advance(60_000 - 5_000)
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect(h.scheduler.scheduled).toEqual([{ matchId: host.match.id, turn: 1, dueAt: deadline }])
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(1)
+  })
+
+  it('retries an alarm that fires a hair early no sooner than the retry floor', async () => {
+    const { host } = await h.startedMatch(60)
+    h.clock.advance(60_000 - 1)
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect(h.scheduler.scheduled).toEqual([
+      { matchId: host.match.id, turn: 1, dueAt: new Date(h.clock.now().getTime() + 250) },
+    ])
+    h.clock.advance(250)
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(true)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+  })
+
+  it('does not leave the successor without a timer when a ready seal races an early re-arm', async () => {
+    const { host, guest } = await h.startedMatch(60)
+    h.clock.advance(30_000)
+    const record = h.scheduler.schedule.bind(h.scheduler)
+    let raced = false
+    h.scheduler.schedule = async (input) => {
+      if (!raced && input.turn === 1) {
+        raced = true
+        // Everyone readies between the early fire's read of turn 1 and its re-arm landing: the
+        // seal arms turn 2, and the re-arm for turn 1 then replaces it.
+        await h.submit(await h.principalOf(host.token), 1, 1, true)
+        await h.submit(await h.principalOf(guest.token), 1, 2, true)
+      }
+      await record(input)
+    }
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+    expect(h.scheduler.scheduled.at(-1)).toEqual({
+      matchId: host.match.id,
+      turn: 2,
+      dueAt: new Date(h.clock.now().getTime() + 60_000),
+    })
+  })
+
+  it('does not re-arm a paused turn, which has no deadline to wait for', async () => {
+    const { host } = await h.startedMatch(0)
+    h.scheduler.scheduled.length = 0
+
+    expect(await h.kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
+
+    expect(h.scheduler.scheduled).toEqual([])
   })
 })
