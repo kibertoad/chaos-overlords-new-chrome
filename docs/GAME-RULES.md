@@ -471,12 +471,13 @@ claim about original-game behavior.
   purchases, and earlier submitted Sells. It does not include later Sells,
   the post-Transaction Chaos payout, or the
   sector tax, site Cash, and gang Upkeep collected at the next Upkeep. The
-  city console's separate `DELTA` figure (`FinanceProjection.CashAdjustment`)
+  city console's parenthesised delta (`FinanceProjection.CashAdjustment`)
   nets all of those components across the whole cycle, so it is not an
   affordability test: `cash + delta >= 0` can hold while an Equip fails. For
   example, with $10 cash, one queued $12 Equip, $5 of sector tax, and no other
-  projected component, the console shows `CASH 10`, `DELTA -7`, and `UNSPENT -2`;
-  the Equip fails. `UNSPENT` subtracts every queued Bribe and Equip price from
+  projected component, the console's cash row reads `CASH 10 [-2] (-7)`: cash,
+  unspent cash in brackets, and the delta in parentheses; the Equip fails.
+  Unspent cash subtracts every queued Bribe and Equip price from
   current cash, because both debit cash before or during the Transaction scan,
   while its tooltip lists them in resolution order: Bribes first, then Equips
   in submission order. It is a preview, not a cash reservation: earlier Sells

@@ -39,8 +39,10 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 submitted those orders. Replacing an order moves it to the end. Transactions
 still resolve by player slot, and Give retains its deferred roster-ordered
 recipient writes. The city console shows current cash, the whole-cycle Delta,
-and `UNSPENT = cash - sum(queued Bribe and Equip prices)` separately. Hovering
-the cash figures shows every queued Bribe and Equip, numbered in resolution
+and `UNSPENT = cash - sum(queued Bribe and Equip prices)` on one row as
+`CASH 20 [18] (+1)`: cash, unspent cash in brackets, and the delta in
+parentheses. Hovering the row explains each figure in its own section, breaks
+the delta down by component, and shows every queued Bribe and Equip, numbered in resolution
 order with its price: Instant Bribes first, then Equips in submission order.
 
 **Original behavior.** `BIN-EQUIP-002` and `BIN-EQUIP-006` establish that the

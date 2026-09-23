@@ -81,6 +81,8 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(579, StatusConsoleLayout.ValueRight);
         Assert.Equal(new Rectangle(476, 95, 44, 9), StatusConsoleLayout.CashLabel);
+        Assert.Equal(new Rectangle(476, 41, 108, 9), StatusConsoleLayout.Cash);
+        Assert.Equal(12, StatusConsoleLayout.CashValueMaxCharacters);
         Assert.Equal([60, 69, 78, 87, 96],
             Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorValueY));
     }
@@ -119,6 +121,9 @@ public sealed class UiNavigationTests
         Assert.Equal("+1", StatusConsolePresentation.ProjectedChange(1));
         Assert.Equal("-3", StatusConsolePresentation.ProjectedChange(-3));
         Assert.Equal("0", StatusConsolePresentation.ProjectedChange(0));
+        Assert.Equal("20 [20] (+1)", StatusConsolePresentation.CashSummary(20, 20, 1));
+        Assert.Equal("5 [-3] (0)", StatusConsolePresentation.CashSummary(5, -3, 0));
+        Assert.Equal("120[95](-12)", StatusConsolePresentation.CashSummary(120, 95, -12));
         Assert.Empty(StatusConsoleTooltip.At(Point.Zero));
     }
 

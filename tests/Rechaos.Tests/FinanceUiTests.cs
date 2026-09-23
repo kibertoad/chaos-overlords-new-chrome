@@ -116,6 +116,41 @@ public sealed class FinanceUiTests
     }
 
     [Fact]
+    public void CashTooltipExplainsEachFigureInItsOwnSection()
+    {
+        var gang = new GangId(1);
+        QueuedCashSpend[] spends =
+        [
+            new(1, gang, "TEST", GangAction.Bribe, "BRIBE", 2),
+            new(2, gang, "TEST", GangAction.Equip, "PISTOL", 5)
+        ];
+        var projection = new FinanceProjection(
+            GangUpkeep: -3, NewContracts: 0, ProjectedGangCount: 1, Equipment: -5,
+            CityOfficials: -2, SectorTax: 1, SiteProtection: 0, ChaosEstimate: 4,
+            CashAdjustment: -5);
+
+        var lines = StatusConsolePresentation.CashTooltip(20, spends, projection);
+
+        Assert.Equal("CASH  20 [13] (-5)", lines[0]);
+        Assert.Equal(
+            [
+                "20 - CASH: MONEY ON HAND RIGHT NOW.",
+                "[13] - UNSPENT: CASH LEFT AFTER QUEUED BRIBES AND EQUIPS.",
+                "(-5) - DELTA: ESTIMATED CHANGE OVER THE WHOLE TURN.",
+                "QUEUED SPENDING IN RESOLUTION ORDER:"
+            ],
+            lines.Select((line, index) => (line, index))
+                .Where(entry => entry.index > 0 && lines[entry.index - 1].Length == 0)
+                .Select(entry => entry.line));
+        Assert.Contains("  20 CASH - 2 BRIBES - 5 EQUIPS = 13", lines);
+        Assert.Contains("  GANG UPKEEP       -3", lines);
+        Assert.Contains("  CHAOS ESTIMATE    +4", lines);
+        Assert.Contains("  TOTAL             -5", lines);
+        Assert.DoesNotContain(lines, line => line.StartsWith("  NEW CONTRACTS", StringComparison.Ordinal)
+            || line.StartsWith("  SITE CASH", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void SectorProjectionExcludesOtherSectorsAndEstimatesQueuedChaos()
     {
         var state = CreatePlanningMatch();
