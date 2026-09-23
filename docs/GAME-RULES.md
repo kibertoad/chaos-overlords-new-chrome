@@ -532,7 +532,7 @@ claim about original-game behavior.
 ### RULE-CHAOS-001 — Cooperative Chaos and crackdown
 
 - Source: `MANUAL-GOG-1`; Chaos and Crackdown descriptions, including the
-  Math of the Game section.
+  Math of the Game section; `BIN-POLICE-002` for report recipients.
 - Observed statement: each player rolls the Force plus Chaos skill of their
   participating gangs with sector Income. Each success earns $1 in a
   controlled sector and counts toward crackdown; activity outside a controlled
@@ -549,7 +549,8 @@ claim about original-game behavior.
   threshold during this phase, pays no group; otherwise controlled groups earn
   all successes and uncontrolled groups earn `floor(group successes / 2)` after
   all same-player gangs in that sector have been aggregated. A newly
-  triggered crackdown notifies every active player. The executable physically
+  triggered crackdown reports to each player with a gang in that sector at
+  the opening roster scan, including players who did not order Chaos. The executable physically
   rolls Chaos and creates Crackdowns immediately after the Instant pass, before
   Combat, then resolves Combat and Transactions before paying the stored Chaos
   successes. The recreation preserves the public six-boundary interface while
@@ -581,7 +582,7 @@ claim about original-game behavior.
 ### RULE-POLICE-001 — Crackdown detection and combat
 
 - Source: `MANUAL-GOG-1`; Crackdown and Math of the Game descriptions, plus
-  `BIN-COMBAT-ORDER-001` and `BIN-POLICE-COMBAT-001`.
+  `BIN-COMBAT-ORDER-001`, `BIN-POLICE-COMBAT-001`, and `BIN-POLICE-002`.
 - Observed statement: during a crackdown, police attack every gang in the
   sector with Combat 20. Police detection is certain through Stealth 5 and
   drops five percentage points per additional Stealth point, reaching zero at
@@ -616,7 +617,8 @@ claim about original-game behavior.
   sites, Support, Tolerance modifiers, and resistance just like an overthrow,
   then writes the current turn into both slots. Reacquired control can be lost
   again on another recent trigger. The displaced owner receives a distinct
-  `ControlLost` notification in addition to the global Crackdown notification.
+  `ControlLost` notification after the sector-occupant Crackdown reports, even
+  without a gang in that sector.
   History mutation and ownership cleanup precede the duration-extension draw.
   A newly created Crackdown therefore attacks in the same turn's following
   police pass; the common end-of-Combat decrement immediately consumes one of
