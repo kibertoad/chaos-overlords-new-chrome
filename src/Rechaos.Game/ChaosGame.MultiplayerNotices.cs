@@ -64,19 +64,9 @@ public sealed partial class ChaosGame
                     EndOnlineMatch("THE SAVED ONLINE MATCH HAS ALREADY ENDED");
                     return;
                 }
-                // A seat resumed while the server is still starting the match reads it `running` on
-                // turn 0. Bootstrapping that view fails for good, so it waits in the lobby instead,
+                // A seat resumed while the server is still starting the match waits in the lobby,
                 // where the poll brings the finished match to the start below.
-                if (seated.Membership.Match.Status is MatchStatus.Running or MatchStatus.Desynced
-                    && MultiplayerMatchSession.HasFinishedStarting(seated.Membership.Match))
-                {
-                    _online.JoinedInProgress = true;
-                    _online.Stage = MultiplayerStage.Busy;
-                    _online.Status = "RESTORING THE MATCH";
-                    _screens.Show(ClientScreen.Online);
-                    StartOnlineMatch(seated.Membership.Match);
-                    return;
-                }
+                if (TryStartOnlineMatch(seated.Membership.Match, resumingSeat: true)) return;
                 _online.Stage = MultiplayerStage.Lobby;
                 // The lobby says what it is waiting for on its own standing line, so the status is
                 // left clear for what happens next: a settings change, or a refusal of one.
@@ -102,14 +92,9 @@ public sealed partial class ChaosGame
                 // is the same poll that would type over the name being written next to it.
                 if (!_online.IsHost) AdoptLobbySettings(updated.Match);
                 if (updated.Match.Status == MatchStatus.Lobby) RememberOwnLobbyName(updated.Match);
-                // Only once the server has finished starting it. A poll that reads the match between
-                // `running` and turn 1 opening would fail the bootstrap, and a failed bootstrap is
-                // final, so the joiner sat on WAITING FOR THE HOST while the host played on.
-                if (_session is null && updated.Match.Status == MatchStatus.Running
-                    && MultiplayerMatchSession.HasFinishedStarting(updated.Match))
-                {
-                    StartOnlineMatch(updated.Match);
-                }
+                // A running or desynced match both count as started, as they do for a resumed seat;
+                // one the server is still starting is left for a later poll.
+                if (_session is null) TryStartOnlineMatch(updated.Match);
                 return;
             case LobbyNotice.Listed listed:
                 _online.Listings = Describe(listed.Matches);
