@@ -10,6 +10,7 @@ import {
   startMatchContract,
   takeoverVoteContract,
   updateMatchSettingsContract,
+  updatePlayerProfileContract,
 } from '@chaos-overlords/contracts'
 import { NotFoundError } from '@chaos-overlords/kernel'
 import type { Hono } from 'hono'
@@ -88,6 +89,16 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
     await c
       .get('container')
       .kernel.lobby.updateSettings(
+        requireMember(c.get('principal'), c.req.valid('param').matchId),
+        c.req.valid('json'),
+      )
+    return c.body(null, 204)
+  })
+
+  buildHonoRoute(api, updatePlayerProfileContract, async (c) => {
+    await c
+      .get('container')
+      .kernel.lobby.updateProfile(
         requireMember(c.get('principal'), c.req.valid('param').matchId),
         c.req.valid('json'),
       )

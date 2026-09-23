@@ -161,11 +161,17 @@ internal sealed class MultiplayerUiState
     /// The overlord face this player takes into the session they create or join.
     /// </summary>
     /// <remarks>
-    /// Sent once, with the request that claims the seat, and never changed afterwards: the roster is
-    /// what every client generates its city from, and the setup a city was generated from is part of
-    /// the state hash a turn is settled on, so a face that moved mid-match would read as a desync.
+    /// Sent with the request that claims the seat, and changeable in the lobby until the match
+    /// starts — never afterwards: the roster is what every client generates its city from, and the
+    /// setup a city was generated from is part of the state hash a turn is settled on, so a face
+    /// that moved mid-match would read as a desync. <see cref="DisplayName"/> follows the same rule.
     /// </remarks>
     internal short Portrait { get; set; }
+
+    /// <summary>
+    /// Whether the lobby holds a name or face the player chose that the server has not been sent.
+    /// </summary>
+    internal bool ProfilePending { get; set; }
 
     internal TextField Server { get; } = new(
         "SERVER", 96, GamePreferences.DefaultCustomMultiplayerServer);
@@ -319,6 +325,8 @@ internal sealed class MultiplayerUiState
         PublicListing = true;
         Role = OnlineConnectRole.Host;
         Portrait = 0;
+        ProfilePending = false;
+        DisplayName.IsFocused = false;
         Match = null;
         LobbySettingsReadable = true;
         JoinCodeShown = string.Empty;

@@ -157,6 +157,7 @@ public sealed partial class ChaosGame
         if (_screens.Current == ClientScreen.Lobby)
         {
             if (_online.IsHost && _online.SessionName.IsFocused) _online.SessionName.Type(character);
+            else if (EditingLobbyName) _online.DisplayName.Type(character);
             return;
         }
         if (_screens.Current != ClientScreen.Online) return;
@@ -704,12 +705,15 @@ public sealed partial class ChaosGame
     {
         if (CanConfigureOnlineLobby() && LobbySessionName.Contains(point))
         {
+            FinishLobbyNameEdit(cancel: false);
             _online.SessionName.IsFocused = true;
             return;
         }
-        // Anywhere else finishes an edit of the name: the setting it belongs to is about to be sent,
-        // or the player is leaving the screen the caret was on.
+        if (HandleLobbyProfileClick(point)) return;
+        // Anywhere else finishes an edit of either name: the setting it belongs to is about to be
+        // sent, or the player is leaving the screen the caret was on.
         CommitLobbySessionName();
+        FinishLobbyNameEdit(cancel: false);
         if (LobbyCopyCode.Contains(point)) CopyLobbyJoinCode();
         else if (LobbySetup.Contains(point)) OpenOnlineSetup();
         else if (LobbyStart.Contains(point)) StartHostedMatch();
@@ -740,15 +744,33 @@ public sealed partial class ChaosGame
         ? ClassicOnlineLobbyLayout.LateJoinAllowed : OnlineLobbyLayout.LateJoinAllowed;
     private Rectangle LobbyLateJoinRefused => UsesClassicLobby
         ? ClassicOnlineLobbyLayout.LateJoinRefused : OnlineLobbyLayout.LateJoinRefused;
+    private Rectangle LobbyRosterPortrait(int row) => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.RosterPortrait(row) : OnlineLobbyLayout.RosterPortrait(row);
+    private Rectangle LobbyRosterName(int row) => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.RosterName(row) : OnlineLobbyLayout.RosterName(row);
 
     private void UpdateLobby(KeyboardState keyboard, GameTime gameTime)
     {
+        // The match started under an edit: the roster is final, so what was being typed goes.
+        if (_online.DisplayName.IsFocused && !CanEditLobbyProfile())
+            FinishLobbyNameEdit(cancel: true);
+        if (_online.DisplayName.IsFocused)
+        {
+            if (Pressed(keyboard, Keys.Enter)) FinishLobbyNameEdit(cancel: false);
+            else if (Pressed(keyboard, Keys.Escape)) FinishLobbyNameEdit(cancel: true);
+            PollLobby(gameTime);
+            return;
+        }
+        SendPendingLobbyProfile();
         if (_online.SessionName.IsFocused)
         {
             if (Pressed(keyboard, Keys.Enter)) CommitLobbySessionName();
             PollLobby(gameTime);
             return;
         }
+        // The arrows turn the player's own face, as they do on the connect form.
+        if (Pressed(keyboard, Keys.Left)) CycleLobbyPortrait(-1);
+        else if (Pressed(keyboard, Keys.Right)) CycleLobbyPortrait(1);
         if (Pressed(keyboard, Keys.Enter)) StartHostedMatch();
         else PollLobby(gameTime);
     }

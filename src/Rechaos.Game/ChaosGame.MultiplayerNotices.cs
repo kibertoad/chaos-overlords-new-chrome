@@ -55,6 +55,7 @@ public sealed partial class ChaosGame
                 _online.IsHost = seated.Membership.Player.IsHost;
                 _online.JoinCodeShown = seated.Membership.JoinCode;
                 _online.Match = seated.Membership.Match;
+                AdoptOwnProfile(seated.Membership.Player);
                 AdoptLobbySettings(seated.Membership.Match);
                 RememberOnlineMembership(seated.Membership);
                 if (seated.Membership.Match.Status is MatchStatus.Finished or MatchStatus.Abandoned)
@@ -100,6 +101,7 @@ public sealed partial class ChaosGame
                 // Not while the host is editing them: the poll that carries a settings change back
                 // is the same poll that would type over the name being written next to it.
                 if (!_online.IsHost) AdoptLobbySettings(updated.Match);
+                if (updated.Match.Status == MatchStatus.Lobby) RememberOwnLobbyName(updated.Match);
                 // Only once the server has finished starting it. A poll that reads the match between
                 // `running` and turn 1 opening would fail the bootstrap, and a failed bootstrap is
                 // final, so the joiner sat on WAITING FOR THE HOST while the host played on.
@@ -135,6 +137,13 @@ public sealed partial class ChaosGame
                     ["apiReason"] = lobbyApi?.Reason,
                     ["requestId"] = lobbyApi?.RequestId,
                 });
+                // A refused name or face leaves the seat exactly as it was, so it is said on the lobby
+                // rather than treated as the connection failing.
+                if (failed.Operation == nameof(MultiplayerLobbySession.UpdateProfile))
+                {
+                    RejectLobbyProfile(failed);
+                    return;
+                }
                 RememberOnlineFailure(failed.Error, failed.Operation, lastEventSequence: null);
                 if (_online.Stage == MultiplayerStage.Busy)
                 {

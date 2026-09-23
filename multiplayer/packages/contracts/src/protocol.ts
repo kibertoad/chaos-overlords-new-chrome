@@ -9,7 +9,7 @@ import { notNegativeZero } from './primitives'
  * this server can talk at all, and a match already stored is described by
  * {@link MULTIPLAYER_SESSION_VERSION} instead.
  */
-export const MULTIPLAYER_PROTOCOL_VERSION = 18
+export const MULTIPLAYER_PROTOCOL_VERSION = 19
 
 /**
  * Version of the session as it is stored: the match row, its turns, its orders and its snapshots,

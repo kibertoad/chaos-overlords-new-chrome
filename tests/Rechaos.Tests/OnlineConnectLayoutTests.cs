@@ -241,6 +241,26 @@ public sealed class OnlineConnectLayoutTests
     }
 
     /// <summary>
+    /// The player's own name is clicked and edited where it is drawn: beside the face, inside the
+    /// roster column, with the line saying so under the last seat.
+    /// </summary>
+    [Fact]
+    public void TheLobbyRosterNamesAreClickableBesideTheirFaces()
+    {
+        for (var row = 0; row < 6; row++)
+        {
+            var name = OnlineLobbyLayout.RosterName(row);
+            var face = OnlineLobbyLayout.RosterPortrait(row);
+            Assert.False(name.Intersects(face));
+            Assert.Equal(face.Y, name.Y);
+            Assert.True(name.Right <= OnlineLobbyLayout.RosterRight);
+        }
+        Assert.True(OnlineLobbyLayout.RosterPortrait(5).Bottom <= OnlineLobbyLayout.ProfileHintY);
+        Assert.True(
+            OnlineLobbyLayout.ProfileHintY + OriginalFontLayout.GlyphHeight <= OnlineLobbyLayout.WaitingHintY);
+    }
+
+    /// <summary>
     /// Every captioned control on the connect screen leaves room for its caption.
     /// </summary>
     /// <remarks>

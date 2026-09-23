@@ -93,7 +93,16 @@ export const DEFAULT_SERVER_CONFIG: ServerConfig = {
 
 /** Per-minute budgets. Generous for play, far below what a retry loop would spend. */
 export const DEFAULT_RATE_LIMITS = {
-  anonymousPerMinute: 30,
+  /**
+   * Unauthenticated calls (handshake, browse, create, join) per client address. Two a second.
+   *
+   * The address is often not one player: a household, a LAN party or a mobile carrier's CGNAT puts
+   * many behind it, and every lobby a player opens costs a handshake and a create, so thirty a
+   * minute was spent by a few hosts creating and cancelling lobbies. Nothing this tier protects
+   * needs it tighter: a join code is one of 2^40, a password has its own per-match budget, and a
+   * creation flood meets `matchCreationPerMinute` whatever addresses it comes from.
+   */
+  anonymousPerMinute: 120,
   memberPerMinute: 240,
   uploadPerMinute: 10,
   /**
