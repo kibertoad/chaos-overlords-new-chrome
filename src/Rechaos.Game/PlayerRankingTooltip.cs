@@ -18,7 +18,18 @@ public static class PlayerRankingTooltip
     public static IReadOnlyList<string> At(Point point, MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        var entries = PlayerRankingPresentation.Project(state);
+        return At(point, state, PlayerRankingPresentation.Project(state));
+    }
+
+    /// <summary>
+    /// The tooltip for the portrait under <paramref name="point"/> among standings the caller has
+    /// already projected, so the panel that draws the portraits does not rank the match twice a frame.
+    /// </summary>
+    public static IReadOnlyList<string> At(
+        Point point, MatchState state, IReadOnlyList<PlayerRankingEntry> entries)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(entries);
         var hovered = entries.FirstOrDefault(entry =>
             PlayerRankingLayout.Portrait(entry.Player.Value, entry.Standing).Contains(point));
         return hovered is null ? [] : Lines(state, hovered, entries);
@@ -58,7 +69,7 @@ public static class PlayerRankingTooltip
         ScenarioId.Armageddon => "SECTORS CONTROLLED (GOAL 64)",
         ScenarioId.Acceptance => "SUPPORT",
         ScenarioId.Dominance => "WEIGHTED CASH, SUPPORT, SECTORS",
-        ScenarioId.KillEmAll or ScenarioId.Siege => "OVERLORDS ELIMINATED SO FAR",
+        ScenarioId.KillEmAll or ScenarioId.Siege => "OVERLORD SEATS NO LONGER ACTIVE",
         ScenarioId.Eliminate => "HQ SECTORS CONTROLLED (OF 6)",
         ScenarioId.BigMan => "BIG MAN POINTS (GOAL 40)",
         _ => throw new ArgumentOutOfRangeException(nameof(scenario))
@@ -66,11 +77,12 @@ public static class PlayerRankingTooltip
 
     private static IEnumerable<string> Breakdown(MatchState state, MatchPlayerState player)
     {
-        var sectors = ControlledSectors(state, player.Id);
+        var holdings = MatchOutcomeEvaluator.Project(state, player);
+        var sectors = holdings.ControlledSectors;
         switch (state.Setup.Scenario)
         {
             case ScenarioId.Greed:
-                yield return $"  CASH: ${Number(player.Cash)}";
+                yield return $"  CASH: {Money(player.Cash)}";
                 break;
             case ScenarioId.Power or ScenarioId.Big40 or ScenarioId.Armageddon:
                 yield return $"  SECTORS: {sectors} OF {MatchLimits.SectorCount}";
@@ -80,15 +92,18 @@ public static class PlayerRankingTooltip
                 break;
             case ScenarioId.Dominance:
                 var weights = ScenarioCatalog.Weights(state.Setup.Duration);
-                yield return WeightedRow("CASH", "$" + Number(player.Cash), player.Cash, weights.Cash);
+                yield return WeightedRow("CASH", Money(player.Cash), player.Cash, weights.Cash);
                 yield return WeightedRow("SUPPORT", Number(player.Support), player.Support, weights.Support);
                 yield return WeightedRow("SECTORS", Number(sectors), sectors, weights.ControlledSector);
-                yield return "  TOTAL / 10 = SCORE";
+                var total = (long)player.Cash * weights.Cash + (long)player.Support * weights.Support
+                    + (long)sectors * weights.ControlledSector;
+                yield return $"  TOTAL {Number(total)} / 10 = SCORE";
                 break;
             case ScenarioId.KillEmAll or ScenarioId.Siege:
+                yield return $"  {MatchLimits.PlayerCount} SEATS - {holdings.OpponentsAlive + 1} ACTIVE OVERLORDS";
                 yield return "  SHARED BY EVERY SURVIVING OVERLORD";
                 if (state.Setup.Scenario == ScenarioId.Siege)
-                    yield return $"  HQ SECTORS HELD: {HeadquartersHeld(state, player.Id)} OF 6 (GOAL)";
+                    yield return $"  SIEGE SECTORS HELD: {holdings.ImportantSectorsControlled} OF 6 (GOAL)";
                 break;
             case ScenarioId.Eliminate:
                 yield return $"  HQ SECTORS HELD: {HeadquartersHeld(state, player.Id)}";
@@ -109,11 +124,11 @@ public static class PlayerRankingTooltip
         return $"{(hovered ? ">" : " ")} {entry.Standing + 1}. {name,-NameWidth} {Number(entry.Score),10}";
     }
 
-    private static int ControlledSectors(MatchState state, PlayerId player) =>
-        state.Sectors.Count(sector => sector.Owner == player);
-
     private static int HeadquartersHeld(MatchState state, PlayerId player) =>
         OriginalCityGenerator.HeadquartersCandidates.Count(sector => state.Sectors[sector].Owner == player);
+
+    private static string Money(long value) =>
+        value < 0 ? "-$" + Number(-value) : "$" + Number(value);
 
     private static string Number(long value) => value.ToString("N0", CultureInfo.InvariantCulture);
 }

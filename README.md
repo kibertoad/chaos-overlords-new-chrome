@@ -114,8 +114,9 @@ presentation-only conveniences that make the original systems easier to read:
   compatible help pack receives a clearly named listed subject for any missing one.
 - Hover tooltips explain the practical effects of city statistics, gang and
   site attributes, item modifiers, every game mode and duration, setup
-  difficulty, and every Options entry. Resting the pointer on a gang command
-  for two seconds explains what that order does before it is queued.
+  difficulty, every Options entry, and how each overlord's Ranking score is
+  built. Resting the pointer on a gang command for two seconds explains what
+  that order does before it is queued.
 - The city console shows projected turn cashflow beside current Cash, with
   finance panels breaking down upkeep, purchases, taxes, site income, Chaos,
   and the resulting adjustment.
