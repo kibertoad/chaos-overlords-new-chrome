@@ -356,6 +356,20 @@ public static class MatchReplaySerializer
     }
 
     /// <summary>
+    /// Opens a verified journal for read-only playback. The entire journal is checked before
+    /// the first frame is shown, so a later seek cannot expose an unverified state.
+    /// </summary>
+    public static MatchReplayPlayback OpenPlayback(Stream source, OriginalData definitions)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(definitions);
+        if (!source.CanRead) throw new ArgumentException("Source stream is not readable.", nameof(source));
+        var document = Read(source);
+        ApplyGuarded(document, definitions);
+        return new MatchReplayPlayback(document, definitions);
+    }
+
+    /// <summary>
     /// Loads a journal and answers a recorder that continues it, or null when it cannot be continued.
     /// </summary>
     /// <remarks>
@@ -471,11 +485,24 @@ public static class MatchReplaySerializer
         {
             throw;
         }
-        catch (Exception exception) when (exception is ArgumentException
-            or InvalidOperationException or KeyNotFoundException or OverflowException)
+        catch (Exception exception) when (IsMalformedOperation(exception))
         {
             throw new InvalidDataException("Replay operation is invalid.", exception);
         }
+    }
+
+    /// <summary>The ways a malformed recorded operation surfaces from the rules engine.</summary>
+    internal static bool IsMalformedOperation(Exception exception) =>
+        exception is ArgumentException or InvalidOperationException
+            or KeyNotFoundException or OverflowException;
+
+    /// <summary>Loads a journal's opening snapshot and checks it against its recorded fingerprint.</summary>
+    internal static MatchState LoadOpeningState(ReplayDocument document, OriginalData definitions)
+    {
+        using var snapshot = new MemoryStream(document.InitialSnapshot, writable: false);
+        var state = NativeSaveSerializer.Load(snapshot, definitions);
+        VerifyFingerprint(document.InitialStateFingerprint, state, -1);
+        return state;
     }
 
     private static MatchState Apply(ReplayDocument document, OriginalData definitions)
@@ -488,9 +515,7 @@ public static class MatchReplaySerializer
                 $"Unsupported replay format {document.FormatVersion}.");
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
-        using var snapshot = new MemoryStream(document.InitialSnapshot, writable: false);
-        var state = NativeSaveSerializer.Load(snapshot, definitions);
-        VerifyFingerprint(document.InitialStateFingerprint, state, -1);
+        var state = LoadOpeningState(document, definitions);
         for (var index = 0; index < document.Steps.Count; index++)
         {
             var step = document.Steps[index];
@@ -500,7 +525,7 @@ public static class MatchReplaySerializer
         return state;
     }
 
-    private static void ApplyStep(MatchState state, ReplayStep step, int index)
+    internal static void ApplyStep(MatchState state, ReplayStep step, int index)
     {
         ValidateStepPayload(step, index);
 
@@ -660,7 +685,7 @@ public static class MatchReplaySerializer
         step.GangDefinitionId
             ?? throw new InvalidDataException($"Replay step {index} has no gang definition.");
 
-    private static void VerifyFingerprint(string expected, MatchState state, int index)
+    internal static void VerifyFingerprint(string expected, MatchState state, int index)
     {
         if (!MatchStateHasher.IsFingerprint(expected))
             throw new InvalidDataException($"Replay step {index} has an invalid state fingerprint.");
@@ -691,8 +716,68 @@ internal sealed record ReplayDocument(
     byte[] InitialSnapshot,
     IReadOnlyList<ReplayStep> Steps);
 
+/// <summary>A cursor over a journal whose complete history was verified when opened.</summary>
+public sealed class MatchReplayPlayback
+{
+    private readonly ReplayDocument _document;
+    private readonly OriginalData _definitions;
+
+    internal MatchReplayPlayback(ReplayDocument document, OriginalData definitions)
+    {
+        _document = document;
+        _definitions = definitions;
+        State = MatchReplaySerializer.LoadOpeningState(document, definitions);
+    }
+
+    /// <summary>The state at the current position. Position zero is the opening snapshot.</summary>
+    public MatchState State { get; private set; }
+    public int Position { get; private set; }
+    public int StepCount => _document.Steps.Count;
+    public ReplayStep? CurrentStep => Position == 0 ? null : _document.Steps[Position - 1];
+
+    /// <summary>Advance one recorded mutation; return false at the end.</summary>
+    public bool MoveNext()
+    {
+        if (Position == StepCount) return false;
+        var expected = Position == 0
+            ? _document.InitialStateFingerprint
+            : _document.Steps[Position - 1].ResultingStateFingerprint;
+        MatchReplaySerializer.VerifyFingerprint(expected, State, Position - 1);
+        var step = _document.Steps[Position];
+        try
+        {
+            MatchReplaySerializer.ApplyStep(State, step, Position);
+        }
+        catch (Exception exception) when (MatchReplaySerializer.IsMalformedOperation(exception))
+        {
+            throw new InvalidDataException("Replay operation is invalid.", exception);
+        }
+        MatchReplaySerializer.VerifyFingerprint(step.ResultingStateFingerprint, State, Position);
+        Position++;
+        return true;
+    }
+
+    /// <summary>Seek to any recorded mutation, rebuilding from the opening snapshot on rewind.</summary>
+    public void Seek(int position)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(position);
+        if (position > StepCount) throw new ArgumentOutOfRangeException(nameof(position));
+        if (position < Position)
+        {
+            State = MatchReplaySerializer.LoadOpeningState(_document, _definitions);
+            Position = 0;
+        }
+        while (Position < position) MoveNext();
+    }
+}
+
 public sealed record MatchReplayLoadResult(
     MatchState State,
+    bool RecoveredFromBackup,
+    bool PrimaryRepaired = false);
+
+public sealed record MatchReplayPlaybackLoadResult(
+    MatchReplayPlayback Playback,
     bool RecoveredFromBackup,
     bool PrimaryRepaired = false);
 
@@ -724,6 +809,25 @@ public static class MatchReplayStore
         using var stream = new FileStream(
             Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read);
         return MatchReplaySerializer.LoadAndReplay(stream, definitions);
+    }
+
+    public static MatchReplayPlayback OpenPlayback(string path, OriginalData definitions)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        using var stream = new FileStream(
+            Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read);
+        return MatchReplaySerializer.OpenPlayback(stream, definitions);
+    }
+
+    /// <summary>Opens a fully verified playback, using a valid backup if the primary is damaged.</summary>
+    public static MatchReplayPlaybackLoadResult OpenPlaybackRecoveringBackup(
+        string path, OriginalData definitions, bool repairPrimary = true)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(definitions);
+        var (playback, recovered, repaired) = AtomicGenerationRecovery.LoadRecoveringBackup(
+            path, BackupSuffix, repairPrimary, candidate => OpenPlayback(candidate, definitions));
+        return new MatchReplayPlaybackLoadResult(playback, recovered, repaired);
     }
 
     /// <summary>

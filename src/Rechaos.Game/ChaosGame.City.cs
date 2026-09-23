@@ -40,7 +40,7 @@ public sealed partial class ChaosGame
             if (Pressed(keyboard, Keys.F5)) OpenSaveBrowser(saving: true);
             if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false);
             if (Pressed(keyboard, Keys.F6)) SaveReplay();
-            if (Pressed(keyboard, Keys.F10)) LoadReplay();
+            if (Pressed(keyboard, Keys.F10)) OpenReplayPlayback();
         }
         else if (Pressed(keyboard, Keys.F6) || Pressed(keyboard, Keys.F10))
         {

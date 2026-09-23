@@ -12,7 +12,8 @@ tables are bundled in the open-source core; original art and media are not.
 
 Original save import/export is not supported. Recreation-native saves and
 replays are development formats until 1.0.0 and may change incompatibly before
-then; the versioned migration machinery is retained for post-1.0 compatibility.
+then; stable 1.x releases will carry the save migration guarantee described in
+[the format policy](docs/NATIVE-SAVE-FORMAT.md#compatibility-policy).
 
 ## Quick start
 
@@ -91,7 +92,7 @@ Tracking issues are linked from each area below.
 | [Online experience](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138) | Late joining is limited to eligible AI seats that have never belonged to a human. Spectating, lobby chat, and online Comlink integration are not implemented. A desync still depends on the host supplying a snapshot, and live-runtime recovery coverage will grow as more failure modes are identified. Security and deployment limitations are documented in [Multiplayer](docs/MULTIPLAYER.md). |
 | [Media and platform polish](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139) | Original movie trigger/skip capture, broader native A/V validation, the remaining interface/impact sound triggers, and sound overlap/interruption behavior remain. Windows releases can be Authenticode-signed through SSL.com eSigner and Linux `.deb` releases can carry a verified detached OpenPGP signature; macOS signing and notarization, native interactive installer validation, and wider platform QA remain. |
 | [Help fidelity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140) | Help content and navigation are functional, but exact native WinHelp typography and paragraph geometry are intentionally approximated by the cross-platform viewer. Unsafe legacy macro/external-file execution remains disabled. |
-| [Compatibility and replay UX](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141) | Recreation save/replay formats may change before 1.0.0. Post-1.0 migration guarantees still need a release policy. Replays can be recorded and deterministically verified, but user-facing animated playback controls are not implemented. Importing or exporting original 1996 save files is not planned. |
+| [Compatibility and replay UX](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141) | Recreation save/replay formats may change before 1.0.0. The [post-1.0 policy](docs/NATIVE-SAVE-FORMAT.md#compatibility-policy) guarantees migration of 1.x saves within the 1.x line, while older replays require a retained verifier. Local replay playback has pause, speed, step, jump, and exit controls over a verified journal. Importing or exporting original 1996 save files is not planned. |
 
 ### Permanent scope boundaries
 
@@ -237,7 +238,7 @@ asynchronously, but every client still applies them in the same sealed order.
 | Help | F1 | Click Help on the title screen; point at the topic list or article and use the mouse wheel to scroll it |
 | Online play | Tab between enabled fields; Left/Right turn your overlord face; Enter creates or connects; F5 refreshes the browser | The form asks what you want to do, who you are, which session, and last which server: pick Host A New Game or Join With A Code, the arrows beside the face pick it, Paste fills the join code, Browse Games and Unfinished Sessions are the other ways in, and Copy copies the join code from the lobby |
 | Save / load | F5 / F9 | Use Save Game or Load Game in the Escape menu and choose one of nine slots |
-| Save / load replay | F6 / F10 | Local games only; records or verifies the recreation replay file |
+| Save / play replay | F6 / F10 | Local games only; F10 opens verified playback without replacing the live match. Space pauses, arrows step or change speed, Home/End jump, and Esc exits. |
 | Finish planning | Space | Click the end-turn control |
 | Pause/game menu | Escape | Resume, save, load, adjust options, report a bug, or request a confirmed return to the main menu |
 | Report a bug | Escape, then Report Bug | Tab moves between the box, the checkbox and the buttons; Enter is a new paragraph in the box |

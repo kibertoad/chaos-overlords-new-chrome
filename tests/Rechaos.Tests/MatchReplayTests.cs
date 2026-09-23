@@ -10,6 +10,76 @@ namespace Rechaos.Tests;
 
 public sealed class MatchReplayTests
 {
+    [Fact]
+    public void VerifiedPlaybackSeeksAcrossSavedReplayAndRejectsDivergenceBeforeShowingFrames()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        var opening = MatchStateHasher.ComputeFingerprint(recorder.State);
+        recorder.FinishUpkeep();
+        recorder.FinishCommand(new PlayerId(0));
+        recorder.FinishCommand(new PlayerId(1));
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+
+        replay.Position = 0;
+        var playback = MatchReplaySerializer.OpenPlayback(replay, recorder.State.Definitions);
+        Assert.Equal(0, playback.Position);
+        Assert.Equal(opening, MatchStateHasher.ComputeFingerprint(playback.State));
+        Assert.Equal(recorder.StepCount, playback.StepCount);
+        playback.Seek(playback.StepCount);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(playback.State));
+        Assert.False(playback.MoveNext());
+        playback.Seek(1);
+        Assert.Equal(recorder.Steps[0].ResultingStateFingerprint,
+            MatchStateHasher.ComputeFingerprint(playback.State));
+        playback.Seek(0);
+        Assert.Equal(opening, MatchStateHasher.ComputeFingerprint(playback.State));
+
+        var corrupted = JsonNode.Parse(replay.ToArray())!.AsObject();
+        corrupted["steps"]![1]!["resultingStateFingerprint"] = opening;
+        using var badReplay = new MemoryStream(Encoding.UTF8.GetBytes(corrupted.ToJsonString()));
+        Assert.Throws<InvalidDataException>(() =>
+            MatchReplaySerializer.OpenPlayback(badReplay, recorder.State.Definitions));
+
+        corrupted = JsonNode.Parse(replay.ToArray())!.AsObject();
+        corrupted["formatVersion"] = MatchReplaySerializer.CurrentFormatVersion + 1;
+        using var incompatible = new MemoryStream(Encoding.UTF8.GetBytes(corrupted.ToJsonString()));
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            MatchReplaySerializer.OpenPlayback(incompatible, recorder.State.Definitions));
+        Assert.Equal(IncompatibleSaveReason.NewerFormat, IncompatibleSave.ReasonOf(exception));
+    }
+
+    [Fact]
+    public void PlaybackIncludesStepsRecordedBeforeAndAfterSaveLoad()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        recorder.FinishUpkeep();
+        using var save = new MemoryStream();
+        using var journal = new MemoryStream();
+        NativeSaveSerializer.Save(save, recorder.State);
+        MatchReplaySerializer.Save(journal, recorder);
+
+        save.Position = 0;
+        journal.Position = 0;
+        var restored = NativeSaveSerializer.Load(save, recorder.State.Definitions);
+        var resumed = MatchReplaySerializer.TryResumeOnto(journal, restored);
+        Assert.NotNull(resumed);
+        resumed.FinishCommand(new PlayerId(0));
+        using var continued = new MemoryStream();
+        MatchReplaySerializer.Save(continued, resumed);
+
+        continued.Position = 0;
+        var playback = MatchReplaySerializer.OpenPlayback(continued, restored.Definitions);
+        Assert.Equal(2, playback.StepCount);
+        playback.Seek(1);
+        Assert.Equal(ReplayOperationKind.FinishUpkeep, playback.CurrentStep!.Kind);
+        playback.Seek(2);
+        Assert.Equal(ReplayOperationKind.FinishCommand, playback.CurrentStep!.Kind);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(restored),
+            MatchStateHasher.ComputeFingerprint(playback.State));
+    }
+
     /// <summary>
     /// The operation kind is serialized as its number, so a stored replay reads whatever member
     /// happens to sit at that ordinal today. Adding one is safe; moving one silently reinterprets
@@ -468,6 +538,14 @@ public sealed class MatchReplayTests
             recorder.FinishCommand(new PlayerId(0));
             MatchReplayStore.SaveAtomic(path, recorder);
             File.WriteAllText(path, "corrupt");
+
+            var playback = MatchReplayStore.OpenPlaybackRecoveringBackup(
+                path, recorder.State.Definitions, repairPrimary: false);
+            Assert.True(playback.RecoveredFromBackup);
+            Assert.False(playback.PrimaryRepaired);
+            playback.Playback.Seek(playback.Playback.StepCount);
+            Assert.Equal(previousHash,
+                MatchStateHasher.ComputeFingerprint(playback.Playback.State));
 
             var recovered = MatchReplayStore.LoadAndReplayRecoveringBackup(
                 path, recorder.State.Definitions);

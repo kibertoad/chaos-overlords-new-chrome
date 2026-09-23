@@ -114,9 +114,11 @@ public sealed partial class ChaosGame
     {
         try
         {
-            if (_state is null || _session is not null) return null;
+            // While a replay is open, _state is a historical frame; the live match is set aside.
+            var live = _matchBeforeReplay ?? _state;
+            if (live is null || _session is not null) return null;
             var path = Path.Combine(_saveDirectory, "crash-recovery.rchsave");
-            NativeSaveStore.SaveAtomic(path, _state);
+            NativeSaveStore.SaveAtomic(path, live);
             return path;
         }
         catch (Exception exception)
@@ -145,31 +147,6 @@ public sealed partial class ChaosGame
                                           or InvalidOperationException)
         {
             _message = "REPLAY SAVE FAILED";
-        }
-    }
-
-    private void LoadReplay()
-    {
-        if (_state is null) return;
-        try
-        {
-            var result = MatchReplayStore.LoadAndReplayRecoveringBackup(
-                _replayPath, _state.Definitions);
-            _state = result.State;
-            _actions = new MatchActions(new MatchReplayRecorder(_state));
-            ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
-            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
-            if (!_debugPhaseStepping) PrepareCurrentHireOffers();
-            _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
-            _message = result.RecoveredFromBackup
-                ? result.PrimaryRepaired ? "REPLAY RECOVERED" : "REPLAY LOADED  REPAIR FAILED"
-                : string.Empty;
-            ResetMatchPresentation(_state);
-            StartPlanningTimer(_inputTime);
-        }
-        catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            _message = "REPLAY FAILED";
         }
     }
 }
