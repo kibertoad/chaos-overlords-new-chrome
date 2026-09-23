@@ -122,5 +122,10 @@ interface ErrorBody {
 
 function respond(c: Context<AppEnv>, { code, message, details, requestId }: ErrorBody): Response {
   const body: ErrorEnvelope = { error: { code, message, details, requestId } }
+  // Hono carries every header already set on this context onto the error response that replaces
+  // a handler's, so a caching policy the handler chose for its success (the sealed-order set's
+  // `immutable`, say) would otherwise be applied to the refusal. It must be overwritten on the
+  // context itself: the `c.res` setter copies the previous response's headers over the new one.
+  c.header('Cache-Control', 'no-store')
   return c.json(validateSync(errorEnvelopeSchema, body), STATUS_BY_CODE[code] as 400)
 }
