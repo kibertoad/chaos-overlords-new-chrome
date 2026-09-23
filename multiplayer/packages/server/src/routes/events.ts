@@ -6,6 +6,7 @@ import { requireMember } from '../http/guards'
 import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
 import { isReadableEvent } from '../sse/createSseResponse'
+import { isActiveMember } from '../sse/membership'
 
 /** The event log: a paged REST read (the fallback) and the SSE stream over the same log. */
 export function registerEventRoutes(api: Hono<AppEnv>): void {
@@ -50,17 +51,15 @@ export function registerEventRoutes(api: Hono<AppEnv>): void {
     // before returning any of its buffered frames when the membership is already gone.
     let stillMember = false
     try {
-      const fresh = await c.get('container').kernel.deps.storage.players.get(principal.player.id)
-      stillMember =
-        fresh?.matchId === principal.match.id &&
-        fresh.tokenHash !== null &&
-        fresh.tokenHash === principal.player.tokenHash
-    } catch (error) {
-      await stream.body?.cancel()
-      throw error
+      stillMember = await isActiveMember(
+        c.get('container').kernel.deps.storage.players,
+        principal.match.id,
+        principal.player.id,
+      )
+    } finally {
+      if (!stillMember) await stream.body?.cancel()
     }
     if (!stillMember) {
-      await stream.body?.cancel()
       throw new UnauthorizedError('Invalid or expired player token', { reason: 'invalid_token' })
     }
     // The stream is a raw `Response`, and Hono does not merge the headers the middleware prepared

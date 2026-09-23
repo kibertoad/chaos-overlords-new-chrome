@@ -20,6 +20,7 @@ import {
   DEFAULT_RATE_LIMITS,
   DEFAULT_SERVER_CONFIG,
   defaultClientAddress,
+  isActiveMember,
   LocalEventHub,
   type ServerContainer,
 } from '@chaos-overlords/server'
@@ -84,10 +85,7 @@ export async function buildNodeRuntime(
         logger.warn('skipped an unreadable stored event', { matchId, seq }),
       abandoned: (matchId, playerId) =>
         logger.info('answered an already abandoned event stream', { matchId, playerId }),
-      revalidate: async (matchId, playerId) => {
-        const player = await opened.storage.players.get(playerId)
-        return player?.matchId === matchId && player.tokenHash !== null
-      },
+      revalidate: (matchId, playerId) => isActiveMember(opened.storage.players, matchId, playerId),
     },
   )
 

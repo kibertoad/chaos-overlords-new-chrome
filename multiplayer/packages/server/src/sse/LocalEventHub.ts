@@ -99,9 +99,9 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
   /**
    * End every stream a membership holds.
    *
-   * Revoking a token stops the next request; without prompt disconnect a kicked player keeps being
-   * handed every sealed set, every desync report
-   * (which names each player's state hash) and every host change until they choose to disconnect.
+   * Revoking a token stops the next request, and an open stream only re-checks its membership on
+   * the catch-up heartbeat; until then a kicked player keeps being handed every sealed set, every
+   * desync report (which names each player's state hash) and every host change.
    */
   async close(input: { matchId: string; playerId: string }): Promise<void> {
     // Snapshot deliberately: `close()` removes the subscription from the set being walked.

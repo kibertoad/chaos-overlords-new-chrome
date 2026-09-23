@@ -212,7 +212,13 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
           // idle server was otherwise issuing one query per stream per heartbeat to find nothing.
           beats += 1
           const overdue = beats % CATCH_UP_EVERY_HEARTBEATS === 0
-          if (overdue && options.revalidate && !validating) {
+          if (overdue && options.revalidate) {
+            // A lookup still pending a whole catch-up cycle later is a failed one. Waiting on it
+            // instead left the stream never checked again for as long as that query hung.
+            if (validating) {
+              shutdown()
+              return
+            }
             validating = true
             void Promise.resolve()
               .then(options.revalidate)
@@ -220,16 +226,15 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
                 (valid) => {
                   validating = false
                   if (!valid) shutdown()
-                  else if (!closed) wake(true)
                 },
                 () => {
                   validating = false
                   shutdown()
                 },
               )
-            return
           }
-          if (validating) return
+          // The catch-up does not wait on the membership check: notifications keep delivering
+          // while it is in flight anyway, so holding this back only delayed the read.
           if (overdue || !source.caughtUp(lastSeq)) wake(overdue)
         }, options.heartbeatMs)
         shutdown = () => {
