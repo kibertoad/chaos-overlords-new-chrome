@@ -2,6 +2,28 @@ import { RateLimiter } from '../src'
 import { ManualClock } from '../src/testing'
 import { describe, expect, it } from 'vitest'
 
+describe('RateLimiter reservations', () => {
+  it('refunds a failed request once without touching a later window', () => {
+    const clock = new ManualClock()
+    const limiter = new RateLimiter(clock, { limit: 1, windowMs: 1_000 })
+    const release = limiter.reserve('key')
+    expect(release).not.toBeNull()
+    expect(limiter.reserve('key')).toBeNull()
+
+    release?.()
+    expect(limiter.spent('key')).toBe(0)
+    const held = limiter.reserve('key')
+    expect(held).not.toBeNull()
+    release?.()
+    expect(limiter.spent('key')).toBe(1)
+
+    clock.advance(1_000)
+    expect(limiter.reserve('key')).not.toBeNull()
+    held?.()
+    expect(limiter.spent('key')).toBe(1)
+  })
+})
+
 describe('RateLimiter residency bound', () => {
   it('evicts an older window rather than a rolled, currently limited one', () => {
     const clock = new ManualClock()

@@ -3,6 +3,7 @@ import {
   type BugReportService,
   createBugReportService,
   createMemoryBlobStore,
+  DEFAULT_BUG_REPORT_RETENTION,
 } from '@chaos-overlords/bug-reports'
 import { defineHttpConformance } from '@chaos-overlords/conformance'
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@chaos-overlords/contracts'
@@ -48,7 +49,7 @@ type LimitWindow = { limit: number; windowMs: number }
 interface BuildLimits {
   anonymous?: LimitWindow
   member?: LimitWindow
-  bugReports?: { enabled?: boolean; limit?: number; statePerDay?: number }
+  bugReports?: { enabled?: boolean; limit?: number; statePerDay?: number; dailyStateBytes?: number }
   matchCreationPerMinute?: number
 }
 
@@ -76,6 +77,11 @@ function build(overrides: Partial<ServerContainer['config']> = {}, limits: Build
           clock,
           logger: new RecordingLogger(),
           blobs: createMemoryBlobStore(),
+          retention: {
+            ...DEFAULT_BUG_REPORT_RETENTION,
+            dailyStateBytes:
+              bugReportOptions.dailyStateBytes ?? DEFAULT_BUG_REPORT_RETENTION.dailyStateBytes,
+          },
         })
   const container: ServerContainer = {
     kernel,
@@ -535,6 +541,50 @@ describe('bug report intake', () => {
       error: { code: 'validation_failed', details: { reason: 'state_digest_mismatch' } },
     })
     expect(reports.rows).toHaveLength(0)
+  })
+
+  it('charges the address allowance only for journals that are stored', async () => {
+    const { app } = build({}, { bugReports: { statePerDay: 1, dailyStateBytes: 64 } })
+    const headers = { 'x-forwarded-for': '203.0.113.51' }
+    const state = async (bytes: Uint8Array, digest?: string) => ({
+      codec: 'brotli',
+      replayFormatVersion: 24,
+      uncompressedBytes: 4_096,
+      sha256: digest ?? (await sha256Hex(bytes)),
+      anonymized: true,
+      body: encodeBase64(bytes),
+    })
+
+    const corrupt = await post(
+      app,
+      report({ state: await state(new Uint8Array(8).fill(1), 'f'.repeat(64)) }),
+      headers,
+    )
+    expect(corrupt.status).toBe(422)
+
+    const tooLarge = await post(
+      app,
+      report({ state: await state(new Uint8Array(96).fill(2)) }),
+      headers,
+    )
+    expect(tooLarge.status).toBe(201)
+    expect(await tooLarge.json()).toMatchObject({ stateStored: 'omitted' })
+
+    const valid = await post(
+      app,
+      report({ state: await state(new Uint8Array(32).fill(3)) }),
+      headers,
+    )
+    expect(valid.status).toBe(201)
+    expect(await valid.json()).toMatchObject({ stateStored: 'stored' })
+
+    const spent = await post(
+      app,
+      report({ state: await state(new Uint8Array(32).fill(4)) }),
+      headers,
+    )
+    expect(spent.status).toBe(201)
+    expect(await spent.json()).toMatchObject({ stateStored: 'omitted' })
   })
 
   it('refuses an empty message through the contract rather than storing one', async () => {

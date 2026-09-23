@@ -89,15 +89,10 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
   const container = c.get('container')
   const key = addressOf(c)
   enforce(container.rateLimiters, 'bugReport', key, c)
-  // The daily journal budget is NOT spent here. It used to be, before the body had even been read,
-  // so five text-only reports or five requests the contract validator answered 413 or 422 for spent
-  // it, and the sixth — the one that actually carried a journal — was quietly filed with
-  // `stateStored: 'omitted'`. Everyone behind one NAT shares those five. The handler spends it
-  // instead, once it knows there is a journal to spend it on; see the bug report route.
-  c.set(
-    'bugReportJournalBudget',
-    () =>
-      container.rateLimiters.bugReportState.take(`bugReportState:${rateLimitKey(key)}`) === null,
+  // The handler reserves one unit only for a validated report carrying a journal, then releases it
+  // if the journal fails its digest check or is omitted by the storage budget.
+  c.set('bugReportJournalBudget', () =>
+    container.rateLimiters.bugReportState.reserve(`bugReportState:${rateLimitKey(key)}`),
   )
   await next()
 }

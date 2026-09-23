@@ -22,16 +22,20 @@ export function registerBugReportRoutes(api: Hono<AppEnv>): void {
       })
     }
     const request = c.req.valid('json')
-    // The daily journal budget is spent HERE: after the contract has validated the body, and only
-    // when there is a journal to spend it on. Charging it in the middleware meant five text-only
-    // reports, or five bodies the validator refused, used up the day's allowance for everyone
-    // behind one address — and the sixth report, the one carrying the journal somebody wanted, was
-    // filed without it and said so only in the receipt.
-    //
-    // An address that really has spent it files the description without the journal, and the
-    // receipt says `omitted` — the same outcome the global byte budget produces.
-    const allowed = request.state === undefined || (c.get('bugReportJournalBudget')?.() ?? true)
-    const submitted = allowed ? request : { ...request, state: undefined }
-    return c.json(answering(c, await bugReports.submit(submitted)), 201)
+    const release = request.state === undefined ? undefined : c.get('bugReportJournalBudget')?.()
+    const denied = release === null
+    const submitted = denied ? { ...request, state: undefined } : request
+    let stored = false
+    try {
+      const receipt = await bugReports.submit(submitted)
+      stored = receipt.stateStored === 'stored'
+      // The intake sees no journal when this address is spent, but the client did send one.
+      return c.json(answering(c, denied ? { ...receipt, stateStored: 'omitted' } : receipt), 201)
+    } finally {
+      // A digest refusal, global-byte omission, row failure, or any other non-storage outcome
+      // cannot spend the caller's allowance. The reservation is per request and safe to release
+      // even if another request has since entered the same address window.
+      if (!stored) release?.()
+    }
   })
 }
