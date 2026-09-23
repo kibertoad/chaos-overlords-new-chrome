@@ -51,6 +51,10 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     /// </summary>
     internal bool CloseStreamOnOpen { get; set; }
 
+    /// <summary>An unbuffered error body for stream-refusal deadline and size tests.</summary>
+    internal HttpStatusCode? StreamErrorStatus { get; set; }
+    internal PushStream StreamErrorBody { get; } = new();
+
     /// <summary>Ends the connection being read, as a server dropping it would.</summary>
     internal void DropStream()
     {
@@ -164,6 +168,15 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         var block = NextBlock(request.Method, path);
         if (block is not null)
             await block.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        if (path.EndsWith("/stream", StringComparison.Ordinal)
+            && StreamErrorStatus is { } streamErrorStatus)
+        {
+            return new HttpResponseMessage(streamErrorStatus)
+            {
+                Content = new StreamContent(StreamErrorBody),
+            };
+        }
 
         // A queued or standing answer wins even for the stream route, so a test can play the
         // things that sit between a player and the server: a reverse proxy answering 404 for every

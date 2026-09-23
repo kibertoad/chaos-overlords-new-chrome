@@ -60,13 +60,15 @@ public sealed class MultiplayerApiException : Exception
     /// </remarks>
     public static async Task<MultiplayerApiException> FromResponseAsync(
         HttpResponseMessage response,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        long maximumBodyBytes = long.MaxValue)
     {
         ArgumentNullException.ThrowIfNull(response);
         var headerRequestId = response.Headers.TryGetValues("X-Request-Id", out var requestIds)
             ? requestIds.FirstOrDefault()
             : null;
-        var body = await ReadBodyAsync(response, cancellationToken).ConfigureAwait(false);
+        var body = await ReadBodyAsync(response, cancellationToken, maximumBodyBytes)
+            .ConfigureAwait(false);
         try
         {
             // Read tolerantly. The reason is what a caller branches on and what a player is shown,
@@ -103,10 +105,16 @@ public sealed class MultiplayerApiException : Exception
 
     private static async Task<string> ReadBodyAsync(
         HttpResponseMessage response,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        long maximumBodyBytes)
     {
         try
         {
+            // ResponseHeadersRead leaves the body unbuffered. Buffer it explicitly with a small
+            // ceiling for stream refusals; an oversized proxy page becomes a status-only error.
+            if (maximumBodyBytes != long.MaxValue)
+                await response.Content.LoadIntoBufferAsync(maximumBodyBytes, cancellationToken)
+                    .ConfigureAwait(false);
             return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is HttpRequestException or IOException)

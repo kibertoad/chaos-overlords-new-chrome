@@ -93,6 +93,7 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
 /// </example>
 public sealed class MultiplayerClient
 {
+    private const int MaximumStreamErrorBytes = 64 * 1024;
     private readonly HttpClient _http;
     private readonly MultiplayerClientOptions _options;
     private readonly string? _token;
@@ -258,8 +259,17 @@ public sealed class MultiplayerClient
         if (response.IsSuccessStatusCode) return response;
         using (response)
         {
-            throw await MultiplayerApiException
-                .FromResponseAsync(response, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                throw await MultiplayerApiException
+                    .FromResponseAsync(response, timeout.Token, MaximumStreamErrorBytes)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException exception)
+                when (!cancellationToken.IsCancellationRequested && timeout.IsCancellationRequested)
+            {
+                throw new MultiplayerTimeoutException(_options.EffectiveTimeout, exception);
+            }
         }
     }
 

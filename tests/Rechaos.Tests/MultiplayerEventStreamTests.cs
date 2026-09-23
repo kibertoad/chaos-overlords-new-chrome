@@ -12,6 +12,42 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class MultiplayerEventStreamTests
 {
+    [Fact]
+    public async Task StreamErrorBodyThatNeverFinishesUsesTheRequestDeadline()
+    {
+        using var server = new FakeMultiplayerServer
+        {
+            StreamErrorStatus = System.Net.HttpStatusCode.BadGateway,
+        };
+        using var http = new HttpClient(server);
+        var match = new MultiplayerClient(http, new MultiplayerClientOptions(
+                new Uri("http://server.test"), TimeSpan.FromMilliseconds(100)))
+            .WithToken("cop_test").Match("m1");
+
+        await Assert.ThrowsAsync<MultiplayerTimeoutException>(
+            () => match.OpenStreamAsync(0, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task OversizedStreamErrorBodyBecomesAStatusOnlyRefusal()
+    {
+        using var server = new FakeMultiplayerServer
+        {
+            StreamErrorStatus = System.Net.HttpStatusCode.BadGateway,
+        };
+        server.StreamErrorBody.Write(new string('x', 65 * 1024));
+        server.StreamErrorBody.End();
+        using var http = new HttpClient(server);
+        var match = new MultiplayerClient(http, new MultiplayerClientOptions(
+                new Uri("http://server.test")))
+            .WithToken("cop_test").Match("m1");
+
+        var refusal = await Assert.ThrowsAsync<MultiplayerApiException>(
+            () => match.OpenStreamAsync(0, CancellationToken.None));
+        Assert.Equal(System.Net.HttpStatusCode.BadGateway, refusal.Status);
+        Assert.False(refusal.FromEnvelope);
+    }
+
     private const string Envelope =
         "\"seq\":3,\"matchId\":\"m1\",\"createdAt\":\"2026-09-10T12:00:00.000Z\"";
 
