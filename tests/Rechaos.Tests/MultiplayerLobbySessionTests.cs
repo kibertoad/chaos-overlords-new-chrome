@@ -141,6 +141,63 @@ public sealed class MultiplayerLobbySessionTests
     }
 
     [Fact]
+    public async Task StartConflictStillFailsWhileTheServerIsHalfwayThroughStarting()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        server.Answer(HttpMethod.Get, "/matches/m1", new MatchDetail(View(MatchStatus.Lobby), "CODE1234", "p1"));
+
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await WaitFor<LobbyNotice.Seated>(lobby, cancellationToken);
+
+        server.Answer(HttpMethod.Post, "/start", """
+            {"error":{"code":"conflict","message":"The match has already started","details":{"reason":"match_not_in_lobby"}}}
+            """, HttpStatusCode.Conflict);
+        // Committed `running` with its seed, but turn 1 is not open yet: handing this on would fail
+        // the host's bootstrap for good.
+        var running = View(MatchStatus.Running);
+        server.Answer(HttpMethod.Get, "/matches/m1",
+            new MatchDetail(running with { CurrentTurn = 0 }, "CODE1234", "p1"));
+
+        lobby.Start();
+
+        var failed = await WaitFor<LobbyNotice.Failed>(lobby, cancellationToken);
+        Assert.Equal(nameof(MultiplayerLobbySession.Start), failed.Operation);
+        Assert.False(lobby.TryDequeueNotice(out _));
+    }
+
+    [Fact]
+    public void AMatchCaughtHalfwayThroughStartingHasNotFinishedStarting()
+    {
+        var running = View(MatchStatus.Running);
+        // The server commits `running` on turn 0 before it seats anyone or opens turn 1.
+        var committed = running with
+        {
+            CurrentTurn = 0,
+            Players = [running.Players[0] with { Slot = -1 }],
+        };
+        var seated = committed with { Players = running.Players };
+
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(View(MatchStatus.Lobby)));
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(committed));
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(seated));
+        Assert.False(MultiplayerMatchSession.HasFinishedStarting(running with
+        {
+            Players = [running.Players[0] with { Slot = -1 }],
+        }));
+        Assert.True(MultiplayerMatchSession.HasFinishedStarting(running));
+        // A seat past the board is a started match this client cannot play, not an early one: the
+        // bootstrap has to see it to refuse it with a reason instead of waiting forever.
+        Assert.True(MultiplayerMatchSession.HasFinishedStarting(running with
+        {
+            Players = [running.Players[0] with { Slot = 99 }],
+        }));
+    }
+
+    [Fact]
     public async Task ProfileChangeIsSentForTheOwnSeatAndTheLobbyIsReadBack()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

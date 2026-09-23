@@ -859,6 +859,26 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     }
 
     /// <summary>
+    /// Whether the server has finished starting a match, so a session can be built from the view.
+    /// </summary>
+    /// <remarks>
+    /// Starting is several writes at the server: the match turns <c>running</c> on turn 0 first, and
+    /// only then seats the roster and opens turn 1. A lobby poll that lands between them reads a
+    /// running match that is not playable yet. That view is not a broken match, only an early one,
+    /// and the next poll brings the finished one.
+    /// </remarks>
+    public static bool HasFinishedStarting(MatchView view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        return view.Status is MatchStatus.Running or MatchStatus.Desynced
+            && view.CurrentTurn >= 1
+            // Only the lobby's slot -1 means "not seated yet". A slot past the board is a finished
+            // start this client cannot play, which the bootstrap refuses with a reason; counting it
+            // as unfinished would leave the player waiting on a start that has already happened.
+            && !view.Players.Any(player => player.Status == WirePlayerStatus.Active && player.Slot < 0);
+    }
+
+    /// <summary>
     /// Refuses a running match whose initial authoritative view contradicts itself before a city is
     /// generated or the interface is allowed to issue an order against it.
     /// </summary>

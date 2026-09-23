@@ -64,15 +64,9 @@ public sealed partial class ChaosGame
                     EndOnlineMatch("THE SAVED ONLINE MATCH HAS ALREADY ENDED");
                     return;
                 }
-                if (seated.Membership.Match.Status is MatchStatus.Running or MatchStatus.Desynced)
-                {
-                    _online.JoinedInProgress = true;
-                    _online.Stage = MultiplayerStage.Busy;
-                    _online.Status = "RESTORING THE MATCH";
-                    _screens.Show(ClientScreen.Online);
-                    StartOnlineMatch(seated.Membership.Match);
-                    return;
-                }
+                // A seat resumed while the server is still starting the match waits in the lobby,
+                // where the poll brings the finished match to the start below.
+                if (TryStartOnlineMatch(seated.Membership.Match, resumingSeat: true)) return;
                 _online.Stage = MultiplayerStage.Lobby;
                 // The lobby says what it is waiting for on its own standing line, so the status is
                 // left clear for what happens next: a settings change, or a refusal of one.
@@ -98,8 +92,9 @@ public sealed partial class ChaosGame
                 // is the same poll that would type over the name being written next to it.
                 if (!_online.IsHost) AdoptLobbySettings(updated.Match);
                 if (updated.Match.Status == MatchStatus.Lobby) RememberOwnLobbyName(updated.Match);
-                if (_session is null && updated.Match.Status == MatchStatus.Running)
-                    StartOnlineMatch(updated.Match);
+                // A running or desynced match both count as started, as they do for a resumed seat;
+                // one the server is still starting is left for a later poll.
+                if (_session is null) TryStartOnlineMatch(updated.Match);
                 return;
             case LobbyNotice.Listed listed:
                 _online.Listings = Describe(listed.Matches);
