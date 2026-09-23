@@ -1,5 +1,5 @@
-import type { TakeoverRepository } from '@chaos-overlords/kernel'
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { ABSENT_HUMAN_STATUSES, type TakeoverRepository } from '@chaos-overlords/kernel'
+import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { toTakeoverVote } from '../shared/mappers'
 import type { PostgresDatabase } from './database'
 import * as schema from './schema'
@@ -13,12 +13,29 @@ import * as schema from './schema'
  * of replaying them out of the event log.
  */
 export function postgresTakeoverRepository(db: PostgresDatabase): TakeoverRepository {
-  const { takeoverPrompts, takeoverVotes } = schema
+  const { players, takeoverPrompts, takeoverVotes } = schema
   return {
     async openPrompt(matchId, playerId, turn, openedAt) {
       const rows = await db
         .insert(takeoverPrompts)
-        .values({ matchId, playerId, turn, openedAt })
+        .select(
+          db
+            .select({
+              matchId: sql`${matchId}`.as('match_id'),
+              playerId: sql`${playerId}`.as('player_id'),
+              turn: sql`${turn}`.as('turn'),
+              openedAt: sql`${openedAt}`.as('opened_at'),
+            })
+            .from(players)
+            .where(
+              and(
+                eq(players.id, playerId),
+                eq(players.matchId, matchId),
+                inArray(players.status, [...ABSENT_HUMAN_STATUSES]),
+              ),
+            )
+            .for('update'),
+        )
         .onConflictDoNothing()
         .returning({ playerId: takeoverPrompts.playerId })
       return rows.length === 1

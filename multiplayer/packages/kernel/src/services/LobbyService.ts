@@ -10,6 +10,7 @@ import {
   type TakeoverVoteRequest,
 } from '@chaos-overlords/contracts'
 import {
+  ABSENT_HUMAN_STATUSES,
   activePlayers,
   humanParticipants,
   isInProgress,
@@ -46,8 +47,6 @@ const DEFAULT_PORTRAIT_ID = 0
 
 /** Host statuses that mean the seat is genuinely empty and the role may move. */
 const VACANT_HOST_STATUSES: ReadonlyArray<Player['status']> = ['left', 'kicked', 'computer']
-/** A human seat nobody is playing: the ones an absence vote can hand to the computer. */
-const ABSENT_HUMAN_STATUSES: ReadonlyArray<Player['status']> = ['takeoverPending', 'left', 'kicked']
 
 /**
  * Passwords one caller will have verified against one match in a window.

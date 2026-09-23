@@ -888,12 +888,29 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
     })
 
     it('keeps one absence prompt per seat and judges votes against it', async () => {
-      const match = matchFixture({ status: 'running', currentTurn: 3 })
+      const match = matchFixture({ currentTurn: 3 })
       await storage.matches.create(match)
       const other = matchFixture({ status: 'running', currentTurn: 1 })
       await storage.matches.create(other)
       const at = new Date('2026-03-01T12:00:00.000Z')
+      for (const player of [
+        playerFixture(match, { id: 'absent', status: 'left' }),
+        playerFixture(match, { id: 'another', status: 'kicked' }),
+        playerFixture(match, { id: 'active' }),
+        playerFixture(match, { id: 'pending', status: 'takeoverPending' }),
+        playerFixture(match, { id: 'robot', status: 'computer' }),
+      ])
+        expect(await storage.players.create(player)).toBe(true)
+      expect(
+        await storage.matches.transition(match.id, ['lobby'], { status: 'running', updatedAt: at }),
+      ).toBe(true)
       expect(await storage.takeovers.hasOpenPrompts(match.id)).toBe(false)
+      expect(await storage.takeovers.openPrompt(match.id, 'active', 3, at)).toBe(false)
+      expect(await storage.takeovers.openPrompt(other.id, 'absent', 3, at)).toBe(false)
+      // A seat the computer already plays is not a human absence; a seat that missed a deadline is.
+      expect(await storage.takeovers.openPrompt(match.id, 'robot', 3, at)).toBe(false)
+      expect(await storage.takeovers.openPrompt(match.id, 'pending', 3, at)).toBe(true)
+      await storage.takeovers.closePrompt(match.id, 'pending')
       // No prompt, no vote: a choice can never outlive or precede the question it answers.
       expect(
         await storage.takeovers.castVote({

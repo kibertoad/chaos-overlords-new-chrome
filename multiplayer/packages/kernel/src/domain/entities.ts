@@ -189,6 +189,13 @@ export function activePlayers(players: readonly Player[]): Player[] {
   return players.filter((player) => player.status === ACTIVE_PLAYER)
 }
 
+/** A human seat nobody is playing: the ones an absence vote can hand to the computer. */
+export const ABSENT_HUMAN_STATUSES: ReadonlyArray<PlayerStatus> = [
+  'takeoverPending',
+  'left',
+  'kicked',
+]
+
 /** A seat a human still holds: present, or absent and waited for while a takeover is voted on. */
 export function isHumanParticipant(player: Pick<Player, 'status'>): boolean {
   return player.status === 'active' || player.status === 'takeoverPending'
