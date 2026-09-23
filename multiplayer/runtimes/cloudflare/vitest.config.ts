@@ -18,6 +18,7 @@ export default defineConfig(async () => {
             TEST_BUG_REPORT_MIGRATIONS: bugReportMigrations,
             PUBLIC_LISTING: 'true',
             RATE_LIMIT_PER_MINUTE: '10000',
+            MATCH_CREATION_RATE_LIMIT_PER_MINUTE: '10000',
           },
         },
       }),

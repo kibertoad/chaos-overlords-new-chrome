@@ -58,6 +58,17 @@ export interface RateLimiters {
    * part worth keeping.
    */
   bugReportState: RateLimiter
+  /**
+   * Matches this process creates per window, from every caller together, under one key.
+   *
+   * The anonymous tier is per address, so it bounds one stranger and nothing about many. Each
+   * create is a stored lobby that lives until lobby retention collects it, and a PBKDF2 hash when it
+   * carries a password, so a flood from a few thousand addresses at the per-address rate would grow
+   * the matches table and hold the CPU without ever meeting a limit. This is the ceiling that
+   * distributed case meets. Joining and browsing are not charged here, so an existing lobby stays
+   * reachable while it is spent.
+   */
+  matchCreation: RateLimiter
 }
 
 export interface ServerContainer {
@@ -96,4 +107,10 @@ export const DEFAULT_RATE_LIMITS = {
    * of the default global budget, so no single address can crowd everybody else out of it.
    */
   bugReportStatePerDay: 5,
+  /**
+   * Matches created per minute across every caller. Two a second is far beyond what players open by
+   * hand on any server this is likely to run, and caps a flood at under three thousand lobbies an
+   * hour for lobby retention to collect.
+   */
+  matchCreationPerMinute: 120,
 } as const

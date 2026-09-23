@@ -136,6 +136,7 @@ export async function buildNodeRuntime(
         limit: DEFAULT_RATE_LIMITS.bugReportStatePerDay,
         windowMs: DAY_MS,
       }),
+      matchCreation: perMinute(config.matchCreationRateLimitPerMinute),
     },
     config: {
       ...DEFAULT_SERVER_CONFIG,

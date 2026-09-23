@@ -80,7 +80,8 @@ public sealed partial class MultiplayerMatchSession
                 // cancels the cycle. Reading it here catches the first case; without it the flag
                 // stayed latched at 1 and every later resync request was a permanent no-op.
                 restart = Volatile.Read(ref _resyncRequested) != 0
-                    || await ReadStreamCycleAsync(outage, cycle.Token).ConfigureAwait(false);
+                    || await ReadStreamCycleAsync(outage, cycle.Token, cancellationToken)
+                        .ConfigureAwait(false);
             }
             catch (RetryExhaustedException exhausted)
                 when (TransientFailure.CanRetryAfterExhaustion(exhausted))
@@ -121,9 +122,21 @@ public sealed partial class MultiplayerMatchSession
     /// <summary>
     /// One connection's worth of reading. True when the pump should rebuild and open another.
     /// </summary>
+    /// <remarks>
+    /// Two tokens, because a resync ends a connection and not the work of an event already read.
+    /// <paramref name="streamToken"/> is the cycle's, which <see cref="RequestResync"/> cancels, and
+    /// only the read waits on it. The handler runs on the session's own token: a handler changes
+    /// the session's state and then awaits calls, and a resync that cancelled it in between left
+    /// the state moved on and <see cref="_resumeAfterSeq"/> not, which the restore that followed
+    /// replayed history onto as though neither had happened. A resync asked for while a handler
+    /// runs is acted on as soon as it returns, at the next read. Nothing a handler awaits is
+    /// unbounded — the calls it makes each have a retry window — except the one wait that can be,
+    /// which watches the cycle itself; see <see cref="AwaitRepairReportsAsync"/>.
+    /// </remarks>
     private async Task<bool> ReadStreamCycleAsync(
         System.Diagnostics.Stopwatch outage,
-        CancellationToken cancellationToken)
+        CancellationToken streamToken,
+        CancellationToken handlerToken)
     {
         var stream = new MatchEventStream(
             _match,
@@ -140,7 +153,7 @@ public sealed partial class MultiplayerMatchSession
             },
             _streamIdleTimeout);
         await foreach (var @event in stream
-            .ReadAsync(_resumeAfterSeq, cancellationToken).ConfigureAwait(false))
+            .ReadAsync(_resumeAfterSeq, streamToken).ConfigureAwait(false))
         {
             if (!string.Equals(@event.MatchId, _match.MatchId, StringComparison.Ordinal))
             {
@@ -157,7 +170,7 @@ public sealed partial class MultiplayerMatchSession
                     attempt: 1);
                 return true;
             }
-            await HandleAsync(@event, cancellationToken).ConfigureAwait(false);
+            await HandleAsync(@event, handlerToken).ConfigureAwait(false);
             _resumeAfterSeq = @event.Seq;
         }
         return false;

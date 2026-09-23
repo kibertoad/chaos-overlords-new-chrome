@@ -1,3 +1,4 @@
+using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Http;
 
@@ -56,27 +57,43 @@ public sealed partial class MultiplayerMatchSession
     private bool _reportsClosed;
 
     /// <summary>
-    /// Captures and queues a report in turn order.
+    /// Captures and queues a report for the live state in turn order.
     /// </summary>
     /// <remarks>
     /// The request is built here, before the next sealed turn can move <see cref="_replay"/>, so
     /// what is queued is a fact about one turn rather than a promise to describe the state later.
     /// </remarks>
+    /// <returns>See <see cref="QueueReportAsync(TurnReport)"/>.</returns>
+    private Task QueueReportAsync(int turn, string stateHash) =>
+        QueueReportAsync(CaptureReport(turn, stateHash, _replay.State));
+
+    /// <summary>
+    /// The report for one turn, taken from the state that turn's resolution produced.
+    /// </summary>
+    /// <remarks>
+    /// A reconstruction applies several turns before it reports any of them, so it captures each
+    /// report as its turn is applied. Built from wherever the reconstruction ended instead, every
+    /// earlier report carried the last turn's <c>finished</c> flag and seat summaries — and the
+    /// server finishes a match on the first report that says it is over.
+    /// </remarks>
+    private TurnReport CaptureReport(int turn, string stateHash, MatchState state) => new(
+        turn,
+        new TurnReportRequest(
+            stateHash,
+            state.Outcome is not null,
+            IsHost ? SummarizeSeats(state) : null));
+
+    /// <summary>Queues a captured report behind every report queued before it.</summary>
     /// <returns>
     /// Completes when the server has answered this report, or when it has been abandoned for a
     /// reason that is not a failure. Awaited by the reconstruction paths, which must not run ahead
     /// of the settlement barrier they are trying to clear; ignored by the live path, which is the
     /// whole point of the queue.
     /// </returns>
-    private Task QueueReportAsync(int turn, string stateHash)
+    private Task QueueReportAsync(TurnReport captured)
     {
         if (_ownSeatIsComputerControlled) return Task.CompletedTask;
-        var report = new PendingReport(
-            turn,
-            new TurnReportRequest(
-                stateHash,
-                _replay.State.Outcome is not null,
-                IsHost ? SummarizeSeats(_replay.State) : null));
+        var report = new PendingReport(captured.Turn, captured.Request);
         lock (_reportGate) _pendingReports.Enqueue(report);
         _reportSignal.Release();
         return report.Completion.Task;
@@ -207,6 +224,13 @@ public sealed partial class MultiplayerMatchSession
                 report.Completion.TrySetException(exception);
         }
     }
+
+    /// <summary>What one turn's report says, captured from the state that turn produced.</summary>
+    /// <remarks>
+    /// Kept apart from <see cref="PendingReport"/> so a reconstruction that is retried queues a
+    /// fresh completion rather than one an earlier attempt may already have settled.
+    /// </remarks>
+    private readonly record struct TurnReport(int Turn, TurnReportRequest Request);
 
     /// <summary>One immutable request and the completion awaited only by reconstruction paths.</summary>
     private sealed record PendingReport(int Turn, TurnReportRequest Request)
