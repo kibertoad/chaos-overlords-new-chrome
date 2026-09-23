@@ -233,6 +233,28 @@ describe('absent seats, departures and the repair sweeps', () => {
     expect((await h.principalOf(host.token)).match.currentTurn).toBe(3)
   })
 
+  it('holds the turn of a player returning to an empty match until they decide the departed host', async () => {
+    const { host, guest } = await h.startedMatch()
+    await h.kernel.lobby.leave(await h.principalOf(guest.token))
+    await h.kernel.lobby.voteOnTakeover(await h.principalOf(host.token), guest.player.id, {
+      decision: 'computer',
+    })
+    await h.kernel.lobby.leave(await h.principalOf(host.token))
+    expect(await h.storage.takeovers.listOpenPrompts(host.match.id)).toEqual([])
+
+    await h.kernel.lobby.rejoin(await h.principalOf(guest.token))
+    // Asked about the host who left while nobody was present, and the turn waits on that seat.
+    expect(await h.storage.takeovers.listOpenPrompts(host.match.id)).toEqual([host.player.id])
+    await h.submit(await h.principalOf(guest.token), 1, 2, true)
+    expect((await h.principalOf(guest.token)).match.currentTurn).toBe(1)
+
+    await h.kernel.lobby.voteOnTakeover(await h.principalOf(guest.token), host.player.id, {
+      decision: 'computer',
+    })
+    expect((await h.storage.players.get(host.player.id))?.status).toBe('computer')
+    expect((await h.principalOf(guest.token)).match.currentTurn).toBe(2)
+  })
+
   it('requires every present player to approve computer control exactly once', async () => {
     const { host, guest, third } = await h.startedMatchOfThree(60)
     await h.submit(await h.principalOf(host.token), 1, 1, true)
