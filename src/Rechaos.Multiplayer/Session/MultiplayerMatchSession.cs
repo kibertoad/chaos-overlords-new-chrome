@@ -784,15 +784,27 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     {
         if (ReferenceEquals(lane, _pumpLane)) Volatile.Write(ref _pumpOperation, operation);
         if (ReferenceEquals(lane, _outboxLane)) Volatile.Write(ref _outboxOperation, operation);
-        var result = await TransientFailure.CallAsync(
-            call,
-            _callRetryPolicy,
-            onRetry: lane is null
-                ? null
-                : (exception, attempt) => lane.Failed(Describe(exception), attempt),
-            cancellationToken).ConfigureAwait(false);
-        lane?.Recovered();
-        return result;
+        try
+        {
+            var result = await TransientFailure.CallAsync(
+                call,
+                _callRetryPolicy,
+                onRetry: lane is null
+                    ? null
+                    : (exception, attempt) => lane.Failed(Describe(exception), attempt),
+                cancellationToken).ConfigureAwait(false);
+            lane?.Recovered();
+            return result;
+        }
+        catch (Exception exception) when (exception is MultiplayerApiException
+            or MultiplayerProtocolException)
+        {
+            // A refusal, or an answer this build cannot read, still proves the server answered.
+            // The caller decides what it means for this operation, while the connection lane can
+            // stop reporting an outage.
+            lane?.Recovered();
+            throw;
+        }
     }
 
     /// <summary>
