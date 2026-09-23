@@ -19,6 +19,54 @@ namespace Rechaos.Tests;
 /// </remarks>
 public sealed partial class MultiplayerSessionTests
 {
+    [Fact]
+    public async Task ResyncDuringRepairCatchUpKeepsTheAppliedTurnAndRestoresTheSession()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
+        var afterOne = await ResolveTurnOneAsync(session, server);
+        server.Answer(HttpMethod.Get, "/turns/2/orders", SealedOrders(2));
+        server.Events.Write(SealedFrame(9, 2));
+        await WaitFor<MultiplayerNotice.TurnResolved>(session);
+        server.Answer(HttpMethod.Get, $"/matches/{MatchId}",
+            new MatchDetail(ViewAtTurn(3) with { LastEventSeq = 10 }, "CODE1234", "p1"));
+        server.Answer(HttpMethod.Get, "/snapshots/latest", BootstrapSnapshot(session));
+        server.Answer(HttpMethod.Get, "/turns/3/orders/mine",
+            new OwnSubmissionView(3, null, Ready: false, OrdersHash: null));
+        server.Answer(HttpMethod.Get, "/events", new EventPage([]));
+
+        // The peer's valid turn-1 state differs from ours, so the live announcement adopts it.
+        var replay = new MatchReplayRecorder(
+            MatchStateClone.Of(session.Bootstrap.State, BundledOriginalData.Load()));
+        CommandPhase.Enter(replay);
+        SealedTurnApplier.Apply(replay, SealedOrders(1));
+        replay.State.Players[0].Cash++;
+        var repairHash = MatchStateHasher.ComputeFingerprint(replay.State);
+        var repair = new SnapshotView(1, NativeSaveSerializer.CurrentFormatVersion,
+            MultiplayerProtocolVersion.Current, MultiplayerSessionVersion.Current, repairHash,
+            "p2", "2026-09-10T12:03:00.000Z", MatchStateClone.ToBase64(replay.State));
+        Assert.NotEqual(afterOne, repairHash);
+        server.Answer(HttpMethod.Get, "/snapshots/1", repair);
+        server.Events.Write(Frame(10, "turn.desynced", Desync(repairHash)));
+        await WaitFor<MultiplayerNotice.Desynced>(session);
+
+        var blocked = server.BlockOnce(HttpMethod.Get, "/turns/2/orders");
+        server.Events.Write(Frame(11, "snapshot.available",
+            $"{{\"turn\":1,\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion},"
+            + $"\"stateHash\":\"{repairHash}\",\"uploadedByPlayerId\":\"p2\"}}"));
+        await Until(() => server.CallsTo(HttpMethod.Get, "/turns/2/orders") >= 2,
+            "repair catch-up reached the sealed-set read");
+        session.RequestResync();
+        blocked.SetResult();
+
+        var seen = new List<MultiplayerNotice>();
+        var resumed = await WaitFor<MultiplayerNotice.Resumed>(session, seen);
+        Assert.Equal(3, resumed.State.Coordinator.Turn);
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+    }
+
     /// <summary>
     /// The divergence is noticed after the next turn has already sealed.
     /// </summary>

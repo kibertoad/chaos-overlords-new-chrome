@@ -183,19 +183,23 @@ public sealed partial class MultiplayerMatchSession
     private async Task AdoptRepairAsync(SnapshotView snapshot, CancellationToken cancellationToken)
     {
         var restored = ReadVerifiedSnapshot(snapshot);
-        _replay = new MatchReplayRecorder(restored);
+        // A stream-cycle cancellation can arrive during any sealed-set fetch. Build the repaired
+        // state off to the side so the event cursor still describes the live replay if that happens.
+        var repaired = new MatchReplayRecorder(restored);
         var settled = new List<(int Turn, string StateHash)> { (snapshot.Turn, snapshot.StateHash) };
         var view = await ReadMatchViewAsync(cancellationToken).ConfigureAwait(false);
         for (var turn = snapshot.Turn + 1; turn < view.CurrentTurn; turn++)
         {
-            settled.Add((turn, await ApplySealedSetAsync(_replay, turn, cancellationToken)
+            settled.Add((turn, await ApplySealedSetAsync(repaired, turn, cancellationToken)
                 .ConfigureAwait(false)));
         }
+        cancellationToken.ThrowIfCancellationRequested();
+        _replay = repaired;
         _pendingDesync = null;
         // Seals reconstructed before this repair are superseded by the turns just replayed.
         _unreportedSeals.Clear();
         foreach (var (turn, stateHash) in settled)
-            await QueueReportAsync(turn, stateHash).WaitAsync(cancellationToken).ConfigureAwait(false);
+            await QueueReportAsync(turn, stateHash).WaitAsync(_stoppingToken).ConfigureAwait(false);
         var current = MatchStateHasher.ComputeFingerprint(_replay.State);
         var (state, planning) = HandOver();
         _notices.Enqueue(new MultiplayerNotice.Resynced(snapshot.Turn, state, current, planning));
