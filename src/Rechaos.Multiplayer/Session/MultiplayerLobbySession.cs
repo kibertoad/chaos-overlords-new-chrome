@@ -64,7 +64,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     private Task? _disposal;
     private int _busy;
     private int _leaveGeneration;
-    private volatile bool _finishPendingSeatBeforeStop;
+    private bool _stopped;
 
     /// <summary>A session pointed at one server.</summary>
     /// <param name="http">Shared by every call; the game owns it.</param>
@@ -102,29 +102,37 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     public void Host(CreateMatchRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var generation = Volatile.Read(ref _leaveGeneration);
-        Run(async token => await SeatAsync(
-            await _anonymous.CreateMatchAsync(request, token).ConfigureAwait(false), generation)
-            .ConfigureAwait(false));
+        Claim(token => _anonymous.CreateMatchAsync(request, token));
     }
 
     /// <summary>Claims a seat by join code.</summary>
     public void Join(JoinMatchRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var generation = Volatile.Read(ref _leaveGeneration);
-        Run(async token => await SeatAsync(
-            await _anonymous.JoinAsync(request, token).ConfigureAwait(false), generation)
-            .ConfigureAwait(false));
+        Claim(token => _anonymous.JoinAsync(request, token));
     }
 
     public void JoinRunning(JoinRunningMatchRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
+        Claim(token => _anonymous.JoinRunningAsync(request, token));
+    }
+
+    /// <summary>Asks the server for a new seat, and gives it back if nobody is left to sit in it.</summary>
+    /// <remarks>
+    /// A claim commits at the server whether or not its answer gets back, so it is deliberately not
+    /// bound to this session's cancellation: cutting it off on stop would leave a seat taken that no
+    /// recovery record names. The client's own request deadline bounds it instead, and
+    /// <see cref="SeatAsync"/> releases whatever it returns after a leave or a stop.
+    /// </remarks>
+    private void Claim(
+        Func<CancellationToken, Task<MembershipView>> request,
+        [CallerMemberName] string operationName = "")
+    {
         var generation = Volatile.Read(ref _leaveGeneration);
-        Run(async token => await SeatAsync(
-            await _anonymous.JoinRunningAsync(request, token).ConfigureAwait(false), generation)
-            .ConfigureAwait(false));
+        Run(async _ => await SeatAsync(
+                await request(CancellationToken.None).ConfigureAwait(false), generation, claimed: true)
+            .ConfigureAwait(false), operationName);
     }
 
     public void Browse() => Run(async token =>
@@ -139,8 +147,11 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(token);
         var handle = _anonymous.WithToken(token).Match(matchId);
         var generation = Volatile.Read(ref _leaveGeneration);
-        Run(async cancellationToken =>
+        // Not bound to the session's cancellation either, for the same reason as a claim: a leave
+        // asked for while this is in flight has to see its answer to give the seat back.
+        Run(async _ =>
         {
+            var cancellationToken = CancellationToken.None;
             var detail = await handle.GetAsync(cancellationToken).ConfigureAwait(false);
             if (!string.Equals(detail.You, playerId, StringComparison.Ordinal))
                 throw new MultiplayerProtocolException("the saved membership belongs to another player");
@@ -153,6 +164,9 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
                 // active roster.  Reclaim that seat before constructing the match session.  In
                 // particular, this is the normal route when everybody left a running match: the
                 // server retains it and the first person back becomes its host.
+                // Rejoining is a write, so a player who has already left or stopped must not be put
+                // back into the roster (and possibly made host) only to be taken out again.
+                if (IsAbandoned(generation)) return;
                 await handle.RejoinAsync(cancellationToken).ConfigureAwait(false);
                 detail = await handle.GetAsync(cancellationToken).ConfigureAwait(false);
                 player = detail.Match.Players.First(candidate => candidate.Id == playerId);
@@ -160,17 +174,18 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             await SeatAsync(new MembershipView(
                 detail.Match, player, token, string.IsNullOrWhiteSpace(detail.JoinCode)
                     ? joinCode
-                    : detail.JoinCode), generation).ConfigureAwait(false);
+                    : detail.JoinCode), generation, claimed: false).ConfigureAwait(false);
         });
     }
 
     /// <summary>Host only: seats the players, draws the seed and opens turn 1.</summary>
     public void Start() => Run(async token =>
     {
-        if (_handle is null) return;
+        // Read once: a leave clears the field from another thread while this is in flight.
+        if (_handle is not { } handle) return;
         try
         {
-            await _handle.StartAsync(token).ConfigureAwait(false);
+            await handle.StartAsync(token).ConfigureAwait(false);
         }
         catch (MultiplayerApiException exception) when (exception.Status == HttpStatusCode.Conflict)
         {
@@ -178,7 +193,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             // race another request from this same host, even though the match did start. The match
             // read is authoritative: treat that state as success rather than leaving the host on a
             // misleading error solely because the original transition was no longer available.
-            var detail = await _handle.GetAsync(token).ConfigureAwait(false);
+            var detail = await handle.GetAsync(token).ConfigureAwait(false);
             if (detail.Match.Status != MatchStatus.Running
                 || detail.Match.Seed is null
                 || detail.Match.CurrentTurn < 1
@@ -187,21 +202,21 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             _notices.Enqueue(new LobbyNotice.Updated(detail.Match));
             return;
         }
-        await PublishLobbyAsync(_handle, token).ConfigureAwait(false);
+        await PublishLobbyAsync(handle, token).ConfigureAwait(false);
     });
 
     public void UpdateSettings(MatchSettings settings) => Run(async token =>
     {
-        if (_handle is null) return;
-        await _handle.UpdateSettingsAsync(settings, token).ConfigureAwait(false);
-        await PublishLobbyAsync(_handle, token).ConfigureAwait(false);
+        if (_handle is not { } handle) return;
+        await handle.UpdateSettingsAsync(settings, token).ConfigureAwait(false);
+        await PublishLobbyAsync(handle, token).ConfigureAwait(false);
     });
 
     /// <summary>Re-reads the lobby, for the roster and for the moment it starts running.</summary>
     public void Refresh() => Run(async token =>
     {
-        if (_handle is null) return;
-        await PublishLobbyAsync(_handle, token).ConfigureAwait(false);
+        if (_handle is not { } handle) return;
+        await PublishLobbyAsync(handle, token).ConfigureAwait(false);
     });
 
     private async Task PublishLobbyAsync(MatchHandle handle, CancellationToken token) =>
@@ -235,9 +250,6 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             handle = _handle;
             _handle = null;
             OwnPlayerId = string.Empty;
-            // The UI normally calls StopAsync immediately after leaving. Let an in-flight seat
-            // request finish so its successful response can be compensated before stop cancels it.
-            _finishPendingSeatBeforeStop |= handle is null && IsBusy;
         }
         if (handle is null) return Task.CompletedTask;
         // The client's own request deadline bounds this; the session's token deliberately does not.
@@ -265,8 +277,9 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
 
     private async Task DisposeCoreAsync()
     {
-        if (_finishPendingSeatBeforeStop)
-            await _current.ConfigureAwait(false);
+        // A seat call still in flight is not cancelled below; from here on it hands back whatever
+        // it is given, and awaiting the current call waits for that too.
+        lock (_seatGate) _stopped = true;
         await _stopping.CancelAsync().ConfigureAwait(false);
         try
         {
@@ -293,21 +306,34 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         exception is MultiplayerApiException or MultiplayerProtocolException
             or MultiplayerTimeoutException or HttpRequestException or IOException;
 
-    private async Task SeatAsync(MembershipView membership, int generation)
+    private bool IsAbandoned(int generation)
+    {
+        lock (_seatGate) return _stopped || generation != _leaveGeneration;
+    }
+
+    /// <param name="membership">What the server answered.</param>
+    /// <param name="generation">The leave count when the call was asked for.</param>
+    /// <param name="claimed">
+    /// Whether the call took a new seat. A resumed seat was the player's before the call, and the
+    /// recovery record that asked for it still names it, so a stop without a leave keeps it.
+    /// </param>
+    private async Task SeatAsync(MembershipView membership, int generation, bool claimed)
     {
         var handle = _anonymous.WithToken(membership.Token).Match(membership.Match.Id);
         lock (_seatGate)
         {
-            if (generation == _leaveGeneration)
+            var left = generation != _leaveGeneration;
+            if (!left && !_stopped)
             {
                 OwnPlayerId = membership.Player.Id;
                 _handle = handle;
                 _notices.Enqueue(new LobbyNotice.Seated(membership));
                 return;
             }
+            if (!left && !claimed) return;
         }
-        // The server may have committed the request just before LeaveAsync. Release that seat even
-        // though the player no longer waits for this request or owns its session cancellation token.
+        // The server committed the request after the player left, or after a stop that means nobody
+        // will ever read this answer or record its token. Release it even though nobody waits.
         try
         {
             await handle.LeaveAsync(CancellationToken.None).ConfigureAwait(false);
