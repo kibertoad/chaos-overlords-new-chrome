@@ -43,6 +43,7 @@ export function registerEventRoutes(api: Hono<AppEnv>): void {
       playerId: principal.player.id,
       afterSeq,
       signal: c.req.raw.signal,
+      lobby: principal.match.status === 'lobby',
     })
     // The stream is a raw `Response`, and Hono does not merge the headers the middleware prepared
     // into one of those — so the one response an operator most wants to correlate, a stream that

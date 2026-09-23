@@ -24,6 +24,8 @@ import { MatchLog } from './MatchLog'
  * predecessor is still being torn down. Reaching it closes that player's oldest stream rather than
  * refusing the new one, because the new one is the live client and the old one is the corpse.
  * `perMatch` and `perProcess` are the ceilings a client cannot talk its way past, and they refuse.
+ * Lobby streams may use at most one quarter of the process ceiling, so cheaply minted host tokens
+ * cannot fill every stream slot needed by running matches.
  */
 export interface EventHubLimits {
   perPlayer: number
@@ -52,6 +54,7 @@ export interface EventHubObserver {
 
 interface Subscription {
   playerId: string
+  lobby: boolean
   wake: () => void
   close: () => void
 }
@@ -71,6 +74,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
    */
   private readonly logs = new Map<string, MatchLog>()
   private open_ = 0
+  private lobbyOpen_ = 0
 
   constructor(
     private readonly events: EventRepository,
@@ -80,6 +84,15 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
   ) {}
 
   async notify(event: PersistedEvent): Promise<void> {
+    // A stream opened in the lobby stays connected when play starts. Release its lobby quota now
+    // rather than waiting for a reconnect that may never happen.
+    if (event.type === 'match.started') {
+      for (const subscription of this.listeners.get(event.matchId) ?? []) {
+        if (!subscription.lobby) continue
+        subscription.lobby = false
+        this.lobbyOpen_ -= 1
+      }
+    }
     // The notification carries the durable row, so its frame is formatted once here and every
     // stream one event behind — which is every healthy stream of the match — is served from it
     // without reading anything. See `MatchLog`.
@@ -140,6 +153,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     playerId: string
     afterSeq: number
     signal: AbortSignal
+    lobby?: boolean
   }): Promise<Response> {
     // Before the caps, not only inside the response: making room closes the caller's oldest
     // stream, and a request nobody is waiting on must not cost that player a live one (or be
@@ -148,13 +162,18 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
       this.observer.abandoned?.(input.matchId, input.playerId)
       return abandonedSseResponse()
     }
-    this.makeRoom(input.matchId, input.playerId)
+    this.makeRoom(input.matchId, input.playerId, input.lobby === true)
     const log = this.logOf(input.matchId)
     return createSseResponse(
       {
         page: (afterSeq, force) => log.page(afterSeq, force),
         caughtUp: (lastSeq) => log.caughtUp(lastSeq),
-        subscribe: (wake, close) => this.subscribe(input.matchId, input.playerId, wake, close),
+        subscribe: (wake, close) =>
+          this.subscribe(
+            { matchId: input.matchId, playerId: input.playerId, lobby: input.lobby === true },
+            wake,
+            close,
+          ),
       },
       {
         afterSeq: input.afterSeq,
@@ -174,30 +193,31 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
   }
 
   private subscribe(
-    matchId: string,
-    playerId: string,
+    input: { matchId: string; playerId: string; lobby: boolean },
     wake: () => void,
     close: () => void,
   ): () => void {
-    const set = this.listeners.get(matchId) ?? new Set<Subscription>()
-    const subscription: Subscription = { playerId, wake, close }
+    const set = this.listeners.get(input.matchId) ?? new Set<Subscription>()
+    const subscription: Subscription = { playerId: input.playerId, lobby: input.lobby, wake, close }
     set.add(subscription)
-    this.listeners.set(matchId, set)
+    this.listeners.set(input.matchId, set)
     this.open_ += 1
+    if (input.lobby) this.lobbyOpen_ += 1
     return () => {
       if (!set.delete(subscription)) return
       this.open_ -= 1
+      if (subscription.lobby) this.lobbyOpen_ -= 1
       if (set.size === 0) {
-        this.listeners.delete(matchId)
+        this.listeners.delete(input.matchId)
         // Nothing reads this match any more, so its frames are only memory. The next stream of it
         // starts from the log, which is where the truth was all along.
-        this.logs.delete(matchId)
+        this.logs.delete(input.matchId)
       }
     }
   }
 
   /**
-   * Enforce the three caps before a stream is built.
+   * Enforce the stream caps before a stream is built.
    *
    * The caller's own stale streams are closed FIRST, before either ceiling is read. Closing them is
    * not a concession to the caller, it is bookkeeping: a reconnect whose predecessor has not
@@ -209,7 +229,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
    * `perMatch` and `perProcess` then refuse whatever is still over, which is the case no client can
    * talk its way past.
    */
-  private makeRoom(matchId: string, playerId: string): void {
+  private makeRoom(matchId: string, playerId: string, lobby: boolean): void {
     const set = this.listeners.get(matchId)
     if (set) {
       const mine = [...set].filter((subscription) => subscription.playerId === playerId)
@@ -219,6 +239,16 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
       throw new RateLimitedError('This server is holding as many event streams as it can', {
         reason: 'too_many_streams',
         scope: 'process',
+      })
+    }
+    // Creating a lobby is unauthenticated. A caller can mint hundreds of host tokens and hold
+    // three streams per token, so lobby streams cannot be allowed to occupy the whole process cap.
+    // Running matches retain the other three quarters even when a single source spreads creation
+    // across many IPv6 /64s and exhausts the lobby pool.
+    if (lobby && this.lobbyOpen_ >= Math.max(1, Math.floor(this.limits.perProcess / 4))) {
+      throw new RateLimitedError('This server is holding as many lobby streams as it can', {
+        reason: 'too_many_streams',
+        scope: 'lobby',
       })
     }
     if ((this.listeners.get(matchId)?.size ?? 0) >= this.limits.perMatch) {
