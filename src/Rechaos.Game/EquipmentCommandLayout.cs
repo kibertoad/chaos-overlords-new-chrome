@@ -6,6 +6,10 @@ public static class EquipmentCommandLayout
 {
     public const int CategoryCount = 4;
     public const int VisibleItemCount = 16;
+    public const int EquippedItemCount = 3;
+    private const int EquippedItemSize = 20;
+    private const int EquippedItemStride = 22;
+    private const int EquippedItemGap = 4;
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Portrait => SharedPanelLayout.StandardPortrait;
     public static Rectangle Cancel => SharedPanelLayout.CommandCancel;
@@ -32,6 +36,18 @@ public static class EquipmentCommandLayout
         if (selectedPosition is < 0 || selectedPosition >= itemCount)
             throw new ArgumentOutOfRangeException(nameof(selectedPosition));
         return 0;
+    }
+
+    /// <summary>
+    /// Boxes for the gang's current weapon, armor, and miscellaneous items: a row
+    /// spanning the portrait's width directly beneath it, clear of the Cancel button.
+    /// </summary>
+    public static Rectangle EquippedItem(int slot)
+    {
+        if (slot is < 0 or >= EquippedItemCount) throw new ArgumentOutOfRangeException(nameof(slot));
+        var portrait = Portrait;
+        return new Rectangle(portrait.X + slot * EquippedItemStride, portrait.Bottom + EquippedItemGap,
+            EquippedItemSize, EquippedItemSize);
     }
 
     public static Rectangle Category(int category)

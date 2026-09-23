@@ -44,6 +44,9 @@ public sealed partial class ChaosGame
 
     private void CycleGangDetails(int delta)
     {
+        // Opened from a command overlay, the panel describes the gang being ordered and
+        // must hand the overlay back that same gang.
+        if (_gangDetailsReturnScreen == ClientScreen.Commands) return;
         if (_gangDetailsSectorFilter is not { } sectorId
             || _state?.Coordinator.ActivePlayer is not { } playerId)
         {
@@ -93,7 +96,10 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        DrawMapBackdrop(batch, pixel, font, state, _gangDetailsReturnScreen);
+        if (_gangDetailsReturnScreen == ClientScreen.Commands)
+            DrawCommands(batch, pixel, font, state);
+        else
+            DrawMapBackdrop(batch, pixel, font, state, _gangDetailsReturnScreen);
     }
 
     private void DrawGangDetailsPanel(
