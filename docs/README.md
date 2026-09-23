@@ -35,7 +35,7 @@ and contributor working rules are in [AGENTS.md](../AGENTS.md).
 | Work on original file formats or the asset pack | [ORIGINAL-FILE-FORMATS.md](ORIGINAL-FILE-FORMATS.md), [ASSET-CATALOG.md](ASSET-CATALOG.md), [UI-ATLAS.md](UI-ATLAS.md), [AUDIO-VIDEO.md](AUDIO-VIDEO.md) |
 | Set up or run clean-room binary analysis | [GHIDRA.md](GHIDRA.md) for the toolchain, [REFERENCE-CAPTURE.md](REFERENCE-CAPTURE.md) for runtime captures, [the static research protocol](VALIDATION.md#static-binary-research-protocol) for what a finding must record |
 | Change saves, replays, or the canonical hash | [NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md) |
-| Host, operate, or extend online play | [MULTIPLAYER.md](MULTIPLAYER.md) for the design, [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) for the robustness and efficiency review and what each of its findings led to, [multiplayer/README.md](../multiplayer/README.md) for operating a server, [src/Rechaos.Multiplayer/README.md](../src/Rechaos.Multiplayer/README.md) for the game client; version rules are in [AGENTS.md](../AGENTS.md#multiplayer-protocol-version) |
+| Host, operate, or extend online play | [MULTIPLAYER.md](MULTIPLAYER.md) for the design, [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) for the review items still open, [multiplayer/README.md](../multiplayer/README.md) for operating a server, [src/Rechaos.Multiplayer/README.md](../src/Rechaos.Multiplayer/README.md) for the game client; version rules are in [AGENTS.md](../AGENTS.md#multiplayer-protocol-version) |
 | Cut or sign a release | [RELEASING.md](RELEASING.md) |
 
 ## Document catalog
@@ -65,7 +65,7 @@ guides, which are current by construction or change rarely.
 | [AI-SPEC.md](AI-SPEC.md) | Original versus Advanced policy architecture, planner inputs and invariants, the current policy, and the parity work still required | Specification |
 | [NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md) | Recreation save container and limits, the current save document, the compatibility policy, and the replay format | Format specification |
 | [MULTIPLAYER.md](MULTIPLAYER.md) | What the coordination server is and is not, REST plus server-sent events transport, protocol and session versions, lobby, turn barrier and lifecycle, timers, bug-report intake, retention, security model and threat boundaries, the shared TypeScript/C# contract, client integration contract, limitations | Design |
-| [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) | Code review of the online-play implementation for robustness and efficiency: what holds, the desync-repair and client give-up paths that did not, the seal and departure races, the server's hot-path costs, client thread and reconnect costs, and test gaps — with the resolution of every finding, and the two recommendations that were not followed as written | Review |
+| [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) | What is still open from the robustness and efficiency review of online play: lobby polling cost, client backoff jitter, recovery-file downgrade safety, response parsing and allocation costs, and the tests that would pin the review's fixes | Review |
 
 ### Original-game research
 

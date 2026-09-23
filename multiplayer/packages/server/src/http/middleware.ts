@@ -103,6 +103,18 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
 }
 
 /**
+ * The process-wide budget on creating a match, charged to one shared key.
+ *
+ * Mounted for `POST /matches` alone, because the same path also serves the public listing, which
+ * must not spend it. It runs after `rateLimited`, so a single address over its own budget is
+ * refused without touching the shared one.
+ */
+export const matchCreationRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
+  enforce(c.get('container').rateLimiters, 'matchCreation', MATCH_CREATION_KEY, c)
+  await next()
+}
+
+/**
  * Limiter for an authenticated member, keyed by player rather than address so one player on a shared
  * address cannot spend another's budget. Must run after `bearerAuth`.
  */
@@ -198,7 +210,10 @@ function ipv6Prefix64(address: string): string {
  * `rateLimitKey` masks IPv6 prefixes and strips ports, which is meaningless work on a player UUID
  * and runs on every authenticated request.
  */
-const IDENTITY_TIERS: ReadonlySet<string> = new Set(['member', 'upload'])
+const IDENTITY_TIERS: ReadonlySet<string> = new Set(['member', 'upload', 'matchCreation'])
+
+/** The one key the match-creation tier counts under; it is a process-wide budget, not a per-caller one. */
+const MATCH_CREATION_KEY = 'all'
 
 function enforce(
   limiters: RateLimiters,

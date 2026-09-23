@@ -7,6 +7,7 @@ import { handleError } from './http/errorHandler'
 import {
   bearerAuth,
   bugReportRateLimited,
+  matchCreationRateLimited,
   memberRateLimited,
   rateLimited,
   requestId,
@@ -80,6 +81,8 @@ function apiRoutes(): Hono<AppEnv> {
 
   // The doors a stranger can knock on, throttled per client address.
   api.use('/matches', rateLimited, bodyLimit({ maxSize: LIMITS.gameSettingsBytes + SMALL_BODY }))
+  // Creating is also charged to one budget shared by every caller; browsing the same path is not.
+  api.on('POST', '/matches', matchCreationRateLimited)
   api.use('/matches/join', rateLimited, bodyLimit({ maxSize: SMALL_BODY }))
   // `use(path, ...)` matches the path verbatim, so neither of the two above covers this one. It is
   // a password-gated door like `/matches/join` and needs the same throttle and the same cap on a

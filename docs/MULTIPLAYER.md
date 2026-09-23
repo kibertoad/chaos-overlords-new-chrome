@@ -401,7 +401,10 @@ guarantee sets `synchronous = FULL` or runs Postgres.
 - **Rate limits** come in three tiers: the unauthenticated doors per client address, every
   authenticated call per player, and snapshot uploads per player on a tighter budget, because a
   member is a cost too — order documents are a quarter of a megabyte and snapshots four times that.
-  The windows are per process, which is what a self-hosted server needs; a public deployment puts its
+  Match creation also has one process-wide budget shared by every caller, because a per-address
+  budget does nothing against many addresses and every create is a stored lobby. The Node runtime
+  also caps connections and sets header and request deadlines, so a client that never finishes
+  sending a request cannot hold a socket for long. The windows are per process, which is what a self-hosted server needs; a public deployment puts its
   platform's rate limiting in front as the real gate.
 - **A refused request is described, not echoed.** A validation failure names the field and the
   rule; the value the client sent (a mistyped password, an order document) is never written back

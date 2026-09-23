@@ -43,12 +43,19 @@ function inMemoryBugReports(): BugReportRepository & { rows: StoredBugReport[] }
   }
 }
 
-function build(
-  overrides: Partial<ServerContainer['config']> = {},
-  rateLimit = { limit: 1000, windowMs: 60_000 },
-  memberRateLimit = { limit: 1000, windowMs: 60_000 },
-  bugReportOptions: { enabled?: boolean; limit?: number; statePerDay?: number } = {},
-) {
+type Window = { limit: number; windowMs: number }
+
+interface BuildLimits {
+  anonymous?: Window
+  member?: Window
+  bugReports?: { enabled?: boolean; limit?: number; statePerDay?: number }
+  matchCreationPerMinute?: number
+}
+
+function build(overrides: Partial<ServerContainer['config']> = {}, limits: BuildLimits = {}) {
+  const rateLimit = limits.anonymous ?? { limit: 1000, windowMs: 60_000 }
+  const memberRateLimit = limits.member ?? { limit: 1000, windowMs: 60_000 }
+  const bugReportOptions = limits.bugReports ?? {}
   const storage = new InMemoryStorage()
   const clock = new ManualClock()
   const hub = new LocalEventHub(storage.events, 50)
@@ -85,6 +92,10 @@ function build(
       bugReportState: new RateLimiter(clock, {
         limit: bugReportOptions.statePerDay ?? 1000,
         windowMs: 24 * 60 * 60 * 1000,
+      }),
+      matchCreation: new RateLimiter(clock, {
+        limit: limits.matchCreationPerMinute ?? 1000,
+        windowMs: 60_000,
       }),
     },
     config: { ...DEFAULT_SERVER_CONFIG, publicListing: true, ...overrides },
@@ -149,7 +160,7 @@ describe('server app over in-memory storage', () => {
   })
 
   it('rate-limits the unauthenticated doors per client address', async () => {
-    const limited = build({}, { limit: 2, windowMs: 60_000 })
+    const limited = build({}, { anonymous: { limit: 2, windowMs: 60_000 } })
     const body = JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'x' })
     const headers = {
       'content-type': 'application/json',
@@ -181,12 +192,54 @@ describe('server app over in-memory storage', () => {
   })
 
   /**
+   * The per-address budget binds one stranger and nothing about many, and every create is a stored
+   * lobby. The shared ceiling is what a flood from many addresses meets, and it must not close the
+   * listing or the join door that share the `/matches` prefix with it.
+   */
+  it('caps match creation across every caller, leaving listing and joining open', async () => {
+    const limited = build({}, { matchCreationPerMinute: 2 })
+    const create = (address: string) =>
+      limited.app.request('/api/v1/matches', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': address },
+        body: JSON.stringify({
+          settings: {
+            name: 'x',
+            maxPlayers: 2,
+            turnTimerSeconds: 0,
+            visibility: 'public',
+            gameSettings: {},
+          },
+          hostDisplayName: 'h',
+        }),
+      })
+    expect((await create('203.0.113.1')).status).toBe(201)
+    const second = await create('203.0.113.2')
+    expect(second.status).toBe(201)
+    const third = await create('203.0.113.3')
+    expect(third.status).toBe(429)
+    expect(third.headers.get('retry-after')).toMatch(/^\d+$/)
+
+    expect((await limited.app.request('/api/v1/matches')).status).toBe(200)
+    const { joinCode } = (await second.json()) as { joinCode: string }
+    const joined = await limited.app.request('/api/v1/matches/join', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.4' },
+      body: JSON.stringify({ joinCode, displayName: 'g' }),
+    })
+    expect(joined.status).toBe(201)
+
+    limited.clock.advance(60_000)
+    expect((await create('203.0.113.3')).status).toBe(201)
+  })
+
+  /**
    * The member limiter is keyed by player and cannot run before there is one, so a bad token used to
    * cost a SHA-256 and an indexed lookup against no budget at all. Guessing a 256-bit token is not
    * the worry; driving database reads at line rate is.
    */
   it('charges a failed authentication to the caller address', async () => {
-    const limited = build({}, { limit: 2, windowMs: 60_000 })
+    const limited = build({}, { anonymous: { limit: 2, windowMs: 60_000 } })
     const headers = { authorization: 'Bearer not-a-real-token', 'x-forwarded-for': '203.0.113.5' }
     const path = '/api/v1/matches/00000000-0000-4000-8000-000000000000'
     expect((await limited.app.request(path, { headers })).status).toBe(401)
@@ -195,13 +248,13 @@ describe('server app over in-memory storage', () => {
     expect(third.status).toBe(429)
 
     // A caller who never sent a credential at all is charged the same: the cost is the same.
-    const missing = build({}, { limit: 1, windowMs: 60_000 })
+    const missing = build({}, { anonymous: { limit: 1, windowMs: 60_000 } })
     expect((await missing.app.request(path, { headers: {} })).status).toBe(401)
     expect((await missing.app.request(path, { headers: {} })).status).toBe(429)
   })
 
   it('rate-limits an authenticated member per player, not per address', async () => {
-    const limited = build({}, { limit: 1000, windowMs: 60_000 }, { limit: 2, windowMs: 60_000 })
+    const limited = build({}, { member: { limit: 2, windowMs: 60_000 } })
     const created = await limited.app.request('/api/v1/matches', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -250,7 +303,7 @@ describe('server app over in-memory storage', () => {
    * body that is buffered before anything validates it.
    */
   it('rate-limits and caps the body of the late-join door', async () => {
-    const limited = build({}, { limit: 2, windowMs: 60_000 })
+    const limited = build({}, { anonymous: { limit: 2, windowMs: 60_000 } })
     const body = JSON.stringify({ match: 'ABCDEFGH', displayName: 'x', slot: 3 })
     const headers = {
       'content-type': 'application/json',
@@ -485,7 +538,7 @@ describe('bug report intake', () => {
   })
 
   it('answers 404 on a server that does not take reports', async () => {
-    const { app } = build({}, undefined, undefined, { enabled: false })
+    const { app } = build({}, { bugReports: { enabled: false } })
     const response = await post(app, report())
 
     expect(response.status).toBe(404)
@@ -495,7 +548,7 @@ describe('bug report intake', () => {
   })
 
   it('spends its own budget rather than the lobby one', async () => {
-    const limited = build({}, { limit: 1000, windowMs: 60_000 }, undefined, { limit: 1 })
+    const limited = build({}, { bugReports: { limit: 1 } })
     const headers = { 'x-forwarded-for': '203.0.113.42' }
 
     expect((await post(limited.app, report(), headers)).status).toBe(201)
