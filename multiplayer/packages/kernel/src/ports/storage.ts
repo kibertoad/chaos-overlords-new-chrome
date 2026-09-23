@@ -24,7 +24,8 @@ import type {
 /**
  * Persistence ports. There are NO transactions: D1 has none, so every invariant that two writers
  * could race on is a single conditional statement whose row count says who won. Each `transition`
- * is such a compare-and-swap; `claimSeat`/`releaseSeat` are atomic counters; `submitOrders` is
+ * is such a compare-and-swap; `claimSeat`/`releaseSeat` and `claimLateJoinOrder` are atomic
+ * counters; `submitOrders` is
  * conditional on the turn still being open; `append` allocates its own sequence number.
  *
  * Writes that a unique constraint can refuse answer `false` instead of throwing, so the services
@@ -48,6 +49,15 @@ export interface MatchRepository {
    * position in the match's monotonic join sequence, or null when no seat was available.
    */
   claimSeat(matchId: string): Promise<number | null>
+  /**
+   * Atomically take the next position in the match's join sequence for a late joiner, while the
+   * match is running; null when it is not running or no longer exists. It advances the same
+   * `joinCounter` `claimSeat` does, in one conditional UPDATE — a separate sequence, or a read
+   * followed by a write, would hand two joiners the same `joinOrder` — and it never returns a
+   * position a stored player of the match already holds. It does not test capacity: `createLate`
+   * does, and a position taken for a join that `createLate` then refuses stays unused.
+   */
+  claimLateJoinOrder(matchId: string): Promise<number | null>
   releaseSeat(matchId: string): Promise<void>
   /** Host-only lobby configuration; false after the match starts or below the occupied seat count. */
   updateSettings(matchId: string, settings: MatchSettings, updatedAt: Date): Promise<boolean>

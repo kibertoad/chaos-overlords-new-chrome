@@ -155,8 +155,16 @@ describe('the lobby, the roster and the turn barrier', () => {
       portraitId: 9,
     })
     expect(joined.player.slot).toBe(3)
+    expect((await h.storage.players.get(joined.player.id))?.joinOrder).toBe(1)
     expect(joined.player.status).toBe('active')
     expect(joined.player.portraitId).toBe(9)
+    const second = await h.kernel.lobby.joinRunning({
+      match: host.match.id,
+      displayName: 'Later',
+      slot: 4,
+    })
+    expect((await h.storage.players.get(second.player.id))?.joinOrder).toBe(2)
+    expect((await h.storage.matches.get(host.match.id))?.joinCounter).toBe(3)
     await expect(
       h.kernel.lobby.joinRunning({
         match: host.joinCode,
@@ -165,6 +173,76 @@ describe('the lobby, the roster and the turn barrier', () => {
       }),
     ).rejects.toMatchObject({ details: { reason: 'seat_reserved' } })
     expect(h.notifier.events.at(-1)?.type).toBe('match.latePlayerJoined')
+  })
+
+  async function lateJoinableMatch() {
+    const host = await h.kernel.lobby.createMatch({
+      settings: {
+        name: 'Drop In',
+        maxPlayers: 6,
+        turnTimerSeconds: 0,
+        visibility: 'public',
+        gameSettings: { allowLateJoin: true },
+      },
+      hostDisplayName: 'Host',
+    })
+    await h.kernel.lobby.start(await h.principalOf(host.token))
+    await h.kernel.snapshots.upload(await h.principalOf(host.token), {
+      turn: 0,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+    return host.match.id
+  }
+
+  async function joinOrderOf(playerId: string) {
+    return (await h.storage.players.get(playerId))?.joinOrder
+  }
+
+  it('gives concurrent late joiners distinct join positions', async () => {
+    const match = await lateJoinableMatch()
+    const [a, b] = await Promise.all([
+      h.kernel.lobby.joinRunning({ match, displayName: 'A', slot: 3 }),
+      h.kernel.lobby.joinRunning({ match, displayName: 'B', slot: 4 }),
+    ])
+    expect(
+      [await joinOrderOf(a.player.id), await joinOrderOf(b.player.id)].sort(
+        (x, y) => Number(x) - Number(y),
+      ),
+    ).toEqual([1, 2])
+  })
+
+  it('refuses the loser of a race for one seat, leaving only a gap in the join sequence', async () => {
+    const match = await lateJoinableMatch()
+    const results = await Promise.allSettled([
+      h.kernel.lobby.joinRunning({ match, displayName: 'A', slot: 3 }),
+      h.kernel.lobby.joinRunning({ match, displayName: 'B', slot: 3 }),
+    ])
+    const seated = results.filter((result) => result.status === 'fulfilled')
+    const refused = results.filter((result) => result.status === 'rejected')
+    expect(seated).toHaveLength(1)
+    expect(refused).toHaveLength(1)
+    expect(refused[0]?.reason).toMatchObject({ details: { reason: 'seat_reserved' } })
+    // Both claims took a position; the refused one is never reused.
+    expect((await h.storage.matches.get(match))?.joinCounter).toBe(3)
+    const later = await h.kernel.lobby.joinRunning({ match, displayName: 'C', slot: 4 })
+    expect(await joinOrderOf(later.player.id)).toBe(3)
+    const roster = await h.storage.players.listByMatch(match)
+    expect(roster.filter((player) => player.slot === 3)).toHaveLength(1)
+  })
+
+  it('answers unknown_match when the match is deleted while a late joiner claims a position', async () => {
+    const match = await lateJoinableMatch()
+    const claim = h.storage.matches.claimLateJoinOrder
+    h.storage.matches.claimLateJoinOrder = async (matchId) => {
+      await h.storage.matches.deleteAbandonedLive(new Date(8.64e15), 10, false)
+      return claim(matchId)
+    }
+    await expect(
+      h.kernel.lobby.joinRunning({ match, displayName: 'Late', slot: 3 }),
+    ).rejects.toMatchObject({ details: { reason: 'unknown_match' } })
   })
 
   it('refuses a late join by id into a private match, and past maxPlayers', async () => {

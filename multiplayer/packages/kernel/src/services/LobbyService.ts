@@ -295,11 +295,16 @@ export class LobbyService {
     this.assertNameIsFree(existing, request.displayName)
     const token = generateToken()
     const seatKey = (await hashToken(`${match.id}:${request.slot}`)).slice(0, 32)
+    // The position is taken before the insert because the port has no transactions to take both
+    // in one; a join `createLate` then refuses leaves a gap in the sequence, which only has to be
+    // unique and increasing. The checks above refuse the requests that are doomed from the start.
+    const joinOrder = await this.deps.storage.matches.claimLateJoinOrder(match.id)
+    if (joinOrder === null) throw await this.lateJoinClaimRefused(match.id)
     const player: Player = {
       id: `late-${seatKey}`,
       matchId: match.id,
       slot: request.slot,
-      joinOrder: match.joinCounter,
+      joinOrder,
       displayName: request.displayName,
       portraitId: request.portraitId ?? DEFAULT_PORTRAIT_ID,
       tokenHash: await hashToken(token),
@@ -319,6 +324,13 @@ export class LobbyService {
       payload: { playerId: player.id, slot: player.slot },
     })
     return this.membership(match, player, token)
+  }
+
+  /** Why the late-join claim found no running match: it stopped running, or it is gone. */
+  private async lateJoinClaimRefused(matchId: string): Promise<Error> {
+    return (await this.deps.storage.matches.get(matchId))
+      ? new ConflictError('The match is not running', { reason: 'match_not_running' })
+      : new NotFoundError('No match with that id or join code', { reason: 'unknown_match' })
   }
 
   async leave(principal: Principal): Promise<void> {
