@@ -57,11 +57,14 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     private readonly ConcurrentQueue<LobbyNotice> _notices = new();
     private readonly CancellationTokenSource _stopping = new();
     private readonly Lock _disposalGate = new();
+    private readonly Lock _seatGate = new();
     private MatchHandle? _handle;
     private Task _current = Task.CompletedTask;
     private Task _leaving = Task.CompletedTask;
     private Task? _disposal;
     private int _busy;
+    private int _leaveGeneration;
+    private volatile bool _finishPendingSeatBeforeStop;
 
     /// <summary>A session pointed at one server.</summary>
     /// <param name="http">Shared by every call; the game owns it.</param>
@@ -99,21 +102,29 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     public void Host(CreateMatchRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        Run(async token => Seat(await _anonymous.CreateMatchAsync(request, token).ConfigureAwait(false)));
+        var generation = Volatile.Read(ref _leaveGeneration);
+        Run(async token => await SeatAsync(
+            await _anonymous.CreateMatchAsync(request, token).ConfigureAwait(false), generation)
+            .ConfigureAwait(false));
     }
 
     /// <summary>Claims a seat by join code.</summary>
     public void Join(JoinMatchRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        Run(async token => Seat(await _anonymous.JoinAsync(request, token).ConfigureAwait(false)));
+        var generation = Volatile.Read(ref _leaveGeneration);
+        Run(async token => await SeatAsync(
+            await _anonymous.JoinAsync(request, token).ConfigureAwait(false), generation)
+            .ConfigureAwait(false));
     }
 
     public void JoinRunning(JoinRunningMatchRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        Run(async token => Seat(
-            await _anonymous.JoinRunningAsync(request, token).ConfigureAwait(false)));
+        var generation = Volatile.Read(ref _leaveGeneration);
+        Run(async token => await SeatAsync(
+            await _anonymous.JoinRunningAsync(request, token).ConfigureAwait(false), generation)
+            .ConfigureAwait(false));
     }
 
     public void Browse() => Run(async token =>
@@ -127,6 +138,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(playerId);
         ArgumentException.ThrowIfNullOrWhiteSpace(token);
         var handle = _anonymous.WithToken(token).Match(matchId);
+        var generation = Volatile.Read(ref _leaveGeneration);
         Run(async cancellationToken =>
         {
             var detail = await handle.GetAsync(cancellationToken).ConfigureAwait(false);
@@ -145,12 +157,10 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
                 detail = await handle.GetAsync(cancellationToken).ConfigureAwait(false);
                 player = detail.Match.Players.First(candidate => candidate.Id == playerId);
             }
-            OwnPlayerId = playerId;
-            _handle = handle;
-            _notices.Enqueue(new LobbyNotice.Seated(new MembershipView(
+            await SeatAsync(new MembershipView(
                 detail.Match, player, token, string.IsNullOrWhiteSpace(detail.JoinCode)
                     ? joinCode
-                    : detail.JoinCode)));
+                    : detail.JoinCode), generation).ConfigureAwait(false);
         });
     }
 
@@ -218,8 +228,17 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     /// </remarks>
     public Task LeaveAsync()
     {
-        var handle = _handle;
-        _handle = null;
+        MatchHandle? handle;
+        lock (_seatGate)
+        {
+            _leaveGeneration++;
+            handle = _handle;
+            _handle = null;
+            OwnPlayerId = string.Empty;
+            // The UI normally calls StopAsync immediately after leaving. Let an in-flight seat
+            // request finish so its successful response can be compensated before stop cancels it.
+            _finishPendingSeatBeforeStop |= handle is null && IsBusy;
+        }
         if (handle is null) return Task.CompletedTask;
         // The client's own request deadline bounds this; the session's token deliberately does not.
         var leaving = handle.LeaveAsync(CancellationToken.None);
@@ -246,6 +265,8 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
 
     private async Task DisposeCoreAsync()
     {
+        if (_finishPendingSeatBeforeStop)
+            await _current.ConfigureAwait(false);
         await _stopping.CancelAsync().ConfigureAwait(false);
         try
         {
@@ -272,11 +293,29 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         exception is MultiplayerApiException or MultiplayerProtocolException
             or MultiplayerTimeoutException or HttpRequestException or IOException;
 
-    private void Seat(MembershipView membership)
+    private async Task SeatAsync(MembershipView membership, int generation)
     {
-        OwnPlayerId = membership.Player.Id;
-        _handle = _anonymous.WithToken(membership.Token).Match(membership.Match.Id);
-        _notices.Enqueue(new LobbyNotice.Seated(membership));
+        var handle = _anonymous.WithToken(membership.Token).Match(membership.Match.Id);
+        lock (_seatGate)
+        {
+            if (generation == _leaveGeneration)
+            {
+                OwnPlayerId = membership.Player.Id;
+                _handle = handle;
+                _notices.Enqueue(new LobbyNotice.Seated(membership));
+                return;
+            }
+        }
+        // The server may have committed the request just before LeaveAsync. Release that seat even
+        // though the player no longer waits for this request or owns its session cancellation token.
+        try
+        {
+            await handle.LeaveAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (IsServerOrNetworkFailure(exception))
+        {
+            // The server's turn timer handles a seat we could not release.
+        }
     }
 
     /// <summary>

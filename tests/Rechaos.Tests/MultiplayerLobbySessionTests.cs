@@ -10,6 +10,49 @@ namespace Rechaos.Tests;
 
 public sealed class MultiplayerLobbySessionTests
 {
+    [Theory]
+    [InlineData("host", "/matches")]
+    [InlineData("join", "/matches/join")]
+    [InlineData("join-running", "/matches/join-running")]
+    public async Task LeavingDuringSeatRequestReleasesTheReturnedSeat(string kind, string route)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        var view = View(kind == "join-running" ? MatchStatus.Running : MatchStatus.Lobby);
+        server.Answer(HttpMethod.Post, route,
+            new MembershipView(view, view.Players[0], "cop_test", "CODE1234"));
+        server.Answer(HttpMethod.Post, "/matches/m1/leave", null, HttpStatusCode.NoContent);
+        var blocked = server.BlockOnce(HttpMethod.Post, route);
+
+        switch (kind)
+        {
+            case "host":
+                lobby.Host(new CreateMatchRequest(view.Settings, "HOST", 0, null, null, null));
+                break;
+            case "join":
+                lobby.Join(new JoinMatchRequest("CODE1234", "HOST", 0, null));
+                break;
+            default:
+                lobby.JoinRunning(new JoinRunningMatchRequest(
+                    "CODE1234", "HOST", 0, null, 0));
+                break;
+        }
+        await Until(() => server.CallsTo(HttpMethod.Post, route) == 1, cancellationToken);
+        await lobby.LeaveAsync();
+        var stopping = lobby.StopAsync();
+        blocked.SetResult();
+        await stopping;
+        await Until(() => server.CallsTo(HttpMethod.Post, "/matches/m1/leave") == 1
+            && !lobby.IsBusy, cancellationToken);
+
+        Assert.Null(lobby.Handle);
+        Assert.Equal(string.Empty, lobby.OwnPlayerId);
+        Assert.False(lobby.TryDequeueNotice(out _));
+    }
+
     [Fact]
     public async Task StartConflictReconcilesWhenTheLobbyAlreadyBecameRunning()
     {
@@ -65,5 +108,16 @@ public sealed class MultiplayerLobbySessionTests
             await Task.Delay(10, cancellationToken);
         }
         throw new TimeoutException($"Timed out waiting for {typeof(TNotice).Name}.");
+    }
+
+    private static async Task Until(Func<bool> condition, CancellationToken cancellationToken)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (condition()) return;
+            await Task.Delay(10, cancellationToken);
+        }
+        throw new TimeoutException("Timed out waiting for the lobby request.");
     }
 }
