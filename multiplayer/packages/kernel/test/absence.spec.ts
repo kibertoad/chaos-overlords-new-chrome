@@ -239,6 +239,7 @@ describe('absent seats, departures and the repair sweeps', () => {
     await h.kernel.lobby.voteOnTakeover(await h.principalOf(host.token), guest.player.id, {
       decision: 'computer',
     })
+    expect((await h.storage.players.get(guest.player.id))?.status).toBe('computer')
     await h.kernel.lobby.leave(await h.principalOf(host.token))
     expect(await h.storage.takeovers.listOpenPrompts(host.match.id)).toEqual([])
 
@@ -246,12 +247,15 @@ describe('absent seats, departures and the repair sweeps', () => {
     // Asked about the host who left while nobody was present, and the turn waits on that seat.
     expect(await h.storage.takeovers.listOpenPrompts(host.match.id)).toEqual([host.player.id])
     await h.submit(await h.principalOf(guest.token), 1, 2, true)
+    expect((await h.storage.turns.get(host.match.id, 1))?.status).toBe('open')
     expect((await h.principalOf(guest.token)).match.currentTurn).toBe(1)
 
     await h.kernel.lobby.voteOnTakeover(await h.principalOf(guest.token), host.player.id, {
       decision: 'computer',
     })
     expect((await h.storage.players.get(host.player.id))?.status).toBe('computer')
+    const first = await h.storage.turns.get(host.match.id, 1)
+    expect(first?.sealedSlots?.map((seat) => seat.playerId)).toEqual([guest.player.id])
     expect((await h.principalOf(guest.token)).match.currentTurn).toBe(2)
   })
 
