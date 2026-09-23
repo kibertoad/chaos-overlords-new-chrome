@@ -22,6 +22,12 @@ export interface AppEnv {
      */
     bugReportJournalBudget?: () => boolean
     /**
+     * Spends one unit of the process-wide match-creation budget, or throws the 429 when it is gone.
+     * Set by `matchCreationRateLimited`, called by the create handler once the body has validated;
+     * absent everywhere else.
+     */
+    spendMatchCreation?: () => void
+    /**
      * The object a contract handler answered with, recorded by `contractJson` so the response
      * validator can check it without parsing the body back out. Wrapped so that a handler
      * answering `null` is still told apart from a handler that recorded nothing.

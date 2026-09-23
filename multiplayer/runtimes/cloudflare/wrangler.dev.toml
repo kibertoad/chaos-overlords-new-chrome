@@ -23,6 +23,7 @@ RATE_LIMIT_PER_MINUTE = "30"
 MEMBER_RATE_LIMIT_PER_MINUTE = "240"
 UPLOAD_RATE_LIMIT_PER_MINUTE = "10"
 BUG_REPORT_RATE_LIMIT_PER_MINUTE = "5"
+MATCH_CREATION_RATE_LIMIT_PER_MINUTE = "120"
 # Retention, in days; 0 keeps that kind of row forever. These are the kernel's defaults, sized for a
 # shared public server. SILENT_RETENTION_DAYS (unset: three times ABANDONED_RETENTION_DAYS) and
 # RETENTION_BATCH_SIZE (50) can be added the same way.

@@ -7,7 +7,7 @@ import { DEFAULT_RETENTION_DAYS } from '@chaos-overlords/kernel'
 import { ManualClock } from '@chaos-overlords/kernel/testing'
 import { type ServerType, serve } from '@hono/node-server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { buildNodeRuntime, loadConfig, type NodeRuntime } from '../src'
+import { buildNodeRuntime, loadConfig, type NodeRuntime, startHttpServer } from '../src'
 
 /**
  * The facade over a real HTTP listener: the client SDK's fetch goes over TCP, so the streaming
@@ -34,6 +34,7 @@ function defineFacadeSuite(name: string, databaseUrl: string | undefined): void 
           MEMBER_RATE_LIMIT_PER_MINUTE: '10000',
           UPLOAD_RATE_LIMIT_PER_MINUTE: '10000',
           BUG_REPORT_RATE_LIMIT_PER_MINUTE: '10000',
+          MATCH_CREATION_RATE_LIMIT_PER_MINUTE: '10000',
         }),
         { clock },
       )
@@ -107,6 +108,42 @@ describe('node runtime configuration', () => {
     expect(loadConfig({ PUBLIC_LISTING: 'FALSE' }).publicListing).toBe(false)
     expect(loadConfig({ PUBLIC_LISTING: '0' }).publicListing).toBe(false)
     expect(() => loadConfig({ PUBLIC_LISTING: 'sometimes' })).toThrow(/Expected a boolean/)
+  })
+
+  it('bounds connections and request deadlines, refusing settings that defeat them', () => {
+    const defaults = loadConfig({})
+    expect(defaults.maxConnections).toBe(1_024)
+    expect(defaults.maxConnections).toBeGreaterThan(defaults.maxEventStreams)
+    expect(defaults.headersTimeoutMs).toBe(15_000)
+    expect(defaults.requestTimeoutMs).toBe(120_000)
+    expect(defaults.matchCreationRateLimitPerMinute).toBe(120)
+
+    // The default grows with the stream ceiling so raising one alone never starves requests.
+    expect(loadConfig({ MAX_EVENT_STREAMS: '2000' }).maxConnections).toBe(4_000)
+    expect(() => loadConfig({ MAX_CONNECTIONS: '512' })).toThrow(/above MAX_EVENT_STREAMS/)
+    expect(() =>
+      loadConfig({ HTTP_HEADERS_TIMEOUT_MS: '60000', HTTP_REQUEST_TIMEOUT_MS: '30000' }),
+    ).toThrow(/must not exceed/)
+    expect(() => loadConfig({ HTTP_REQUEST_TIMEOUT_MS: '0' })).toThrow(/at least 1000/)
+    expect(() => loadConfig({ MATCH_CREATION_RATE_LIMIT_PER_MINUTE: '0' })).toThrow(/at least 1/)
+  })
+
+  it('hands the connection cap and request deadlines to the listening server', async () => {
+    const config = loadConfig({
+      HOST: '127.0.0.1',
+      PORT: '0',
+      MAX_CONNECTIONS: '600',
+      HTTP_HEADERS_TIMEOUT_MS: '5000',
+      HTTP_REQUEST_TIMEOUT_MS: '9000',
+    })
+    const server = startHttpServer(() => new Response('ok'), config)
+    try {
+      expect(server.maxConnections).toBe(600)
+      expect(server.headersTimeout).toBe(5_000)
+      expect(server.requestTimeout).toBe(9_000)
+    } finally {
+      await new Promise((resolve) => server.close(resolve))
+    }
   })
 
   it('reads browser origins as a trimmed list, none by default', () => {

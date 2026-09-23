@@ -31,8 +31,8 @@ public sealed partial class MultiplayerMatchSession
 
     /// <summary>
     /// Every turn reconstructed from history whose confirmation the log has not carried, in turn
-    /// order, with the hash this client reached, so that the reports a crash interrupted are made
-    /// after all.
+    /// order, with the report captured when it was applied, so that the reports a crash interrupted
+    /// are made after all.
     /// </summary>
     /// <remarks>
     /// A list rather than one slot. A client can miss more than one seal — a laptop that sleeps
@@ -41,7 +41,7 @@ public sealed partial class MultiplayerMatchSession
     /// seat, so the forgotten turn stayed `sealed` for the rest of the match, `listUnsettled` never
     /// emptied, and `resumeAfterDesync` could therefore never lift a later desync pause.
     /// </remarks>
-    private readonly List<(int Turn, string StateHash)> _unreportedSeals = [];
+    private readonly List<TurnReport> _unreportedSeals = [];
 
     /// <summary>
     /// Fetches the match, adopts the newest snapshot the local state is behind, replays the log
@@ -97,9 +97,10 @@ public sealed partial class MultiplayerMatchSession
         {
             // In turn order. The turn a report is missing from is the turn the barrier is waiting
             // on, and an earlier one left unsettled blocks every later desync repair.
-            foreach (var seal in _unreportedSeals.OrderBy(item => item.Turn).ToArray())
-                await QueueReportAsync(seal.Turn, seal.StateHash).WaitAsync(cancellationToken)
-                    .ConfigureAwait(false);
+            // All queued at once: the reporter holds them in that order anyway, so waiting for
+            // each answer before queuing the next only added a round trip per turn.
+            var reports = _unreportedSeals.OrderBy(item => item.Turn).Select(QueueReportAsync).ToArray();
+            await Task.WhenAll(reports).WaitAsync(cancellationToken).ConfigureAwait(false);
             _unreportedSeals.Clear();
             // The reports may have finished the match; re-read rather than judge it on the view
             // that was fetched before they were sent.
@@ -197,6 +198,7 @@ public sealed partial class MultiplayerMatchSession
                 + $"{restored.Coordinator.Phase} turn {restored.Coordinator.Turn}");
         }
         _replay = new MatchReplayRecorder(restored);
+        _canonicalThroughTurn = snapshot.Turn;
     }
 
     /// <summary>
@@ -302,8 +304,7 @@ public sealed partial class MultiplayerMatchSession
             var turn = sealedTurn.Payload.Turn;
             if (turn < _replay.State.Coordinator.Turn || _prefetchedSealedSets.ContainsKey(turn))
                 continue;
-            _prefetchedSealedSets[turn] = CallAsync(
-                token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken);
+            _prefetchedSealedSets[turn] = FetchSealedSetAsync(turn, cancellationToken);
             started++;
         }
     }
@@ -315,9 +316,12 @@ public sealed partial class MultiplayerMatchSession
     private Task<SealedOrdersView> SealedSetAsync(int turn, CancellationToken cancellationToken)
     {
         if (_prefetchedSealedSets.Remove(turn, out var prefetched)) return prefetched;
-        return CallAsync(
-            token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken);
+        return FetchSealedSetAsync(turn, cancellationToken);
     }
+
+    /// <summary>One turn's sealed set from the server, unverified.</summary>
+    private Task<SealedOrdersView> FetchSealedSetAsync(int turn, CancellationToken cancellationToken) =>
+        CallAsync(token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken);
 
     private async Task ApplyHistoricalEventAsync(
         MatchEvent @event,
@@ -361,13 +365,13 @@ public sealed partial class MultiplayerMatchSession
                 // Whether this seat's own orders were in that set is not said on this path: these
                 // turns are history being caught up on, and the resumed state is announced by
                 // `Resumed`, which carries the submission the server holds for the open turn.
-                _unreportedSeals.Add((sealedTurn.Payload.Turn, stateHash));
+                _unreportedSeals.Add(CaptureReport(sealedTurn.Payload.Turn, stateHash, _replay.State));
                 return;
             case TurnConfirmedEvent confirmed:
                 VerifyHistoricalConfirmation(confirmed);
                 _unreportedSeals.RemoveAll(seal => seal.Turn == confirmed.Payload.Turn);
-                // A turn the log went on to confirm is no longer a pause anybody is waiting on.
-                if (_pendingDesync?.Turn == confirmed.Payload.Turn) _pendingDesync = null;
+                if (_pendingDesync is { } pending && pending.Turn == confirmed.Payload.Turn)
+                    _pendingDesync = SettlePendingDesync(pending, confirmed.Payload.StateHash);
                 return;
             // A divergence and its repair are FACTS about the match, not merely live notifications,
             // and the history is the only place a client that was not connected can learn them. A
@@ -381,6 +385,29 @@ public sealed partial class MultiplayerMatchSession
         }
     }
 
+    /// <summary>
+    /// What a confirmation of the disputed turn, met in history, leaves of the pause.
+    /// </summary>
+    /// <remarks>
+    /// The pause is over for the match, but not necessarily for this client. A client standing on
+    /// the disputed turn has just had the verdict checked against its state; one rebuilt from a
+    /// snapshot at or after that turn holds the repair by construction. Either way nothing is left
+    /// to do. A client that was already past the turn — the live state a resync or a sequence gap
+    /// carries into the replay — is still on whatever it computed, and clearing the pause here used
+    /// to leave it there: the <c>snapshot.available</c> that would have repaired it is also behind
+    /// the cursor now, and the next report desynced the match all over again. That client keeps the
+    /// pause, marked with the verdict, and settles it once the replay is over; see
+    /// <see cref="ResolvePendingDesyncAsync"/>.
+    /// </remarks>
+    private PendingDesync? SettlePendingDesync(PendingDesync pending, string confirmedStateHash) =>
+        pending.Turn <= _canonicalThroughTurn
+            ? null
+            : pending with { SettledStateHash = confirmedStateHash };
+
+    /// <summary>
+    /// Checks a historical confirmation against the local state when that state is the one it is
+    /// about.
+    /// </summary>
     private void VerifyHistoricalConfirmation(TurnConfirmedEvent confirmed)
     {
         var resolvedTurn = _replay.State.Coordinator.Turn - 1;
@@ -398,6 +425,7 @@ public sealed partial class MultiplayerMatchSession
                 $"the reconstructed state for confirmed turn {confirmed.Payload.Turn} does not "
                 + "match the server hash; the match was produced by incompatible game rules");
         }
+        _canonicalThroughTurn = confirmed.Payload.Turn;
     }
 
     /// <summary>

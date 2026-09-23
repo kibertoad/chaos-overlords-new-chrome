@@ -4,6 +4,7 @@ import {
   configInteger,
   configList,
   DEFAULT_EVENT_HUB_LIMITS,
+  DEFAULT_RATE_LIMITS,
 } from '@chaos-overlords/server'
 
 export interface NodeConfig {
@@ -49,6 +50,8 @@ export interface NodeConfig {
   uploadRateLimitPerMinute: number
   /** Bug reports accepted per client address per minute. */
   bugReportRateLimitPerMinute: number
+  /** Matches created per minute across every caller together; see `RateLimiters.matchCreation`. */
+  matchCreationRateLimitPerMinute: number
   /**
    * Days after which a finished or abandoned match is deleted with everything it owns. 0 keeps
    * them forever, which a long-lived server will feel in its database size.
@@ -110,6 +113,26 @@ export interface NodeConfig {
    * are not configurable; they follow from the six seats and from what a reconnect needs.
    */
   maxEventStreams: number
+  /**
+   * Connections the HTTP server holds at once; sockets over it are closed as they arrive.
+   *
+   * Every open event stream is a connection, so this has to leave room above `maxEventStreams` for
+   * ordinary requests, and it is refused at startup when it does not. Without it the only ceiling on
+   * idle or trickling sockets is the process file descriptor limit, and reaching that fails the
+   * database and the log files as well as the API.
+   */
+  maxConnections: number
+  /**
+   * How long a client may take to send a request's headers. Node's own default is a minute, which
+   * lets a slowloris client hold a socket for sixty seconds per header it drips.
+   */
+  headersTimeoutMs: number
+  /**
+   * How long a client may take to send a whole request, body included. Sized for the largest body
+   * the API takes (a bug report's base64 journal) on a slow uplink. An event stream is not affected:
+   * its request is complete as soon as its headers are, however long the response runs.
+   */
+  requestTimeoutMs: number
   /** `CORS_ORIGINS`: browser origins allowed to call the API, comma separated. None by default. */
   corsOrigins: string[]
 }
@@ -120,6 +143,11 @@ export interface NodeConfig {
  * hosts chose to be discoverable, and port 8787.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
+  const maxEventStreams = configInteger(
+    env.MAX_EVENT_STREAMS,
+    DEFAULT_EVENT_HUB_LIMITS.perProcess,
+    1,
+  )
   return {
     host: env.HOST ?? '0.0.0.0',
     port: configInteger(env.PORT, 8787),
@@ -133,6 +161,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
     memberRateLimitPerMinute: configInteger(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240, 1),
     uploadRateLimitPerMinute: configInteger(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10, 1),
     bugReportRateLimitPerMinute: configInteger(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5, 1),
+    matchCreationRateLimitPerMinute: configInteger(
+      env.MATCH_CREATION_RATE_LIMIT_PER_MINUTE,
+      DEFAULT_RATE_LIMITS.matchCreationPerMinute,
+      1,
+    ),
     retentionDays: configInteger(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
     lobbyRetentionDays: optionalInteger(env.LOBBY_RETENTION_DAYS),
     abandonedRetentionDays: configInteger(
@@ -146,9 +179,47 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
     bugReportDailyStateMb: configInteger(env.BUG_REPORT_DAILY_STATE_MB, 512),
     trustedProxyHops: proxyHops(env.TRUST_PROXY),
     shutdownGraceMs: configInteger(env.SHUTDOWN_GRACE_MS, 5_000),
-    maxEventStreams: configInteger(env.MAX_EVENT_STREAMS, DEFAULT_EVENT_HUB_LIMITS.perProcess, 1),
+    maxEventStreams,
+    maxConnections: connectionCap(env.MAX_CONNECTIONS, maxEventStreams),
+    ...requestTimeouts(env),
     corsOrigins: configList(env.CORS_ORIGINS),
   }
+}
+
+/**
+ * Room for ordinary requests above the stream ceiling: a busy server's API calls ride keep-alive
+ * sockets of their own, one or two per connected player, beside that player's stream.
+ */
+const CONNECTION_HEADROOM_PER_STREAM = 2
+const MIN_CONNECTIONS = 1_024
+
+/** `MAX_CONNECTIONS`, which must leave room for requests above every allowed event stream. */
+function connectionCap(raw: string | undefined, maxEventStreams: number): number {
+  const fallback = Math.max(MIN_CONNECTIONS, maxEventStreams * CONNECTION_HEADROOM_PER_STREAM)
+  const value = configInteger(raw, fallback, 1)
+  if (value <= maxEventStreams) {
+    throw new Error(
+      `MAX_CONNECTIONS (${value}) must be above MAX_EVENT_STREAMS (${maxEventStreams}), or the streams alone can take every connection`,
+    )
+  }
+  return value
+}
+
+/**
+ * The two request deadlines. Node's `createServer` refuses a header deadline past the request one,
+ * and would do it with an error naming its own option rather than the variable; this says which.
+ */
+function requestTimeouts(
+  env: NodeJS.ProcessEnv,
+): Pick<NodeConfig, 'headersTimeoutMs' | 'requestTimeoutMs'> {
+  const headersTimeoutMs = configInteger(env.HTTP_HEADERS_TIMEOUT_MS, 15_000, 1_000)
+  const requestTimeoutMs = configInteger(env.HTTP_REQUEST_TIMEOUT_MS, 120_000, 1_000)
+  if (headersTimeoutMs > requestTimeoutMs) {
+    throw new Error(
+      `HTTP_HEADERS_TIMEOUT_MS (${headersTimeoutMs}) must not exceed HTTP_REQUEST_TIMEOUT_MS (${requestTimeoutMs})`,
+    )
+  }
+  return { headersTimeoutMs, requestTimeoutMs }
 }
 
 /**

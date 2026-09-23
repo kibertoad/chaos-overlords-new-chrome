@@ -103,6 +103,24 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
 }
 
 /**
+ * The process-wide budget on creating a match, checked here and spent by the create handler.
+ *
+ * Mounted for `POST /matches` alone, because the same path also serves the public listing, which
+ * must not spend it. It runs after `rateLimited`, so a single address over its own budget is
+ * refused without touching the shared one. It only PEEKS: a spent budget is refused before the
+ * body is read, but a request is charged only once its body has passed the contract validator,
+ * through `spendMatchCreation`. Charging here would let a handful of addresses sending malformed
+ * bodies, which never store a lobby, hold the shared budget at zero for every legitimate host.
+ */
+export const matchCreationRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const limiters = c.get('container').rateLimiters
+  const retryAfter = limiters.matchCreation.peek(`matchCreation:${MATCH_CREATION_KEY}`)
+  if (retryAfter !== null) refuse(c, retryAfter)
+  c.set('spendMatchCreation', () => enforce(limiters, 'matchCreation', MATCH_CREATION_KEY, c))
+  await next()
+}
+
+/**
  * Limiter for an authenticated member, keyed by player rather than address so one player on a shared
  * address cannot spend another's budget. Must run after `bearerAuth`.
  */
@@ -198,7 +216,10 @@ function ipv6Prefix64(address: string): string {
  * `rateLimitKey` masks IPv6 prefixes and strips ports, which is meaningless work on a player UUID
  * and runs on every authenticated request.
  */
-const IDENTITY_TIERS: ReadonlySet<string> = new Set(['member', 'upload'])
+const IDENTITY_TIERS: ReadonlySet<string> = new Set(['member', 'upload', 'matchCreation'])
+
+/** The one key the match-creation tier counts under; it is a process-wide budget, not a per-caller one. */
+const MATCH_CREATION_KEY = 'all'
 
 function enforce(
   limiters: RateLimiters,
@@ -209,7 +230,10 @@ function enforce(
   const retryAfter = limiters[tier].take(
     `${tier}:${IDENTITY_TIERS.has(tier) ? key : rateLimitKey(key)}`,
   )
-  if (retryAfter === null) return
+  if (retryAfter !== null) refuse(c, retryAfter)
+}
+
+function refuse(c: Context<AppEnv>, retryAfter: number): never {
   c.header('Retry-After', String(retryAfter))
   throw new RateLimitedError('Too many attempts; slow down', {
     reason: 'rate_limited',

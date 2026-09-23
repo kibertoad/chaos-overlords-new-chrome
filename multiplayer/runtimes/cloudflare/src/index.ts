@@ -92,6 +92,10 @@ export function buildContainer(env: Env): ServerContainer {
         limit: DEFAULT_RATE_LIMITS.bugReportStatePerDay,
         windowMs: 24 * 60 * 60 * 1000,
       }),
+      matchCreation: perMinute(
+        env.MATCH_CREATION_RATE_LIMIT_PER_MINUTE,
+        DEFAULT_RATE_LIMITS.matchCreationPerMinute,
+      ),
     },
     // Listing is on unless a deployment turns it off: an unset var means the Browse screen works,
     // rather than every client being told the server lists nothing.

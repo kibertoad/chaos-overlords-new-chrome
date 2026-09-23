@@ -37,6 +37,9 @@ export function registerPublicLobbyRoutes(api: Hono<AppEnv>): void {
   })
 
   buildHonoRoute(api, createMatchContract, async (c) => {
+    // Charged here, after the contract validator, so a body that was never going to store a lobby
+    // does not spend the budget every host shares; `matchCreationRateLimited` only checks it.
+    c.get('spendMatchCreation')?.()
     const membership = await c.get('container').kernel.lobby.createMatch(c.req.valid('json'))
     return c.json(answering(c, membership), 201)
   })
