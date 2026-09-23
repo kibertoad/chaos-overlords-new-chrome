@@ -12,7 +12,7 @@ public static class GeneralSoundSlot
     public const int IncomingMessageAlert = 6;
     public const int CountdownWarning = 7;
     public const int FinalSecondWarning = 8;
-    public const int LoadedWithoutCallSite = 9;
+    public const int TurnStartCue = 9;
 }
 
 public static class AudioRouting
@@ -35,7 +35,7 @@ public static class AudioRouting
             [GeneralSoundSlot.IncomingMessageAlert] = 205,
             [GeneralSoundSlot.CountdownWarning] = 206,
             [GeneralSoundSlot.FinalSecondWarning] = 207,
-            [GeneralSoundSlot.LoadedWithoutCallSite] = 208
+            [GeneralSoundSlot.TurnStartCue] = 208
         };
 
     public static IReadOnlyList<int> GeneralSoundSlots { get; } =

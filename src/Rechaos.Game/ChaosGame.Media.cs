@@ -257,6 +257,7 @@ public sealed partial class ChaosGame
         FlushAutoSaves();
         DisposeIntroMovie();
         DisposeSoundtrack();
+        StopEffectVoice();
         foreach (var sound in _combatSounds.Values) sound.Dispose();
         foreach (var sound in _generalSounds.Values) sound.Dispose();
         _combatSounds.Clear();

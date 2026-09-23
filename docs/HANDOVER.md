@@ -672,8 +672,9 @@ status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
   confirmation/cancellation controls use slot 3 through the original shared
   helpers. Events, Combat Results,
   and incoming-Comlink paging is bounded rather than wrapping, with slot 3 on
-  a legal step and slot 4 at the first/last-page boundary. General slot 9 is loaded
-  by the original but has no call through its gated effect wrapper. Detailed Combat cues start with
+  a legal step and slot 4 at the first/last-page boundary. General slot 9 is the
+  later-turn cue, called directly through the lower effect helper. A new effect
+  interrupts the preceding effect voice. Detailed Combat cues start with
   their corresponding animation clips rather than at resolution time.
 
 ### Saves, replays, and canonical hashing

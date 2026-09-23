@@ -58,7 +58,11 @@ public sealed partial class ChaosGame
             ["phase"] = _state.Coordinator.Phase.ToString()
         });
         _message = string.Empty;
-        if (_state.Coordinator.Turn != previousTurn) WriteAutoSave();
+        if (_state.Coordinator.Turn != previousTurn)
+        {
+            WriteAutoSave();
+            if (_state.Outcome is null) PlayGeneralSound(GeneralSoundSlot.TurnStartCue);
+        }
 
         if (_state.Outcome is not null)
             _screens.Show(ClientScreen.Endgame);
@@ -120,6 +124,7 @@ public sealed partial class ChaosGame
             return;
         }
         var previousActivePlayer = _state.Coordinator.ActivePlayer;
+        var previousTurn = _state.Coordinator.Turn;
         var completedTurn = _state.Coordinator.Phase == TurnPhase.PlayerElimination;
         var transition = _state.Coordinator.Phase switch
         {
@@ -131,7 +136,12 @@ public sealed partial class ChaosGame
             _ => throw new InvalidOperationException("Unknown turn phase.")
         };
         _message = string.Empty;
-        if (completedTurn) WriteAutoSave();
+        if (completedTurn)
+        {
+            WriteAutoSave();
+            if (_state.Coordinator.Turn != previousTurn && _state.Outcome is null)
+                PlayGeneralSound(GeneralSoundSlot.TurnStartCue);
+        }
         if (_state.Outcome is not null)
             _screens.Show(ClientScreen.Endgame);
         else if (transition.ActivePlayer is not null && transition.ActivePlayer != previousActivePlayer)
@@ -213,7 +223,11 @@ public sealed partial class ChaosGame
         if (!acted) return;
         _selectedGangIndex = 0;
         _message = string.Empty;
-        if (_state.Coordinator.Turn != startingTurn) WriteAutoSave();
+        if (_state.Coordinator.Turn != startingTurn)
+        {
+            WriteAutoSave();
+            if (_state.Outcome is null) PlayGeneralSound(GeneralSoundSlot.TurnStartCue);
+        }
         if (_state.Outcome is not null)
         {
             _screens.Show(ClientScreen.Endgame);

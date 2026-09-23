@@ -1,7 +1,7 @@
 # Audio, music, and video
 
 Status: active clean-room research log
-Last updated: 2026-09-20
+Last updated: 2026-09-23
 
 The media layer: CD track programs and their lifecycle, and the sound-effect
 slots, volume handling, and setup cues that drive them. The imports these paths
@@ -20,6 +20,7 @@ reference executable fingerprinted there.
   - [BIN-MUSIC-001 - CD track programs and lifecycle](#bin-music-001---cd-track-programs-and-lifecycle)
 - [Sound effects](#sound-effects)
   - [BIN-SOUND-001 - effect slots, volume and setup cues](#bin-sound-001---effect-slots-volume-and-setup-cues)
+  - [BIN-SOUND-002 - turn-start cue and effect interruption](#bin-sound-002---turn-start-cue-and-effect-interruption)
 <!-- doc-index:end -->
 
 ## Music
@@ -150,7 +151,8 @@ therefore suppresses both the motion and its paired cue; these are not generic
 ungated dialog sounds.
 
 A bounded inventory of all 110 direct calls to the gated wrapper confirms that
-the executable passes only slots 0 through 8; no direct call passes slot 9.
+the executable passes only slots 0 through 8; no direct wrapper call passes slot 9.
+The direct lower-helper caller for slot 9 is documented in `BIN-SOUND-002`.
 Pairing those callers with the image-loader wrapper identifies rejected-input
 slot 4 in the handlers for Hire (`PX05000`/`PX05016`), Item and Site Information
 (`PX05001`/`PX05002`), Attack, Equip, Influence, Move, and Research
@@ -253,7 +255,7 @@ helper `0x0045e04d` marks the current record read and rescans all 16 read bytes,
 so the repeat stops after the final unread record is acknowledged rather than
 merely when the Comlink panel opens.
 Slot 9 is loaded but has no call site through the
-only gated general-effect wrapper in this executable. Music and effects share
+gated general-effect wrapper in this executable. Music and effects share
 the same numeric conversion but have separate state and enable flags.
 
 **Confidence:** High static evidence for slot/resource mapping, panel entry/exit gating, pointer-push,
@@ -301,5 +303,44 @@ animation tick, so retaliation waits for its reversed second clip instead of
 playing with the opening attack. Simple Combat does not enter this presenter.
 
 **Next validation:** Validate per-record Comlink acknowledgement, the slot-6
-cadence, and countdown-warning cadence at runtime,
-then validate overlap/interruption and native amplitude behavior.
+cadence, countdown-warning cadence, and native amplitude behavior at runtime.
+
+### BIN-SOUND-002 - turn-start cue and effect interruption
+
+**Observation:** The gated general-effect wrapper `0x00464290` calls the lower
+play helper `0x0045851a` with a requested slot and priority. The outer turn
+function `0x0046e766` also calls that lower helper directly at `0x0046f201`,
+passing slot 9 and priority 1 when local-game flag `0x00482178` or legacy-network
+flag `0x00487b58` is set. This branch follows the per-sector turn-start financial
+work and precedes player planning. Its enclosing loop initializes `local_8` to
+one and only reaches the branch when `local_8` is zero; the first turn therefore
+does not play the cue, while later turn starts can.
+
+The lower helper checks the requested slot and loaded memory pointer, then
+tracks its channel bookkeeping and calls `PlaySoundA(pointer, 0, 7)` when sound
+output is available. Flags 7 are `SND_ASYNC | SND_MEMORY | SND_NODEFAULT`.
+They omit `SND_NOSTOP`, so a new `PlaySound` call can interrupt the sound already
+playing; the separate MCI music path is unaffected. The helper does not consult
+the wrapper's effects-enable byte for this direct caller. Microsoft's
+[PlaySound documentation](https://learn.microsoft.com/en-us/windows/win32/multimedia/the-playsound-function)
+and [flag reference](https://learn.microsoft.com/en-us/previous-versions/ms713269%28v%3Dvs.85%29)
+describe the flags and interruption behavior.
+
+**Interpretation:** `SND00208` is a turn-start cue after the initial turn in
+local and legacy-network play. General and combat effects use one interrupting
+playback path, while CD music has its own playback path. The native helper's
+priority/channel bookkeeping and host driver timing still need audible
+validation.
+
+**Confidence:** High for the direct call, branch conditions, turn position,
+flags, and separation from MCI music; Medium for audible interruption timing
+on specific native systems.
+
+**Recreation status:** The client plays slot 9 when a local turn counter advances
+without an endgame outcome and routes combat and general effects through one
+active effect voice. Starting a new effect stops the previous effect voice.
+Music remains separate. Volume changes update that voice, and level zero stops
+it. These are presentation-only operations.
+
+**Next validation:** Compare the cue and rapid successive effects against a
+native reference capture, including local and legacy-network turn boundaries.

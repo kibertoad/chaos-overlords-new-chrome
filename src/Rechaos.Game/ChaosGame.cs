@@ -91,6 +91,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private PixelFont? _font;
     private readonly Dictionary<short, SoundEffect> _combatSounds = [];
     private readonly Dictionary<int, SoundEffect> _generalSounds = [];
+    private SoundEffectInstance? _activeEffectVoice;
     private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
     private readonly PanelSlideTransition _panelSlideTransition = new();

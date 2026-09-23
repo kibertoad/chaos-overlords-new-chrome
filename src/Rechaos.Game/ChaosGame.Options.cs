@@ -252,6 +252,7 @@ public sealed partial class ChaosGame
             throw new ArgumentOutOfRangeException(nameof(level));
         var changed = level != _soundEffectVolumeLevel;
         _soundEffectVolumeLevel = level;
+        UpdateEffectVoiceVolume();
         SavePreferences();
         if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
