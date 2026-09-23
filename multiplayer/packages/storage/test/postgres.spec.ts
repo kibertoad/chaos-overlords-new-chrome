@@ -238,4 +238,39 @@ describe.skipIf(!url)('postgres', () => {
         }),
     )
   })
+
+  it('discards orphan votes when a later prompt reuses a seat', async () => {
+    const { storage, match, player } = await matchWithPlayers()
+    const target = player(0)
+    const at = new Date('2026-03-01T12:00:00.000Z')
+    await storage.players.setStatus(target.id, 'left')
+    expect(await storage.takeovers.openPrompt(match.id, target.id, 1, at)).toBe(true)
+    expect(
+      await storage.takeovers.castVote({
+        matchId: match.id,
+        targetPlayerId: target.id,
+        voterPlayerId: 'voter',
+        decision: 'computer',
+        castAt: at,
+      }),
+    ).toBe(true)
+    const client = new pg.Client({ connectionString: url as string })
+    await client.connect()
+    try {
+      // A process could die after removing the prompt and before removing its votes.
+      await client.query('DELETE FROM takeover_prompts WHERE match_id = $1 AND player_id = $2', [
+        match.id,
+        target.id,
+      ])
+      expect(await storage.takeovers.openPrompt(match.id, target.id, 2, at)).toBe(true)
+      expect(await storage.takeovers.listVotes(match.id, target.id)).toEqual([])
+      const stale = await client.query<{ count: string }>(
+        'SELECT count(*) AS count FROM takeover_votes WHERE match_id = $1',
+        [match.id],
+      )
+      expect(Number(stale.rows[0]?.count)).toBe(0)
+    } finally {
+      await client.end()
+    }
+  })
 })

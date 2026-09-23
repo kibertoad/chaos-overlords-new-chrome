@@ -1,5 +1,5 @@
 import { ABSENT_HUMAN_STATUSES, type TakeoverRepository } from '@chaos-overlords/kernel'
-import { and, asc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, eq, gte, inArray, notExists, sql } from 'drizzle-orm'
 import { toTakeoverVote } from '../shared/mappers'
 import type { PostgresDatabase } from './database'
 import * as schema from './schema'
@@ -16,6 +16,22 @@ export function postgresTakeoverRepository(db: PostgresDatabase): TakeoverReposi
   const { players, takeoverPrompts, takeoverVotes } = schema
   return {
     async openPrompt(matchId, playerId, turn, openedAt) {
+      // A crash after deleting the old prompt but before deleting its votes can leave orphans.
+      // Clear them before a new prompt uses this key, without disturbing an existing prompt.
+      await db.delete(takeoverVotes).where(
+        and(
+          eq(takeoverVotes.matchId, matchId),
+          eq(takeoverVotes.targetPlayerId, playerId),
+          notExists(
+            db
+              .select({ one: sql`1` })
+              .from(takeoverPrompts)
+              .where(
+                and(eq(takeoverPrompts.matchId, matchId), eq(takeoverPrompts.playerId, playerId)),
+              ),
+          ),
+        ),
+      )
       const rows = await db
         .insert(takeoverPrompts)
         .select(
@@ -41,14 +57,13 @@ export function postgresTakeoverRepository(db: PostgresDatabase): TakeoverReposi
       return rows.length === 1
     },
     async closePrompt(matchId, playerId) {
-      // Votes first: a death between the two leaves an open prompt with no votes, which is the
-      // safe state, rather than votes that a later prompt for the same seat would inherit.
-      await db
-        .delete(takeoverVotes)
-        .where(and(eq(takeoverVotes.matchId, matchId), eq(takeoverVotes.targetPlayerId, playerId)))
+      // Close first so no concurrent vote can be admitted between vote cleanup and prompt removal.
       await db
         .delete(takeoverPrompts)
         .where(and(eq(takeoverPrompts.matchId, matchId), eq(takeoverPrompts.playerId, playerId)))
+      await db
+        .delete(takeoverVotes)
+        .where(and(eq(takeoverVotes.matchId, matchId), eq(takeoverVotes.targetPlayerId, playerId)))
     },
     async hasOpenPrompts(matchId) {
       const rows = await db
@@ -107,10 +122,27 @@ export function postgresTakeoverRepository(db: PostgresDatabase): TakeoverReposi
     },
     async listVotes(matchId, targetPlayerId) {
       const rows = await db
-        .select()
+        .select({
+          matchId: takeoverVotes.matchId,
+          targetPlayerId: takeoverVotes.targetPlayerId,
+          voterPlayerId: takeoverVotes.voterPlayerId,
+          decision: takeoverVotes.decision,
+          castAt: takeoverVotes.castAt,
+        })
         .from(takeoverVotes)
+        .innerJoin(
+          takeoverPrompts,
+          and(
+            eq(takeoverPrompts.matchId, takeoverVotes.matchId),
+            eq(takeoverPrompts.playerId, takeoverVotes.targetPlayerId),
+          ),
+        )
         .where(
-          and(eq(takeoverVotes.matchId, matchId), eq(takeoverVotes.targetPlayerId, targetPlayerId)),
+          and(
+            eq(takeoverVotes.matchId, matchId),
+            eq(takeoverVotes.targetPlayerId, targetPlayerId),
+            gte(takeoverVotes.castAt, takeoverPrompts.openedAt),
+          ),
         )
         .orderBy(asc(takeoverVotes.voterPlayerId))
       return rows.map(toTakeoverVote)
