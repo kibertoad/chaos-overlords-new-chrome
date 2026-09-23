@@ -193,6 +193,18 @@ public abstract record MultiplayerNotice
         : MultiplayerNotice;
 
     /// <summary>
+    /// A draft of the open turn has not reached the server yet, and is being retried.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not a <see cref="ConnectionChanged"/>. A draft only protects work the player
+    /// has not finished, and the next change sends a fresh one, so a failed attempt is worth a quiet
+    /// line and never the reconnect modal. <see cref="OrdersAccepted"/> for the same turn clears it.
+    /// </remarks>
+    /// <param name="Turn">The turn the draft was for.</param>
+    /// <param name="Detail">What went wrong with the last attempt, for the diagnostics log.</param>
+    public sealed record DraftDelayed(int Turn, string Detail) : MultiplayerNotice;
+
+    /// <summary>
     /// Whether the server is answering.
     /// </summary>
     /// <remarks>

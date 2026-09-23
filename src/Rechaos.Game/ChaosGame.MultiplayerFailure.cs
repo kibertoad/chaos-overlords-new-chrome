@@ -12,7 +12,7 @@ public sealed partial class ChaosGame
             && _online.SeatedSeats > 0
             && _online.ReadySeats >= _online.SeatedSeats;
         if (expectsResolution)
-            _online.ResolutionExpectedSince ??= DateTimeOffset.UtcNow;
+            _online.ResolutionExpectedSince ??= MonotonicClock.Now;
         else
             _online.ResolutionExpectedSince = null;
     }
@@ -36,7 +36,7 @@ public sealed partial class ChaosGame
     {
         if (_session is not { } session
             || _online.ResolutionExpectedSince is not { } since
-            || DateTimeOffset.UtcNow - since < OnlineResolutionGrace)
+            || MonotonicClock.Now - since < OnlineResolutionGrace)
             return;
         var turn = _online.PlanningTurn;
         _diagnostics?.Write("multiplayer.turn-resolution.timeout",
@@ -46,7 +46,7 @@ public sealed partial class ChaosGame
                 ["ready"] = _online.ReadySeats.ToString(CultureInfo.InvariantCulture),
                 ["seated"] = _online.SeatedSeats.ToString(CultureInfo.InvariantCulture),
             });
-        _online.ResolutionExpectedSince = DateTimeOffset.UtcNow;
+        _online.ResolutionExpectedSince = MonotonicClock.Now;
         _online.Status = "NO SEALED TURN YET  RESYNCHRONISING WITH THE SERVER";
         session.RequestResync();
     }

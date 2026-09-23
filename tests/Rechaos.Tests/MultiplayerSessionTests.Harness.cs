@@ -43,7 +43,8 @@ public sealed partial class MultiplayerSessionTests
             TimeSpan? streamOutageBudget = null,
             RetryPolicy? streamRetryPolicy = null,
             RetryPolicy? callRetryPolicy = null,
-            TimeSpan? reportFlushGrace = null)
+            TimeSpan? reportFlushGrace = null,
+            RetryPolicy? backgroundRetryPolicy = null)
     {
         var server = new FakeMultiplayerServer();
         var http = new HttpClient(server);
@@ -63,7 +64,7 @@ public sealed partial class MultiplayerSessionTests
         var session = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
             handle, BundledOriginalData.Load(), view, ownPlayerId, ResumeAfterSeq: 7,
             joinedInProgress, streamIdleTimeout, streamOutageBudget, streamRetryPolicy,
-            callRetryPolicy, reportFlushGrace));
+            callRetryPolicy, reportFlushGrace, backgroundRetryPolicy));
         return (session, server, http);
     }
 

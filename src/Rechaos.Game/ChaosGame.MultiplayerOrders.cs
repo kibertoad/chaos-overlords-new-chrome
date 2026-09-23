@@ -18,6 +18,24 @@ public sealed partial class ChaosGame
     private int _sentOrderVersion = UnsentOrders;
 
     /// <summary>
+    /// The shortest gap between two drafts.
+    /// </summary>
+    /// <remarks>
+    /// The draft is checked every frame and every change used to be a PUT, so a player dragging
+    /// gangs about sent several a second into the per-player budget the stream, the reports and
+    /// every read share — and a 429 there is refused for everybody on that seat. A draft only
+    /// protects work against the clock sealing the turn first, so pacing it costs at most this much
+    /// of the planning a player does in the very last second; the finished turn is never paced.
+    /// </remarks>
+    internal static readonly TimeSpan DraftInterval = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// When the last draft was queued, on the <see cref="MonotonicClock"/>, or null before the
+    /// first; drafts wait out <see cref="DraftInterval"/> after it.
+    /// </summary>
+    private TimeSpan? _lastDraftQueuedAt;
+
+    /// <summary>
     /// The planning handle of the turn the player last ended, kept until that turn is replaced.
     /// </summary>
     /// <remarks>
@@ -84,11 +102,16 @@ public sealed partial class ChaosGame
         if (_session is null || !_online.PlanningIsOpen) return;
         if (_actions?.OnlineTurn is not { } turn) return;
         if (turn.Orders.Version == _sentOrderVersion) return;
+        // Left unsent rather than dropped: the version still differs next frame, so the latest
+        // document goes as soon as the interval is up, carrying every change made in between.
+        var now = MonotonicClock.Now;
+        if (_lastDraftQueuedAt is { } last && now - last < DraftInterval) return;
         _sentOrderVersion = turn.Orders.Version;
         var document = turn.Build();
         var digest = OrderDigest.OfDocument(document);
         if (string.Equals(digest, _online.SentOrderDigest, StringComparison.Ordinal)) return;
         _online.SentOrderDigest = digest;
+        _lastDraftQueuedAt = now;
         _session.QueueOrders(_online.PlanningTurn, document, ready: false);
     }
 }
