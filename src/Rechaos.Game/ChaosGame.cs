@@ -97,7 +97,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _policeSprites;
     private Texture2D? _uiSprites;
     private Texture2D? _uiKeyedSprites;
-    private Texture2D? _hireSnubMark;
     private PixelFont? _font;
     private readonly Dictionary<short, SoundEffect> _combatSounds = [];
     private readonly Dictionary<int, SoundEffect> _generalSounds = [];
@@ -337,8 +336,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _batch = new SpriteBatch(GraphicsDevice);
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData([Color.White]);
-        _hireSnubMark = new Texture2D(GraphicsDevice, HireSnubMark.Size, HireSnubMark.Size);
-        _hireSnubMark.SetData(HireSnubMark.Pixels());
         _eventSiteDitherOverlay = LastTurnEventPresentation.CreateEventSiteDitherOverlay(
             GraphicsDevice);
         _definitions = BundledOriginalData.Load();

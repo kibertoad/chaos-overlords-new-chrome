@@ -41,8 +41,8 @@ public sealed partial class ChaosGame
             case HireDockMark.Hired when _uiKeyedSprites is not null:
                 batch.Draw(_uiKeyedSprites, stamp, OriginalSpriteLayout.HiredStamp, Color.White);
                 break;
-            case HireDockMark.Snubbed when _hireSnubMark is not null:
-                batch.Draw(_hireSnubMark, stamp, Color.White);
+            case HireDockMark.Snubbed when _uiKeyedSprites is not null:
+                batch.Draw(_uiKeyedSprites, stamp, OriginalSpriteLayout.SnubbedStamp, Color.White);
                 break;
         }
     }

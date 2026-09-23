@@ -47,21 +47,6 @@ public sealed class HireDockLayoutTests
     }
 
     [Fact]
-    public void HireSnubMarkCrossesBothDiagonalsInsideATransparentMargin()
-    {
-        var pixels = HireSnubMark.Pixels();
-
-        Assert.Equal(HireSnubMark.Size * HireSnubMark.Size, pixels.Length);
-        Assert.Equal(HireSnubMark.Core, HireSnubMark.PixelAt(30, 30));
-        Assert.Equal(HireSnubMark.Core, HireSnubMark.PixelAt(10, 10));
-        Assert.Equal(HireSnubMark.Core, HireSnubMark.PixelAt(49, 10));
-        Assert.Equal(HireSnubMark.Outline, HireSnubMark.PixelAt(14, 10));
-        Assert.Equal(Color.Transparent, HireSnubMark.PixelAt(0, 0));
-        Assert.Equal(Color.Transparent, HireSnubMark.PixelAt(30, 10));
-        Assert.Equal(pixels[10 * HireSnubMark.Size + 49], HireSnubMark.PixelAt(49, 10));
-    }
-
-    [Fact]
     public void HireDockCursorUsesPhysicalSlotsAndSkipsVacancies()
     {
         HireOfferSlotState[] offers =

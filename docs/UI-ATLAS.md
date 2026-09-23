@@ -35,7 +35,7 @@ original-game capture confirms the screen and interaction state.
 
 | Resource | Mapping | Confidence |
 |---|---|---|
-| `PX00129` | Main UI composite sheet: original font strip `(0,0,354,7)` containing six-pixel ASCII cells from space through `Z`, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)`; eight composable gang-status frames at `(492,67 + 20n,20,20)` for assigned/idle, uncontested/contested, and ordinary/incoming combinations, plus incoming-only `(492,227,20,20)` | High from pixel inspection, visible content, user captures, and native surface-6 copy calls; the sheet mixes opaque, pattern-mask, and exact-white-key roles rather than one alpha policy |
+| `PX00129` | Main UI composite sheet: original font strip `(0,0,354,7)` containing six-pixel ASCII cells from space through `Z`, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)` and adjacent red snub cross `(180,300,60,60)`; eight composable gang-status frames at `(492,67 + 20n,20,20)` for assigned/idle, uncontested/contested, and ordinary/incoming combinations, plus incoming-only `(492,227,20,20)` | High from pixel inspection, visible content, user captures, and native surface-6 copy calls; the sheet mixes opaque, pattern-mask, and exact-white-key roles rather than one alpha policy |
 | `PX00132` | Next-player/Ready handoff panel; active Overlord fills the measured 80x77 portrait aperture | High from visible labels and border pixels |
 | `PX00137` | Centered 220-by-72 legacy transport transfer-progress frame; a three-pixel green `PX00129` strip fills its single bar | High from complete loader/caller and renderer paths; deliberately unsupported legacy transport |
 | `PX00139` | Centered 220-by-72 legacy six-seat synchronization frame; the same three-pixel strip fills one stacked bar per connected slot | High from complete loader/caller and six-slot renderer paths; deliberately unsupported legacy transport |
@@ -290,9 +290,8 @@ silently exposed as compatible online modes.
   a reserved recruit retains its cell under the color-keyed original `HIRED`
   stamp from `PX00129`. A snubbed candidate (the Reject selection) likewise
   retains its cell under a red cross in the same 60-by-60 stamp aperture. The
-  original draws that cross from a `PX00129` rectangle not yet recovered, so
-  the recreation composites a generated stand-in (`HireSnubMark`) until the
-  native source is identified. Available candidates show their two-digit initial hire
+  red cross is the adjacent `PX00129` source `(180,300,60,60)`, copied with
+  exact-white transparency like the `HIRED` stamp. Available candidates show their two-digit initial hire
   price with a minimum width of two digits (`06`, but `11` remains `11`),
   centered in the left 33-by-24 footer half at y 436. The right-footer Reject
   action is a deliberately compact 32-by-13 target at `(472 + 66*slot,437)`,

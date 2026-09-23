@@ -584,6 +584,7 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(new Rectangle(116, 0, 48, 64), OriginalSpriteLayout.PolicePatrolCar);
         Assert.Equal(new Rectangle(120, 300, 60, 60), OriginalSpriteLayout.HiredStamp);
+        Assert.Equal(new Rectangle(180, 300, 60, 60), OriginalSpriteLayout.SnubbedStamp);
         Assert.Equal(new Rectangle(492, 67, 20, 20), OriginalSpriteLayout.AssignedGangStatus);
         Assert.Equal(new Rectangle(492, 87, 20, 20), OriginalSpriteLayout.ContestedAssignedGangStatus);
         Assert.Equal(new Rectangle(492, 107, 20, 20), OriginalSpriteLayout.IdleGangStatus);
