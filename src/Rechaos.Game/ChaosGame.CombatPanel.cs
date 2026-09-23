@@ -67,8 +67,8 @@ public sealed partial class ChaosGame
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, CombatPanelLayout.GangPortrait(rightSide),
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
-        var damage = gang.Id == clip.Defender ? CombatDamage(gameEvent, clip) : 0;
-        DrawDetailedCombatForce(batch, pixel, rightSide, gang.Force, damage);
+        var (force, damage) = CombatantForce(gang, clip, gameEvent);
+        DrawDetailedCombatForce(batch, pixel, rightSide, force, damage);
 
         DrawCombatItem(batch, state, eventWeapon ?? gang.WeaponItemId, CombatPanelLayout.EquipmentItem(rightSide, 0));
         DrawCombatItem(batch, state, gang.ArmorItemId, CombatPanelLayout.EquipmentItem(rightSide, 1));
@@ -157,6 +157,23 @@ public sealed partial class ChaosGame
             };
             batch.Draw(pixel, new Rectangle(x, bar.Y + row, width, 1), color);
         }
+    }
+
+    /// <summary>
+    /// The force a combatant shows in <paramref name="clip"/> and the damage it takes there. A clip
+    /// carries the forces as of its place in the phase; one without them falls back to the final force.
+    /// </summary>
+    private static (int Force, int Damage) CombatantForce(
+        MatchGangState gang,
+        CombatAnimationClip clip,
+        GameEvent? gameEvent)
+    {
+        if (clip.Forces is { } forces)
+        {
+            if (gang.Id == clip.Defender) return (forces.DefenderAfter, forces.DefenderDamage);
+            if (gang.Id == clip.Attacker && forces.Attacker is { } attacker) return (attacker, 0);
+        }
+        return (gang.Force, gang.Id == clip.Defender ? CombatDamage(gameEvent, clip) : 0);
     }
 
     private static int CombatDamage(GameEvent? gameEvent, CombatAnimationClip clip)
