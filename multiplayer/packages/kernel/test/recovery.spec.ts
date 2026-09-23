@@ -225,6 +225,9 @@ describe('desync verdicts, snapshots and recovery', () => {
     const { host, guest } = await h.startedMatch()
     await h.kernel.lobby.leave(await h.principalOf(guest.token))
     await h.storage.takeovers.closePrompt(host.match.id, guest.player.id)
+    const requested = () =>
+      h.notifier.events.filter((event) => event.type === 'match.takeoverVoteRequested').length
+    const requestedBefore = requested()
     const castVote = h.storage.takeovers.castVote
     let firstCast = true
     h.storage.takeovers.castVote = async (vote) => {
@@ -242,6 +245,8 @@ describe('desync verdicts, snapshots and recovery', () => {
       }),
     ).rejects.toMatchObject({ details: { reason: 'takeover_not_pending' } })
     expect(await h.storage.takeovers.hasOpenPrompts(host.match.id)).toBe(false)
+    // Nothing was announced for the returned seat, so no client shows a modal for it.
+    expect(requested()).toBe(requestedBefore)
     expect((await h.storage.players.get(guest.player.id))?.status).toBe('active')
   })
 

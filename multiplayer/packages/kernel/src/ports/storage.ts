@@ -344,7 +344,10 @@ export interface CastVoteInput {
  * are one indexed read instead of a scan of every event the match ever logged.
  */
 export interface TakeoverRepository {
-  /** Opens a prompt only while the seat is absent; false when active or already open. */
+  /**
+   * Opens a prompt only while the seat is a human absence (`ABSENT_HUMAN_STATUSES`) of that match;
+   * false when one is already open or the seat is active, computer controlled or not in the match.
+   */
   openPrompt(matchId: string, playerId: string, turn: number, openedAt: Date): Promise<boolean>
   /** Closes the prompt and discards its votes. A no-op when none is open. */
   closePrompt(matchId: string, playerId: string): Promise<void>

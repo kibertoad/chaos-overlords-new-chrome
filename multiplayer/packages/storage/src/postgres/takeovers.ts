@@ -1,4 +1,4 @@
-import type { TakeoverRepository } from '@chaos-overlords/kernel'
+import { ABSENT_HUMAN_STATUSES, type TakeoverRepository } from '@chaos-overlords/kernel'
 import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { toTakeoverVote } from '../shared/mappers'
 import type { PostgresDatabase } from './database'
@@ -31,7 +31,7 @@ export function postgresTakeoverRepository(db: PostgresDatabase): TakeoverReposi
               and(
                 eq(players.id, playerId),
                 eq(players.matchId, matchId),
-                inArray(players.status, ['takeoverPending', 'left', 'kicked']),
+                inArray(players.status, [...ABSENT_HUMAN_STATUSES]),
               ),
             )
             .for('update'),
