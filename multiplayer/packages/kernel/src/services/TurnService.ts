@@ -200,15 +200,39 @@ export class TurnService {
     now: Date,
   ): Promise<void> {
     const dueAt = new Date(Math.max(deadlineAt.getTime(), now.getTime() + EARLY_DEADLINE_RETRY_MS))
+    if (!(await this.armDeadline(matchId, number, dueAt))) return
+    // Both runtimes keep one pending deadline per match. A seal on readiness that ran between this
+    // call's read of the turn and the schedule above has already armed its successor's deadline,
+    // and the schedule above just replaced it with a timer for a turn that is no longer open. Put
+    // the live turn's timer back. A successor that opens after this read arms itself afterwards.
+    const match = await this.deps.storage.matches.get(matchId)
+    if (match?.status !== 'running' || match.currentTurn === number) return
+    const live = await this.deps.storage.turns.get(matchId, match.currentTurn)
+    if (live?.status === 'open' && live.deadlineAt !== null) {
+      await this.armDeadline(matchId, live.number, live.deadlineAt)
+    }
+  }
+
+  /**
+   * Hand a deadline to the scheduler, logging rather than raising if it cannot be reached. Returns
+   * whether it was armed.
+   *
+   * The deadline is durable on the turn row and `listExpiredOpen` is the safety net behind every
+   * timer, so a scheduler that cannot be reached costs at most one sweep interval of lateness. It
+   * used to cost the submitter a 500 on a seal that had already completed, which left them retrying
+   * a request the server had in fact finished.
+   */
+  private async armDeadline(matchId: string, turn: number, dueAt: Date): Promise<boolean> {
     try {
-      await this.deps.scheduler.schedule({ matchId, turn: number, dueAt })
+      await this.deps.scheduler.schedule({ matchId, turn, dueAt })
+      return true
     } catch (error) {
-      // The same safety net as a deadline that could not be armed when the turn opened.
-      this.deps.logger.warn('could not re-arm an early turn deadline; the sweep will seal it', {
+      this.deps.logger.warn('could not arm a turn deadline; the sweep will seal it', {
         matchId,
-        turn: number,
+        turn,
         error: String(error),
       })
+      return false
     }
   }
 
@@ -382,19 +406,7 @@ export class TurnService {
     // has already moved past would otherwise replace the live turn's timer with one for a sealed
     // turn, leaving the live deadline to the next sweep.
     if (deadlineAt && (created || advanced)) {
-      try {
-        await this.deps.scheduler.schedule({ matchId: match.id, turn: number, dueAt: deadlineAt })
-      } catch (error) {
-        // The deadline is durable on the turn row and `listExpiredOpen` is the safety net behind
-        // every timer, so a scheduler that cannot be reached costs at most one sweep interval of
-        // lateness. It used to cost the submitter a 500 on a seal that had already completed,
-        // which left them retrying a request the server had in fact finished.
-        this.deps.logger.warn('could not arm a turn deadline; the sweep will seal it', {
-          matchId: match.id,
-          turn: number,
-          error: String(error),
-        })
-      }
+      await this.armDeadline(match.id, number, deadlineAt)
     }
     return created
   }
