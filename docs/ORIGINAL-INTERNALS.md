@@ -1,7 +1,7 @@
 # Original executable internals research
 
 Status: active clean-room research log
-Last updated: 2026-09-20
+Last updated: 2026-09-23
 Reference executable SHA-256:
 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
 
@@ -290,6 +290,18 @@ Useful static work which remains is narrower:
 3. Match the linker/runtime fingerprints against a known compiler signature only
    if this becomes useful to interpret generated-code artifacts; it is not a
    gameplay-parity dependency.
+4. Record the exact Equip affordability predicate. `BIN-EQUIP-002` establishes
+   that the Transaction pass checks and subtracts cash for each Equip in the
+   player/roster scan, and `BIN-EQUIP-001` locates the price load and Factory
+   subtraction, but no finding records the comparison instruction, its
+   signedness, the equality boundary, or which cash word it reads. Unlike
+   Bribe (`BIN-BRIBE-001`, fails below 3), the recreation's `cash < price`
+   rule for Equip is inferred rather than recovered. Also establish whether
+   the Equip picker `0x0043dad9` gates or marks unaffordable items at queue
+   time. The recreation performs no queue-time check, so a whole-turn cash
+   projection that nets later income can suggest a purchase will succeed when
+   it will fail (see
+   [RULE-EQUIP-001](GAME-RULES.md#rule-equip-001--purchase-and-equip)).
 
 The fixed original save/load envelope is closed in `BIN-API-003`. Every live AI
 family, including family 1's unavailable-command policy and family 11's late
