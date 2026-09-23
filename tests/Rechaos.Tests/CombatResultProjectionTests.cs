@@ -162,6 +162,48 @@ public sealed class CombatResultProjectionTests
         Assert.Equal(2, match.Coordinator.Turn);
     }
 
+    [Fact]
+    public void UndetectedPoliceAreNotCombatResults()
+    {
+        var match = CreateCrackdownMatch();
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(11), GangAction.Move, CommandTarget.Sector(1))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        foreach (var _ in TurnStructure.ExecutionOrder) match.FinishExecutionPhase();
+        var police = match.Events
+            .Where(gameEvent => gameEvent.Kind == GameEventKind.PoliceAttackResolved)
+            .ToArray();
+        match.FinishHire(new PlayerId(0));
+        match.FinishPlayerElimination();
+
+        Assert.Contains(police, gameEvent => !gameEvent.PoliceAttack!.Detected);
+        Assert.Contains(police, gameEvent => gameEvent.PoliceAttack!.Detected);
+        var pages = CombatResultProjection.Pages(match, new PlayerId(0));
+        var page = Assert.Single(pages);
+        Assert.Equal(0, page.SectorId);
+        Assert.Equal(
+            police.Where(gameEvent => gameEvent.PoliceAttack!.Detected)
+                .Select(gameEvent => gameEvent.Sequence),
+            page.Results.Select(result => result.Event.Sequence));
+    }
+
+    [Fact]
+    public void CrackdownThatDetectsNobodyHasNoCombatResults()
+    {
+        var match = CreateCrackdownMatch(undetectableOnly: true);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Move, CommandTarget.Sector(1))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        foreach (var _ in TurnStructure.ExecutionOrder) match.FinishExecutionPhase();
+        match.FinishHire(new PlayerId(0));
+        match.FinishPlayerElimination();
+
+        Assert.Contains(match.Events, gameEvent => gameEvent.PoliceAttack is { Detected: false });
+        Assert.Empty(CombatResultProjection.Pages(match, new PlayerId(0)));
+    }
+
     private static CombatResultEntry Attack(
         long sequence, int sector, int attacker, int attackerGang, int defender, int defenderGang)
     {
@@ -214,6 +256,38 @@ public sealed class CombatResultProjectionTests
         return new MatchState(data,
             new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups),
             players, sectors);
+    }
+
+    /// <summary>
+    /// One player in crackdown sector 0. Ebon Order with an Inviso-Cloak beside a Stealth site the
+    /// player influences reaches Stealth 25 and is never detected; the
+    /// definition with the lowest Stealth always is.
+    /// </summary>
+    private static MatchState CreateCrackdownMatch(bool undetectableOnly = false)
+    {
+        const short ebonOrder = 84;
+        const short invisoCloak = 36;
+        var data = BundledOriginalData.Load();
+        var setup = new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human);
+        List<MatchGangState> gangs =
+        [
+            new(new GangId(10), new PlayerId(0), ebonOrder, 0, 7, miscellaneousItemId: invisoCloak)
+        ];
+        if (!undetectableOnly)
+            gangs.Add(new MatchGangState(new GangId(11), new PlayerId(0),
+                data.Gangs.MinBy(gang => gang.Stats.Stealth)!.Id, 0, 10));
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, id == 0 ? (short)17 : (short)0, id == 0 ? 0 : 7,
+                    id == 0 ? new PlayerId(0) : null),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 4)
+            ], owner: id == 0 ? new PlayerId(0) : null, crackdownActive: id == 0))
+            .ToArray();
+        return new MatchState(data,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setup]),
+            [new MatchPlayerState(setup, 500, gangs)], sectors);
     }
 
     private static MatchGangState Gang(int id, int owner, int sector) =>
