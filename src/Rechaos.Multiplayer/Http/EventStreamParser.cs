@@ -69,9 +69,10 @@ public static class EventStreamParser
     /// </summary>
     /// <param name="body">The response body, read line by line and never buffered whole.</param>
     /// <param name="idleTimeout">
-    /// How long the body may carry nothing before the connection is given up on as dead, or null
-    /// to wait forever. The server heartbeats on a fixed interval, so silence well past it means the
-    /// socket is gone even though nothing has said so.
+    /// How long a read may wait with nothing arriving before the connection is given up on as dead,
+    /// or null to wait forever. Time the consumer spends handling a yielded frame does not count.
+    /// The server heartbeats on a fixed interval, so silence well past it means the socket is gone
+    /// even though nothing has said so.
     /// </param>
     /// <param name="cancellationToken">The caller's own stop, which is never reported as idleness.</param>
     /// <exception cref="EventStreamIdleException">Nothing arrived within <paramref name="idleTimeout"/>.</exception>
@@ -84,14 +85,11 @@ public static class EventStreamParser
         ArgumentNullException.ThrowIfNull(body);
         using var reader = new StreamReader(body, Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
         var lines = new BoundedLineReader(reader, MaximumFrameChars);
-        // One linked source, armed only while reading each line. The consumer can spend longer than
-        // the idle window handling a yielded frame without making a healthy socket look idle.
-        using var idle = idleTimeout is { } ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken) : null;
         var frame = new StringBuilder();
         var firstLine = true;
         while (true)
         {
-            var line = await ReadLineAsync(lines, idle, idleTimeout, cancellationToken).ConfigureAwait(false);
+            var line = await ReadLineAsync(lines, idleTimeout, cancellationToken).ConfigureAwait(false);
             if (line is null)
             {
                 // The connection ended. A frame with no blank line after it was cut mid-write, and
@@ -122,27 +120,29 @@ public static class EventStreamParser
     }
 
     /// <summary>One line, with the idle deadline told apart from the caller's cancellation.</summary>
+    /// <remarks>
+    /// Each read gets its own deadline, which exists only while that read waits on the body. An
+    /// async iterator is suspended at <c>yield return</c> while its consumer handles the frame, and
+    /// that time must not count as silence. A single source shared across reads cannot be disarmed
+    /// safely: if its timer fired in the instant after a read completed, the source would stay
+    /// cancelled, and the next read would fail as idle before it began.
+    /// </remarks>
     private static async Task<string?> ReadLineAsync(
         BoundedLineReader reader,
-        CancellationTokenSource? idle,
         TimeSpan? idleTimeout,
         CancellationToken cancellationToken)
     {
-        if (idle is null) return await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-        idle.CancelAfter(idleTimeout!.Value);
+        if (idleTimeout is not { } timeout)
+            return await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+        using var idle = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        idle.CancelAfter(timeout);
         try
         {
             return await reader.ReadLineAsync(idle.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new EventStreamIdleException(idleTimeout.Value, exception);
-        }
-        finally
-        {
-            // An async iterator is suspended at yield return while its consumer handles the frame.
-            // Leaving this deadline armed would cancel the next read before it even begins.
-            idle.CancelAfter(Timeout.InfiniteTimeSpan);
+            throw new EventStreamIdleException(timeout, exception);
         }
     }
 
