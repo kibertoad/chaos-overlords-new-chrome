@@ -5,7 +5,7 @@ using Rechaos.Core.GameModel;
 namespace Rechaos.Game;
 
 /// <summary>
-/// What an online match draws once it is running: the opponents still drafting, the line that says
+/// What an online match draws once it is running: the seats still drafting, the line that says
 /// where the turn stands, and the two modals that take the screen when the server stops answering.
 /// </summary>
 /// <remarks>
@@ -27,22 +27,22 @@ public sealed partial class ChaosGame
     /// match is paused by a desync or over altogether nobody is drafting anything, so the captions
     /// go with the turn they describe rather than lingering as a state that cannot change.
     /// </remarks>
-    private void DrawOpponentPlanning(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    private void DrawSeatPlanning(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         if (_session is null) return;
         var ownTurnSent = _online.PlanningIsSubmitted;
         var turnIsOpen = _online.PlanningIsOpen || ownTurnSent;
         for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
-            if (!OpponentPlanningPresentation.IsDrafting(
+            if (!SeatPlanningPresentation.IsDrafting(
                     slot, _session.Slot, turnIsOpen, ownTurnSent,
                     _online.AwaitedSlots, _online.ReadySlots))
                 continue;
             var caption = PlayerPortraitLayout.CityCaption(
-                slot, OpponentPlanningPresentation.WaitingCaption.Length);
+                slot, SeatPlanningPresentation.WaitingCaption.Length);
             batch.Draw(pixel, caption, Color.Black);
-            font.Draw(batch, OpponentPlanningPresentation.WaitingCaption,
-                new Vector2(caption.X, caption.Y), OpponentPlanningPresentation.WaitingColor, 1);
+            font.Draw(batch, SeatPlanningPresentation.WaitingCaption,
+                new Vector2(caption.X, caption.Y), SeatPlanningPresentation.WaitingColor, 1);
         }
     }
 

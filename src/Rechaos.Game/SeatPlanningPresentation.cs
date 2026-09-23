@@ -12,7 +12,7 @@ namespace Rechaos.Game;
 /// not sees the same mark under their own portrait, so the one question the footer's count leaves
 /// open, whether the turn is waiting on them, is answered where they are already looking.
 /// </remarks>
-public static class OpponentPlanningPresentation
+public static class SeatPlanningPresentation
 {
     /// <summary>What a seat that has not committed its turn is marked with.</summary>
     public const string WaitingCaption = "WAIT";

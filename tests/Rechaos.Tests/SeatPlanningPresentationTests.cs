@@ -4,24 +4,24 @@ using Xunit;
 
 namespace Rechaos.Tests;
 
-public sealed class OpponentPlanningPresentationTests
+public sealed class SeatPlanningPresentationTests
 {
     private static readonly IReadOnlySet<int> BothHumanSeats = new HashSet<int> { 0, 2 };
 
     [Fact]
     public void AnOpponentWhoHasNotCommittedTheTurnIsStillDrafting() =>
-        Assert.True(OpponentPlanningPresentation.IsDrafting(
+        Assert.True(SeatPlanningPresentation.IsDrafting(
             slot: 2, ownSlot: 0, turnIsOpen: true, ownTurnSent: false, BothHumanSeats, new HashSet<int>()));
 
     [Fact]
     public void AnOpponentWhoHasCommittedTheTurnIsNotDrafting() =>
-        Assert.False(OpponentPlanningPresentation.IsDrafting(
+        Assert.False(SeatPlanningPresentation.IsDrafting(
             slot: 2, ownSlot: 0, turnIsOpen: true, ownTurnSent: false, BothHumanSeats, new HashSet<int> { 2 }));
 
     /// <summary>The player's own seat is marked while the turn is still theirs to end.</summary>
     [Fact]
     public void TheOwnSeatIsMarkedUntilTheTurnIsSent() =>
-        Assert.True(OpponentPlanningPresentation.IsDrafting(
+        Assert.True(SeatPlanningPresentation.IsDrafting(
             slot: 0, ownSlot: 0, turnIsOpen: true, ownTurnSent: false, BothHumanSeats,
             new HashSet<int>()));
 
@@ -34,7 +34,7 @@ public sealed class OpponentPlanningPresentationTests
     /// </remarks>
     [Fact]
     public void TheOwnSeatIsNotMarkedOnceTheTurnIsSent() =>
-        Assert.False(OpponentPlanningPresentation.IsDrafting(
+        Assert.False(SeatPlanningPresentation.IsDrafting(
             slot: 0, ownSlot: 0, turnIsOpen: true, ownTurnSent: true, BothHumanSeats,
             new HashSet<int>()));
 
@@ -43,14 +43,14 @@ public sealed class OpponentPlanningPresentationTests
     /// </summary>
     [Fact]
     public void TheOwnSeatIgnoresTheReadinessRoster() =>
-        Assert.True(OpponentPlanningPresentation.IsDrafting(
+        Assert.True(SeatPlanningPresentation.IsDrafting(
             slot: 0, ownSlot: 0, turnIsOpen: true, ownTurnSent: false, BothHumanSeats,
             new HashSet<int> { 0 }));
 
     /// <summary>An own seat the table handed to the computer is not waited on either.</summary>
     [Fact]
     public void AnOwnSeatTheTurnDoesNotWaitOnIsNotMarked() =>
-        Assert.False(OpponentPlanningPresentation.IsDrafting(
+        Assert.False(SeatPlanningPresentation.IsDrafting(
             slot: 0, ownSlot: 0, turnIsOpen: true, ownTurnSent: false, new HashSet<int> { 2 },
             new HashSet<int>()));
 
@@ -59,13 +59,13 @@ public sealed class OpponentPlanningPresentationTests
     [InlineData(1)]
     [InlineData(5)]
     public void ASeatTheTurnDoesNotWaitOnIsNotMarked(int slot) =>
-        Assert.False(OpponentPlanningPresentation.IsDrafting(
+        Assert.False(SeatPlanningPresentation.IsDrafting(
             slot, ownSlot: 0, turnIsOpen: true, ownTurnSent: false, BothHumanSeats, new HashSet<int>()));
 
     /// <summary>Nobody is drafting while the match is paused, over or not yet playing.</summary>
     [Fact]
     public void AClosedTurnMarksNobody() =>
-        Assert.False(OpponentPlanningPresentation.IsDrafting(
+        Assert.False(SeatPlanningPresentation.IsDrafting(
             slot: 2, ownSlot: 0, turnIsOpen: false, ownTurnSent: false, BothHumanSeats, new HashSet<int>()));
 
     /// <summary>
@@ -79,7 +79,7 @@ public sealed class OpponentPlanningPresentationTests
     public void TheWaitCaptionSitsUnderThePortraitItBelongsTo()
     {
         var caption = PlayerPortraitLayout.CityCaption(
-            2, OpponentPlanningPresentation.WaitingCaption.Length);
+            2, SeatPlanningPresentation.WaitingCaption.Length);
 
         Assert.Equal(new Rectangle(164, 37, 24, 7), caption);
         Assert.Equal(PlayerPortraitLayout.CityTop(2).Bottom + 1, caption.Y);
