@@ -238,6 +238,22 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(types(events)).toContain('snapshot.available')
     })
 
+    it('lets a lobby member change their own name and face until the match starts', async () => {
+      const { host, guest } = await lobbyOfTwo()
+      await guest.api.updateProfile({ displayName: 'Hopper', portraitId: 6 })
+      const renamed = (await host.api.get()).match.players.find((p) => p.id === guest.player.id)
+      expect(renamed).toMatchObject({ displayName: 'Hopper', portraitId: 6 })
+      await expect(
+        guest.api.updateProfile({ displayName: 'ada', portraitId: 6 }),
+      ).rejects.toMatchObject({ status: 409, reason: 'display_name_taken' })
+      await host.api.start()
+      await expect(
+        guest.api.updateProfile({ displayName: 'Grace', portraitId: 2 }),
+      ).rejects.toMatchObject({ status: 409, reason: 'match_not_in_lobby' })
+      const started = (await host.api.get()).match.players.find((p) => p.id === guest.player.id)
+      expect(started).toMatchObject({ displayName: 'Hopper', portraitId: 6 })
+    })
+
     it('kicking opens a takeover vote and unblocks readiness; leaving as host passes the crown', async () => {
       const { host, guest } = await lobbyOfTwo()
       const third = await client().join({ joinCode: host.joinCode, displayName: 'Linus' })

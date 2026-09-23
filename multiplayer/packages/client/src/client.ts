@@ -36,6 +36,8 @@ import {
   takeoverVoteContract,
   type UploadSnapshotRequest,
   updateMatchSettingsContract,
+  updatePlayerProfileContract,
+  type UpdatePlayerProfileRequest,
   uploadSnapshotContract,
   validate,
 } from '@chaos-overlords/contracts'
@@ -291,6 +293,15 @@ export class MatchHandle {
       updateMatchSettingsContract,
       updateMatchSettingsContract.pathResolver({ matchId: this.matchId }),
       settings,
+    )
+  }
+
+  /** Changes this player's own name and portrait; refused once the match has started. */
+  updateProfile(profile: UpdatePlayerProfileRequest): Promise<void> {
+    return this.client.call(
+      updatePlayerProfileContract,
+      updatePlayerProfileContract.pathResolver({ matchId: this.matchId }),
+      profile,
     )
   }
 

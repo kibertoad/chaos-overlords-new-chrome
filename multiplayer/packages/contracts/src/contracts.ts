@@ -14,6 +14,7 @@ import {
   submitOrdersRequestSchema,
   takeoverVoteRequestSchema,
   turnReportRequestSchema,
+  updatePlayerProfileRequestSchema,
   uploadSnapshotRequestSchema,
 } from './schemas'
 import { matchSettingsSchema } from './settings'
@@ -140,6 +141,15 @@ export const updateMatchSettingsContract = defineApiContract({
   requestBodySchema: matchSettingsSchema,
   responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
   summary: 'Host-only lobby game configuration.',
+})
+
+export const updatePlayerProfileContract = defineApiContract({
+  method: 'put',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/matches/${matchId}/profile`,
+  requestBodySchema: updatePlayerProfileRequestSchema,
+  responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
+  summary: "Change the caller's own name and portrait while the match is in the lobby.",
 })
 
 export const leaveMatchContract = defineApiContract({
@@ -308,6 +318,7 @@ export const API_CONTRACTS = {
   joinRunningMatch: joinRunningMatchContract,
   getMatch: getMatchContract,
   updateMatchSettings: updateMatchSettingsContract,
+  updatePlayerProfile: updatePlayerProfileContract,
   startMatch: startMatchContract,
   leaveMatch: leaveMatchContract,
   rejoinMatch: rejoinMatchContract,

@@ -867,6 +867,36 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(await storage.matches.updateSettings(match.id, settings, new Date())).toBe(false)
     })
 
+    it('updates an active player profile only while the match is in the lobby', async () => {
+      const match = matchFixture()
+      await storage.matches.create(match)
+      const player = playerFixture(match)
+      await storage.players.create(player)
+      const profile = { displayName: 'Renamed', portraitId: 9 }
+      expect(await storage.players.updateProfile(player.id, profile)).toBe(true)
+      expect(await storage.players.get(player.id)).toMatchObject(profile)
+      expect(await storage.players.updateProfile(uid('missing'), profile)).toBe(false)
+      await storage.matches.transition(match.id, ['lobby'], {
+        status: 'running',
+        updatedAt: new Date(),
+      })
+      expect(
+        await storage.players.updateProfile(player.id, { displayName: 'Late', portraitId: 1 }),
+      ).toBe(false)
+      expect(await storage.players.get(player.id)).toMatchObject(profile)
+    })
+
+    it('does not update the profile of a player who is no longer active', async () => {
+      const match = matchFixture()
+      await storage.matches.create(match)
+      const player = playerFixture(match)
+      await storage.players.create(player)
+      await storage.players.setStatus(player.id, 'left')
+      expect(
+        await storage.players.updateProfile(player.id, { displayName: 'Gone', portraitId: 1 }),
+      ).toBe(false)
+    })
+
     it('summarises order rows without their documents', async () => {
       const match = matchFixture({ status: 'running', currentTurn: 1 })
       await storage.matches.create(match)

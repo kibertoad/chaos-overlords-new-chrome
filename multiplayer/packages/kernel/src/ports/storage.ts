@@ -10,6 +10,7 @@ import type {
   OrderSummary,
   PersistedEvent,
   Player,
+  PlayerProfile,
   PublicLobbyRow,
   SealedSlot,
   Snapshot,
@@ -155,6 +156,14 @@ export interface PlayerRepository {
     from: readonly Player['status'][],
     status: Player['status'],
   ): Promise<boolean>
+  /**
+   * Replace an active lobby member's name and portrait, in ONE statement conditional on the match
+   * still being in the lobby. False when the match has started (or is gone) or the player is not
+   * active. Tested in the statement rather than by the caller because `start` reads the roster it
+   * seats after its own transition: an update that lands before that transition is in the roster
+   * every client generates its city from, and one that lands after it must not land at all.
+   */
+  updateProfile(playerId: string, profile: PlayerProfile): Promise<boolean>
   /** Clears the token hash, so the player's bearer token stops authenticating immediately. */
   revokeToken(playerId: string): Promise<void>
   /**

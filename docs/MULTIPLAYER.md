@@ -158,6 +158,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings`: the match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
+| `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
 | `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the departure and opens a takeover vote; it does not transfer control. A leaving host hands the role to the lowest active slot. The durable membership token is retained for later rejoin. |
 | `POST /matches/:id/rejoin` | former member | Reactivates the caller's durable seat, restores host authority when appropriate, and transfers an AI-controlled reserved seat back to its owner. |
@@ -502,9 +503,12 @@ seed one fair match.
 create or join, and it rides their roster row from there: `playerView.portraitId`, one of the
 original atlas's sixteen. Every client builds its city from that roster, and the setup a city was
 generated from is hashed into every turn verdict, so the face is as load-bearing as the name beside
-it. Three consequences follow, and all three are enforced rather than assumed. A face is set once,
-by the request that claims the seat, and nothing changes it afterwards — a face that moved
-mid-match would read as a desync on every client that had already bootstrapped. A seat nobody
+it. Three consequences follow, and all three are enforced rather than assumed. A face is set by
+the request that claims the seat, and only `PUT /matches/:id/profile` changes it — together with
+the name, and only while the match is in the lobby. The write is conditional on the lobby in the
+same statement, and `start` reads the roster it seats after its own transition, so a change either
+makes it into the roster every client bootstraps from or is refused; a face that moved mid-match
+would read as a desync on every client that had already bootstrapped. A seat nobody
 claimed keeps the portrait the host's `gameSettings` dressed it in, because there is no player to
 ask; a latecomer taking such a seat over sends that same face back rather than their own. And a
 value outside the atlas stops the bootstrap (`MatchBootstrapFactory`) instead of being clamped to

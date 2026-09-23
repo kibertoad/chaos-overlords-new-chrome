@@ -387,7 +387,7 @@ public sealed partial class ChaosGame
         DrawLobbyJoinCode(batch, pixel, font);
         if (match is not null)
         {
-            DrawLobbyRoster(batch, font, match);
+            DrawLobbyRoster(batch, pixel, font, match);
             DrawLobbySettings(batch, pixel, font, match);
         }
         DrawCentered(font, batch,
@@ -454,13 +454,21 @@ public sealed partial class ChaosGame
         foreach (var player in match.Players.Where(Seated).Take(MatchLimits.PlayerCount))
         {
             var face = ClassicOnlineLobbyLayout.RosterPortrait(row);
+            var (displayName, portrait) = LobbyRosterEntry(player);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, face,
-                    OriginalSpriteLayout.OverlordPortrait(OnlinePortrait(player)), Color.White);
+                    OriginalSpriteLayout.OverlordPortrait(portrait), Color.White);
             var colour = player.Slot >= 0 && player.Slot < PlayerColors.Length
                 ? PlayerColors[player.Slot]
                 : Color.White;
-            var label = player.IsHost ? $"{player.DisplayName}*" : player.DisplayName;
+            if (EditingLobbyName && player.Id == _lobby?.OwnPlayerId)
+            {
+                DrawFieldBox(batch, pixel, font, ClassicOnlineLobbyLayout.RosterName(row),
+                    _online.DisplayName, string.Empty);
+                row++;
+                continue;
+            }
+            var label = player.IsHost ? $"{displayName}*" : displayName;
             font.Draw(batch, Fitted(label, new Rectangle(face.Right + 4, face.Y + 4, 132, 8)),
                 new Vector2(face.Right + 4, face.Y + 4), colour, 1);
             row++;
@@ -510,7 +518,7 @@ public sealed partial class ChaosGame
     private static int SeatedPlayerCount(MatchView match) => match.Players.Count(Seated);
 
     /// <summary>Who has taken a seat, and how many computer players will fill the rest.</summary>
-    private void DrawLobbyRoster(SpriteBatch batch, PixelFont font, MatchView match)
+    private void DrawLobbyRoster(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchView match)
     {
         var seated = SeatedPlayerCount(match);
         font.Draw(batch, "PLAYERS",
@@ -525,20 +533,31 @@ public sealed partial class ChaosGame
                 ? PlayerColors[player.Slot]
                 : Color.White;
             var suffix = player.IsHost ? "  HOST" : string.Empty;
-            var name = player.DisplayName.Length > OnlineLobbyLayout.RosterNameColumns
-                ? player.DisplayName[..OnlineLobbyLayout.RosterNameColumns]
-                : player.DisplayName;
-            // The face each player chose on their way in, so the roster says who is who by more
-            // than a name: it is the face their overlord wears on every screen once the match runs.
+            var (displayName, portrait) = LobbyRosterEntry(player);
+            var name = displayName.Length > OnlineLobbyLayout.RosterNameColumns
+                ? displayName[..OnlineLobbyLayout.RosterNameColumns]
+                : displayName;
+            // The face each player chose, so the roster says who is who by more than a name: it is
+            // the face their overlord wears on every screen once the match runs.
             var face = OnlineLobbyLayout.RosterPortrait(row);
             if (_uiSprites is not null)
             {
                 batch.Draw(_uiSprites, face,
-                    OriginalSpriteLayout.OverlordPortrait(OnlinePortrait(player)), Color.White);
+                    OriginalSpriteLayout.OverlordPortrait(portrait), Color.White);
             }
-            font.Draw(batch, $"{name}{suffix}",
-                new Vector2(face.Right + 6, face.Y + 5), colour, 1);
+            if (EditingLobbyName && player.Id == _lobby?.OwnPlayerId)
+                DrawFieldBox(batch, pixel, font, OnlineLobbyLayout.RosterName(row), _online.DisplayName,
+                    string.Empty);
+            else
+                font.Draw(batch, $"{name}{suffix}",
+                    new Vector2(face.Right + 6, face.Y + 5), colour, 1);
             row++;
+        }
+        if (CanEditLobbyProfile())
+        {
+            font.Draw(batch, "CLICK YOUR NAME OR FACE",
+                new Vector2(OnlineLobbyLayout.RosterLeft, OnlineLobbyLayout.ProfileHintY),
+                OnlineMutedText, 1);
         }
         // Every unseated slot plays as a computer player, which is worth saying before the start.
         var computers = MatchLimits.PlayerCount - seated;
