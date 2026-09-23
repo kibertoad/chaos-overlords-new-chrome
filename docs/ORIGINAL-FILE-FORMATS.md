@@ -286,8 +286,25 @@ font descriptors and produces 779 normalized styled runs. It uses 93 internal
 context-hash hotspots (67 topic jumps and 26 popups), all of which resolve
 through the native 80-entry context map; it has no topic images, external-file
 links, or macro hotspots. Bold, italic, underline, double-underline, strikeout,
-small-caps, half-point size, link hash, and popup intent are retained. Exact
-native WinHelp font metrics and paragraph geometry remain **Low** confidence.
+small-caps, half-point size, link hash, and popup intent are retained.
+
+The supported file has 418 paragraph display records. Its nine descriptors
+all name Times New Roman (Roman family), with 16, 20, 24, or 28 half-point
+sizes. The extractor retains each descriptor's face, family, attributes,
+size, foreground/background channels, and each run's descriptor index. The
+paragraph flag histogram is: `0x0000` 36, `0x0002` 92, `0x0004` 156,
+`0x0006` 15, `0x0008` 1, `0x000A` 2, `0x0010` 4, `0x0014` 4,
+`0x0018` 13, `0x001A` 3, `0x001C` 9, `0x0030` 4, `0x0034` 4,
+`0x003E` 16, and `0x0806` 59. The source uses space before/after,
+line spacing, left/right indents, and centered alignment. It has no tab-stop,
+border, right-alignment, or keep-together records. The extracted document
+retains the raw flags and signed source-unit values, including fields not yet
+rendered. [Wine's WinHelp parser](https://github.com/wine-mirror/wine/blob/master/programs/winhlp32/hlpfile.c)
+and the [Halibut WinHelp writer](https://sources.debian.org/src/halibut/1.0%2Bsvn20090906-9/winhelp.c/)
+corroborate the field order and compressed encoding. These counts come from
+static inspection of the supported owned file; no original program was run.
+Native font metrics, exact pixel spacing, and page/popup comparison remain
+**Low** confidence.
 
 The generated Attack topic appends a clearly labeled New Chrome clarification:
 the effective roll is gang Combat plus current Force minus defender Defense,
