@@ -33,12 +33,13 @@ public static partial class AiTurnPlanner
 
         var cashBudget = Math.Max(0, player.Cash);
         var commands = new List<GameCommand>();
+        var targets = new CommandOptionCatalog.TargetLists(state);
         foreach (var entry in player.Gangs
                      .Select((gang, slot) => (gang, slot))
                      .Where(entry => entry.gang.IsActive))
         {
             var gang = entry.gang;
-            var options = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id)
+            var options = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id, targets)
                 .Where(command => EstimatedCost(state, command) <= cashBudget)
                 .ToArray();
             var choice = SelectRecoveredFamilyCommand(

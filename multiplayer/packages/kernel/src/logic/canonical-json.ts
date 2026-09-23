@@ -23,23 +23,54 @@ export class NonCanonicalValueError extends Error {
   }
 }
 
-function canonicalize(value: unknown, path = ''): unknown {
+type PathSegment = string | number
+
+function canonicalize(value: unknown, path: PathSegment[] = []): unknown {
   if (value === null || typeof value === 'boolean' || typeof value === 'string') return value
   if (typeof value === 'number') {
     if (!Number.isSafeInteger(value) || Object.is(value, -0)) {
-      throw new NonCanonicalValueError(path, `${value} is not a safe non-negative-zero integer`)
+      throw new NonCanonicalValueError(
+        describe(path),
+        `${value} is not a safe non-negative-zero integer`,
+      )
     }
     return value
   }
-  if (Array.isArray(value))
-    return value.map((item, index) => canonicalize(item, `${path}[${index}]`))
+  if (Array.isArray(value)) return value.map((item, index) => descend(path, index, item))
   if (typeof value === 'object') {
     const source = value as Record<string, unknown>
     const sorted: Record<string, unknown> = {}
     for (const key of Object.keys(source).sort()) {
-      sorted[key] = canonicalize(source[key], path ? `${path}.${key}` : key)
+      sorted[key] = descend(path, key, source[key])
     }
     return sorted
   }
-  throw new NonCanonicalValueError(path, `unsupported type ${typeof value}`)
+  throw new NonCanonicalValueError(describe(path), `unsupported type ${typeof value}`)
+}
+
+function descend(path: PathSegment[], segment: PathSegment, value: unknown): unknown {
+  path.push(segment)
+  try {
+    return canonicalize(value, path)
+  } finally {
+    path.pop()
+  }
+}
+
+/**
+ * Renders the accumulated segments the way the C# mirror's `path` parameter spells them
+ * (`CanonicalJson.WriteObject`/`WriteArray`): an index is always `[n]`, and a key is dotted unless
+ * nothing has been rendered yet. The emptiness of what came before decides the dot, not the
+ * segment's position -- an empty-string key renders as nothing, so `{ '': { y: 1.5 } }` reports
+ * `y` rather than `.y`, matching both the mirror and the string-building version this replaced.
+ *
+ * Only a throw reaches here, so the allocation is off the hot path.
+ */
+function describe(path: readonly PathSegment[]): string {
+  let rendered = ''
+  for (const segment of path) {
+    if (typeof segment === 'number') rendered += `[${segment}]`
+    else rendered += rendered.length === 0 ? segment : `.${segment}`
+  }
+  return rendered
 }

@@ -898,7 +898,10 @@ claim about original-game behavior.
   score-descending standings for every scenario; equal scores share a
   competition rank, with the next place skipped, and eliminated players follow
   the active ranking unranked in player-slot order. Fixed inactive slots retain
-  the executable's -32,000 score sentinel during rank counting. Objective
+  the executable's -32,000 score sentinel during rank counting. In Greed, an
+  active player with cash below -32,000 can therefore have numeric place 6 even
+  when they are the only active player; inactive players still display last and
+  unranked. Objective
   ranking uses the executable's scenario table: sectors for Big 40/Armageddon,
   owned HQ sectors for Eliminate, accumulated points for Big Man, and the common
   inactive-player count for Kill 'Em All/Siege. Dominance divides its weighted

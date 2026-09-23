@@ -114,7 +114,7 @@ public static class CombatAnimationRouting
         }
         var gang = state.FindGang(gangId)
             ?? throw new ArgumentOutOfRangeException(nameof(gangId));
-        var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+        var definition = state.Definitions.Gang(gang.DefinitionId);
         var martialArts = definition.Stats.MartialArts > 0;
         return (
             martialArts ? (short)1 : (short)0,

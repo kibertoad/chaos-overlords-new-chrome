@@ -1,6 +1,6 @@
 {
   "name": "@chaos-overlords/contracts",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Wire contracts shared by the multiplayer server and its clients: valibot request/response schemas, the event union, the error envelope, and one toad-contracts definition per endpoint.",
   "keywords": [
     "chaos-overlords",

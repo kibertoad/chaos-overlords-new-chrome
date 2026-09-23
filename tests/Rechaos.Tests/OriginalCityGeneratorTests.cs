@@ -144,8 +144,11 @@ public sealed class OriginalCityGeneratorTests
         var second = OriginalMatchFactory.Create(data, setup);
 
         Assert.Equal(MatchStateHasher.ComputeFingerprint(first), MatchStateHasher.ComputeFingerprint(second));
+        // The fingerprint half of this vector is pinned to the encoding as well as to the state,
+        // so a deliberate move of MatchStateHasher.FormatVersion re-pins it; the random state and
+        // the consumption count either side of it are what say the factory itself is unchanged.
         Assert.Equal(
-            "dbda1cf1ccdc1d95dea12c3546bf9a8b:160916660:936",
+            "c4bc677e2aed1cd30ebe4e3b0798d5e5:160916660:936",
             $"{MatchStateHasher.ComputeFingerprint(first)}:{first.Random.State}:{first.Random.ConsumptionCount}");
         Assert.Equal(MatchLimits.PlayerCount, first.Players.Count);
         Assert.Equal(
@@ -294,6 +297,20 @@ public sealed class OriginalCityGeneratorTests
             Assert.Equal(OriginalSetupNameRules.AssaultArmorItemId, gang.ArmorItemId);
             Assert.Equal(OriginalSetupNameRules.AssaultMiscellaneousItemId, gang.MiscellaneousItemId);
         });
+    }
+
+    [Fact]
+    public void FactoryIndexesEveryStartingGangIncludingNameModifierBonuses()
+    {
+        var match = OriginalMatchFactory.Create(
+            BundledOriginalData.Load(), SetupWithName("SMGKICKASS"));
+
+        // The bonus gangs join the rosters while the match is still being composed, so this also
+        // covers the factory building exactly one match over those players.
+        Assert.Equal(6, match.Players[0].Gangs.Count);
+        Assert.All(
+            match.Players.SelectMany(player => player.Gangs),
+            gang => Assert.Same(gang, match.FindGang(gang.Id)));
     }
 
     [Fact]

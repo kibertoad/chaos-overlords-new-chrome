@@ -7,6 +7,8 @@ namespace Rechaos.Core.GameModel;
 internal static class OriginalAiScenarioStandingRules
 {
     public const int InactiveStanding = byte.MaxValue;
+    // BIN-AI-005: inactive slots still contribute this score when the original routine counts
+    // strictly better scores. In Greed, active cash below -32,000 can therefore yield place 6.
     internal const int InactiveScore = -32_000;
 
     public static IReadOnlyList<int> Build(MatchState state)

@@ -95,7 +95,7 @@ public static class HireRules
         new DelegateRule(HireValidationCode.OfferUnavailable,
             context => !context.Player!.HirePool.Contains(context.GangDefinitionId)),
         new DelegateRule(HireValidationCode.SectorNotControlled,
-            context => context.TargetSectorId is < 0 or >= MatchLimits.SectorCount ||
+            context => !MatchLimits.IsSectorId(context.TargetSectorId) ||
                 context.State.Sectors[context.TargetSectorId].Owner != context.PlayerId
                 && !context.Player!.Gangs.Any(gang =>
                     gang.IsActive && gang.SectorId == context.TargetSectorId))
@@ -112,7 +112,7 @@ public static class HireRules
                 context.Player!.Cash,
                 context.State.Definitions.Gang(context.GangDefinitionId))),
         new DelegateRule(HireValidationCode.SectorNotControlled,
-            context => context.TargetSectorId is < 0 or >= MatchLimits.SectorCount ||
+            context => !MatchLimits.IsSectorId(context.TargetSectorId) ||
                 context.State.Sectors[context.TargetSectorId].Owner != context.PlayerId),
         new DelegateRule(HireValidationCode.GangCapacityReached,
             context => context.Player!.Gangs.Count(gang => gang.IsActive) >= MatchLimits.GangsPerPlayer),
