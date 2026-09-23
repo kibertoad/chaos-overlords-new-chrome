@@ -803,7 +803,7 @@ export class LobbyService {
 
   /**
    * Undo a join that could not be completed. The token was never returned, so the row is
-   * unreachable: leaving it would hold a seat and keep `allActiveReady` waiting forever on a player
+   * unreachable: leaving it would hold a seat and keep `allAwaitedReady` waiting forever on a player
    * who does not exist. Deleting the row is safe precisely because nobody ever held its token.
    */
   private async rollbackJoin(matchId: string, playerId: string): Promise<void> {

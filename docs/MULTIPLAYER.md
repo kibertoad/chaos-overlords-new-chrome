@@ -67,7 +67,11 @@ so every client bootstraps the same city.
 
 A departure or a timed turn with no submitted document opens a takeover vote. Every currently
 present player must choose `USE AI` before control changes; any `WAIT` choice keeps the seat human,
-and there is no server-side timeout that approves takeover implicitly. While any such prompt is
+and there is no server-side timeout that approves takeover implicitly. Leaving does not decide the
+seat either: while the vote on a departed seat is open, whether anyone has answered it yet or
+somebody chose `WAIT`, the turn waits on that seat's readiness like any other, so it cannot seal
+before the player returns and finishes it or the vote hands the seat to the computer. A kicked seat
+is not waited on, since its player cannot come back. While any such prompt is
 open, the open turn has no deadline, so time spent in the modal cannot consume planning time. The
 clock restarts when the last prompt closes. Opening a prompt is what stops the clock, wherever the
 prompt comes from — a departure, a seal that found an empty seat, a returning player being asked
@@ -215,9 +219,10 @@ open ──(all ready | deadline)──> sealed ──(unanimous reports)──>
 
 Sealing opens the next turn immediately, so players plan turn n+1 while reports for turn n arrive.
 The seal also **freezes its participant set** on the turn row, beside the digest taken over it. The
-set a client fetches is therefore always the set the digest was computed from: a player who left
-after submitting but before the seal is absent from both, and one who leaves after the seal stays in
-both. A slot absent from the set contributes no human document. The first wholly missed timed turn
+set a client fetches is therefore always the set the digest was computed from: a player who leaves
+after marking ready, while the vote on their seat is still open, is in both, because the seal waited
+on them; one whose seat was kicked or handed to the computer before the seal is absent from both;
+and one who leaves after the seal stays in both. A slot absent from the set contributes no human document. The first wholly missed timed turn
 marks an otherwise active seat `takeoverPending` and opens a vote. It remains idle and human while
 players wait; only a later `match.playerTakenOver` makes it computer-planned.
 
@@ -561,8 +566,10 @@ Readiness reaches the interface as the seats that have finished, not as a count
 of them. The city top bar marks every opponent the turn is still waiting on with
 a green `WAIT` under their portrait, so "waiting for the other players" says
 which ones; the footer's tally is the same fact counted. A seat the turn does not
-seal against — a computer empire, a player who left, or one voted onto computer
-control — is never marked, and neither is the player's own.
+seal against — a computer empire, a kicked player, a player who left with no vote
+open on their seat, or one voted onto computer control — is never marked, and
+neither is the player's own. A departed seat whose vote is still open is waited
+on, and marked, until the vote closes.
 
 ## Client integration contract
 

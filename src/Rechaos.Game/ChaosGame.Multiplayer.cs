@@ -388,9 +388,10 @@ public sealed partial class ChaosGame
     /// </summary>
     /// <remarks>
     /// The same rule the session applies to the event stream, for the two moments the interface
-    /// holds a roster before any readiness has been reported. A seat that left or was handed to the
-    /// computer is no longer waited on; a temporarily absent one still is, until its takeover vote
-    /// says otherwise.
+    /// holds a roster before any readiness has been reported. A seat handed to the computer is no
+    /// longer waited on; a temporarily absent one still is, until its takeover vote says otherwise.
+    /// A seat that left is waited on while its vote is open too, which the roster cannot show: the
+    /// session corrects the count with a readiness notice once it knows the votes.
     /// </remarks>
     private static IReadOnlySet<int> AwaitedSeats(IEnumerable<PlayerView> players) =>
         players
