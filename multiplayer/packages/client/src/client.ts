@@ -57,20 +57,24 @@ export interface ClientOptions {
   requestTimeoutMs?: number
 }
 
-export interface StreamOptions {
+/** Options for a single connection (`streamOnce`). */
+export interface StreamOnceOptions {
   /** Resume after this sequence number (the last event seen). */
   after?: number
   signal?: AbortSignal
-  /** First reconnect delay; it doubles up to `maxReconnectDelayMs`, with jitter. */
-  reconnectDelayMs?: number
-  maxReconnectDelayMs?: number
-  /** Called for each dropped connection, so a caller can surface "reconnecting" to the player. */
-  onReconnect?: (error: unknown, attempt: number) => void
   /**
    * A connection that carries nothing, not even the server's keepalive comment, for this long is
    * dropped and reconnected. The default is two and a half server heartbeats; `0` disables it.
    */
   idleTimeoutMs?: number
+}
+
+export interface StreamOptions extends StreamOnceOptions {
+  /** First reconnect delay; it doubles up to `maxReconnectDelayMs`, with jitter. */
+  reconnectDelayMs?: number
+  maxReconnectDelayMs?: number
+  /** Called for each dropped connection, so a caller can surface "reconnecting" to the player. */
+  onReconnect?: (error: unknown, attempt: number) => void
   /**
    * How long the stream may keep failing to deliver anything before it gives up. The clock starts
    * at the first failure and is reset by an event, or by a keepalive on a connection that has lasted
@@ -370,8 +374,17 @@ export class MatchHandle {
   }
 
   /** One connection's worth of events; ends when the server closes it. */
-  async *streamOnce(
-    options: StreamOptions & { onActivity?: (connectionAgeMs: number) => void } = {},
+  streamOnce(options: StreamOnceOptions = {}): AsyncGenerator<MatchEvent> {
+    return this.connect(options)
+  }
+
+  /**
+   * `streamOnce`, plus a hook for every well-formed frame with the connection's age, which `stream`
+   * uses to tell a working connection from one that keeps dropping.
+   */
+  private async *connect(
+    options: StreamOnceOptions,
+    onActivity: (connectionAgeMs: number) => void = () => {},
   ): AsyncGenerator<MatchEvent> {
     const { response, release } = await this.client.openStream(
       streamEventsContract,
@@ -383,7 +396,7 @@ export class MatchHandle {
     try {
       yield* parseEventStream(response.body as ReadableStream<Uint8Array>, {
         idleTimeoutMs: options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS,
-        onActivity: () => options.onActivity?.(Date.now() - connectedAt),
+        onActivity: () => onActivity(Date.now() - connectedAt),
       })
     } finally {
       // Runs on a `break` or a `return` from the consumer as well, so every connection gives its
@@ -428,16 +441,13 @@ export class MatchHandle {
       // same kind as a dropped one for the purposes of the budget: nothing arrived.
       let failure: unknown = new Error('the server closed the event stream')
       try {
-        for await (const event of this.streamOnce({
-          ...options,
-          after,
-          onActivity: (connectionAgeMs) => {
-            if (connectionAgeMs >= provenAfterMs) {
-              attempt = 0
-              outageStartedAt = null
-            }
-          },
-        })) {
+        const connection = this.connect({ ...options, after }, (connectionAgeMs) => {
+          if (connectionAgeMs >= provenAfterMs) {
+            attempt = 0
+            outageStartedAt = null
+          }
+        })
+        for await (const event of connection) {
           after = Math.max(after, event.seq)
           attempt = 0
           outageStartedAt = null
