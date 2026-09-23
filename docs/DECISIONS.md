@@ -53,8 +53,8 @@ with equality permitted.
 while the fixed roster index is hidden. Cash timing remains execution-time:
 an earlier submitted Sell can fund Equip, but a later Sell, Chaos payout, or
 next Upkeep income cannot. This deliberate rule deviation changes deterministic
-turn outcomes, so multiplayer session version 8 retires sessions started under
-version 7. Native saves and replay journals retain their format gates because
+turn outcomes, so multiplayer session version 9 retires sessions started under
+version 8. Native saves and replay journals retain their format gates because
 their schema and fingerprint encoding have not changed.
 
 ## 2026-09-22 — Fold the definition set into a fingerprint as a digest

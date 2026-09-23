@@ -327,15 +327,15 @@ public sealed partial class ChaosGame
             && _state is { } state)
         {
             var player = ViewingPlayer(state);
-            var sector = state.Sectors[_cursor];
-            var chaosEstimate = ChaosRangeProjection.Detail(state, player, _cursor);
-            var enemyGangsPresent = HasEnemyGang(state, player, _cursor);
             if (StatusConsoleLayout.Cash.Contains(statusHover))
             {
                 DrawCashPurchaseTooltip(batch, pixel, font, statusHover,
                     state, state.FindPlayer(player)!);
                 return;
             }
+            var sector = state.Sectors[_cursor];
+            var chaosEstimate = ChaosRangeProjection.Detail(state, player, _cursor);
+            var enemyGangsPresent = HasEnemyGang(state, player, _cursor);
             var lines = StatusConsoleTooltip.At(
                 statusHover, state.Setup.Scenario, state.Setup.Duration, sector.Tolerance,
                 chaosEstimate, StatusConsolePresentation.ChaosBreakdown(state, chaosEstimate),
@@ -358,7 +358,7 @@ public sealed partial class ChaosGame
         [
             "CASH AND PURCHASE RESERVES",
             $"CASH {player.Cash}  DELTA {StatusConsolePresentation.ProjectedChange(FinanceProjection.Project(state, player, null).CashAdjustment)}",
-            $"EQ LEFT = CASH - QUEUED EQUIP = {StatusConsolePresentation.CashLessQueuedEquip(state, player)}",
+            $"EQ LEFT = CASH - QUEUED EQUIP = {StatusConsolePresentation.CashLess(player, purchases)}",
             "NO CASH IS RESERVED UNTIL AN ORDER RESOLVES.",
             "PURCHASES USE CLICK ORDER; EARLIER SELLS MAY FUND THEM.",
             "QUEUED PURCHASES IN RESOLUTION ORDER:"
@@ -366,15 +366,15 @@ public sealed partial class ChaosGame
         string[] rows = purchases.Count == 0
             ? ["NONE"]
             : purchases.Select(entry =>
-                $"{entry.Position:00} G{entry.Gang.Value} {entry.ItemName} ${entry.Price}").ToArray();
+                $"{entry.Position:00} {entry.GangName} {entry.ItemName} ${entry.Price}").ToArray();
         var rowCount = Math.Min(maxRowsPerColumn, rows.Length);
         var columnCount = (rows.Length + maxRowsPerColumn - 1) / maxRowsPerColumn;
         var columnWidth = rows.Max(row => row.Length) * OriginalFontLayout.CellWidth + 12;
         var width = Math.Max(header.Max(line => line.Length) * OriginalFontLayout.CellWidth + 16,
             columnCount * columnWidth + 16);
         var height = (header.Length + rowCount) * OriginalFontLayout.LineHeight + 16;
-        var x = Math.Clamp(point.X + 10, 4, VirtualInput.Width - width - 4);
-        var y = Math.Clamp(point.Y + 12, 4, VirtualInput.Height - height - 4);
+        var x = Math.Clamp(point.X + 10, 4, Math.Max(4, VirtualInput.Width - width - 4));
+        var y = Math.Clamp(point.Y + 12, 4, Math.Max(4, VirtualInput.Height - height - 4));
         var panel = new Rectangle(x, y, width, height);
         batch.Draw(pixel, panel, new Color(8, 18, 16, 252));
         DrawBorder(batch, pixel, panel, Color.Lime, 2);

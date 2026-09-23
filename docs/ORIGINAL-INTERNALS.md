@@ -66,7 +66,7 @@ are grouped by subsystem, each group names the document that holds it, and rows
 are in ID order.
 
 <!-- doc-index:begin finding-index -->
-106 findings.
+107 findings.
 
 **Executable image** — [executable-and-platform.md](original-internals/executable-and-platform.md)
 

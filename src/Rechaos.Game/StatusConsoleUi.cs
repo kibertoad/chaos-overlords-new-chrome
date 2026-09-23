@@ -166,22 +166,24 @@ public static class StatusConsolePresentation
 
     public static IReadOnlyList<QueuedEquipPurchase> QueuedEquipPurchases(
         MatchState state, MatchPlayerState player) => state.Commands.ExecutionPlan()
+        // The plan is already ordered by phase and then by sequence, and every Equip resolves in
+        // Transaction, so filtering it keeps the submission order the resolver uses.
         .Where(entry => entry.Command.Player == player.Id
             && entry.Command.Action == GangAction.Equip)
-        .OrderBy(entry => entry.Sequence)
         .Select((entry, index) =>
         {
             var gang = state.FindGang(entry.Command.Gang)!;
             var item = state.Definitions.Items[entry.Command.Target.Id];
-            return new QueuedEquipPurchase(index + 1, gang.Id, item.Id, item.Name,
+            return new QueuedEquipPurchase(index + 1, gang.Id,
+                state.Definitions.Gang(gang.DefinitionId).Name, item.Id, item.Name,
                 SpecialSiteRules.EquipmentCost(state, gang, item));
         }).ToArray();
 
-    public static int CashLessQueuedEquip(MatchState state, MatchPlayerState player)
-    {
-        var queuedCost = QueuedEquipPurchases(state, player).Sum(entry => entry.Price);
-        return checked(player.Cash - queuedCost);
-    }
+    public static int CashLessQueuedEquip(MatchState state, MatchPlayerState player) =>
+        CashLess(player, QueuedEquipPurchases(state, player));
+
+    public static int CashLess(MatchPlayerState player, IEnumerable<QueuedEquipPurchase> purchases) =>
+        checked(player.Cash - purchases.Sum(entry => entry.Price));
 
     public static int SectorCash(PlayerId? owner, PlayerId activePlayer, int cash) =>
         owner == activePlayer ? cash : 0;
@@ -210,7 +212,7 @@ public static class StatusConsolePresentation
 }
 
 public sealed record QueuedEquipPurchase(
-    int Position, GangId Gang, short Item, string ItemName, int Price);
+    int Position, GangId Gang, string GangName, short Item, string ItemName, int Price);
 
 public static class HoverTooltipLayout
 {
