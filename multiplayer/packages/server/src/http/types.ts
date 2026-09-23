@@ -16,11 +16,10 @@ export interface AppEnv {
      */
     caller?: string
     /**
-     * Spends one unit of this caller's daily attached-journal budget and says whether there was
-     * any left. Set by `bugReportRateLimited`, called by the handler and only for a report that
-     * actually carries a journal; absent everywhere else.
+     * Reserves one unit of this caller's daily attached-journal budget. Returns a release function
+     * when allowed, or null when spent. The handler releases it unless the journal is stored.
      */
-    bugReportJournalBudget?: () => boolean
+    bugReportJournalBudget?: () => (() => void) | null
     /**
      * The object a contract handler answered with, recorded by `contractJson` so the response
      * validator can check it without parsing the body back out. Wrapped so that a handler

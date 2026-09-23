@@ -60,6 +60,31 @@ export class RateLimiter {
     return null
   }
 
+  /**
+   * Reserves one unit for work that may be rejected after validation. The returned release function
+   * refunds exactly this reservation, once, while its window is still live. A rolled or evicted
+   * window is never decremented on behalf of an older request.
+   */
+  reserve(key: string): (() => void) | null {
+    const now = this.tick()
+    let entry = this.live(key, now)
+    if (!entry) {
+      entry = { windowStart: now, count: 0 }
+      this.windows.set(key, entry)
+      this.prune(now)
+      this.evictOldest()
+    }
+    if (entry.count >= this.options.limit) return null
+    entry.count += 1
+    const reserved = entry
+    let released = false
+    return () => {
+      if (released) return
+      released = true
+      if (this.windows.get(key) === reserved) reserved.count -= 1
+    }
+  }
+
   /** What `take` would answer right now, spending nothing. */
   peek(key: string): number | null {
     const now = this.tick()
