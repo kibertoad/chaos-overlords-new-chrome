@@ -260,6 +260,20 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
         .returning({ id: matches.id })
       return rows.length === 1
     },
+    async advanceCurrentTurn(matchId, number, updatedAt) {
+      const rows = await db
+        .update(matches)
+        .set({ currentTurn: number, updatedAt })
+        .where(
+          and(
+            eq(matches.id, matchId),
+            inArray(matches.status, ['running', 'desynced']),
+            lt(matches.currentTurn, number),
+          ),
+        )
+        .returning({ id: matches.id })
+      return rows.length === 1
+    },
   }
 }
 

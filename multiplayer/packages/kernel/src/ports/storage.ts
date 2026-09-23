@@ -118,6 +118,8 @@ export interface MatchRepository {
       updatedAt: Date
     },
   ): Promise<boolean>
+  /** Advance the current turn in one conditional write; a late sweep may never move it backwards. */
+  advanceCurrentTurn(matchId: string, number: number, updatedAt: Date): Promise<boolean>
 }
 
 export interface PlayerRepository {
