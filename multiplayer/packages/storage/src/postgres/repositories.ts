@@ -137,6 +137,15 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
       const row = rows[0]
       return row ? row.joinCounter - 1 : null
     },
+    async claimLateJoinOrder(matchId) {
+      const rows = await db
+        .update(matches)
+        .set({ joinCounter: sql`${matches.joinCounter} + 1` })
+        .where(and(eq(matches.id, matchId), eq(matches.status, 'running')))
+        .returning({ joinCounter: matches.joinCounter })
+      const row = rows[0]
+      return row ? row.joinCounter - 1 : null
+    },
     async releaseSeat(matchId) {
       await db
         .update(matches)

@@ -109,11 +109,18 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(await storage.matches.claimSeat(match.id)).toBe(2)
       expect(await storage.matches.claimSeat(match.id)).toBe(3)
       expect(await storage.matches.claimSeat(match.id)).toBeNull()
+      expect(await storage.matches.claimLateJoinOrder(match.id)).toBeNull()
       await storage.matches.transition(match.id, ['lobby'], {
         status: 'running',
         updatedAt: new Date(),
       })
       expect(await storage.matches.claimSeat(match.id)).toBeNull()
+      const lateOrders = await Promise.all([
+        storage.matches.claimLateJoinOrder(match.id),
+        storage.matches.claimLateJoinOrder(match.id),
+      ])
+      expect(lateOrders.sort()).toEqual([4, 5])
+      expect((await storage.matches.get(match.id))?.joinCounter).toBe(6)
     })
 
     it('transitions only from the expected statuses and patches the given fields', async () => {

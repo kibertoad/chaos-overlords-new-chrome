@@ -295,11 +295,15 @@ export class LobbyService {
     this.assertNameIsFree(existing, request.displayName)
     const token = generateToken()
     const seatKey = (await hashToken(`${match.id}:${request.slot}`)).slice(0, 32)
+    const joinOrder = await this.deps.storage.matches.claimLateJoinOrder(match.id)
+    if (joinOrder === null) {
+      throw new ConflictError('The match is not running', { reason: 'match_not_running' })
+    }
     const player: Player = {
       id: `late-${seatKey}`,
       matchId: match.id,
       slot: request.slot,
-      joinOrder: match.joinCounter,
+      joinOrder,
       displayName: request.displayName,
       portraitId: request.portraitId ?? DEFAULT_PORTRAIT_ID,
       tokenHash: await hashToken(token),

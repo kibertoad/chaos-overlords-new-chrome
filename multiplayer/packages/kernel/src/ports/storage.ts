@@ -48,6 +48,8 @@ export interface MatchRepository {
    * position in the match's monotonic join sequence, or null when no seat was available.
    */
   claimSeat(matchId: string): Promise<number | null>
+  /** Atomically allocate a unique join position while the match is running. */
+  claimLateJoinOrder(matchId: string): Promise<number | null>
   releaseSeat(matchId: string): Promise<void>
   /** Host-only lobby configuration; false after the match starts or below the occupied seat count. */
   updateSettings(matchId: string, settings: MatchSettings, updatedAt: Date): Promise<boolean>

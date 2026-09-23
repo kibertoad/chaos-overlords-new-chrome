@@ -90,6 +90,12 @@ export class InMemoryStorage implements MultiplayerStorage {
       match.joinCounter += 1
       return match.joinCounter - 1
     },
+    claimLateJoinOrder: async (matchId) => {
+      const match = this.matchRows.get(matchId)
+      if (match?.status !== 'running') return null
+      match.joinCounter += 1
+      return match.joinCounter - 1
+    },
     releaseSeat: async (matchId) => {
       const match = this.matchRows.get(matchId)
       if (match && match.seatCount > 0) match.seatCount -= 1

@@ -155,8 +155,16 @@ describe('the lobby, the roster and the turn barrier', () => {
       portraitId: 9,
     })
     expect(joined.player.slot).toBe(3)
+    expect((await h.storage.players.get(joined.player.id))?.joinOrder).toBe(1)
     expect(joined.player.status).toBe('active')
     expect(joined.player.portraitId).toBe(9)
+    const second = await h.kernel.lobby.joinRunning({
+      match: host.match.id,
+      displayName: 'Later',
+      slot: 4,
+    })
+    expect((await h.storage.players.get(second.player.id))?.joinOrder).toBe(2)
+    expect((await h.storage.matches.get(host.match.id))?.joinCounter).toBe(3)
     await expect(
       h.kernel.lobby.joinRunning({
         match: host.joinCode,
