@@ -35,6 +35,11 @@ public sealed class AudioRoutingTests
             AudioRouting.OnlineTurnReadySound());
         Assert.Equal("SND00208.wav",
             AudioRouting.GeneralSoundFile(GeneralSoundSlot.TurnStartCue));
+        Assert.Equal(GeneralSoundSlot.TurnStartCue,
+            AudioRouting.TurnStartSound(1, 2, matchOver: false, humanPlaying: true));
+        Assert.Null(AudioRouting.TurnStartSound(2, 2, matchOver: false, humanPlaying: true));
+        Assert.Null(AudioRouting.TurnStartSound(1, 2, matchOver: true, humanPlaying: true));
+        Assert.Null(AudioRouting.TurnStartSound(1, 2, matchOver: false, humanPlaying: false));
         Assert.Throws<ArgumentOutOfRangeException>(() => AudioRouting.GeneralSoundFile(5));
         Assert.Equal(GeneralSoundSlot.AcceptedSelection,
             AudioRouting.PlayerCountResultSound(changed: true, pointerButton: false));

@@ -61,7 +61,7 @@ public sealed partial class ChaosGame
         if (_state.Coordinator.Turn != previousTurn)
         {
             WriteAutoSave();
-            if (_state.Outcome is null) PlayGeneralSound(GeneralSoundSlot.TurnStartCue);
+            PlayTurnStartCue(previousTurn);
         }
 
         if (_state.Outcome is not null)
@@ -91,6 +91,23 @@ public sealed partial class ChaosGame
     {
         if (_state is null) return;
         _autoSave.Capture(_state);
+    }
+
+    /// <summary>Plays the recovered later-turn cue when a local turn has just begun.</summary>
+    /// <remarks>
+    /// Once every local human is out, the computers play on at one turn per frame; restarting the
+    /// cue on each of those frames would only stutter its first few milliseconds, so it waits for a
+    /// turn someone is still planning.
+    /// </remarks>
+    private void PlayTurnStartCue(int previousTurn)
+    {
+        if (_state is not { } state) return;
+        var humanPlaying = state.Players.Any(player =>
+            player.Setup.Controller == PlayerController.Human
+            && player.Status == PlayerStatus.Active);
+        if (AudioRouting.TurnStartSound(previousTurn, state.Coordinator.Turn,
+                state.Outcome is not null, humanPlaying) is { } cue)
+            PlayGeneralSound(cue);
     }
 
     /// <summary>
@@ -139,8 +156,7 @@ public sealed partial class ChaosGame
         if (completedTurn)
         {
             WriteAutoSave();
-            if (_state.Coordinator.Turn != previousTurn && _state.Outcome is null)
-                PlayGeneralSound(GeneralSoundSlot.TurnStartCue);
+            PlayTurnStartCue(previousTurn);
         }
         if (_state.Outcome is not null)
             _screens.Show(ClientScreen.Endgame);
@@ -226,7 +242,7 @@ public sealed partial class ChaosGame
         if (_state.Coordinator.Turn != startingTurn)
         {
             WriteAutoSave();
-            if (_state.Outcome is null) PlayGeneralSound(GeneralSoundSlot.TurnStartCue);
+            PlayTurnStartCue(startingTurn);
         }
         if (_state.Outcome is not null)
         {

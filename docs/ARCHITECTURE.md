@@ -277,9 +277,10 @@ while full local-setup push buttons use slot 2; an invalid pointer-driven player
 count change follows its press cue with slot 4. The four setup push controls
 retain the pressed identity and act only on release inside that same recovered
 rectangle. Panel confirmation uses slots 0/1, a handoff into an unread Comlink
-inbox uses slot 6, and the planning countdown uses slots 7/8. Slot 9 is loaded by the
-original but has no gated-wrapper call site. None of these routes feeds playback
-state or timing back into the simulation.
+inbox uses slot 6, and the planning countdown uses slots 7/8. Slot 9 is the later-turn
+cue, which the original calls directly through its lower effect helper. General and
+combat effects share one interrupting effect voice, separate from music. None of these
+routes feeds playback state or timing back into the simulation.
 `SoundtrackCatalog` discovers the extracted `Track02`-`Track09` Ogg files and
 encodes the recovered title/setup, gameplay, and endgame track programs, while
 `ChaosGame.Media.cs` owns their optional streaming, screen transition, repeat,

@@ -166,25 +166,6 @@ public sealed partial class ChaosGame
         try { voice.Dispose(); } catch { }
     }
 
-    private void UpdateEffectVoiceVolume()
-    {
-        if (_soundEffectVolumeLevel == 0)
-        {
-            StopEffectVoice();
-            return;
-        }
-        try
-        {
-            if (_activeEffectVoice is not null)
-                _activeEffectVoice.Volume = AudioRouting.EffectVolumeForLevel(
-                    _soundEffectVolumeLevel);
-        }
-        catch
-        {
-            StopEffectVoice();
-        }
-    }
-
     private void CaptureNewCombatAnimations()
     {
         if (_state is null) return;

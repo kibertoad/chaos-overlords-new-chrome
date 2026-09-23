@@ -337,10 +337,13 @@ flags, and separation from MCI music; Medium for audible interruption timing
 on specific native systems.
 
 **Recreation status:** The client plays slot 9 when a local turn counter advances
-without an endgame outcome and routes combat and general effects through one
-active effect voice. Starting a new effect stops the previous effect voice.
-Music remains separate. Volume changes update that voice, and level zero stops
-it. These are presentation-only operations.
+without an endgame outcome while a local human is still playing, and routes
+combat and general effects through one active effect voice. Once every local
+human is out, the computers play on at one turn per frame, so those turns stay
+silent instead of restarting the cue every frame. Starting a new effect stops
+the previous effect voice. Music remains separate. Changing the Effects level
+replaces that voice with its confirmation cue at the new amplitude, and level
+zero stops it. These are presentation-only operations.
 
 **Next validation:** Compare the cue and rapid successive effects against a
 native reference capture, including local and legacy-network turn boundaries.

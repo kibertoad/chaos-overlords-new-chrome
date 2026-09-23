@@ -766,7 +766,7 @@ status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
 3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
    compare the bounded recreation cadence with a controlled original capture.
 4. Validate the recovered per-record Comlink acknowledgement and slot-6 cadence
-   at runtime, then validate effect overlap/interruption and complete native
+   at runtime, then validate audible effect interruption timing and complete native
    audio/music validation. The four-second repeat, slot-2 inventory, and
    Combat-selection slot-3 call are statically classified and routed.
 5. Capture original startup-movie trigger/skip behavior and validate native
