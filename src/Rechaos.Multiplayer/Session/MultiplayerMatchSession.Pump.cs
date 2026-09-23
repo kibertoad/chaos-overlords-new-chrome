@@ -65,6 +65,16 @@ public sealed partial class MultiplayerMatchSession
         // that opens. Only `_streamOutageBudget` ends the session over it; see the option.
         var outage = new System.Diagnostics.Stopwatch();
         var attemptsThisOutage = 0;
+        void RecordExhaustion(RetryExhaustedException exhausted)
+        {
+            if (!outage.IsRunning) outage.Restart();
+            attemptsThisOutage += exhausted.Attempts;
+            if (_streamOutageBudget is { } budget && outage.Elapsed >= budget) throw exhausted;
+            _streamLane.Failed(
+                $"Still trying to reach the server, {outage.Elapsed.TotalMinutes:0.#} minutes "
+                + "so far. The match resumes as soon as it answers.",
+                attemptsThisOutage);
+        }
         while (true)
         {
             Volatile.Write(ref _pumpOperation, "event_stream");
@@ -90,13 +100,7 @@ public sealed partial class MultiplayerMatchSession
                 // on this same session has always treated it that way — it requeues the draft and
                 // opens another window — and the stream ending the session here meant a six-minute
                 // sleep cost the player their city screen while their orders survived.
-                if (!outage.IsRunning) outage.Restart();
-                attemptsThisOutage += exhausted.Attempts;
-                if (_streamOutageBudget is { } budget && outage.Elapsed >= budget) throw;
-                _streamLane.Failed(
-                    $"Still trying to reach the server, {outage.Elapsed.TotalMinutes:0.#} minutes "
-                    + "so far. The match resumes as soon as it answers.",
-                    attemptsThisOutage);
+                RecordExhaustion(exhausted);
                 restart = true;
             }
             catch (OperationCanceledException)
@@ -109,10 +113,24 @@ public sealed partial class MultiplayerMatchSession
             // The stream ends only by throwing, by cancellation, or by a restart above.
             if (!restart) return;
             if (Interlocked.Exchange(ref _resyncRequested, 0) != 0) outage.Reset();
-            if (!await RestoreAsync(_resumeAfterSeq, cancellationToken).ConfigureAwait(false)) return;
-            // The restore re-arms the bootstrap upload for a host that never completed one, so it
-            // is offered again here rather than only on the way into the loop.
-            await UploadBootstrapSnapshotIfDueAsync(cancellationToken).ConfigureAwait(false);
+            while (true)
+            {
+                try
+                {
+                    if (!await RestoreAsync(_resumeAfterSeq, cancellationToken).ConfigureAwait(false)) return;
+                    // The restore re-arms the bootstrap upload for a host that never completed
+                    // one, so it is offered again before the next stream cycle.
+                    await UploadBootstrapSnapshotIfDueAsync(cancellationToken).ConfigureAwait(false);
+                    break;
+                }
+                catch (RetryExhaustedException exhausted)
+                    when (TransientFailure.CanRetryAfterExhaustion(exhausted))
+                {
+                    // A restore call has the same retry window as a call triggered by a stream
+                    // event. Keep the session and its draft while the server is unavailable.
+                    RecordExhaustion(exhausted);
+                }
+            }
             outage.Reset();
             attemptsThisOutage = 0;
             _streamLane.Recovered();

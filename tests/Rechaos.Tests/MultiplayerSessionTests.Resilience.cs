@@ -288,6 +288,40 @@ public sealed partial class MultiplayerSessionTests
         Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
     }
 
+    [Fact]
+    public async Task AnExhaustedRestoreWindowDoesNotEndTheSession()
+    {
+        var window = new RetryPolicy(
+            TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1), MaxAttempts: 1);
+        var (session, server, http) = Running(
+            streamRetryPolicy: window,
+            callRetryPolicy: window,
+            configure: fake =>
+            {
+                fake.Answer(
+                    HttpMethod.Get, "/snapshots/latest", Envelope("no_snapshot"), HttpStatusCode.NotFound);
+                fake.Answer(HttpMethod.Get, "/events", new EventPage([]));
+                fake.Answer(
+                    HttpMethod.Get, "/turns/1/orders/mine",
+                    new OwnSubmissionView(1, null, Ready: false, OrdersHash: null));
+            });
+        using var _ = http;
+        await using var __ = session;
+        var seen = new List<MultiplayerNotice>();
+
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") >= 1, "the first stream opened");
+        server.AnswerOnce(HttpMethod.Get, "/stream", null, HttpStatusCode.BadGateway);
+        server.AnswerOnce(HttpMethod.Get, $"/matches/{MatchId}", null, HttpStatusCode.BadGateway);
+        server.DropStream();
+
+        await WaitFor<MultiplayerNotice.Resumed>(session, seen);
+        await Until(
+            () => server.CallsTo(HttpMethod.Get, "/stream") >= 3,
+            "the stream reopened after the restore retried");
+        Assert.True(server.CallsTo(HttpMethod.Get, $"/matches/{MatchId}") >= 2);
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+    }
+
     /// <summary>And with a budget — what the headless smoke test wants — it does end.</summary>
     [Fact]
     public async Task AnExhaustedStreamWindowEndsTheSessionWhenABudgetSaysSo()
