@@ -9,6 +9,10 @@ namespace Rechaos.Game;
 public sealed partial class ChaosGame
 {
     private static readonly double[] ReplaySpeeds = [0.25, 0.5, 1, 2, 4, 8];
+    private static readonly string[] ReplayControlLabels =
+        ["START", "PREV", "PLAY", "NEXT", "END", "SPEED", "EXIT"];
+    private const int ReplayControlLeft = 12;
+    private const int ReplayControlWidth = 90;
     private MatchReplayPlayback? _replayPlayback;
     private MatchState? _matchBeforeReplay;
     private int _cursorBeforeReplay;
@@ -26,6 +30,9 @@ public sealed partial class ChaosGame
         {
             var opened = MatchReplayStore.OpenPlaybackRecoveringBackup(
                 _replayPath, _state.Definitions);
+            // Playback swallows pointer releases, so a drag or press begun on the live board
+            // would otherwise complete against it after exit.
+            CancelCurrentInteraction();
             _matchBeforeReplay = _state;
             _cursorBeforeReplay = _cursor;
             _gangBeforeReplay = _selectedGangIndex;
@@ -45,13 +52,15 @@ public sealed partial class ChaosGame
             _message = IncompatibleSave.IsIncompatible(exception)
                 ? "REPLAY INCOMPATIBLE"
                 : exception is FileNotFoundException ? "REPLAY NOT FOUND"
-                : exception.Message.Contains("diverg", StringComparison.OrdinalIgnoreCase)
-                    ? "REPLAY DIVERGED"
-                    : exception is InvalidDataException
-                        ? "REPLAY VERIFICATION FAILED"
-                        : "REPLAY LOAD FAILED";
+                : exception is InvalidDataException ? ReplayVerificationMessage(exception)
+                : "REPLAY LOAD FAILED";
         }
     }
+
+    private static string ReplayVerificationMessage(Exception exception) =>
+        exception.Message.Contains("diverg", StringComparison.OrdinalIgnoreCase)
+            ? "REPLAY DIVERGED"
+            : "REPLAY VERIFICATION FAILED";
 
     private void UpdateReplayPlayback(GameTime gameTime, KeyboardState keyboard, MouseState mouse)
     {
@@ -75,13 +84,16 @@ public sealed partial class ChaosGame
             && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var point)
             && point.Y >= 408 && point.Y < 432)
         {
-            if (point.X < 90) SeekReplay(0);
-            else if (point.X < 180) SeekReplay(_replayPlayback.Position - 1);
-            else if (point.X < 270) _replayPlaying = !_replayPlaying;
-            else if (point.X < 360) SeekReplay(_replayPlayback.Position + 1);
-            else if (point.X < 450) SeekReplay(_replayPlayback.StepCount);
-            else if (point.X < 540) _replaySpeed = (_replaySpeed + 1) % ReplaySpeeds.Length;
-            else CloseReplayPlayback();
+            switch (Math.Clamp(point.X / ReplayControlWidth, 0, ReplayControlLabels.Length - 1))
+            {
+                case 0: SeekReplay(0); break;
+                case 1: SeekReplay(_replayPlayback.Position - 1); break;
+                case 2: _replayPlaying = !_replayPlaying; break;
+                case 3: SeekReplay(_replayPlayback.Position + 1); break;
+                case 4: SeekReplay(_replayPlayback.StepCount); break;
+                case 5: _replaySpeed = (_replaySpeed + 1) % ReplaySpeeds.Length; break;
+                default: CloseReplayPlayback(); break;
+            }
         }
 
         if (!_replayPlaying || _replayPlayback is null) return;
@@ -91,13 +103,11 @@ public sealed partial class ChaosGame
         while (_replayElapsed >= interval && _replayPlaying && stepsThisFrame++ < 16)
         {
             _replayElapsed -= interval;
-            if (!_replayPlayback.MoveNext())
+            if (!TryMoveReplay(playback => playback.MoveNext()))
             {
                 _replayPlaying = false;
-                _replayStatus = "END OF REPLAY";
                 break;
             }
-            ShowReplayFrame();
         }
     }
 
@@ -106,8 +116,34 @@ public sealed partial class ChaosGame
         if (_replayPlayback is null) return;
         _replayPlaying = false;
         _replayElapsed = 0;
-        _replayPlayback.Seek(Math.Clamp(position, 0, _replayPlayback.StepCount));
+        var target = Math.Clamp(position, 0, _replayPlayback.StepCount);
+        TryMoveReplay(playback =>
+        {
+            playback.Seek(target);
+            return true;
+        });
+    }
+
+    /// <summary>
+    /// Moves the cursor and shows the frame it lands on. The journal was verified when opened, so a
+    /// failure here is a defect rather than bad data; it ends playback instead of the process, which
+    /// would otherwise write the replayed frame as the crash-recovery save.
+    /// </summary>
+    private bool TryMoveReplay(Func<MatchReplayPlayback, bool> move)
+    {
+        if (_replayPlayback is null) return false;
+        try
+        {
+            if (!move(_replayPlayback)) return false;
+        }
+        catch (InvalidDataException exception)
+        {
+            CloseReplayPlayback();
+            _message = ReplayVerificationMessage(exception);
+            return false;
+        }
         ShowReplayFrame();
+        return true;
     }
 
     private void ShowReplayFrame()
@@ -138,11 +174,16 @@ public sealed partial class ChaosGame
         var position = _replayPlayback.Position;
         var step = _replayPlayback.CurrentStep?.Kind.ToString().ToUpperInvariant() ?? "OPENING STATE";
         font.Draw(batch, $"REPLAY {position}/{_replayPlayback.StepCount}  {step}",
-            new Vector2(12, 394), Color.Lime, 1);
-        font.Draw(batch, "START     PREV      PLAY      NEXT      END       SPEED     EXIT",
-            new Vector2(12, 413), Color.Gold, 1);
+            new Vector2(ReplayControlLeft, 394), Color.Lime, 1);
+        // Each label sits at the left of the band UpdateReplayPlayback hit-tests for it.
+        for (var index = 0; index < ReplayControlLabels.Length; index++)
+            font.Draw(batch, ReplayControlLabels[index],
+                new Vector2(ReplayControlLeft + index * ReplayControlWidth, 413), Color.Gold, 1);
+        var status = position == _replayPlayback.StepCount && position > 0
+            ? "END OF REPLAY"
+            : _replayStatus;
         font.Draw(batch,
-            $"{(_replayPlaying ? "PLAYING" : "PAUSED")}  {ReplaySpeeds[_replaySpeed]:0.##}X  {_replayStatus}",
-            new Vector2(12, 437), Color.White, 1);
+            $"{(_replayPlaying ? "PLAYING" : "PAUSED")}  {ReplaySpeeds[_replaySpeed]:0.##}X  {status}",
+            new Vector2(ReplayControlLeft, 437), Color.White, 1);
     }
 }

@@ -114,9 +114,11 @@ public sealed partial class ChaosGame
     {
         try
         {
-            if (_state is null || _session is not null) return null;
+            // While a replay is open, _state is a historical frame; the live match is set aside.
+            var live = _matchBeforeReplay ?? _state;
+            if (live is null || _session is not null) return null;
             var path = Path.Combine(_saveDirectory, "crash-recovery.rchsave");
-            NativeSaveStore.SaveAtomic(path, _state);
+            NativeSaveStore.SaveAtomic(path, live);
             return path;
         }
         catch (Exception exception)
@@ -146,10 +148,5 @@ public sealed partial class ChaosGame
         {
             _message = "REPLAY SAVE FAILED";
         }
-    }
-
-    private void LoadReplay()
-    {
-        OpenReplayPlayback();
     }
 }

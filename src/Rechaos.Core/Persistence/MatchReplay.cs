@@ -485,11 +485,24 @@ public static class MatchReplaySerializer
         {
             throw;
         }
-        catch (Exception exception) when (exception is ArgumentException
-            or InvalidOperationException or KeyNotFoundException or OverflowException)
+        catch (Exception exception) when (IsMalformedOperation(exception))
         {
             throw new InvalidDataException("Replay operation is invalid.", exception);
         }
+    }
+
+    /// <summary>The ways a malformed recorded operation surfaces from the rules engine.</summary>
+    internal static bool IsMalformedOperation(Exception exception) =>
+        exception is ArgumentException or InvalidOperationException
+            or KeyNotFoundException or OverflowException;
+
+    /// <summary>Loads a journal's opening snapshot and checks it against its recorded fingerprint.</summary>
+    internal static MatchState LoadOpeningState(ReplayDocument document, OriginalData definitions)
+    {
+        using var snapshot = new MemoryStream(document.InitialSnapshot, writable: false);
+        var state = NativeSaveSerializer.Load(snapshot, definitions);
+        VerifyFingerprint(document.InitialStateFingerprint, state, -1);
+        return state;
     }
 
     private static MatchState Apply(ReplayDocument document, OriginalData definitions)
@@ -502,9 +515,7 @@ public static class MatchReplaySerializer
                 $"Unsupported replay format {document.FormatVersion}.");
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
-        using var snapshot = new MemoryStream(document.InitialSnapshot, writable: false);
-        var state = NativeSaveSerializer.Load(snapshot, definitions);
-        VerifyFingerprint(document.InitialStateFingerprint, state, -1);
+        var state = LoadOpeningState(document, definitions);
         for (var index = 0; index < document.Steps.Count; index++)
         {
             var step = document.Steps[index];
@@ -674,7 +685,7 @@ public static class MatchReplaySerializer
         step.GangDefinitionId
             ?? throw new InvalidDataException($"Replay step {index} has no gang definition.");
 
-    private static void VerifyFingerprint(string expected, MatchState state, int index)
+    internal static void VerifyFingerprint(string expected, MatchState state, int index)
     {
         if (!MatchStateHasher.IsFingerprint(expected))
             throw new InvalidDataException($"Replay step {index} has an invalid state fingerprint.");
@@ -715,7 +726,7 @@ public sealed class MatchReplayPlayback
     {
         _document = document;
         _definitions = definitions;
-        State = LoadOpeningState();
+        State = MatchReplaySerializer.LoadOpeningState(document, definitions);
     }
 
     /// <summary>The state at the current position. Position zero is the opening snapshot.</summary>
@@ -731,10 +742,17 @@ public sealed class MatchReplayPlayback
         var expected = Position == 0
             ? _document.InitialStateFingerprint
             : _document.Steps[Position - 1].ResultingStateFingerprint;
-        VerifyState(expected);
+        MatchReplaySerializer.VerifyFingerprint(expected, State, Position - 1);
         var step = _document.Steps[Position];
-        MatchReplaySerializer.ApplyStep(State, step, Position);
-        VerifyState(step.ResultingStateFingerprint);
+        try
+        {
+            MatchReplaySerializer.ApplyStep(State, step, Position);
+        }
+        catch (Exception exception) when (MatchReplaySerializer.IsMalformedOperation(exception))
+        {
+            throw new InvalidDataException("Replay operation is invalid.", exception);
+        }
+        MatchReplaySerializer.VerifyFingerprint(step.ResultingStateFingerprint, State, Position);
         Position++;
         return true;
     }
@@ -746,26 +764,10 @@ public sealed class MatchReplayPlayback
         if (position > StepCount) throw new ArgumentOutOfRangeException(nameof(position));
         if (position < Position)
         {
-            State = LoadOpeningState();
+            State = MatchReplaySerializer.LoadOpeningState(_document, _definitions);
             Position = 0;
         }
         while (Position < position) MoveNext();
-    }
-
-    private MatchState LoadOpeningState()
-    {
-        using var stream = new MemoryStream(_document.InitialSnapshot, writable: false);
-        var state = NativeSaveSerializer.Load(stream, _definitions);
-        if (!StringComparer.Ordinal.Equals(
-                _document.InitialStateFingerprint, MatchStateHasher.ComputeFingerprint(state)))
-            throw new InvalidDataException("Replay opening state diverged.");
-        return state;
-    }
-
-    private void VerifyState(string expected)
-    {
-        if (!StringComparer.Ordinal.Equals(expected, MatchStateHasher.ComputeFingerprint(State)))
-            throw new InvalidDataException($"Replay diverged after step {Position - 1}.");
     }
 }
 
