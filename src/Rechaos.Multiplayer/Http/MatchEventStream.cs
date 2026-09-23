@@ -155,7 +155,7 @@ public sealed class MatchEventStream(
                     attempt,
                     outage.Elapsed,
                     lastFailure ?? new IOException("the server event stream did not reconnect"));
-            await Task.Delay(_policy.Backoff(attempt), cancellationToken).ConfigureAwait(false);
+            await Task.Delay(_policy.DelayAfter(lastFailure, attempt), cancellationToken).ConfigureAwait(false);
         }
     }
 

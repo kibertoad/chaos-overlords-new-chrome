@@ -32,6 +32,7 @@ public static class MultiplayerFailureText
             // this client: the name is refused before a request is built, which is the only way to
             // say which field is wrong. The server refuses it too, as a contract violation like any
             // other.
+            MultiplayerApiException { IsRateLimited: true } api => RateLimited(api),
             MultiplayerApiException api =>
                 $"Server returned HTTP {(int)api.Status}: {api.Message}"
                 + (api.RequestId is null ? string.Empty : $" (request {api.RequestId})"),
@@ -45,6 +46,29 @@ public static class MultiplayerFailureText
             IOException io => $"Connection stream failed: {io.Message}",
             _ => $"{exception.GetType().Name}: {exception.Message}",
         };
+    }
+
+    /// <summary>
+    /// Whether the failure is the server limiting how often this client may call it.
+    /// </summary>
+    /// <remarks>
+    /// Not a lost connection: the server answered, and it will answer again once the window turns
+    /// over. The interface says so rather than telling the player their network is down.
+    /// </remarks>
+    public static bool IsRateLimited(Exception? exception) => exception switch
+    {
+        MultiplayerApiException api => api.IsRateLimited,
+        RetryExhaustedException exhausted => IsRateLimited(exhausted.LastError),
+        _ => false,
+    };
+
+    private static string RateLimited(MultiplayerApiException api)
+    {
+        var wait = api.RetryAfter is { } retryAfter
+            ? $"; it asked to wait {Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds))} s"
+            : string.Empty;
+        return $"The server is limiting how often this client may call it{wait}."
+            + (api.RequestId is null ? string.Empty : $" (request {api.RequestId})");
     }
 
     /// <summary>

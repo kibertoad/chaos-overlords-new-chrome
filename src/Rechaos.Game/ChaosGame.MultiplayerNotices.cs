@@ -29,9 +29,24 @@ public sealed partial class ChaosGame
     private void UpdateOnlineSession()
     {
         PumpOnlineNotices();
+        // The session stops retrying a draft once its turn seals, so its line goes with the turn.
+        if (_online.DelayedDraftTurn is { } delayedTurn && delayedTurn != _online.PlanningTurn)
+        {
+            _online.DelayedDraftTurn = null;
+            if (_message == DelayedDraftMessage) _message = string.Empty;
+        }
+        if (_online.UpdateReconnectPopup(DateTimeOffset.UtcNow)) _message = ReconnectingMessage();
         SendOnlineDraft();
         UpdateOnlineDeadlineWarnings();
     }
+
+    /// <summary>What the message line says while the reconnect modal is up.</summary>
+    private string ReconnectingMessage() => _online.IsRateLimited
+        ? "THE SERVER IS LIMITING REQUESTS  AUTOMATICALLY RETRYING"
+        : "CONNECTION LOST  AUTOMATICALLY RECONNECTING";
+
+    /// <summary>The message line while a draft of the open turn is being retried in the background.</summary>
+    private const string DelayedDraftMessage = "ORDERS NOT SAVED ON THE SERVER YET  RETRYING";
 
     /// <summary>
     /// Drains what the sessions have to say, on the game thread.
@@ -276,9 +291,27 @@ public sealed partial class ChaosGame
                 _online.AwaitedSlots = readiness.AwaitedSlots;
                 UpdateOnlineResolutionExpectation();
                 return;
+            case MultiplayerNotice.DraftDelayed delayed:
+                _diagnostics?.Write("multiplayer.orders.draft_delayed",
+                    new Dictionary<string, string?>
+                    {
+                        ["turn"] = delayed.Turn.ToString(CultureInfo.InvariantCulture),
+                        ["detail"] = delayed.Detail,
+                    });
+                // Quietly: the draft is retried on its own and superseded by the next change, and
+                // the player can go on planning. Only a draft of the turn on screen is worth a line.
+                if (delayed.Turn != _online.PlanningTurn) return;
+                _online.DelayedDraftTurn = delayed.Turn;
+                if (_message.Length == 0) _message = DelayedDraftMessage;
+                return;
             case MultiplayerNotice.OrdersAccepted accepted:
                 // A draft needs no announcement; the submission that ends a turn already said so.
                 _online.TurnSyncError = string.Empty;
+                if (_online.DelayedDraftTurn is { } delayedTurn && accepted.Turn >= delayedTurn)
+                {
+                    _online.DelayedDraftTurn = null;
+                    if (_message == DelayedDraftMessage) _message = string.Empty;
+                }
                 if (accepted.Ready && accepted.Turn == _online.PlanningTurn)
                 {
                     _online.ReadySubmissionPending = false;
@@ -320,20 +353,28 @@ public sealed partial class ChaosGame
                 _online.IsConnected = connection.IsConnected;
                 if (connection.IsConnected)
                 {
+                    // Only a modal that was up said anything on the message line to take back; a
+                    // blip that recovered within the grace leaves whatever the player was reading.
+                    var wasShown = _online.ReconnectPopupShown;
+                    _online.DisconnectedSince = null;
+                    _online.UpdateReconnectPopup(DateTimeOffset.UtcNow);
                     _online.ReconnectLog.Clear();
                     _online.ReconnectCopyStatus = string.Empty;
                     _online.ReconnectAttempt = 0;
-                    _message = string.Empty;
+                    if (wasShown) _message = string.Empty;
                     UpdateOnlineResolutionExpectation();
                 }
                 else if (connection.Detail is not null)
                 {
+                    _online.DisconnectedSince ??= DateTimeOffset.UtcNow;
                     _online.ResolutionExpectedSince = null;
                     _online.ReconnectAttempt = Math.Max(1, connection.Attempt);
                     _online.ReconnectLog.Add(ReconnectAttemptEntry.From(connection, DateTimeOffset.Now));
                     while (_online.ReconnectLog.Count > ReconnectPopupLayout.MaxRows)
                         _online.ReconnectLog.RemoveAt(0);
-                    _message = "CONNECTION LOST  AUTOMATICALLY RECONNECTING";
+                    // The modal, and the message line with it, wait out the grace; see
+                    // `MultiplayerUiState.ReconnectPopupGrace`. Once it is up, say which it is.
+                    if (_online.ReconnectPopupShown) _message = ReconnectingMessage();
                 }
                 return;
             case MultiplayerNotice.MatchFinished:

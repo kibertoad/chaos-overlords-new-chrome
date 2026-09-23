@@ -78,4 +78,28 @@ public sealed class ReconnectPopupTests
 
         Assert.Equal(new ConnectionFailure("outbox", "outbox down", 2, error), reported);
     }
+
+    /// <summary>
+    /// A failure that recovers within the grace never covers the screen; one that outlasts it does.
+    /// </summary>
+    [Fact]
+    public void TheModalWaitsOutTheGraceBeforeCoveringTheScreen()
+    {
+        var lost = new DateTimeOffset(2026, 9, 23, 12, 0, 0, TimeSpan.Zero);
+        var state = new MultiplayerUiState { IsConnected = false, DisconnectedSince = lost };
+
+        Assert.False(state.UpdateReconnectPopup(lost + MultiplayerUiState.ReconnectPopupGrace / 2));
+        Assert.False(state.ReconnectPopupShown);
+
+        Assert.True(state.UpdateReconnectPopup(lost + MultiplayerUiState.ReconnectPopupGrace));
+        Assert.True(state.ReconnectPopupShown);
+        // Appearing is said once, not every frame the modal stays up.
+        Assert.False(state.UpdateReconnectPopup(lost + MultiplayerUiState.ReconnectPopupGrace * 2));
+        Assert.True(state.ReconnectPopupShown);
+
+        state.IsConnected = true;
+        state.DisconnectedSince = null;
+        state.UpdateReconnectPopup(lost + MultiplayerUiState.ReconnectPopupGrace * 3);
+        Assert.False(state.ReconnectPopupShown);
+    }
 }

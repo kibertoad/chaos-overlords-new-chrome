@@ -18,7 +18,8 @@ public sealed class MultiplayerApiException : Exception
         string message,
         string? reason,
         string? requestId,
-        bool fromEnvelope)
+        bool fromEnvelope,
+        TimeSpan? retryAfter)
         : base(message)
     {
         Status = status;
@@ -26,6 +27,7 @@ public sealed class MultiplayerApiException : Exception
         Reason = reason;
         RequestId = requestId;
         FromEnvelope = fromEnvelope;
+        RetryAfter = retryAfter;
     }
 
     public HttpStatusCode Status { get; }
@@ -49,6 +51,19 @@ public sealed class MultiplayerApiException : Exception
     /// An envelope, by contrast, came from the server's own error handler and means what it says.
     /// </remarks>
     public bool FromEnvelope { get; }
+
+    /// <summary>
+    /// How long the server asked the caller to wait before trying again, from <c>Retry-After</c>.
+    /// </summary>
+    /// <remarks>
+    /// Sent with every rate-limit refusal. The server's limiter works in fixed windows, so an
+    /// attempt made before the window turns over is refused again for nothing — and each one was
+    /// another line in the reconnect log. Null when the header is absent or unreadable.
+    /// </remarks>
+    public TimeSpan? RetryAfter { get; }
+
+    /// <summary>Whether this is the server limiting how often this client may call it.</summary>
+    public bool IsRateLimited => Status == HttpStatusCode.TooManyRequests;
 
     /// <summary>
     /// The most of a refusal's body that is read before it is judged not to be an envelope.
@@ -92,6 +107,7 @@ public sealed class MultiplayerApiException : Exception
         var headerRequestId = response.Headers.TryGetValues("X-Request-Id", out var requestIds)
             ? requestIds.FirstOrDefault()
             : null;
+        var retryAfter = RetryAfterOf(response);
         var body = await ReadBodyAsync(response, bodyTimeout, cancellationToken)
             .ConfigureAwait(false);
         try
@@ -111,7 +127,8 @@ public sealed class MultiplayerApiException : Exception
                     error.Message,
                     error.Details?.Reason,
                     error.RequestId ?? headerRequestId,
-                    fromEnvelope: true);
+                    fromEnvelope: true,
+                    retryAfter);
             }
         }
         catch (MultiplayerProtocolException)
@@ -125,7 +142,17 @@ public sealed class MultiplayerApiException : Exception
             $"HTTP {(int)response.StatusCode}",
             reason: null,
             requestId: headerRequestId,
-            fromEnvelope: false);
+            fromEnvelope: false,
+            retryAfter);
+    }
+
+    /// <summary>The wait <c>Retry-After</c> asks for, as a delay or a date; null when it says neither.</summary>
+    private static TimeSpan? RetryAfterOf(HttpResponseMessage response)
+    {
+        var header = response.Headers.RetryAfter;
+        var wait = header?.Delta
+            ?? (header?.Date is { } date ? date - DateTimeOffset.UtcNow : null);
+        return wait is { } value ? (value > TimeSpan.Zero ? value : TimeSpan.Zero) : null;
     }
 
     /// <summary>
