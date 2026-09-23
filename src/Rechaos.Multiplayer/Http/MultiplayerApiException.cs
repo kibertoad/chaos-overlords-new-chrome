@@ -51,23 +51,48 @@ public sealed class MultiplayerApiException : Exception
     public bool FromEnvelope { get; }
 
     /// <summary>
+    /// The most of a refusal's body that is read before it is judged not to be an envelope.
+    /// </summary>
+    /// <remarks>
+    /// An envelope is a few hundred bytes; the largest the server writes is a validation refusal
+    /// listing every issue in an order document, which stays well inside a megabyte. A body past
+    /// this is not the server's error handler talking, and buffering it would be this process
+    /// holding whatever a proxy — or something posing as the server — decided to send.
+    /// </remarks>
+    public const int MaximumBodyBytes = 1024 * 1024;
+
+    /// <summary>
     /// Reads the envelope out of a failed response.
     /// </summary>
     /// <remarks>
     /// A body that is not the envelope still yields a typed error: a proxy's HTML page and an empty
     /// 502 are both things a self-hosted deployment produces, and neither should surface as a
-    /// parse failure on top of the failure it is reporting.
+    /// parse failure on top of the failure it is reporting. A body over
+    /// <see cref="MaximumBodyBytes"/>, or one the transport loses, is treated the same way.
     /// </remarks>
-    public static async Task<MultiplayerApiException> FromResponseAsync(
+    public static Task<MultiplayerApiException> FromResponseAsync(
         HttpResponseMessage response,
-        CancellationToken cancellationToken,
-        long maximumBodyBytes = long.MaxValue)
+        CancellationToken cancellationToken) =>
+        FromResponseAsync(response, Timeout.InfiniteTimeSpan, cancellationToken);
+
+    /// <inheritdoc cref="FromResponseAsync(HttpResponseMessage, CancellationToken)"/>
+    /// <param name="response">The refusal.</param>
+    /// <param name="bodyTimeout">
+    /// How long the body may take once the status is in; zero or less waits for as long as the
+    /// caller does. A body that outruns it becomes a status-only refusal: the status did arrive, and
+    /// throwing a timeout instead would both lose it and claim the server said nothing.
+    /// </param>
+    /// <param name="cancellationToken">The caller's; cancelling it still throws.</param>
+    internal static async Task<MultiplayerApiException> FromResponseAsync(
+        HttpResponseMessage response,
+        TimeSpan bodyTimeout,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(response);
         var headerRequestId = response.Headers.TryGetValues("X-Request-Id", out var requestIds)
             ? requestIds.FirstOrDefault()
             : null;
-        var body = await ReadBodyAsync(response, cancellationToken, maximumBodyBytes)
+        var body = await ReadBodyAsync(response, bodyTimeout, cancellationToken)
             .ConfigureAwait(false);
         try
         {
@@ -103,21 +128,26 @@ public sealed class MultiplayerApiException : Exception
             fromEnvelope: false);
     }
 
+    /// <summary>
+    /// The body, or empty when it cannot be the envelope: too large, too slow, or cut off.
+    /// </summary>
     private static async Task<string> ReadBodyAsync(
         HttpResponseMessage response,
-        CancellationToken cancellationToken,
-        long maximumBodyBytes)
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
     {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        if (timeout > TimeSpan.Zero) deadline.CancelAfter(timeout);
         try
         {
-            // ResponseHeadersRead leaves the body unbuffered. Buffer it explicitly with a small
-            // ceiling for stream refusals; an oversized proxy page becomes a status-only error.
-            if (maximumBodyBytes != long.MaxValue)
-                await response.Content.LoadIntoBufferAsync(maximumBodyBytes, cancellationToken)
-                    .ConfigureAwait(false);
-            return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return await BoundedBody
+                .ReadStringAsync(response.Content, MaximumBodyBytes, deadline.Token)
+                .ConfigureAwait(false) ?? string.Empty;
         }
-        catch (Exception exception) when (exception is HttpRequestException or IOException)
+        catch (Exception exception) when (
+            exception is HttpRequestException or IOException
+            || (exception is OperationCanceledException
+                && !cancellationToken.IsCancellationRequested))
         {
             return string.Empty;
         }

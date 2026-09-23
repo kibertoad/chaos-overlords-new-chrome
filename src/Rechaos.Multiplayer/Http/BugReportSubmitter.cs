@@ -215,18 +215,12 @@ public sealed class BugReportSubmitter
     {
         try
         {
-            await using var stream = await response.Content.ReadAsStreamAsync(deadline)
-                .ConfigureAwait(false);
-            var buffer = new byte[MaximumResponseBytes + 1];
-            var read = await stream.ReadAtLeastAsync(
-                buffer, buffer.Length, throwOnEndOfStream: false, deadline).ConfigureAwait(false);
-            if (read > MaximumResponseBytes)
-            {
-                throw new BugReportException(
+            return await BoundedBody
+                    .ReadStringAsync(response.Content, (int)MaximumResponseBytes, deadline)
+                    .ConfigureAwait(false)
+                ?? throw new BugReportException(
                     BugReportFailure.ServerError,
                     "The bug report server answered more than this build will read.");
-            }
-            return Encoding.UTF8.GetString(buffer, 0, read);
         }
         catch (Exception exception) when (exception is HttpRequestException
                                           or IOException

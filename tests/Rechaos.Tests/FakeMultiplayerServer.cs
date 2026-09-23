@@ -51,10 +51,6 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     /// </summary>
     internal bool CloseStreamOnOpen { get; set; }
 
-    /// <summary>An unbuffered error body for stream-refusal deadline and size tests.</summary>
-    internal HttpStatusCode? StreamErrorStatus { get; set; }
-    internal PushStream StreamErrorBody { get; } = new();
-
     /// <summary>Ends the connection being read, as a server dropping it would.</summary>
     internal void DropStream()
     {
@@ -105,6 +101,35 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
             }
             queue.Enqueue(new Reply(status, Serialize(body)));
         }
+    }
+
+    /// <summary>
+    /// Answers the next call to this route with a body the test writes, and returns that body.
+    /// </summary>
+    /// <remarks>
+    /// Queued like <see cref="AnswerOnce"/>, so it wins over the standing answer and the event
+    /// stream alike, and each call gets a body of its own. The body is unbuffered, as a real
+    /// connection's is: it ends only when the test ends it, which is how a test plays a proxy that
+    /// sends a status and then never finishes its page.
+    /// </remarks>
+    internal PushStream AnswerOnceUnbuffered(
+        HttpMethod method,
+        string pathSuffix,
+        HttpStatusCode status,
+        string? contentType = null)
+    {
+        var body = new PushStream();
+        lock (_gate)
+        {
+            _connections.Add(body);
+            if (!_queued.TryGetValue(Key(method, pathSuffix), out var queue))
+            {
+                queue = new Queue<Reply>();
+                _queued[Key(method, pathSuffix)] = queue;
+            }
+            queue.Enqueue(new Reply(status, string.Empty, body, contentType));
+        }
+        return body;
     }
 
     /// <summary>Blocks the next matching request until released, while still honoring cancellation.</summary>
@@ -169,20 +194,12 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         if (block is not null)
             await block.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-        if (path.EndsWith("/stream", StringComparison.Ordinal)
-            && StreamErrorStatus is { } streamErrorStatus)
-        {
-            return new HttpResponseMessage(streamErrorStatus)
-            {
-                Content = new StreamContent(StreamErrorBody),
-            };
-        }
-
         // A queued or standing answer wins even for the stream route, so a test can play the
         // things that sit between a player and the server: a reverse proxy answering 404 for every
         // path while the backend restarts, a tunnel that has gone stale. Those produce a status
         // with no error envelope, which is a different fact from the server refusing.
         var reply = Next(request.Method, path);
+        if (reply is { Unbuffered: { } unbuffered }) return Unbuffered(reply, unbuffered);
         if (reply is not null) return Json(reply.Status, reply.Body);
         if (path.EndsWith("/stream", StringComparison.Ordinal)) return Streaming();
         return Json(HttpStatusCode.NotFound, UnroutedEnvelope);
@@ -260,6 +277,15 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         return response;
     }
 
+    private static HttpResponseMessage Unbuffered(Reply reply, PushStream body)
+    {
+        var response = new HttpResponseMessage(reply.Status) { Content = new StreamContent(body) };
+        // Without validation, so a test can send the malformed header a misconfigured proxy would.
+        if (reply.ContentType is not null)
+            response.Content.Headers.TryAddWithoutValidation("Content-Type", reply.ContentType);
+        return response;
+    }
+
     private static HttpResponseMessage Json(HttpStatusCode status, string body) =>
         new(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
 
@@ -283,7 +309,11 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
 
     private static string Key(HttpMethod method, string pathSuffix) => $"{method.Method} {pathSuffix}";
 
-    private sealed record Reply(HttpStatusCode Status, string Body);
+    private sealed record Reply(
+        HttpStatusCode Status,
+        string Body,
+        PushStream? Unbuffered = null,
+        string? ContentType = null);
 
     /// <summary>One request the client made.</summary>
     /// <param name="Query">The query string, with its leading <c>?</c>, or empty.</param>
