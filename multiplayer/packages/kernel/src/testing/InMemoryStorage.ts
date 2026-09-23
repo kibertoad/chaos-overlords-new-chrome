@@ -236,6 +236,7 @@ export class InMemoryStorage implements MultiplayerStorage {
     open: async (turn, playerIds) => {
       const created = !this.turnRows.has(turnKey(turn.matchId, turn.number))
       if (created) this.turnRows.set(turnKey(turn.matchId, turn.number), { ...turn })
+      if (this.turnRows.get(turnKey(turn.matchId, turn.number))?.status !== 'open') return created
       for (const playerId of playerIds) {
         const key = orderKey(turn.matchId, turn.number, playerId)
         if (this.orderRows.has(key)) continue

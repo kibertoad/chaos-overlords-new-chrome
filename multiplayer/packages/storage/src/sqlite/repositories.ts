@@ -507,11 +507,19 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
       const created = await insertUnlessTaken(() => db.insert(turns).values(turn))
       if (playerIds.length > 0) {
         // Topped up rather than assumed: a re-run of the open step (a repaired seal) fills any row
-        // an interrupted one never wrote, and a player who already has a row keeps it untouched.
+        // an interrupted one never wrote. One statement for the whole roster (a round trip each on
+        // D1), gated on the turn still being open. SQLite names a VALUES column `column1`.
+        const seats = sql.join(
+          playerIds.map((playerId) => sql`(${playerId})`),
+          sql`, `,
+        )
         await db
           .insert(turnOrders)
-          .values(
-            playerIds.map((playerId) => ({ matchId: turn.matchId, turn: turn.number, playerId })),
+          .select(
+            sql`select ${turns.matchId}, ${turns.number}, seat.column1, null, null, 0, null
+              from ${turns} cross join (values ${seats}) as seat
+              where ${turns.matchId} = ${turn.matchId} and ${turns.number} = ${turn.number}
+                and ${turns.status} = 'open'`,
           )
           .onConflictDoNothing()
       }

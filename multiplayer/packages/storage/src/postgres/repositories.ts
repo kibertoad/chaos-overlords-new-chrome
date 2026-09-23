@@ -512,11 +512,20 @@ function postgresTurnRepository(db: PostgresDatabase): TurnRepository {
       const created = await insertUnlessTaken(() => db.insert(turns).values(turn))
       if (playerIds.length > 0) {
         // Topped up rather than assumed: a re-run of the open step (a repaired seal) fills any row
-        // an interrupted one never wrote, and a player who already has a row keeps it untouched.
+        // an interrupted one never wrote. One statement for the whole roster, gated on the turn
+        // still being open; the shared lock keeps a concurrent seal behind this insert.
+        const seats = sql.join(
+          playerIds.map((playerId) => sql`(${playerId})`),
+          sql`, `,
+        )
         await db
           .insert(turnOrders)
-          .values(
-            playerIds.map((playerId) => ({ matchId: turn.matchId, turn: turn.number, playerId })),
+          .select(
+            sql`select ${turns.matchId}, ${turns.number}, seat.player_id, null, null, false, null
+              from ${turns} cross join (values ${seats}) as seat(player_id)
+              where ${turns.matchId} = ${turn.matchId} and ${turns.number} = ${turn.number}
+                and ${turns.status} = 'open'
+              for share of ${turns}`,
           )
           .onConflictDoNothing()
       }

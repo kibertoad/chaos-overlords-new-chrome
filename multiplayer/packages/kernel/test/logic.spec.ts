@@ -2,6 +2,7 @@ import { type OrderDocument, orderDocumentSchema } from '@chaos-overlords/contra
 import { safeParse } from 'valibot'
 import { describe, expect, it } from 'vitest'
 import type { Player, TurnReport } from '../src'
+import { allActiveReady, sealedByDeadline } from '../src/logic/turn-logic'
 import {
   assignSlots,
   authoritativeCandidates,
@@ -35,6 +36,26 @@ function report(playerId: string, stateHash: string, finished = false): TurnRepo
 
 const HASH_A = 'a'.repeat(32)
 const HASH_B = 'b'.repeat(32)
+
+describe('allActiveReady', () => {
+  it('waits only on seats that have an orders row', () => {
+    const players = [player('host', 0), player('late', 1)]
+    expect(allActiveReady(players, [{ playerId: 'host', ready: true }])).toBe(true)
+    expect(allActiveReady(players, [{ playerId: 'host', ready: false }])).toBe(false)
+    expect(allActiveReady(players, [])).toBe(false)
+  })
+})
+
+describe('sealedByDeadline', () => {
+  const at = (ms: number) => new Date(ms)
+  it('is true only for a turn sealed once its deadline had passed', () => {
+    expect(sealedByDeadline({ deadlineAt: at(1000), sealedAt: at(1000) })).toBe(true)
+    expect(sealedByDeadline({ deadlineAt: at(1000), sealedAt: at(2000) })).toBe(true)
+    expect(sealedByDeadline({ deadlineAt: at(1000), sealedAt: at(999) })).toBe(false)
+    expect(sealedByDeadline({ deadlineAt: null, sealedAt: at(2000) })).toBe(false)
+    expect(sealedByDeadline({ deadlineAt: at(1000), sealedAt: null })).toBe(false)
+  })
+})
 
 describe('canonicalJson', () => {
   it('is independent of key order and nested', () => {

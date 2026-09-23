@@ -13,7 +13,13 @@ import {
 } from '../domain/entities'
 import { ConflictError, ValidationError } from '../domain/errors'
 import { hashOrderDocument, hashOrderSet } from '../logic/crypto'
-import { allActiveReady, assignSlots, evaluateConsensus, turnDeadline } from '../logic/turn-logic'
+import {
+  allActiveReady,
+  assignSlots,
+  evaluateConsensus,
+  sealedByDeadline,
+  turnDeadline,
+} from '../logic/turn-logic'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
@@ -92,7 +98,14 @@ export class TurnService {
       })
     }
     await this.restorePendingPlayer(player.id, match.id)
-    const previous = await this.deps.storage.turns.getOrderSummary(match.id, number, player.id)
+    let previous = await this.deps.storage.turns.getOrderSummary(match.id, number, player.id)
+    if (previous === null) {
+      // A participant of the open turn without a row: every step that seats a player tops its
+      // row up, but each is best effort, and a process that died between one and the next left
+      // this seat unable to submit at all. Submitting is its own repair.
+      await this.topUpSeat(match.id, number, player.id)
+      previous = await this.deps.storage.turns.getOrderSummary(match.id, number, player.id)
+    }
     const accepted = await this.deps.storage.turns.submitOrders(match.id, number, player.id, {
       orders: request.orders,
       ordersHash,
@@ -117,6 +130,15 @@ export class TurnService {
     }
     if (request.ready) await this.trySeal(match.id, number, 'ready')
     return own
+  }
+
+  /**
+   * Give `playerId` an empty orders row in turn `number` if that turn is still open. Idempotent: a
+   * seat that already has a row keeps it untouched, and a sealed turn is never given one.
+   */
+  async topUpSeat(matchId: string, number: number, playerId: string): Promise<void> {
+    const turn = await this.deps.storage.turns.get(matchId, number)
+    if (turn?.status === 'open') await this.deps.storage.turns.open(turn, [playerId])
   }
 
   /** Seal `number` if its trigger condition holds. Returns whether THIS call sealed it. */
@@ -179,7 +201,11 @@ export class TurnService {
       const submitted = new Set(
         orders.filter((row) => row.ordersHash !== null).map((row) => row.playerId),
       )
-      for (const player of activePlayers(players)) {
+      // Only a clock that ran out can make anyone absent. A ready seal is decided on the rows it
+      // read, every one of them ready; an empty row it finds now was topped up for a late seat in
+      // the window between that read and the seal, and that player was never given a chance.
+      const absentees = sealedByDeadline(turn) ? activePlayers(players) : []
+      for (const player of absentees) {
         // A seat with no row at all (a late joiner seated after this turn opened) was never
         // asked for orders, so it is not absent; only a row that stayed empty is.
         if (submitted.has(player.id) || !orders.some((row) => row.playerId === player.id)) continue
@@ -280,25 +306,35 @@ export class TurnService {
     const deadlineAt = hasAbsenceVote
       ? null
       : turnDeadline(openedAt, match.settings.turnTimerSeconds)
+    const turn = {
+      matchId: match.id,
+      number,
+      status: 'open' as const,
+      openedAt,
+      deadlineAt,
+      sealedAt: null,
+      orderSetHash: null,
+      sealedSlots: null,
+      stateHash: null,
+      desyncedAt: null,
+    }
     const created = await this.deps.storage.turns.open(
-      {
-        matchId: match.id,
-        number,
-        status: 'open',
-        openedAt,
-        deadlineAt,
-        sealedAt: null,
-        orderSetHash: null,
-        sealedSlots: null,
-        stateHash: null,
-        desyncedAt: null,
-      },
+      turn,
       players.map((player) => player.id),
     )
     // A desynced match counts: a repaired seal must still point `currentTurn` at the turn that is
     // actually open, even though nobody may submit to it until the pause lifts.
     const advanced = await this.deps.storage.matches.advanceCurrentTurn(match.id, number, openedAt)
     if (created) {
+      // A late seat can commit after the first roster read and top up the previous turn before
+      // this one exists. Re-read after publishing the new currentTurn so either this pass or the
+      // joiner's post-commit pass sees the seat and creates its orders row. Only seats the first
+      // read missed need a row; everyone else got one above.
+      const asked = new Set(players.map((player) => player.id))
+      const missed = humanParticipants(await this.deps.storage.players.listByMatch(match.id))
+        .map((player) => player.id)
+        .filter((id) => !asked.has(id))
+      if (missed.length > 0) await this.deps.storage.turns.open(turn, missed)
       await this.publisher.publish(match.id, {
         type: 'turn.opened',
         payload: { turn: number, deadlineAt: deadlineAt?.toISOString() ?? null },

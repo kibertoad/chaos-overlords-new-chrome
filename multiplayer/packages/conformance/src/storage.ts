@@ -534,6 +534,9 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(
         (await storage.turns.listOrders(match.id, 1)).map((row) => row.playerId).sort(),
       ).toEqual([a.id, b.id].sort())
+      await storage.turns.transition(match.id, 1, ['open'], { status: 'sealed' })
+      await storage.turns.open(turnFixture(match, 1), ['joined-after-seal'])
+      expect(await storage.turns.getOrderSummary(match.id, 1, 'joined-after-seal')).toBeNull()
     })
 
     it('moves an open turn deadline and refuses once the turn is sealed', async () => {

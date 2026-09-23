@@ -316,8 +316,7 @@ export class LobbyService {
       })
     }
     await this.refreshRetention(match.id)
-    const openTurn = await this.deps.storage.turns.get(match.id, match.currentTurn)
-    if (openTurn?.status === 'open') await this.deps.storage.turns.open(openTurn, [player.id])
+    await this.topUpCurrentTurn(match.id, player.id)
     await this.publisher.publish(match.id, {
       type: 'match.latePlayerJoined',
       payload: { playerId: player.id, slot: player.slot },
@@ -343,7 +342,12 @@ export class LobbyService {
       throw new ForbiddenError('A kicked player cannot rejoin', { reason: 'kicked' })
     }
     await this.refreshRetention(match.id)
-    if (player.status === 'active') return
+    if (player.status === 'active') {
+      // Nothing to reclaim, but a seat whose row an interrupted turn open never wrote is repaired
+      // here too, so the returning client is waited for instead of silently sealed past.
+      await this.topUpCurrentTurn(match.id, player.id)
+      return
+    }
     const replacedComputer = player.status === 'computer'
     if (
       !(await this.deps.storage.players.transitionStatus(
@@ -354,11 +358,7 @@ export class LobbyService {
     ) {
       throw new ConflictError('The player seat could not be reclaimed', { reason: 'rejoin_race' })
     }
-    const openTurn = await this.deps.storage.turns.get(match.id, match.currentTurn)
-    if (openTurn?.status === 'open') {
-      // `open` is idempotent and tops up missing participant rows even when the turn already exists.
-      await this.deps.storage.turns.open(openTurn, [player.id])
-    }
+    await this.topUpCurrentTurn(match.id, player.id)
     await this.deps.storage.takeovers.closePrompt(match.id, player.id)
     await this.publisher.publish(match.id, {
       type: 'match.playerReturned',
@@ -384,6 +384,12 @@ export class LobbyService {
     }
     await this.turns.reevaluate(match.id)
     await this.turns.resumeAfterTakeoverVotes(match.id)
+  }
+
+  /** A seat claim can cross a seal, so use the turn current after the seat was committed. */
+  private async topUpCurrentTurn(matchId: string, playerId: string): Promise<void> {
+    const match = await this.deps.storage.matches.get(matchId)
+    if (match) await this.turns.topUpSeat(matchId, match.currentTurn, playerId)
   }
 
   async updateSettings(principal: Principal, settings: MatchSettings): Promise<void> {
