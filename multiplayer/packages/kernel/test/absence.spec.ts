@@ -86,6 +86,34 @@ describe('absent seats, departures and the repair sweeps', () => {
     expect((await h.storage.turns.get(host.match.id, 1))?.deadlineAt).toBeNull()
   })
 
+  it('seats a player who left during turn 1 into turn 2 after the host seals turn 1 alone', async () => {
+    const { host, guest } = await h.startedMatch()
+    await h.kernel.lobby.leave(await h.principalOf(guest.token))
+    await h.submit(await h.principalOf(host.token), 1, 1, true)
+
+    // Turn 1 really sealed, on the host's orders alone: the host's "turn 2" is the second turn.
+    const first = await h.storage.turns.get(host.match.id, 1)
+    expect(first?.status).toBe('sealed')
+    expect(first?.sealedSlots?.map((seat) => seat.playerId)).toEqual([host.player.id])
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+
+    await h.kernel.lobby.rejoin(await h.principalOf(guest.token))
+    const returned = await h.principalOf(guest.token)
+    expect(returned.match.currentTurn).toBe(2)
+    expect(await h.kernel.query.ownSubmission(returned.match, guest.player.id, 2)).toEqual({
+      turn: 2,
+      orders: null,
+      ready: false,
+      ordersHash: null,
+    })
+
+    // The returning seat is waited on for turn 2; the host finishing it alone does not seal it.
+    await h.submit(await h.principalOf(host.token), 2, 1, true)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(2)
+    await h.submit(await h.principalOf(guest.token), 2, 2, true)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(3)
+  })
+
   it('stops the h.clock for the seats a returning player is asked about', async () => {
     const { host, guest, third } = await h.startedMatchOfThree(60)
     await h.kernel.lobby.leave(await h.principalOf(guest.token))
