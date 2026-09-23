@@ -343,7 +343,8 @@ human is out, the computers play on at one turn per frame, so those turns stay
 silent instead of restarting the cue every frame. Starting a new effect stops
 the previous effect voice. Music remains separate. Changing the Effects level
 replaces that voice with its confirmation cue at the new amplitude, and level
-zero stops it. These are presentation-only operations.
+zero stops it. Cancelling a Detailed Combat presentation stops the skipped
+clip's cue with it. These are presentation-only operations.
 
 **Next validation:** Compare the cue and rapid successive effects against a
 native reference capture, including local and legacy-network turn boundaries.

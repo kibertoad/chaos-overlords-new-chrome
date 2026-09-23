@@ -454,7 +454,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)
                 || cancelClicked || rightClicked)
             {
+                // The cue belongs to the clip being skipped, and the original unloads slot 5 once
+                // a combatant's sequence ends, so it does not outlive the presentation.
                 _combatAnimationPlayer.Clear();
+                StopEffectVoice();
                 _message = string.Empty;
                 rightClicked = false;
             }

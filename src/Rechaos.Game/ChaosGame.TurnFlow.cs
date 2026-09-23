@@ -39,15 +39,18 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
+        var previousTurn = _state.Coordinator.Turn;
         if (_state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
+            // Starting outside Command (a load mid-phase) can still roll into the next turn, which
+            // earns the same autosave and cue as the ordinary advance below.
             GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             _message = string.Empty;
+            CompleteTurnAdvance(previousTurn);
             return;
         }
 
-        var previousTurn = _state.Coordinator.Turn;
         var advance = GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
         QueueHotSeatEliminations(advance);
         _diagnostics?.Write("planning.finished", new Dictionary<string, string?>
@@ -58,11 +61,7 @@ public sealed partial class ChaosGame
             ["phase"] = _state.Coordinator.Phase.ToString()
         });
         _message = string.Empty;
-        if (_state.Coordinator.Turn != previousTurn)
-        {
-            WriteAutoSave();
-            PlayTurnStartCue(previousTurn);
-        }
+        CompleteTurnAdvance(previousTurn);
 
         if (_state.Outcome is not null)
             _screens.Show(ClientScreen.Endgame);
@@ -91,6 +90,14 @@ public sealed partial class ChaosGame
     {
         if (_state is null) return;
         _autoSave.Capture(_state);
+    }
+
+    /// <summary>Autosaves and cues the turn that has just begun, if one has.</summary>
+    private void CompleteTurnAdvance(int previousTurn)
+    {
+        if (_state is null || _state.Coordinator.Turn == previousTurn) return;
+        WriteAutoSave();
+        PlayTurnStartCue(previousTurn);
     }
 
     /// <summary>Plays the recovered later-turn cue when a local turn has just begun.</summary>
@@ -239,11 +246,7 @@ public sealed partial class ChaosGame
         if (!acted) return;
         _selectedGangIndex = 0;
         _message = string.Empty;
-        if (_state.Coordinator.Turn != startingTurn)
-        {
-            WriteAutoSave();
-            PlayTurnStartCue(startingTurn);
-        }
+        CompleteTurnAdvance(startingTurn);
         if (_state.Outcome is not null)
         {
             _screens.Show(ClientScreen.Endgame);
