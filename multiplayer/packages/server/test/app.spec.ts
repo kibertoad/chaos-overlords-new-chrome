@@ -461,6 +461,37 @@ describe('server app over in-memory storage', () => {
     expect(done).toBe(true)
     expect(hub.connectionCount(match.id)).toBe(0)
   })
+
+  it('refuses a stream when the token is revoked after the initial auth check', async () => {
+    const { app: fresh, hub, kernel: localKernel } = build()
+    const created = await fresh.request('/api/v1/matches', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        settings: {
+          name: 'x',
+          maxPlayers: 2,
+          turnTimerSeconds: 0,
+          visibility: 'private',
+          gameSettings: {},
+        },
+        hostDisplayName: 'h',
+      }),
+    })
+    const { token, match } = (await created.json()) as { token: string; match: { id: string } }
+    const playerId = (await localKernel.auth.authenticate(token)).player.id
+    const originalOpen = hub.open.bind(hub)
+    hub.open = async (input) => {
+      await localKernel.deps.storage.players.revokeToken(playerId)
+      return originalOpen(input)
+    }
+
+    const response = await fresh.request(`/api/v1/matches/${match.id}/stream`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(response.status).toBe(401)
+    expect(hub.connectionCount(match.id)).toBe(0)
+  })
 })
 
 describe('bug report intake', () => {

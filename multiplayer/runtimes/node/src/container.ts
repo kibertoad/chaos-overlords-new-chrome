@@ -84,6 +84,10 @@ export async function buildNodeRuntime(
         logger.warn('skipped an unreadable stored event', { matchId, seq }),
       abandoned: (matchId, playerId) =>
         logger.info('answered an already abandoned event stream', { matchId, playerId }),
+      revalidate: async (matchId, playerId) => {
+        const player = await opened.storage.players.get(playerId)
+        return player?.matchId === matchId && player.tokenHash !== null
+      },
     },
   )
 

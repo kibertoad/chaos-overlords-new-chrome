@@ -38,6 +38,8 @@ export interface SseOptions {
   signal: AbortSignal
   /** Told the sequence of a stored event this build cannot validate, so it can be logged. */
   onUnreadable?: (seq: number) => void
+  /** Confirm that the subscription still belongs to an active member. */
+  revalidate?: () => Promise<boolean>
 }
 
 /**
@@ -192,6 +194,7 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
         )
         let beats = 0
         let stalledBeats = 0
+        let validating = false
         const heartbeat = setInterval(() => {
           // A consumer that is not reading is not a consumer. The queue is full, so this frame
           // would only buffer; after a few beats of that the connection is gone in every way that
@@ -209,6 +212,24 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
           // idle server was otherwise issuing one query per stream per heartbeat to find nothing.
           beats += 1
           const overdue = beats % CATCH_UP_EVERY_HEARTBEATS === 0
+          if (overdue && options.revalidate && !validating) {
+            validating = true
+            void Promise.resolve()
+              .then(options.revalidate)
+              .then(
+                (valid) => {
+                  validating = false
+                  if (!valid) shutdown()
+                  else if (!closed) wake(true)
+                },
+                () => {
+                  validating = false
+                  shutdown()
+                },
+              )
+            return
+          }
+          if (validating) return
           if (overdue || !source.caughtUp(lastSeq)) wake(overdue)
         }, options.heartbeatMs)
         shutdown = () => {

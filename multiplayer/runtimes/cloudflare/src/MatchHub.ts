@@ -44,6 +44,10 @@ export class MatchHub {
         // so a run of these is where a signal that only looks aborted would show up.
         abandoned: (matchId, playerId) =>
           workerLogger.info('answered an already abandoned event stream', { matchId, playerId }),
+        revalidate: async (matchId, playerId) => {
+          const player = await this.repositories.players.get(playerId)
+          return player?.matchId === matchId && player.tokenHash !== null
+        },
       },
     )
   }
