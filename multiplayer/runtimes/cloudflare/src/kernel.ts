@@ -38,26 +38,35 @@ function wholeNumber(raw: string | undefined, fallback: number): number {
   return Number.isInteger(value) && value >= 0 ? value : fallback
 }
 
+/** A whole number when the variable is set, `undefined` when it is unset or not a whole number. */
+function optionalWholeNumber(raw: string | undefined): number | undefined {
+  if (raw === undefined || raw === '') return undefined
+  const value = Number(raw)
+  return Number.isInteger(value) && value >= 0 ? value : undefined
+}
+
 /**
  * The retention windows from the vars, with the kernel's defaults for any that are unset.
  *
- * The silent window is only passed when it is set, so an unset one follows the abandoned window the
- * same way it does on Node.
+ * The lobby and silent windows are only passed when they are set to a whole number, so the kernel
+ * derives them the same way it does on Node: the silent window from the abandoned one, the lobby
+ * window from `RETENTION_DAYS`'s off switch. A mistyped value reads as unset rather than as a
+ * fixed default, because a fixed silent window could end up shorter than the abandoned window and
+ * collect matches whose players are still seated. Node refuses to start on the same input; a
+ * Worker has no start to refuse, so the derived window is the safe reading.
  */
 export function retentionPolicyFor(env: Env): RetentionPolicy {
-  const silentLive =
-    env.SILENT_RETENTION_DAYS === undefined || env.SILENT_RETENTION_DAYS === ''
-      ? undefined
-      : wholeNumber(env.SILENT_RETENTION_DAYS, DEFAULT_RETENTION_DAYS.silentLive)
+  const lobby = optionalWholeNumber(env.LOBBY_RETENTION_DAYS)
+  const silentLive = optionalWholeNumber(env.SILENT_RETENTION_DAYS)
   const batchSize = wholeNumber(env.RETENTION_BATCH_SIZE, DEFAULT_RETENTION_BATCH_SIZE)
   return retentionPolicyFromDays(
     {
       finished: wholeNumber(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
-      lobby: wholeNumber(env.LOBBY_RETENTION_DAYS, DEFAULT_RETENTION_DAYS.lobby),
       abandonedLive: wholeNumber(
         env.ABANDONED_RETENTION_DAYS,
         DEFAULT_RETENTION_DAYS.abandonedLive,
       ),
+      ...(lobby === undefined ? {} : { lobby }),
       ...(silentLive === undefined ? {} : { silentLive }),
     },
     // A batch of 0 would delete nothing while looking switched on; the windows are the off switch.

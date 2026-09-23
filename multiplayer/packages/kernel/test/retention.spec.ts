@@ -6,7 +6,7 @@ import {
   retentionPolicyFromDays,
   RetentionService,
 } from '../src'
-import { createHarness, type Harness } from './harness'
+import { createHarness, HASH_A, type Harness } from './harness'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -69,6 +69,45 @@ describe('retention windows', () => {
     expect(h.storage.statusOf(host.match.id)).toBeUndefined()
   })
 
+  it('restarts the silent window when a seated player comes back', async () => {
+    const { host } = await h.startedMatch()
+
+    h.clock.advance(DEFAULT_RETENTION.silentLiveMaxAgeMs - DAY_MS)
+    // Still `active`, so the rejoin changes no roster and opens no turn; it is activity all the same.
+    await h.kernel.lobby.rejoin(await h.principalOf(host.token))
+    h.clock.advance(2 * DAY_MS)
+    expect(await h.kernel.retention.collect()).toBe(0)
+    expect(h.storage.statusOf(host.match.id)).toBe('running')
+  })
+
+  it('restarts the silent window when a latecomer joins', async () => {
+    const host = await h.kernel.lobby.createMatch({
+      settings: {
+        name: 'Drop In',
+        maxPlayers: 6,
+        turnTimerSeconds: 0,
+        visibility: 'public',
+        gameSettings: { allowLateJoin: true },
+      },
+      hostDisplayName: 'Host',
+    })
+    await h.kernel.lobby.start(await h.principalOf(host.token))
+    await h.kernel.snapshots.upload(await h.principalOf(host.token), {
+      turn: 0,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+    const silentOnly = retentionWith({ abandonedLiveMaxAgeMs: 0 })
+
+    h.clock.advance(DEFAULT_RETENTION.silentLiveMaxAgeMs - DAY_MS)
+    await h.kernel.lobby.joinRunning({ match: host.match.id, displayName: 'Late', slot: 3 })
+    h.clock.advance(2 * DAY_MS)
+    expect(await silentOnly.collect()).toBe(0)
+    expect(h.storage.statusOf(host.match.id)).toBe('running')
+  })
+
   it('deletes at most one batch per window per pass', async () => {
     for (let i = 0; i < 3; i++) await openLobby()
     const retention = retentionWith({ batchSize: 2 })
@@ -94,5 +133,16 @@ describe('retentionPolicyFromDays', () => {
       retentionPolicyFromDays({ finished: 7, lobby: 1, abandonedLive: 10, silentLive: 12 })
         .silentLiveMaxAgeMs,
     ).toBe(12 * DAY_MS)
+  })
+
+  it('keeps lobbies forever when finished matches are kept forever, unless lobbies are stated', () => {
+    expect(retentionPolicyFromDays({ finished: 7, abandonedLive: 10 }).lobbyMaxAgeMs).toBe(
+      DEFAULT_RETENTION_DAYS.lobby * DAY_MS,
+    )
+    // `RETENTION_DAYS=0` kept lobbies too before they had their own window; an upgrade keeps that.
+    expect(retentionPolicyFromDays({ finished: 0, abandonedLive: 10 }).lobbyMaxAgeMs).toBe(0)
+    expect(
+      retentionPolicyFromDays({ finished: 0, lobby: 2, abandonedLive: 10 }).lobbyMaxAgeMs,
+    ).toBe(2 * DAY_MS)
   })
 })

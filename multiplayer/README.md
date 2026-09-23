@@ -71,9 +71,9 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `MEMBER_RATE_LIMIT_PER_MINUTE` | `240` | Authenticated calls per player per minute. |
 | `UPLOAD_RATE_LIMIT_PER_MINUTE` | `10` | Snapshot uploads per player per minute (a snapshot can be a megabyte). |
 | `RETENTION_DAYS` | `14` | Delete finished and abandoned matches untouched for this long, with everything they own (players, turns, orders, snapshots, events). `0` keeps them forever. |
-| `LOBBY_RETENTION_DAYS` | `3` | Delete a lobby that was never started once it is this old (counted from creation or its last settings change). `0` keeps them forever. |
-| `ABANDONED_RETENTION_DAYS` | `30` | Delete a still-`running` match nobody is in any more once it has been silent this long. This is how most public matches actually end, and nothing else collects one. `0` keeps them forever. |
-| `SILENT_RETENTION_DAYS` | 3 × `ABANDONED_RETENTION_DAYS` | Delete a `running` match even though players are still seated in it, once nothing has happened in it for this long. That is an untimed match whose clients all died without leaving. `0` keeps them forever. |
+| `LOBBY_RETENTION_DAYS` | `3`, or `0` when `RETENTION_DAYS=0` | Delete a lobby that was never started once it is this old (counted from creation or its last settings change). `0` keeps them forever. |
+| `ABANDONED_RETENTION_DAYS` | `30` | Delete a still-`running` match nobody is in any more once it has been silent this long; a player joining or rejoining restarts the count. This is how most public matches actually end, and nothing else collects one. `0` keeps them forever. |
+| `SILENT_RETENTION_DAYS` | 3 × `ABANDONED_RETENTION_DAYS` | Delete a `running` match even though players are still seated in it, once nothing has happened in it for this long; a join or rejoin counts as something. That is an untimed match whose clients all died without leaving. `0` keeps them forever. |
 | `RETENTION_BATCH_SIZE` | `10` (SQLite), `50` (Postgres) | Matches each retention window deletes per cleanup pass. Smaller keeps one pass short on a synchronous SQLite driver. |
 | `RETENTION_INTERVAL_MS` | `60000` | How often the cleanup job runs: match retention, then bug report retention. At least `1000`. |
 | `TRUST_PROXY` | `0` | How many trusted proxies sit in front. `0` reads the socket address, the only value a client cannot choose. `1` (or `true`) reads the last `X-Forwarded-For` entry, which is the one the trusted proxy wrote; a higher number skips that many more from the right. See the note below. |

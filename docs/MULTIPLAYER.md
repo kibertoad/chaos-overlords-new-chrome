@@ -313,7 +313,7 @@ server; a self-hosted one raises them through configuration, and `0` switches a 
 | Window | Collects | Default |
 |---|---|---|
 | `RETENTION_DAYS` | `finished` and `abandoned` matches untouched for this long | 14 days |
-| `LOBBY_RETENTION_DAYS` | `lobby` matches nobody started, counted from creation or the last settings change | 3 days |
+| `LOBBY_RETENTION_DAYS` | `lobby` matches nobody started, counted from creation or the last settings change | 3 days; 0 when `RETENTION_DAYS` is 0 |
 | `ABANDONED_RETENTION_DAYS` | `running`/`desynced` matches with no `active` player, silent this long | 30 days |
 | `SILENT_RETENTION_DAYS` | `running`/`desynced` matches silent this long, whatever the roster says | 3 × abandoned |
 | `BUG_REPORT_RETENTION_DAYS` | bug reports and their archives | 90 days |
@@ -324,7 +324,14 @@ that is deliberately kept running so anyone can rejoin, and nobody ever did. A d
 abandonment and neither is a weekend, which is why an active seat spares the match under that
 window. The silent window drops the roster test, because an untimed match whose clients all died
 without a `leave` keeps its `active` rows forever; it follows the abandoned window unless it is set,
-so switching the abandoned window off keeps running matches forever.
+so switching the abandoned window off keeps running matches forever. Both windows run from the
+match's last activity, and a player joining or rejoining the match counts as activity: it restarts
+them the same way a turn opening does.
+
+The lobby window follows `RETENTION_DAYS` when it is unset: a server that keeps finished matches
+forever (`RETENTION_DAYS=0`) keeps its lobbies too, as it did before lobbies had a window of their
+own. A value that is set but not a whole number is refused at startup on Node; the Worker has no
+startup to refuse it at and treats it as unset, so a derived window keeps being derived.
 
 Bug reports have their own database and their own window, `BUG_REPORT_RETENTION_DAYS` (90 by
 default); collecting one deletes its archive from the blob store as well, because nothing cascades

@@ -16,6 +16,10 @@ export interface RetentionPolicy {
    * Its own window, and a short one, because a lobby holds nothing worth keeping: no turn has been
    * played in it. On a public server the forgotten ones are also what clutters the Browse list.
    * The age runs from creation or the last settings change; a join does not refresh it.
+   *
+   * Left unset, it follows the finished window's off switch: a server that keeps its finished
+   * matches forever (`finished: 0`) kept its lobbies forever too before this window existed, and an
+   * upgrade must not start deleting them underneath the guests seated in them.
    */
   lobbyMaxAgeMs: number
   /**
@@ -26,6 +30,8 @@ export interface RetentionPolicy {
    * precisely so a player who closed the game can come back and rejoin — so the window has to be
    * long enough that collecting one is the same statement as "nobody is coming back". It is the
    * ordinary end of a match on a public server, and nothing else ever collects it.
+   *
+   * A join or a rejoin restarts the age, as every turn open and status change does.
    */
   abandonedLiveMaxAgeMs: number
   /**
@@ -46,13 +52,16 @@ export interface RetentionPolicy {
 /**
  * The retention windows in whole days, which is how both runtimes let an operator state them.
  *
- * `silentLive` is optional: left out, it follows `abandonedLive` at
- * {@link SILENT_TO_ABANDONED_RATIO} times its length, so the window without the roster test stays
- * the longer of the two and switching the abandoned window off (0) switches both off.
+ * Two are optional, and each follows another window when left out:
+ * - `lobby` is {@link DEFAULT_RETENTION_DAYS}'s lobby window, or 0 when `finished` is 0, so a
+ *   server that switched retention off before lobbies had their own window keeps them too.
+ * - `silentLive` is {@link SILENT_TO_ABANDONED_RATIO} times `abandonedLive`, so the window without
+ *   the roster test stays the longer of the two and switching the abandoned window off (0)
+ *   switches both off.
  */
 export interface RetentionDays {
   finished: number
-  lobby: number
+  lobby?: number
   abandonedLive: number
   silentLive?: number
 }
@@ -75,15 +84,16 @@ export const DEFAULT_RETENTION_BATCH_SIZE = 50
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Maps windows stated in days onto the policy, deriving the silent window when it is left out. */
+/** Maps windows stated in days onto the policy, deriving the windows that are left out. */
 export function retentionPolicyFromDays(
   days: RetentionDays,
   batchSize = DEFAULT_RETENTION_BATCH_SIZE,
 ): RetentionPolicy {
+  const lobby = days.lobby ?? (days.finished === 0 ? 0 : DEFAULT_RETENTION_DAYS.lobby)
   const silentLive = days.silentLive ?? days.abandonedLive * SILENT_TO_ABANDONED_RATIO
   return {
     finishedMaxAgeMs: days.finished * DAY_MS,
-    lobbyMaxAgeMs: days.lobby * DAY_MS,
+    lobbyMaxAgeMs: lobby * DAY_MS,
     abandonedLiveMaxAgeMs: days.abandonedLive * DAY_MS,
     silentLiveMaxAgeMs: silentLive * DAY_MS,
     batchSize,

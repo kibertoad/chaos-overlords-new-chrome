@@ -29,7 +29,10 @@ export interface Env {
   BUG_REPORT_RATE_LIMIT_PER_MINUTE?: string
   /** Days before a finished or abandoned match is deleted. 0 keeps them forever. */
   RETENTION_DAYS?: string
-  /** Days before a lobby that was never started is deleted. 0 keeps them forever. */
+  /**
+   * Days before a lobby that was never started is deleted. 0 keeps them forever. Unset (or not a
+   * whole number) is three days, or 0 when `RETENTION_DAYS` is 0.
+   */
   LOBBY_RETENTION_DAYS?: string
   /**
    * Days before a RUNNING match with nobody active in it is deleted. 0 keeps them forever.
@@ -40,7 +43,8 @@ export interface Env {
   ABANDONED_RETENTION_DAYS?: string
   /**
    * Days before a running match is deleted whatever its roster says, because nothing has happened
-   * in it for that long. Unset follows `ABANDONED_RETENTION_DAYS` (three times as long).
+   * in it for that long. Unset (or not a whole number) follows `ABANDONED_RETENTION_DAYS` (three
+   * times as long).
    */
   SILENT_RETENTION_DAYS?: string
   /** Matches each retention window deletes per cron run. */

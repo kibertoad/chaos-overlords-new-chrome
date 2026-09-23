@@ -77,8 +77,8 @@ export interface MatchRepository {
    * being `active` only through `leave`, `kick` or a missed deadline, and the game's default is an
    * untimed match, so two friends whose clients both died mid-match leave two `active` rows that
    * nothing ever clears: with the roster test alone their match is immortal. The longer window drops
-   * the test, because `updated_at` is refreshed by every turn open and every status change and
-   * months of silence on both is not something a live match does.
+   * the test, because `updated_at` is refreshed by every turn open, every status change and every
+   * join or rejoin, and months of silence on all of them is not something a live match does.
    */
   deleteAbandonedLive(before: Date, limit: number, requireEmptyRoster: boolean): Promise<number>
   /**

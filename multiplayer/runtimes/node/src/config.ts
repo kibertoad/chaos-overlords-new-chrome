@@ -49,8 +49,12 @@ export interface NodeConfig {
    * them forever, which a long-lived server will feel in its database size.
    */
   retentionDays: number
-  /** Days after which a lobby that was never started is deleted. 0 keeps them forever. */
-  lobbyRetentionDays: number
+  /**
+   * Days after which a lobby that was never started is deleted. 0 keeps them forever. Unset is the
+   * kernel's default, except that `RETENTION_DAYS=0` keeps lobbies too, as it did before lobbies
+   * had a window of their own.
+   */
+  lobbyRetentionDays: number | undefined
   /**
    * Days after which a RUNNING match that nobody is in any more is deleted. 0 keeps them forever.
    *
@@ -125,7 +129,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
     uploadRateLimitPerMinute: integer(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10, 1),
     bugReportRateLimitPerMinute: integer(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5, 1),
     retentionDays: integer(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
-    lobbyRetentionDays: integer(env.LOBBY_RETENTION_DAYS, DEFAULT_RETENTION_DAYS.lobby),
+    lobbyRetentionDays: optionalInteger(env.LOBBY_RETENTION_DAYS),
     abandonedRetentionDays: integer(
       env.ABANDONED_RETENTION_DAYS,
       DEFAULT_RETENTION_DAYS.abandonedLive,

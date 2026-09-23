@@ -87,6 +87,21 @@ export async function buildNodeRuntime(
     },
   )
 
+  const retention = retentionPolicyFromDays(
+    {
+      finished: config.retentionDays,
+      ...(config.lobbyRetentionDays === undefined ? {} : { lobby: config.lobbyRetentionDays }),
+      abandonedLive: config.abandonedRetentionDays,
+      ...(config.silentRetentionDays === undefined
+        ? {}
+        : { silentLive: config.silentRetentionDays }),
+    },
+    // Retention runs on the request thread when the driver is synchronous, and a match is
+    // everything it owns: up to five megabytes of snapshot and its whole event log. Smaller
+    // batches every pass bound how long one pass can hold every stream and request still.
+    config.retentionBatchSize ?? (opened.dialect === 'sqlite' ? 10 : 50),
+  )
+
   let scheduler: TimerDeadlineScheduler | undefined
   let warnedAboutProxy = false
   const kernel = createKernel(
@@ -99,20 +114,7 @@ export async function buildNodeRuntime(
       scheduler: { schedule: (input) => (scheduler as TimerDeadlineScheduler).schedule(input) },
     },
     {
-      retention: retentionPolicyFromDays(
-        {
-          finished: config.retentionDays,
-          lobby: config.lobbyRetentionDays,
-          abandonedLive: config.abandonedRetentionDays,
-          ...(config.silentRetentionDays === undefined
-            ? {}
-            : { silentLive: config.silentRetentionDays }),
-        },
-        // Retention runs on the request thread when the driver is synchronous, and a match is
-        // everything it owns: up to five megabytes of snapshot and its whole event log. Smaller
-        // batches every pass bound how long one pass can hold every stream and request still.
-        config.retentionBatchSize ?? (opened.dialect === 'sqlite' ? 10 : 50),
-      ),
+      retention,
     },
   )
   scheduler = new TimerDeadlineScheduler(kernel.turns, clock, logger)
@@ -164,9 +166,12 @@ export async function buildNodeRuntime(
     databaseUrl: redactUrl(config.databaseUrl),
     publicListing: config.publicListing,
     retention: {
-      finishedDays: config.retentionDays,
-      lobbyDays: config.lobbyRetentionDays,
-      abandonedDays: config.abandonedRetentionDays,
+      // The effective windows, so a derived one is logged as what it resolved to.
+      finishedDays: retention.finishedMaxAgeMs / DAY_MS,
+      lobbyDays: retention.lobbyMaxAgeMs / DAY_MS,
+      abandonedDays: retention.abandonedLiveMaxAgeMs / DAY_MS,
+      silentDays: retention.silentLiveMaxAgeMs / DAY_MS,
+      batchSize: retention.batchSize,
       intervalMs: config.retentionIntervalMs,
     },
     bugReports: bugReports ? 'on' : 'off',

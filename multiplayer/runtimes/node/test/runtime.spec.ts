@@ -70,7 +70,8 @@ describe('node runtime configuration', () => {
   it('reads every retention window, defaulting to the kernel public-server values', () => {
     const defaults = loadConfig({})
     expect(defaults.retentionDays).toBe(DEFAULT_RETENTION_DAYS.finished)
-    expect(defaults.lobbyRetentionDays).toBe(DEFAULT_RETENTION_DAYS.lobby)
+    // Unset rather than defaulted, so the kernel can follow `RETENTION_DAYS=0` for lobbies.
+    expect(defaults.lobbyRetentionDays).toBeUndefined()
     expect(defaults.abandonedRetentionDays).toBe(DEFAULT_RETENTION_DAYS.abandonedLive)
     // Unset rather than defaulted, so the kernel can derive it from the abandoned window.
     expect(defaults.silentRetentionDays).toBeUndefined()
