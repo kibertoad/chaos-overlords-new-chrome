@@ -58,12 +58,79 @@ public sealed class ExtractedHelpStoreTests : IDisposable
                 [new ExtractedHelpTextRun("Different")])]
         });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
-        Write(Document() with { Fonts = [] });
+        Write(Document() with { Fonts = null });
+        Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+        Write(Document() with { Topics = [Topic(0, "Topic", "Readable text", true)
+            with { Paragraphs = [new ExtractedHelpParagraph(
+                [new ExtractedHelpTextRun("Text", LinkHash: 0x1234u)], 0, TabStops: [])] }] });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
         Write(Document() with { Topics = [Topic(0, "Topic", "Readable text", true)
             with { Paragraphs = [new ExtractedHelpParagraph(
                 [new ExtractedHelpTextRun("Text", FontIndex: 2)], 0, TabStops: [])] }] });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+    }
+
+    [Fact]
+    public void DocumentWithoutFontTableLoads()
+    {
+        // The decoder emits no descriptors when a help file has no |FONT stream.
+        Write(Document() with { Fonts = [] });
+
+        Assert.NotNull(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+    }
+
+    [Fact]
+    public void ExecutableNotesAreDrawnForTopicsWithParagraphRecords()
+    {
+        var document = Document() with
+        {
+            Topics = [Topic(0, "Bribe", "Readable text", true)],
+            Contents = [new ExtractedHelpContentsEntry(0, "Bribe", 0, "BRIBE")]
+        };
+
+        var topic = HelpContentAugmentation.AddExecutableNotes(document).Topics
+            .Single(candidate => candidate.Id == 0);
+        var lines = HelpTextLayout.Wrap(topic, 62).Select(line => line.Text).ToArray();
+
+        Assert.Contains(HelpContentAugmentation.NoteHeading, lines);
+        Assert.Contains(lines, line => line.StartsWith("The shipped game charges $3",
+            StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void EmptyParagraphRecordsCollapseIntoOneBlankRow()
+    {
+        var topic = Topic(0, "Topic", "ONE\n\nTWO", true) with
+        {
+            Paragraphs =
+            [
+                new ExtractedHelpParagraph([], 0, TabStops: []),
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("ONE")], 0, TabStops: []),
+                new ExtractedHelpParagraph([], 0, TabStops: []),
+                new ExtractedHelpParagraph([], 0, TabStops: []),
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("TWO")], 0, TabStops: [])
+            ]
+        };
+
+        Assert.Equal(["ONE", "", "TWO"], HelpTextLayout.Wrap(topic, 12).Select(line => line.Text));
+    }
+
+    [Fact]
+    public void LargeSourceIndentsKeepHalfTheWidthForText()
+    {
+        var topic = Topic(0, "Topic", "ABCDEFGH", true) with
+        {
+            Paragraphs =
+            [
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("ABCDEFGH")], 0x0030,
+                    LeftIndentUnits: 400, RightIndentUnits: 400, TabStops: [])
+            ]
+        };
+
+        var lines = HelpTextLayout.Wrap(topic, 12);
+
+        Assert.Equal(["ABCDEF", "GH"], lines.Select(line => line.Text));
+        Assert.All(lines, line => Assert.Equal(6, line.ColumnOffset));
     }
 
     [Fact]

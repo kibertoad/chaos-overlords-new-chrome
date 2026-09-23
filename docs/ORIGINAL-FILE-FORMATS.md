@@ -282,7 +282,8 @@ SHA-256 `c212f3909b177093863b8a59af1830d8e65359fa452f572ff581e48f01bc7609`
 after newline normalization. An independent parser produced the same character
 count and hash. Container structure, decompression, topic count, and source text
 are therefore **High** confidence. The supported file has nine 11-byte legacy
-font descriptors and produces 779 normalized styled runs. It uses 93 internal
+font descriptors. Extracted-help format 3 normalized it into 779 styled runs;
+format 4 also splits runs by descriptor index, so its run count differs. It uses 93 internal
 context-hash hotspots (67 topic jumps and 26 popups), all of which resolve
 through the native 80-entry context map; it has no topic images, external-file
 links, or macro hotspots. Bold, italic, underline, double-underline, strikeout,

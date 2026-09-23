@@ -14,11 +14,13 @@ public static partial class WinHelpDecoder
         var descriptorsOffset = ReadUInt16(data, 6);
         if (faceNames is > 256 || descriptors is > 256
             || faceNamesOffset < 8 || descriptorsOffset < faceNamesOffset
-            || faceNamesOffset >= 12 || faceNames == 0
-            || (descriptorsOffset - faceNamesOffset) / faceNames == 0)
+            || faceNamesOffset >= 12
+            || (faceNames == 0
+                ? descriptors != 0
+                : (descriptorsOffset - faceNamesOffset) / faceNames == 0))
             throw new InvalidDataException("WinHelp font table layout is unsupported.");
         Require(data, descriptorsOffset, checked(descriptors * 11));
-        var faceStride = (descriptorsOffset - faceNamesOffset) / faceNames;
+        var faceStride = faceNames == 0 ? 0 : (descriptorsOffset - faceNamesOffset) / faceNames;
         var names = new string[faceNames];
         for (var index = 0; index < faceNames; index++)
         {

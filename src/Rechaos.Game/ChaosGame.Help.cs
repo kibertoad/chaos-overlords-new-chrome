@@ -83,6 +83,15 @@ public static class HelpTextLayout
             var pendingAfter = 0;
             foreach (var record in topic.Paragraphs)
             {
+                if (record.Runs.Count == 0)
+                {
+                    // An empty record is authored vertical space: fold it into the gap
+                    // before the next record instead of stacking extra blank rows.
+                    pendingAfter = Math.Max(pendingAfter, Math.Max(
+                        RowsFromUnits(record.SpaceBeforeUnits),
+                        RowsFromUnits(record.SpaceAfterUnits)));
+                    continue;
+                }
                 if (laidOut.Count > 0)
                     AddBlankRows(laidOut, Math.Max(1, Math.Max(pendingAfter,
                         RowsFromUnits(record.SpaceBeforeUnits))));
@@ -129,6 +138,7 @@ public static class HelpTextLayout
         }
 
         var lines = new List<HelpTextLine>();
+        var minimumWidth = Math.Max(1, columns / 2);
         var firstLine = true;
         foreach (var paragraph in paragraphs)
         {
@@ -140,13 +150,16 @@ public static class HelpTextLayout
             var start = 0;
             while (start < paragraph.Count)
             {
-                var indent = Math.Clamp(left + (firstLine ? first : 0), 0, columns - 1);
-                var available = Math.Max(1, columns - indent - Math.Max(0, right));
+                // Keep at least half the width for text so large source indents on a
+                // narrow pane (such as a popup) cannot wrap one character per row.
+                var indent = Math.Clamp(left + (firstLine ? first : 0), 0, columns - minimumWidth);
+                var margin = Math.Clamp(right, 0, columns - indent - minimumWidth);
+                var available = columns - indent - margin;
                 var end = Math.Min(start + available, paragraph.Count);
                 if (end == paragraph.Count)
                 {
-                    lines.Add(PlaceLine(BuildLine(paragraph, start, end), columns,
-                        indent, right, alignment));
+                    lines.Add(PlaceLine(BuildLine(paragraph, start, end), available,
+                        indent, alignment));
                     break;
                 }
                 var split = -1;
@@ -159,8 +172,8 @@ public static class HelpTextLayout
                         break;
                     }
                 if (split < 0) split = end;
-                lines.Add(PlaceLine(BuildLine(paragraph, start, split), columns,
-                    indent, right, alignment));
+                lines.Add(PlaceLine(BuildLine(paragraph, start, split), available,
+                    indent, alignment));
                 firstLine = false;
                 start = split;
                 while (start < paragraph.Count && paragraph[start].Value == ' ') start++;
@@ -170,10 +183,10 @@ public static class HelpTextLayout
         return lines;
     }
 
-    private static HelpTextLine PlaceLine(HelpTextLine line, int columns,
-        int indent, int right, HelpParagraphAlignment alignment)
+    private static HelpTextLine PlaceLine(HelpTextLine line, int available,
+        int indent, HelpParagraphAlignment alignment)
     {
-        var free = Math.Max(0, columns - indent - Math.Max(0, right) - line.Text.Length);
+        var free = Math.Max(0, available - line.Text.Length);
         var offset = alignment switch
         {
             HelpParagraphAlignment.Right => free,
@@ -317,12 +330,22 @@ public static class HelpContentAugmentation
             var heading = topic.Text.Length == 0
                 ? $"{NoteHeading}\n"
                 : $"\n\n{NoteHeading}\n";
+            // Layout draws a topic's paragraph records whenever it has any, so the note must be
+            // appended there too or it would never be shown for an extracted topic.
+            IReadOnlyList<ExtractedHelpParagraph>? paragraphs = topic.Paragraphs is { Count: > 0 }
+                ? [.. topic.Paragraphs,
+                    new ExtractedHelpParagraph(
+                        [new ExtractedHelpTextRun(NoteHeading, Bold: true),
+                            new ExtractedHelpTextRun($"\n{note.Text}")],
+                        0, TabStops: [])]
+                : topic.Paragraphs;
             topics[topicIndex] = topic with
             {
                 Text = topic.Text + heading + note.Text,
                 Runs = [.. runs,
                     new ExtractedHelpTextRun(heading, Bold: true),
-                    new ExtractedHelpTextRun(note.Text)]
+                    new ExtractedHelpTextRun(note.Text)],
+                Paragraphs = paragraphs
             };
             changed = true;
         }

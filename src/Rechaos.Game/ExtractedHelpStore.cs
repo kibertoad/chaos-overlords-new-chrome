@@ -41,9 +41,10 @@ public static class ExtractedHelpStore
             || document.Topics is null or { Count: 0 or > MaximumTopics }
             || document.Contents is null or { Count: > MaximumContentsEntries }
             || document.Contexts is null or { Count: > MaximumContexts }
-            || document.Fonts is null or { Count: 0 or > 256 }
+            || document.Fonts is null or { Count: > 256 }
             || !document.Fonts.All(font =>
-                !string.IsNullOrWhiteSpace(font.Name) && font.Name.Length <= 255
+                font is not null
+                && !string.IsNullOrWhiteSpace(font.Name) && font.Name.Length <= 255
                 && font.Family is >= 0 and <= 255
                 && font.Attributes is >= 0 and <= 63
                 && font.HalfPoints is > 0 and <= 144
@@ -60,39 +61,35 @@ public static class ExtractedHelpStore
         var previousTopicOffset = -1;
         foreach (var topic in document.Topics)
         {
-            if (topic.Id < 0 || !ids.Add(topic.Id) || string.IsNullOrWhiteSpace(topic.Title)
+            if (topic is null || topic.Id < 0 || !ids.Add(topic.Id)
+                || string.IsNullOrWhiteSpace(topic.Title)
                 || topic.Text is null || topic.Text.Length > MaximumTopicCharacters)
                 return false;
             if (topic.TopicOffset < previousTopicOffset
                 || topic.Runs is null or { Count: > MaximumRunsPerTopic }
                 || topic.Paragraphs is null or { Count: > MaximumParagraphsPerTopic }
-                || !topic.Runs.All(run =>
-                    !string.IsNullOrEmpty(run.Text)
-                    && run.HalfPoints is > 0 and <= 144
-                    && (run.FontIndex is null || run.FontIndex >= 0
-                        && run.FontIndex < document.Fonts.Count)
-                    && (!run.Popup || run.LinkHash is not null)))
+                || !topic.Runs.All(run => IsValidRun(run, document.Fonts.Count)))
                 return false;
             if (!topic.Paragraphs.All(paragraph =>
-                paragraph.Runs is not null
+                paragraph is not null
+                && paragraph.Runs is not null
                 && paragraph.RawFlags is >= 0 and <= ushort.MaxValue
                 && paragraph.Alignment is >= HelpParagraphAlignment.Left
                     and <= HelpParagraphAlignment.Unsupported
                 && paragraph.TabStops is not null
                 && paragraph.TabStops.Count <= 256
-                && paragraph.TabStops.All(tab => tab.PositionUnits is >= 0 and <= 16383
-                    && tab.AlignmentCode is >= 0 and <= 2)
-                && paragraph.Runs.All(run =>
-                    !string.IsNullOrEmpty(run.Text)
-                    && run.HalfPoints is > 0 and <= 144
-                    && (run.FontIndex is null || run.FontIndex >= 0
-                        && run.FontIndex < document.Fonts.Count))))
+                // The decoder keeps a tab's alignment as the compressed word it read.
+                && paragraph.TabStops.All(tab => tab is not null
+                    && tab.PositionUnits is >= 0 and <= 16383
+                    && tab.AlignmentCode is >= 0 and <= 0x7fff)
+                && paragraph.Runs.All(run => IsValidRun(run, document.Fonts.Count))))
                 return false;
             previousTopicOffset = topic.TopicOffset;
             if (!string.Equals(string.Concat(topic.Runs.Select(run => run.Text)),
                     topic.Text, StringComparison.Ordinal))
                 return false;
-            foreach (var hash in topic.Runs.Where(run => run.LinkHash is not null)
+            foreach (var hash in topic.Runs.Concat(topic.Paragraphs.SelectMany(p => p.Runs))
+                         .Where(run => run.LinkHash is not null)
                          .Select(run => run.LinkHash!.Value))
                 linkHashes.Add(hash);
             totalCharacters = checked(totalCharacters + topic.Title.Length + topic.Text.Length);
@@ -115,4 +112,11 @@ public static class ExtractedHelpStore
             && (context.NumericId is not { } numericId || numericIds.Add(numericId)));
         return validContexts && linkHashes.All(hashes.Contains);
     }
+
+    private static bool IsValidRun(ExtractedHelpTextRun? run, int fontCount) =>
+        run is not null
+        && !string.IsNullOrEmpty(run.Text)
+        && run.HalfPoints is > 0 and <= 144
+        && (run.FontIndex is null || run.FontIndex >= 0 && run.FontIndex < fontCount)
+        && (!run.Popup || run.LinkHash is not null);
 }
