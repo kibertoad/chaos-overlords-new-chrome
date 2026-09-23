@@ -10,6 +10,110 @@ namespace Rechaos.Tests;
 
 public sealed class MultiplayerLobbySessionTests
 {
+    [Theory]
+    [InlineData("host", "/matches")]
+    [InlineData("join", "/matches/join")]
+    [InlineData("join-running", "/matches/join-running")]
+    public Task LeavingDuringSeatRequestReleasesTheReturnedSeat(string kind, string route) =>
+        AbandoningASeatRequestReleasesTheReturnedSeat(kind, route, leave: true);
+
+    [Theory]
+    [InlineData("host", "/matches")]
+    [InlineData("join", "/matches/join")]
+    [InlineData("join-running", "/matches/join-running")]
+    public Task StoppingDuringSeatRequestReleasesTheReturnedSeat(string kind, string route) =>
+        AbandoningASeatRequestReleasesTheReturnedSeat(kind, route, leave: false);
+
+    [Fact]
+    public async Task LeavingDuringResumeDoesNotRejoinTheAbandonedSeat()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        var running = View(MatchStatus.Running);
+        var departed = running with { Players = [running.Players[0] with { Status = PlayerStatus.Left }] };
+        server.Answer(HttpMethod.Get, "/matches/m1", new MatchDetail(departed, "CODE1234", "p1"));
+        server.Answer(HttpMethod.Post, "/matches/m1/rejoin", null, HttpStatusCode.NoContent);
+        server.Answer(HttpMethod.Post, "/matches/m1/leave", null, HttpStatusCode.NoContent);
+        var blocked = server.BlockOnce(HttpMethod.Get, "/matches/m1");
+
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await Until(() => server.CallsTo(HttpMethod.Get, "/matches/m1") == 1, cancellationToken);
+        await lobby.LeaveAsync();
+        var stopping = lobby.StopAsync();
+        blocked.SetResult();
+        await stopping;
+
+        Assert.Equal(0, server.CallsTo(HttpMethod.Post, "/matches/m1/rejoin"));
+        Assert.Equal(0, server.CallsTo(HttpMethod.Post, "/matches/m1/leave"));
+        Assert.False(lobby.TryDequeueNotice(out _));
+    }
+
+    [Fact]
+    public async Task StoppingDuringResumeKeepsTheSavedSeat()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        server.Answer(HttpMethod.Get, "/matches/m1", new MatchDetail(View(MatchStatus.Lobby), "CODE1234", "p1"));
+        server.Answer(HttpMethod.Post, "/matches/m1/leave", null, HttpStatusCode.NoContent);
+        var blocked = server.BlockOnce(HttpMethod.Get, "/matches/m1");
+
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await Until(() => server.CallsTo(HttpMethod.Get, "/matches/m1") == 1, cancellationToken);
+        var stopping = lobby.StopAsync();
+        blocked.SetResult();
+        await stopping;
+
+        Assert.Equal(0, server.CallsTo(HttpMethod.Post, "/matches/m1/leave"));
+        Assert.Null(lobby.Handle);
+        Assert.False(lobby.TryDequeueNotice(out _));
+    }
+
+    private static async Task AbandoningASeatRequestReleasesTheReturnedSeat(
+        string kind, string route, bool leave)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        var view = View(kind == "join-running" ? MatchStatus.Running : MatchStatus.Lobby);
+        server.Answer(HttpMethod.Post, route,
+            new MembershipView(view, view.Players[0], "cop_test", "CODE1234"));
+        server.Answer(HttpMethod.Post, "/matches/m1/leave", null, HttpStatusCode.NoContent);
+        var blocked = server.BlockOnce(HttpMethod.Post, route);
+
+        switch (kind)
+        {
+            case "host":
+                lobby.Host(new CreateMatchRequest(view.Settings, "HOST", 0, null, null, null));
+                break;
+            case "join":
+                lobby.Join(new JoinMatchRequest("CODE1234", "HOST", 0, null));
+                break;
+            default:
+                lobby.JoinRunning(new JoinRunningMatchRequest(
+                    "CODE1234", "HOST", 0, null, 0));
+                break;
+        }
+        await Until(() => server.CallsTo(HttpMethod.Post, route) == 1, cancellationToken);
+        if (leave) await lobby.LeaveAsync();
+        var stopping = lobby.StopAsync();
+        blocked.SetResult();
+        await stopping;
+
+        Assert.Equal(1, server.CallsTo(HttpMethod.Post, "/matches/m1/leave"));
+
+        Assert.Null(lobby.Handle);
+        Assert.Equal(string.Empty, lobby.OwnPlayerId);
+        Assert.False(lobby.TryDequeueNotice(out _));
+    }
+
     [Fact]
     public async Task StartConflictReconcilesWhenTheLobbyAlreadyBecameRunning()
     {
@@ -58,12 +162,23 @@ public sealed class MultiplayerLobbySessionTests
         CancellationToken cancellationToken)
         where TNotice : LobbyNotice
     {
+        TNotice? typed = null;
+        await Until(
+            () => lobby.TryDequeueNotice(out var notice) && (typed = notice as TNotice) is not null,
+            cancellationToken,
+            typeof(TNotice).Name);
+        return typed!;
+    }
+
+    private static async Task Until(
+        Func<bool> condition, CancellationToken cancellationToken, string what = "the lobby request")
+    {
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
         while (DateTime.UtcNow < deadline)
         {
-            if (lobby.TryDequeueNotice(out var notice) && notice is TNotice typed) return typed;
+            if (condition()) return;
             await Task.Delay(10, cancellationToken);
         }
-        throw new TimeoutException($"Timed out waiting for {typeof(TNotice).Name}.");
+        throw new TimeoutException($"Timed out waiting for {what}.");
     }
 }
