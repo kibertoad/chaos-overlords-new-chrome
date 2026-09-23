@@ -30,6 +30,15 @@ public static partial class CommandResolver
     {
         var prepared = PreparedChaosResults(state, commands);
         if (prepared.Count > 0 || commands.Count == 0) return prepared;
+        // The original resolver records a per-player/sector presence byte from the
+        // opening gang roster, then reports each Crackdown only to those present.
+        // This includes occupants who did not submit a Chaos command.
+        var crackdownObservers = state.Sectors.ToDictionary(
+            sector => sector.Id,
+            sector => state.Players
+                .Where(player => player.Gangs.Any(gang => gang.IsActive && gang.SectorId == sector.Id))
+                .Select(player => player.Id)
+                .ToArray());
         var ordered = InRosterOrder(state, commands);
         var rolled = ordered.Select(queued =>
         {
@@ -58,7 +67,7 @@ public static partial class CommandResolver
         var sectorSuccesses = groups
             .GroupBy(group => group.Sector.Id)
             .ToDictionary(group => group.Key, group => group.Sum(value => value.Successes));
-        var triggered = new HashSet<int>();
+        var triggered = new Dictionary<int, CrackdownTriggerResult>();
         var crackdownChaos = groups
             .GroupBy(group => group.Sector.Id)
             .ToDictionary(group => group.Key, group => group.Sum(value =>
@@ -70,8 +79,8 @@ public static partial class CommandResolver
         {
             if (!ManualRules.TriggersCrackdown(
                     crackdownChaos.GetValueOrDefault(sector.Id), sector.Tolerance)) continue;
-            CrackdownResolver.Trigger(state, sector, ExecutionPhase.Chaos);
-            triggered.Add(sector.Id);
+            triggered.Add(sector.Id, CrackdownResolver.Trigger(
+                state, sector, ExecutionPhase.Chaos, emitControlLostNotification: false));
         }
 
         var groupByCommand = groups.SelectMany(group => group.Participants.Select(
@@ -106,14 +115,18 @@ public static partial class CommandResolver
             firstEventBySector.TryAdd(group.Sector.Id, result.Event!.Sequence);
         }
 
-        foreach (var sectorId in triggered.Order())
+        foreach (var sectorId in triggered.Keys.Order())
         {
-            foreach (var player in state.Players.Where(player => player.Status == PlayerStatus.Active))
+            foreach (var playerId in crackdownObservers[sectorId])
                 state.QueueNotification(
-                    player.Id, GameNotificationKind.Crackdown,
+                    playerId, GameNotificationKind.Crackdown,
                     sectorId: sectorId,
                     relatedEventSequence: firstEventBySector.TryGetValue(sectorId, out var sequence) ? sequence : null,
                     executionPhase: ExecutionPhase.Chaos);
+            var trigger = triggered[sectorId];
+            if (trigger.ControlLost && trigger.PreviousOwner is { } previousOwner)
+                state.QueueNotification(previousOwner, GameNotificationKind.ControlLost,
+                    sectorId: sectorId, executionPhase: ExecutionPhase.Chaos);
         }
         return results;
     }

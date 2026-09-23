@@ -372,7 +372,11 @@ Snapshot storage is independently bounded to the newest five snapshots per match
 checkpoint every ten confirmed turns, and the exceptional desync repairs. A checkpoint is what
 bounds how far a reconnect has to replay; the server takes one only from the host, only for a turn
 already CONFIRMED, and only at exactly the hash that verdict settled on, so it can restate the
-match's own conclusion and nothing else.
+match's own conclusion and nothing else. Nothing on the client waits for one: the host serialises
+the state on the event pump and uploads it in the background, off the connection-health lanes, with
+a few attempts over at most two minutes, so a checkpoint the server is slow to take or rate limits
+neither holds the next seal nor raises the reconnect modal. A checkpoint given up costs the next
+reconnect a longer replay from an older snapshot.
 
 **SQLite runs with `synchronous = NORMAL`.** "Published after durable" therefore holds against a
 process crash and not against losing power: a handful of the most recent writes can be lost with
@@ -610,11 +614,17 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    whenever its digest changes, with `ready: true` when the player presses Done. A `ready: false`
    draft means a turn the clock seals still uses what the player planned. The outbox retains only
    the newest pending whole-document replacement while one request is in flight, so rapid edits
-   cannot build a backlog of obsolete drafts. A transient request is retried for the shared
+   cannot build a backlog of obsolete drafts. Drafts are paced to at most one a second, because the
+   per-player rate limit they spend is the one the stream, the reports and every read share; the
+   finished turn is never paced. A transient request is retried for the shared
    five-minute call window; if that window expires without an answer, the outbox retains the same
    idempotent document and starts another window. Only a server refusal, a revoked membership, or
    caller shutdown discards it, so a connectivity outage cannot silently turn a submitted draft
-   into an empty sealed turn.
+   into an empty sealed turn. A draft's failed attempts are retried as quietly as they are
+   persistently: they put a line on the message bar, never the reconnect modal, which answers only
+   for the stream, the pump's calls, the reporter and a finished turn. A draft is retried only
+   while it can still matter: a newer draft cancels it, and so does the seal of its turn, since the
+   server holds nothing a sealed turn's draft could still change.
 4. On `turn.sealed`, fetch the sealed set and verify both the digest announced by that exact event
    and the set's internally recomputed digest: SHA-256 over `slot:ordersHash`
    lines joined by `\n` in slot order, each `ordersHash` being SHA-256 of that player's canonical
@@ -677,8 +687,12 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    holds and an order document replaces what was held — so a server having a bad moment costs latency
    and nothing else. Draft submissions are whole-document replacements: an unsent older draft is
    discarded, and queuing a newer draft cancels retries of the superseded in-flight document so
-   only the latest plan consumes server work. While retrying, the client shows a modal attempt log with the concrete timeout,
-   HTTP status/request id, stream closure, or network exception and lets the player stop early. If
+   only the latest plan consumes server work. A retried call waits at least as long as a
+   `Retry-After` asks, up to a minute, so a rate limit is not spent on attempts its window will
+   refuse. While retrying, the status line says so from the first failed attempt; once the server
+   has gone unanswered for five seconds the client shows a modal attempt log with the concrete timeout,
+   HTTP status/request id, stream closure, or network exception and lets the player stop early. A
+   rate limit is titled as the server limiting requests rather than as a lost connection. If
    the window expires, the terminal error reports the attempt count, elapsed time, and last failure.
    A refusal that will keep being refused (a revoked token, a body the server will never accept) or a
    payload that cannot be made sense of still ends immediately. The city screen distinguishes an

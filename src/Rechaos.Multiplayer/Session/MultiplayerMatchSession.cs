@@ -47,6 +47,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private readonly TimeSpan? _streamOutageBudget;
     private readonly RetryPolicy _streamRetryPolicy;
     private readonly RetryPolicy _callRetryPolicy;
+    private readonly RetryPolicy _backgroundRetryPolicy;
     private readonly Dictionary<string, int> _slotsByPlayerId;
     private readonly Dictionary<string, PendingTakeoverVote> _takeoverVotes = new(StringComparer.Ordinal);
 
@@ -141,6 +142,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _streamOutageBudget = options.StreamOutageBudget;
         _streamRetryPolicy = options.StreamRetryPolicy ?? RetryPolicy.Stream;
         _callRetryPolicy = options.CallRetryPolicy ?? RetryPolicy.Call;
+        _backgroundRetryPolicy = options.BackgroundRetryPolicy ?? RetryPolicy.Background;
         _reportFlushGrace = options.ReportFlushGrace ?? DefaultReportFlushGrace;
         _stoppingToken = _stopping.Token;
         _replay = replay;
@@ -371,6 +373,15 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 // Stopping is how a session ends; both tasks are meant to be cancelled.
             }
         }
+        // Read after the pump has finished, since the pump is what starts one.
+        try
+        {
+            await _backgroundUpload.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled before it ran; it answers for everything else itself.
+        }
         _stopping.Dispose();
         _outboxSignal.Dispose();
         _reportSignal.Dispose();
@@ -398,6 +409,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         {
             case TurnSealedEvent sealedTurn:
                 lock (_outboxGate) _locallyReadyTurns.Remove(sealedTurn.Payload.Turn);
+                RetireDraftsThrough(sealedTurn.Payload.Turn);
                 await ResolveSealedTurnAsync(
                         sealedTurn.Payload.Turn,
                         sealedTurn.Payload.OrderSetHash,
@@ -409,9 +421,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 // a settled turn's repair announcement, which every reconnect replays, from being
                 // treated as an open question again.
                 if (_pendingDesync?.Turn == confirmed.Payload.Turn) _pendingDesync = null;
-                await CheckpointIfDueAsync(
-                        confirmed.Payload.Turn, confirmed.Payload.StateHash, cancellationToken)
-                    .ConfigureAwait(false);
+                CheckpointIfDue(confirmed.Payload.Turn, confirmed.Payload.StateHash);
                 return;
             case TurnDesyncedEvent desynced:
                 await HandleDesyncAsync(desynced, cancellationToken).ConfigureAwait(false);
@@ -802,10 +812,16 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// <param name="lane">
     /// Whose health the attempts report into, or null for a one-off the caller answers for itself.
     /// </param>
+    /// <param name="onQuietRetry">
+    /// Told about each retried attempt when there is no lane to report it to.
+    /// </param>
+    /// <param name="retryPolicy">The retry window, or null for the session's call policy.</param>
     private async Task<T> CallAsync<T>(
         Func<CancellationToken, Task<T>> call,
         ConnectionHealth.Lane? lane,
         CancellationToken cancellationToken,
+        Action<Exception, int>? onQuietRetry = null,
+        RetryPolicy? retryPolicy = null,
         [CallerMemberName] string operation = "")
     {
         if (ReferenceEquals(lane, _pumpLane)) Volatile.Write(ref _pumpOperation, operation);
@@ -814,9 +830,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         {
             var result = await TransientFailure.CallAsync(
                 call,
-                _callRetryPolicy,
+                retryPolicy ?? _callRetryPolicy,
                 onRetry: lane is null
-                    ? null
+                    ? onQuietRetry
                     : (exception, attempt) => lane.Failed(Describe(exception), attempt, exception),
                 cancellationToken).ConfigureAwait(false);
             lane?.Recovered();

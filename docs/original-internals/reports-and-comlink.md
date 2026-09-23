@@ -54,7 +54,7 @@ labels and statically traced meanings are:
 | Type | Original status | Trigger |
 |---:|---|---|
 | 0 | `NO EVENTS.` | Empty/default compositor case; not emitted by the resolver |
-| 1 | `POLICE CRACKDOWN.` | Crackdown created |
+| 1 | `POLICE CRACKDOWN.` | Crackdown created; players with a gang in the sector at resolution opening |
 | 2 | `SECTOR CONTROL ATTAINED.` | Sector captured |
 | 3 | `SECTOR CONTROL LOST.` | Previous owner displaced |
 | 4 | `SITE COOPERATION ACHIEVED.` | Influence completed |

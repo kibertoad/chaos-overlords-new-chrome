@@ -576,7 +576,7 @@ public sealed partial class ChaosGame
 
     private bool HandleReconnectPopupClick(Point point)
     {
-        if (_session is null || _online.IsConnected) return false;
+        if (_session is null || !_online.ReconnectPopupShown) return false;
         if (ReconnectPopupLayout.StopRetrying.Contains(point))
         {
             EndOnlineMatch("AUTOMATIC RECONNECT CANCELLED");

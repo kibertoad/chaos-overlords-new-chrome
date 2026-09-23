@@ -3,6 +3,7 @@ using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Session;
 using Xunit;
 
@@ -105,6 +106,80 @@ public sealed partial class MultiplayerSessionTests
         var checkpoint = server.BodiesSentTo(HttpMethod.Post, "/snapshots")[1];
         Assert.Contains("\"turn\":10", checkpoint, StringComparison.Ordinal);
         Assert.Contains(hash, checkpoint, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A checkpoint the server is slow to take does not hold the match behind it.
+    /// </summary>
+    /// <remarks>
+    /// The upload used to run inside the pump, so a checkpoint met by a rate limit or a slow server
+    /// held the next seal — and the reconnect modal stood over the host's turn — for as long as its
+    /// retry window lasted, over a stream that was working the whole time.
+    /// </remarks>
+    [Fact]
+    public async Task AStalledCheckpointDoesNotHoldTheNextTurn()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
+        var stalled = server.BlockOnce(HttpMethod.Post, "/snapshots");
+
+        var seq = await ConfirmTurnsAsync(session, server, seq: 8, lastTurn: 10);
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 2, "the checkpoint");
+
+        server.Answer(HttpMethod.Get, "/turns/11/orders", SealedOrders(11));
+        server.Events.Write(SealedFrame(seq, 11));
+        var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session);
+
+        Assert.Equal(11, resolved.Turn);
+        Assert.False(stalled.Task.IsCompleted);
+        stalled.SetResult();
+    }
+
+    /// <summary>A checkpoint the server refuses for a rate limit is given up without a reconnect report.</summary>
+    [Fact]
+    public async Task ARateLimitedCheckpointIsGivenUpQuietly()
+    {
+        var (session, server, http) = Running(backgroundRetryPolicy: new RetryPolicy(
+            TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1), MaxAttempts: 2));
+        using var _ = http;
+        await using var __ = session;
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            server.AnswerOnce(
+                HttpMethod.Post, "/snapshots", Envelope("rate_limited"), HttpStatusCode.TooManyRequests);
+        }
+        var seen = new List<MultiplayerNotice>();
+
+        await ConfirmTurnsAsync(session, server, seq: 8, lastTurn: 10, seen);
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 3, "both checkpoint attempts");
+        await Task.Delay(30, TestContext.Current.CancellationToken);
+        while (session.TryDequeueNotice(out var notice)) seen.Add(notice);
+
+        Assert.Equal(3, server.CallsTo(HttpMethod.Post, "/snapshots"));
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.ConnectionChanged
+            or MultiplayerNotice.Failed);
+    }
+
+    /// <summary>Seals and confirms turns 1 to <paramref name="lastTurn"/>; answers the next free sequence.</summary>
+    private static async Task<int> ConfirmTurnsAsync(
+        MultiplayerMatchSession session,
+        FakeMultiplayerServer server,
+        int seq,
+        int lastTurn,
+        List<MultiplayerNotice>? seen = null)
+    {
+        for (var turn = 1; turn <= lastTurn; turn++)
+        {
+            server.Answer(HttpMethod.Get, $"/turns/{turn}/orders", SealedOrders(turn));
+            server.Events.Write(SealedFrame(seq++, turn));
+            var hash = (await WaitFor<MultiplayerNotice.TurnResolved>(session, seen)).StateHash;
+            server.Events.Write(Frame(
+                seq++, "turn.confirmed", $$"""{"turn":{{turn}},"stateHash":"{{hash}}"}"""));
+        }
+        return seq;
     }
 
     /// <summary>

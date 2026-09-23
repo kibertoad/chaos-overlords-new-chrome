@@ -21,6 +21,15 @@ public sealed partial class MultiplayerMatchSession
     private PendingOrders? _pending;
     private CancellationTokenSource? _inFlightOrders;
 
+    /// <summary>The document <see cref="_inFlightOrders"/> is sending. Guarded by <see cref="_outboxGate"/>.</summary>
+    private PendingOrders? _inFlightDocument;
+
+    /// <summary>
+    /// The latest turn the log has sealed; a draft for it or earlier has nothing left to protect.
+    /// Guarded by <see cref="_outboxGate"/>.
+    /// </summary>
+    private int _sealedThroughTurn;
+
     /// <summary>
     /// Queues this player's order document for a turn, to be sent off the caller's thread.
     /// </summary>
@@ -123,21 +132,31 @@ public sealed partial class MultiplayerMatchSession
             {
                 next = _pending;
                 _pending = null;
+                if (next is not null && IsRetiredDraft(next)) next = null;
                 if (next is not null)
                 {
                     requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(
                         cancellationToken);
                     _inFlightOrders = requestCancellation;
+                    _inFlightDocument = next;
                 }
             }
             if (next is null) continue;
+            // Only a finished turn answers to the connection's health. A draft is insurance
+            // against the clock sealing the turn before the player ends it, sent on every change
+            // and superseded by the next one, so a failed attempt at one is retried quietly: the
+            // reconnect modal it used to raise blocked a player who had nothing to do about it.
+            var lane = next.Ready ? _outboxLane : null;
             try
             {
                 await CallAsync(
                     token => _match.SubmitOrdersAsync(
                         next.Turn, new SubmitOrdersRequest(next.Document, next.Ready), token),
-                    _outboxLane,
-                    requestCancellation!.Token).ConfigureAwait(false);
+                    lane,
+                    requestCancellation!.Token,
+                    onQuietRetry: (exception, _) => _notices.Enqueue(
+                        new MultiplayerNotice.DraftDelayed(next.Turn, Describe(exception))))
+                    .ConfigureAwait(false);
                 _notices.Enqueue(new MultiplayerNotice.OrdersAccepted(next.Turn, next.Ready));
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested
@@ -158,7 +177,10 @@ public sealed partial class MultiplayerMatchSession
                 // retry window expires. The order PUT remains an idempotent whole-document
                 // replacement, so retain it and start a new window instead of ending the match
                 // (or silently throwing away a turn the player already closed locally).
-                _outboxLane.Failed(Describe(exception), exception.Attempts, exception);
+                if (lane is null)
+                    _notices.Enqueue(new MultiplayerNotice.DraftDelayed(next.Turn, Describe(exception)));
+                else
+                    lane.Failed(Describe(exception), exception.Attempts, exception);
                 Requeue(next);
             }
             catch (MultiplayerApiException exception) when (exception.Reason == "not_active")
@@ -188,7 +210,10 @@ public sealed partial class MultiplayerMatchSession
                 lock (_outboxGate)
                 {
                     if (ReferenceEquals(_inFlightOrders, requestCancellation))
+                    {
                         _inFlightOrders = null;
+                        _inFlightDocument = null;
+                    }
                 }
                 requestCancellation?.Dispose();
             }
@@ -210,13 +235,45 @@ public sealed partial class MultiplayerMatchSession
         lock (_outboxGate)
         {
             if (_pending is not null) return;
-            _pending = orders with
+            var requeued = orders with
             {
                 Ready = orders.Ready || _locallyReadyTurns.Contains(orders.Turn),
             };
+            // A draft whose turn sealed while it was unanswered is not worth another window.
+            if (IsRetiredDraft(requeued)) return;
+            _pending = requeued;
         }
         _outboxSignal.Release();
     }
+
+    /// <summary>
+    /// Stops sending drafts of turns the log has sealed, including one still being retried.
+    /// </summary>
+    /// <remarks>
+    /// A draft only protects planning against the clock, so once its turn is sealed the server has
+    /// nothing to take it for: it would answer <c>turn_not_open</c> at best. A newer draft already
+    /// cancels the older one's retries, but a player who changes nothing on the next turn sends no
+    /// newer draft, and the stale one used to go on retrying — a whole five-minute window, then
+    /// another — against a server that was perhaps already struggling. A finished turn is left
+    /// alone: the interface waits on its answer to say whether the server took it.
+    /// </remarks>
+    private void RetireDraftsThrough(int sealedTurn)
+    {
+        CancellationTokenSource? stale = null;
+        lock (_outboxGate)
+        {
+            if (sealedTurn <= _sealedThroughTurn) return;
+            _sealedThroughTurn = sealedTurn;
+            if (_pending is { } pending && IsRetiredDraft(pending)) _pending = null;
+            if (_inFlightDocument is { } inFlight && IsRetiredDraft(inFlight)) stale = _inFlightOrders;
+        }
+        // Outside the lock, for the reason `QueueOrders` gives.
+        CancelUnlessDisposed(stale);
+    }
+
+    /// <summary>Whether the document is a draft of a turn already sealed. Call under <see cref="_outboxGate"/>.</summary>
+    private bool IsRetiredDraft(PendingOrders orders) =>
+        !orders.Ready && orders.Turn <= _sealedThroughTurn;
 
     /// <summary>
     /// Whether a refusal was of the document itself, which the server never recorded, rather than

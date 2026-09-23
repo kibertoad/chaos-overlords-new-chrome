@@ -100,7 +100,11 @@ public sealed partial class ChaosGame
     private string OnlineTurnStatus()
     {
         if (!_online.IsConnected)
-            return $"RECONNECTING TO THE SERVER  ATTEMPT {_online.ReconnectAttempt}";
+        {
+            return _online.IsRateLimited
+                ? $"THE SERVER IS LIMITING REQUESTS  RETRY {_online.ReconnectAttempt}"
+                : $"RECONNECTING TO THE SERVER  ATTEMPT {_online.ReconnectAttempt}";
+        }
         if (_online.TurnSyncError.Length > 0)
             return $"TURN SYNC ERROR  {_online.TurnSyncError}";
         return _online.Stage switch
@@ -117,6 +121,10 @@ public sealed partial class ChaosGame
                         ? $"SERVER ACKNOWLEDGED  ALL PLAYERS READY {OnlineSeatTally()}"
                         : $"SERVER ACKNOWLEDGED  WAITING FOR OTHER PLAYERS "
                             + $"{OnlineSeatTally()} {OnlineCountdown()}",
+            // Here rather than on the message line, which anything else said since would have
+            // taken over: the warning lasts exactly as long as the draft it is about.
+            MultiplayerStage.Playing when _online.OpenTurnDraftUnsaved =>
+                $"TURN {_online.PlanningTurn}  ORDERS NOT SAVED YET  RETRYING  {OnlineCountdown()}",
             MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineCountdown()}",
             _ => string.Empty,
         };
@@ -141,12 +149,17 @@ public sealed partial class ChaosGame
             DrawOnlineErrorPopup(batch, pixel, font);
             return;
         }
-        if (_session is null || _online.IsConnected) return;
+        if (_session is null || !_online.ReconnectPopupShown) return;
         batch.Draw(pixel, new Rectangle(0, 0, 640, 460), new Color(0, 0, 0, 190));
         var panel = ReconnectPopupLayout.Panel;
         batch.Draw(pixel, panel, new Color(12, 22, 20));
         DrawBorder(batch, pixel, panel, Color.Gold, 2);
-        DrawCentered(font, batch, "CONNECTION LOST  RECONNECTING", 102, Color.Gold, 1);
+        // A rate limit is the server answering, not the connection going; saying "connection lost"
+        // over it sent players looking at their network.
+        var title = _online.IsRateLimited
+            ? "THE SERVER IS LIMITING REQUESTS  RETRYING"
+            : "CONNECTION LOST  RECONNECTING";
+        DrawCentered(font, batch, title, 102, Color.Gold, 1);
         font.Draw(batch, "AUTOMATIC RETRIES CONTINUE FOR UP TO FIVE MINUTES.",
             new Vector2(104, 132), Color.White, 1);
         font.Draw(batch, "RECENT ATTEMPTS", new Vector2(104, 162), new Color(150, 165, 165), 1);
@@ -208,7 +221,7 @@ public sealed partial class ChaosGame
     private void DrawBlockingOnlineOverlays(Viewport viewport)
     {
         if (_batch is null || _pixel is null || _font is null || _session is null) return;
-        if (_online.IsConnected && _online.CurrentTakeoverVote is null) return;
+        if (!_online.ReconnectPopupShown && _online.CurrentTakeoverVote is null) return;
         _batch.Begin(
             samplerState: SamplerState.PointClamp,
             transformMatrix: VirtualInput.Transform(viewport));

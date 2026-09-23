@@ -16,6 +16,9 @@ namespace Rechaos.Game;
 /// <param name="Details">The full error of this attempt, copied verbatim.</param>
 public sealed record ReconnectAttemptEntry(int Attempt, string Summary, string Details)
 {
+    /// <summary>Whether the server answered this attempt by limiting the client's request rate.</summary>
+    public bool IsRateLimited { get; init; }
+
     public static ReconnectAttemptEntry From(
         MultiplayerNotice.ConnectionChanged connection, DateTimeOffset reportedAt)
     {
@@ -32,6 +35,9 @@ public sealed record ReconnectAttemptEntry(int Attempt, string Summary, string D
         if (connection.Lane is { Length: > 0 } lane) details.Append("Connection: ").Append(lane).AppendLine();
         details.Append("Summary: ").Append(detail);
         if (connection.Error is { } error) details.AppendLine().Append("Error:").AppendLine().Append(error.ToString());
-        return new ReconnectAttemptEntry(attempt, summary, details.ToString());
+        return new ReconnectAttemptEntry(attempt, summary, details.ToString())
+        {
+            IsRateLimited = MultiplayerFailureText.IsRateLimited(connection.Error),
+        };
     }
 }
