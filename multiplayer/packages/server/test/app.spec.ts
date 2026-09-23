@@ -43,11 +43,11 @@ function inMemoryBugReports(): BugReportRepository & { rows: StoredBugReport[] }
   }
 }
 
-type Window = { limit: number; windowMs: number }
+type LimitWindow = { limit: number; windowMs: number }
 
 interface BuildLimits {
-  anonymous?: Window
-  member?: Window
+  anonymous?: LimitWindow
+  member?: LimitWindow
   bugReports?: { enabled?: boolean; limit?: number; statePerDay?: number }
   matchCreationPerMinute?: number
 }
@@ -213,6 +213,14 @@ describe('server app over in-memory storage', () => {
           hostDisplayName: 'h',
         }),
       })
+    // A body the contract refuses never stores a lobby, so it does not spend the shared budget.
+    const malformed = await limited.app.request('/api/v1/matches', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.9' },
+      body: JSON.stringify({ settings: {} }),
+    })
+    expect(malformed.status).toBeGreaterThanOrEqual(400)
+    expect(malformed.status).not.toBe(429)
     expect((await create('203.0.113.1')).status).toBe(201)
     const second = await create('203.0.113.2')
     expect(second.status).toBe(201)
