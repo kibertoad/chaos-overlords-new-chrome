@@ -504,7 +504,11 @@ detailed-sector buildings; the right data block reports live remaining
 Resistance plus the site's Tolerance, Support and Cash, and the lower block
 reports all fourteen site modifiers. A stationary double-click opens it from
 either a detailed-sector building or a `PX05005` Influence target, then returns
-to the originating screen without discarding target selection.
+to the originating screen without discarding target selection. Hovering the
+portrait of a special site explains its effect while influenced: the Factory's
+one-third equipment discount and the Science Center's Tech 8 or Research Lab's
+Tech 10 research ceiling for the owner's gangs in that sector. An ordinary
+site's portrait has no tooltip.
 
 `PX05013` is the original `EQUIPMENT TO SELL` panel. Its three fixed rows map
 to the acting gang's weapon, armor and miscellaneous slots. Clicking a populated
