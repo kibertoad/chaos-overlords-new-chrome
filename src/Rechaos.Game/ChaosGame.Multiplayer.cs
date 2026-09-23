@@ -302,14 +302,43 @@ public sealed partial class ChaosGame
         _lobby.Start();
     }
 
+    /// <summary>
+    /// Starts the match once the server has finished starting it; false while it has not.
+    /// </summary>
+    /// <remarks>
+    /// The server commits `running` on turn 0 before it seats anyone or opens turn 1, and a lobby
+    /// poll or a resumed seat can read the match in between. Bootstrapping that view would fail, and
+    /// a failed bootstrap is final, so an early view is refused here, before anything is changed,
+    /// and the caller keeps the player in the lobby, whose poll brings the finished match back.
+    /// </remarks>
+    /// <param name="view">The match as the server last described it.</param>
+    /// <param name="resumingSeat">
+    /// A saved seat taken back in a running match: it is restored on the online screen, as a
+    /// player who joined in progress, rather than opened from the lobby.
+    /// </param>
+    private bool TryStartOnlineMatch(MatchView view, bool resumingSeat = false)
+    {
+        if (!MultiplayerMatchSession.HasFinishedStarting(view)) return false;
+        if (resumingSeat)
+        {
+            _online.JoinedInProgress = true;
+            _online.Stage = MultiplayerStage.Busy;
+            _online.Status = "RESTORING THE MATCH";
+            _screens.Show(ClientScreen.Online);
+        }
+        BootstrapOnlineMatch(view);
+        return true;
+    }
+
     /// <summary>Bootstraps the match from the server's seed and roster, and opens turn 1.</summary>
     /// <remarks>
     /// A bootstrap that fails is the end of this client's match: the seed, the roster or the settings
     /// were something it cannot build a city from, and there is no version of that which playing on
     /// would improve. It says so and lets the player leave rather than starting a match it knows is
-    /// not the one everyone else is in.
+    /// not the one everyone else is in. Reached only through <see cref="TryStartOnlineMatch"/>, so a
+    /// view that is merely early never gets here.
     /// </remarks>
-    private void StartOnlineMatch(MatchView view)
+    private void BootstrapOnlineMatch(MatchView view)
     {
         if (_session is not null || _online.BootstrapFailed || _lobby?.Handle is null) return;
         if (_definitions is null)

@@ -194,9 +194,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             // read is authoritative: treat that state as success rather than leaving the host on a
             // misleading error solely because the original transition was no longer available.
             var detail = await handle.GetAsync(token).ConfigureAwait(false);
-            if (detail.Match.Status != MatchStatus.Running
-                || detail.Match.Seed is null
-                || !MultiplayerMatchSession.HasFinishedStarting(detail.Match))
+            if (detail.Match.Seed is null || !MultiplayerMatchSession.HasFinishedStarting(detail.Match))
                 throw;
             _notices.Enqueue(new LobbyNotice.Updated(detail.Match));
             return;
