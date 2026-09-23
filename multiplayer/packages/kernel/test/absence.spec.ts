@@ -278,6 +278,18 @@ describe('absent seats, departures and the repair sweeps', () => {
     expect((await h.principalOf(guest.token)).match.hostPlayerId).toBe(guest.player.id)
   })
 
+  it('hands off the host role when a takeover-pending host leaves', async () => {
+    const { host, guest } = await h.startedMatch(60)
+    await h.storage.players.setStatus(host.player.id, 'takeoverPending')
+    await h.kernel.turns.openTakeoverPrompt(host.match.id, host.player.id, 1)
+
+    await h.kernel.lobby.leave(await h.principalOf(host.token))
+
+    expect((await h.storage.players.get(host.player.id))?.status).toBe('left')
+    expect((await h.principalOf(guest.token)).match.hostPlayerId).toBe(guest.player.id)
+    expect(h.notifier.events.filter((event) => event.type === 'lobby.hostChanged')).toHaveLength(1)
+  })
+
   /**
    * A kick reaches a seat in any state. `remove` returned at once for anything but `active`, so
    * the host was answered 204 while the target kept a working token, an open stream, and `rejoin`,

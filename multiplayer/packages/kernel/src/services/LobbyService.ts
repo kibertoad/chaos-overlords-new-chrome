@@ -648,6 +648,11 @@ export class LobbyService {
     // and everyone present already ready. A `left` seat really is idle, and re-running the verdict
     // for it costs one query.
     if (!claimed || !wasActive) {
+      if (claimed && target.id === match.hostPlayerId) {
+        const successor = activePlayers(await this.deps.storage.players.listByMatch(match.id))[0]
+        if (successor) await this.handHostTo(match.id, successor.id, now)
+        else await this.turns.pauseAbandonedMatch(match.id)
+      }
       await this.turns.reevaluate(match.id)
       await this.retallyOpenPrompts(match)
       return
