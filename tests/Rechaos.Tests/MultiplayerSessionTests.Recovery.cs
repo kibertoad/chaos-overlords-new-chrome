@@ -36,8 +36,8 @@ public sealed partial class MultiplayerSessionTests
     /// A stream that goes quiet past the heartbeat is dropped and reopened from the last sequence.
     /// </summary>
     /// <remarks>
-    /// A socket the network has forgotten about never says so. Without a deadline measured from
-    /// the last byte, the session would sit on it for the rest of the match, missing every turn.
+    /// A socket the network has forgotten about never says so. Without a deadline on every read of
+    /// the body, the session would sit on it for the rest of the match, missing every turn.
     /// </remarks>
     [Fact]
     public async Task ReconnectsWhenTheStreamGoesSilent()

@@ -223,7 +223,7 @@ public sealed class MultiplayerEventStreamTests
     /// A body that carries nothing for longer than the idle deadline is given up on as dead.
     /// </summary>
     /// <remarks>
-    /// The deadline is measured from the last byte: a keepalive resets it, so a healthy stream
+    /// The deadline runs while the parser waits on the body: a keepalive resets it, so a healthy stream
     /// between turns is never mistaken for a dead one.
     /// </remarks>
     [Fact]
@@ -240,6 +240,31 @@ public sealed class MultiplayerEventStreamTests
         var idle = await Assert.ThrowsAsync<EventStreamIdleException>(async () => await frames.MoveNextAsync());
 
         Assert.True(TransientFailure.IsTransient(idle));
+    }
+
+    /// <summary>
+    /// Time the consumer spends handling a frame is not silence on the wire.
+    /// </summary>
+    /// <remarks>
+    /// No deadline runs while the iterator is suspended at <c>yield return</c>, but the next read
+    /// arms a fresh one: a read that then waits past it still gives up on the connection.
+    /// </remarks>
+    [Fact]
+    public async Task ConsumerWorkLongerThanIdleWindowDoesNotExpireNextRead()
+    {
+        using var body = new PushStream();
+        body.Write(": keepalive\n\n");
+        await using var frames = EventStreamParser
+            .ReadFramesAsync(body, TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
+
+        Assert.True(await frames.MoveNextAsync());
+        await Task.Delay(250, TestContext.Current.CancellationToken);
+        var next = frames.MoveNextAsync().AsTask();
+        body.Write(": keepalive\n\n");
+        Assert.True(await next);
+        Assert.True(frames.Current.IsKeepalive);
+        await Assert.ThrowsAsync<EventStreamIdleException>(async () => await frames.MoveNextAsync());
     }
 
     /// <summary>
