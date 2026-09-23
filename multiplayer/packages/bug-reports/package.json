@@ -1,6 +1,6 @@
 {
   "name": "@chaos-overlords/bug-reports",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "Bug report intake: its own Drizzle schema, migration lineage and database, plus the blob store the compressed match journals are kept in. Deliberately shares nothing with the multiplayer storage.",
   "keywords": [
     "chaos-overlords",
