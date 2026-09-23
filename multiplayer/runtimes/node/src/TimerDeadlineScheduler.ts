@@ -1,5 +1,5 @@
-import type { BugReportService } from '@chaos-overlords/bug-reports'
 import type { Clock, DeadlineScheduler, Kernel, Logger, TurnService } from '@chaos-overlords/kernel'
+import { startPeriodic } from './periodic.js'
 
 /**
  * One `setTimeout` per open turn, replaced when the same match schedules again. Timers do not
@@ -47,49 +47,18 @@ export class TimerDeadlineScheduler implements DeadlineScheduler {
 }
 
 /**
- * The periodic safety net: seals turns whose timer was lost to a restart, finishes seals that were
- * interrupted halfway, and collects matches past their retention age. Returns the stop handle.
+ * The periodic safety net: seals turns whose timer was lost to a restart and finishes seals that
+ * were interrupted halfway. Returns the stop handle. Retention is the cleanup job's, not this one's.
  */
-export function startSweeper(
-  kernel: Kernel,
-  intervalMs: number,
-  logger: Logger,
-  bugReports?: BugReportService,
-): () => void {
-  // One pass at a time. `setInterval` fires whether or not the previous pass finished, and a slow
-  // database would stack passes that each re-read the same expired turns and the same retention
-  // batch; a pass still running when the interval fires simply skips that beat.
-  let running = false
-  const tick = () => {
-    if (running) return
-    running = true
-    void sweep(kernel, logger, bugReports).finally(() => {
-      running = false
-    })
-  }
-  const timer = setInterval(tick, intervalMs)
-  timer.unref()
-  tick()
-  return () => clearInterval(timer)
+export function startSweeper(kernel: Kernel, intervalMs: number, logger: Logger): () => void {
+  return startPeriodic(intervalMs, () => sweep(kernel, logger))
 }
 
-async function sweep(kernel: Kernel, logger: Logger, bugReports?: BugReportService): Promise<void> {
+async function sweep(kernel: Kernel, logger: Logger): Promise<void> {
   try {
     const { sealed, repaired } = await kernel.turns.sweep()
     if (sealed > 0 || repaired > 0) logger.info('sweeper advanced turns', { sealed, repaired })
   } catch (error) {
     logger.warn('turn sweep failed', { error: String(error) })
-  }
-  try {
-    await kernel.retention.collect()
-  } catch (error) {
-    logger.warn('retention sweep failed', { error: String(error) })
-  }
-  // The intake keeps nothing forever either. It is a different database with a different window,
-  // so it gets its own call and its own failure: neither sweep may take the other down.
-  try {
-    await bugReports?.collect()
-  } catch (error) {
-    logger.warn('bug report retention sweep failed', { error: String(error) })
   }
 }

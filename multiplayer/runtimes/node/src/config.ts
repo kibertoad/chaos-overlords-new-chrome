@@ -1,3 +1,4 @@
+import { DEFAULT_RETENTION_DAYS } from '@chaos-overlords/kernel'
 import { DEFAULT_EVENT_HUB_LIMITS } from '@chaos-overlords/server'
 
 export interface NodeConfig {
@@ -44,10 +45,12 @@ export interface NodeConfig {
   /** Bug reports accepted per client address per minute. */
   bugReportRateLimitPerMinute: number
   /**
-   * Days after which a finished, abandoned or never-started match is deleted with everything it
-   * owns. 0 keeps every match forever, which a long-lived server will feel in its database size.
+   * Days after which a finished or abandoned match is deleted with everything it owns. 0 keeps
+   * them forever, which a long-lived server will feel in its database size.
    */
   retentionDays: number
+  /** Days after which a lobby that was never started is deleted. 0 keeps them forever. */
+  lobbyRetentionDays: number
   /**
    * Days after which a RUNNING match that nobody is in any more is deleted. 0 keeps them forever.
    *
@@ -56,6 +59,16 @@ export interface NodeConfig {
    * collecting one says "nobody is coming back".
    */
   abandonedRetentionDays: number
+  /**
+   * Days after which a running match is deleted even though players are still seated in it, because
+   * nothing has happened in it for that long. Unset follows `abandonedRetentionDays` (three times
+   * as long); 0 keeps them forever.
+   */
+  silentRetentionDays: number | undefined
+  /** Matches each retention window deletes per pass. Unset picks a size for the database dialect. */
+  retentionBatchSize: number | undefined
+  /** How often the cleanup job runs: match retention, then bug report retention. */
+  retentionIntervalMs: number
   /** Days a bug report and its archive are kept. 0 keeps them forever. */
   bugReportRetentionDays: number
   /**
@@ -111,8 +124,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
     memberRateLimitPerMinute: integer(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240, 1),
     uploadRateLimitPerMinute: integer(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10, 1),
     bugReportRateLimitPerMinute: integer(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5, 1),
-    retentionDays: integer(env.RETENTION_DAYS, 30),
-    abandonedRetentionDays: integer(env.ABANDONED_RETENTION_DAYS, 90),
+    retentionDays: integer(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
+    lobbyRetentionDays: integer(env.LOBBY_RETENTION_DAYS, DEFAULT_RETENTION_DAYS.lobby),
+    abandonedRetentionDays: integer(
+      env.ABANDONED_RETENTION_DAYS,
+      DEFAULT_RETENTION_DAYS.abandonedLive,
+    ),
+    silentRetentionDays: optionalInteger(env.SILENT_RETENTION_DAYS),
+    retentionBatchSize: optionalInteger(env.RETENTION_BATCH_SIZE, 1),
+    retentionIntervalMs: integer(env.RETENTION_INTERVAL_MS, 60_000, MIN_SWEEP_INTERVAL_MS),
     bugReportRetentionDays: integer(env.BUG_REPORT_RETENTION_DAYS, 90),
     bugReportDailyStateMb: integer(env.BUG_REPORT_DAILY_STATE_MB, 512),
     trustedProxyHops: proxyHops(env.TRUST_PROXY),
@@ -123,8 +143,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
 }
 
 /**
- * The floor under the sweep: `0` would be a hot loop over the database, and anything under a
- * second has nothing to find that the previous pass did not.
+ * The floor under the sweep and the cleanup job: `0` would be a hot loop over the database, and
+ * anything under a second has nothing to find that the previous pass did not.
  */
 const MIN_SWEEP_INTERVAL_MS = 1_000
 
@@ -140,6 +160,11 @@ function integer(raw: string | undefined, fallback: number, minimum = 0): number
     throw new Error(`Expected an integer of at least ${minimum}, got "${raw}"`)
   }
   return value
+}
+
+/** An integer when the variable is set, `undefined` when it is not, so a derived default can apply. */
+function optionalInteger(raw: string | undefined, minimum = 0): number | undefined {
+  return raw === undefined || raw === '' ? undefined : integer(raw, 0, minimum)
 }
 
 /** A comma-separated list, trimmed, with empty entries dropped. */

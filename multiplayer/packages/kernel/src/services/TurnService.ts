@@ -31,7 +31,7 @@ export const FIRST_TURN = 1
  *
  * A seal in flight is seconds old and a verdict interrupted after its compare-and-swap is too, so
  * this window is generous by orders of magnitude for both. What it excludes is the standing
- * population of a public server: matches deliberately kept `running` for ninety days after everyone
+ * population of a public server: matches deliberately kept `running` for weeks after everyone
  * walked away, and matches parked in `desynced` because the host never uploaded a repair. Those
  * used to be re-judged, and joined against, on every single tick forever.
  */

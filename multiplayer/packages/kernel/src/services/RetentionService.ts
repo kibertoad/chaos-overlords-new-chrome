@@ -1,20 +1,31 @@
 import type { MatchStatus } from '@chaos-overlords/contracts'
 import type { KernelDeps } from './deps'
 
-/** Matches that will never be played again, and are therefore the only ones retention may delete. */
-const COLLECTABLE: readonly MatchStatus[] = ['finished', 'abandoned', 'lobby']
+/** Matches that are over, and will never be played again. */
+const TERMINATED: readonly MatchStatus[] = ['finished', 'abandoned']
+
+/** A lobby nobody ever started. It has no game in it, only a seat list and a listing slot. */
+const NEVER_STARTED: readonly MatchStatus[] = ['lobby']
 
 export interface RetentionPolicy {
-  /** Age after which a finished, abandoned or never-started match is deleted. 0 keeps everything. */
-  maxAgeMs: number
+  /** Age after which a finished or abandoned match is deleted. 0 keeps them forever. */
+  finishedMaxAgeMs: number
+  /**
+   * Age after which a lobby that was never started is deleted. 0 keeps them forever.
+   *
+   * Its own window, and a short one, because a lobby holds nothing worth keeping: no turn has been
+   * played in it. On a public server the forgotten ones are also what clutters the Browse list.
+   * The age runs from creation or the last settings change; a join does not refresh it.
+   */
+  lobbyMaxAgeMs: number
   /**
    * Age after which a RUNNING or desynced match with nobody active in it is deleted. 0 keeps them
-   * forever, which is what the server used to do.
+   * forever.
    *
-   * Far longer than {@link maxAgeMs} on purpose. A match in this state is not over — it is kept
-   * precisely so a player who closed the game in March can come back and rejoin — so the window has
-   * to be long enough that collecting one is the same statement as "nobody is coming back". It is
-   * the ordinary end of a match on a public server, and nothing else ever collected it.
+   * Longer than {@link finishedMaxAgeMs} on purpose. A match in this state is not over — it is kept
+   * precisely so a player who closed the game can come back and rejoin — so the window has to be
+   * long enough that collecting one is the same statement as "nobody is coming back". It is the
+   * ordinary end of a match on a public server, and nothing else ever collects it.
    */
   abandonedLiveMaxAgeMs: number
   /**
@@ -28,24 +39,63 @@ export interface RetentionPolicy {
    * matches, their orders, their events and up to five megabytes of snapshot are immortal.
    */
   silentLiveMaxAgeMs: number
-  /** Matches deleted per sweep, so one pass cannot monopolise the database. */
+  /** Matches deleted per window per sweep, so one pass cannot monopolise the database. */
   batchSize: number
 }
 
+/**
+ * The retention windows in whole days, which is how both runtimes let an operator state them.
+ *
+ * `silentLive` is optional: left out, it follows `abandonedLive` at
+ * {@link SILENT_TO_ABANDONED_RATIO} times its length, so the window without the roster test stays
+ * the longer of the two and switching the abandoned window off (0) switches both off.
+ */
+export interface RetentionDays {
+  finished: number
+  lobby: number
+  abandonedLive: number
+  silentLive?: number
+}
+
+/**
+ * Defaults sized for a shared public server, where nobody is watching one self-hosted file grow and
+ * the database is every stranger's matches. A server for a group of friends that wants to keep its
+ * history longer raises them through configuration; nothing else depends on their values.
+ */
+export const DEFAULT_RETENTION_DAYS: Required<RetentionDays> = {
+  finished: 14,
+  lobby: 3,
+  abandonedLive: 30,
+  silentLive: 90,
+}
+
+export const SILENT_TO_ABANDONED_RATIO = 3
+
+export const DEFAULT_RETENTION_BATCH_SIZE = 50
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
-export const DEFAULT_RETENTION: RetentionPolicy = {
-  maxAgeMs: 30 * DAY_MS,
-  abandonedLiveMaxAgeMs: 90 * DAY_MS,
-  silentLiveMaxAgeMs: 180 * DAY_MS,
-  batchSize: 50,
+/** Maps windows stated in days onto the policy, deriving the silent window when it is left out. */
+export function retentionPolicyFromDays(
+  days: RetentionDays,
+  batchSize = DEFAULT_RETENTION_BATCH_SIZE,
+): RetentionPolicy {
+  const silentLive = days.silentLive ?? days.abandonedLive * SILENT_TO_ABANDONED_RATIO
+  return {
+    finishedMaxAgeMs: days.finished * DAY_MS,
+    lobbyMaxAgeMs: days.lobby * DAY_MS,
+    abandonedLiveMaxAgeMs: days.abandonedLive * DAY_MS,
+    silentLiveMaxAgeMs: silentLive * DAY_MS,
+    batchSize,
+  }
 }
+
+export const DEFAULT_RETENTION: RetentionPolicy = retentionPolicyFromDays(DEFAULT_RETENTION_DAYS)
 
 /**
  * Deletes the matches nobody will come back to. A coordination server accumulates rows that have no
  * second use — a finished match's order documents, a megabyte of snapshot per desync, the lobby
- * someone opened and never started — and a self-hosted SQLite file has no operator watching it
- * grow. Deleting the match row takes everything it owns with it, because every child table cascades.
+ * someone opened and never started — and every one of them has a window here after which it goes. Deleting the match row takes everything it owns with it, because every child table cascades.
  *
  * A running or desynced match is collected only when it has been silent for the much longer second
  * window AND holds no active player. A desync pause is not abandonment and neither is a weekend;
@@ -60,6 +110,7 @@ export class RetentionService {
   async collect(): Promise<number> {
     return (
       (await this.collectTerminated()) +
+      (await this.collectNeverStarted()) +
       (await this.collectAbandonedLive()) +
       (await this.collectSilentLive())
     )
@@ -67,10 +118,19 @@ export class RetentionService {
 
   private collectTerminated(): Promise<number> {
     return this.collectWindow(
-      this.policy.maxAgeMs,
-      'retention deleted inactive matches',
+      this.policy.finishedMaxAgeMs,
+      'retention deleted finished matches',
       (before) =>
-        this.deps.storage.matches.deleteInactive(COLLECTABLE, before, this.policy.batchSize),
+        this.deps.storage.matches.deleteInactive(TERMINATED, before, this.policy.batchSize),
+    )
+  }
+
+  private collectNeverStarted(): Promise<number> {
+    return this.collectWindow(
+      this.policy.lobbyMaxAgeMs,
+      'retention deleted lobbies that never started',
+      (before) =>
+        this.deps.storage.matches.deleteInactive(NEVER_STARTED, before, this.policy.batchSize),
     )
   }
 

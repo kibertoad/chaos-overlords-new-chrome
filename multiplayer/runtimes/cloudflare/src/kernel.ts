@@ -8,10 +8,14 @@ import {
 } from '@chaos-overlords/bug-reports'
 import {
   createKernel,
+  DEFAULT_RETENTION_BATCH_SIZE,
+  DEFAULT_RETENTION_DAYS,
   type DeadlineScheduler,
   type EventNotifier,
   type Kernel,
   type Logger,
+  type RetentionPolicy,
+  retentionPolicyFromDays,
   type StreamCloser,
 } from '@chaos-overlords/kernel'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
@@ -27,13 +31,38 @@ export const workerLogger: Logger = {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const DEFAULT_RETENTION_DAYS = 30
-const DEFAULT_ABANDONED_RETENTION_DAYS = 90
 
 /** A non-negative whole number from an environment variable; anything else reads as `fallback`. */
 function wholeNumber(raw: string | undefined, fallback: number): number {
   const value = Number(raw ?? fallback)
   return Number.isInteger(value) && value >= 0 ? value : fallback
+}
+
+/**
+ * The retention windows from the vars, with the kernel's defaults for any that are unset.
+ *
+ * The silent window is only passed when it is set, so an unset one follows the abandoned window the
+ * same way it does on Node.
+ */
+export function retentionPolicyFor(env: Env): RetentionPolicy {
+  const silentLive =
+    env.SILENT_RETENTION_DAYS === undefined || env.SILENT_RETENTION_DAYS === ''
+      ? undefined
+      : wholeNumber(env.SILENT_RETENTION_DAYS, DEFAULT_RETENTION_DAYS.silentLive)
+  const batchSize = wholeNumber(env.RETENTION_BATCH_SIZE, DEFAULT_RETENTION_BATCH_SIZE)
+  return retentionPolicyFromDays(
+    {
+      finished: wholeNumber(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
+      lobby: wholeNumber(env.LOBBY_RETENTION_DAYS, DEFAULT_RETENTION_DAYS.lobby),
+      abandonedLive: wholeNumber(
+        env.ABANDONED_RETENTION_DAYS,
+        DEFAULT_RETENTION_DAYS.abandonedLive,
+      ),
+      ...(silentLive === undefined ? {} : { silentLive }),
+    },
+    // A batch of 0 would delete nothing while looking switched on; the windows are the off switch.
+    batchSize > 0 ? batchSize : DEFAULT_RETENTION_BATCH_SIZE,
+  )
 }
 
 export const HUB_PATHS = {
@@ -125,18 +154,7 @@ export function buildKernel(
       clock: { now: () => new Date() },
       logger: workerLogger,
     },
-    {
-      retention: {
-        maxAgeMs: wholeNumber(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS) * DAY_MS,
-        abandonedLiveMaxAgeMs:
-          wholeNumber(env.ABANDONED_RETENTION_DAYS, DEFAULT_ABANDONED_RETENTION_DAYS) * DAY_MS,
-        // Twice the abandoned window, and without its roster test, which never collects an untimed
-        // match whose players' clients died without a `leave`.
-        silentLiveMaxAgeMs:
-          wholeNumber(env.ABANDONED_RETENTION_DAYS, DEFAULT_ABANDONED_RETENTION_DAYS) * 2 * DAY_MS,
-        batchSize: 50,
-      },
-    },
+    { retention: retentionPolicyFor(env) },
   )
 }
 
