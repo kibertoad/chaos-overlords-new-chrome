@@ -600,9 +600,9 @@ export class LobbyService {
       // and turns the match into a 500 for everybody.
       if (!(await this.deps.storage.players.delete(target.id))) return
       await this.deps.storage.matches.releaseSeat(match.id)
-      // A kicked member's token is dead with the row, but a stream they already hold is never
-      // re-authenticated: without this it goes on delivering `match.started` with the seed and
-      // every seal, desync and roster change for the rest of the match.
+      // A kicked member's token is dead with the row, but a stream they already hold only re-checks
+      // its membership on the hub's catch-up heartbeat: without this it goes on delivering
+      // `match.started` with the seed and every seal, desync and roster change until then.
       if (reason === 'kicked') await this.hangUp(match.id, target.id)
       await this.publisher.publish(match.id, {
         type: 'lobby.playerLeft',
@@ -625,8 +625,8 @@ export class LobbyService {
     // controlled, but the person behind it must still lose the token and the streams either way.
     // Membership is the only thing the token ever proved, so it stops working here: a kicked player
     // keeps neither the event stream nor the sealed order sets of the turns that follow. The revoke
-    // closes the next request and the hang-up closes the streams already open, which are never
-    // re-authenticated and would otherwise outlive the membership for as long as the client liked.
+    // closes the next request and the hang-up closes the streams already open, which otherwise
+    // outlive the membership until the hub's periodic membership check catches up with them.
     if (reason === 'kicked') {
       await this.deps.storage.players.revokeToken(target.id)
       await this.hangUp(match.id, target.id)

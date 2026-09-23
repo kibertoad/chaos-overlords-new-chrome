@@ -16,6 +16,7 @@ export {
   isReadableEvent,
 } from './sse/createSseResponse'
 export { type EventFrame, MatchLog } from './sse/MatchLog'
+export { isActiveMember } from './sse/membership'
 export {
   DEFAULT_EVENT_HUB_LIMITS,
   type EventHubLimits,

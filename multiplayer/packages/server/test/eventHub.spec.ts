@@ -33,6 +33,27 @@ async function open(hub: LocalEventHub, matchId: string, playerId: string) {
 }
 
 describe('LocalEventHub stream caps', () => {
+  it('ends a stream when periodic membership revalidation fails', async () => {
+    let authorized = true
+    const hub = new LocalEventHub(emptyEvents, 5, undefined, {
+      revalidate: async () => authorized,
+    })
+    const stream = await open(hub, 'm', 'p1')
+    expect(hub.connectionCount('m')).toBe(1)
+    authorized = false
+    expect(await stream.ended()).toBe(true)
+    expect(hub.connectionCount('m')).toBe(0)
+  })
+
+  it('ends a stream whose membership check never settles', async () => {
+    const hub = new LocalEventHub(emptyEvents, 5, undefined, {
+      revalidate: () => new Promise<boolean>(() => {}),
+    })
+    const stream = await open(hub, 'm', 'p1')
+    expect(await stream.ended()).toBe(true)
+    expect(hub.connectionCount('m')).toBe(0)
+  })
+
   /**
    * A stream is not a request. It lives until the client closes it and every event published to its
    * match costs it one query, so the per-minute limit on the call that opens one bounds nothing that
