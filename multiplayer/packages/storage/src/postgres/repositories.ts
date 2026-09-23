@@ -320,29 +320,37 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
       return rows.length === 1
     },
     async createLate(player) {
-      // Lock first, then count in a new READ COMMITTED statement. Putting the count in the
-      // locking SELECT would still let two joins evaluate it against the same old snapshot.
+      // Lock first, then run the guarded insert as a new READ COMMITTED statement. Putting the
+      // count in the locking SELECT would still let two joins evaluate it against the same old
+      // snapshot. `no key update` serializes late joins without blocking the foreign-key checks
+      // every other insert under this match takes.
       return db.transaction(async (tx) => {
-        const [match] = await tx
-          .select({ maxPlayers: matches.maxPlayers })
+        const locked = await tx
+          .select({ id: matches.id })
           .from(matches)
           .where(and(eq(matches.id, player.matchId), eq(matches.status, 'running')))
-          .for('update')
-        if (!match) return false
-        const [capacity] = await tx
-          .select({ count: sql<number>`count(*)` })
-          .from(players)
-          .where(eq(players.matchId, player.matchId))
-        if (Number(capacity?.count ?? 0) >= match.maxPlayers) return false
-        const occupied = await tx
+          .for('no key update')
+        if (locked.length === 0) return false
+        const occupied = tx
           .select({ id: players.id })
           .from(players)
           .where(and(eq(players.matchId, player.matchId), eq(players.slot, player.slot)))
-          .limit(1)
-        if (occupied.length > 0) return false
         const rows = await tx
           .insert(players)
-          .values(player)
+          .select(
+            tx
+              .select(playerValues(player))
+              .from(matches)
+              .where(
+                and(
+                  eq(matches.id, player.matchId),
+                  eq(matches.status, 'running'),
+                  notExists(occupied),
+                  // Capacity in the same statement as the insert; see the SQLite twin.
+                  sql`(select count(*) from ${players} where ${players.matchId} = ${player.matchId}) < ${matches.maxPlayers}`,
+                ),
+              ),
+          )
           .onConflictDoNothing()
           .returning({ id: players.id })
         return rows.length === 1
