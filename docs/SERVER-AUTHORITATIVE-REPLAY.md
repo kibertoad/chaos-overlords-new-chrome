@@ -1,7 +1,7 @@
 # Server-authoritative turn replay
 
 Status: design, not implemented
-Last updated: 2026-09-20
+Last updated: 2026-09-23
 
 This document designs the change that [MULTIPLAYER.md](MULTIPLAYER.md) leaves room for and
 names twice: moving turn resolution onto the coordination server behind a `TurnResolver` port.
@@ -316,6 +316,18 @@ Ordering choices worth stating:
   the open moves back before resolution and the invariant is weakened to "resolved or resolving".
 - **Resolution runs on the server's own checkpoint**, never on anything a client sent. The server
   cannot be handed a state.
+- **`resolved_turn` only moves forward, the way `currentTurn` does.** `openTurn` no longer writes
+  `currentTurn` outright: it goes through `MatchRepository.advanceCurrentTurn`, a conditional write
+  that a late sweep re-opening a turn the match has moved past cannot move backwards, and only the
+  call that created the turn or advanced `currentTurn` onto it arms the deadline. Resolution follows
+  the same rule. The `match_states` insert is keyed on `(match_id, turn)` and refused when the row
+  exists; `resolved_turn` advances through one conditional write that is refused unless it moves
+  forward; and `turn.resolved` is announced under its own claim on the turn row, as `turn.desynced`
+  already is through `claimDesyncAnnouncement`, so a process that dies between the write and the
+  announcement leaves it for the sweep and the event is never published twice. A sweep that finds a
+  resolution already written skips straight to the announcement claim and the idempotent
+  `openTurn`. Because the next turn now opens after resolution, its deadline is armed
+  after resolution too, so the time the server spends resolving never comes out of a player's clock.
 
 The verdict logic changes from a consensus to a comparison. A report equal to `resolved_state_hash`
 confirms the seat; a report that differs marks that seat desynced, names it in `turn.desynced`, and
@@ -381,6 +393,22 @@ client contract is unchanged except that step 5 (the host uploads on desync) dis
 The `seatSummaries` the host wrote into `gameSettings` from its snapshot uploads for the public listing
 are now derived by the server from its own state at every resolution.
 
+On the client this fits the restore split that already exists. `RestoreAsync` is now two steps:
+`RebuildFromHistoryAsync`, which rebuilds the state and announces `Resumed`, and
+`ResolvePendingDesyncAsync`, which the pump retries on its own when it runs out of its retry window,
+so a long outage never announces the match twice. Under this design the second step stops adopting a
+repair somebody posted, or posting one, and becomes: fetch `GET /snapshots/:turn` for the seat's
+desynced turn, restore it, verify the hash and re-report. The retry boundary stays where it is. The
+best-effort bootstrap upload the restore path still makes goes away with the upload route.
+
+The host role loses its data duties with this change. Today the host uploads the bootstrap, the
+ten-turn checkpoints and the seat summaries, and a desync waits for whoever holds the most-reported
+hash to post a repair, so a match whose repairers are away stays parked in `desynced`. After it the
+host of a running match only kicks. The handoff rules stay as they are: the role moves to the first
+active player when the host leaves, a `takeoverPending` host who leaves included, and an abandoned
+match pauses when nobody is left to take it. They stop being on the path of a match's progress,
+because nothing the match needs is waiting on the host.
+
 ### Controller transfers and absence
 
 Nothing changes in the vote machinery. What changes is that the approved transfer, which every client
@@ -388,6 +416,19 @@ applies at its event-log position through `TransferPlayerToComputer`, is also ap
 the same position as part of the next `apply`. The transfers are read from the event log between the
 previous seal and this one, in sequence order, and passed in `SealedTurnInput.transfers`. This is
 the one place the resolver depends on the log, and the log is already durable before it is published.
+
+The events are the three MULTIPLAYER.md names as placing a transfer: `match.playerTakenOver` becomes
+`to: 'computer'`, and `match.playerReturned` (for a seat that was computer controlled) and
+`match.latePlayerJoined` become `to: 'human'`. The resolver applies the rule the clients apply: a
+transfer is ignored once the state carries an outcome, so the server ignores exactly the transfers
+every client ignores. Transfers are applied before any document, and the frozen participant set
+guarantees what the resolver then sees: `sealedSlots` is drawn from the human participants at the
+freeze, so a slot that carries a document is human controlled once the transfers before the seal
+are applied. The resolver asserts that rather than assuming it, and a slot that has a document and
+ends the transfers computer controlled refuses the resolution as a server defect. The takeover
+repository now enforces the upstream half of this too: `TakeoverRepository.openPrompt` opens a
+prompt only while the seat has one of the `ABSENT_HUMAN_STATUSES`, so a player who has returned
+cannot be voted to the computer by a prompt that outlived their absence.
 
 ### Engine version and session version
 
@@ -410,7 +451,12 @@ whose hash is not the one the engine's conformance vectors were generated for.
 - **Node**: the resolver runs in-process. A turn's resolution is CPU-bound for tens to a few hundred
   milliseconds, dominated by AI planning; it runs on the request that completed the seal or in the
   sweep, and a `worker_threads` pool is the escape hatch if a public Node deployment shows it blocking
-  the event loop.
+  the event loop. The event loop it blocks is also the one holding every open event stream (up to
+  `MAX_EVENT_STREAMS`, with a quarter of that reserved for lobbies), writing their 20-second
+  keepalives and re-checking each stream's membership. The game's stream idle deadline is two and a
+  half heartbeats, so a resolution blocking for a few hundred milliseconds is far inside it; what
+  the pool guards against is many matches sealing at once on one process, which delays every
+  stream's keepalive by the sum of them.
 - **Cloudflare**: the `MatchHub` Durable Object already exists per match for fan-out and deadlines.
   Resolution moves into it, which serialises resolution per match for free and lets it keep the
   restored `EngineState` of the current turn in memory between seals so that a turn is resolved from
@@ -679,7 +725,9 @@ Each phase is shippable on its own and none changes the rules a client plays.
    the protocol version moves. Submission-time refusal of rejected orders ships here.
 5. **Retire the client-side path that no longer has a purpose.** The host's upload code and the
    corroboration logic are deleted from both the kernel and the game client; the storage migration
-   drops the `snapshots` table once every live match has a server checkpoint.
+   drops the `snapshots` table once every live match has a server checkpoint. The match-wide
+   `desynced` status goes with them, and so do the paths that exist only to get a match out of it:
+   `resumeAfterDesync`, the verdict repair in `reevaluate` and the sweep's pass over paused matches.
 
 What comes after, and is not planned here: per-seat filtered state, which is what finally closes
 the hidden-information gap, and a browser client on the engine package.
