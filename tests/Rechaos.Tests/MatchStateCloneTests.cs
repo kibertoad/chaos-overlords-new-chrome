@@ -44,6 +44,31 @@ public sealed class MatchStateCloneTests
     }
 
     [Fact]
+    public void EvictedReadComlinkSequenceSurvivesSaveAndSpeculativeClone()
+    {
+        var definitions = BundledOriginalData.Load();
+        var state = State(definitions);
+        var sender = new PlayerId(0);
+        var recipient = new PlayerId(1);
+        state.FinishUpkeep();
+        Assert.True(state.SendComlinkMessage(sender, [recipient], "FIRST").Accepted);
+        Assert.True(state.MarkComlinkRead(recipient, 0));
+        for (var index = 0; index < MatchLimits.ComlinkMessagesPerPlayer; index++)
+            Assert.True(state.SendComlinkMessage(sender, [recipient], $"NEXT {index}").Accepted);
+        Assert.Empty(state.ComlinkFor(recipient).ReadSequences);
+        Assert.Equal(0, state.ComlinkFor(recipient).LegacyReadThroughSequence);
+
+        var cloned = MatchStateClone.Of(state, definitions);
+        using var originalSave = new MemoryStream();
+        using var clonedSave = new MemoryStream();
+        NativeSaveSerializer.Save(originalSave, state);
+        NativeSaveSerializer.Save(clonedSave, cloned);
+
+        Assert.Equal(0, cloned.ComlinkFor(recipient).LegacyReadThroughSequence);
+        Assert.Equal(originalSave.ToArray(), clonedSave.ToArray());
+    }
+
+    [Fact]
     public void OnlineSnapshotStillReadsLegacyUncompressedBody()
     {
         var definitions = BundledOriginalData.Load();
