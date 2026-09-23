@@ -35,8 +35,7 @@ public static partial class AiTurnPlanner
         var commands = new List<GameCommand>();
         foreach (var entry in player.Gangs
                      .Select((gang, slot) => (gang, slot))
-                     .Where(entry => entry.gang.IsActive)
-                     .OrderBy(entry => entry.gang.Id.Value))
+                     .Where(entry => entry.gang.IsActive))
         {
             var gang = entry.gang;
             var options = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id)

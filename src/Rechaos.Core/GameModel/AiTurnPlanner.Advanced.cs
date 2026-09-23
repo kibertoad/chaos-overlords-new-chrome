@@ -34,8 +34,7 @@ public static partial class AiTurnPlanner
         var cashBudget = Math.Max(0, player.Cash)
             - commands.Sum(command => EstimatedCost(state, command));
 
-        foreach (var gang in player.Gangs.Where(gang => gang.IsActive)
-                     .OrderBy(gang => gang.Id.Value))
+        foreach (var gang in player.Gangs.Where(gang => gang.IsActive))
         {
             if (assigned.Contains(gang.Id)) continue;
             var fallback = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id)
@@ -60,8 +59,7 @@ public static partial class AiTurnPlanner
     {
         if (state.Setup.AiMentality < AiDifficulty.CrimeLord) return;
         foreach (var entry in player.Gangs.Select((gang, slot) => (gang, slot))
-                     .Where(entry => entry.gang.IsActive)
-                     .OrderBy(entry => entry.gang.Id.Value))
+                     .Where(entry => entry.gang.IsActive))
         {
             var gang = entry.gang;
             if (gang.Force < 8 || state.Sectors[gang.SectorId].Owner != player.Id) continue;
