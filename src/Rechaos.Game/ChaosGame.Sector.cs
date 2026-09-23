@@ -447,7 +447,10 @@ public sealed partial class ChaosGame
         {
             if (SectorDetailLayout.SectorAt(_cursor, column, row) is not { } sectorId
                 || !legalSectors.Contains(sectorId)) continue;
-            DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row), GangDragSectorHighlight, 1);
+            var destination = SectorDetailLayout.Cell(column, row);
+            destination.Inflate(-2, -2);
+            batch.Draw(pixel, destination, GangDragDestinationWash);
+            DrawBorder(batch, pixel, destination, GangDragDestinationOutline, 1);
         }
         for (var siteSlot = 0; siteSlot < MatchLimits.SitesPerSector; siteSlot++)
         {
