@@ -1,17 +1,15 @@
 #!/usr/bin/env node
 
-import type { Server } from 'node:http'
-import { serve } from '@hono/node-server'
 import { loadConfig } from './config.js'
 import { buildNodeRuntime } from './container.js'
+import { startHttpServer } from './http.js'
 import { createLogger } from './logger.js'
 
 const config = loadConfig()
 const logger = createLogger(config.logLevel)
 const runtime = await buildNodeRuntime(config)
-const server = serve(
-  { fetch: runtime.app.fetch, hostname: config.host, port: config.port },
-  (info) => logger.info('listening', { host: info.address, port: info.port }),
+const server = startHttpServer(runtime.app.fetch, config, (info) =>
+  logger.info('listening', { host: info.address, port: info.port }),
 )
 
 server.on('error', (error) => {
@@ -32,11 +30,7 @@ process.on('uncaughtException', (error) => {
  * Event streams are open connections that never end on their own, so waiting for the server to go
  * quiet would wait forever. Idle connections are closed at once, and the streams still running are
  * given the grace period before they are cut; `close` then returns and the process can exit.
- *
- * `ServerType` widens to HTTP/2, which has no connection-closing methods; this server is always the
- * HTTP/1 one `serve` creates without a `createServer` override.
  */
-const connections = server as Server
 
 let shuttingDown = false
 let exiting = false
@@ -53,7 +47,7 @@ function shutdown(): void {
   }
   const deadline = setTimeout(() => {
     logger.warn('forcing open connections closed', { graceMs: config.shutdownGraceMs })
-    connections.closeAllConnections()
+    server.closeAllConnections()
     exit()
   }, config.shutdownGraceMs)
   deadline.unref()
@@ -62,7 +56,7 @@ function shutdown(): void {
   // clients see as a connection reset rather than as a stream to reconnect with their
   // `Last-Event-ID`. Closing them lets `server.close` return at once.
   runtime.closeStreams()
-  connections.closeIdleConnections()
+  server.closeIdleConnections()
   server.close(() => {
     clearTimeout(deadline)
     exit()
