@@ -1,6 +1,9 @@
 import { RateLimitedError, RateLimiter } from '@chaos-overlords/kernel'
 import {
   type AppEnv,
+  configFlag,
+  configInteger,
+  configList,
   createApp,
   DEFAULT_RATE_LIMITS,
   DEFAULT_SERVER_CONFIG,
@@ -49,9 +52,7 @@ export function resetContainerForTests(): void {
 export function buildContainer(env: Env): ServerContainer {
   const clock = { now: () => new Date() }
   const perMinute = (raw: string | undefined, fallback: number) => {
-    const limit = Number(raw ?? fallback)
-    const effective = Number.isInteger(limit) && limit > 0 ? limit : fallback
-    return new RateLimiter(clock, { limit: effective, windowMs: 60_000 })
+    return new RateLimiter(clock, { limit: configInteger(raw, fallback, 1), windowMs: 60_000 })
   }
   const bugReports = buildBugReports(env)
   return {
@@ -94,7 +95,11 @@ export function buildContainer(env: Env): ServerContainer {
     },
     // Listing is on unless a deployment turns it off: an unset var means the Browse screen works,
     // rather than every client being told the server lists nothing.
-    config: { ...DEFAULT_SERVER_CONFIG, publicListing: env.PUBLIC_LISTING !== 'false' },
+    config: {
+      ...DEFAULT_SERVER_CONFIG,
+      publicListing: configFlag(env.PUBLIC_LISTING, true),
+      corsOrigins: configList(env.CORS_ORIGINS),
+    },
     // `CF-Connecting-IP` is authoritative here and only here: Cloudflare sets it on every request
     // that reaches a Worker and a client cannot forge it through the edge. Off Cloudflare it is a
     // header anyone can write, which is why the default resolver ignores it unless told otherwise.

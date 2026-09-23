@@ -102,6 +102,11 @@ describe('node runtime configuration', () => {
     expect(loadConfig({}).publicListing).toBe(true)
     expect(loadConfig({ PUBLIC_LISTING: 'false' }).publicListing).toBe(false)
     expect(loadConfig({ PUBLIC_LISTING: 'true' }).publicListing).toBe(true)
+    expect(loadConfig({ PUBLIC_LISTING: 'TRUE' }).publicListing).toBe(true)
+    expect(loadConfig({ PUBLIC_LISTING: 'yes' }).publicListing).toBe(true)
+    expect(loadConfig({ PUBLIC_LISTING: 'FALSE' }).publicListing).toBe(false)
+    expect(loadConfig({ PUBLIC_LISTING: '0' }).publicListing).toBe(false)
+    expect(() => loadConfig({ PUBLIC_LISTING: 'sometimes' })).toThrow(/Expected a boolean/)
   })
 
   it('reads browser origins as a trimmed list, none by default', () => {

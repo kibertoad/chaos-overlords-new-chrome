@@ -1,5 +1,10 @@
 import { DEFAULT_RETENTION_DAYS } from '@chaos-overlords/kernel'
-import { DEFAULT_EVENT_HUB_LIMITS } from '@chaos-overlords/server'
+import {
+  configFlag,
+  configInteger,
+  configList,
+  DEFAULT_EVENT_HUB_LIMITS,
+} from '@chaos-overlords/server'
 
 export interface NodeConfig {
   host: string
@@ -117,32 +122,32 @@ export interface NodeConfig {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
   return {
     host: env.HOST ?? '0.0.0.0',
-    port: integer(env.PORT, 8787),
+    port: configInteger(env.PORT, 8787),
     databaseUrl: env.DATABASE_URL ?? 'sqlite:./chaos-overlords.db',
     bugReportDatabaseUrl: env.BUG_REPORT_DATABASE_URL ?? '',
     bugReportBlobDirectory: env.BUG_REPORT_BLOB_DIR ?? '',
-    publicListing: flag(env.PUBLIC_LISTING, true),
+    publicListing: configFlag(env.PUBLIC_LISTING, true),
     logLevel: level(env.LOG_LEVEL),
-    sweepIntervalMs: integer(env.SWEEP_INTERVAL_MS, 15_000, MIN_SWEEP_INTERVAL_MS),
-    rateLimitPerMinute: integer(env.RATE_LIMIT_PER_MINUTE, 30, 1),
-    memberRateLimitPerMinute: integer(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240, 1),
-    uploadRateLimitPerMinute: integer(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10, 1),
-    bugReportRateLimitPerMinute: integer(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5, 1),
-    retentionDays: integer(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
+    sweepIntervalMs: configInteger(env.SWEEP_INTERVAL_MS, 15_000, MIN_SWEEP_INTERVAL_MS),
+    rateLimitPerMinute: configInteger(env.RATE_LIMIT_PER_MINUTE, 30, 1),
+    memberRateLimitPerMinute: configInteger(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240, 1),
+    uploadRateLimitPerMinute: configInteger(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10, 1),
+    bugReportRateLimitPerMinute: configInteger(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5, 1),
+    retentionDays: configInteger(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
     lobbyRetentionDays: optionalInteger(env.LOBBY_RETENTION_DAYS),
-    abandonedRetentionDays: integer(
+    abandonedRetentionDays: configInteger(
       env.ABANDONED_RETENTION_DAYS,
       DEFAULT_RETENTION_DAYS.abandonedLive,
     ),
     silentRetentionDays: optionalInteger(env.SILENT_RETENTION_DAYS),
     retentionBatchSize: optionalInteger(env.RETENTION_BATCH_SIZE, 1),
-    retentionIntervalMs: integer(env.RETENTION_INTERVAL_MS, 60_000, MIN_SWEEP_INTERVAL_MS),
-    bugReportRetentionDays: integer(env.BUG_REPORT_RETENTION_DAYS, 90),
-    bugReportDailyStateMb: integer(env.BUG_REPORT_DAILY_STATE_MB, 512),
+    retentionIntervalMs: configInteger(env.RETENTION_INTERVAL_MS, 60_000, MIN_SWEEP_INTERVAL_MS),
+    bugReportRetentionDays: configInteger(env.BUG_REPORT_RETENTION_DAYS, 90),
+    bugReportDailyStateMb: configInteger(env.BUG_REPORT_DAILY_STATE_MB, 512),
     trustedProxyHops: proxyHops(env.TRUST_PROXY),
-    shutdownGraceMs: integer(env.SHUTDOWN_GRACE_MS, 5_000),
-    maxEventStreams: integer(env.MAX_EVENT_STREAMS, DEFAULT_EVENT_HUB_LIMITS.perProcess, 1),
-    corsOrigins: list(env.CORS_ORIGINS),
+    shutdownGraceMs: configInteger(env.SHUTDOWN_GRACE_MS, 5_000),
+    maxEventStreams: configInteger(env.MAX_EVENT_STREAMS, DEFAULT_EVENT_HUB_LIMITS.perProcess, 1),
+    corsOrigins: configList(env.CORS_ORIGINS),
   }
 }
 
@@ -157,26 +162,9 @@ const MIN_SWEEP_INTERVAL_MS = 1_000
  * window and refuses the rest, which nobody means — so every budget has a floor of one, and the
  * refusal names it rather than letting a misconfiguration run.
  */
-function integer(raw: string | undefined, fallback: number, minimum = 0): number {
-  if (raw === undefined || raw === '') return fallback
-  const value = Number(raw)
-  if (!Number.isInteger(value) || value < minimum) {
-    throw new Error(`Expected an integer of at least ${minimum}, got "${raw}"`)
-  }
-  return value
-}
-
 /** An integer when the variable is set, `undefined` when it is not, so a derived default can apply. */
 function optionalInteger(raw: string | undefined, minimum = 0): number | undefined {
-  return raw === undefined || raw === '' ? undefined : integer(raw, 0, minimum)
-}
-
-/** A comma-separated list, trimmed, with empty entries dropped. */
-function list(raw: string | undefined): string[] {
-  return (raw ?? '')
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0)
+  return raw === undefined || raw === '' ? undefined : configInteger(raw, 0, minimum)
 }
 
 /**
@@ -194,11 +182,6 @@ function proxyHops(raw: string | undefined): number {
     throw new Error(`Expected TRUST_PROXY to be true, false or a hop count, got "${raw}"`)
   }
   return value
-}
-
-function flag(raw: string | undefined, fallback: boolean): boolean {
-  if (raw === undefined || raw === '') return fallback
-  return raw === 'true' || raw === '1'
 }
 
 function level(raw: string | undefined): NodeConfig['logLevel'] {
