@@ -64,8 +64,17 @@ public sealed class MatchEventStream(
     /// server sends a keepalive every <see cref="ServerHeartbeat"/>, so a connection that survives
     /// to the second one is carrying traffic; and any real EVENT proves it immediately, whenever
     /// it arrives.
+    ///
+    /// The threshold sits a quarter of a heartbeat short of one, not on it. The server starts its
+    /// heartbeat timer when it builds the stream, and this side starts its stopwatch only once the
+    /// response headers have arrived, so the first keepalive reaches the client a little BEFORE a
+    /// full heartbeat has elapsed on its clock. Exactly one heartbeat therefore missed it, and a
+    /// reconnect to a quiet match was not reported until the keepalive after that: the "connection
+    /// lost" dialog stayed up for some forty seconds over a stream that had been working since the
+    /// first. A connection that drops right after the <c>: connected</c> comment still never
+    /// reaches the threshold, which is all it exists to catch.
     /// </remarks>
-    public static readonly TimeSpan ProvenAfter = ServerHeartbeat;
+    public static readonly TimeSpan ProvenAfter = ServerHeartbeat * 0.75;
 
     private readonly RetryPolicy _policy = policy ?? RetryPolicy.Stream;
     private readonly TimeSpan _idleTimeout = idleTimeout ?? DefaultIdleTimeout;

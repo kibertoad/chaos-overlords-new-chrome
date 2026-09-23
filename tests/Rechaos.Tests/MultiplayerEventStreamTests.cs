@@ -345,6 +345,23 @@ public sealed class MultiplayerEventStreamTests
     }
 
     /// <summary>
+    /// The first keepalive after a reconnect proves the connection, not the second.
+    /// </summary>
+    /// <remarks>
+    /// The server's heartbeat timer starts before this side's stopwatch does, so the first
+    /// keepalive lands a little short of a full heartbeat on the client's clock. A threshold of
+    /// exactly one heartbeat missed it and held the "connection lost" dialog up for a second one,
+    /// some forty seconds, over a stream that was already working.
+    /// </remarks>
+    [Fact]
+    public void ProvesAQuietConnectionOnItsFirstKeepalive()
+    {
+        Assert.True(MatchEventStream.ProvenAfter < MatchEventStream.ServerHeartbeat);
+        // Still long enough that a connection dropped right after `: connected` never counts.
+        Assert.True(MatchEventStream.ProvenAfter >= MatchEventStream.ServerHeartbeat / 2);
+    }
+
+    /// <summary>
     /// A server that accepts, writes a keepalive and drops is an outage, and is backed off from.
     /// </summary>
     /// <remarks>

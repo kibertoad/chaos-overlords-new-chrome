@@ -1,6 +1,6 @@
 import type { EventRepository, PersistedEvent } from '@chaos-overlords/kernel'
 import { describe, expect, it } from 'vitest'
-import { LocalEventHub, MatchLog } from '../src'
+import { LocalEventHub, MatchLog, type SseCloseReason } from '../src'
 
 /** An empty log: these tests are about the subscriptions, not about what comes down them. */
 const emptyEvents: EventRepository = {
@@ -34,8 +34,21 @@ async function open(hub: LocalEventHub, matchId: string, playerId: string, lobby
       }
       return false
     },
+    /** Keeps reading, as a live client does, until the stream ends. */
+    readUntilEnded: async () => {
+      while (!(await reader.read()).done) {
+        // A heartbeat; keep the queue empty so the stream never looks stalled.
+      }
+    },
     abort: () => controller.abort(),
   }
+}
+
+async function until(condition: () => boolean): Promise<void> {
+  for (let i = 0; i < 500 && !condition(); i += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 2))
+  }
+  expect(condition()).toBe(true)
 }
 
 describe('LocalEventHub stream caps', () => {
@@ -108,12 +121,77 @@ describe('LocalEventHub stream caps', () => {
   })
 
   it('ends a stream whose membership check never settles', async () => {
+    const reasons: SseCloseReason[] = []
     const hub = new LocalEventHub(emptyEvents, 5, undefined, {
       revalidate: () => new Promise<boolean>(() => {}),
+      closed: (_matchId, _playerId, reason) => reasons.push(reason),
     })
     const stream = await open(hub, 'm', 'p1')
     expect(await stream.ended()).toBe(true)
     expect(hub.connectionCount('m')).toBe(0)
+    expect(reasons).toEqual(['membership_unverified'])
+  })
+
+  /**
+   * A failed lookup says something about the database, not about the membership. D1 answers the odd
+   * query with a transient error, and dropping the stream on the first one put a "connection lost"
+   * dialog in front of a player whose server and connection were both fine.
+   */
+  it('keeps a stream through a membership check that fails once', async () => {
+    let checks = 0
+    const reasons: SseCloseReason[] = []
+    const hub = new LocalEventHub(emptyEvents, 2, undefined, {
+      // Every other check fails: never two in a row.
+      revalidate: async () => {
+        checks += 1
+        if (checks % 2 === 1) throw new Error('D1_ERROR: Network connection lost')
+        return true
+      },
+      closed: (_matchId, _playerId, reason) => reasons.push(reason),
+    })
+    const stream = await open(hub, 'm', 'p1')
+    const reading = stream.readUntilEnded()
+    await until(() => checks >= 6)
+    expect(hub.connectionCount('m')).toBe(1)
+    expect(reasons).toEqual([])
+    stream.abort()
+    await reading
+    expect(reasons).toEqual(['client_gone'])
+  })
+
+  it('ends a stream whose membership checks keep failing', async () => {
+    const reasons: SseCloseReason[] = []
+    const hub = new LocalEventHub(emptyEvents, 2, undefined, {
+      revalidate: async () => {
+        throw new Error('D1_ERROR: Network connection lost')
+      },
+      closed: (_matchId, _playerId, reason) => reasons.push(reason),
+    })
+    const stream = await open(hub, 'm', 'p1')
+    await stream.readUntilEnded()
+    expect(hub.connectionCount('m')).toBe(0)
+    expect(reasons).toEqual(['membership_unverified'])
+  })
+
+  it('reports why the hub ended each stream', async () => {
+    const reasons: string[] = []
+    const hub = new LocalEventHub(
+      emptyEvents,
+      60_000,
+      { perPlayer: 1, perMatch: 8, perProcess: 8 },
+      {
+        closed: (_matchId, playerId, reason) => reasons.push(`${playerId}:${reason}`),
+      },
+    )
+    const replaced = await open(hub, 'm', 'p1')
+    const kept = await open(hub, 'm', 'p1')
+    expect(await replaced.ended()).toBe(true)
+    const kicked = await open(hub, 'm', 'p2')
+    await hub.close({ matchId: 'm', playerId: 'p2' })
+    expect(await kicked.ended()).toBe(true)
+    hub.closeAll()
+    expect(await kept.ended()).toBe(true)
+    expect(reasons).toEqual(['p1:replaced', 'p2:revoked', 'p1:shutdown'])
   })
 
   /**

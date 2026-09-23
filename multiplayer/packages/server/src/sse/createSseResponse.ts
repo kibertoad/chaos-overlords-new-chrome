@@ -29,7 +29,48 @@ export interface EventStreamSource {
    * it already holds and how a player's stale stream is dropped to make room for their reconnect.
    * It is safe to call at any time and does nothing once the stream is closed.
    */
-  subscribe(wake: () => void, close: () => void): () => void
+  subscribe(wake: () => void, close: (reason: HubCloseReason) => void): () => void
+}
+
+/** Why the hub ended a stream from its side; see `EventStreamSource.subscribe`. */
+export type HubCloseReason =
+  /** The player's membership was revoked, so the streams it held were hung up. */
+  | 'revoked'
+  /** The player opened another stream and this, their oldest, made room for it. */
+  | 'replaced'
+  /** The process is shutting down, or the object holding the stream is. */
+  | 'shutdown'
+
+/**
+ * Why a stream ended.
+ *
+ * The client sees every one of these the same way — the body simply ends — so this is the only
+ * record of which it was. A stream the server dropped while the player was still reading it shows
+ * up on their screen as a lost connection, and without the reason in the log a membership lookup
+ * that failed once on a database hiccup is indistinguishable from a deploy.
+ */
+export type SseCloseReason =
+  | HubCloseReason
+  /** The client went away: the request was aborted, or the consumer cancelled the body. */
+  | 'client_gone'
+  /** The periodic membership check answered that this player is no longer a member. */
+  | 'membership_revoked'
+  /** The periodic membership check failed or hung too many times in a row to trust the stream. */
+  | 'membership_unverified'
+  /** The consumer stopped reading for long enough that the connection is presumed dead. */
+  | 'stalled'
+  /** Reading the log failed, and the stream was errored rather than closed. */
+  | 'read_failed'
+
+/**
+ * Whether a close is one a healthy client should never see: the server dropped a stream that was
+ * still being read, for a reason of its own.
+ *
+ * `client_gone`, `replaced` and `shutdown` are routine, and a revoked membership is the stream
+ * doing its job. The rest are worth an operator's attention.
+ */
+export function isUnexpectedClose(reason: SseCloseReason): boolean {
+  return reason === 'membership_unverified' || reason === 'stalled' || reason === 'read_failed'
 }
 
 export interface SseOptions {
@@ -40,6 +81,8 @@ export interface SseOptions {
   onUnreadable?: (seq: number) => void
   /** Confirm that the subscription still belongs to an active member. */
   revalidate?: () => Promise<boolean>
+  /** Told once, when the stream ends, why it ended. */
+  onClose?: (reason: SseCloseReason) => void
 }
 
 /**
@@ -62,6 +105,18 @@ const CATCH_UP_EVERY_HEARTBEATS = 5
  * cannot recover: it reconnects and resumes from its `Last-Event-ID`.
  */
 const STALLED_HEARTBEATS_BEFORE_DROP = 3
+
+/**
+ * Consecutive membership checks that may fail or hang before the stream is dropped.
+ *
+ * A check that FAILS has learned nothing about the membership, only about the database, and D1 in
+ * particular answers the odd query with a transient error. Dropping the stream on the first one
+ * put a "connection lost" dialog in front of a player whose membership, server and connection were
+ * all fine. A kick does not wait on this check — `LocalEventHub.close` hangs the stream up at once —
+ * so tolerating one failure only delays the backstop by a catch-up cycle, and a check that answers
+ * "not a member" still ends the stream immediately.
+ */
+const MEMBERSHIP_CHECK_FAILURES_BEFORE_DROP = 2
 
 const encoder = new TextEncoder()
 
@@ -100,7 +155,7 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
   let wakeAgain = false
   let closed = false
 
-  let shutdown: () => void = () => {
+  let shutdown: (reason: SseCloseReason) => void = () => {
     closed = true
   }
 
@@ -171,7 +226,7 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
               } catch {
                 // Already closed by the consumer.
               }
-              shutdown()
+              shutdown('read_failed')
             })
             .finally(() => {
               draining = null
@@ -188,20 +243,28 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
         // hub a close that leaves the heartbeat running and the subscription in place.
         const unsubscribe = source.subscribe(
           () => wake(),
-          () => {
-            shutdown()
+          (reason) => {
+            shutdown(reason)
           },
         )
         let beats = 0
         let stalledBeats = 0
         let validating = false
+        let failedChecks = 0
+        /** A check that learned nothing; enough of them in a row and the stream is not trusted. */
+        const checkFailed = () => {
+          failedChecks += 1
+          if (failedChecks >= MEMBERSHIP_CHECK_FAILURES_BEFORE_DROP) {
+            shutdown('membership_unverified')
+          }
+        }
         const heartbeat = setInterval(() => {
           // A consumer that is not reading is not a consumer. The queue is full, so this frame
           // would only buffer; after a few beats of that the connection is gone in every way that
           // matters and the stream is dropped rather than held; see the constant above.
           if ((controller.desiredSize ?? 1) <= 0) {
             stalledBeats += 1
-            if (stalledBeats >= STALLED_HEARTBEATS_BEFORE_DROP) shutdown()
+            if (stalledBeats >= STALLED_HEARTBEATS_BEFORE_DROP) shutdown('stalled')
             return
           }
           stalledBeats = 0
@@ -214,35 +277,39 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
           const overdue = beats % CATCH_UP_EVERY_HEARTBEATS === 0
           if (overdue && options.revalidate) {
             // A lookup still pending a whole catch-up cycle later is a failed one. Waiting on it
-            // instead left the stream never checked again for as long as that query hung.
+            // without counting it left the stream never checked again for as long as that query
+            // hung; it is left to settle rather than raced by a second one.
             if (validating) {
-              shutdown()
-              return
+              checkFailed()
+              if (closed) return
+            } else {
+              validating = true
+              void Promise.resolve()
+                .then(options.revalidate)
+                .then(
+                  (valid) => {
+                    validating = false
+                    if (!valid) shutdown('membership_revoked')
+                    else failedChecks = 0
+                  },
+                  () => {
+                    validating = false
+                    checkFailed()
+                  },
+                )
             }
-            validating = true
-            void Promise.resolve()
-              .then(options.revalidate)
-              .then(
-                (valid) => {
-                  validating = false
-                  if (!valid) shutdown()
-                },
-                () => {
-                  validating = false
-                  shutdown()
-                },
-              )
           }
           // The catch-up does not wait on the membership check: notifications keep delivering
           // while it is in flight anyway, so holding this back only delayed the read.
           if (overdue || !source.caughtUp(lastSeq)) wake(overdue)
         }, options.heartbeatMs)
-        shutdown = () => {
+        const aborted = () => shutdown('client_gone')
+        shutdown = (reason) => {
           if (closed) return
           closed = true
           // A stream ended by `cancel`, a stall or its hub would otherwise leave this listener, and
           // everything its closure holds, on the request signal for as long as that lives.
-          options.signal.removeEventListener('abort', shutdown)
+          options.signal.removeEventListener('abort', aborted)
           clearInterval(heartbeat)
           unsubscribe()
           // Release a drain parked on backpressure, so it observes `closed` and stops.
@@ -253,8 +320,9 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
           } catch {
             // Already errored, or cancelled by the consumer.
           }
+          options.onClose?.(reason)
         }
-        options.signal.addEventListener('abort', shutdown, { once: true })
+        options.signal.addEventListener('abort', aborted, { once: true })
         send(': connected\n\n')
         // The opening catch-up always reaches the log: a fresh stream has been told nothing.
         wake(true)
@@ -267,7 +335,7 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
       },
       // The consumer went away (a dropped TCP connection surfaces here, not as an abort).
       cancel() {
-        shutdown()
+        shutdown('client_gone')
       },
     },
     new CountQueuingStrategy({ highWaterMark: STREAM_HIGH_WATER_MARK }),
