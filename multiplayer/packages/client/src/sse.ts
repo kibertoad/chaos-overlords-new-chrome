@@ -32,7 +32,7 @@ export interface ParseOptions {
    * keepalive, which is tens of minutes away, while the player misses every seal. `0` disables it.
    */
   idleTimeoutMs?: number
-  /** Called when the stream delivers bytes, including keepalive comments. */
+  /** Called for each complete, well-formed frame the stream delivers, keepalive comments included. */
   onActivity?: () => void
 }
 
@@ -67,7 +67,6 @@ export async function* parseEventStream(
         drained = true
         break
       }
-      options.onActivity?.()
       buffer += decoder.decode(value, { stream: true })
       // A frame ends at a blank line, and without a cap a server that never writes one grows this
       // string for as long as it keeps sending. The C# client caps a frame at the same size.
@@ -78,6 +77,9 @@ export async function* parseEventStream(
       }
       for (const frame of takeFrames()) {
         const event = parseFrame(frame)
+        // Only a whole frame that parsed counts: bytes of a frame that never ends, or of one that is
+        // refused, are not the server talking.
+        options.onActivity?.()
         if (event) yield event
       }
     }

@@ -73,8 +73,9 @@ export interface StreamOptions {
   idleTimeoutMs?: number
   /**
    * How long the stream may keep failing to deliver anything before it gives up. The clock starts
-   * at the first failure and is reset by an event or sustained stream activity. A server that
-   * accepts and then closes at once is still an outage. `0` retries forever.
+   * at the first failure and is reset by an event, or by a keepalive on a connection that has lasted
+   * a server heartbeat. A server that accepts and then closes at once is still an outage. `0`
+   * retries forever.
    */
   maxOutageMs?: number
 }
@@ -93,8 +94,10 @@ export class StreamOutageError extends Error {
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000
 const DEFAULT_RECONNECT_DELAY_MS = 1_000
 const DEFAULT_MAX_RECONNECT_DELAY_MS = 30_000
-/** Two and a half of the server's 20-second heartbeats. */
-const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 50_000
+/** The server's default keepalive interval (`sseHeartbeatMs`). */
+const SERVER_HEARTBEAT_MS = 20_000
+/** Two and a half of the server's heartbeats. */
+const DEFAULT_STREAM_IDLE_TIMEOUT_MS = SERVER_HEARTBEAT_MS * 2.5
 const DEFAULT_MAX_OUTAGE_MS = 5 * 60_000
 
 const API = '/api/v1'
@@ -402,8 +405,9 @@ export class MatchHandle {
    *
    * Every other failure — a dropped socket, a mangled frame, a proxy answering with HTML, a
    * connection that went silent — is retried within `maxOutageMs`, after which the stream ends
-   * with a `StreamOutageError` naming the last failure. Events or sustained keepalive traffic
-   * reset the clock; accepting and immediately closing connections does not.
+   * with a `StreamOutageError` naming the last failure. An event resets the clock, and so does a
+   * keepalive on a connection that has lasted a heartbeat; accepting and immediately closing
+   * connections does not.
    */
   async *stream(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
     let after = options.after ?? 0
@@ -412,18 +416,23 @@ export class MatchHandle {
     const base = options.reconnectDelayMs ?? DEFAULT_RECONNECT_DELAY_MS
     const ceiling = options.maxReconnectDelayMs ?? DEFAULT_MAX_RECONNECT_DELAY_MS
     const maxOutageMs = options.maxOutageMs ?? DEFAULT_MAX_OUTAGE_MS
+    // A connection that is still carrying keepalives a heartbeat after it opened is a working one,
+    // the same line the C# client draws (`MatchEventStream.ProvenAfter`). The heartbeat is read off
+    // the idle timeout, which is two and a half of them, and capped so a short outage budget can
+    // still be reset by a connection that lasts half of it.
+    const idleMs = options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS
+    const heartbeatMs = idleMs > 0 ? idleMs / 2.5 : SERVER_HEARTBEAT_MS
+    const provenAfterMs = maxOutageMs > 0 ? Math.min(heartbeatMs, maxOutageMs / 2) : heartbeatMs
     while (!options.signal?.aborted) {
       // A connection the server closes cleanly without delivering anything is a failure of the
       // same kind as a dropped one for the purposes of the budget: nothing arrived.
       let failure: unknown = new Error('the server closed the event stream')
       try {
-        const idleMs = options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS
-        const healthyAfterMs = Math.min(idleMs > 0 ? idleMs : maxOutageMs, maxOutageMs) / 2
         for await (const event of this.streamOnce({
           ...options,
           after,
           onActivity: (connectionAgeMs) => {
-            if (maxOutageMs > 0 && connectionAgeMs >= healthyAfterMs) {
+            if (connectionAgeMs >= provenAfterMs) {
               attempt = 0
               outageStartedAt = null
             }

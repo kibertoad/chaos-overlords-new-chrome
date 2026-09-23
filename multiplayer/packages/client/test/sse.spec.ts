@@ -105,6 +105,16 @@ describe('parseEventStream idle deadline', () => {
     for await (const event of parseEventStream(body, { idleTimeoutMs: 40 })) seen.push(event.seq)
     expect(seen).toEqual([1])
   })
+  it('reports activity per complete frame, not per chunk', async () => {
+    let activity = 0
+    const body = bodyOf([': conn', 'ected\n\n', frameOf(1).slice(0, 10), frameOf(1).slice(10)])
+    const seen: number[] = []
+    for await (const event of parseEventStream(body, { onActivity: () => (activity += 1) })) {
+      seen.push(event.seq)
+    }
+    expect(seen).toEqual([1])
+    expect(activity).toBe(2)
+  })
 })
 
 describe('MatchHandle.stream outage budget', () => {
@@ -182,7 +192,7 @@ describe('MatchHandle.stream outage budget', () => {
           const body = new ReadableStream<Uint8Array>({
             async start(controller) {
               controller.enqueue(encoder.encode(': connected\n\n'))
-              await new Promise((resolve) => setTimeout(resolve, 40))
+              await new Promise((resolve) => setTimeout(resolve, 50))
               controller.enqueue(encoder.encode(': keepalive\n\n'))
               await new Promise((resolve) => setTimeout(resolve, 40))
               controller.close()
