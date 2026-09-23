@@ -108,7 +108,8 @@ public static partial class WinHelpDecoder
             ReadContentsTitle(contents.Span) ?? "Chaos Overlords Help",
             topics,
             contentsEntries,
-            extractedContexts);
+            extractedContexts,
+            fonts.Select(font => font.Extract()).ToArray());
     }
 
     public static uint CalculateContextHash(string contextName)
@@ -148,7 +149,10 @@ public static partial class WinHelpDecoder
         var text = $"{topic.Text.TrimEnd()}\n\n{clarification}";
         var runs = (topic.Runs ?? []).ToList();
         runs.Add(new ExtractedHelpTextRun($"\n\n{clarification}", Bold: true));
-        return topic with { Text = text, Runs = runs };
+        var paragraphs = (topic.Paragraphs ?? []).ToList();
+        paragraphs.Add(new ExtractedHelpParagraph(
+            [new ExtractedHelpTextRun(clarification, Bold: true)], 0, TabStops: []));
+        return topic with { Text = text, Runs = runs, Paragraphs = paragraphs };
     }
 
     public static byte[] DecompressLz77(ReadOnlySpan<byte> input, int maximumOutputBytes)
@@ -314,7 +318,8 @@ public static partial class WinHelpDecoder
                     string.Concat(runs.Select(run => run.Text)),
                     false,
                     topic.TopicOffset,
-                    runs);
+                    runs,
+                    topic.Paragraphs);
             })
             .ToList();
     }
@@ -381,7 +386,8 @@ public static partial class WinHelpDecoder
         ReadOnlySpan<byte> data2,
         IReadOnlyList<HelpFont> fonts)
     {
-        var commandOffset = ParagraphCommandsOffset(data1);
+        var (commandOffset, formatting) = ReadParagraphFormatting(data1);
+        var runs = new List<MutableRun>();
         var textOffset = 0;
         var fontIndex = -1;
         uint? linkHash = null;
@@ -391,7 +397,7 @@ public static partial class WinHelpDecoder
         {
             var terminator = data2[textOffset..].IndexOf((byte)0);
             var length = terminator < 0 ? data2.Length - textOffset : terminator;
-            AddRun(topic.Runs, DecodeWindows1252(data2.Slice(textOffset, length)),
+            AddRun(runs, DecodeWindows1252(data2.Slice(textOffset, length)),
                 FontAt(fonts, fontIndex), linkHash, popup);
             textOffset += length + (terminator < 0 ? 0 : 1);
             if (commandOffset >= data1.Length) break;
@@ -405,20 +411,20 @@ public static partial class WinHelpDecoder
                     commandOffset += 3;
                     break;
                 case 0x81:
-                    AddRun(topic.Runs, "\n", FontAt(fonts, fontIndex), linkHash, popup);
+                    AddRun(runs, "\n", FontAt(fonts, fontIndex), linkHash, popup);
                     commandOffset++;
                     break;
                 case 0x82:
-                    AddRun(topic.Runs, "\n\n", FontAt(fonts, fontIndex), linkHash, popup);
+                    AddRun(runs, "\n\n", FontAt(fonts, fontIndex), linkHash, popup);
                     commandOffset++;
                     break;
                 case 0x83:
                 case 0x8b:
-                    AddRun(topic.Runs, " ", FontAt(fonts, fontIndex), linkHash, popup);
+                    AddRun(runs, " ", FontAt(fonts, fontIndex), linkHash, popup);
                     commandOffset++;
                     break;
                 case 0x8c:
-                    AddRun(topic.Runs, "-", FontAt(fonts, fontIndex), linkHash, popup);
+                    AddRun(runs, "-", FontAt(fonts, fontIndex), linkHash, popup);
                     commandOffset++;
                     break;
                 case 0x89:
@@ -445,7 +451,9 @@ public static partial class WinHelpDecoder
             }
             if (terminator < 0 && textOffset >= data2.Length) break;
         }
-        AddRun(topic.Runs, "\n\n", FontAt(fonts, fontIndex), null, false);
+        AddRun(runs, "\n\n", FontAt(fonts, fontIndex), null, false);
+        topic.Runs.AddRange(runs);
+        topic.Paragraphs.Add(formatting with { Runs = NormalizeRuns(runs) });
     }
 
     private static int ParagraphTopicLength(ReadOnlySpan<byte> data)
@@ -455,7 +463,8 @@ public static partial class WinHelpDecoder
         return ReadCompressedWord(data, ref offset);
     }
 
-    private static int ParagraphCommandsOffset(ReadOnlySpan<byte> data)
+    private static (int CommandOffset, ExtractedHelpParagraph Paragraph) ReadParagraphFormatting(
+        ReadOnlySpan<byte> data)
     {
         var offset = 0;
         _ = ReadCompressedLong(data, ref offset);
@@ -465,13 +474,22 @@ public static partial class WinHelpDecoder
         var bits = ReadUInt16(data, offset);
         offset += 2;
         if ((bits & 0x0001) != 0) _ = ReadCompressedLong(data, ref offset);
-        foreach (var mask in new ushort[] { 0x0002, 0x0004, 0x0008, 0x0010, 0x0020, 0x0040 })
-            if ((bits & mask) != 0) _ = ReadCompressedInt(data, ref offset);
+        int? before = (bits & 0x0002) != 0 ? ReadCompressedInt(data, ref offset) : null;
+        int? after = (bits & 0x0004) != 0 ? ReadCompressedInt(data, ref offset) : null;
+        int? line = (bits & 0x0008) != 0 ? ReadCompressedInt(data, ref offset) : null;
+        int? left = (bits & 0x0010) != 0 ? ReadCompressedInt(data, ref offset) : null;
+        int? right = (bits & 0x0020) != 0 ? ReadCompressedInt(data, ref offset) : null;
+        int? first = (bits & 0x0040) != 0 ? ReadCompressedInt(data, ref offset) : null;
+        int? borderFlags = null;
+        int? borderWidth = null;
         if ((bits & 0x0100) != 0)
         {
             Require(data, offset, 3);
+            borderFlags = data[offset];
+            borderWidth = ReadInt16(data, offset + 1);
             offset += 3;
         }
+        var tabStops = new List<ExtractedHelpTabStop>();
         if ((bits & 0x0200) != 0)
         {
             var tabs = ReadCompressedInt(data, ref offset);
@@ -479,10 +497,21 @@ public static partial class WinHelpDecoder
             for (var index = 0; index < tabs; index++)
             {
                 var tab = ReadCompressedWord(data, ref offset);
-                if ((tab & 0x4000) != 0) _ = ReadCompressedWord(data, ref offset);
+                var alignment = (tab & 0x4000) != 0
+                    ? ReadCompressedWord(data, ref offset) : 0;
+                tabStops.Add(new ExtractedHelpTabStop(tab & 0x3fff, alignment));
             }
         }
-        return offset;
+        var alignmentKind = (bits & 0x0c00) switch
+        {
+            0x0400 => HelpParagraphAlignment.Right,
+            0x0800 => HelpParagraphAlignment.Center,
+            0x0c00 => HelpParagraphAlignment.Unsupported,
+            _ => HelpParagraphAlignment.Left
+        };
+        return (offset, new ExtractedHelpParagraph([], bits, before, after,
+            line, left, right, first, alignmentKind, tabStops,
+            borderFlags, borderWidth, (bits & 0x1000) != 0));
     }
 
     private static int SkipFormattingCommand(ReadOnlySpan<byte> data, int offset)
@@ -787,6 +816,7 @@ public static partial class WinHelpDecoder
         public string Title { get; } = title;
         public int TopicOffset { get; } = topicOffset;
         public List<MutableRun> Runs { get; } = [];
+        public List<ExtractedHelpParagraph> Paragraphs { get; } = [];
     }
 
     private sealed class MutableRun(string text, HelpFont font, uint? linkHash, bool popup)

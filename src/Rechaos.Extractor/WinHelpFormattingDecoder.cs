@@ -14,18 +14,36 @@ public static partial class WinHelpDecoder
         var descriptorsOffset = ReadUInt16(data, 6);
         if (faceNames is > 256 || descriptors is > 256
             || faceNamesOffset < 8 || descriptorsOffset < faceNamesOffset
-            || faceNamesOffset >= 12)
+            || faceNamesOffset >= 12
+            || (faceNames == 0
+                ? descriptors != 0
+                : (descriptorsOffset - faceNamesOffset) / faceNames == 0))
             throw new InvalidDataException("WinHelp font table layout is unsupported.");
         Require(data, descriptorsOffset, checked(descriptors * 11));
+        var faceStride = faceNames == 0 ? 0 : (descriptorsOffset - faceNamesOffset) / faceNames;
+        var names = new string[faceNames];
+        for (var index = 0; index < faceNames; index++)
+        {
+            var face = data.Slice(faceNamesOffset + index * faceStride, faceStride);
+            var terminator = face.IndexOf((byte)0);
+            names[index] = DecodeWindows1252(terminator < 0 ? face : face[..terminator]);
+            if (string.IsNullOrWhiteSpace(names[index]))
+                throw new InvalidDataException("WinHelp font face is empty.");
+        }
         var result = new HelpFont[descriptors];
         for (var index = 0; index < descriptors; index++)
         {
             var offset = descriptorsOffset + index * 11;
             var attributes = data[offset];
             var halfPoints = data[offset + 1];
+            var faceIndex = ReadUInt16(data, offset + 3);
             if ((attributes & 0xc0) != 0 || halfPoints is 0 or > 144)
                 throw new InvalidDataException("WinHelp font descriptor is invalid.");
-            result[index] = new HelpFont(attributes, halfPoints);
+            if (faceIndex >= names.Length)
+                throw new InvalidDataException("WinHelp font face index is invalid.");
+            result[index] = new HelpFont(index, names[faceIndex], attributes, halfPoints,
+                data[offset + 2], data[offset + 5], data[offset + 6], data[offset + 7],
+                data[offset + 8], data[offset + 9], data[offset + 10]);
         }
         return result;
     }
@@ -116,7 +134,8 @@ public static partial class WinHelpDecoder
             (font.Attributes & 0x20) != 0,
             font.HalfPoints,
             character.LinkHash,
-            character.Popup);
+            character.Popup,
+            font.Index >= 0 ? font.Index : null);
         if (runs.LastOrDefault() is { } previous && SameFormatting(previous, run))
             runs[^1] = previous with { Text = previous.Text + run.Text };
         else
@@ -132,11 +151,20 @@ public static partial class WinHelpDecoder
         && left.SmallCaps == right.SmallCaps
         && left.HalfPoints == right.HalfPoints
         && left.LinkHash == right.LinkHash
-        && left.Popup == right.Popup;
+        && left.Popup == right.Popup
+        && left.FontIndex == right.FontIndex;
 
-    private readonly record struct HelpFont(byte Attributes, byte HalfPoints)
+    private readonly record struct HelpFont(
+        int Index, string Name, byte Attributes, byte HalfPoints, byte Family,
+        byte ForegroundRed, byte ForegroundGreen, byte ForegroundBlue,
+        byte BackgroundRed, byte BackgroundGreen, byte BackgroundBlue)
     {
-        public static HelpFont Default => new(0, 20);
+        public static HelpFont Default => new(-1, "Times New Roman", 0, 20, 2,
+            0, 0, 0, 0, 0, 0);
+
+        public ExtractedHelpFont Extract() => new(Name, Family, Attributes, HalfPoints,
+            ForegroundRed, ForegroundGreen, ForegroundBlue,
+            BackgroundRed, BackgroundGreen, BackgroundBlue);
     }
 
     private readonly record struct StyledCharacter(

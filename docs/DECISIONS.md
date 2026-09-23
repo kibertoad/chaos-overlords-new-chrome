@@ -1,7 +1,7 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-22
+Last updated: 2026-09-23
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-23 | [Render WinHelp geometry on the cross-platform pixel grid](#2026-09-23--render-winhelp-geometry-on-the-cross-platform-pixel-grid) |
 | 2026-09-22 | [Fold the definition set into a fingerprint as a digest](#2026-09-22--fold-the-definition-set-into-a-fingerprint-as-a-digest) |
 | 2026-09-21 | [Fingerprint match state with XxHash128, not SHA-256](#2026-09-21--fingerprint-match-state-with-xxhash128-not-sha-256) |
 | 2026-09-19 | [Order a ctrl-picked selection of gangs at once](#2026-09-19--order-a-ctrl-picked-selection-of-gangs-at-once) |
@@ -31,6 +32,22 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-23 — Render WinHelp geometry on the cross-platform pixel grid
+
+**Decision.** Preserve the supported help file's font descriptors and
+paragraph geometry in extracted-help format 4, and render source indents,
+centering, and paragraph spacing on the existing bounded pixel-font grid.
+Asset-pack format 7 requires users to regenerate their local extracted pack.
+Exact native font metrics and line spacing remain pending comparison with
+representative original captures. Legacy macro and external-file execution
+remain disabled.
+
+**Reasoning.** Static inspection of the owned help file recovers the authored
+fields without running WinHelp. The native font rasterization and exact
+paragraph-to-pixel conversion cannot be established from those records alone.
+The extracted schema keeps the original values so a later renderer can use
+them without decoding the source again.
 
 ## 2026-09-22 — Fold the definition set into a fingerprint as a digest
 

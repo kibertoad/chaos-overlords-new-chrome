@@ -77,9 +77,57 @@ public static class HelpTextLayout
     {
         ArgumentNullException.ThrowIfNull(topic);
         if (columns <= 0) throw new ArgumentOutOfRangeException(nameof(columns));
+        if (topic.Paragraphs is { Count: > 0 })
+        {
+            var laidOut = new List<HelpTextLine>();
+            var pendingAfter = 0;
+            foreach (var record in topic.Paragraphs)
+            {
+                if (record.Runs.Count == 0)
+                {
+                    // An empty record is authored vertical space: fold it into the gap
+                    // before the next record instead of stacking extra blank rows.
+                    pendingAfter = Math.Max(pendingAfter, Math.Max(
+                        RowsFromUnits(record.SpaceBeforeUnits),
+                        RowsFromUnits(record.SpaceAfterUnits)));
+                    continue;
+                }
+                if (laidOut.Count > 0)
+                    AddBlankRows(laidOut, Math.Max(1, Math.Max(pendingAfter,
+                        RowsFromUnits(record.SpaceBeforeUnits))));
+                var left = ColumnsFromUnits(record.LeftIndentUnits);
+                var right = ColumnsFromUnits(record.RightIndentUnits);
+                var first = ColumnsFromUnits(record.FirstLineIndentUnits);
+                var recordLines = WrapRuns(record.Runs, columns, left, right, first,
+                    record.Alignment);
+                laidOut.AddRange(recordLines);
+                pendingAfter = RowsFromUnits(record.SpaceAfterUnits);
+            }
+            return laidOut;
+        }
         var source = topic.Runs is { Count: > 0 }
             ? topic.Runs
             : [new ExtractedHelpTextRun(topic.Text)];
+        return WrapRuns(source, columns, 0, 0, 0, HelpParagraphAlignment.Left);
+    }
+
+    private static int ColumnsFromUnits(int? units) =>
+        Math.Clamp((int)Math.Round((units ?? 0) * 2.0 / (3 * OriginalFontLayout.CellWidth)),
+            -16, 32);
+
+    private static int RowsFromUnits(int? units) =>
+        Math.Clamp((int)Math.Round((units ?? 0) * 2.0 / (3 * OriginalFontLayout.LineHeight)),
+            0, 3);
+
+    private static void AddBlankRows(List<HelpTextLine> lines, int count)
+    {
+        for (var index = 0; index < count; index++) lines.Add(new HelpTextLine([]));
+    }
+
+    private static IReadOnlyList<HelpTextLine> WrapRuns(
+        IReadOnlyList<ExtractedHelpTextRun> source, int columns,
+        int left, int right, int first, HelpParagraphAlignment alignment)
+    {
         var paragraphs = new List<List<HelpStyledCharacter>> { new() };
         foreach (var run in source)
         foreach (var character in run.Text)
@@ -90,6 +138,8 @@ public static class HelpTextLayout
         }
 
         var lines = new List<HelpTextLine>();
+        var minimumWidth = Math.Max(1, columns / 2);
+        var firstLine = true;
         foreach (var paragraph in paragraphs)
         {
             if (paragraph.Count == 0)
@@ -98,10 +148,22 @@ public static class HelpTextLayout
                 continue;
             }
             var start = 0;
-            while (paragraph.Count - start > columns)
+            while (start < paragraph.Count)
             {
+                // Keep at least half the width for text so large source indents on a
+                // narrow pane (such as a popup) cannot wrap one character per row.
+                var indent = Math.Clamp(left + (firstLine ? first : 0), 0, columns - minimumWidth);
+                var margin = Math.Clamp(right, 0, columns - indent - minimumWidth);
+                var available = columns - indent - margin;
+                var end = Math.Min(start + available, paragraph.Count);
+                if (end == paragraph.Count)
+                {
+                    lines.Add(PlaceLine(BuildLine(paragraph, start, end), available,
+                        indent, alignment));
+                    break;
+                }
                 var split = -1;
-                for (var index = Math.Min(start + columns, paragraph.Count - 1);
+                for (var index = Math.Min(end, paragraph.Count - 1);
                      index > start;
                      index--)
                     if (paragraph[index].Value == ' ')
@@ -109,14 +171,29 @@ public static class HelpTextLayout
                         split = index;
                         break;
                     }
-                if (split < 0) split = start + columns;
-                lines.Add(BuildLine(paragraph, start, split));
+                if (split < 0) split = end;
+                lines.Add(PlaceLine(BuildLine(paragraph, start, split), available,
+                    indent, alignment));
+                firstLine = false;
                 start = split;
                 while (start < paragraph.Count && paragraph[start].Value == ' ') start++;
             }
-            lines.Add(BuildLine(paragraph, start, paragraph.Count));
+            firstLine = false;
         }
         return lines;
+    }
+
+    private static HelpTextLine PlaceLine(HelpTextLine line, int available,
+        int indent, HelpParagraphAlignment alignment)
+    {
+        var free = Math.Max(0, available - line.Text.Length);
+        var offset = alignment switch
+        {
+            HelpParagraphAlignment.Right => free,
+            HelpParagraphAlignment.Center => free / 2,
+            _ => 0
+        };
+        return line with { ColumnOffset = indent + offset };
     }
 
     private static HelpTextLine BuildLine(
@@ -148,12 +225,12 @@ public static class HelpTextLayout
         && left.Underline == right.Underline && left.Strikethrough == right.Strikethrough
         && left.DoubleUnderline == right.DoubleUnderline && left.SmallCaps == right.SmallCaps
         && left.HalfPoints == right.HalfPoints && left.LinkHash == right.LinkHash
-        && left.Popup == right.Popup;
+        && left.Popup == right.Popup && left.FontIndex == right.FontIndex;
 
     private readonly record struct HelpStyledCharacter(char Value, ExtractedHelpTextRun Style);
 }
 
-public sealed record HelpTextLine(IReadOnlyList<ExtractedHelpTextRun> Runs)
+public sealed record HelpTextLine(IReadOnlyList<ExtractedHelpTextRun> Runs, int ColumnOffset = 0)
 {
     public string Text => string.Concat(Runs.Select(run => run.Text));
 }
@@ -253,12 +330,22 @@ public static class HelpContentAugmentation
             var heading = topic.Text.Length == 0
                 ? $"{NoteHeading}\n"
                 : $"\n\n{NoteHeading}\n";
+            // Layout draws a topic's paragraph records whenever it has any, so the note must be
+            // appended there too or it would never be shown for an extracted topic.
+            IReadOnlyList<ExtractedHelpParagraph>? paragraphs = topic.Paragraphs is { Count: > 0 }
+                ? [.. topic.Paragraphs,
+                    new ExtractedHelpParagraph(
+                        [new ExtractedHelpTextRun(NoteHeading, Bold: true),
+                            new ExtractedHelpTextRun($"\n{note.Text}")],
+                        0, TabStops: [])]
+                : topic.Paragraphs;
             topics[topicIndex] = topic with
             {
                 Text = topic.Text + heading + note.Text,
                 Runs = [.. runs,
                     new ExtractedHelpTextRun(heading, Bold: true),
-                    new ExtractedHelpTextRun(note.Text)]
+                    new ExtractedHelpTextRun(note.Text)],
+                Paragraphs = paragraphs
             };
             changed = true;
         }
@@ -527,9 +614,10 @@ public sealed partial class ChaosGame
         if (row < 0 || row >= HelpLayout.VisibleTextLines
             || _helpLineOffset + row >= lines.Count)
             return false;
-        var column = (point.X - 226) / OriginalFontLayout.CellWidth;
+        var line = lines[_helpLineOffset + row];
+        var column = (point.X - 226) / OriginalFontLayout.CellWidth - line.ColumnOffset;
         var cursor = 0;
-        foreach (var run in lines[_helpLineOffset + row].Runs)
+        foreach (var run in line.Runs)
         {
             if (column >= cursor && column < cursor + run.Text.Length
                 && HelpNavigation.ResolveLink(_helpDocument, run) is { } target)
@@ -618,7 +706,9 @@ public sealed partial class ChaosGame
         font.Draw(batch, title, new Vector2(226, 74), Color.Gold, 1);
         var lines = HelpLines(_helpTopicIndex, HelpLayout.TextColumns);
         for (var row = 0; row < HelpLayout.VisibleTextLines && _helpLineOffset + row < lines.Count; row++)
-            DrawHelpLine(batch, pixel, font, lines[_helpLineOffset + row], 226, 94 + row * 9);
+            DrawHelpLine(batch, pixel, font, lines[_helpLineOffset + row],
+                226 + lines[_helpLineOffset + row].ColumnOffset * OriginalFontLayout.CellWidth,
+                94 + row * OriginalFontLayout.LineHeight);
         var position = HelpNavigation.PositionOf(_helpTopicOrder, _helpTopicIndex);
         var topicPosition = position < 0 ? "LINKED" : $"{position + 1}/{_helpTopicOrder.Count}";
         font.Draw(batch,
@@ -672,6 +762,8 @@ public sealed partial class ChaosGame
         var firstLineY = panel.Y + (hasAuthoredTitle ? 28 : 10);
         var visibleLines = hasAuthoredTitle ? 18 : 20;
         for (var row = 0; row < visibleLines && row < lines.Count; row++)
-            DrawHelpLine(batch, pixel, font, lines[row], panel.X + 10, firstLineY + row * 9);
+            DrawHelpLine(batch, pixel, font, lines[row],
+                panel.X + 10 + lines[row].ColumnOffset * OriginalFontLayout.CellWidth,
+                firstLineY + row * OriginalFontLayout.LineHeight);
     }
 }

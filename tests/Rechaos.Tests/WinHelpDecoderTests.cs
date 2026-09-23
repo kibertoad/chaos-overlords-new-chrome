@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Text;
+using Rechaos.Core.Assets;
 using Rechaos.Extractor;
 using Xunit;
 
@@ -48,6 +49,11 @@ public sealed class WinHelpDecoderTests
         Assert.True(topic.ListedInContents);
         Assert.Equal(0, topic.TopicOffset);
         Assert.Equal(topic.Text, string.Concat(topic.Runs!.Select(run => run.Text)));
+        Assert.Equal(2, document.Fonts!.Count);
+        Assert.Equal("Times New Roman", document.Fonts[0].Name);
+        Assert.Equal(20, document.Fonts[0].HalfPoints);
+        Assert.Equal("Hello\nworld", Assert.Single(topic.Paragraphs!).Runs
+            .Aggregate(string.Empty, (text, run) => text + run.Text));
         Assert.Collection(document.Contexts!,
             context =>
             {
@@ -88,6 +94,24 @@ public sealed class WinHelpDecoderTests
         Assert.Equal(WinHelpDecoder.CalculateContextHash("CITYVIEW"), link.LinkHash);
         Assert.Equal(popup, link.Popup);
         Assert.Equal(20, link.HalfPoints);
+        Assert.Equal(1, Assert.Single(topic.Runs!, run => run.Text.Contains("Bold", StringComparison.Ordinal)).FontIndex);
+    }
+
+    [Fact]
+    public void DecoderPreservesParagraphGeometryFromDisplayRecord()
+    {
+        var document = WinHelpDecoder.Decode(BuildHelpFile(geometry: true),
+            ReadOnlyMemory<byte>.Empty);
+        var paragraph = Assert.Single(Assert.Single(document.Topics).Paragraphs!);
+
+        Assert.Equal(0x087e, paragraph.RawFlags);
+        Assert.Equal(12, paragraph.SpaceBeforeUnits);
+        Assert.Equal(6, paragraph.SpaceAfterUnits);
+        Assert.Equal(20, paragraph.LineSpacingUnits);
+        Assert.Equal(18, paragraph.LeftIndentUnits);
+        Assert.Equal(12, paragraph.RightIndentUnits);
+        Assert.Equal(-6, paragraph.FirstLineIndentUnits);
+        Assert.Equal(HelpParagraphAlignment.Center, paragraph.Alignment);
     }
 
     [Theory]
@@ -136,7 +160,8 @@ public sealed class WinHelpDecoderTests
     private static byte[] BuildHelpFile(
         string topicName = "Synthetic",
         bool styledLink = false,
-        bool popupLink = false)
+        bool popupLink = false,
+        bool geometry = false)
     {
         var system = new byte[12];
         WriteUInt16(system, 2, 33);
@@ -147,7 +172,10 @@ public sealed class WinHelpDecoderTests
         var topicHeaderLength = 21 + topicHeaderData.Length + topicTitle.Length;
         var topicHeader = BuildTopicLink(0x02, topicHeaderData, topicTitle,
             checked((uint)(12 + topicHeaderLength)));
-        var paragraphCommands = styledLink
+        var paragraphCommands = geometry
+            ? new byte[] { 0, 0x80, 22, 0, 0, 0, 0, 0x7e, 0x08,
+                152, 140, 168, 164, 152, 116, 0x81, 0xff }
+            : styledLink
             ? StyledParagraphCommands(popupLink)
             : new byte[] { 0, 0x80, 22, 0, 0, 0, 0, 0, 0, 0x81, 0xff };
         var topicText = Encoding.ASCII.GetBytes(styledLink

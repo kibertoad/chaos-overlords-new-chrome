@@ -22,12 +22,15 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Assert.Equal(expected.Topics.Count, actual.Topics.Count);
         for (var index = 0; index < expected.Topics.Count; index++)
         {
-            Assert.Equal(expected.Topics[index] with { Runs = null },
-                actual.Topics[index] with { Runs = null });
+            Assert.Equal(expected.Topics[index] with { Runs = null, Paragraphs = null },
+                actual.Topics[index] with { Runs = null, Paragraphs = null });
             Assert.Equal(expected.Topics[index].Runs!, actual.Topics[index].Runs!);
+            Assert.Equal(expected.Topics[index].Paragraphs![0].Runs,
+                actual.Topics[index].Paragraphs![0].Runs);
         }
         Assert.Equal(expected.Contents, actual.Contents);
         Assert.Equal(expected.Contexts, actual.Contexts);
+        Assert.Equal(expected.Fonts, actual.Fonts);
     }
 
     [Fact]
@@ -55,6 +58,79 @@ public sealed class ExtractedHelpStoreTests : IDisposable
                 [new ExtractedHelpTextRun("Different")])]
         });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+        Write(Document() with { Fonts = null });
+        Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+        Write(Document() with { Topics = [Topic(0, "Topic", "Readable text", true)
+            with { Paragraphs = [new ExtractedHelpParagraph(
+                [new ExtractedHelpTextRun("Text", LinkHash: 0x1234u)], 0, TabStops: [])] }] });
+        Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+        Write(Document() with { Topics = [Topic(0, "Topic", "Readable text", true)
+            with { Paragraphs = [new ExtractedHelpParagraph(
+                [new ExtractedHelpTextRun("Text", FontIndex: 2)], 0, TabStops: [])] }] });
+        Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+    }
+
+    [Fact]
+    public void DocumentWithoutFontTableLoads()
+    {
+        // The decoder emits no descriptors when a help file has no |FONT stream.
+        Write(Document() with { Fonts = [] });
+
+        Assert.NotNull(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+    }
+
+    [Fact]
+    public void ExecutableNotesAreDrawnForTopicsWithParagraphRecords()
+    {
+        var document = Document() with
+        {
+            Topics = [Topic(0, "Bribe", "Readable text", true)],
+            Contents = [new ExtractedHelpContentsEntry(0, "Bribe", 0, "BRIBE")]
+        };
+
+        var topic = HelpContentAugmentation.AddExecutableNotes(document).Topics
+            .Single(candidate => candidate.Id == 0);
+        var lines = HelpTextLayout.Wrap(topic, 62).Select(line => line.Text).ToArray();
+
+        Assert.Contains(HelpContentAugmentation.NoteHeading, lines);
+        Assert.Contains(lines, line => line.StartsWith("The shipped game charges $3",
+            StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void EmptyParagraphRecordsCollapseIntoOneBlankRow()
+    {
+        var topic = Topic(0, "Topic", "ONE\n\nTWO", true) with
+        {
+            Paragraphs =
+            [
+                new ExtractedHelpParagraph([], 0, TabStops: []),
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("ONE")], 0, TabStops: []),
+                new ExtractedHelpParagraph([], 0, TabStops: []),
+                new ExtractedHelpParagraph([], 0, TabStops: []),
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("TWO")], 0, TabStops: [])
+            ]
+        };
+
+        Assert.Equal(["ONE", "", "TWO"], HelpTextLayout.Wrap(topic, 12).Select(line => line.Text));
+    }
+
+    [Fact]
+    public void LargeSourceIndentsKeepHalfTheWidthForText()
+    {
+        var topic = Topic(0, "Topic", "ABCDEFGH", true) with
+        {
+            Paragraphs =
+            [
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("ABCDEFGH")], 0x0030,
+                    LeftIndentUnits: 400, RightIndentUnits: 400, TabStops: [])
+            ]
+        };
+
+        var lines = HelpTextLayout.Wrap(topic, 12);
+
+        Assert.Equal(["ABCDEF", "GH"], lines.Select(line => line.Text));
+        Assert.All(lines, line => Assert.Equal(6, line.ColumnOffset));
     }
 
     [Fact]
@@ -103,6 +179,27 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         var tail = Assert.Single(lines[1].Runs);
         Assert.Equal("MNOPQ", tail.Text);
         Assert.True(tail.Italic);
+    }
+
+    [Fact]
+    public void ParagraphLayoutUsesSourceIndentCenteringAndSpacing()
+    {
+        var topic = Topic(0, "Topic", "FIRST SECOND\n\nCENTER", true) with
+        {
+            Paragraphs =
+            [
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("FIRST SECOND")],
+                    0x0010, LeftIndentUnits: 18, TabStops: []),
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("CENTER")],
+                    0x0802, SpaceBeforeUnits: 12,
+                    Alignment: HelpParagraphAlignment.Center, TabStops: [])
+            ]
+        };
+
+        var lines = HelpTextLayout.Wrap(topic, 12);
+
+        Assert.Equal(["FIRST", "SECOND", "", "CENTER"], lines.Select(line => line.Text));
+        Assert.Equal([2, 2, 0, 3], lines.Select(line => line.ColumnOffset));
     }
 
     [Fact]
@@ -317,7 +414,8 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         "Synthetic Help",
         [Topic(0, "Topic", "Readable text", true)],
         [new ExtractedHelpContentsEntry(0, "Topic", 0)],
-        []);
+        [],
+        [new ExtractedHelpFont("Times New Roman", 2, 0, 20, 0, 0, 0, 0, 0, 0)]);
 
     private static ExtractedHelpTopic Topic(
         int id,
@@ -325,5 +423,6 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         string text,
         bool listed,
         int offset = 0) =>
-        new(id, title, text, listed, offset, [new ExtractedHelpTextRun(text)]);
+        new(id, title, text, listed, offset, [new ExtractedHelpTextRun(text)],
+            [new ExtractedHelpParagraph([new ExtractedHelpTextRun(text)], 0, TabStops: [])]);
 }
