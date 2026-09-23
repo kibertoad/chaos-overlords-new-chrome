@@ -251,8 +251,18 @@ public sealed partial class ChaosGame
         DrawPanelValue(font, batch, ScenarioScore(state, player).ToString(),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.ScoreY);
         var projectedCashflow = FinanceProjection.Project(state, player, sectorId: null).CashAdjustment;
-        DrawPanelValue(font, batch, StatusConsolePresentation.Cash(player.Cash, projectedCashflow),
+        font.Draw(batch, "DELTA", new Vector2(StatusConsoleLayout.LabelLeft,
+            StatusConsoleLayout.CashDeltaY), Color.Lime, 1);
+        DrawPanelValue(font, batch, StatusConsolePresentation.ProjectedChange(projectedCashflow),
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashDeltaY);
+        font.Draw(batch, "CASH", new Vector2(StatusConsoleLayout.LabelLeft,
+            StatusConsoleLayout.CashY), Color.Lime, 1);
+        DrawPanelValue(font, batch, player.Cash.ToString(),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashY);
+        font.Draw(batch, "EQ LEFT", new Vector2(StatusConsoleLayout.LabelLeft,
+            StatusConsoleLayout.EquipCashY), Color.Lime, 1);
+        DrawPanelValue(font, batch, StatusConsolePresentation.CashLessQueuedEquip(state, player).ToString(),
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.EquipCashY);
         DrawPanelValue(font, batch, SectorCode(_cursor),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(0));
         DrawPanelValue(font, batch, $"${SectorIncome(state, selectedSector)}",
@@ -320,6 +330,12 @@ public sealed partial class ChaosGame
             var sector = state.Sectors[_cursor];
             var chaosEstimate = ChaosRangeProjection.Detail(state, player, _cursor);
             var enemyGangsPresent = HasEnemyGang(state, player, _cursor);
+            if (StatusConsoleLayout.Cash.Contains(statusHover))
+            {
+                DrawCashPurchaseTooltip(batch, pixel, font, statusHover,
+                    state, state.FindPlayer(player)!);
+                return;
+            }
             var lines = StatusConsoleTooltip.At(
                 statusHover, state.Setup.Scenario, state.Setup.Duration, sector.Tolerance,
                 chaosEstimate, StatusConsolePresentation.ChaosBreakdown(state, chaosEstimate),
@@ -331,6 +347,46 @@ public sealed partial class ChaosGame
                 enemyGangsPresent ? StatusConsoleTooltip.EnemyChaosWarningRow : null,
                 enemyGangsPresent ? Color.Red : null);
         }
+    }
+
+    private static void DrawCashPurchaseTooltip(SpriteBatch batch, Texture2D pixel, PixelFont font,
+        Point point, MatchState state, MatchPlayerState player)
+    {
+        const int maxRowsPerColumn = 40;
+        var purchases = StatusConsolePresentation.QueuedEquipPurchases(state, player);
+        string[] header =
+        [
+            "CASH AND PURCHASE RESERVES",
+            $"CASH {player.Cash}  DELTA {StatusConsolePresentation.ProjectedChange(FinanceProjection.Project(state, player, null).CashAdjustment)}",
+            $"EQ LEFT = CASH - QUEUED EQUIP = {StatusConsolePresentation.CashLessQueuedEquip(state, player)}",
+            "NO CASH IS RESERVED UNTIL AN ORDER RESOLVES.",
+            "PURCHASES USE CLICK ORDER; EARLIER SELLS MAY FUND THEM.",
+            "QUEUED PURCHASES IN RESOLUTION ORDER:"
+        ];
+        string[] rows = purchases.Count == 0
+            ? ["NONE"]
+            : purchases.Select(entry =>
+                $"{entry.Position:00} G{entry.Gang.Value} {entry.ItemName} ${entry.Price}").ToArray();
+        var rowCount = Math.Min(maxRowsPerColumn, rows.Length);
+        var columnCount = (rows.Length + maxRowsPerColumn - 1) / maxRowsPerColumn;
+        var columnWidth = rows.Max(row => row.Length) * OriginalFontLayout.CellWidth + 12;
+        var width = Math.Max(header.Max(line => line.Length) * OriginalFontLayout.CellWidth + 16,
+            columnCount * columnWidth + 16);
+        var height = (header.Length + rowCount) * OriginalFontLayout.LineHeight + 16;
+        var x = Math.Clamp(point.X + 10, 4, VirtualInput.Width - width - 4);
+        var y = Math.Clamp(point.Y + 12, 4, VirtualInput.Height - height - 4);
+        var panel = new Rectangle(x, y, width, height);
+        batch.Draw(pixel, panel, new Color(8, 18, 16, 252));
+        DrawBorder(batch, pixel, panel, Color.Lime, 2);
+        for (var row = 0; row < header.Length; row++)
+            font.Draw(batch, header[row],
+                new Vector2(x + 8, y + 8 + row * OriginalFontLayout.LineHeight),
+                row == 0 ? Color.Gold : Color.White, 1);
+        for (var index = 0; index < rows.Length; index++)
+            font.Draw(batch, rows[index],
+                new Vector2(x + 8 + index / maxRowsPerColumn * columnWidth,
+                    y + 8 + (header.Length + index % maxRowsPerColumn)
+                    * OriginalFontLayout.LineHeight), Color.White, 1);
     }
 
     private static bool HasEnemyGang(MatchState state, PlayerId viewer, int sectorId) =>

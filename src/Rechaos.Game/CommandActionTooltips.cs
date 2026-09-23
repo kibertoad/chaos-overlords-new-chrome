@@ -90,7 +90,13 @@ public static class CommandActionTooltips
         GangAction.Equip =>
         [
             "BUYS AN ITEM: ONE WEAPON, ONE ARMOR, AND ONE MISC PER GANG.",
-            "REPLACING A FILLED SLOT DESTROYS THE ITEM ALREADY THERE."
+            "REPLACING A FILLED SLOT DESTROYS THE ITEM ALREADY THERE.",
+            "PRICE = COST - TRUNC(COST / 3) WITH A CONTROLLED FACTORY.",
+            "QUEUING SPENDS NOTHING. PURCHASES USE YOUR CLICK ORDER.",
+            "AT THIS ORDER: CASH = START CASH - BRIBES - EARLIER EQUIPS",
+            "                         + EARLIER SELLS.",
+            "BUY IF CASH >= PRICE; OTHERWISE THE ORDER FAILS UNCHARGED.",
+            "LATER SELLS, CHAOS CASH, AND NEXT UPKEEP CANNOT FUND IT."
         ],
         GangAction.Give =>
         [

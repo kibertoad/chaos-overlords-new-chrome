@@ -1,7 +1,7 @@
 # Game rules and evidence
 
 Status: partial, active research
-Last updated: 2026-09-23
+Last updated: 2026-09-24
 
 This document separates intended rules stated by the original manual from
 behavior verified against the fingerprinted version 1.1 executable. A manual
@@ -459,41 +459,42 @@ claim about original-game behavior.
 - Factory rule: an influenced Factory in the acting gang's controlled sector
   reduces purchase price to `Cost - trunc(Cost / 3)`. This is a one-third
   discount rounded toward the full price; for example, an $11 Katana costs $8.
-- Affordability: queuing Equip never checks cash. Each Equip is checked once,
-  when its turn in the Transaction scan comes up, against the cash balance at
-  that moment and its own Factory-adjusted price. The recreation fails it
-  without mutation when `cash < price`, so an exact balance buys the item
-  (`BIN-EQUIP-002` says only that the resolver "checks and subtracts"). The
-  balance at that point already reflects Instant spending (Bribe), earlier
-  purchases, and Sell proceeds from lower player/roster slots. It does not
-  include later-slot Sell proceeds, the post-Transaction Chaos payout, or the
+- Affordability: the original picker shows unaffordable researched items and
+  queues them without checking cash; it hides an item already equipped on the
+  acting gang. In the original, each Equip is checked at its fixed player and
+  roster slot in the Transaction scan against then-current cash and its own
+  Factory-adjusted price (`BIN-EQUIP-006`). The recreation deliberately uses
+  the player's submission sequence for Equip and Sell instead
+  ([decision](DECISIONS.md#2026-09-24--resolve-cash-transactions-in-player-order)).
+  It fails a purchase without mutation when `cash < price`, so an exact balance
+  buys the item. Cash at that point reflects Instant Bribes, earlier submitted
+  purchases, and earlier submitted Sells. It does not include later Sells,
+  the post-Transaction Chaos payout, or the
   sector tax, site Cash, and gang Upkeep collected at the next Upkeep. The
-  city console's `cash ±delta` figure (`FinanceProjection.CashAdjustment`)
-  nets all of those components across the whole turn, so it is not an
+  city console's separate `DELTA` figure (`FinanceProjection.CashAdjustment`)
+  nets all of those components across the whole cycle, so it is not an
   affordability test: `cash + delta >= 0` can hold while an Equip fails. For
   example, with $10 cash, one queued $12 Equip, $5 of sector tax, and no other
-  projected component, the console shows `10 -7` and the Equip fails.
+  projected component, the console shows `CASH 10`, `DELTA -7`, and `EQ LEFT -2`;
+  the Equip fails. `EQ LEFT` subtracts all queued Equip prices from current
+  cash, while its tooltip lists the full purchase order. It is a preview, not
+  a cash reservation: earlier Sells may fund a purchase and later ones cannot.
 - Confidence: High for cost, categories, research, tech gates, the statically
   verified zero-difficulty initialization, Factory division/rounding, controlled/influenced locality,
-  fixed player/roster-slot resolution order, execution-time (not queue-time)
-  cash check, and same-slot replacement; Medium for repeat commands and for the
-  exact affordability predicate. The comparison instruction, its signedness,
-  and the equality boundary are not recorded, and neither is whether the
-  original Equip picker `0x0043dad9` refuses or marks an item the player cannot
-  currently afford. Both remain open in the
-  [static-analysis queue](ORIGINAL-INTERNALS.md#remaining-static-analysis-queue).
+  original fixed player/roster-slot resolution order, signed execution-time cash check,
+  equality boundary, queue-time picker behavior, and same-slot replacement;
+  Medium for repeat commands. The cash predicate and picker are recorded in
+  `BIN-EQUIP-006`.
 - Implementation: `EquipmentRules`, `SpecialSiteRules.EquipmentCost`,
   transaction validation, and `CommandResolver.ResolveEquip`.
 - Tests: `TransactionResolutionTests` covers purchase, replacement, cash and
-  statistics, research/tech validation, insufficient funds, replay hashes, and
+  statistics, research/tech validation, insufficient funds, ordered Sell funding,
+  replay hashes, and
   a Factory completed during Instant not discounting a same-turn
   Transaction-phase replacement; all decoded item costs exercise the recovered division formula.
-- Next experiment: disassemble the Equip branch of `0x00472775` near the cost
-  load at `0x00474998` and the Factory subtraction at `0x004749e1..0x004749f3`
-  to record the cash comparison (`JL`/`JLE`/`JB` or equivalent), its operands,
-  and whether a same-player Sell credited earlier in the scan is visible to it.
-  At runtime, capture an Equip with cash exactly equal to the price, one dollar
-  short, and one dollar short with a lower-slot Sell queued in the same turn.
+- Next experiment: capture an Equip with cash exactly equal to the price, one
+  dollar short, and one dollar short with a lower-slot Sell queued in the same
+  turn to corroborate the static control flow at runtime.
 
 ### RULE-GIVE-001 — Transfer equipped item
 

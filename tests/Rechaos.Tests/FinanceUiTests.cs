@@ -61,6 +61,35 @@ public sealed class FinanceUiTests
     }
 
     [Fact]
+    public void QueuedEquipRemainderListsEveryPurchaseInSubmissionOrder()
+    {
+        var state = CreatePlanningMatch();
+        var player = state.Players[0];
+        var first = player.Gangs.Single(gang => gang.IsActive);
+        var second = new MatchGangState(new GangId(900), player.Id,
+            first.DefinitionId, first.SectorId, 5);
+        player.AddGang(second);
+        var item = state.Definitions.Items[0];
+
+        Assert.True(state.Submit(new GameCommand(player.Id, second.Id,
+            GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
+        Assert.True(state.Submit(new GameCommand(player.Id, first.Id,
+            GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
+
+        var purchases = StatusConsolePresentation.QueuedEquipPurchases(state, player);
+        Assert.Equal([second.Id, first.Id], purchases.Select(purchase => purchase.Gang).ToArray());
+        Assert.Equal([1, 2], purchases.Select(purchase => purchase.Position).ToArray());
+        Assert.Equal(player.Cash - purchases.Sum(purchase => purchase.Price),
+            StatusConsolePresentation.CashLessQueuedEquip(state, player));
+
+        Assert.True(state.Submit(new GameCommand(player.Id, second.Id,
+            GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
+        Assert.Equal([first.Id, second.Id],
+            StatusConsolePresentation.QueuedEquipPurchases(state, player)
+                .Select(purchase => purchase.Gang).ToArray());
+    }
+
+    [Fact]
     public void SectorProjectionExcludesOtherSectorsAndEstimatesQueuedChaos()
     {
         var state = CreatePlanningMatch();

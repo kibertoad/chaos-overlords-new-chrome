@@ -116,9 +116,9 @@ public sealed class UiNavigationTests
             new PlayerId(1), new PlayerId(1), 7));
         Assert.Equal(0, StatusConsolePresentation.SectorCash(
             new PlayerId(1), new PlayerId(0), 7));
-        Assert.Equal("12 +1", StatusConsolePresentation.Cash(12, 1));
-        Assert.Equal("12 -3", StatusConsolePresentation.Cash(12, -3));
-        Assert.Equal("12 0", StatusConsolePresentation.Cash(12, 0));
+        Assert.Equal("+1", StatusConsolePresentation.ProjectedChange(1));
+        Assert.Equal("-3", StatusConsolePresentation.ProjectedChange(-3));
+        Assert.Equal("0", StatusConsolePresentation.ProjectedChange(0));
         Assert.Empty(StatusConsoleTooltip.At(Point.Zero));
     }
 

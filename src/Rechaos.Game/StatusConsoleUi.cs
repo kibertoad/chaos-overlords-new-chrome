@@ -33,7 +33,9 @@ public static class StatusConsoleLayout
     public const int ScenarioY = 3;
     public const int DateY = 15;
     public const int ScoreY = 24;
+    public const int CashDeltaY = 33;
     public const int CashY = 42;
+    public const int EquipCashY = 51;
 
     public static int SectorValueY(int row)
     {
@@ -43,7 +45,7 @@ public static class StatusConsoleLayout
 
     public static Rectangle Scenario => new(476, 0, 108, 10);
     public static Rectangle Score => Entry(ScoreY);
-    public static Rectangle Cash => Entry(CashY);
+    public static Rectangle Cash => new(476, CashDeltaY - 1, 108, 27);
     public static Rectangle CashLabel => new(476, SectorValueY(4) - 1, 44, 9);
     public static Rectangle SectorEntry(int row) => Entry(SectorValueY(row));
 
@@ -81,9 +83,11 @@ public static class StatusConsoleTooltip
             return ["SCORE", "CURRENT SCENARIO PROGRESS USED FOR RANKING AND VICTORY."];
         if (StatusConsoleLayout.Cash.Contains(point))
             return [
-                "CASH / PROJECTED CHANGE",
-                "FIRST VALUE IS AVAILABLE CASH; THE SIGNED VALUE IS CASHFLOW.",
-                "IT INCLUDES QUEUED COSTS AND ESTIMATED CHAOS PROCEEDS."
+                "CASH: MONEY ON HAND NOW.",
+                "DELTA: WHOLE-CYCLE ESTIMATE, INCLUDING LATER INCOME.",
+                "EQ LEFT: CASH MINUS ALL QUEUED EQUIP PRICES.",
+                "EQ LEFT IS A PREVIEW; EARLIER SALES MAY FUND EQUIPS.",
+                "EACH EQUIP CHECKS ACTUAL CASH IN SUBMISSION ORDER."
             ];
         if (StatusConsoleLayout.SectorEntry(0).Contains(point))
             return ["SECTOR", "THE COORDINATES OF THE CURRENTLY SELECTED SECTOR."];
@@ -157,8 +161,27 @@ public static class StatusConsolePresentation
     public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>
         range.CanTriggerCrackdown(tolerance) ? Color.Red : Color.Lime;
 
-    public static string Cash(int current, int projectedChange) =>
-        $"{current} {projectedChange:+#;-#;0}";
+    public static string ProjectedChange(int projectedChange) =>
+        projectedChange.ToString("+#;-#;0");
+
+    public static IReadOnlyList<QueuedEquipPurchase> QueuedEquipPurchases(
+        MatchState state, MatchPlayerState player) => state.Commands.ExecutionPlan()
+        .Where(entry => entry.Command.Player == player.Id
+            && entry.Command.Action == GangAction.Equip)
+        .OrderBy(entry => entry.Sequence)
+        .Select((entry, index) =>
+        {
+            var gang = state.FindGang(entry.Command.Gang)!;
+            var item = state.Definitions.Items[entry.Command.Target.Id];
+            return new QueuedEquipPurchase(index + 1, gang.Id, item.Id, item.Name,
+                SpecialSiteRules.EquipmentCost(state, gang, item));
+        }).ToArray();
+
+    public static int CashLessQueuedEquip(MatchState state, MatchPlayerState player)
+    {
+        var queuedCost = QueuedEquipPurchases(state, player).Sum(entry => entry.Price);
+        return checked(player.Cash - queuedCost);
+    }
 
     public static int SectorCash(PlayerId? owner, PlayerId activePlayer, int cash) =>
         owner == activePlayer ? cash : 0;
@@ -185,6 +208,9 @@ public static class StatusConsolePresentation
         return lines;
     }
 }
+
+public sealed record QueuedEquipPurchase(
+    int Position, GangId Gang, short Item, string ItemName, int Price);
 
 public static class HoverTooltipLayout
 {
