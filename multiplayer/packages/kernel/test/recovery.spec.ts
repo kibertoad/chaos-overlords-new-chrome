@@ -329,12 +329,21 @@ describe('desync verdicts, snapshots and recovery', () => {
   })
 
   it('does not rewind the current turn when a late sweep reopens an older turn', async () => {
-    const { host } = await h.startedMatchOfThree()
+    const { host, guest, third } = await h.startedMatchOfThree(60)
     const stale = await h.principalOf(host.token)
-    await h.storage.matches.advanceCurrentTurn(host.match.id, 3, h.clock.now())
-
-    expect(await h.kernel.turns.openTurn(stale.match, 1)).toBe(false)
+    for (const turn of [1, 2]) {
+      await h.submit(await h.principalOf(host.token), turn, 1, true)
+      await h.submit(await h.principalOf(guest.token), turn, 2, true)
+      await h.submit(await h.principalOf(third.token), turn, 3, true)
+    }
     expect((await h.principalOf(host.token)).match.currentTurn).toBe(3)
+    const armed = h.scheduler.scheduled.length
+    expect(h.scheduler.scheduled.at(-1)?.turn).toBe(3)
+
+    expect(await h.kernel.turns.openTurn(stale.match, 2)).toBe(false)
+    expect((await h.principalOf(host.token)).match.currentTurn).toBe(3)
+    // The live turn keeps its timer: a stale re-open must not replace it with one for turn 2.
+    expect(h.scheduler.scheduled).toHaveLength(armed)
   })
 
   /**
