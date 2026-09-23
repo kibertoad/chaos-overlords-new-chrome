@@ -57,6 +57,12 @@ export class MatchLog {
    * every one of its reads goes to the log exactly as before.
    */
   private notified = 0
+  /**
+   * Whether this process has seen the match's `match.started`, by notification or by reading it.
+   * A stream authenticated while the match was still a lobby can subscribe after that notification
+   * went out; this is how the hub learns the stream is no longer a lobby stream.
+   */
+  started = false
 
   constructor(
     private readonly matchId: string,
@@ -71,6 +77,7 @@ export class MatchLog {
    */
   record(event: PersistedEvent): void {
     if (event.seq > this.notified) this.notified = event.seq
+    if (event.type === 'match.started') this.started = true
     if (this.frames.has(event.seq)) return
     this.frames.set(event.seq, { seq: event.seq, text: tryFormatEvent(event) })
     this.trim()
@@ -134,6 +141,7 @@ export class MatchLog {
   private async read(afterSeq: number): Promise<EventFrame[]> {
     const rows = await this.events.listAfter(this.matchId, afterSeq, PAGE_SIZE)
     const page = rows.map((row) => {
+      if (row.type === 'match.started') this.started = true
       const known = this.frames.get(row.seq)
       if (known) return known
       const frame: EventFrame = { seq: row.seq, text: tryFormatEvent(row) }

@@ -16,9 +16,15 @@ function hubOf(limits: { perPlayer: number; perMatch: number; perProcess: number
 }
 
 /** Opens a stream and hands back a reader, so the response body is actually consumed. */
-async function open(hub: LocalEventHub, matchId: string, playerId: string) {
+async function open(hub: LocalEventHub, matchId: string, playerId: string, lobby = false) {
   const controller = new AbortController()
-  const response = await hub.open({ matchId, playerId, afterSeq: 0, signal: controller.signal })
+  const response = await hub.open({
+    matchId,
+    playerId,
+    afterSeq: 0,
+    signal: controller.signal,
+    lobby,
+  })
   const reader = (response.body as ReadableStream<Uint8Array>).getReader()
   return {
     /** Drains whatever is buffered and reports whether the stream ended. */
@@ -33,6 +39,62 @@ async function open(hub: LocalEventHub, matchId: string, playerId: string) {
 }
 
 describe('LocalEventHub stream caps', () => {
+  it('reserves process capacity for running matches when lobby streams fill their share', async () => {
+    const hub = hubOf({ perPlayer: 2, perMatch: 8, perProcess: 8 })
+    const first = await open(hub, 'lobby1', 'host1', true)
+    const second = await open(hub, 'lobby2', 'host2', true)
+    await expect(
+      hub.open({
+        matchId: 'lobby3',
+        playerId: 'host3',
+        afterSeq: 0,
+        signal: new AbortController().signal,
+        lobby: true,
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'too_many_streams', scope: 'lobby' } })
+
+    const running = await open(hub, 'running', 'player')
+    expect(hub.openStreams).toBe(3)
+    // Existing lobby streams become running-match streams without reconnecting.
+    await hub.notify({
+      seq: 1,
+      matchId: 'lobby1',
+      type: 'match.started',
+      payload: { seed: 1, players: [] },
+      createdAt: '2026-01-01T00:00:00.000Z',
+    } as PersistedEvent)
+    const third = await open(hub, 'lobby3', 'host3', true)
+    first.abort()
+    second.abort()
+    third.abort()
+    running.abort()
+    expect(hub.openStreams).toBe(0)
+  })
+
+  it('releases the lobby share of a stream that authenticated just before its match started', async () => {
+    // The request read the match as a lobby, then `match.started` was published before the stream
+    // subscribed, so the notification had nobody to release. Its own read of the log must.
+    const started: PersistedEvent = {
+      seq: 1,
+      matchId: 'raced',
+      type: 'match.started',
+      payload: { seed: 1, players: [] },
+      createdAt: '2026-01-01T00:00:00.000Z',
+    } as PersistedEvent
+    const hub = new LocalEventHub(
+      { ...emptyEvents, listAfter: async (matchId) => (matchId === 'raced' ? [started] : []) },
+      60_000,
+      { perPlayer: 2, perMatch: 8, perProcess: 4 },
+    )
+    const raced = await open(hub, 'raced', 'player', true)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    // The lobby share of a four-stream process is one stream; the raced one no longer holds it.
+    const lobby = await open(hub, 'lobby', 'host', true)
+    raced.abort()
+    lobby.abort()
+    expect(hub.openStreams).toBe(0)
+  })
+
   it('ends a stream when periodic membership revalidation fails', async () => {
     let authorized = true
     const hub = new LocalEventHub(emptyEvents, 5, undefined, {

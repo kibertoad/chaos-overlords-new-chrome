@@ -44,6 +44,8 @@ export interface EventStreamOpener {
     playerId: string
     afterSeq: number
     signal: AbortSignal
+    /** Lobby streams use a smaller share of a Node process's total stream capacity. */
+    lobby?: boolean
   }): Promise<Response>
 }
 

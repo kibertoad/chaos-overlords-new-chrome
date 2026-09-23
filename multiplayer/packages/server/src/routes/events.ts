@@ -45,6 +45,7 @@ export function registerEventRoutes(api: Hono<AppEnv>): void {
       playerId: principal.player.id,
       afterSeq,
       signal: c.req.raw.signal,
+      lobby: principal.match.status === 'lobby',
     })
     // The kick may have revoked the token and run hangUp after bearerAuth but before the hub
     // subscribed. That hangUp saw no listener. Re-read the row after open and cancel the new stream

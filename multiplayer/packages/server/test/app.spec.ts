@@ -435,6 +435,11 @@ describe('server app over in-memory storage', () => {
 
   it('closes the stream and drops the listener when the client disconnects', async () => {
     const { app: fresh, hub } = build()
+    const originalOpen = hub.open.bind(hub)
+    hub.open = async (input) => {
+      expect(input.lobby).toBe(true)
+      return originalOpen(input)
+    }
     const created = await fresh.request('/api/v1/matches', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
