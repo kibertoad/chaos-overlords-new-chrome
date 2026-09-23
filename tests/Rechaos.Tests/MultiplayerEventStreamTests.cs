@@ -242,6 +242,23 @@ public sealed class MultiplayerEventStreamTests
         Assert.True(TransientFailure.IsTransient(idle));
     }
 
+    [Fact]
+    public async Task ConsumerWorkLongerThanIdleWindowDoesNotExpireNextRead()
+    {
+        using var body = new PushStream();
+        body.Write(": keepalive\n\n");
+        await using var frames = EventStreamParser
+            .ReadFramesAsync(body, TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
+
+        Assert.True(await frames.MoveNextAsync());
+        await Task.Delay(250, TestContext.Current.CancellationToken);
+        var next = frames.MoveNextAsync().AsTask();
+        body.Write(": keepalive\n\n");
+        Assert.True(await next);
+        Assert.True(frames.Current.IsKeepalive);
+    }
+
     /// <summary>
     /// A server that accepts the stream and closes it is not a connection, and reconnecting to it
     /// forever would never surface the failure.

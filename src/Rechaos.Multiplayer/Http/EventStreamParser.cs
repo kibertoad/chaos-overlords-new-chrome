@@ -84,8 +84,8 @@ public static class EventStreamParser
         ArgumentNullException.ThrowIfNull(body);
         using var reader = new StreamReader(body, Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
         var lines = new BoundedLineReader(reader, MaximumFrameChars);
-        // One linked source, re-armed after every line: `CancelAfter` restarts the countdown, so
-        // the deadline is always measured from the last byte rather than from the connection.
+        // One linked source, armed only while reading each line. The consumer can spend longer than
+        // the idle window handling a yielded frame without making a healthy socket look idle.
         using var idle = idleTimeout is { } ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken) : null;
         var frame = new StringBuilder();
         var firstLine = true;
@@ -137,6 +137,12 @@ public static class EventStreamParser
         catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
         {
             throw new EventStreamIdleException(idleTimeout.Value, exception);
+        }
+        finally
+        {
+            // An async iterator is suspended at yield return while its consumer handles the frame.
+            // Leaving this deadline armed would cancel the next read before it even begins.
+            idle.CancelAfter(Timeout.InfiniteTimeSpan);
         }
     }
 
