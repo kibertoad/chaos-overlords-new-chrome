@@ -9,17 +9,18 @@ public static class SectorGangsLayout
     public const int MaximumGangCount = 6;
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-
     public static Rectangle GangCard(int index)
     {
         if (index is < 0 or >= MaximumGangCount) throw new ArgumentOutOfRangeException(nameof(index));
-        return new Rectangle(144 + index * 32, 158, 32, 32);
+        return new Rectangle(SharedPanelLayout.X(144 + index * 32),
+            SharedPanelLayout.Y(12), 32, 32);
     }
 
-    public static int ValueRight(int index)
+    /// <summary>The left edge of the native two-cell statistic field.</summary>
+    public static int ValueLeft(int index)
     {
         if (index is < 0 or >= MaximumGangCount) throw new ArgumentOutOfRangeException(nameof(index));
-        return 154 + index * 32;
+        return SharedPanelLayout.X(154 + index * 32);
     }
 
     public static int ValueY(int row)
@@ -27,22 +28,24 @@ public static class SectorGangsLayout
         if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
         return row switch
         {
-            0 => 192,
-            1 => 201,
-            2 => 211,
-            3 => 220,
-            4 => 229,
-            5 => 238,
-            6 => 248,
-            7 => 257,
-            8 => 266,
-            9 => 275,
-            10 => 284,
-            11 => 294,
-            12 => 303,
-            13 => 312,
-            14 => 321,
-            15 => 330,
+            // These are the PX05009 label baselines at panel-local y=48..186.
+            // They deliberately do not share the card's global coordinate system.
+            0 => SharedPanelLayout.Y(48),
+            1 => SharedPanelLayout.Y(57),
+            2 => SharedPanelLayout.Y(67),
+            3 => SharedPanelLayout.Y(76),
+            4 => SharedPanelLayout.Y(85),
+            5 => SharedPanelLayout.Y(94),
+            6 => SharedPanelLayout.Y(104),
+            7 => SharedPanelLayout.Y(113),
+            8 => SharedPanelLayout.Y(122),
+            9 => SharedPanelLayout.Y(131),
+            10 => SharedPanelLayout.Y(140),
+            11 => SharedPanelLayout.Y(150),
+            12 => SharedPanelLayout.Y(159),
+            13 => SharedPanelLayout.Y(168),
+            14 => SharedPanelLayout.Y(177),
+            15 => SharedPanelLayout.Y(186),
             _ => throw new ArgumentOutOfRangeException(nameof(row))
         };
     }
@@ -90,18 +93,23 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        if (_sectorGangReturnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);
-        else DrawBoard(batch, pixel, font, state);
-        if (_sectorGangsBackground is not null)
-            batch.Draw(_sectorGangsBackground, SectorGangsLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, SectorGangsLayout.Panel, new Color(0, 0, 0, 245));
+        DrawMapBackdrop(batch, pixel, font, state, _sectorGangReturnScreen);
+        DrawSectorGangsPanel(batch, pixel, font, state);
+    }
+
+    private void DrawSectorGangsPanel(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        MatchState state)
+    {
+        DrawPanelArtwork(batch, pixel, _sectorGangsBackground, SectorGangsLayout.Panel);
         foreach (var entry in _sectorGangRoster.Take(SectorGangsLayout.MaximumGangCount)
                      .Select((id, index) => (id, index)))
         {
             var gang = state.FindGang(entry.id);
             if (gang is null) continue;
-            var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+            var definition = state.Definitions.Gang(gang.DefinitionId);
             var stats = _showBaseStatistics
                 ? EffectiveStatistics.From(definition.Stats)
                 : EffectiveStatisticsCalculator.ForGang(state, gang);
@@ -118,9 +126,9 @@ public sealed partial class ChaosGame
             for (var row = 0; row < values.Length; row++)
             {
                 var y = SectorGangsLayout.ValueY(row);
-                var valueRight = SectorGangsLayout.ValueRight(entry.index);
-                batch.Draw(pixel, new Rectangle(valueRight - 12, y, 12, 7), Color.Black);
-                DrawNativeTwoCellValue(font, batch, values[row], valueRight - 12, y,
+                var valueLeft = SectorGangsLayout.ValueLeft(entry.index);
+                batch.Draw(pixel, new Rectangle(valueLeft, y, 12, 7), Color.Black);
+                DrawNativeTwoCellValue(font, batch, values[row], valueLeft, y,
                     row < 6 ? NativeTwoCellNumberPresentation.Kind.Baseline
                         : NativeTwoCellNumberPresentation.Kind.Modifier);
             }

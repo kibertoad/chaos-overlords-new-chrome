@@ -93,10 +93,7 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        if (_gangDetailsReturnScreen == ClientScreen.Sector)
-            DrawSectorDetails(batch, pixel, font, state);
-        else
-            DrawBoard(batch, pixel, font, state);
+        DrawMapBackdrop(batch, pixel, font, state, _gangDetailsReturnScreen);
     }
 
     private void DrawGangDetailsPanel(
@@ -129,7 +126,7 @@ public sealed partial class ChaosGame
         }
         else
         {
-            var definition = state.Definitions.Gangs.Single(value => value.Id == definitionId.Value);
+            var definition = state.Definitions.Gang(definitionId.Value);
             var stats = gang is null || _showBaseStatistics
                 ? EffectiveStatistics.From(definition.Stats)
                 : EffectiveStatisticsCalculator.ForGang(state, gang);
@@ -149,7 +146,7 @@ public sealed partial class ChaosGame
             font.Draw(batch, definition.Name,
                 new Vector2(definitionOnly ? GangDefinitionInformationLayout.NameLeft : SharedPanelLayout.X(98),
                     definitionOnly ? GangDefinitionInformationLayout.NameY : SharedPanelLayout.Y(28)), Color.Lime, 1);
-            var descriptionColumns = definitionOnly ? 30 : 27;
+            var descriptionColumns = definitionOnly ? 29 : 27;
             foreach (var entry in WrapPanelText(definition.Description, descriptionColumns).Take(3)
                          .Select((text, row) => (text, row)))
                 font.Draw(batch, entry.text,
@@ -209,7 +206,10 @@ public sealed partial class ChaosGame
         var forceY = definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92);
         var techLevelY = definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101);
         batch.Draw(pixel, new Rectangle(nameLeft, nameY, 180, 10), Color.Black);
-        batch.Draw(pixel, new Rectangle(descriptionLeft, descriptionY, 186, 37), Color.Black);
+        var descriptionWidth = definitionOnly
+            ? GangDefinitionInformationLayout.DescriptionClearWidth
+            : 186;
+        batch.Draw(pixel, new Rectangle(descriptionLeft, descriptionY, descriptionWidth, 37), Color.Black);
         batch.Draw(pixel, GangInformationLayout.ValueField(leftValueLeft, forceY), Color.Black);
         batch.Draw(pixel, GangInformationLayout.ValueField(rightValueLeft, forceY), Color.Black);
         batch.Draw(pixel, GangInformationLayout.ValueField(rightValueLeft, techLevelY), Color.Black);

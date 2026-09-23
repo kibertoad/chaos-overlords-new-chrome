@@ -150,10 +150,7 @@ public sealed partial class ChaosGame
         if (LastTurnEventsLayout.Previous.Contains(point)) MoveEventCursor(-1);
         else if (LastTurnEventsLayout.Next.Contains(point)) MoveEventCursor(1);
         else if (LastTurnEventsLayout.Ok.Contains(point))
-        {
-            AcceptInput();
-            CloseEvents();
-        }
+            AcceptAndInvoke(CloseEvents);
     }
 
     private void MoveEventCursor(int delta)
@@ -220,11 +217,8 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawBoard(batch, pixel, font, state);
-        if (_lastTurnEventsBackground is not null)
-            batch.Draw(_lastTurnEventsBackground, LastTurnEventsLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, LastTurnEventsLayout.Panel, new Color(0, 0, 0, 245));
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        DrawPanelArtwork(batch, pixel, _lastTurnEventsBackground, LastTurnEventsLayout.Panel);
+        var playerId = ViewingPlayer(state);
         var notifications = ReviewableReports(state, playerId);
         ClearLastTurnEventFields(batch, pixel);
         batch.Draw(pixel, LastTurnEventsLayout.Artwork, Color.Black);
@@ -236,7 +230,7 @@ public sealed partial class ChaosGame
 
     private GameNotification? CurrentEventReport(MatchState state)
     {
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = ViewingPlayer(state);
         var notifications = ReviewableReports(state, playerId);
         if (notifications.Count == 0) return null;
         _eventCursor = Math.Clamp(_eventCursor, 0, notifications.Count - 1);
@@ -257,7 +251,7 @@ public sealed partial class ChaosGame
             return;
         }
 
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = ViewingPlayer(state);
         var reportCount = ReviewableReports(state, playerId).Count;
         font.Draw(batch, $"{_eventCursor + 1:00} OF {reportCount:00}",
             new Vector2(SharedPanelLayout.X(34), SharedPanelLayout.Y(13)), Color.Lime, 1);
@@ -321,9 +315,9 @@ public sealed partial class ChaosGame
         if (LastTurnEventPresentation.InfluenceSiteObject(state, notification, related) is { } site)
             return site;
         if (related?.Hire is { } hire)
-            return state.Definitions.Gangs.Single(value => value.Id == hire.GangDefinitionId).Name;
+            return state.Definitions.Gang(hire.GangDefinitionId).Name;
         if (notification.Gang is { } gangId && state.FindGang(gangId) is { } gang)
-            return state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name;
+            return state.Definitions.Gang(gang.DefinitionId).Name;
         if (notification.SectorId is { } sectorId) return SectorCode(sectorId);
         return notification.Kind.ToString().ToUpperInvariant();
     }
@@ -370,14 +364,21 @@ public sealed partial class ChaosGame
     /// <summary>
     /// The event a notification points at.
     /// </summary>
+    private static GameEvent? RelatedEvent(MatchState state, GameNotification notification) =>
+        notification.RelatedEventSequence is { } sequence
+            ? EventBySequence(state.Events, sequence)
+            : null;
+
+    /// <summary>
+    /// The event carrying <paramref name="sequence"/>, or <c>null</c> when the log has no such event.
+    /// </summary>
     /// <remarks>
-    /// Binary search rather than a linear scan: the list is append-only in sequence order, never
-    /// trimmed, and this is asked once per drawn report on screens that redraw every frame.
+    /// Binary search rather than a linear scan: the log is append-only in ascending sequence order,
+    /// never trimmed, and the screens that ask this redraw every frame. <c>MatchState</c> maintains
+    /// that ordering on both append and restore, so every caller shares this one lookup.
     /// </remarks>
-    private static GameEvent? RelatedEvent(MatchState state, GameNotification notification)
+    private static GameEvent? EventBySequence(IReadOnlyList<GameEvent> events, long sequence)
     {
-        if (notification.RelatedEventSequence is not { } sequence) return null;
-        var events = state.Events;
         var low = 0;
         var high = events.Count - 1;
         while (low <= high)
@@ -515,6 +516,13 @@ public static class LastTurnEventPresentation
     public static int ArtworkIndex(GameNotification notification, GameEvent? relatedEvent)
     {
         ArgumentNullException.ThrowIfNull(notification);
+        if (relatedEvent is
+            {
+                Kind: GameEventKind.CommandFailed,
+                Action: GangAction.Bribe or GangAction.Equip,
+                Resolution.Code: CommandResolutionCode.InsufficientCash
+            })
+            return 6;
         return notification.Kind switch
         {
             GameNotificationKind.Crackdown => 1,
@@ -524,6 +532,7 @@ public static class LastTurnEventPresentation
             GameNotificationKind.Elimination => 4,
             GameNotificationKind.Research => 5,
             GameNotificationKind.Influence => 4,
+            GameNotificationKind.HireInsufficientCash => 6,
             GameNotificationKind.Objective => 7,
             _ => 0
         };
@@ -558,7 +567,7 @@ public static class LastTurnEventPresentation
         if (InfluenceSiteId(notification, relatedEvent) is not { } siteId
             || state.FindSite(siteId) is not { } site)
             return null;
-        var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+        var definition = state.Definitions.Site(site.DefinitionId);
         return $"{siteId:00}:{definition.Name}";
     }
 

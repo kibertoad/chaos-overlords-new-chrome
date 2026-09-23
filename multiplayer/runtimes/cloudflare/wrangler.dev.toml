@@ -2,8 +2,8 @@
 #
 # The bindings here are this package's interface — what any deployment has to supply for the Worker
 # to run — with local, throwaway resources behind them. Everything a real deployment decides (the
-# Worker's name, which account's databases these are, their ids, the cron schedule, the tuning of
-# the vars) lives with that deployment, not in this repository.
+# Worker's name, which account's databases these are, their ids, the tuning of the vars) lives with
+# that deployment, not in this repository.
 #
 #   pnpm dev                   # wrangler dev against local D1 and R2
 #   pnpm db:migrate:local      # apply the SQLite lineage to the local match database
@@ -22,13 +22,24 @@ RATE_LIMIT_PER_MINUTE = "30"
 MEMBER_RATE_LIMIT_PER_MINUTE = "240"
 UPLOAD_RATE_LIMIT_PER_MINUTE = "10"
 BUG_REPORT_RATE_LIMIT_PER_MINUTE = "5"
-RETENTION_DAYS = "30"
-ABANDONED_RETENTION_DAYS = "90"
+MATCH_CREATION_RATE_LIMIT_PER_MINUTE = "120"
+# Retention, in days; 0 keeps that kind of row forever. These are the kernel's defaults, sized for a
+# shared public server. SILENT_RETENTION_DAYS (unset: three times ABANDONED_RETENTION_DAYS) and
+# RETENTION_BATCH_SIZE (50) can be added the same way.
+RETENTION_DAYS = "14"
+LOBBY_RETENTION_DAYS = "3"
+ABANDONED_RETENTION_DAYS = "30"
 BUG_REPORT_RETENTION_DAYS = "90"
 BUG_REPORT_DAILY_STATE_MB = "512"
 
 # The D1 migration lineage is the storage package's SQLite one, shared with better-sqlite3, so
 # `wrangler d1 migrations apply` and the Node migrator run the same files.
+# The `scheduled` handler: expired deadlines, interrupted seals, and the retention sweeps that delete
+# every stored row past its window. Five minutes is the interval the sweeper is written for. Run
+# `wrangler dev --test-scheduled` and GET /__scheduled to fire it locally.
+[triggers]
+crons = ["*/5 * * * *"]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "chaos_overlords_dev"

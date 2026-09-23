@@ -101,11 +101,13 @@ public static class CitySiteMarkerProjection
         ArgumentNullException.ThrowIfNull(selectedSiteIds);
         if (state.FindPlayer(player) is null) throw new ArgumentOutOfRangeException(nameof(player));
         var result = new List<CitySiteMarker>();
-        foreach (var sector in state.Sectors.OrderBy(sector => sector.Id))
+        for (var sectorIndex = 0; sectorIndex < state.Sectors.Count; sectorIndex++)
         {
+            var sector = state.Sectors[sectorIndex];
             var visibleSlot = 0;
-            foreach (var site in sector.Sites.OrderBy(site => site.Slot))
+            for (var siteIndex = 0; siteIndex < sector.Sites.Count; siteIndex++)
             {
+                var site = sector.Sites[siteIndex];
                 var controlled = SiteControlRules.Controller(sector, site) == player;
                 if (!controlled && !selectedSiteIds.Contains(site.DefinitionId)) continue;
                 result.Add(new CitySiteMarker(

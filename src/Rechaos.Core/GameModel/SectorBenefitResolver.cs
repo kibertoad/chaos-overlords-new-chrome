@@ -8,14 +8,7 @@ internal static class SectorBenefitResolver
 {
     public static void ActivatePending(MatchState state)
     {
-        var completedSites = state.Events
-            .Where(value => value.Turn == state.Coordinator.Turn - 1
-                && value.Kind == GameEventKind.CommandResolved
-                && value.Action == GangAction.Influence
-                && value.Target.Kind == CommandTargetKind.Site
-                && value.Resolution is { PreviousValue: > 0, ResultValue: 0 })
-            .Select(value => value.Target.Id)
-            .ToHashSet();
+        var completedSites = CompletedLastTurn(state);
         foreach (var sector in state.Sectors.OrderBy(value => value.Id))
         {
             if (sector.Owner is not { } owner) continue;
@@ -26,12 +19,37 @@ internal static class SectorBenefitResolver
                 if (!completedSites.Contains(siteId)
                     || site.Resistance != 0
                     || site.InfluencedBy is not null) continue;
-                var definition = state.Definitions.Sites.Single(
-                    value => value.Id == site.DefinitionId);
+                var definition = state.Definitions.Site(site.DefinitionId);
                 site.InfluencedBy = owner;
                 player.Support = checked(player.Support + definition.Support);
                 sector.Tolerance = checked(sector.Tolerance + definition.Tolerance);
             }
         }
+    }
+
+    /// <summary>The sites whose Resistance reached zero during the turn that has just ended.</summary>
+    /// <remarks>
+    /// Walked back from the end rather than filtered, the way every other reader of the log does
+    /// it. The history is append-only in turn order and this runs at every Upkeep, so scanning all
+    /// of it made one turn's cost grow with the number of turns already played — over a full-length
+    /// match that is the whole log re-read a couple of hundred times.
+    /// </remarks>
+    private static HashSet<int> CompletedLastTurn(MatchState state)
+    {
+        var completedTurn = state.Coordinator.Turn - 1;
+        var completed = new HashSet<int>();
+        var events = state.Events;
+        for (var index = events.Count - 1; index >= 0; index--)
+        {
+            var value = events[index];
+            if (value.Turn < completedTurn) break;
+            if (value.Turn == completedTurn
+                && value.Kind == GameEventKind.CommandResolved
+                && value.Action == GangAction.Influence
+                && value.Target.Kind == CommandTargetKind.Site
+                && value.Resolution is { PreviousValue: > 0, ResultValue: 0 })
+                completed.Add(value.Target.Id);
+        }
+        return completed;
     }
 }

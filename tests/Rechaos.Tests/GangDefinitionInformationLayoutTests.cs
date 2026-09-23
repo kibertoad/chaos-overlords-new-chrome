@@ -15,6 +15,7 @@ public sealed class GangDefinitionInformationLayoutTests
         Assert.Equal(new Rectangle(161, 293, 49, 22), GangDefinitionInformationLayout.Ok);
         Assert.Equal(228, GangDefinitionInformationLayout.NameLeft);
         Assert.Equal(228, GangDefinitionInformationLayout.DescriptionLeft);
+        Assert.Equal(180, GangDefinitionInformationLayout.DescriptionClearWidth);
         Assert.Equal([169, 178, 187], Enumerable.Range(0, 3)
             .Select(GangDefinitionInformationLayout.DescriptionY));
         Assert.Equal(300, GangDefinitionInformationLayout.LeftValueLeft);

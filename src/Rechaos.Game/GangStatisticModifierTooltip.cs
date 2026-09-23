@@ -20,7 +20,7 @@ public static class GangStatisticModifierTooltip
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gang);
-        var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+        var definition = state.Definitions.Gang(gang.DefinitionId);
         return Lines(effect, definition.Stats,
             EffectiveStatisticsCalculator.ModifiersForGang(state, gang));
     }

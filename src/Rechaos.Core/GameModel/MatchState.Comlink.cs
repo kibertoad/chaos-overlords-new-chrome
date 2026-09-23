@@ -20,9 +20,6 @@ public sealed partial class MatchState
     public bool MarkComlinkRead(PlayerId player, long sequence) =>
         GetComlinkInbox(player).MarkRead(sequence);
 
-    internal bool MarkAllComlinkReadLegacy(PlayerId player) =>
-        GetComlinkInbox(player).MarkAllRead();
-
     private ComlinkSendResult ValidateComlinkMessage(
         PlayerId sender,
         IReadOnlyList<PlayerId> recipients,

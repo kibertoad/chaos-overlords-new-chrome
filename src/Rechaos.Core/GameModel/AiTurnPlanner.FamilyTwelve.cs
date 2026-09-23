@@ -2,30 +2,21 @@ namespace Rechaos.Core.GameModel;
 
 public static partial class AiTurnPlanner
 {
-    private static bool PrepareFamilyTwelveCommand(
+    private static void PrepareFamilyTwelveCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
         if (visible.Count == 0)
             PrepareFamilyTwelveUncontestedCommand(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
         else
             PrepareFamilyTwelveAttack(state, playerId, gang, gangSlot, visible);
 
-        var turnsRemaining = Math.Max(0,
-            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
-        if (OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
-                state.Setup.Scenario, turnsRemaining))
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
-        return true;
+        TerminateForGreed(state, playerId, gangSlot);
     }
 
     private static void PrepareFamilyTwelveUncontestedCommand(
@@ -33,10 +24,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var player = state.FindPlayer(playerId)!;
         if (OriginalAiEquipmentRules.SelectFamily11WeaponUpgrade(
@@ -87,16 +75,16 @@ public static partial class AiTurnPlanner
             sourceSectorId: gang.SectorId,
             player: playerId,
             family: 12,
-            sectorOwners,
-            sectorDisabled,
-            sectorGangCounts,
+            snapshot.SectorOwners,
+            snapshot.SectorDisabled,
+            snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            playerOrder,
+            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }

@@ -167,7 +167,6 @@ public sealed class AiPlanningState
     internal IReadOnlyList<short> CaptureWeaponCooldowns() => _weaponCooldowns.ToArray();
     internal IReadOnlyList<short> CaptureArmorCooldowns() => _armorCooldowns.ToArray();
     internal IReadOnlyList<short> CaptureFormationSectors() => _focusValues.ToArray();
-    internal IReadOnlyList<short> CaptureFocusValues() => CaptureFormationSectors();
     internal IReadOnlyList<short> CaptureCoverageSectors() => _coverageSectors.ToArray();
 
     internal bool BeginPlanning(PlayerId player)

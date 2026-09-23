@@ -23,6 +23,30 @@ public static partial class AiTurnPlanner
                 : visible;
     }
 
+    /// <summary>Weight of the first visible opponent's owner, or 0 when nobody is visible.</summary>
+    private static int FirstVisibleOpponentWeight(
+        MatchState state,
+        PlayerId playerId,
+        IReadOnlyList<ObjectiveTarget> visible) =>
+        visible.Count == 0
+            ? 0
+            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+
+    /// <summary>The family 0 and family 4 draw: human-weighted pool, family 12 acceptance test.</summary>
+    private static RecoveredAttackDraw DrawHumanWeightedAttackTarget(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        IReadOnlyList<ObjectiveTarget> visible,
+        int visibleWeight)
+    {
+        var targetPool = SelectHumanWeightedTargetPool(
+            state, playerId, gang.SectorId, visible, visibleWeight);
+        return DrawRecoveredAttackTarget(
+            state, gang, visible, targetPool,
+            OriginalAiFamilyTwelveRules.CanAttackSelectedTarget);
+    }
+
     private static RecoveredAttackDraw DrawRecoveredAttackTarget(
         MatchState state,
         MatchGangState gang,
@@ -43,6 +67,27 @@ public static partial class AiTurnPlanner
         return new RecoveredAttackDraw(selected, acceptsComparison(
             gang.Force, attackerStats.Combat, attackerStats.Defense,
             comparisonTarget.Force, targetStats.Combat, targetStats.Defense));
+    }
+
+    private static void SetRecoveredActionClearingFocus(
+        MatchState state,
+        PlayerId playerId,
+        int gangSlot,
+        GangAction action)
+    {
+        state.AiPlanning.SetPlannedAction(playerId, gangSlot, action);
+        state.AiPlanning.SetFocusValue(
+            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+    }
+
+    /// <summary>Replaces the planned action with Terminate in the last turns of a Greed match.</summary>
+    private static void TerminateForGreed(MatchState state, PlayerId playerId, int gangSlot)
+    {
+        var turnsRemaining = Math.Max(0,
+            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
+        if (OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
+                state.Setup.Scenario, turnsRemaining))
+            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
     }
 
     private static void SetRecoveredAttackAction(

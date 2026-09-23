@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 import { describe, expect, it } from 'vitest'
-import { defaultClientAddress } from '../src'
+import { defaultClientAddress, rateLimitKey } from '../src'
 import type { AppEnv } from '../src/http/types'
 
 /** Just enough context to answer `c.req.header(name)`. */
@@ -43,5 +43,75 @@ describe('defaultClientAddress', () => {
   it('answers unknown rather than guessing when there is no chain', () => {
     expect(defaultClientAddress(requestWith({}))).toBe('unknown')
     expect(defaultClientAddress(requestWith({ 'x-forwarded-for': ' , ' }))).toBe('unknown')
+  })
+})
+
+describe('rateLimitKey', () => {
+  it('keeps an IPv4 address, with or without a port', () => {
+    expect(rateLimitKey('1.2.3.4')).toBe('1.2.3.4')
+    expect(rateLimitKey('1.2.3.4:443')).toBe('1.2.3.4')
+    expect(rateLimitKey('  1.2.3.4  ')).toBe('1.2.3.4')
+    expect(rateLimitKey('')).toBe('unknown')
+  })
+
+  /**
+   * A client is routed a whole /64, so the budget has to be the prefix. The compressed forms are
+   * the ones that matter: `2001:db8::1` and `2001:db8::2` are one client, and giving each its own
+   * key meant the per-address budget never bound for anybody who could pick their own suffix.
+   */
+  it('masks every spelling of an IPv6 address to its /64', () => {
+    expect(rateLimitKey('2001:db8:85a3:8d3:1319:8a2e:370:7348')).toBe('2001:db8:85a3:8d3::/64')
+    expect(rateLimitKey('2a02:8109:a1c0:2f0::abcd')).toBe('2a02:8109:a1c0:2f0::/64')
+    expect(rateLimitKey('2001:db8::1')).toBe(rateLimitKey('2001:db8::2'))
+    expect(rateLimitKey('2001:db8::1')).toBe('2001:db8:0:0::/64')
+    expect(rateLimitKey('2001:db8:1::5')).toBe(rateLimitKey('2001:db8:1::6'))
+    expect(rateLimitKey('[2001:db8::1]:443')).toBe(rateLimitKey('2001:db8::9'))
+    expect(rateLimitKey('fd00::1')).toBe('fd00:0:0:0::/64')
+    expect(rateLimitKey('::1')).toBe('0:0:0:0::/64')
+  })
+
+  it('reads one address under one key however it is written', () => {
+    expect(rateLimitKey('2001:0DB8::0001')).toBe(rateLimitKey('2001:db8::1'))
+    expect(rateLimitKey('2001:db8:0:0:0:0:0:1')).toBe(rateLimitKey('2001:db8::1'))
+    // The IPv4-mapped branch used to answer before the address was lowercased, so these two
+    // spellings of one client held a budget each.
+    expect(rateLimitKey('::FFFF:1.2.3.4')).toBe(rateLimitKey('::ffff:1.2.3.4'))
+    expect(rateLimitKey('::FFFF:0102:0304')).toBe(rateLimitKey('::ffff:1.2.3.4'))
+  })
+
+  it('leaves an IPv4-mapped address whole, since its suffix is the address', () => {
+    expect(rateLimitKey('::ffff:1.2.3.4')).toBe('::ffff:1.2.3.4')
+  })
+
+  /**
+   * RFC 4291 lets the embedded address be written as a dotted quad or as two hex groups. Only the
+   * dotted form was recognised, and the hex form has no `.`, so it fell through to the /64 mask —
+   * where the mapped prefix is all zeros. Every IPv4 client written that way therefore shared one
+   * bucket with each other and with `::` and `::1`, and one noisy source in it spent the anonymous
+   * and bug-report budgets for all of them.
+   */
+  it('reads the hex spelling of an IPv4-mapped address as that address', () => {
+    expect(rateLimitKey('::ffff:0102:0304')).toBe('::ffff:1.2.3.4')
+    expect(rateLimitKey('[::ffff:0102:0304]:443')).toBe('::ffff:1.2.3.4')
+    // Two different clients, and neither of them the loopback.
+    expect(rateLimitKey('::ffff:0506:0708')).toBe('::ffff:5.6.7.8')
+    expect(rateLimitKey('::ffff:0102:0304')).not.toBe(rateLimitKey('::ffff:0506:0708'))
+    expect(rateLimitKey('::ffff:0102:0304')).not.toBe(rateLimitKey('::1'))
+    expect(rateLimitKey('::ffff:0102:0304')).not.toBe(rateLimitKey('::'))
+    // Short groups and a zero octet still read as the address they carry.
+    expect(rateLimitKey('::ffff:102:304')).toBe('::ffff:1.2.3.4')
+    expect(rateLimitKey('::ffff:0:1')).toBe('::ffff:0.0.0.1')
+  })
+
+  /** A genuine IPv6 address that merely ends in two short groups is not an IPv4-mapped one. */
+  it('masks an address outside the mapped prefix to its /64', () => {
+    expect(rateLimitKey('2001:db8::102:304')).toBe('2001:db8:0:0::/64')
+    expect(rateLimitKey('::fffe:0102:0304')).toBe('0:0:0:0::/64')
+  })
+
+  /** Two clients behind one /64 must never be told apart; two /64s must never be merged. */
+  it('separates different prefixes', () => {
+    expect(rateLimitKey('2001:db8::1')).not.toBe(rateLimitKey('2001:db9::1'))
+    expect(rateLimitKey('2001:db8:0:1::1')).not.toBe(rateLimitKey('2001:db8::1'))
   })
 })

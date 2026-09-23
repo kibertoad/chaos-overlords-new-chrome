@@ -56,6 +56,7 @@ original-game capture confirms the screen and interaction state.
 | `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
 | `PX05022` | Gang Information variant without live-instance equipment cells, used for hire-offer definition inspection | High from comparison with `PX05000` and Hire/Gang help topics |
 | `PX05024` | Search: Sites panel with ALL, NONE, and OK controls plus a two-column aperture sized for all 22 site types | High from visible identity, geometry, and the complete native handler |
+| `PX06006` | Empty-safe illustration for insufficient-cash Bribe, Equip, and Hire Last Turn reports | High from type-6 report composition at `0x0044fd6c` |
 | `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
 | `PX03000` | 10x9 gang portrait grid, 64x64 each, covering all 90 definitions | High from dimensions and definition coverage |
 | `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; unarmed uses 0 normally or 1 for any positive base Martial Arts, index 27 is target-evasion/question art, and right-facing index 28 is the police car | High from frame inspection, item-table indices, and detailed-combat loader branches |
@@ -363,10 +364,10 @@ The native dispatcher uses six 48-by-48 tiles at `(500,126)`, `(552,126)`,
 `(500,178)`, `(552,178)`, `(500,230)`, and `(552,230)`, followed by Done at
 `(500,282,100,48)` and Game Info at `(588,41,26,34)`. They route Events;
 Comlink; Combat; Financial; Gangs/Hire; Ranking/Search; Done; and Game Info.
-The paired tiles split horizontally, not vertically. Comlink, Combat, Financial,
-and Gangs/Hire allocate 33 pixels to View, Results, City, or Gangs and 15 pixels
-to Send, Detailed, Sector, or Hire. Ranking/Search allocates 25 pixels to Ranking
-and 23 to Search. All rectangles are half-open.
+The paired tiles split vertically, not horizontally. Comlink, Combat, Financial,
+and Gangs/Hire allocate the upper 33 pixels to View, Results, City, or Gangs and
+the lower 15 pixels to Send, Detailed, Sector, or Hire. Ranking/Search allocates
+the upper 25 pixels to Ranking and the lower 23 to Search. All rectangles are half-open.
 
 Pressing a tile copies its exact opaque `PX00129` pressed sprite, plays general
 effect slot 2, restores the baked `PX00128` control when the pointer leaves, and

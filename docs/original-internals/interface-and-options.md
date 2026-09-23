@@ -189,18 +189,18 @@ each release gate is `(top=437,left=472 + 66*slot,bottom=450,right=504 +
 66*slot)`, i.e. a 32-by-13 half-open target. The broad portrait drag flow is
 separate from this compact reject gate.
 
-Five 48-pixel tiles select a subroute from the original press x coordinate,
-not from separate vertical rows. Comlink, Combat, Finance, and Gangs/Hire use
-the left 33 pixels and right 15 pixels: View/Send, Results/Detailed, City/Sector,
-and Gangs/Hire respectively. Ranking/Search uses left 25 and right 23 pixels.
-The strict comparisons are x greater than tile-left +32 or +24, so the boundary
-pixel remains in the left route. Events, Done, and Game Info use their complete
+Five 48-pixel tiles select a subroute from the original press y coordinate,
+not from separate horizontal columns. Comlink, Combat, Finance, and Gangs/Hire use
+the upper 33 pixels and lower 15 pixels: View/Send, Results/Detailed, City/Sector,
+and Gangs/Hire respectively. Ranking/Search uses upper 25 and lower 23 pixels.
+The strict comparisons are y greater than tile-top +32 or +24, so the boundary
+pixel remains in the upper route. Events, Done, and Game Info use their complete
 outer rectangles.
 
 **Interpretation:** The former recreation inferred 50-pixel rectangles from
-the visible frame and split paired controls vertically. That both admitted
+the visible frame and split paired controls horizontally. That both admitted
 border pixels and routed large regions to the wrong action. The client now uses
-the exact native tiles, horizontal subcontrols, original press identity,
+the exact native tiles, vertical subcontrols, original press identity,
 release-inside cancellation, slot-2 press cue, and opaque pressed sprites on
 both city and detailed-sector screens.
 
@@ -375,9 +375,12 @@ confirmed in an original 1.1 runtime observation.
 all 81 roster records for active gangs in the selected sector. It advances one
 display index for every match and draws each portrait into a 32-by-32 cell at
 `(144 + 32*n,158)-(176 + 32*n,190)`. It then writes Tech Level, Upkeep, and
-fourteen statistic values in that same column at x=`154 + 32*n`, with rows
-192, 201, 211, 220, 229, 238, 248, 257, 266, 275, 284, 294, 303, 312, 321,
-and 330. The six-gang sector capacity bounds the rendered columns to six.
+fourteen statistic values in that same column, with the left edge of each
+two-cell field at panel-local x=`154 + 32*n`
+(screen x=`258 + 32*n`). The decoded `PX05009` labels establish the matching
+screen row baselines as 172, 181, 191, 200, 209, 218, 228, 237, 246, 255,
+264, 274, 283, 292, 301, and 310. The six-gang sector capacity bounds the
+rendered columns to six.
 
 **Interpretation:** `PX05009` is a simultaneous compact sector roster, not a
 one-gang detail browser. The recreation renders every active gang in its

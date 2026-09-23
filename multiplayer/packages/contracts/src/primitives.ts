@@ -260,6 +260,8 @@ export const RESERVED_DISPLAY_NAMES = [
 /** The original executable stores a player name in a fixed ten-character record. */
 export const ORIGINAL_PLAYER_NAME_MAX_LENGTH = 10
 
+const RESERVED_DISPLAY_NAME_SET: ReadonlySet<string> = new Set(RESERVED_DISPLAY_NAMES)
+
 /**
  * Projects a modern display name into the original executable's printable, upper-case name record.
  *
@@ -268,13 +270,29 @@ export const ORIGINAL_PLAYER_NAME_MAX_LENGTH = 10
  * actually receive.
  */
 export function originalPlayerNameProjection(name: string): string {
+  const length = Math.min(name.length, ORIGINAL_PLAYER_NAME_MAX_LENGTH)
   let output = ''
-  for (let index = 0; index < name.length && index < ORIGINAL_PLAYER_NAME_MAX_LENGTH; index++) {
-    const source = name[index] ?? ' '
-    const upper = source >= 'a' && source <= 'z' ? source.toUpperCase() : source
-    output += upper >= ' ' && upper <= 'Z' ? upper : ' '
+  for (let index = 0; index < length; index++) {
+    output += foldIntoOriginalRecord(name.charAt(index))
   }
   return output.trim()
+}
+
+const LATIN_SMALL_LONG_S = '\u017F'
+
+/**
+ * Folds one UTF-16 cell into the native record, exactly as the game core does.
+ *
+ * Both sides name the cells whose simple upper-case mapping lands in the record's range — `a`–`z`
+ * and the long s — rather than asking an engine's Unicode tables, so neither an ICU upgrade nor a
+ * .NET globalization mode can move a name across the reserved-name line on one side only. Every
+ * other cell already sits in `' '`–`'Z'` or becomes a space, so one source cell is always one
+ * record cell.
+ */
+function foldIntoOriginalRecord(cell: string): string {
+  if (cell >= 'a' && cell <= 'z') return cell.toUpperCase()
+  if (cell === LATIN_SMALL_LONG_S) return 'S'
+  return cell >= ' ' && cell <= 'Z' ? cell : ' '
 }
 
 /**
@@ -297,8 +315,7 @@ export const displayNameInputSchema = pipe(
   maxLength(LIMITS.displayNameLength),
   check((name) => !UNSAFE_NAME_CHARACTERS.test(name), NAME_CHARACTER_MESSAGE),
   check(
-    (name) =>
-      !RESERVED_DISPLAY_NAMES.some((reserved) => originalPlayerNameProjection(name) === reserved),
+    (name) => !RESERVED_DISPLAY_NAME_SET.has(originalPlayerNameProjection(name)),
     'that display name is a cheat code in the original game, not a name',
   ),
 )

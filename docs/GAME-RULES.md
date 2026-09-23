@@ -665,6 +665,11 @@ claim about original-game behavior.
   earlier one stays. The helper's defensive saturated-cycle branch routes a
   previously rewritten no-op through selector mode 0: a uniform all-sector draw
   followed by the usual horizontal-then-vertical capacity-checked one-step move.
+  Only an active gang occupies one of the six places. A gang killed in Combat or
+  by police, and one that Terminated, keeps the sector it died in on its inactive
+  record — that is the record the hire resolver later reuses in place — so a
+  contested sector accumulates more gang records than the bound over a long match
+  without ever breaking it.
 - Confidence: High static evidence for adjacency, submission capacity, phase
   precedence, projected-count construction, highest-sector selection, roster
   rewrite direction, repeated normalization, mode-0 fallback, and final Move
@@ -674,7 +679,9 @@ claim about original-game behavior.
 - Tests: `BoardResolutionTests` covers movement events, capacity at submission,
   reversed-submission runtime contention, native earlier-roster cancellation,
   successful no-op results, Terminate precedence, and notifications;
-  `OriginalAiSectorSelectionRulesTests` covers mode-0 fallback RNG and routing.
+  `OriginalAiSectorSelectionRulesTests` covers mode-0 fallback RNG and routing;
+  `NativeSaveSerializerTests` covers a save carrying inactive records beyond the
+  bound and still refusing a seventh active gang in one sector.
 
 ### RULE-CONTROL-001 — Cooperative sector control comparison
 
@@ -891,7 +898,10 @@ claim about original-game behavior.
   score-descending standings for every scenario; equal scores share a
   competition rank, with the next place skipped, and eliminated players follow
   the active ranking unranked in player-slot order. Fixed inactive slots retain
-  the executable's -32,000 score sentinel during rank counting. Objective
+  the executable's -32,000 score sentinel during rank counting. In Greed, an
+  active player with cash below -32,000 can therefore have numeric place 6 even
+  when they are the only active player; inactive players still display last and
+  unranked. Objective
   ranking uses the executable's scenario table: sectors for Big 40/Armageddon,
   owned HQ sectors for Eliminate, accumulated points for Big Man, and the common
   inactive-player count for Kill 'Em All/Siege. Dominance divides its weighted

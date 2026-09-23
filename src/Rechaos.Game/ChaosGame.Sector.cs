@@ -83,17 +83,15 @@ public sealed partial class ChaosGame
             return;
         }
         if (_state is null) return;
-        var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = ViewingPlayer(_state);
         if (SectorOpponentGangs.PortraitAt(_state, point) is { } portraitOwner)
         {
             SelectSectorGangCardOwner(_state, playerId, portraitOwner);
             return;
         }
         if (BeginCityConsolePress(point, ClientScreen.Sector)) return;
-        var rejectSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
-            .FirstOrDefault(slot => HireDockLayout.Reject(slot).Contains(point), -1);
-        var hireSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
-            .FirstOrDefault(slot => HireDockLayout.Portrait(slot).Contains(point), -1);
+        var rejectSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Reject, point);
+        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Portrait, point);
         if (rejectSlot >= 0)
         {
             BeginHireReject(rejectSlot, ClientScreen.Sector);
@@ -112,8 +110,7 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
-        var siteSlot = Enumerable.Range(0, MatchLimits.SitesPerSector)
-            .FirstOrDefault(slot => SectorDetailLayout.SitePortrait(slot).Contains(point), -1);
+        var siteSlot = HitTest.IndexAt(MatchLimits.SitesPerSector, SectorDetailLayout.SitePortrait, point);
         if (siteSlot >= 0)
         {
             if (_sectorSiteClicks.Register(_cursor * MatchLimits.SitesPerSector + siteSlot, _inputTime))
@@ -122,8 +119,7 @@ public sealed partial class ChaosGame
         }
         var visible = SectorCardGangs(_state, playerId)
             .Take(SectorGangCardLayout.VisibleCards).ToArray();
-        var index = Enumerable.Range(0, visible.Length)
-            .FirstOrDefault(value => SectorGangCardLayout.Frame(value).Contains(point), -1);
+        var index = HitTest.IndexAt(visible.Length, SectorGangCardLayout.Frame, point);
         if (index < 0) return;
         var gang = visible[index];
         if (gang.Owner != playerId)
@@ -154,16 +150,16 @@ public sealed partial class ChaosGame
 
     private void DrawSectorDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawBoard(batch, pixel, font, state);
+        DrawBoard(batch, pixel, font, state, drawMapLayer: false);
         batch.Draw(pixel, new Rectangle(0, 42, 438, 418), Color.Black);
         DrawSectorSideRail(batch, pixel, font);
         var sector = state.Sectors[_cursor];
-        var viewer = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var viewer = ViewingPlayer(state);
         DrawSectorOpponentGangPresence(batch, pixel, font, state, viewer);
         DrawSectorNeighborhood(batch, pixel, font, state);
         foreach (var site in sector.Sites)
         {
-            var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+            var definition = state.Definitions.Site(site.DefinitionId);
             var portrait = SectorDetailLayout.SitePortrait(site.Slot);
             var controlOwner = SiteControlRules.Controller(sector, site);
             if (_sitePortraits is not null)
@@ -224,9 +220,10 @@ public sealed partial class ChaosGame
         IReadOnlyList<MatchGangState> visibleGangs)
     {
         if (_hoverPoint is not { } point) return;
-        var hoveredSlot = Enumerable.Range(0,
-                Math.Min(visibleGangs.Count, SectorGangCardLayout.VisibleCards))
-            .FirstOrDefault(slot => SectorGangCardLayout.Frame(slot).Contains(point), -1);
+        var hoveredSlot = HitTest.IndexAt(
+            Math.Min(visibleGangs.Count, SectorGangCardLayout.VisibleCards),
+            SectorGangCardLayout.Frame,
+            point);
         // An opponent's orders stay their own business: the cards hide their action strip, so the
         // workspace must not betray the same order by highlighting what it targets.
         if (hoveredSlot < 0 || visibleGangs[hoveredSlot].Owner != viewer
@@ -263,7 +260,7 @@ public sealed partial class ChaosGame
     private void DrawSectorHireDrag(SpriteBatch batch, Texture2D pixel, MatchState state)
     {
         if (!_hireDragStarted || _draggedHireDefinitionId is not { } definitionId) return;
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = ViewingPlayer(state);
         var overMap = SectorDetailLayout.TrySectorAt(_dragPoint, _cursor, out var dropSector);
         if (!overMap && SectorDetailLayout.Workspace.Contains(_dragPoint)) dropSector = _cursor;
         if (overMap)
@@ -302,14 +299,27 @@ public sealed partial class ChaosGame
         _draggedGangId = gang.Id;
         _gangPressPoint = point;
         _gangDragStarted = false;
+        _gangDragProjection = null;
         _dragPoint = point;
+    }
+
+    /// <summary>Promotes a press into a drag, projecting up front what the drag paints with.</summary>
+    private void StartGangDrag()
+    {
+        if (_state is null || _draggedGangId is not { } gangId
+            || _state.FindGang(gangId) is not { } gang)
+        {
+            CancelGangDrag();
+            return;
+        }
+        _gangDragProjection = SectorGangDragProjection.For(_state, gang, _cursor);
+        _gangDragStarted = true;
     }
 
     private void CompleteGangClick()
     {
         var gangId = _draggedGangId;
-        _draggedGangId = null;
-        _gangDragStarted = false;
+        ForgetGangDrag();
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang) return;
         if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
             OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
@@ -318,8 +328,7 @@ public sealed partial class ChaosGame
     private void CompleteGangDrag(Point point)
     {
         var gangId = _draggedGangId;
-        _draggedGangId = null;
-        _gangDragStarted = false;
+        ForgetGangDrag();
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang || _actions is null) return;
         var playerId = _state.Coordinator.ActivePlayer ?? gang.Owner;
         var visibleGangs = SectorGangView.Visible(_state, playerId, _cursor).ToArray();
@@ -330,8 +339,7 @@ public sealed partial class ChaosGame
                 "GANG CANNOT BE ATTACKED");
             return;
         }
-        var siteSlot = Enumerable.Range(0, MatchLimits.SitesPerSector)
-            .FirstOrDefault(slot => SectorDetailLayout.SitePortrait(slot).Contains(point), -1);
+        var siteSlot = HitTest.IndexAt(MatchLimits.SitesPerSector, SectorDetailLayout.SitePortrait, point);
         if (siteSlot >= 0)
         {
             var target = CommandTarget.Site(_cursor * MatchLimits.SitesPerSector + siteSlot);
@@ -376,18 +384,50 @@ public sealed partial class ChaosGame
 
     private void CancelGangDrag()
     {
+        ForgetGangDrag();
+        _message = string.Empty;
+    }
+
+    /// <summary>Lets go of a drag in progress, along with what it was painting with.</summary>
+    /// <remarks>
+    /// Every path that replaces the match on screen or ends the turn being planned calls this, for
+    /// the reason those paths already clear the ctrl-picked selection: the gang under the pointer
+    /// was picked up on a turn that is over, and releasing the button would aim its order at a
+    /// board the player never saw.
+    /// </remarks>
+    private void ForgetGangDrag()
+    {
         _draggedGangId = null;
         _gangDragStarted = false;
-        _message = string.Empty;
+        _gangDragProjection = null;
+    }
+
+    /// <summary>
+    /// What the drag paints with, taken again when the board it was projected from has moved on.
+    /// </summary>
+    /// <remarks>
+    /// The projection is kept for the whole gesture so its cost is paid once rather than once per
+    /// frame, and the paths that replace the match or end the turn drop the drag outright. This is
+    /// the guard for everything in between that they cannot see — the minimap scrolled under a
+    /// held button, or a state swapped between an update and the draw that follows it — and it
+    /// keeps what is painted equal to what <see cref="CompleteGangDrag"/> will act on.
+    /// </remarks>
+    private SectorGangDragProjection GangDragProjection(MatchState state, MatchGangState gang)
+    {
+        if (_gangDragProjection is { } held && held.Describes(state, gang.Id, _cursor)) return held;
+        return _gangDragProjection = SectorGangDragProjection.For(state, gang, _cursor);
     }
 
     private void DrawGangMoveDrag(SpriteBatch batch, Texture2D pixel, MatchState state)
     {
-        if (!_gangDragStarted || _draggedGangId is not { } gangId || state.FindGang(gangId) is not { } gang)
+        if (!_gangDragStarted || _draggedGangId is not { } gangId
+            || state.FindGang(gangId) is not { } gang)
             return;
-        var legalCommands = CommandOptionCatalog.LegalCommands(state, gang.Owner, gang.Id);
-        var legalSectors = SectorMapGangDrop.Destinations(legalCommands, gang.SectorId);
-        var visibleGangs = SectorGangView.Visible(state, gang.Owner, _cursor).ToArray();
+        var projection = GangDragProjection(state, gang);
+        var legalCommands = projection.LegalCommands;
+        var legalSectors = projection.LegalSectors;
+        var legalSites = projection.LegalSites;
+        var visibleGangs = projection.VisibleGangs;
         if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, _dragPoint) is { } enemyId)
         {
             var canAttack = legalCommands.Any(command => command.Action == GangAction.Attack
@@ -407,7 +447,14 @@ public sealed partial class ChaosGame
         {
             if (SectorDetailLayout.SectorAt(_cursor, column, row) is not { } sectorId
                 || !legalSectors.Contains(sectorId)) continue;
-            DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row), Color.Lime, 2);
+            DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row), GangDragSectorHighlight, 1);
+        }
+        for (var siteSlot = 0; siteSlot < MatchLimits.SitesPerSector; siteSlot++)
+        {
+            var siteId = _cursor * MatchLimits.SitesPerSector + siteSlot;
+            if (legalSites.Contains(siteId))
+                DrawBorder(batch, pixel, SectorDetailLayout.SitePortrait(siteSlot),
+                    GangDragSectorHighlight, 1);
         }
         if (_gangPortraits is null) return;
         var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 14, 36, 28);
@@ -473,12 +520,11 @@ public sealed partial class ChaosGame
             font.Draw(batch, label, new Vector2(strip.X + 2, strip.Y + 1), Color.Lime, 1);
         }
 
-        var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+        var definition = state.Definitions.Gang(gang.DefinitionId);
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, SectorGangCardLayout.Portrait(slot),
                 OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
-        short?[] equippedItems =
-            [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
+        var equippedItems = EquippedItems(gang);
         for (var itemSlot = 0; itemSlot < 3; itemSlot++)
         {
             if (_itemPortraits is not null && equippedItems[itemSlot] is { } itemId)
@@ -571,7 +617,7 @@ public sealed partial class ChaosGame
                     (sectorId / 8 + 1).ToString(), top: false);
         }
 
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
         var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
             .GroupBy(gang => gang.SectorId).ToArray();

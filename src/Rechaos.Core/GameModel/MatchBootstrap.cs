@@ -10,6 +10,16 @@ public sealed record MatchPlayerStart(
     IReadOnlyList<short> HirePool);
 
 /// <summary>
+/// The starting rosters and city a match is constructed over, before any
+/// <see cref="MatchState"/> exists. Callers that still have layout to finish — extra starting
+/// gangs, scenario landmarks — work on this, so exactly one match is ever built over these player
+/// instances and each of them belongs to that one match.
+/// </summary>
+internal sealed record MatchFoundation(
+    IReadOnlyList<MatchPlayerState> Players,
+    IReadOnlyList<MatchSectorState> Sectors);
+
+/// <summary>
 /// Builds authoritative match state from an explicit city and placement layout.
 /// The recovered original generator and headquarters selector feed this boundary,
 /// while explicit layouts remain available for tests and imported scenarios.
@@ -26,6 +36,20 @@ public static class MatchBootstrap
         IReadOnlyList<MatchSectorState> sectors,
         IReadOnlyList<MatchPlayerStart> starts)
     {
+        var foundation = Compose(definitions, setup, sectors, starts);
+        return new MatchState(definitions, setup, foundation.Players, foundation.Sectors);
+    }
+
+    /// <summary>
+    /// The starting rosters and city on their own, for the original generation path, which finishes
+    /// the layout before the match is constructed rather than reaching into a built one.
+    /// </summary>
+    internal static MatchFoundation Compose(
+        OriginalData definitions,
+        MatchSetup setup,
+        IReadOnlyList<MatchSectorState> sectors,
+        IReadOnlyList<MatchPlayerStart> starts)
+    {
         ArgumentNullException.ThrowIfNull(definitions);
         ArgumentNullException.ThrowIfNull(setup);
         ArgumentNullException.ThrowIfNull(sectors);
@@ -36,13 +60,11 @@ public static class MatchBootstrap
             throw new ArgumentException("Player starts must follow setup player order.", nameof(starts));
         if (starts.Select(start => start.HeadquartersSectorId).Distinct().Count() != starts.Count)
             throw new ArgumentException("Players must have distinct headquarters sectors.", nameof(starts));
-        if (sectors.Count != MatchLimits.SectorCount
-            || !sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, MatchLimits.SectorCount)))
-            throw new ArgumentException("The city must contain sectors ordered from 0 through 63.", nameof(sectors));
+        RequireOrderedCity(sectors, nameof(sectors));
 
         // The bootstrap is transactional with respect to its inputs: ownership is
         // applied to a private state graph, not to the caller's reusable layout.
-        var sectorArray = sectors.Select(CloneSector).ToArray();
+        var sectorArray = sectors.Select(sector => CloneSector(sector)).ToArray();
         foreach (var start in starts)
         {
             if (start.HeadquartersSectorId is < 0 or >= MatchLimits.SectorCount)
@@ -90,13 +112,26 @@ public static class MatchBootstrap
                     setup.Players[index].Name));
         }
 
-        return new MatchState(definitions, setup, players, sectorArray);
+        return new MatchFoundation(players, sectorArray);
     }
 
-    private static MatchSectorState CloneSector(MatchSectorState sector) => new(
+    /// <summary>Throws unless the city holds all 64 sectors, each at the index of its own id.</summary>
+    internal static void RequireOrderedCity(IReadOnlyList<MatchSectorState> sectors, string parameterName)
+    {
+        if (sectors.Count != MatchLimits.SectorCount
+            || !sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, MatchLimits.SectorCount)))
+            throw new ArgumentException("The city must contain sectors ordered from 0 through 63.", parameterName);
+    }
+
+    /// <summary>
+    /// A copy of the sector with its own site objects. The owner is kept, and
+    /// <paramref name="isImportant"/> replaces the flag when given.
+    /// </summary>
+    internal static MatchSectorState CloneSector(MatchSectorState sector, bool? isImportant = null) => new(
         sector.Id,
         sector.Sites.Select(site => new MatchSiteState(
             site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy)).ToArray(),
-        sector.Owner, sector.Tolerance, sector.LegacyChaos, sector.CrackdownActive, sector.IsImportant, sector.Income,
+        sector.Owner, sector.Tolerance, sector.LegacyChaos, sector.CrackdownActive,
+        isImportant ?? sector.IsImportant, sector.Income,
         sector.CrackdownTurnsRemaining, sector.CrackdownHistory);
 }

@@ -27,8 +27,15 @@ export interface Env {
   MEMBER_RATE_LIMIT_PER_MINUTE?: string
   UPLOAD_RATE_LIMIT_PER_MINUTE?: string
   BUG_REPORT_RATE_LIMIT_PER_MINUTE?: string
-  /** Days before a finished, abandoned or never-started match is deleted. 0 keeps everything. */
+  /** Matches created per minute across every caller, per isolate. */
+  MATCH_CREATION_RATE_LIMIT_PER_MINUTE?: string
+  /** Days before a finished or abandoned match is deleted. 0 keeps them forever. */
   RETENTION_DAYS?: string
+  /**
+   * Days before a lobby that was never started is deleted. 0 keeps them forever. Unset (or not a
+   * whole number) is three days, or 0 when `RETENTION_DAYS` is 0.
+   */
+  LOBBY_RETENTION_DAYS?: string
   /**
    * Days before a RUNNING match with nobody active in it is deleted. 0 keeps them forever.
    *
@@ -36,6 +43,14 @@ export interface Env {
    * nothing else ever collects one of those.
    */
   ABANDONED_RETENTION_DAYS?: string
+  /**
+   * Days before a running match is deleted whatever its roster says, because nothing has happened
+   * in it for that long. Unset (or not a whole number) follows `ABANDONED_RETENTION_DAYS` (three
+   * times as long).
+   */
+  SILENT_RETENTION_DAYS?: string
+  /** Matches each retention window deletes per cron run. */
+  RETENTION_BATCH_SIZE?: string
   /** Days a bug report and its R2 object are kept. 0 keeps them forever. */
   BUG_REPORT_RETENTION_DAYS?: string
   /** Attached journal megabytes accepted per rolling day across every reporter. 0 lifts the cap. */

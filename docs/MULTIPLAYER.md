@@ -305,17 +305,33 @@ HTTP buffer.
 ## Retention
 
 A coordination server accumulates rows with no second use: a finished match's order documents, a
-megabyte of snapshot per desync, the lobby someone opened and never started. Matches in a terminal
-or never-started state (`finished`, `abandoned`, `lobby`) are deleted once they have been untouched
-for `RETENTION_DAYS` (30 by default, `0` to keep everything), with everything they own: every child
-table cascades from the match row.
+megabyte of snapshot per desync, the lobby someone opened and never started. Every row the server
+stores belongs to exactly one retention window, and deleting a match takes everything it owns with
+it, because every child table cascades from the match row. The defaults are sized for a shared public
+server; a self-hosted one raises them through configuration, and `0` switches a window off.
 
-A `running` or `desynced` match is collected only under a second, much longer window,
-`ABANDONED_RETENTION_DAYS` (90 by default), and only when no player in it is still `active`. That is
-the living-dead case and it is the ordinary end of a public match: everybody walked away from a
-match that is deliberately kept running so anyone can rejoin, and nobody ever did. A desync pause is
-not abandonment and neither is a weekend, which is why the window is long and why an active seat
-spares the match at any age.
+| Window | Collects | Default |
+|---|---|---|
+| `RETENTION_DAYS` | `finished` and `abandoned` matches untouched for this long | 14 days |
+| `LOBBY_RETENTION_DAYS` | `lobby` matches nobody started, counted from creation or the last settings change | 3 days; 0 when `RETENTION_DAYS` is 0 |
+| `ABANDONED_RETENTION_DAYS` | `running`/`desynced` matches with no `active` player, silent this long | 30 days |
+| `SILENT_RETENTION_DAYS` | `running`/`desynced` matches silent this long, whatever the roster says | 3 × abandoned |
+| `BUG_REPORT_RETENTION_DAYS` | bug reports and their archives | 90 days |
+
+A `running` or `desynced` match is collected only under the two longer windows. The abandoned one
+is the living-dead case and the ordinary end of a public match: everybody walked away from a match
+that is deliberately kept running so anyone can rejoin, and nobody ever did. A desync pause is not
+abandonment and neither is a weekend, which is why an active seat spares the match under that
+window. The silent window drops the roster test, because an untimed match whose clients all died
+without a `leave` keeps its `active` rows forever; it follows the abandoned window unless it is set,
+so switching the abandoned window off keeps running matches forever. Both windows run from the
+match's last activity, and a player joining or rejoining the match counts as activity: it restarts
+them the same way a turn opening does.
+
+The lobby window follows `RETENTION_DAYS` when it is unset: a server that keeps finished matches
+forever (`RETENTION_DAYS=0`) keeps its lobbies too, as it did before lobbies had a window of their
+own. A value that is set but not a whole number is refused at startup on Node; the Worker has no
+startup to refuse it at and treats it as unset, so a derived window keeps being derived.
 
 Bug reports have their own database and their own window, `BUG_REPORT_RETENTION_DAYS` (90 by
 default); collecting one deletes its archive from the blob store as well, because nothing cascades
@@ -329,10 +345,15 @@ report somebody attached a journal to would be filed without it. The map that co
 bounded by a hard cap on the number of keys any limiter holds, because on an unauthenticated route
 a map keyed by address is otherwise unbounded memory.
 
-Node runs every sweep in its periodic pass and Cloudflare invokes the same ones from cron. Most
+Node runs the turn sweep every `SWEEP_INTERVAL_MS` and the retention sweeps as a separate cleanup
+job every `RETENTION_INTERVAL_MS` (a minute by default), each pass deleting at most
+`RETENTION_BATCH_SIZE` matches per window. Cloudflare invokes the same sweeps from its cron trigger
+(every five minutes). Durable Object storage holds only a match's pending deadline, which the alarm
+deletes once nothing is left to fire for, and in-memory rate limiter windows are bounded by a key cap.
+Most
 passes visit only matches something has happened to in the last few minutes — a seal in flight and
 an interrupted verdict are both seconds old — with an unbounded pass on a much longer period and one
-at startup, so the standing population of a public server (matches kept `running` for ninety days
+at startup, so the standing population of a public server (matches kept `running` for a month
 after everyone walked away, matches parked in `desynced` because nobody ever repaired them) is not
 re-judged every tick for the whole of its retention.
 
@@ -380,7 +401,11 @@ guarantee sets `synchronous = FULL` or runs Postgres.
 - **Rate limits** come in three tiers: the unauthenticated doors per client address, every
   authenticated call per player, and snapshot uploads per player on a tighter budget, because a
   member is a cost too — order documents are a quarter of a megabyte and snapshots four times that.
-  The windows are per process, which is what a self-hosted server needs; a public deployment puts its
+  Match creation also has one process-wide budget shared by every caller, because a per-address
+  budget does nothing against many addresses and every create is a stored lobby; only a create whose
+  body validates spends it. The Node runtime also caps connections and sets header and request
+  deadlines, so a client that never finishes sending a request cannot hold a socket for long. The
+  windows are per process, which is what a self-hosted server needs; a public deployment puts its
   platform's rate limiting in front as the real gate.
 - **A refused request is described, not echoed.** A validation failure names the field and the
   rule; the value the client sent (a mistyped password, an order document) is never written back

@@ -17,9 +17,12 @@ public readonly record struct GangId
 {
     public GangId(int value)
     {
-        if (value < 0) throw new ArgumentOutOfRangeException(nameof(value));
+        if (!IsValid(value)) throw new ArgumentOutOfRangeException(nameof(value));
         Value = value;
     }
+
+    /// <summary>Whether <paramref name="value"/> can name a gang, so a reader can refuse it by name.</summary>
+    public static bool IsValid(int value) => value >= 0;
 
     public int Value { get; }
     public override string ToString() => Value.ToString();
@@ -47,15 +50,45 @@ public readonly record struct CommandTarget
 
     public static CommandTarget None => new(CommandTargetKind.None, -1);
     public static CommandTarget Gang(GangId id) => new(CommandTargetKind.Gang, id.Value);
-    public static CommandTarget Sector(int id) => Create(CommandTargetKind.Sector, id, MatchLimits.SectorCount);
-    public static CommandTarget Site(int id) => Create(CommandTargetKind.Site, id, MatchLimits.SiteCount);
-    public static CommandTarget Item(int id) => Create(CommandTargetKind.Item, id, MatchLimits.ItemSlots);
+    public static CommandTarget Sector(int id) => Create(CommandTargetKind.Sector, id);
+    public static CommandTarget Site(int id) => Create(CommandTargetKind.Site, id);
+    public static CommandTarget Item(int id) => Create(CommandTargetKind.Item, id);
 
-    private static CommandTarget Create(CommandTargetKind kind, int id, int exclusiveMaximum)
+    /// <summary>
+    /// A target of <paramref name="kind"/>, or false when <paramref name="id"/> cannot name one.
+    /// </summary>
+    /// <remarks>
+    /// The same rule the factories enforce, for a reader that has to refuse an id by name rather
+    /// than surface an <see cref="ArgumentOutOfRangeException"/>. <see cref="CommandTargetKind.None"/>
+    /// carries no id and is always created.
+    /// </remarks>
+    public static bool TryCreate(CommandTargetKind kind, int id, out CommandTarget target)
     {
-        if (id < 0 || id >= exclusiveMaximum) throw new ArgumentOutOfRangeException(nameof(id));
-        return new CommandTarget(kind, id);
+        if (kind == CommandTargetKind.None)
+        {
+            target = None;
+            return true;
+        }
+        if (!IsValidId(kind, id))
+        {
+            target = default;
+            return false;
+        }
+        target = new CommandTarget(kind, id);
+        return true;
     }
+
+    private static CommandTarget Create(CommandTargetKind kind, int id) =>
+        TryCreate(kind, id, out var target) ? target : throw new ArgumentOutOfRangeException(nameof(id));
+
+    private static bool IsValidId(CommandTargetKind kind, int id) => kind switch
+    {
+        CommandTargetKind.Gang => GangId.IsValid(id),
+        CommandTargetKind.Sector => MatchLimits.IsSectorId(id),
+        CommandTargetKind.Site => id is >= 0 and < MatchLimits.SiteCount,
+        CommandTargetKind.Item => id is >= 0 and < MatchLimits.ItemSlots,
+        _ => false,
+    };
 }
 
 /// <summary>Player or AI intent. Resolution emits events separately.</summary>
@@ -101,6 +134,7 @@ public sealed class TurnCommandQueue
 {
     private readonly Dictionary<GangId, QueuedCommand> _byGang = [];
     private long _nextSequence;
+    private IReadOnlyList<QueuedCommand>? _executionPlan;
 
     public int Count => _byGang.Count;
     internal long NextSequence => _nextSequence;
@@ -112,19 +146,32 @@ public sealed class TurnCommandQueue
 
         var queued = new QueuedCommand(_nextSequence++, command);
         _byGang[command.Gang] = queued;
+        _executionPlan = null;
         return queued;
     }
 
-    public bool Cancel(GangId gang) => _byGang.Remove(gang);
+    public bool Cancel(GangId gang)
+    {
+        if (!_byGang.Remove(gang)) return false;
+        _executionPlan = null;
+        return true;
+    }
 
     public bool TryGet(GangId gang, out QueuedCommand? command) => _byGang.TryGetValue(gang, out command);
 
-    public IReadOnlyList<QueuedCommand> ExecutionPlan() => _byGang.Values
-        .OrderBy(command => TurnStructure.ExecutionIndex(command.ExecutionPhase))
-        .ThenBy(command => command.Sequence)
-        .ThenBy(command => command.Command.Player.Value)
-        .ThenBy(command => command.Command.Gang.Value)
-        .ToArray();
+    /// <summary>
+    /// The canonical execution order, rebuilt only after the queue changes. The plan is handed out
+    /// by reference rather than copied, so it is wrapped the way <see cref="MatchState.Events"/>
+    /// wraps its live list: an unwrapped array would let a caller cast the result back and reorder
+    /// the queue in place, which state fingerprints would report as divergence rather than damage.
+    /// </summary>
+    public IReadOnlyList<QueuedCommand> ExecutionPlan() => _executionPlan ??= Array.AsReadOnly(
+        _byGang.Values
+            .OrderBy(command => TurnStructure.ExecutionIndex(command.ExecutionPhase))
+            .ThenBy(command => command.Sequence)
+            .ThenBy(command => command.Command.Player.Value)
+            .ThenBy(command => command.Command.Gang.Value)
+            .ToArray());
 
     public IReadOnlyList<QueuedCommand> ForPhase(ExecutionPhase phase) => ExecutionPlan()
         .Where(command => command.ExecutionPhase == phase)
@@ -133,11 +180,21 @@ public sealed class TurnCommandQueue
     /// <summary>Ends resolution, preserving only commands explicitly marked to repeat.</summary>
     public void FinishExecution()
     {
+        var changed = false;
         foreach (var gang in _byGang.Where(pair => !pair.Value.Command.Repeat).Select(pair => pair.Key).ToArray())
+        {
             _byGang.Remove(gang);
+            changed = true;
+        }
+        if (changed) _executionPlan = null;
     }
 
-    public void Clear() => _byGang.Clear();
+    public void Clear()
+    {
+        if (_byGang.Count == 0) return;
+        _byGang.Clear();
+        _executionPlan = null;
+    }
 
     internal static TurnCommandQueue Restore(
         IReadOnlyList<QueuedCommand> commands,

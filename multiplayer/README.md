@@ -70,16 +70,24 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `RATE_LIMIT_PER_MINUTE` | `30` | Create/join attempts per client address per minute. Every per-minute budget is at least `1`: `0` is refused at startup rather than admitting one call a minute. |
 | `MEMBER_RATE_LIMIT_PER_MINUTE` | `240` | Authenticated calls per player per minute. |
 | `UPLOAD_RATE_LIMIT_PER_MINUTE` | `10` | Snapshot uploads per player per minute (a snapshot can be a megabyte). |
-| `RETENTION_DAYS` | `30` | Delete finished, abandoned and never-started matches older than this, with everything they own. `0` keeps every match forever. |
-| `ABANDONED_RETENTION_DAYS` | `90` | Delete a still-`running` match nobody is in any more once it has been silent this long. This is how most public matches actually end, and nothing else collects one. `0` keeps them forever. |
+| `RETENTION_DAYS` | `14` | Delete finished and abandoned matches untouched for this long, with everything they own (players, turns, orders, snapshots, events). `0` keeps them forever. |
+| `LOBBY_RETENTION_DAYS` | `3`, or `0` when `RETENTION_DAYS=0` | Delete a lobby that was never started once it is this old (counted from creation or its last settings change). `0` keeps them forever. |
+| `ABANDONED_RETENTION_DAYS` | `30` | Delete a still-`running` match nobody is in any more once it has been silent this long; a player joining or rejoining restarts the count. This is how most public matches actually end, and nothing else collects one. `0` keeps them forever. |
+| `SILENT_RETENTION_DAYS` | 3 × `ABANDONED_RETENTION_DAYS` | Delete a `running` match even though players are still seated in it, once nothing has happened in it for this long; a join or rejoin counts as something. That is an untimed match whose clients all died without leaving. `0` keeps them forever. |
+| `RETENTION_BATCH_SIZE` | `10` (SQLite), `50` (Postgres) | Matches each retention window deletes per cleanup pass. Smaller keeps one pass short on a synchronous SQLite driver. |
+| `RETENTION_INTERVAL_MS` | `60000` | How often the cleanup job runs: match retention, then bug report retention. At least `1000`. |
 | `TRUST_PROXY` | `0` | How many trusted proxies sit in front. `0` reads the socket address, the only value a client cannot choose. `1` (or `true`) reads the last `X-Forwarded-For` entry, which is the one the trusted proxy wrote; a higher number skips that many more from the right. See the note below. |
 | `BUG_REPORT_DATABASE_URL` | *(empty, intake off)* | A **second** SQLite file, for bug reports. Empty turns the intake off and `POST /api/v1/bug-reports` answers 404. The game posts its reports to the central service, so a lobby server has no reason to take them. |
 | `BUG_REPORT_RETENTION_DAYS` | `90` | Delete a bug report and its archive once it is older than this. `0` keeps them forever. |
 | `BUG_REPORT_DAILY_STATE_MB` | `512` | Attached journal megabytes accepted per rolling day across every reporter. Over budget, the report is still filed and only its journal is dropped. `0` lifts the ceiling. |
 | `BUG_REPORT_BLOB_DIR` | *(unset)* | Directory for compressed match journals. Unset keeps archives under 256 KiB in the database row and drops larger ones (a `sqlite::memory:` bug report database gets an in-memory store instead, since it has no file to outlive). |
 | `BUG_REPORT_RATE_LIMIT_PER_MINUTE` | `5` | Bug reports accepted per client address per minute. Its own budget, not the lobby's. |
-| `SWEEP_INTERVAL_MS` | `15000` | How often the safety net runs: expired turn deadlines, interrupted seals, retention (the timers are the precise path for a deadline). At least `1000`; a pass still running when the next is due is not overlapped. |
+| `MATCH_CREATION_RATE_LIMIT_PER_MINUTE` | `120` | Matches created per minute across every caller together. The per-address budget cannot stop a flood from many addresses, and every create is a stored lobby (plus a PBKDF2 hash when it has a password). Browsing and joining are not charged. |
+| `SWEEP_INTERVAL_MS` | `15000` | How often the safety net runs: expired turn deadlines and interrupted seals (the timers are the precise path for a deadline). At least `1000`; a pass still running when the next is due is not overlapped. |
 | `SHUTDOWN_GRACE_MS` | `5000` | How long open event streams may delay shutdown before they are cut. |
+| `MAX_CONNECTIONS` | `1024`, or 2 × `MAX_EVENT_STREAMS` if that is larger | Sockets the HTTP server holds at once; further connections are closed as they arrive. Must be above `MAX_EVENT_STREAMS`, since every stream is a connection. Without it, the only limit on idle or trickling sockets is the file descriptor limit. |
+| `HTTP_HEADERS_TIMEOUT_MS` | `15000` | How long a client may take to send its request headers (Node's own default is a minute). At least `1000` and no more than `HTTP_REQUEST_TIMEOUT_MS`. |
+| `HTTP_REQUEST_TIMEOUT_MS` | `120000` | How long a client may take to send a whole request, body included. Sized for an 8 MiB bug report on a slow uplink. Event streams are unaffected: their request is complete once the headers arrive. |
 | `MAX_EVENT_STREAMS` | `512` | Event streams this process holds at once, across every match; further opens answer 429. A stream lives until its client closes it and costs one read per published event, so this is what stops one member from holding thousands. Raise it and the file descriptor limit together. |
 | `CORS_ORIGINS` | *(none)* | Comma-separated browser origins allowed to call the API. The game is not a browser and needs none; a web front end using `@chaos-overlords/client` lists its origin here, which also permits the preflighted `Authorization` and `Last-Event-ID` headers. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
@@ -150,10 +158,13 @@ deployment has to satisfy:
 | `MATCH_HUB` | Durable Object | `MatchHub`, one per match: SSE fan-out and the turn deadline alarm. Its migration lineage starts at tag `v1`, `new_sqlite_classes = ["MatchHub"]`. |
 
 `PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
-`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
-`ABANDONED_RETENTION_DAYS`, `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars,
-with the same meanings as the Node environment variables above. A deployment also wants the cron
-trigger the `scheduled` handler expects — five minutes is the interval the sweeper is written for —
+`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`,
+`MATCH_CREATION_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
+`LOBBY_RETENTION_DAYS`, `ABANDONED_RETENTION_DAYS`, `SILENT_RETENTION_DAYS`, `RETENTION_BATCH_SIZE`
+(`50`), `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars, with the same meanings
+and defaults as the Node environment variables above. A deployment also wants the cron trigger the
+`scheduled` handler expects — `wrangler.dev.toml` declares `crons = ["*/5 * * * *"]`, the interval
+the sweeper and the retention sweeps are written for —
 and Cloudflare rate limiting rules on `/api/v1/matches`, `/api/v1/matches/join` and
 `/api/v1/bug-reports`: the in-Worker limiter counts per isolate, so it softens abuse on one edge node
 rather than globally.

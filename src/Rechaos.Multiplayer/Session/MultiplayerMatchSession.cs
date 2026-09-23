@@ -204,17 +204,12 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             ?? throw new MultiplayerProtocolException("the match has started without a seed");
         var self = view.Players.FirstOrDefault(player => player.Id == options.OwnPlayerId)
             ?? throw new MultiplayerProtocolException("this client is not on the match roster");
-        if (self.Slot is < 0 or >= MatchLimits.PlayerCount)
+        if (!MatchBootstrapFactory.IsSeated(self))
         {
             throw new MultiplayerProtocolException(
                 $"this client was given slot {self.Slot}, which is not a seat at this table");
         }
         var settings = MultiplayerGameSettings.FromWire(view.Settings.GameSettings);
-        if (view.CurrentTurn < 1)
-        {
-            throw new MultiplayerProtocolException(
-                $"a started match cannot be on turn {view.CurrentTurn}");
-        }
         var state = MatchBootstrapFactory.Create(options.Definitions, seed, settings, view.Players);
         var replay = new MatchReplayRecorder(state);
         CommandPhase.Enter(replay);
@@ -532,24 +527,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         // From the replay's prefetch when one was started for this turn, and from the server
         // otherwise; see `SealedSetAsync`.
         var sealedOrders = await SealedSetAsync(turn, cancellationToken).ConfigureAwait(false);
-        if (sealedOrders.Turn != turn)
-        {
-            throw new MultiplayerProtocolException(
-                $"the server answered turn {turn}'s sealed set with the set for turn {sealedOrders.Turn}");
-        }
-        if (!string.Equals(
-                sealedOrders.OrderSetHash,
-                announcedOrderSetHash,
-                StringComparison.Ordinal))
-        {
-            throw new MultiplayerProtocolException(
-                $"the sealed-set digest for turn {turn} does not match the event log");
-        }
-        if (!OrderDigest.Verifies(sealedOrders, sealedOrders.OrderSetHash))
-        {
-            throw new MultiplayerProtocolException(
-                $"the sealed set for turn {turn} does not match the digest the server announced");
-        }
+        RequireSealedSet(sealedOrders, turn, announcedOrderSetHash);
         var includedOwnOrders = sealedOrders.Players.Any(entry => entry.Slot == Slot);
         return (SealedTurnApplier.Apply(_replay, sealedOrders), includedOwnOrders);
     }
@@ -731,8 +709,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         // Follow the roster's word on who hosts; the promoted client repairs desyncs.
         _isHost = string.Equals(view.HostPlayerId, PlayerId, StringComparison.Ordinal);
         _awaitedSlots = view.Players
-            .Where(player => player.Slot is >= 0 and < MatchLimits.PlayerCount
-                && IsAwaitedHuman(player))
+            .Where(player => MatchBootstrapFactory.IsSeated(player) && IsAwaitedHuman(player))
             .Select(player => player.Slot)
             .ToHashSet();
         return view;
@@ -850,7 +827,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         var slots = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var player in players)
         {
-            if (player.Slot is >= 0 and < MatchLimits.PlayerCount) slots[player.Id] = player.Slot;
+            if (MatchBootstrapFactory.IsSeated(player)) slots[player.Id] = player.Slot;
         }
         return slots;
     }
@@ -879,8 +856,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             throw new MultiplayerProtocolException(
                 $"a running match has a {turn.Status} current turn instead of an open one");
 
-        var seated = view.Players.Where(player => player.Slot is >= 0 and < MatchLimits.PlayerCount)
-            .ToArray();
+        var seated = view.Players.Where(MatchBootstrapFactory.IsSeated).ToArray();
         if (seated.Length == 0
             || seated.Select(player => player.Id).Distinct(StringComparer.Ordinal).Count() != seated.Length
             || seated.Select(player => player.Slot).Distinct().Count() != seated.Length)

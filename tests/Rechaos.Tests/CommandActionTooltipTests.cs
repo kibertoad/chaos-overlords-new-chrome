@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
@@ -15,7 +16,7 @@ public sealed class CommandActionTooltipTests
             var lines = CommandActionTooltips.Lines(action);
 
             Assert.True(lines.Count >= 2);
-            Assert.All(lines, line => Assert.False(string.IsNullOrWhiteSpace(line)));
+            Assert.Contains(lines, line => !string.IsNullOrWhiteSpace(line));
             Assert.All(lines, line => Assert.Equal(line.ToUpperInvariant(), line));
         }
     }
@@ -51,6 +52,37 @@ public sealed class CommandActionTooltipTests
     public void TooltipsQuoteTheRuleValuesThatDriveTheCommand(GangAction action, string expected)
     {
         Assert.Contains(CommandActionTooltips.Lines(action), line => line.Contains(expected));
+    }
+
+    [Theory]
+    [InlineData(GangAction.Bribe)]
+    [InlineData(GangAction.Snitch)]
+    public void ToleranceChangingCommandsExplainHowLongTheirEffectLasts(GangAction action)
+    {
+        var lines = CommandActionTooltips.Lines(action);
+
+        Assert.Contains(lines, line => line.Contains("GANGS CAN STACK IT"));
+        Assert.Contains(lines, line => line.Contains("ON LATER TURNS"));
+        Assert.Contains("EVERY UPKEEP, TOLERANCE MOVES ONE POINT", lines);
+        Assert.Contains("BACK TOWARD ITS NORMAL VALUE.", lines);
+    }
+
+    [Fact]
+    public void ToleranceChangingCommandsShowTheSelectedSectorsCurrentTemporaryShift()
+    {
+        var state = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1996,
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)],
+            allowSparsePlayerIds: true));
+        var gang = state.Players[0].Gangs[0];
+        var sector = state.Sectors[gang.SectorId];
+        var normal = ToleranceResolver.NormalTolerance(state, sector);
+        sector.Tolerance = normal + 6;
+
+        var lines = CommandActionTooltips.Lines(GangAction.Bribe, state, gang);
+
+        Assert.Contains("CURRENT BRIBE/SNITCH SHIFT: +6.", lines);
+        Assert.Contains($"CURRENT {normal + 6}; NORMAL TOLERANCE {normal}.", lines);
     }
 
     [Fact]

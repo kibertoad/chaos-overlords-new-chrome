@@ -4,6 +4,7 @@ namespace Rechaos.Game;
 
 public static class GangDefinitionInformationLayout
 {
+    public const int DescriptionClearWidth = 180;
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
     public static Rectangle Portrait => new(154, 141, 64, 64);
@@ -21,4 +22,5 @@ public static class GangDefinitionInformationLayout
     public static int ForceY => 216;
     public static int TechLevelY => 225;
     public static int StatisticY(int row) => GangInformationLayout.StatisticY(row);
+
 }

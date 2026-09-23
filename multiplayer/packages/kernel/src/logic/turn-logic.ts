@@ -1,4 +1,5 @@
 import {
+  activePlayers,
   humanParticipants,
   type Player,
   type TurnOrders,
@@ -119,14 +120,12 @@ export function assignSlots(
   players: readonly Player[],
   hostPlayerId: string,
 ): Array<{ playerId: string; slot: number }> {
-  const ordered = [...players]
-    .filter((player) => player.status === 'active')
-    .sort((a, b) => {
-      if (a.id === b.id) return 0
-      if (a.id === hostPlayerId) return -1
-      if (b.id === hostPlayerId) return 1
-      return a.joinOrder - b.joinOrder || a.id.localeCompare(b.id)
-    })
+  const ordered = activePlayers(players).sort((a, b) => {
+    if (a.id === b.id) return 0
+    if (a.id === hostPlayerId) return -1
+    if (b.id === hostPlayerId) return 1
+    return a.joinOrder - b.joinOrder || a.id.localeCompare(b.id)
+  })
   return ordered.map((player, slot) => ({ playerId: player.id, slot }))
 }
 

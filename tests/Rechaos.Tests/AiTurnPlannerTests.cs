@@ -25,6 +25,45 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void SharedEquipmentBudgetFollowsRosterSlotsAfterGangIdOrderChanges()
+    {
+        var data = BundledOriginalData.Load();
+        var researched = data.Items
+            .Where(item => item.Type != 99)
+            .Select(item => checked((short)item.Id))
+            .ToHashSet();
+        var match = CreateMatch(data: data, cash: 1_000, researchedItems: researched);
+        var playerId = new PlayerId(0);
+        var player = match.Players[0];
+        player.ReplaceGang(0, new MatchGangState(new GangId(30), playerId, 1, 0, 10));
+        player.AddGang(new MatchGangState(new GangId(11), playerId, 1, 0, 10));
+        match.FinishUpkeep();
+
+        var secondTargets = CommandOptionCatalog.LegalCommands(match, playerId, new GangId(11))
+            .Where(command => command.Action == GangAction.Equip)
+            .Select(command => command.Target.Id)
+            .ToHashSet();
+        var itemId = CommandOptionCatalog.LegalCommands(match, playerId, new GangId(30))
+            .Where(command => command.Action == GangAction.Equip)
+            .Select(command => command.Target.Id)
+            .First(id => secondTargets.Contains(id) && data.Items[id].Cost > 0);
+        player.Cash = data.Items[itemId].Cost;
+        match.AiPlanning.BeginPlanning(playerId);
+        for (var slot = 0; slot < 2; slot++)
+        {
+            match.AiPlanning.SetFamily(playerId, slot, 1);
+            match.AiPlanning.SetPlannedAction(playerId, slot, GangAction.Equip,
+                new AiActionTarget(checked((byte)itemId), 0));
+        }
+
+        var command = Assert.Single(AiTurnPlanner.Plan(match, playerId));
+
+        Assert.Equal(new GangId(30), command.Gang);
+        Assert.Equal(GangAction.Equip, command.Action);
+        Assert.Equal(CommandTarget.Item(itemId), command.Target);
+    }
+
+    [Fact]
     public void PlannerRejectsHumanAndInactiveTurns()
     {
         var computer = CreateMatch();

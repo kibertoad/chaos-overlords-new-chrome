@@ -9,7 +9,13 @@ import {
   type MembershipView,
   type TakeoverVoteRequest,
 } from '@chaos-overlords/contracts'
-import { activePlayers, humanParticipants, type Match, type Player } from '../domain/entities'
+import {
+  activePlayers,
+  humanParticipants,
+  isInProgress,
+  type Match,
+  type Player,
+} from '../domain/entities'
 import {
   ConflictError,
   ForbiddenError,
@@ -20,10 +26,12 @@ import {
 import { generateJoinCode, generateSeed, generateToken, hashToken } from '../logic/crypto'
 import { hashPassword, verifyPassword } from '../logic/password'
 import { assignSlots } from '../logic/turn-logic'
+import type { CastVoteInput } from '../ports/storage'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
-import { MatchQueryService, toPlayerView } from './MatchQueryService'
+import { requireInProgress } from './guards'
+import { MatchQueryService, matchStartedEvent, toPlayerView } from './MatchQueryService'
 import { RateLimiter } from './RateLimiter'
 import { FIRST_TURN, type TurnService } from './TurnService'
 
@@ -287,11 +295,16 @@ export class LobbyService {
     this.assertNameIsFree(existing, request.displayName)
     const token = generateToken()
     const seatKey = (await hashToken(`${match.id}:${request.slot}`)).slice(0, 32)
+    // The position is taken before the insert because the port has no transactions to take both
+    // in one; a join `createLate` then refuses leaves a gap in the sequence, which only has to be
+    // unique and increasing. The checks above refuse the requests that are doomed from the start.
+    const joinOrder = await this.deps.storage.matches.claimLateJoinOrder(match.id)
+    if (joinOrder === null) throw await this.lateJoinClaimRefused(match.id)
     const player: Player = {
       id: `late-${seatKey}`,
       matchId: match.id,
       slot: request.slot,
-      joinOrder: match.joinCounter,
+      joinOrder,
       displayName: request.displayName,
       portraitId: request.portraitId ?? DEFAULT_PORTRAIT_ID,
       tokenHash: await hashToken(token),
@@ -303,6 +316,7 @@ export class LobbyService {
         reason: 'seat_reserved',
       })
     }
+    await this.refreshRetention(match.id)
     const openTurn = await this.deps.storage.turns.get(match.id, match.currentTurn)
     if (openTurn?.status === 'open') await this.deps.storage.turns.open(openTurn, [player.id])
     await this.publisher.publish(match.id, {
@@ -312,18 +326,24 @@ export class LobbyService {
     return this.membership(match, player, token)
   }
 
+  /** Why the late-join claim found no running match: it stopped running, or it is gone. */
+  private async lateJoinClaimRefused(matchId: string): Promise<Error> {
+    return (await this.deps.storage.matches.get(matchId))
+      ? new ConflictError('The match is not running', { reason: 'match_not_running' })
+      : new NotFoundError('No match with that id or join code', { reason: 'unknown_match' })
+  }
+
   async leave(principal: Principal): Promise<void> {
     await this.remove(principal.match, principal.player, 'left')
   }
 
   async rejoin(principal: Principal): Promise<void> {
     const { match, player } = principal
-    if (match.status !== 'running' && match.status !== 'desynced') {
-      throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
-    }
+    requireInProgress(match)
     if (player.status === 'kicked') {
       throw new ForbiddenError('A kicked player cannot rejoin', { reason: 'kicked' })
     }
+    await this.refreshRetention(match.id)
     if (player.status === 'active') return
     const replacedComputer = player.status === 'computer'
     if (
@@ -361,14 +381,7 @@ export class LobbyService {
     // one, which revokes their token for good. A pending host is still present; the takeover vote is
     // the path that decides otherwise.
     if (currentHost === undefined || VACANT_HOST_STATUSES.includes(currentHost.status)) {
-      await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
-        hostPlayerId: player.id,
-        updatedAt: this.deps.clock.now(),
-      })
-      await this.publisher.publish(match.id, {
-        type: 'lobby.hostChanged',
-        payload: { hostPlayerId: player.id },
-      })
+      await this.handHostTo(match.id, player.id, this.deps.clock.now())
     }
     await this.turns.reevaluate(match.id)
     await this.turns.resumeAfterTakeoverVotes(match.id)
@@ -400,11 +413,17 @@ export class LobbyService {
         reason: 'self_kick',
       })
     }
-    const target = await this.deps.storage.players.get(targetPlayerId)
+    const target = await this.requireTarget(match, targetPlayerId)
+    await this.remove(match, target, 'kicked')
+  }
+
+  /** The player a host or a voter named, refused unless it is a member of the caller's match. */
+  private async requireTarget(match: Match, playerId: string): Promise<Player> {
+    const target = await this.deps.storage.players.get(playerId)
     if (!target || target.matchId !== match.id) {
       throw new NotFoundError('No such player in this match', { reason: 'unknown_player' })
     }
-    await this.remove(match, target, 'kicked')
+    return target
   }
 
   /**
@@ -417,45 +436,30 @@ export class LobbyService {
     request: TakeoverVoteRequest,
   ): Promise<void> {
     const { match, player } = principal
-    if (match.status !== 'running' && match.status !== 'desynced') {
-      throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
-    }
+    requireInProgress(match)
     const currentVoter = await this.deps.storage.players.get(player.id)
     if (currentVoter?.status !== 'active') {
       throw new ForbiddenError('Only present players may vote', { reason: 'not_active' })
     }
-    const target = await this.deps.storage.players.get(targetPlayerId)
-    if (!target || target.matchId !== match.id) {
-      throw new NotFoundError('No such player in this match', { reason: 'unknown_player' })
-    }
+    const target = await this.requireTarget(match, targetPlayerId)
     if (!ABSENT_HUMAN_STATUSES.includes(target.status)) {
       throw new ConflictError('That player is not awaiting a takeover vote', {
         reason: 'takeover_not_pending',
       })
     }
-    const now = this.deps.clock.now()
-    if (
-      !(await this.deps.storage.takeovers.castVote({
-        matchId: match.id,
-        targetPlayerId: target.id,
-        voterPlayerId: player.id,
-        decision: request.decision,
-        castAt: now,
-      }))
-    ) {
+    const vote: CastVoteInput = {
+      matchId: match.id,
+      targetPlayerId: target.id,
+      voterPlayerId: player.id,
+      decision: request.decision,
+      castAt: this.deps.clock.now(),
+    }
+    if (!(await this.deps.storage.takeovers.castVote(vote))) {
       // The seat is absent but nobody asked about it yet: it went quiet before this table existed,
       // or while nobody was present to ask. The vote itself opens the question, so the seat can
       // still be decided rather than left idle for the rest of the match.
       await this.turns.openTakeoverPrompt(match.id, target.id, match.currentTurn)
-      if (
-        !(await this.deps.storage.takeovers.castVote({
-          matchId: match.id,
-          targetPlayerId: target.id,
-          voterPlayerId: player.id,
-          decision: request.decision,
-          castAt: now,
-        }))
-      ) {
+      if (!(await this.deps.storage.takeovers.castVote(vote))) {
         throw new ConflictError('That player is not awaiting a takeover vote', {
           reason: 'takeover_not_pending',
         })
@@ -504,16 +508,7 @@ export class LobbyService {
     })
     if (targetPlayerId === match.hostPlayerId) {
       const successor = activePlayers(await this.deps.storage.players.listByMatch(match.id))[0]
-      if (successor) {
-        await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
-          hostPlayerId: successor.id,
-          updatedAt: this.deps.clock.now(),
-        })
-        await this.publisher.publish(match.id, {
-          type: 'lobby.hostChanged',
-          payload: { hostPlayerId: successor.id },
-        })
-      }
+      if (successor) await this.handHostTo(match.id, successor.id, this.deps.clock.now())
     }
     await this.turns.reevaluate(match.id)
     await this.turns.resumeAfterTakeoverVotes(match.id)
@@ -560,13 +555,7 @@ export class LobbyService {
     const finalRoster = await this.deps.storage.players.listByMatch(match.id)
     await this.deps.storage.players.assignSlots(assignSlots(finalRoster, match.hostPlayerId))
     const seated = await this.deps.storage.players.listByMatch(match.id)
-    await this.publisher.publish(match.id, {
-      type: 'match.started',
-      payload: {
-        seed,
-        players: activePlayers(seated).map((player) => toPlayerView(player, match.hostPlayerId)),
-      },
-    })
+    await this.publisher.publish(match.id, matchStartedEvent(seed, seated, match.hostPlayerId))
     await this.turns.openTurn({ ...match, status: 'running', seed }, FIRST_TURN)
   }
 
@@ -648,20 +637,17 @@ export class LobbyService {
         payload: { playerId: target.id, reason },
       })
     }
-    if (match.status !== 'running' && match.status !== 'desynced') return
-    // The takeover won the seat, so it is no longer a human absence anyone has to decide on. The
-    // verdict is still re-run below, because the seat leaving `humanParticipants` can complete a
-    // readiness or a consensus that was waiting on it.
-    if (!claimed) {
-      await this.turns.reevaluate(match.id)
-      await this.retallyOpenPrompts(match)
-      return
-    }
-    if (!wasActive) {
-      // A `takeoverPending` seat is not idle: `humanParticipants` counts it, so both readiness and
-      // consensus wait on it. Kicking one and returning here left the turn waiting on a seat that
-      // could never answer, with the clock paused by its own prompt and everyone present already
-      // ready. A `left` seat really is idle, and re-running the verdict for it costs one query.
+    if (!isInProgress(match)) return
+    // Not claimed: the takeover won the seat, so it is no longer a human absence anyone has to
+    // decide on. The verdict is still re-run below, because the seat leaving `humanParticipants`
+    // can complete a readiness or a consensus that was waiting on it.
+    //
+    // Claimed but no longer active: a `takeoverPending` seat is not idle. `humanParticipants`
+    // counts it, so both readiness and consensus wait on it. Kicking one and returning here left
+    // the turn waiting on a seat that could never answer, with the clock paused by its own prompt
+    // and everyone present already ready. A `left` seat really is idle, and re-running the verdict
+    // for it costs one query.
+    if (!claimed || !wasActive) {
       await this.turns.reevaluate(match.id)
       await this.retallyOpenPrompts(match)
       return
@@ -681,19 +667,41 @@ export class LobbyService {
     }
     await this.turns.openTakeoverPrompt(match.id, target.id, match.currentTurn)
     if (target.id === match.hostPlayerId) {
-      const successor = remaining[0] as Player
-      await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
-        hostPlayerId: successor.id,
-        updatedAt: now,
-      })
-      await this.publisher.publish(match.id, {
-        type: 'lobby.hostChanged',
-        payload: { hostPlayerId: successor.id },
-      })
+      await this.handHostTo(match.id, (remaining[0] as Player).id, now)
     }
     // A departure can complete readiness or a consensus that was waiting on the leaver.
     await this.turns.reevaluate(match.id)
     await this.retallyOpenPrompts(match)
+  }
+
+  /**
+   * Restart a running or desynced match's retention age: somebody has just come (back) to it.
+   *
+   * The abandoned and silent windows both run from `updatedAt`, and neither a join nor a rejoin
+   * otherwise moves it — a player returning to an untimed match whose partner is still away opens
+   * no turn and changes no status — so a match somebody was demonstrably playing could be collected
+   * on the age it had before they came back. A no-op on any other status.
+   */
+  private async refreshRetention(matchId: string): Promise<void> {
+    await this.deps.storage.matches.transition(matchId, ['running', 'desynced'], {
+      updatedAt: this.deps.clock.now(),
+    })
+  }
+
+  /**
+   * Move the host role of a started match and announce it. `at` is the caller's to supply: `remove`
+   * stamps the handoff with the time it read on entry, and the other callers read the clock as
+   * they call.
+   */
+  private async handHostTo(matchId: string, playerId: string, at: Date): Promise<void> {
+    await this.deps.storage.matches.transition(matchId, ['running', 'desynced'], {
+      hostPlayerId: playerId,
+      updatedAt: at,
+    })
+    await this.publisher.publish(matchId, {
+      type: 'lobby.hostChanged',
+      payload: { hostPlayerId: playerId },
+    })
   }
 
   /**

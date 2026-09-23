@@ -5,6 +5,17 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    /// <summary>
+    /// Spaces out redraws while the window has no focus; <see cref="Update"/> keeps its cadence.
+    /// </summary>
+    /// <remarks>
+    /// Returning false skips both <see cref="Draw"/> and the present for this tick, the same path
+    /// MonoGame takes when the graphics device is not ready, so the last presented frame stays on
+    /// screen until the cadence allows the next one.
+    /// </remarks>
+    protected override bool BeginDraw() =>
+        _backgroundRedrawCadence.ShouldRedraw(IsActive, _inputTime) && base.BeginDraw();
+
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(new Color(8, 10, 12));
@@ -32,12 +43,7 @@ public sealed partial class ChaosGame
             _batch.End();
 
             _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: fixedTransform);
-            if (_combatAnimationPlayer.IsPlaying)
-                DrawCombatPanel(_batch, _pixel, _font, _state);
-            DrawPlanningTimer(_batch, _pixel);
-            DrawTakeoverVote(_batch, _pixel, _font);
-            DrawGameMenu(_batch, _pixel, _font);
-            DrawReconnectPopup(_batch, _pixel, _font);
+            DrawScreenOverlays(_batch, _pixel, _font);
             _batch.End();
             CompleteDraw(gameTime);
             return;
@@ -111,9 +117,6 @@ public sealed partial class ChaosGame
             case ClientScreen.SectorGangs when _state is not null:
                 DrawSectorGangs(_batch, _pixel, _font, _state);
                 break;
-            case ClientScreen.Gang when _state is not null:
-                DrawGangDetails(_batch, _pixel, _font, _state);
-                break;
             case ClientScreen.Site when _state is not null:
                 DrawSiteDetails(_batch, _pixel, _font, _state);
                 break;
@@ -142,13 +145,19 @@ public sealed partial class ChaosGame
                 DrawSearch(_batch, _pixel, _font, _state);
                 break;
         }
-        if (_state is not null && _combatAnimationPlayer.IsPlaying)
-            DrawCombatPanel(_batch, _pixel, _font, _state);
-        DrawPlanningTimer(_batch, _pixel);
-        DrawTakeoverVote(_batch, _pixel, _font);
-        DrawGameMenu(_batch, _pixel, _font);
-        DrawReconnectPopup(_batch, _pixel, _font);
+        DrawScreenOverlays(_batch, _pixel, _font);
         _batch.End();
         CompleteDraw(gameTime);
+    }
+
+    /// <summary>What sits above every screen: combat playback, the timer, votes, menu, reconnect.</summary>
+    private void DrawScreenOverlays(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        if (_state is not null && _combatAnimationPlayer.IsPlaying)
+            DrawCombatPanel(batch, pixel, font, _state);
+        DrawPlanningTimer(batch, pixel);
+        DrawTakeoverVote(batch, pixel, font);
+        DrawGameMenu(batch, pixel, font);
+        DrawReconnectPopup(batch, pixel, font);
     }
 }

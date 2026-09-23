@@ -6,6 +6,130 @@ internal static class AtomicGenerationRecovery
     /// <summary>Where a rejected primary is kept instead of being overwritten.</summary>
     public const string RejectedSuffix = ".corrupt";
 
+    /// <summary>
+    /// Writes a new generation beside <paramref name="fullPath"/>, reads it back with
+    /// <paramref name="load"/>, and only then promotes it.
+    /// </summary>
+    /// <remarks>
+    /// A readable primary moves to <paramref name="backupSuffix"/> through
+    /// <see cref="File.Replace(string, string, string)"/>; an unreadable one is overwritten, so a
+    /// known-good backup is never replaced by a damaged file. The caller validates its own
+    /// arguments and resolves <paramref name="fullPath"/> and <paramref name="directory"/>.
+    /// </remarks>
+    /// <param name="trustExistingPrimary">
+    /// Whether the existing primary may be demoted to the backup generation without being read
+    /// back first. Only a caller that knows this process wrote and verified that exact file may
+    /// set it, and it has to stop setting it the moment anything else writes the path or leaves
+    /// it damaged: a trusted primary is moved over the known-good backup unexamined.
+    /// </param>
+    /// <exception cref="IOException">
+    /// The new file failed its read-back; the message is <paramref name="unreadableMessage"/>.
+    /// </exception>
+    public static void SaveAtomic(
+        string fullPath,
+        string directory,
+        string backupSuffix,
+        string unreadableMessage,
+        Action<Stream> write,
+        Action<string> load,
+        bool trustExistingPrimary = false)
+    {
+        Directory.CreateDirectory(directory);
+        var temporaryPath = Path.Combine(
+            directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            using (var stream = new FileStream(
+                temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                bufferSize: 81920, FileOptions.WriteThrough))
+            {
+                write(stream);
+                stream.Flush(flushToDisk: true);
+            }
+
+            try
+            {
+                load(temporaryPath);
+            }
+            catch (InvalidDataException exception)
+            {
+                throw new IOException(unreadableMessage, exception);
+            }
+            if (!File.Exists(fullPath))
+            {
+                File.Move(temporaryPath, fullPath);
+            }
+            // The rolling autosave reaches this path only after this process has already written
+            // and verified the primary itself. It can keep that generation with File.Replace
+            // without paying another full deserialization just to prove what it already knows.
+            // Everything below rests on the caller holding to that; see the parameter.
+            else if (trustExistingPrimary || IsWorthKeeping(fullPath, load))
+            {
+                File.Replace(temporaryPath, fullPath, fullPath + backupSuffix);
+            }
+            else
+            {
+                File.Move(temporaryPath, fullPath, overwrite: true);
+            }
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+        }
+    }
+
+    /// <summary>
+    /// Loads <paramref name="path"/>, and when it is damaged loads its backup generation instead,
+    /// rewriting the primary from the backup when <paramref name="repairPrimary"/> is set.
+    /// </summary>
+    /// <remarks>
+    /// A failure <see cref="IncompatibleSave"/> recognises is rethrown without touching the backup.
+    /// When the backup is missing the primary's own failure is rethrown.
+    /// </remarks>
+    public static (T Value, bool RecoveredFromBackup, bool PrimaryRepaired) LoadRecoveringBackup<T>(
+        string path,
+        string backupSuffix,
+        bool repairPrimary,
+        Func<string, T> load)
+    {
+        try
+        {
+            return (load(path), false, false);
+        }
+        catch (Exception primaryFailure) when (
+            primaryFailure is IOException or InvalidDataException
+            && !IncompatibleSave.IsIncompatible(primaryFailure))
+        {
+            var backupPath = Path.GetFullPath(path) + backupSuffix;
+            if (!File.Exists(backupPath)) throw;
+            var value = load(backupPath);
+            if (!repairPrimary) return (value, true, false);
+            var fullPath = Path.GetFullPath(path);
+            var repaired = TryRestore(fullPath, backupPath, candidate => _ = load(candidate));
+            return (value, true, repaired);
+        }
+    }
+
+    /// <summary>
+    /// Whether the existing primary is worth keeping as the next backup generation.
+    /// </summary>
+    /// <remarks>
+    /// A file this build cannot read but that is otherwise intact counts as worth keeping, so the
+    /// save goes through <see cref="File.Replace(string, string, string)"/> and the older or newer
+    /// generation survives under the backup suffix instead of being overwritten in place.
+    /// </remarks>
+    private static bool IsWorthKeeping(string path, Action<string> load)
+    {
+        try
+        {
+            load(path);
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException)
+        {
+            return IncompatibleSave.IsIncompatible(exception);
+        }
+    }
 
     public static bool TryRestore(
         string primaryPath,

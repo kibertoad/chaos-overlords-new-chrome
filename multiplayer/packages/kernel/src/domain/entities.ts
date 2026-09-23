@@ -32,8 +32,11 @@ export interface Match {
   /** Seats taken in the lobby; capacity is enforced on this counter atomically. */
   seatCount: number
   /**
-   * Monotonic count of seats ever claimed. It never decreases, so the value handed to each player
-   * as `joinOrder` is a stable total order even after someone leaves and a newcomer takes the seat.
+   * The next position in the match's join sequence: advanced by every lobby seat claimed and every
+   * late-join position taken, including claims whose join then failed, so it is an upper bound on
+   * the players ever seated rather than a count of them. It never decreases, so the value handed to
+   * each player as `joinOrder` is a stable total order even after someone leaves and a newcomer
+   * takes the seat; gaps in that order carry no meaning.
    */
   joinCounter: number
   createdAt: Date
@@ -186,9 +189,17 @@ export function activePlayers(players: readonly Player[]): Player[] {
   return players.filter((player) => player.status === ACTIVE_PLAYER)
 }
 
+/** A seat a human still holds: present, or absent and waited for while a takeover is voted on. */
+export function isHumanParticipant(player: Pick<Player, 'status'>): boolean {
+  return player.status === 'active' || player.status === 'takeoverPending'
+}
+
 /** Human-controlled seats, including an absent player the lobby elected to keep waiting for. */
 export function humanParticipants(players: readonly Player[]): Player[] {
-  return players.filter(
-    (player) => player.status === 'active' || player.status === 'takeoverPending',
-  )
+  return players.filter(isHumanParticipant)
+}
+
+/** A started match that has not ended. A desync pause counts: the match resumes from it. */
+export function isInProgress(match: Pick<Match, 'status'>): boolean {
+  return match.status === 'running' || match.status === 'desynced'
 }

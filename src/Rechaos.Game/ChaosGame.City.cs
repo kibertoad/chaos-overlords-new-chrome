@@ -55,10 +55,8 @@ public sealed partial class ChaosGame
             HandleIdleGangWarningClick(point);
             return;
         }
-        var rejectSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
-            .FirstOrDefault(slot => HireDockLayout.Reject(slot).Contains(point), -1);
-        var hireSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
-            .FirstOrDefault(slot => HireDockLayout.Portrait(slot).Contains(point), -1);
+        var rejectSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Reject, point);
+        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Portrait, point);
         if (rejectSlot >= 0)
         {
             BeginHireReject(rejectSlot, ClientScreen.City);
@@ -163,7 +161,8 @@ public sealed partial class ChaosGame
         OpenManagement(ClientScreen.Finance, returnScreen);
     }
 
-    private void DrawBoard(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    private void DrawBoard(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state, bool drawMapLayer = true)
     {
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
@@ -180,37 +179,40 @@ public sealed partial class ChaosGame
         DrawOpponentPlanning(batch, pixel, font);
         var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
         var player = state.Players[playerIndex];
-        var neutralLayer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
-        if (neutralLayer is not null)
-            batch.Draw(neutralLayer, CityMapLayout.Bounds, Color.White);
-        for (var index = 0; index < state.Sectors.Count; index++)
+        if (drawMapLayer)
         {
-            var sector = state.Sectors[index];
-            var destination = CityMapLayout.Destination(index);
-            var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
-            if (sector.Owner is not null && layer is not null)
-                batch.Draw(layer, CityMapLayout.OwnershipDestination(index),
-                    CityMapLayout.OwnershipSource(index), Color.White);
-            else if (neutralLayer is null)
-                batch.Draw(pixel, destination, sector.Owner is { } owner
-                    ? PlayerColors[owner.Value] * .68f
-                    : new Color(24, 37, 39));
-            if (_uiKeyedSprites is not null
-                && ObjectiveSectorMarkerPresentation.IsMarked(
-                    state.Setup.Scenario, index, sector.IsImportant))
-                batch.Draw(_uiKeyedSprites, destination,
-                    OriginalSpriteLayout.ObjectiveSectorPylons, Color.White);
-        }
-        foreach (var marker in CitySiteMarkerProjection.Project(
-                     state, player.Id, _siteSearchSelections.For(player.Id)))
-        {
-            var destination = CitySiteMarkerProjection.Destination(marker);
-            if (_siteMarkerSprites is not null)
-                batch.Draw(_siteMarkerSprites, destination,
-                    CitySiteMarkerProjection.Source(marker), Color.White);
-            else
-                DrawBorder(batch, pixel, destination,
-                    marker.Controlled ? Color.Lime : Color.Cyan, 1);
+            var neutralLayer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
+            if (neutralLayer is not null)
+                batch.Draw(neutralLayer, CityMapLayout.Bounds, Color.White);
+            for (var index = 0; index < state.Sectors.Count; index++)
+            {
+                var sector = state.Sectors[index];
+                var destination = CityMapLayout.Destination(index);
+                var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
+                if (sector.Owner is not null && layer is not null)
+                    batch.Draw(layer, CityMapLayout.OwnershipDestination(index),
+                        CityMapLayout.OwnershipSource(index), Color.White);
+                else if (neutralLayer is null)
+                    batch.Draw(pixel, destination, sector.Owner is { } owner
+                        ? PlayerColors[owner.Value] * .68f
+                        : new Color(24, 37, 39));
+                if (_uiKeyedSprites is not null
+                    && ObjectiveSectorMarkerPresentation.IsMarked(
+                        state.Setup.Scenario, index, sector.IsImportant))
+                    batch.Draw(_uiKeyedSprites, destination,
+                        OriginalSpriteLayout.ObjectiveSectorPylons, Color.White);
+            }
+            foreach (var marker in CitySiteMarkerProjection.Project(
+                         state, player.Id, _siteSearchSelections.For(player.Id)))
+            {
+                var destination = CitySiteMarkerProjection.Destination(marker);
+                if (_siteMarkerSprites is not null)
+                    batch.Draw(_siteMarkerSprites, destination,
+                        CitySiteMarkerProjection.Source(marker), Color.White);
+                else
+                    DrawBorder(batch, pixel, destination,
+                        marker.Controlled ? Color.Lime : Color.Cyan, 1);
+            }
         }
         DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
         var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
@@ -239,6 +241,7 @@ public sealed partial class ChaosGame
         }
 
         var selectedSector = state.Sectors[_cursor];
+        var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
         var scenario = ScenarioCatalog.Get(state.Setup.Scenario);
         batch.Draw(pixel, new Rectangle(StatusConsoleLayout.LabelLeft, 14, 44, 8), Color.Black);
         font.Draw(batch, scenario.Name,
@@ -254,8 +257,11 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(0));
         DrawPanelValue(font, batch, $"${SectorIncome(state, selectedSector)}",
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(1));
-        DrawPanelValue(font, batch, selectedSector.Tolerance,
-            StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(2));
+        DrawPanelValue(font, batch, selectedSector.Tolerance.ToString(),
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(2),
+            selectedSectorChaos.Range.CanTriggerCrackdown(selectedSector.Tolerance)
+                ? Color.OrangeRed
+                : Color.Lime);
         DrawPanelValue(font, batch, SectorSupport(state, player.Id, selectedSector),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(3));
         batch.Draw(pixel, StatusConsoleLayout.CashLabel, Color.Black);
@@ -307,10 +313,31 @@ public sealed partial class ChaosGame
 
     private void DrawStatusConsoleTooltip(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        if (_hoverPoint is { } statusHover && _state is { } state)
-            DrawHoverTooltip(batch, pixel, font, statusHover, StatusConsoleTooltip.At(
-                statusHover, state.Setup.Scenario, state.Setup.Duration));
+        if (_hoverPoint is { } statusHover && StatusConsoleTooltip.Contains(statusHover)
+            && _state is { } state)
+        {
+            var player = ViewingPlayer(state);
+            var sector = state.Sectors[_cursor];
+            var chaosEstimate = ChaosRangeProjection.Detail(state, player, _cursor);
+            var enemyGangsPresent = HasEnemyGang(state, player, _cursor);
+            var lines = StatusConsoleTooltip.At(
+                statusHover, state.Setup.Scenario, state.Setup.Duration, sector.Tolerance,
+                chaosEstimate, StatusConsolePresentation.ChaosBreakdown(state, chaosEstimate),
+                enemyGangsPresent);
+            DrawHoverTooltip(batch, pixel, font, statusHover, lines,
+                StatusConsoleTooltip.QueuedChaosRangeRow,
+                StatusConsoleTooltip.QueuedChaosRangePrefix,
+                StatusConsolePresentation.QueuedChaosRangeColor(chaosEstimate.Range, sector.Tolerance),
+                enemyGangsPresent ? StatusConsoleTooltip.EnemyChaosWarningRow : null,
+                enemyGangsPresent ? Color.Red : null);
+        }
     }
+
+    private static bool HasEnemyGang(MatchState state, PlayerId viewer, int sectorId) =>
+        state.Players.Where(player => player.Id != viewer)
+            .SelectMany(player => player.Gangs)
+            .Any(gang => gang.IsActive
+                && gang.SectorId == sectorId);
 
     private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)
     {
@@ -392,5 +419,5 @@ public sealed partial class ChaosGame
 
     private static int SectorSupport(MatchState state, PlayerId player, MatchSectorState sector) =>
         sector.Sites.Where(site => site.InfluencedBy == player)
-            .Sum(site => state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Support);
+            .Sum(site => state.Definitions.Site(site.DefinitionId).Support);
 }

@@ -30,7 +30,23 @@ public sealed partial class MultiplayerMatchSession
     /// <param name="Turn">The disputed turn.</param>
     /// <param name="Candidates">The hashes a repair may claim, as the announcement named them.</param>
     /// <param name="Details">Short hashes per player, for the interface and the diagnostics log.</param>
-    private sealed record PendingDesync(int Turn, IReadOnlyList<string> Candidates, string Details);
+    /// <param name="SettledStateHash">
+    /// The hash the log went on to confirm for the turn, when it did so while this client was
+    /// already past it; see <see cref="SettlePendingDesync"/>. Null while the verdict is still open.
+    /// </param>
+    private sealed record PendingDesync(
+        int Turn,
+        IReadOnlyList<string> Candidates,
+        string Details,
+        string? SettledStateHash = null)
+    {
+        public static PendingDesync From(TurnDesyncedEvent desynced) => new(
+            desynced.Payload.Turn,
+            desynced.Payload.CandidateStateHashes,
+            string.Join(", ", desynced.Payload.Reports
+                .OrderBy(report => report.PlayerId, StringComparer.Ordinal)
+                .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}")));
+    }
 
     /// <summary>
     /// The divergence this client is waiting on, or null.
@@ -42,14 +58,19 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private PendingDesync? _pendingDesync;
 
+    /// <summary>The latest turn the local state is known to agree with the server on.</summary>
+    /// <remarks>
+    /// Set by a snapshot the state was rebuilt from, a repair it adopted, or a historical
+    /// confirmation checked against it. No divergence at or before this turn can survive in the
+    /// local state, which is what lets a confirmation of an older disputed turn close the pause
+    /// without a rebuild. Zero to begin with: every client generates the bootstrap identically.
+    /// </remarks>
+    private int _canonicalThroughTurn;
+
     /// <summary>The match paused because clients disagreed about a turn.</summary>
     private Task HandleDesyncAsync(TurnDesyncedEvent desynced, CancellationToken cancellationToken)
     {
-        var details = string.Join(", ", desynced.Payload.Reports
-            .OrderBy(report => report.PlayerId, StringComparer.Ordinal)
-            .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}"));
-        _pendingDesync = new PendingDesync(
-            desynced.Payload.Turn, desynced.Payload.CandidateStateHashes, details);
+        _pendingDesync = PendingDesync.From(desynced);
         // The live path does not go looking for a repair: `snapshot.available` follows this event
         // in the log and will arrive on its own. Only a client picking a pause up out of history
         // has to ask, because that announcement is behind its cursor and will not come again.
@@ -71,6 +92,15 @@ public sealed partial class MultiplayerMatchSession
         CancellationToken cancellationToken)
     {
         if (_pendingDesync is not { } pending) return;
+        // The match settled the turn while this client was past it. Whether this client reached
+        // the verdict is the only question left, and a client that did has nothing to repair.
+        if (pending.SettledStateHash is { } settled
+            && await HoldsStateAfterTurnAsync(pending.Turn, settled, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            _pendingDesync = null;
+            return;
+        }
         if (lookForAPostedRepair)
         {
             var posted = await SnapshotForTurnOrNullAsync(pending.Turn, cancellationToken)
@@ -80,6 +110,12 @@ public sealed partial class MultiplayerMatchSession
                 await AdoptRepairAsync(posted, cancellationToken).ConfigureAwait(false);
                 return;
             }
+        }
+        // A settled turn takes no more repairs, so there is nothing left to post or to wait for.
+        if (pending.SettledStateHash is not null)
+        {
+            _pendingDesync = null;
+            return;
         }
         // The state as it stood after the disputed turn, which is not necessarily the state this
         // client is on: reports for turn N can arrive after N+1 has sealed, and in a timed match
@@ -131,16 +167,12 @@ public sealed partial class MultiplayerMatchSession
         // A repair for a turn this client has not resolved yet is not something it can be behind
         // on; the seal for that turn is still ahead of it in the log and will bring it here.
         if (announced.Turn >= _replay.State.Coordinator.Turn) return;
-        var ours = await StateAfterTurnAsync(announced.Turn, cancellationToken).ConfigureAwait(false);
         // Compared at the DISPUTED turn, not against wherever this client is now. Delivery is at
         // least once, so the repeat of a repair already adopted arrives here — and by then several
         // turns may have been applied on top of it, which is exactly when comparing current hashes
         // says "different" and re-adopting throws all of them away.
-        if (ours is not null
-            && string.Equals(
-                announced.StateHash,
-                MatchStateHasher.ComputeFingerprint(ours),
-                StringComparison.Ordinal))
+        if (await HoldsStateAfterTurnAsync(announced.Turn, announced.StateHash, cancellationToken)
+            .ConfigureAwait(false))
         {
             _pendingDesync = null;
             return;
@@ -170,6 +202,17 @@ public sealed partial class MultiplayerMatchSession
     /// after N+1 has sealed.
     /// </para>
     /// <para>
+    /// It catches up to the turn the live replay is on, not to the server's current turn. That is
+    /// where the event cursor is, so the seals and handovers past it still arrive on the stream at
+    /// the boundaries they belong to rather than being skipped as already applied.
+    /// </para>
+    /// <para>
+    /// The repaired state is built off to the side and swapped in whole. A handler can still end
+    /// early — a retry window closing on a sealed-set fetch — and the restore that follows starts
+    /// from the live replay and the cursor that describes it; a half-repaired replay under that
+    /// cursor was a state no history could be replayed onto.
+    /// </para>
+    /// <para>
     /// Every turn it passes through is re-reported, because the server waits for a report from
     /// every human seat and an earlier turn left unsettled blocks every later repair. Reports for
     /// turns already confirmed are refused with <c>turn_confirmed</c>, which
@@ -178,23 +221,71 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private async Task AdoptRepairAsync(SnapshotView snapshot, CancellationToken cancellationToken)
     {
-        var restored = ReadVerifiedSnapshot(snapshot);
-        _replay = new MatchReplayRecorder(restored);
-        var settled = new List<(int Turn, string StateHash)> { (snapshot.Turn, snapshot.StateHash) };
-        var view = await ReadMatchViewAsync(cancellationToken).ConfigureAwait(false);
-        for (var turn = snapshot.Turn + 1; turn < view.CurrentTurn; turn++)
-        {
-            settled.Add((turn, await ApplySealedSetAsync(_replay, turn, cancellationToken)
-                .ConfigureAwait(false)));
-        }
+        var liveTurn = _replay.State.Coordinator.Turn;
+        var rebuilt = await RebuildAsync(
+                snapshot,
+                throughTurn: liveTurn - 1,
+                handoversThroughTurn: liveTurn,
+                captureReports: true,
+                cancellationToken)
+            .ConfigureAwait(false);
+        _replay = rebuilt.Recorder;
+        _canonicalThroughTurn = snapshot.Turn;
         _pendingDesync = null;
         // Seals reconstructed before this repair are superseded by the turns just replayed.
         _unreportedSeals.Clear();
-        foreach (var (turn, stateHash) in settled)
-            await QueueReportAsync(turn, stateHash).WaitAsync(cancellationToken).ConfigureAwait(false);
+        var reports = Task.WhenAll(rebuilt.Reports.Select(QueueReportAsync).ToArray());
+        await AwaitRepairReportsAsync(reports, cancellationToken).ConfigureAwait(false);
         var current = MatchStateHasher.ComputeFingerprint(_replay.State);
         var (state, planning) = HandOver();
         _notices.Enqueue(new MultiplayerNotice.Resynced(snapshot.Turn, state, current, planning));
+    }
+
+    /// <summary>
+    /// Waits for the reports a repair queued, unless a resync is asked for first.
+    /// </summary>
+    /// <remarks>
+    /// The server answers orders with <c>match_desynced</c> until the pause lifts, and the pause
+    /// lifts on these reports, so the repaired turn is not handed to the player before they are
+    /// answered. But the reporter retries through an outage with no bound, and a pump that waited
+    /// that out ignored every resync the player asked for meanwhile. A resync request ends the wait
+    /// and nothing else: the adoption is already committed, the reports stay queued in order, and
+    /// the restore that follows starts from the repaired state. Outside a stream cycle — a repair
+    /// adopted by a restore — there is no resync to wait for, and the restore waits as it always has.
+    /// </remarks>
+    private async Task AwaitRepairReportsAsync(Task reports, CancellationToken cancellationToken)
+    {
+        if (Volatile.Read(ref _streamCycle) is not { } cycle)
+        {
+            await reports.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return;
+        }
+        using var interruptible = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, cycle.Token);
+        try
+        {
+            await reports.WaitAsync(interruptible.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            Forget(reports);
+        }
+    }
+
+    /// <summary>
+    /// Whether this client reached <paramref name="stateHash"/> after <paramref name="turn"/>.
+    /// </summary>
+    private async Task<bool> HoldsStateAfterTurnAsync(
+        int turn,
+        string stateHash,
+        CancellationToken cancellationToken)
+    {
+        var ours = await StateAfterTurnAsync(turn, cancellationToken).ConfigureAwait(false);
+        return ours is not null
+            && string.Equals(
+                stateHash,
+                MatchStateHasher.ComputeFingerprint(ours),
+                StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -202,8 +293,8 @@ public sealed partial class MultiplayerMatchSession
     /// </summary>
     /// <remarks>
     /// The live state when that is where the match is, which is the common case and costs nothing.
-    /// Otherwise it is rebuilt the way a reconnect rebuilds: the newest snapshot at or below the
-    /// turn, then the sealed sets on top of it. Those sets are immutable and served with
+    /// Otherwise it is rebuilt the way a reconnect rebuilds: the newest snapshot below the turn,
+    /// then the sealed sets on top of it. Those sets are immutable and served with
     /// <c>Cache-Control: immutable</c>, so the rebuild asks the server for facts it will never
     /// change its mind about.
     ///
@@ -216,49 +307,124 @@ public sealed partial class MultiplayerMatchSession
         var reached = _replay.State.Coordinator.Turn;
         if (reached == turn + 1) return _replay.State;
         if (reached <= turn) return null;
-        var baseline = await SnapshotAtOrBelowAsync(turn, cancellationToken).ConfigureAwait(false);
+        var baseline = await SnapshotBelowAsync(turn, cancellationToken).ConfigureAwait(false);
         if (baseline is null) return null;
-        var scratch = new MatchReplayRecorder(ReadVerifiedSnapshot(baseline));
-        for (var number = baseline.Turn + 1; number <= turn; number++)
-            await ApplySealedSetAsync(scratch, number, cancellationToken).ConfigureAwait(false);
-        return scratch.State;
+        var rebuilt = await RebuildAsync(
+                baseline,
+                throughTurn: turn,
+                handoversThroughTurn: turn,
+                captureReports: false,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return rebuilt.Recorder.State;
     }
 
-    /// <summary>One turn's sealed set, verified against its own digest and applied.</summary>
-    private async Task<string> ApplySealedSetAsync(
-        MatchReplayRecorder recorder,
-        int turn,
+    /// <summary>A state rebuilt from a snapshot, and the report each turn on the way produced.</summary>
+    private sealed record RebuiltState(MatchReplayRecorder Recorder, IReadOnlyList<TurnReport> Reports);
+
+    /// <summary>
+    /// Rebuilds the state after <paramref name="throughTurn"/> from a server-held snapshot.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The one place a state is rebuilt outside the event history, for both a repair to adopt and a
+    /// turn to speak for. The sealed sets carry the orders, and <see cref="_controlHandovers"/> the
+    /// seats that changed hands between them, which a rebuild from sealed sets alone played with
+    /// their old controllers. Handovers up to <paramref name="handoversThroughTurn"/> are applied,
+    /// so a caller that wants the state the hash for <paramref name="throughTurn"/> was taken from
+    /// leaves out the ones made after that turn resolved.
+    /// </para>
+    /// <para>
+    /// A finished match stops the rebuild: a turn sealed on its deadline after the match ended,
+    /// because a seat had not reported, is not one a finished state can take. The fetches run
+    /// <see cref="SealedSetPrefetchDepth"/> ahead of the turn being applied, as the restore's do.
+    /// </para>
+    /// </remarks>
+    private async Task<RebuiltState> RebuildAsync(
+        SnapshotView baseline,
+        int throughTurn,
+        int handoversThroughTurn,
+        bool captureReports,
         CancellationToken cancellationToken)
     {
-        var sealedOrders = await CallAsync(
-            token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken)
-            .ConfigureAwait(false);
+        var recorder = new MatchReplayRecorder(ReadVerifiedSnapshot(baseline));
+        var reports = new List<TurnReport>();
+        if (captureReports) reports.Add(CaptureReport(baseline.Turn, baseline.StateHash, recorder.State));
+        var fetches = new Queue<Task<SealedOrdersView>>();
+        var nextFetch = baseline.Turn + 1;
+        try
+        {
+            for (var turn = baseline.Turn + 1; turn <= throughTurn; turn++)
+            {
+                if (recorder.State.Outcome is not null) break;
+                while (fetches.Count < SealedSetPrefetchDepth && nextFetch <= throughTurn)
+                    fetches.Enqueue(FetchSealedSetAsync(nextFetch++, cancellationToken));
+                ApplyHandovers(recorder, afterTurn: turn - 1, throughTurn: turn);
+                var sealedOrders = await fetches.Dequeue().ConfigureAwait(false);
+                RequireSealedSet(sealedOrders, turn);
+                var stateHash = SealedTurnApplier.Apply(recorder, sealedOrders);
+                if (captureReports) reports.Add(CaptureReport(turn, stateHash, recorder.State));
+            }
+            ApplyHandovers(recorder, afterTurn: throughTurn, throughTurn: handoversThroughTurn);
+        }
+        finally
+        {
+            // Whatever is still in flight belongs to a rebuild that is over, one way or the other.
+            foreach (var pending in fetches) Forget(pending);
+        }
+        return new RebuiltState(recorder, reports);
+    }
+
+    /// <summary>
+    /// Throws unless a fetched sealed set is the one for <paramref name="turn"/>, carries the digest
+    /// the event log announced when there is one, and matches its own digest.
+    /// </summary>
+    private static void RequireSealedSet(
+        SealedOrdersView sealedOrders,
+        int turn,
+        string? announcedOrderSetHash = null)
+    {
         if (sealedOrders.Turn != turn)
         {
             throw new MultiplayerProtocolException(
-                $"the server answered turn {turn}'s sealed set with the set for turn "
-                + sealedOrders.Turn);
+                $"the server answered turn {turn}'s sealed set with the set for turn {sealedOrders.Turn}");
+        }
+        if (announcedOrderSetHash is not null
+            && !string.Equals(
+                sealedOrders.OrderSetHash,
+                announcedOrderSetHash,
+                StringComparison.Ordinal))
+        {
+            throw new MultiplayerProtocolException(
+                $"the sealed-set digest for turn {turn} does not match the event log");
         }
         if (!OrderDigest.Verifies(sealedOrders, sealedOrders.OrderSetHash))
         {
             throw new MultiplayerProtocolException(
                 $"the sealed set for turn {turn} does not match the digest the server announced");
         }
-        return SealedTurnApplier.Apply(recorder, sealedOrders);
     }
 
-    /// <summary>The newest snapshot no later than <paramref name="turn"/>, or null.</summary>
+    /// <summary>The newest snapshot before <paramref name="turn"/>, or null.</summary>
     /// <remarks>
-    /// The latest row usually is one: while a turn is unsettled no later turn can be repaired, so
-    /// nothing newer than the disputed turn can have been written. The bootstrap row is the
+    /// <para>
+    /// Strictly before: the point of the rebuild is the state THIS client's rules reach by applying
+    /// the turn. A snapshot for the turn itself is the repair somebody posted for it, and a rebuild
+    /// that started there compared the repair with itself — which is how a client past the
+    /// disputed turn concluded it already held the repair and never adopted it.
+    /// </para>
+    /// <para>
+    /// The latest row usually qualifies: while a turn is unsettled no later turn can be repaired,
+    /// so nothing newer than the disputed turn can have been written. The bootstrap row is the
     /// fallback, and it is the baseline every ordinary reconnect replays from anyway.
+    /// </para>
     /// </remarks>
-    private async Task<SnapshotView?> SnapshotAtOrBelowAsync(
+    private async Task<SnapshotView?> SnapshotBelowAsync(
         int turn,
         CancellationToken cancellationToken)
     {
         var latest = await LatestSnapshotOrNullAsync(cancellationToken).ConfigureAwait(false);
-        if (latest is not null && latest.Turn <= turn) return latest;
+        if (latest is not null && latest.Turn < turn) return latest;
         return await SnapshotForTurnOrNullAsync(0, cancellationToken).ConfigureAwait(false);
     }
 

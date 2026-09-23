@@ -98,21 +98,6 @@ public sealed class ComlinkInbox
         return inbox;
     }
 
-    internal static ComlinkInbox RestoreLegacy(
-        IReadOnlyList<ComlinkMessage> messages,
-        long nextSequence,
-        long readThroughSequence)
-    {
-        if (readThroughSequence < -1 || readThroughSequence >= nextSequence)
-            throw new ArgumentException("Restored Comlink read position is invalid.", nameof(readThroughSequence));
-        return Restore(
-            messages,
-            nextSequence,
-            messages.Where(message => message.Sequence <= readThroughSequence)
-                .Select(message => message.Sequence).ToArray(),
-            readThroughSequence);
-    }
-
     internal ComlinkMessage Receive(int turn, PlayerId sender, string text)
     {
         if (turn < 1) throw new ArgumentOutOfRangeException(nameof(turn));

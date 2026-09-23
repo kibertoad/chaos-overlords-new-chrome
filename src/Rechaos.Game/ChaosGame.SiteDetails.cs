@@ -54,13 +54,13 @@ public sealed partial class ChaosGame
         SiteDefinition definition;
         if (_siteDetailsDefinitionId is { } definitionId)
         {
-            definition = state.Definitions.Sites.Single(value => value.Id == definitionId);
+            definition = state.Definitions.Site(definitionId);
         }
         else
         {
             if (_siteDetailsSectorId is not { } sectorId || _siteDetailsSlot is not { } slot) return;
             site = state.Sectors[sectorId].Sites.Single(value => value.Slot == slot);
-            definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+            definition = state.Definitions.Site(site.DefinitionId);
         }
         ClearSiteInformationFields(batch, pixel);
         if (_sitePortraits is not null)

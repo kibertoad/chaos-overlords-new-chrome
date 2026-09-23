@@ -4,6 +4,7 @@ import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqli
 import { drizzle } from 'drizzle-orm/d1'
 import { describe, expect, it } from 'vitest'
 import { buildContainer, containerFor } from '../src/index'
+import { retentionPolicyFor } from '../src/kernel'
 
 describe('D1', () => {
   defineStorageConformance({
@@ -105,5 +106,27 @@ describe('isolate state', () => {
     expect(containerFor(env).container.rateLimiters.anonymous).toBe(
       first.container.rateLimiters.anonymous,
     )
+  })
+})
+
+describe('retention vars', () => {
+  const DAY_MS = 24 * 60 * 60 * 1000
+
+  it('derives a mistyped silent window from the abandoned one instead of a fixed default', () => {
+    const policy = retentionPolicyFor({
+      ...env,
+      ABANDONED_RETENTION_DAYS: '120',
+      SILENT_RETENTION_DAYS: '360d',
+    })
+    expect(policy.silentLiveMaxAgeMs).toBe(360 * DAY_MS)
+  })
+
+  it('keeps lobbies when RETENTION_DAYS=0 unless LOBBY_RETENTION_DAYS says otherwise', () => {
+    const { LOBBY_RETENTION_DAYS: _lobby, ...unset } = env
+    expect(retentionPolicyFor({ ...unset, RETENTION_DAYS: '0' }).lobbyMaxAgeMs).toBe(0)
+    expect(
+      retentionPolicyFor({ ...unset, RETENTION_DAYS: '0', LOBBY_RETENTION_DAYS: '2' })
+        .lobbyMaxAgeMs,
+    ).toBe(2 * DAY_MS)
   })
 })

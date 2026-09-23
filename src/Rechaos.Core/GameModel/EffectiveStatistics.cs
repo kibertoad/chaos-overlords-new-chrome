@@ -66,12 +66,19 @@ public static class EffectiveStatisticsCalculator
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gang);
-        var definition = state.Definitions.Gangs.Single(item => item.Id == gang.DefinitionId);
+        var definition = state.Definitions.Gang(gang.DefinitionId);
         var result = EffectiveStatistics.From(definition.Stats);
-        foreach (var (_, itemId) in EquippedItems(gang))
-            result = result.Add(state.Definitions.Items[itemId].Stats);
-        foreach (var site in InfluencedSites(state, gang))
-            result = result.Add(DefinitionOf(state, site).Stats);
+        if (gang.WeaponItemId is { } weapon)
+            result = result.Add(state.Definitions.Items[weapon].Stats);
+        if (gang.ArmorItemId is { } armor)
+            result = result.Add(state.Definitions.Items[armor].Stats);
+        if (gang.MiscellaneousItemId is { } miscellaneous)
+            result = result.Add(state.Definitions.Items[miscellaneous].Stats);
+        foreach (var site in state.Sectors[gang.SectorId].Sites)
+        {
+            if (site.InfluencedBy != gang.Owner) continue;
+            result = result.Add(state.Definitions.Site(site.DefinitionId).Stats);
+        }
         return result;
     }
 
@@ -94,7 +101,7 @@ public static class EffectiveStatisticsCalculator
         }
         foreach (var site in InfluencedSites(state, gang))
         {
-            var definition = DefinitionOf(state, site);
+            var definition = state.Definitions.Site(site.DefinitionId);
             modifiers.Add(new GangStatisticsModifier(
                 GangModifierSource.Site, definition.Name, definition.Stats));
         }
@@ -116,9 +123,6 @@ public static class EffectiveStatisticsCalculator
         MatchState state,
         MatchGangState gang) =>
         state.Sectors[gang.SectorId].Sites.Where(site => site.InfluencedBy == gang.Owner);
-
-    private static SiteDefinition DefinitionOf(MatchState state, MatchSiteState site) =>
-        state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId);
 }
 
 public static class DiceRoller

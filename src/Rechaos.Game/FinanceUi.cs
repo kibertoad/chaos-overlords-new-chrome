@@ -14,6 +14,7 @@ public static class FinanceLayout
     public const int RowCount = 8;
     public static int ValueLeft => 394;
     public static int ContractCountLeft => 316;
+    public static int ContractCountY => ValueY(0);
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
     public static Rectangle Portrait => new(154, 141, 64, 64);
@@ -71,12 +72,10 @@ public sealed record FinanceProjection(
         bool Includes(int candidate) => sectorId is null || sectorId == candidate;
         var activeGangs = player.Gangs.Where(gang => gang.IsActive && Includes(gang.SectorId)).ToArray();
         var pendingHires = player.PendingHires.Where(hire => Includes(hire.TargetSectorId)).ToArray();
-        var gangUpkeep = -activeGangs.Sum(gang => state.Definitions.Gangs
-            .Single(definition => definition.Id == gang.DefinitionId).Upkeep)
-            - pendingHires.Sum(hire => state.Definitions.Gangs
-                .Single(definition => definition.Id == hire.GangDefinitionId).Upkeep);
-        var newContracts = -pendingHires.Sum(hire => HireRules.InitialCost(state.Definitions.Gangs
-            .Single(definition => definition.Id == hire.GangDefinitionId)));
+        var gangUpkeep = -activeGangs.Sum(gang => state.Definitions.Gang(gang.DefinitionId).Upkeep)
+            - pendingHires.Sum(hire => state.Definitions.Gang(hire.GangDefinitionId).Upkeep);
+        var newContracts = -pendingHires.Sum(hire =>
+            HireRules.InitialCost(state.Definitions.Gang(hire.GangDefinitionId)));
         var commands = state.Commands.ExecutionPlan()
             .Where(queued => queued.Command.Player == player.Id)
             .Where(queued => state.FindGang(queued.Command.Gang) is { } gang && Includes(gang.SectorId))
@@ -90,8 +89,7 @@ public sealed record FinanceProjection(
             * ManualRules.ControlledSectorTax;
         var siteProtection = sectors.SelectMany(sector => sector.Sites)
             .Where(site => site.InfluencedBy == player.Id)
-            .Sum(site => state.Definitions.Sites.Single(
-                definition => definition.Id == site.DefinitionId).Cash);
+            .Sum(site => state.Definitions.Site(site.DefinitionId).Cash);
         var chaosEstimate = EstimateChaos(state, player, commands);
         var adjustment = checked(gangUpkeep + newContracts + equipment + cityOfficials
             + sectorTax + siteProtection + chaosEstimate);

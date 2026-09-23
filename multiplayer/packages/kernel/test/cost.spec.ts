@@ -88,7 +88,7 @@ describe('the cost of the hot paths', () => {
       expect(counting.get('turns.listReports')).toBeGreaterThan(0)
 
       // Nothing has happened to the match since, and a match a public server keeps paused for the
-      // ninety days of its retention has nothing new to judge on any of them.
+      // weeks of its retention has nothing new to judge on any of them.
       h.clock.advance(10 * 60_000)
       counting.reset()
       await counted.turns.sweep()

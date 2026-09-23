@@ -2,15 +2,12 @@ namespace Rechaos.Core.GameModel;
 
 public static partial class AiTurnPlanner
 {
-    private static bool PrepareFamilyNineCommand(
+    private static void PrepareFamilyNineCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var player = state.FindPlayer(playerId)!;
         if (OriginalAiEquipmentRules.SelectFamily11WeaponUpgrade(
@@ -19,7 +16,7 @@ public static partial class AiTurnPlanner
             SetFamilyNineEquipment(
                 state, playerId, gangSlot, checked((short)weaponId),
                 EquipmentSlot.Weapon);
-            return true;
+            return;
         }
 
         if (OriginalAiEquipmentRules.SelectArmorUpgrade(
@@ -28,26 +25,22 @@ public static partial class AiTurnPlanner
             SetFamilyNineEquipment(
                 state, playerId, gangSlot, checked((short)armorId),
                 EquipmentSlot.Armor);
-            return true;
+            return;
         }
 
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
         var action = OriginalAiFamilyNineRules.SelectTerritorialAction(
             state.Sectors[gang.SectorId].Owner == playerId,
             visibleWeight,
             state.AiPlanning.PreviousAction(playerId, gangSlot));
         if (action == GangAction.Move)
             PrepareFamilyNineMove(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
         else if (action == GangAction.Attack)
             PrepareFamilyNineAttack(state, playerId, gang, gangSlot, visible);
         else
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, action);
-        return true;
     }
 
     private static void SetFamilyNineEquipment(
@@ -71,26 +64,23 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var target = OriginalAiSectorSelectionRules.Select(
             mode: 3,
             sourceSectorId: gang.SectorId,
             player: playerId,
             family: 9,
-            sectorOwners,
-            sectorDisabled,
-            sectorGangCounts,
+            snapshot.SectorOwners,
+            snapshot.SectorDisabled,
+            snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            playerOrder,
+            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }

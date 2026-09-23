@@ -8,10 +8,14 @@ import {
 } from '@chaos-overlords/bug-reports'
 import {
   createKernel,
+  DEFAULT_RETENTION_BATCH_SIZE,
+  DEFAULT_RETENTION_DAYS,
   type DeadlineScheduler,
   type EventNotifier,
   type Kernel,
   type Logger,
+  type RetentionPolicy,
+  retentionPolicyFromDays,
   type StreamCloser,
 } from '@chaos-overlords/kernel'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
@@ -27,8 +31,48 @@ export const workerLogger: Logger = {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const DEFAULT_RETENTION_DAYS = 30
-const DEFAULT_ABANDONED_RETENTION_DAYS = 90
+
+/** A non-negative whole number from an environment variable; anything else reads as `fallback`. */
+function wholeNumber(raw: string | undefined, fallback: number): number {
+  const value = Number(raw ?? fallback)
+  return Number.isInteger(value) && value >= 0 ? value : fallback
+}
+
+/** A whole number when the variable is set, `undefined` when it is unset or not a whole number. */
+function optionalWholeNumber(raw: string | undefined): number | undefined {
+  if (raw === undefined || raw === '') return undefined
+  const value = Number(raw)
+  return Number.isInteger(value) && value >= 0 ? value : undefined
+}
+
+/**
+ * The retention windows from the vars, with the kernel's defaults for any that are unset.
+ *
+ * The lobby and silent windows are only passed when they are set to a whole number, so the kernel
+ * derives them the same way it does on Node: the silent window from the abandoned one, the lobby
+ * window from `RETENTION_DAYS`'s off switch. A mistyped value reads as unset rather than as a
+ * fixed default, because a fixed silent window could end up shorter than the abandoned window and
+ * collect matches whose players are still seated. Node refuses to start on the same input; a
+ * Worker has no start to refuse, so the derived window is the safe reading.
+ */
+export function retentionPolicyFor(env: Env): RetentionPolicy {
+  const lobby = optionalWholeNumber(env.LOBBY_RETENTION_DAYS)
+  const silentLive = optionalWholeNumber(env.SILENT_RETENTION_DAYS)
+  const batchSize = wholeNumber(env.RETENTION_BATCH_SIZE, DEFAULT_RETENTION_BATCH_SIZE)
+  return retentionPolicyFromDays(
+    {
+      finished: wholeNumber(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
+      abandonedLive: wholeNumber(
+        env.ABANDONED_RETENTION_DAYS,
+        DEFAULT_RETENTION_DAYS.abandonedLive,
+      ),
+      ...(lobby === undefined ? {} : { lobby }),
+      ...(silentLive === undefined ? {} : { silentLive }),
+    },
+    // A batch of 0 would delete nothing while looking switched on; the windows are the off switch.
+    batchSize > 0 ? batchSize : DEFAULT_RETENTION_BATCH_SIZE,
+  )
+}
 
 export const HUB_PATHS = {
   notify: '/notify',
@@ -110,10 +154,6 @@ export function buildKernel(
         body: { ...input, dueAt: input.dueAt.toISOString() },
       }),
   }
-  const days = (raw: string | undefined, fallback: number): number => {
-    const value = Number(raw ?? fallback)
-    return Number.isInteger(value) && value >= 0 ? value : fallback
-  }
   return createKernel(
     {
       storage,
@@ -123,18 +163,7 @@ export function buildKernel(
       clock: { now: () => new Date() },
       logger: workerLogger,
     },
-    {
-      retention: {
-        maxAgeMs: days(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS) * DAY_MS,
-        abandonedLiveMaxAgeMs:
-          days(env.ABANDONED_RETENTION_DAYS, DEFAULT_ABANDONED_RETENTION_DAYS) * DAY_MS,
-        // Twice the abandoned window, and without its roster test, which never collects an untimed
-        // match whose players' clients died without a `leave`.
-        silentLiveMaxAgeMs:
-          days(env.ABANDONED_RETENTION_DAYS, DEFAULT_ABANDONED_RETENTION_DAYS) * 2 * DAY_MS,
-        batchSize: 50,
-      },
-    },
+    { retention: retentionPolicyFor(env) },
   )
 }
 
@@ -153,10 +182,6 @@ export function buildBugReports(env: Env): BugReportService | undefined {
   if (!env.BUG_DB) return undefined
   const repository = createBugReportRepository(drizzle(env.BUG_DB, { schema: bugReportSchema }))
   const blobs = env.BUG_BLOBS ? createR2BlobStore(env.BUG_BLOBS) : undefined
-  const number = (raw: string | undefined, fallback: number): number => {
-    const value = Number(raw ?? fallback)
-    return Number.isInteger(value) && value >= 0 ? value : fallback
-  }
   return createBugReportService({
     repository,
     clock: { now: () => new Date() },
@@ -164,14 +189,14 @@ export function buildBugReports(env: Env): BugReportService | undefined {
     retention: {
       ...DEFAULT_BUG_REPORT_RETENTION,
       dailyStateBytes:
-        number(
+        wholeNumber(
           env.BUG_REPORT_DAILY_STATE_MB,
           DEFAULT_BUG_REPORT_RETENTION.dailyStateBytes / (1024 * 1024),
         ) *
         1024 *
         1024,
       maxAgeMs:
-        number(env.BUG_REPORT_RETENTION_DAYS, DEFAULT_BUG_REPORT_RETENTION.maxAgeMs / DAY_MS) *
+        wholeNumber(env.BUG_REPORT_RETENTION_DAYS, DEFAULT_BUG_REPORT_RETENTION.maxAgeMs / DAY_MS) *
         DAY_MS,
     },
     ...(blobs ? { blobs } : {}),

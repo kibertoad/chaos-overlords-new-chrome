@@ -117,6 +117,11 @@ presentation-only conveniences that make the original systems easier to read:
 - The city console shows projected turn cashflow beside current Cash, with
   finance panels breaking down upkeep, purchases, taxes, site income, Chaos,
   and the resulting adjustment.
+- Hovering a selected sector's Tolerance shows the active player's queued Chaos
+  success range, calculated from its gangs' force, equipment, and local
+  influenced sites. It also warns when known enemy gangs could add Chaos; the
+  Tolerance value turns orange when the player's range can trigger a crackdown,
+  and the tooltip explains the controlled/uncontrolled Chaos payout rule.
 - Command pickers name their valid gang, sector, site, and item targets. In the
   detailed-sector view, hovering an assigned gang highlights its queued Move,
   Influence, or Attack target directly on the board, building, or gang card.

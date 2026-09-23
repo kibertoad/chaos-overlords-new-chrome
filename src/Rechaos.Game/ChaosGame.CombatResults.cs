@@ -9,7 +9,7 @@ public sealed partial class ChaosGame
     private void OpenCombatResults(ClientScreen returnScreen)
     {
         if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
-        var pages = CombatResultProjection.Pages(_state, viewer);
+        var pages = CombatResultPages(_state, viewer);
         if (pages.Count == 0)
         {
             RejectInput("NO COMBAT RESULTS");
@@ -54,7 +54,7 @@ public sealed partial class ChaosGame
     private void ReplaySelectedCombatDetail()
     {
         if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
-        var pages = CombatResultProjection.Pages(_state, viewer);
+        var pages = CombatResultPages(_state, viewer);
         if (pages.Count == 0)
         {
             RejectInput("NO COMBAT DETAIL AVAILABLE");
@@ -89,7 +89,7 @@ public sealed partial class ChaosGame
     private void MoveCombatSummary(int delta)
     {
         if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
-        var pages = CombatResultProjection.Pages(_state, viewer);
+        var pages = CombatResultPages(_state, viewer);
         var count = pages.Count;
         if (count > 0)
         {
@@ -117,12 +117,9 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        if (_combatResultsBackground is not null)
-            batch.Draw(_combatResultsBackground, CombatResultsLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, CombatResultsLayout.Panel, new Color(0, 0, 0, 245));
-        var viewer = state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        var pages = CombatResultProjection.Pages(state, viewer);
+        DrawPanelArtwork(batch, pixel, _combatResultsBackground, CombatResultsLayout.Panel);
+        var viewer = ViewingPlayer(state);
+        var pages = CombatResultPages(state, viewer);
         ClearCombatResultPage(batch, pixel);
         if (pages.Count == 0)
         {
@@ -147,9 +144,31 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, CombatResultsLayout.Ok, "OK", true);
     }
 
-    private static IReadOnlyList<GameEvent> VisibleCombatResults(MatchState state, PlayerId viewer) =>
-        CombatResultProjection.Pages(state, viewer).SelectMany(page => page.Results)
+    private IReadOnlyList<GameEvent> VisibleCombatResults(MatchState state, PlayerId viewer) =>
+        CombatResultPages(state, viewer).SelectMany(page => page.Results)
             .Select(result => result.Event).ToArray();
+
+    private IReadOnlyList<CombatResultPage> CombatResultPages(MatchState state, PlayerId viewer)
+    {
+        var key = (state.Events.Count, state.Coordinator.Turn);
+        if (!ReferenceEquals(_combatResultSource, state))
+        {
+            _combatResultCache.Clear();
+            _combatResultSource = state;
+        }
+        if (_combatResultCache.TryGetValue(viewer, out var cached) && cached.Key == key)
+            return cached.Pages;
+        var pages = CombatResultProjection.Pages(state, viewer);
+        _combatResultCache[viewer] = (key, pages);
+        return pages;
+    }
+
+    private MatchState? _combatResultSource;
+
+    private readonly Dictionary<
+        PlayerId,
+        ((int Events, int Turn) Key, IReadOnlyList<CombatResultPage> Pages)>
+        _combatResultCache = [];
 
     private void DrawCombatResultSector(SpriteBatch batch, PixelFont font, MatchState state, int sectorId)
     {
@@ -221,7 +240,7 @@ public sealed partial class ChaosGame
     private void SelectCombatSummaryEntry(Point point)
     {
         if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
-        var pages = CombatResultProjection.Pages(_state, viewer);
+        var pages = CombatResultPages(_state, viewer);
         if (pages.Count == 0) return;
         _combatSummaryCursor = Math.Clamp(_combatSummaryCursor, 0, pages.Count - 1);
         var page = pages[_combatSummaryCursor];
@@ -276,12 +295,16 @@ public static class CombatResultProjection
     public static IReadOnlyList<CombatResultPage> Pages(MatchState state, PlayerId viewer)
     {
         ArgumentNullException.ThrowIfNull(state);
-        var entries = state.Events
-            .Where(gameEvent => IsFromLastCompletedTurn(gameEvent.Turn, state.Coordinator.Turn))
-            .Select(gameEvent => Describe(state, gameEvent))
-            .Where(entry => entry is not null)
-            .Cast<CombatResultEntry>()
-            .ToArray();
+        var completedTurn = state.Coordinator.Turn - 1;
+        var first = state.Events.Count;
+        while (first > 0 && state.Events[first - 1].Turn >= completedTurn) first--;
+        var entries = new List<CombatResultEntry>();
+        for (var index = first; index < state.Events.Count; index++)
+        {
+            var gameEvent = state.Events[index];
+            if (gameEvent.Turn != completedTurn || Describe(state, gameEvent) is not { } entry) continue;
+            entries.Add(entry);
+        }
         var occupied = state.FindPlayer(viewer)?.Gangs
             .Where(gang => gang.IsActive)
             .Select(gang => gang.SectorId)

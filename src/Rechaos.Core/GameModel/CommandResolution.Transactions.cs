@@ -35,9 +35,7 @@ public static partial class CommandResolver
             return CompleteTransaction(state, command, new CommandResolutionDetails(
                 CommandResolutionCode.ItemUnavailable, [], 0, ItemId: give.UnavailableItem));
 
-        foreach (var itemIndex in give.Items)
-            EquipmentRules.Unequip(state.FindGang(command.Gang)!,
-                EquipmentRules.SlotFor(state.Definitions.Items[itemIndex]));
+        UnequipGivenItems(state, give);
         return CompleteTransaction(state, command, ApplyGive(state, command, give.Items));
     }
 
@@ -45,16 +43,11 @@ public static partial class CommandResolver
         MatchState state,
         IReadOnlyList<QueuedCommand> commands)
     {
-        var ordered = commands
-            .OrderBy(queued => queued.Command.Player.Value)
-            .ThenBy(queued => GangSlot(state, queued.Command))
-            .ToArray();
+        var ordered = InRosterOrder(state, commands);
         var prepared = ordered.Where(queued => queued.Command.Action == GangAction.Give)
             .ToDictionary(queued => queued.Sequence, queued => PrepareGive(state, queued.Command));
         foreach (var give in prepared.Values.Where(give => give.Available))
-        foreach (var itemIndex in give.Items)
-            EquipmentRules.Unequip(state.FindGang(give.Command.Gang)!,
-                EquipmentRules.SlotFor(state.Definitions.Items[itemIndex]));
+            UnequipGivenItems(state, give);
 
         var details = new Dictionary<long, CommandResolutionDetails>();
         foreach (var queued in ordered)
@@ -116,6 +109,13 @@ public static partial class CommandResolver
             EquipmentRules.EquippedItem(source,
                 EquipmentRules.SlotFor(state.Definitions.Items[itemIndex])) != itemIndex, (short)-1);
         return new PreparedGive(command, items, unavailable < 0, unavailable < 0 ? null : unavailable);
+    }
+
+    private static void UnequipGivenItems(MatchState state, PreparedGive give)
+    {
+        foreach (var itemIndex in give.Items)
+            EquipmentRules.Unequip(state.FindGang(give.Command.Gang)!,
+                EquipmentRules.SlotFor(state.Definitions.Items[itemIndex]));
     }
 
     private static CommandResolutionDetails ApplyGive(

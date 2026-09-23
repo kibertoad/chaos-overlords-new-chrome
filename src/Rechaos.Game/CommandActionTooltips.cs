@@ -28,6 +28,30 @@ public static class CommandActionTooltips
 
     public static IReadOnlyList<string> Lines(GangAction action) => [Name(action), .. Effect(action)];
 
+    /// <summary>
+    /// Adds the selected gang's sector-specific, temporary Bribe/Snitch shift to the two
+    /// tolerance-changing actions. The normal value includes presently controlled sites,
+    /// so the difference represents the still-active order effects.
+    /// </summary>
+    public static IReadOnlyList<string> Lines(GangAction action, MatchState state, MatchGangState? gang)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var lines = Lines(action);
+        if (action is not (GangAction.Bribe or GangAction.Snitch) || gang is null) return lines;
+
+        var sector = state.Sectors[gang.SectorId];
+        var normal = ToleranceResolver.NormalTolerance(state, sector);
+        var shift = sector.Tolerance - normal;
+        var shiftText = shift == 0 ? "NONE" : shift > 0 ? $"+{shift}" : shift.ToString();
+        return
+        [
+            .. lines,
+            "",
+            $"CURRENT BRIBE/SNITCH SHIFT: {shiftText}.",
+            $"CURRENT {sector.Tolerance}; NORMAL TOLERANCE {normal}."
+        ];
+    }
+
     private static string Name(GangAction action) => action switch
     {
         GangAction.None => "NO ORDER",
@@ -45,11 +69,16 @@ public static class CommandActionTooltips
         [
             $"PAYS ${ManualRules.OriginalBribeCost} TO RAISE THIS SECTOR'S TOLERANCE BY" +
             $" {ManualRules.BribeToleranceIncrease}.",
-            "HIGHER TOLERANCE LETS CHAOS RUN LONGER BEFORE A CRACKDOWN."
+            "HIGHER TOLERANCE LETS CHAOS RUN LONGER BEFORE A CRACKDOWN.",
+            "EACH SUCCESSFUL ORDER ADDS +3; GANGS CAN STACK IT.",
+            "THE SAME GANG CAN BRIBE AGAIN ON LATER TURNS.",
+            "",
+            "EVERY UPKEEP, TOLERANCE MOVES ONE POINT",
+            "BACK TOWARD ITS NORMAL VALUE."
         ],
         GangAction.Chaos =>
         [
-            "ROLLS FORCE PLUS CHAOS PLUS SECTOR INCOME TO EARN CASH.",
+            "ROLLS ONE STANDARD D6 FOR EACH POINT OF FORCE, CHAOS, AND INCOME.",
             "THE CHAOS RAISED ALSO PUSHES THE SECTOR TOWARD A CRACKDOWN."
         ],
         GangAction.Control =>
@@ -104,7 +133,12 @@ public static class CommandActionTooltips
         [
             $"TIPS OFF THE POLICE FOR FREE, CUTTING TOLERANCE BY" +
             $" {ManualRules.SnitchToleranceDecrease}.",
-            "LOWER TOLERANCE MAKES A CRACKDOWN HERE MORE LIKELY."
+            "LOWER TOLERANCE MAKES A CRACKDOWN HERE MORE LIKELY.",
+            "EACH SUCCESSFUL ORDER ADDS -3; GANGS CAN STACK IT.",
+            "THE SAME GANG CAN SNITCH AGAIN ON LATER TURNS.",
+            "",
+            "EVERY UPKEEP, TOLERANCE MOVES ONE POINT",
+            "BACK TOWARD ITS NORMAL VALUE."
         ],
         GangAction.None =>
         [

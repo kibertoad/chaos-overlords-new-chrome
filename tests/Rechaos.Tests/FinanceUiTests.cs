@@ -18,6 +18,7 @@ public sealed class FinanceUiTests
         Assert.Equal(new Rectangle(161, 293, 49, 22), FinanceLayout.Ok);
         Assert.Equal(394, FinanceLayout.ValueLeft);
         Assert.Equal(new Rectangle(394, 151, 24, 7), FinanceLayout.ValueField(0));
+        Assert.Equal(151, FinanceLayout.ContractCountY);
         Assert.Equal(1, FinanceLayout.ContractCountWidth(9));
         Assert.Equal(2, FinanceLayout.ContractCountWidth(10));
         Assert.Equal(322, FinanceLayout.ContractCountCloseLeft(1));

@@ -42,7 +42,7 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   const header = c.req.header('authorization') ?? ''
   const [scheme, token] = header.split(' ', 2)
   if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    chargeFailedAuth(c)
+    chargeAnonymous(c)
     throw new UnauthorizedError('Send the player token as a Bearer credential', {
       reason: 'missing_token',
     })
@@ -50,31 +50,29 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   try {
     c.set('principal', await c.get('container').kernel.auth.authenticate(token))
   } catch (error) {
-    if (error instanceof UnauthorizedError) chargeFailedAuth(c)
+    if (error instanceof UnauthorizedError) chargeAnonymous(c)
     throw error
   }
   await next()
 }
 
 /**
- * Spend one unit of the anonymous budget for a caller who failed to authenticate.
+ * Spend one unit of the anonymous budget and return the client address it was charged to.
  *
- * It shares the budget with create and join deliberately: an address doing either at volume is the
- * same address either way, and a separate tier would just be a second thing to size. A caller who
- * is over budget is told so (429) instead of being told the token was wrong, which is the right
- * order of refusals for a caller who has proved nothing.
+ * A caller who failed to authenticate shares the budget with create and join deliberately: an
+ * address doing either at volume is the same address either way, and a separate tier would just be
+ * a second thing to size. A caller who is over budget is told so (429) instead of being told the
+ * token was wrong, which is the right order of refusals for a caller who has proved nothing.
  */
-function chargeFailedAuth(c: Context<AppEnv>): void {
-  const container = c.get('container')
+function chargeAnonymous(c: Context<AppEnv>): string {
   const key = addressOf(c)
-  enforce(container.rateLimiters, 'anonymous', key, c)
+  enforce(c.get('container').rateLimiters, 'anonymous', key, c)
+  return key
 }
 
 /** Fixed-window limiter on the unauthenticated doors, keyed by client address. */
 export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const container = c.get('container')
-  const key = addressOf(c)
-  enforce(container.rateLimiters, 'anonymous', key, c)
+  const key = chargeAnonymous(c)
   // The join doors charge a per-caller budget of their own in front of PBKDF2, in the kernel,
   // where there is no request to work an address out from. Normalised here so that one client is
   // one key there too; see `rateLimitKey`.
@@ -101,6 +99,24 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
     () =>
       container.rateLimiters.bugReportState.take(`bugReportState:${rateLimitKey(key)}`) === null,
   )
+  await next()
+}
+
+/**
+ * The process-wide budget on creating a match, checked here and spent by the create handler.
+ *
+ * Mounted for `POST /matches` alone, because the same path also serves the public listing, which
+ * must not spend it. It runs after `rateLimited`, so a single address over its own budget is
+ * refused without touching the shared one. It only PEEKS: a spent budget is refused before the
+ * body is read, but a request is charged only once its body has passed the contract validator,
+ * through `spendMatchCreation`. Charging here would let a handful of addresses sending malformed
+ * bodies, which never store a lobby, hold the shared budget at zero for every legitimate host.
+ */
+export const matchCreationRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const limiters = c.get('container').rateLimiters
+  const retryAfter = limiters.matchCreation.peek(`matchCreation:${MATCH_CREATION_KEY}`)
+  if (retryAfter !== null) refuse(c, retryAfter)
+  c.set('spendMatchCreation', () => enforce(limiters, 'matchCreation', MATCH_CREATION_KEY, c))
   await next()
 }
 
@@ -141,14 +157,57 @@ export function rateLimitKey(address: string): string {
   // `1.2.3.4:443` — an IPv4 host with a port. A bare IPv6 address has more than one colon.
   const withoutPort = /^[^:]+:\d+$/.test(host) ? (host.split(':')[0] as string) : host
   if (!withoutPort.includes(':')) return withoutPort
-  // IPv6, masked to the /64 a single client is routed. IPv4-mapped forms keep their full address.
-  if (withoutPort.includes('.')) return withoutPort
-  const groups = withoutPort.toLowerCase().split('::')
-  if (groups.length > 1) {
-    const leading = (groups[0] as string).split(':').filter((part) => part !== '')
-    return leading.length >= 4 ? `${leading.slice(0, 4).join(':')}::/64` : `${withoutPort}::/64`
-  }
-  return `${withoutPort.split(':').slice(0, 4).join(':')}::/64`
+  // IPv6 is case-insensitive, so the spelling has to be settled before anything below compares or
+  // slices it. Lowercasing after the IPv4-mapped test let `::FFFF:1.2.3.4` and `::ffff:1.2.3.4`
+  // hold a budget each.
+  const lowered = withoutPort.toLowerCase()
+  // An embedded IPv4 address is the client's own address rather than a prefix it was routed, so it
+  // stays whole.
+  if (lowered.includes('.')) return lowered
+  const mapped = ipv4MappedFromHex(lowered)
+  if (mapped !== null) return mapped
+  // Otherwise IPv6, masked to the /64 a single client is routed.
+  return `${ipv6Prefix64(lowered)}::/64`
+}
+
+/**
+ * The dotted spelling of an IPv4-mapped address whose embedded address is written as hex groups,
+ * or null when the address is not one.
+ *
+ * RFC 4291 lets `::ffff:1.2.3.4` also be written `::ffff:0102:0304`, and only the dotted form was
+ * recognised. The hex form has no `.`, so it fell through to the /64 mask — where the mapped
+ * prefix is all zeros, so every IPv4 client written that way shared `0:0:0:0::/64` with each
+ * other, with `::` and with `::1`. One noisy source in that bucket spent the anonymous and
+ * bug-report budgets for the rest of it. Both spellings now reduce to the same key.
+ */
+function ipv4MappedFromHex(address: string): string | null {
+  const groups = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(address)
+  if (groups === null) return null
+  const high = Number.parseInt(groups[1] as string, 16)
+  const low = Number.parseInt(groups[2] as string, 16)
+  return `::ffff:${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`
+}
+
+/**
+ * The first four groups of an IPv6 address: the /64 a single client is routed.
+ *
+ * The compressed form has to be expanded before it is sliced. `2001:db8::1` writes two groups and
+ * then hides five zero groups behind the `::`, so taking the groups as written either kept the
+ * interface identifier or gave up and used the whole address — and every address in one routed /64
+ * then had a budget of its own, which is the exact thing this masking exists to stop. Groups are
+ * stripped of leading zeros so the two spellings of one address cannot hold two budgets either.
+ */
+function ipv6Prefix64(address: string): string {
+  const [head, tail] = address.split('::', 2)
+  const leading = head === '' ? [] : (head as string).split(':')
+  const trailing = tail === undefined || tail === '' ? [] : tail.split(':')
+  const hidden = tail === undefined ? 0 : Math.max(0, 8 - leading.length - trailing.length)
+  const groups = [...leading, ...Array.from({ length: hidden }, () => '0'), ...trailing]
+  while (groups.length < 4) groups.push('0')
+  return groups
+    .slice(0, 4)
+    .map((group) => group.replace(/^0+(?=.)/, ''))
+    .join(':')
 }
 
 /**
@@ -157,7 +216,10 @@ export function rateLimitKey(address: string): string {
  * `rateLimitKey` masks IPv6 prefixes and strips ports, which is meaningless work on a player UUID
  * and runs on every authenticated request.
  */
-const IDENTITY_TIERS: ReadonlySet<string> = new Set(['member', 'upload'])
+const IDENTITY_TIERS: ReadonlySet<string> = new Set(['member', 'upload', 'matchCreation'])
+
+/** The one key the match-creation tier counts under; it is a process-wide budget, not a per-caller one. */
+const MATCH_CREATION_KEY = 'all'
 
 function enforce(
   limiters: RateLimiters,
@@ -168,7 +230,10 @@ function enforce(
   const retryAfter = limiters[tier].take(
     `${tier}:${IDENTITY_TIERS.has(tier) ? key : rateLimitKey(key)}`,
   )
-  if (retryAfter === null) return
+  if (retryAfter !== null) refuse(c, retryAfter)
+}
+
+function refuse(c: Context<AppEnv>, retryAfter: number): never {
   c.header('Retry-After', String(retryAfter))
   throw new RateLimitedError('Too many attempts; slow down', {
     reason: 'rate_limited',

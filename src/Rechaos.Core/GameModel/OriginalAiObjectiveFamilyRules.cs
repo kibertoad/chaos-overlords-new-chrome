@@ -82,8 +82,9 @@ internal static class OriginalAiObjectiveFamilyRules
         int targetForce,
         int targetCombat,
         int targetDefense) =>
-        (targetForce + targetCombat) / 4 - attackerDefense
-        <= attackerForce + attackerCombat - targetDefense;
+        OriginalAiFamilyTwelveRules.CanAttackSelectedTarget(
+            attackerForce, attackerCombat, attackerDefense,
+            targetForce, targetCombat, targetDefense);
 
     public static GangAction SelectContestedObjectiveResult(
         bool selectedTarget,
@@ -110,8 +111,7 @@ internal static class OriginalAiObjectiveFamilyRules
         int? bestSlot = null;
         foreach (var site in state.Sectors[sectorId].Sites.OrderBy(site => site.Slot))
         {
-            var support = state.Definitions.Sites
-                .Single(definition => definition.Id == site.DefinitionId).Support;
+            var support = state.Definitions.Site(site.DefinitionId).Support;
             if (site.Resistance <= 0 || support <= bestSupport) continue;
             bestSupport = support;
             bestSlot = site.Slot;

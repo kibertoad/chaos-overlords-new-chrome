@@ -148,6 +148,8 @@ public sealed partial class ChaosGame
     private void RefreshSaveSlots()
     {
         if (_definitions is null) return;
+        // Reading the autosave row means opening the file the background worker replaces.
+        FlushAutoSaves();
         for (var slot = 0; slot < SaveSlotCatalog.SlotCount; slot++)
             _saveSlots[slot] = SaveSlotCatalog.Read(_saveDirectory, slot, _definitions);
         _saveSlots[SaveSlotCatalog.AutoSaveRow] =
@@ -332,8 +334,7 @@ public sealed partial class ChaosGame
             else if (GameMenuLayout.CancelSave.Contains(point)) CancelSaveName();
             return;
         }
-        var slot = Enumerable.Range(0, LastSelectableSlotRow + 1)
-            .FirstOrDefault(index => GameMenuLayout.SlotRow(index).Contains(point), -1);
+        var slot = HitTest.IndexAt(LastSelectableSlotRow + 1, GameMenuLayout.SlotRow, point);
         if (slot >= 0) _saveSlotCursor = slot;
         else if (GameMenuLayout.UseSlot.Contains(point)) UseSelectedSlot();
         else if (GameMenuLayout.CancelBrowser.Contains(point)) CloseSaveBrowser();

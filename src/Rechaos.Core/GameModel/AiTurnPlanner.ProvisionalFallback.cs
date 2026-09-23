@@ -122,7 +122,7 @@ public static partial class AiTurnPlanner
     private static int InfluenceValue(MatchState state, int siteTarget, ScenarioId scenario)
     {
         var site = state.FindSite(siteTarget)!;
-        var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+        var definition = state.Definitions.Site(site.DefinitionId);
         return scenario == ScenarioId.Acceptance
             ? definition.Support * 30
             : definition.Cash * 20 + definition.Support * 5;

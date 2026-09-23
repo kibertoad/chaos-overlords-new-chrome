@@ -9,16 +9,16 @@ public sealed class CityConsoleLayoutTests
     [Theory]
     [InlineData(500, 126, CityConsoleAction.Events)]
     [InlineData(552, 126, CityConsoleAction.ComlinkView)]
-    [InlineData(584, 173, CityConsoleAction.ComlinkView)]
-    [InlineData(585, 126, CityConsoleAction.ComlinkSend)]
-    [InlineData(532, 178, CityConsoleAction.CombatSummary)]
-    [InlineData(533, 225, CityConsoleAction.CombatDetail)]
-    [InlineData(584, 178, CityConsoleAction.FinanceCity)]
-    [InlineData(585, 225, CityConsoleAction.FinanceSector)]
-    [InlineData(532, 230, CityConsoleAction.Gangs)]
-    [InlineData(533, 277, CityConsoleAction.Hire)]
-    [InlineData(576, 230, CityConsoleAction.Ranking)]
-    [InlineData(577, 277, CityConsoleAction.Search)]
+    [InlineData(599, 158, CityConsoleAction.ComlinkView)]
+    [InlineData(552, 159, CityConsoleAction.ComlinkSend)]
+    [InlineData(547, 210, CityConsoleAction.CombatSummary)]
+    [InlineData(500, 211, CityConsoleAction.CombatDetail)]
+    [InlineData(599, 210, CityConsoleAction.FinanceCity)]
+    [InlineData(552, 211, CityConsoleAction.FinanceSector)]
+    [InlineData(547, 262, CityConsoleAction.Gangs)]
+    [InlineData(500, 263, CityConsoleAction.Hire)]
+    [InlineData(599, 254, CityConsoleAction.Ranking)]
+    [InlineData(552, 255, CityConsoleAction.Search)]
     [InlineData(500, 282, CityConsoleAction.Done)]
     [InlineData(588, 41, CityConsoleAction.GameInfo)]
     public void RoutesEveryNativeSubcontrolFromThePressPoint(
@@ -28,7 +28,7 @@ public sealed class CityConsoleLayoutTests
         Assert.Equal(expected, CityConsoleLayout.ActionAt(new Point(x, y)));
 
     [Fact]
-    public void UsesNativeTilesHorizontalSubcontrolsAndPressedSources()
+    public void UsesNativeTilesVerticalSubcontrolsAndPressedSources()
     {
         Assert.Equal(new Rectangle(500, 126, 48, 48), CityConsoleLayout.Events);
         Assert.Equal(new Rectangle(552, 126, 48, 48), CityConsoleLayout.Comlink);
@@ -39,16 +39,16 @@ public sealed class CityConsoleLayoutTests
         Assert.Equal(new Rectangle(500, 282, 100, 48), CityConsoleLayout.Done);
         Assert.Equal(new Rectangle(588, 41, 26, 34), CityConsoleLayout.GameInfo);
 
-        Assert.Equal(new Rectangle(500, 178, 33, 48), CityConsoleLayout.CombatSummary);
-        Assert.Equal(new Rectangle(533, 178, 15, 48), CityConsoleLayout.CombatDetail);
+        Assert.Equal(new Rectangle(500, 178, 48, 33), CityConsoleLayout.CombatSummary);
+        Assert.Equal(new Rectangle(500, 211, 48, 15), CityConsoleLayout.CombatDetail);
         Assert.Equal(CityConsoleAction.CombatSummary,
-            CityConsoleLayout.ActionAt(new Point(532, 200)));
+            CityConsoleLayout.ActionAt(new Point(520, 210)));
         Assert.Equal(CityConsoleAction.CombatDetail,
-            CityConsoleLayout.ActionAt(new Point(533, 200)));
+            CityConsoleLayout.ActionAt(new Point(520, 211)));
         Assert.Equal(CityConsoleAction.Ranking,
-            CityConsoleLayout.ActionAt(new Point(576, 250)));
+            CityConsoleLayout.ActionAt(new Point(576, 254)));
         Assert.Equal(CityConsoleAction.Search,
-            CityConsoleLayout.ActionAt(new Point(577, 250)));
+            CityConsoleLayout.ActionAt(new Point(576, 255)));
         Assert.Equal(CityConsoleControl.Combat,
             CityConsoleLayout.HitTest(new Point(547, 225)));
         Assert.Null(CityConsoleLayout.HitTest(new Point(548, 225)));

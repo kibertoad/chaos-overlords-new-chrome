@@ -78,9 +78,7 @@ public static class OriginalCityGenerator
     {
         ArgumentNullException.ThrowIfNull(sectors);
         ArgumentNullException.ThrowIfNull(random);
-        if (sectors.Length != MatchLimits.SectorCount
-            || !sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, MatchLimits.SectorCount)))
-            throw new ArgumentException("The city must contain sectors ordered from 0 through 63.", nameof(sectors));
+        MatchBootstrap.RequireOrderedCity(sectors, nameof(sectors));
 
         var permutation = new int[MatchLimits.PlayerCount];
         Array.Fill(permutation, -1);
@@ -121,9 +119,7 @@ public static class OriginalCityGenerator
     {
         ArgumentNullException.ThrowIfNull(sectors);
         ArgumentNullException.ThrowIfNull(headquarters);
-        if (sectors.Length != MatchLimits.SectorCount
-            || !sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, MatchLimits.SectorCount)))
-            throw new ArgumentException("The city must contain sectors ordered from 0 through 63.", nameof(sectors));
+        MatchBootstrap.RequireOrderedCity(sectors, nameof(sectors));
         if (headquarters.Count != MatchLimits.PlayerCount
             || headquarters.Distinct().Count() != MatchLimits.PlayerCount
             || headquarters.Any(sectorId => sectorId is < 0 or >= MatchLimits.SectorCount))
@@ -132,19 +128,7 @@ public static class OriginalCityGenerator
 
         foreach (var sectorId in headquarters)
         {
-            var sector = sectors[sectorId];
-            sectors[sectorId] = new MatchSectorState(
-                sector.Id,
-                sector.Sites.Select(site => new MatchSiteState(
-                    site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy)).ToArray(),
-                sector.Owner,
-                sector.Tolerance,
-                sector.LegacyChaos,
-                sector.CrackdownActive,
-                isImportant: true,
-                sector.Income,
-                sector.CrackdownTurnsRemaining,
-                sector.CrackdownHistory);
+            sectors[sectorId] = MatchBootstrap.CloneSector(sectors[sectorId], isImportant: true);
         }
     }
 
@@ -157,7 +141,7 @@ public static class OriginalCityGenerator
         {
             var id = checked((short)random.NextInt(GeneratedSiteCount));
             if (scenario == ScenarioId.Armageddon && id is 4 or 8) continue;
-            return definitions.Sites.Single(site => site.Id == id);
+            return definitions.Site(id);
         }
     }
 
@@ -224,20 +208,23 @@ public static class OriginalMatchFactory
         var starts = setup.Players.Select((player, index) => new MatchPlayerStart(
             player.Id, headquarters[index], ManualRules.MaximumForce,
             StandardStartingCash, Array.Empty<short>())).ToArray();
-        var bootstrapped = MatchBootstrap.Create(definitions, setup, sectors, starts);
-        AddNameModifierStartingGangs(bootstrapped);
+        // The name modifiers and the island rule finish the starting layout, so they work on the
+        // composed rosters and city rather than on a match built from them. Only the match returned
+        // here is ever constructed over these players, which is what lets it index their rosters.
+        var foundation = MatchBootstrap.Compose(definitions, setup, sectors, starts);
+        AddNameModifierStartingGangs(foundation.Players);
         if (setup.Players.Any(player => OriginalSetupNameRules.EnablesIslands(player.Name)))
-            foreach (var sector in bootstrapped.Sectors.Where(sector => sector.Owner is null))
+            foreach (var sector in foundation.Sectors.Where(sector => sector.Owner is null))
                 sector.CrackdownTurnsRemaining = 100;
         return new MatchState(
-            definitions, setup, bootstrapped.Players, bootstrapped.Sectors, random, aiStrategy);
+            definitions, setup, foundation.Players, foundation.Sectors, random, aiStrategy);
     }
 
-    private static void AddNameModifierStartingGangs(MatchState state)
+    private static void AddNameModifierStartingGangs(IReadOnlyList<MatchPlayerState> players)
     {
-        var nextGangId = state.Players.SelectMany(player => player.Gangs)
+        var nextGangId = players.SelectMany(player => player.Gangs)
             .Max(gang => gang.Id.Value) + 1;
-        foreach (var player in state.Players)
+        foreach (var player in players)
         {
             var extraRightHands = OriginalSetupNameRules.EnablesExtraRightHands(player.Setup.Name);
             var assaultTeam = OriginalSetupNameRules.EnablesAssaultTeam(player.Setup.Name);

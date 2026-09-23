@@ -7,7 +7,7 @@ import {
   RateLimitedError,
   type StreamCloser,
 } from '@chaos-overlords/kernel'
-import { createSseResponse } from './createSseResponse'
+import { abandonedSseResponse, createSseResponse } from './createSseResponse'
 import { MatchLog } from './MatchLog'
 
 /**
@@ -37,6 +37,19 @@ export const DEFAULT_EVENT_HUB_LIMITS: EventHubLimits = {
   perProcess: 512,
 }
 
+/** What the hub tells its runtime about, so an operator can find out it happened. */
+export interface EventHubObserver {
+  /** A stored event a stream had to skip because this build cannot read it. */
+  unreadable?(matchId: string, seq: number): void
+  /**
+   * A stream request whose signal had already aborted by the time it reached the hub, answered
+   * with an empty stream. Routine for a client that gave up during authentication; a steady run of
+   * them for one player means the runtime is handing over signals that only look aborted, and
+   * that client is reconnecting in a loop.
+   */
+  abandoned?(matchId: string, playerId: string): void
+}
+
 interface Subscription {
   playerId: string
   wake: () => void
@@ -63,8 +76,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     private readonly events: EventRepository,
     private readonly heartbeatMs: number,
     private readonly limits: EventHubLimits = DEFAULT_EVENT_HUB_LIMITS,
-    /** Told about a stored event a stream had to skip, so an operator can find out it exists. */
-    private readonly onUnreadable?: (matchId: string, seq: number) => void,
+    private readonly observer: EventHubObserver = {},
   ) {}
 
   async notify(event: PersistedEvent): Promise<void> {
@@ -129,6 +141,13 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     afterSeq: number
     signal: AbortSignal
   }): Promise<Response> {
+    // Before the caps, not only inside the response: making room closes the caller's oldest
+    // stream, and a request nobody is waiting on must not cost that player a live one (or be
+    // refused with a 429 nobody reads).
+    if (input.signal.aborted) {
+      this.observer.abandoned?.(input.matchId, input.playerId)
+      return abandonedSseResponse()
+    }
     this.makeRoom(input.matchId, input.playerId)
     const log = this.logOf(input.matchId)
     return createSseResponse(
@@ -141,7 +160,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
         afterSeq: input.afterSeq,
         heartbeatMs: this.heartbeatMs,
         signal: input.signal,
-        onUnreadable: (seq) => this.onUnreadable?.(input.matchId, seq),
+        onUnreadable: (seq) => this.observer.unreadable?.(input.matchId, seq),
       },
     )
   }

@@ -1,6 +1,7 @@
 import type {
   MatchRepository,
   MultiplayerStorage,
+  Player,
   PlayerRepository,
   PublicLobbyRow,
   SnapshotRepository,
@@ -21,6 +22,8 @@ import {
   ne,
   notExists,
   or,
+  type SQL,
+  type SQLWrapper,
   sql,
 } from 'drizzle-orm'
 import { insertUnlessTaken } from '../shared/constraints'
@@ -56,6 +59,34 @@ export function createSqliteStorage(db: SqliteDatabase): MultiplayerStorage {
 
 function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
   const { matches, players, snapshots } = schema
+
+  /**
+   * The one statement both join doors take a `joinOrder` from: when `condition` holds, move
+   * `joinCounter` to `next` (setting `extra` alongside) and return the position just taken, or null
+   * when the condition refused the claim.
+   */
+  async function takeJoinOrder(
+    condition: SQL | undefined,
+    next: SQL,
+    extra: { seatCount?: SQL } = {},
+  ): Promise<number | null> {
+    const rows = await db
+      .update(matches)
+      .set({ ...extra, joinCounter: next })
+      .where(condition)
+      .returning({ joinCounter: matches.joinCounter })
+    const row = rows[0]
+    return row ? row.joinCounter - 1 : null
+  }
+
+  // Children cascade from the match row, so one delete takes the whole match with it.
+  const deleteCollectable = async (collectable: SQLWrapper): Promise<number> => {
+    const rows = await db
+      .delete(matches)
+      .where(inArray(matches.id, collectable))
+      .returning({ id: matches.id })
+    return rows.length
+  }
   return {
     async create(match) {
       return insertUnlessTaken(() => db.insert(matches).values(toMatchInsert(match)))
@@ -117,22 +148,25 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
       return rows.map(toPublicLobbyRow)
     },
     async claimSeat(matchId) {
-      const rows = await db
-        .update(matches)
-        .set({
-          seatCount: sql`${matches.seatCount} + 1`,
-          joinCounter: sql`${matches.joinCounter} + 1`,
-        })
-        .where(
-          and(
-            eq(matches.id, matchId),
-            eq(matches.status, 'lobby'),
-            sql`${matches.seatCount} < ${matches.maxPlayers}`,
-          ),
-        )
-        .returning({ joinCounter: matches.joinCounter })
-      const row = rows[0]
-      return row ? row.joinCounter - 1 : null
+      return takeJoinOrder(
+        and(
+          eq(matches.id, matchId),
+          eq(matches.status, 'lobby'),
+          sql`${matches.seatCount} < ${matches.maxPlayers}`,
+        ),
+        sql`${matches.joinCounter} + 1`,
+        { seatCount: sql`${matches.seatCount} + 1` },
+      )
+    },
+    async claimLateJoinOrder(matchId) {
+      // Never below a position a stored player already holds: late joiners seated before the
+      // counter covered them took `joinCounter` without advancing it, so the counter alone could
+      // hand one of their positions out again.
+      const nextFree = sql`(select coalesce(max(${players.joinOrder}) + 1, 0) from ${players} where ${players.matchId} = ${matchId})`
+      return takeJoinOrder(
+        and(eq(matches.id, matchId), eq(matches.status, 'running')),
+        sql`max(${matches.joinCounter}, ${nextFree}) + 1`,
+      )
     },
     async releaseSeat(matchId) {
       await db
@@ -177,12 +211,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
         .from(matches)
         .where(and(inArray(matches.status, [...statuses]), lt(matches.updatedAt, before)))
         .limit(limit)
-      // Children cascade from the match row, so one delete takes the whole match with it.
-      const rows = await db
-        .delete(matches)
-        .where(inArray(matches.id, collectable))
-        .returning({ id: matches.id })
-      return rows.length
+      return deleteCollectable(collectable)
     },
     /**
      * The same delete, aimed at a live match nobody is in any more. The roster test is a
@@ -207,11 +236,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
           ),
         )
         .limit(limit)
-      const rows = await db
-        .delete(matches)
-        .where(inArray(matches.id, collectable))
-        .returning({ id: matches.id })
-      return rows.length
+      return deleteCollectable(collectable)
     },
     async listDesynced(limit, touchedSince) {
       const rows = await db
@@ -238,6 +263,29 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
   }
 }
 
+/**
+ * The select list `create` and `createLate` feed their insert from: the player's own values, each
+ * under the column name it is inserted as.
+ *
+ * The list is written out, which means it does NOT get Drizzle's column mapping: a column added to
+ * `players` later has to be added here too, in the storage form the column expects. The
+ * conformance suite compares a created player against its fixture field by field, so a dropped
+ * column fails there rather than going unnoticed.
+ */
+function playerValues(player: Player) {
+  return {
+    id: sql`${player.id}`.as('id'),
+    matchId: sql`${player.matchId}`.as('match_id'),
+    slot: sql`${player.slot}`.as('slot'),
+    joinOrder: sql`${player.joinOrder}`.as('join_order'),
+    displayName: sql`${player.displayName}`.as('display_name'),
+    portraitId: sql`${player.portraitId}`.as('portrait_id'),
+    tokenHash: sql`${player.tokenHash}`.as('token_hash'),
+    status: sql`${player.status}`.as('status'),
+    joinedAt: sql`${player.joinedAt.getTime()}`.as('joined_at'),
+  }
+}
+
 function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
   const { matches, players } = schema
   return {
@@ -246,28 +294,13 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
      * by the same statement that writes the player. The seat counter was claimed a moment earlier
      * and the match may have started since; without this the player would land in a running match
      * that had already seated its roster, holding a seat nobody can play.
-     *
-     * The select list is written out, which means it does NOT get Drizzle's column mapping: a
-     * column added to `players` later has to be added here too, in the storage form the column
-     * expects. The conformance suite compares a created player against its fixture field by field,
-     * so a dropped column fails there rather than going unnoticed.
      */
     async create(player) {
       const rows = await db
         .insert(players)
         .select(
           db
-            .select({
-              id: sql`${player.id}`.as('id'),
-              matchId: sql`${player.matchId}`.as('match_id'),
-              slot: sql`${player.slot}`.as('slot'),
-              joinOrder: sql`${player.joinOrder}`.as('join_order'),
-              displayName: sql`${player.displayName}`.as('display_name'),
-              portraitId: sql`${player.portraitId}`.as('portrait_id'),
-              tokenHash: sql`${player.tokenHash}`.as('token_hash'),
-              status: sql`${player.status}`.as('status'),
-              joinedAt: sql`${player.joinedAt.getTime()}`.as('joined_at'),
-            })
+            .select(playerValues(player))
             .from(matches)
             .where(and(eq(matches.id, player.matchId), eq(matches.status, 'lobby'))),
         )
@@ -283,17 +316,7 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
         .insert(players)
         .select(
           db
-            .select({
-              id: sql`${player.id}`.as('id'),
-              matchId: sql`${player.matchId}`.as('match_id'),
-              slot: sql`${player.slot}`.as('slot'),
-              joinOrder: sql`${player.joinOrder}`.as('join_order'),
-              displayName: sql`${player.displayName}`.as('display_name'),
-              portraitId: sql`${player.portraitId}`.as('portrait_id'),
-              tokenHash: sql`${player.tokenHash}`.as('token_hash'),
-              status: sql`${player.status}`.as('status'),
-              joinedAt: sql`${player.joinedAt.getTime()}`.as('joined_at'),
-            })
+            .select(playerValues(player))
             .from(matches)
             .where(
               and(
@@ -387,6 +410,13 @@ function sqliteTurnOrderMethods(
   'submitOrders' | 'getOrders' | 'getOrderSummary' | 'listOrders' | 'listOrderSummaries'
 > {
   const { turns, turnOrders } = schema
+  const orderSummaryColumns = {
+    matchId: turnOrders.matchId,
+    turn: turnOrders.turn,
+    playerId: turnOrders.playerId,
+    ordersHash: turnOrders.ordersHash,
+    ready: turnOrders.ready,
+  }
   return {
     async submitOrders(matchId, number, playerId, submission) {
       const turnIsOpen = exists(
@@ -426,13 +456,7 @@ function sqliteTurnOrderMethods(
     },
     async getOrderSummary(matchId, number, playerId) {
       const rows = await db
-        .select({
-          matchId: turnOrders.matchId,
-          turn: turnOrders.turn,
-          playerId: turnOrders.playerId,
-          ordersHash: turnOrders.ordersHash,
-          ready: turnOrders.ready,
-        })
+        .select(orderSummaryColumns)
         .from(turnOrders)
         .where(
           and(
@@ -453,13 +477,7 @@ function sqliteTurnOrderMethods(
     },
     async listOrderSummaries(matchId, number) {
       return db
-        .select({
-          matchId: turnOrders.matchId,
-          turn: turnOrders.turn,
-          playerId: turnOrders.playerId,
-          ordersHash: turnOrders.ordersHash,
-          ready: turnOrders.ready,
-        })
+        .select(orderSummaryColumns)
         .from(turnOrders)
         .where(and(eq(turnOrders.matchId, matchId), eq(turnOrders.turn, number)))
         .orderBy(asc(turnOrders.playerId))
@@ -650,6 +668,16 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
 
 function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
   const { snapshots } = schema
+  const snapshotSummaryColumns = {
+    matchId: snapshots.matchId,
+    turn: snapshots.turn,
+    formatVersion: snapshots.formatVersion,
+    protocolVersion: snapshots.protocolVersion,
+    sessionVersion: snapshots.sessionVersion,
+    stateHash: snapshots.stateHash,
+    uploadedByPlayerId: snapshots.uploadedByPlayerId,
+    uploadedAt: snapshots.uploadedAt,
+  }
   return {
     async put(snapshot) {
       await db
@@ -679,16 +707,7 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
     },
     async getSummary(matchId, turn) {
       const rows = await db
-        .select({
-          matchId: snapshots.matchId,
-          turn: snapshots.turn,
-          formatVersion: snapshots.formatVersion,
-          protocolVersion: snapshots.protocolVersion,
-          sessionVersion: snapshots.sessionVersion,
-          stateHash: snapshots.stateHash,
-          uploadedByPlayerId: snapshots.uploadedByPlayerId,
-          uploadedAt: snapshots.uploadedAt,
-        })
+        .select(snapshotSummaryColumns)
         .from(snapshots)
         .where(and(eq(snapshots.matchId, matchId), eq(snapshots.turn, turn)))
       return firstOrNull(rows.map(toSnapshotSummary))
@@ -704,16 +723,7 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
     },
     async getLatestSummary(matchId) {
       const rows = await db
-        .select({
-          matchId: snapshots.matchId,
-          turn: snapshots.turn,
-          formatVersion: snapshots.formatVersion,
-          protocolVersion: snapshots.protocolVersion,
-          sessionVersion: snapshots.sessionVersion,
-          stateHash: snapshots.stateHash,
-          uploadedByPlayerId: snapshots.uploadedByPlayerId,
-          uploadedAt: snapshots.uploadedAt,
-        })
+        .select(snapshotSummaryColumns)
         .from(snapshots)
         .where(eq(snapshots.matchId, matchId))
         .orderBy(desc(snapshots.turn))

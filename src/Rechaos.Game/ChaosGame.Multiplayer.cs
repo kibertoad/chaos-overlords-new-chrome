@@ -400,10 +400,15 @@ public sealed partial class ChaosGame
     /// keeps returning early with no state to draw, and the queue draining shows the city screen
     /// with no match behind it.
     /// </para>
+    /// <para>
+    /// A gang drag is the same again: the match it was aimed at is gone, so the token under the
+    /// pointer belongs to nothing and the release would drop it on whatever replaced it.
+    /// </para>
     /// </remarks>
     private void ResetTransientMatchUi()
     {
         _idleGangWarningOpen = false;
+        ForgetGangDrag();
         _combatAnimationPlayer.Clear();
         _automaticDetailedCombatPresentation = false;
         _openEventsAfterCombat = false;
@@ -468,6 +473,10 @@ public sealed partial class ChaosGame
         // not the player submitted it — the authoritative clock can seal a turn out from under them,
         // and the gangs they picked may have moved since.
         _gangSelection.Clear();
+        // A drag in progress was aimed at the turn being replaced, and this is the one path that
+        // replaces it without going through ResetTransientMatchUi. Left alone it would keep
+        // painting the old turn's destinations over the new board until the button came up.
+        ForgetGangDrag();
         // The idle-gang warning belongs to the turn that is being replaced. Left open, OK on it
         // submits the new turn as ready with no orders, and there is no taking that back.
         _idleGangWarningOpen = false;
@@ -549,10 +558,7 @@ public sealed partial class ChaosGame
         _recoveryReconciliationCancellation?.Dispose();
         _recoveryReconciliationCancellation = null;
         _recoveryReconciliation = null;
-        _serverProbeCancellation?.Cancel();
-        _serverProbeCancellation?.Dispose();
-        _serverProbeCancellation = null;
-        _serverProbe = null;
+        CancelServerProbe();
         // Only an online match's state is this method's to throw away. Opening the online screen from
         // a hot-seat match in progress and backing out of it again must leave that match alone.
         if (_session is not null)

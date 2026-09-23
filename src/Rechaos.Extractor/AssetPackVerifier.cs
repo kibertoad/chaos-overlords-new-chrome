@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.Json;
 using Rechaos.Core.Assets;
 
@@ -120,8 +119,7 @@ public static class AssetPackVerifier
             }
             if (verifyHashes)
             {
-                await using var stream = File.OpenRead(path);
-                var hash = Convert.ToHexStringLower(await SHA256.HashDataAsync(stream));
+                var hash = await ExtractorProgram.HashAsync(path);
                 if (!string.Equals(hash, asset.Sha256, StringComparison.OrdinalIgnoreCase))
                 {
                     Add("asset_hash_mismatch", $"Asset hash mismatch: {asset.Path}", asset.Path,

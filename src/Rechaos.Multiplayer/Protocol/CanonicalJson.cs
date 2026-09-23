@@ -30,9 +30,6 @@ public static class CanonicalJson
         return builder.ToString();
     }
 
-    /// <summary>The canonical text as UTF-8 bytes, which is what a digest is taken over.</summary>
-    public static byte[] EncodeUtf8(JsonElement value) => Encoding.UTF8.GetBytes(Encode(value));
-
     private static void Write(StringBuilder builder, JsonElement value, string path)
     {
         switch (value.ValueKind)

@@ -61,7 +61,7 @@ public sealed partial class ChaosGame
             _giveCursor = -1;
             return;
         }
-        var equipped = GiveEquippedItems(gang);
+        var equipped = EquippedItems(gang);
         var selected = Enumerable.Range(0, 3)
             .Where(slot => _giveSelections[slot] && equipped[slot].HasValue)
             .Select(slot => equipped[slot]!.Value)
@@ -124,7 +124,7 @@ public sealed partial class ChaosGame
     private void QueueItemCommand(GangAction action)
     {
         if (_state is null || _actions is null) return;
-        var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = ViewingPlayer(_state);
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         var items = RealItems(_state);
         if (gang is null || items.Length == 0)
@@ -143,13 +143,13 @@ public sealed partial class ChaosGame
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         batch.Draw(pixel, new Rectangle(8, 48, 624, 402), new Color(0, 0, 0, 240));
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
         var gang = SelectedGang(player);
         var items = RealItems(state);
         font.Draw(batch, "RESEARCH AND EQUIPMENT", new Vector2(18, 60), Color.Gold, 2);
         font.Draw(batch, gang is null ? "NO ACTIVE GANG" :
-            $"{state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name}  CASH ${player.Cash}",
+            $"{state.Definitions.Gang(gang.DefinitionId).Name}  CASH ${player.Cash}",
             new Vector2(18, 86), PlayerColors[playerId.Value], 1);
         if (gang is not null)
         {

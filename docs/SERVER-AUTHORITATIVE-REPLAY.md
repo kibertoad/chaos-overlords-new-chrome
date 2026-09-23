@@ -70,17 +70,13 @@ means one named client disagrees with the rules, a snapshot is something the ser
 than accepts, and the stored match is valid by construction because every row in it was derived by
 replaying validated orders through the rules.
 
-The code review in [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) reached the same gaps from the
-implementation side and its findings have since been addressed on the current model, which is worth
-reading beside this design because it shows how far a server that cannot produce state can be
-pushed. [R1](MULTIPLAYER-REVIEW.md#r1-desync-repair-only-works-on-a-live-host-inside-a-narrow-window)
-made repair possible by whoever holds the sole most-reported hash, and required a repair to name a
-turn that is actually `desynced`;
-[C1](MULTIPLAYER-REVIEW.md#c1-a-reconnect-replays-the-whole-match-from-turn-0-one-round-trip-per-turn)
-added a host-uploaded checkpoint every ten confirmed turns, accepted only at the hash the verdict
-already settled on; and
-[S3](MULTIPLAYER-REVIEW.md#s3-a-paused-match-is-re-judged-every-sweep-with-a-log-scan-and-a-megabyte-read-each-time)
-put the divergence and a snapshot summary on the turn row so a verdict no longer reads a megabyte.
+The earlier code review reached the same gaps from the implementation side. Its resolved findings
+are retained in the git history of [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md); the current
+[multiplayer design](MULTIPLAYER.md#turn-lifecycle) describes the resulting model. R1 made repair
+possible by whoever holds the sole most-reported hash, and required a repair to name a turn that is
+actually `desynced`; C1 added a host-uploaded checkpoint every ten confirmed turns, accepted only
+at the hash the verdict already settled on; and S3 put the divergence and a snapshot summary on the
+turn row so a verdict no longer reads a megabyte.
 Each of those is the best answer available when the only source of state is a client: a repair is
 still a client's bytes admitted on a count of reports, a checkpoint is still a client's bytes
 admitted on a hash, and a reconnect still replays up to nine turns. With a checkpoint per resolved

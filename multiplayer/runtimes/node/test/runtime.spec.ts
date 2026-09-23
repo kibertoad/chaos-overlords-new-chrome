@@ -3,10 +3,11 @@ import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { defineHttpConformance } from '@chaos-overlords/conformance'
+import { DEFAULT_RETENTION_DAYS } from '@chaos-overlords/kernel'
 import { ManualClock } from '@chaos-overlords/kernel/testing'
 import { type ServerType, serve } from '@hono/node-server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { buildNodeRuntime, loadConfig, type NodeRuntime } from '../src'
+import { buildNodeRuntime, loadConfig, type NodeRuntime, startHttpServer } from '../src'
 
 /**
  * The facade over a real HTTP listener: the client SDK's fetch goes over TCP, so the streaming
@@ -33,6 +34,7 @@ function defineFacadeSuite(name: string, databaseUrl: string | undefined): void 
           MEMBER_RATE_LIMIT_PER_MINUTE: '10000',
           UPLOAD_RATE_LIMIT_PER_MINUTE: '10000',
           BUG_REPORT_RATE_LIMIT_PER_MINUTE: '10000',
+          MATCH_CREATION_RATE_LIMIT_PER_MINUTE: '10000',
         }),
         { clock },
       )
@@ -66,10 +68,77 @@ describe('node runtime configuration', () => {
     expect(loadConfig({ RETENTION_DAYS: '0' }).retentionDays).toBe(0)
   })
 
+  it('reads every retention window, defaulting to the kernel public-server values', () => {
+    const defaults = loadConfig({})
+    expect(defaults.retentionDays).toBe(DEFAULT_RETENTION_DAYS.finished)
+    // Unset rather than defaulted, so the kernel can follow `RETENTION_DAYS=0` for lobbies.
+    expect(defaults.lobbyRetentionDays).toBeUndefined()
+    expect(defaults.abandonedRetentionDays).toBe(DEFAULT_RETENTION_DAYS.abandonedLive)
+    // Unset rather than defaulted, so the kernel can derive it from the abandoned window.
+    expect(defaults.silentRetentionDays).toBeUndefined()
+    expect(defaults.retentionBatchSize).toBeUndefined()
+
+    const tuned = loadConfig({
+      RETENTION_DAYS: '365',
+      LOBBY_RETENTION_DAYS: '0',
+      ABANDONED_RETENTION_DAYS: '120',
+      SILENT_RETENTION_DAYS: '400',
+      RETENTION_BATCH_SIZE: '5',
+      RETENTION_INTERVAL_MS: '300000',
+    })
+    expect(tuned).toMatchObject({
+      retentionDays: 365,
+      lobbyRetentionDays: 0,
+      abandonedRetentionDays: 120,
+      silentRetentionDays: 400,
+      retentionBatchSize: 5,
+      retentionIntervalMs: 300_000,
+    })
+    expect(() => loadConfig({ RETENTION_BATCH_SIZE: '0' })).toThrow(/at least 1/)
+    expect(() => loadConfig({ RETENTION_INTERVAL_MS: '10' })).toThrow(/at least 1000/)
+    expect(() => loadConfig({ LOBBY_RETENTION_DAYS: '-1' })).toThrow(/at least 0/)
+  })
+
   it('serves the public lobby list unless it is explicitly turned off', () => {
     expect(loadConfig({}).publicListing).toBe(true)
     expect(loadConfig({ PUBLIC_LISTING: 'false' }).publicListing).toBe(false)
     expect(loadConfig({ PUBLIC_LISTING: 'true' }).publicListing).toBe(true)
+  })
+
+  it('bounds connections and request deadlines, refusing settings that defeat them', () => {
+    const defaults = loadConfig({})
+    expect(defaults.maxConnections).toBe(1_024)
+    expect(defaults.maxConnections).toBeGreaterThan(defaults.maxEventStreams)
+    expect(defaults.headersTimeoutMs).toBe(15_000)
+    expect(defaults.requestTimeoutMs).toBe(120_000)
+    expect(defaults.matchCreationRateLimitPerMinute).toBe(120)
+
+    // The default grows with the stream ceiling so raising one alone never starves requests.
+    expect(loadConfig({ MAX_EVENT_STREAMS: '2000' }).maxConnections).toBe(4_000)
+    expect(() => loadConfig({ MAX_CONNECTIONS: '512' })).toThrow(/above MAX_EVENT_STREAMS/)
+    expect(() =>
+      loadConfig({ HTTP_HEADERS_TIMEOUT_MS: '60000', HTTP_REQUEST_TIMEOUT_MS: '30000' }),
+    ).toThrow(/must not exceed/)
+    expect(() => loadConfig({ HTTP_REQUEST_TIMEOUT_MS: '0' })).toThrow(/at least 1000/)
+    expect(() => loadConfig({ MATCH_CREATION_RATE_LIMIT_PER_MINUTE: '0' })).toThrow(/at least 1/)
+  })
+
+  it('hands the connection cap and request deadlines to the listening server', async () => {
+    const config = loadConfig({
+      HOST: '127.0.0.1',
+      PORT: '0',
+      MAX_CONNECTIONS: '600',
+      HTTP_HEADERS_TIMEOUT_MS: '5000',
+      HTTP_REQUEST_TIMEOUT_MS: '9000',
+    })
+    const server = startHttpServer(() => new Response('ok'), config)
+    try {
+      expect(server.maxConnections).toBe(600)
+      expect(server.headersTimeout).toBe(5_000)
+      expect(server.requestTimeout).toBe(9_000)
+    } finally {
+      await new Promise((resolve) => server.close(resolve))
+    }
   })
 
   it('reads browser origins as a trimmed list, none by default', () => {

@@ -24,7 +24,8 @@ import type {
 /**
  * Persistence ports. There are NO transactions: D1 has none, so every invariant that two writers
  * could race on is a single conditional statement whose row count says who won. Each `transition`
- * is such a compare-and-swap; `claimSeat`/`releaseSeat` are atomic counters; `submitOrders` is
+ * is such a compare-and-swap; `claimSeat`/`releaseSeat` and `claimLateJoinOrder` are atomic
+ * counters; `submitOrders` is
  * conditional on the turn still being open; `append` allocates its own sequence number.
  *
  * Writes that a unique constraint can refuse answer `false` instead of throwing, so the services
@@ -48,6 +49,15 @@ export interface MatchRepository {
    * position in the match's monotonic join sequence, or null when no seat was available.
    */
   claimSeat(matchId: string): Promise<number | null>
+  /**
+   * Atomically take the next position in the match's join sequence for a late joiner, while the
+   * match is running; null when it is not running or no longer exists. It advances the same
+   * `joinCounter` `claimSeat` does, in one conditional UPDATE — a separate sequence, or a read
+   * followed by a write, would hand two joiners the same `joinOrder` — and it never returns a
+   * position a stored player of the match already holds. It does not test capacity: `createLate`
+   * does, and a position taken for a join that `createLate` then refuses stays unused.
+   */
+  claimLateJoinOrder(matchId: string): Promise<number | null>
   releaseSeat(matchId: string): Promise<void>
   /** Host-only lobby configuration; false after the match starts or below the occupied seat count. */
   updateSettings(matchId: string, settings: MatchSettings, updatedAt: Date): Promise<boolean>
@@ -77,8 +87,8 @@ export interface MatchRepository {
    * being `active` only through `leave`, `kick` or a missed deadline, and the game's default is an
    * untimed match, so two friends whose clients both died mid-match leave two `active` rows that
    * nothing ever clears: with the roster test alone their match is immortal. The longer window drops
-   * the test, because `updated_at` is refreshed by every turn open and every status change and
-   * months of silence on both is not something a live match does.
+   * the test, because `updated_at` is refreshed by every turn open, every status change and every
+   * join or rejoin, and months of silence on all of them is not something a live match does.
    */
   deleteAbandonedLive(before: Date, limit: number, requireEmptyRoster: boolean): Promise<number>
   /**
@@ -91,7 +101,7 @@ export interface MatchRepository {
    * on every report and every snapshot upload, so a match that nothing touched since the previous
    * pass has no new evidence and its verdict cannot have changed; without the bound a public
    * server's parked desyncs — the documented way a match ends when a host never uploads — were
-   * re-judged every fifteen seconds for the ninety days retention keeps them. It also ends the
+   * re-judged every fifteen seconds for the weeks retention keeps them. It also ends the
    * starvation of a page ordered by an `updatedAt` that never moves: pass null to sweep everything,
    * which is what a freshly started process does once to pick up whatever it missed.
    */
@@ -270,7 +280,7 @@ export interface TurnRepository {
    * which is why a missing turn counts as stalled rather than being skipped.
    *
    * `touchedSince` bounds the join to matches something happened to recently. A seal in flight is
-   * seconds old, but abandoned matches are deliberately kept `running` for ninety days, so the
+   * seconds old, but abandoned matches are deliberately kept `running` for weeks, so the
    * unbounded join walked thousands of rows every fifteen seconds to find nothing. The caller runs
    * the bounded scan every tick and the unbounded one (null) on a much longer period, which is what
    * still finds a seal interrupted while the process was down.

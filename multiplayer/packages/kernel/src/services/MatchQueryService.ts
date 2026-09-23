@@ -1,6 +1,7 @@
 import {
   GAME_BOUNDS,
   type LobbyListing,
+  type MatchEventBody,
   type MatchView,
   type OwnSubmissionView,
   type PlayerView,
@@ -8,9 +9,10 @@ import {
   type SealedPlayerOrders,
   type TurnView,
 } from '@chaos-overlords/contracts'
-import type { Match, Player, Turn } from '../domain/entities'
+import { activePlayers, type Match, type Player, type Turn } from '../domain/entities'
 import { ConflictError, NotFoundError } from '../domain/errors'
 import type { MultiplayerStorage } from '../ports/storage'
+import { requireTurn } from './guards'
 
 export function toPlayerView(player: Player, hostPlayerId: string): PlayerView {
   return {
@@ -20,6 +22,21 @@ export function toPlayerView(player: Player, hostPlayerId: string): PlayerView {
     portraitId: player.portraitId,
     status: player.status,
     isHost: player.id === hostPlayerId,
+  }
+}
+
+/** The `match.started` announcement: the seed and the seated roster every client bootstraps from. */
+export function matchStartedEvent(
+  seed: number,
+  seated: readonly Player[],
+  hostPlayerId: string,
+): MatchEventBody {
+  return {
+    type: 'match.started',
+    payload: {
+      seed,
+      players: activePlayers(seated).map((player) => toPlayerView(player, hostPlayerId)),
+    },
   }
 }
 
@@ -156,10 +173,8 @@ export class MatchQueryService {
     return { turn: number, orderSetHash: turn.orderSetHash, players: rows }
   }
 
-  private async requireTurn(matchId: string, number: number): Promise<Turn> {
-    const turn = await this.storage.turns.get(matchId, number)
-    if (!turn) throw new NotFoundError('No such turn', { reason: 'unknown_turn' })
-    return turn
+  private requireTurn(matchId: string, number: number): Promise<Turn> {
+    return requireTurn(this.storage.turns, matchId, number)
   }
 }
 

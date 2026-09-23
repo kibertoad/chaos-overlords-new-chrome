@@ -1,4 +1,5 @@
-import { DEFAULT_EVENT_HUB_LIMITS } from '@chaos-overlords/server'
+import { DEFAULT_RETENTION_DAYS } from '@chaos-overlords/kernel'
+import { DEFAULT_EVENT_HUB_LIMITS, DEFAULT_RATE_LIMITS } from '@chaos-overlords/server'
 
 export interface NodeConfig {
   host: string
@@ -43,11 +44,19 @@ export interface NodeConfig {
   uploadRateLimitPerMinute: number
   /** Bug reports accepted per client address per minute. */
   bugReportRateLimitPerMinute: number
+  /** Matches created per minute across every caller together; see `RateLimiters.matchCreation`. */
+  matchCreationRateLimitPerMinute: number
   /**
-   * Days after which a finished, abandoned or never-started match is deleted with everything it
-   * owns. 0 keeps every match forever, which a long-lived server will feel in its database size.
+   * Days after which a finished or abandoned match is deleted with everything it owns. 0 keeps
+   * them forever, which a long-lived server will feel in its database size.
    */
   retentionDays: number
+  /**
+   * Days after which a lobby that was never started is deleted. 0 keeps them forever. Unset is the
+   * kernel's default, except that `RETENTION_DAYS=0` keeps lobbies too, as it did before lobbies
+   * had a window of their own.
+   */
+  lobbyRetentionDays: number | undefined
   /**
    * Days after which a RUNNING match that nobody is in any more is deleted. 0 keeps them forever.
    *
@@ -56,6 +65,16 @@ export interface NodeConfig {
    * collecting one says "nobody is coming back".
    */
   abandonedRetentionDays: number
+  /**
+   * Days after which a running match is deleted even though players are still seated in it, because
+   * nothing has happened in it for that long. Unset follows `abandonedRetentionDays` (three times
+   * as long); 0 keeps them forever.
+   */
+  silentRetentionDays: number | undefined
+  /** Matches each retention window deletes per pass. Unset picks a size for the database dialect. */
+  retentionBatchSize: number | undefined
+  /** How often the cleanup job runs: match retention, then bug report retention. */
+  retentionIntervalMs: number
   /** Days a bug report and its archive are kept. 0 keeps them forever. */
   bugReportRetentionDays: number
   /**
@@ -88,6 +107,26 @@ export interface NodeConfig {
    * are not configurable; they follow from the six seats and from what a reconnect needs.
    */
   maxEventStreams: number
+  /**
+   * Connections the HTTP server holds at once; sockets over it are closed as they arrive.
+   *
+   * Every open event stream is a connection, so this has to leave room above `maxEventStreams` for
+   * ordinary requests, and it is refused at startup when it does not. Without it the only ceiling on
+   * idle or trickling sockets is the process file descriptor limit, and reaching that fails the
+   * database and the log files as well as the API.
+   */
+  maxConnections: number
+  /**
+   * How long a client may take to send a request's headers. Node's own default is a minute, which
+   * lets a slowloris client hold a socket for sixty seconds per header it drips.
+   */
+  headersTimeoutMs: number
+  /**
+   * How long a client may take to send a whole request, body included. Sized for the largest body
+   * the API takes (a bug report's base64 journal) on a slow uplink. An event stream is not affected:
+   * its request is complete as soon as its headers are, however long the response runs.
+   */
+  requestTimeoutMs: number
   /** `CORS_ORIGINS`: browser origins allowed to call the API, comma separated. None by default. */
   corsOrigins: string[]
 }
@@ -98,6 +137,7 @@ export interface NodeConfig {
  * hosts chose to be discoverable, and port 8787.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
+  const maxEventStreams = integer(env.MAX_EVENT_STREAMS, DEFAULT_EVENT_HUB_LIMITS.perProcess, 1)
   return {
     host: env.HOST ?? '0.0.0.0',
     port: integer(env.PORT, 8787),
@@ -111,20 +151,70 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
     memberRateLimitPerMinute: integer(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240, 1),
     uploadRateLimitPerMinute: integer(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10, 1),
     bugReportRateLimitPerMinute: integer(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5, 1),
-    retentionDays: integer(env.RETENTION_DAYS, 30),
-    abandonedRetentionDays: integer(env.ABANDONED_RETENTION_DAYS, 90),
+    matchCreationRateLimitPerMinute: integer(
+      env.MATCH_CREATION_RATE_LIMIT_PER_MINUTE,
+      DEFAULT_RATE_LIMITS.matchCreationPerMinute,
+      1,
+    ),
+    retentionDays: integer(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS.finished),
+    lobbyRetentionDays: optionalInteger(env.LOBBY_RETENTION_DAYS),
+    abandonedRetentionDays: integer(
+      env.ABANDONED_RETENTION_DAYS,
+      DEFAULT_RETENTION_DAYS.abandonedLive,
+    ),
+    silentRetentionDays: optionalInteger(env.SILENT_RETENTION_DAYS),
+    retentionBatchSize: optionalInteger(env.RETENTION_BATCH_SIZE, 1),
+    retentionIntervalMs: integer(env.RETENTION_INTERVAL_MS, 60_000, MIN_SWEEP_INTERVAL_MS),
     bugReportRetentionDays: integer(env.BUG_REPORT_RETENTION_DAYS, 90),
     bugReportDailyStateMb: integer(env.BUG_REPORT_DAILY_STATE_MB, 512),
     trustedProxyHops: proxyHops(env.TRUST_PROXY),
     shutdownGraceMs: integer(env.SHUTDOWN_GRACE_MS, 5_000),
-    maxEventStreams: integer(env.MAX_EVENT_STREAMS, DEFAULT_EVENT_HUB_LIMITS.perProcess, 1),
+    maxEventStreams,
+    maxConnections: connectionCap(env.MAX_CONNECTIONS, maxEventStreams),
+    ...requestTimeouts(env),
     corsOrigins: list(env.CORS_ORIGINS),
   }
 }
 
 /**
- * The floor under the sweep: `0` would be a hot loop over the database, and anything under a
- * second has nothing to find that the previous pass did not.
+ * Room for ordinary requests above the stream ceiling: a busy server's API calls ride keep-alive
+ * sockets of their own, one or two per connected player, beside that player's stream.
+ */
+const CONNECTION_HEADROOM_PER_STREAM = 2
+const MIN_CONNECTIONS = 1_024
+
+/** `MAX_CONNECTIONS`, which must leave room for requests above every allowed event stream. */
+function connectionCap(raw: string | undefined, maxEventStreams: number): number {
+  const fallback = Math.max(MIN_CONNECTIONS, maxEventStreams * CONNECTION_HEADROOM_PER_STREAM)
+  const value = integer(raw, fallback, 1)
+  if (value <= maxEventStreams) {
+    throw new Error(
+      `MAX_CONNECTIONS (${value}) must be above MAX_EVENT_STREAMS (${maxEventStreams}), or the streams alone can take every connection`,
+    )
+  }
+  return value
+}
+
+/**
+ * The two request deadlines. Node's `createServer` refuses a header deadline past the request one,
+ * and would do it with an error naming its own option rather than the variable; this says which.
+ */
+function requestTimeouts(
+  env: NodeJS.ProcessEnv,
+): Pick<NodeConfig, 'headersTimeoutMs' | 'requestTimeoutMs'> {
+  const headersTimeoutMs = integer(env.HTTP_HEADERS_TIMEOUT_MS, 15_000, 1_000)
+  const requestTimeoutMs = integer(env.HTTP_REQUEST_TIMEOUT_MS, 120_000, 1_000)
+  if (headersTimeoutMs > requestTimeoutMs) {
+    throw new Error(
+      `HTTP_HEADERS_TIMEOUT_MS (${headersTimeoutMs}) must not exceed HTTP_REQUEST_TIMEOUT_MS (${requestTimeoutMs})`,
+    )
+  }
+  return { headersTimeoutMs, requestTimeoutMs }
+}
+
+/**
+ * The floor under the sweep and the cleanup job: `0` would be a hot loop over the database, and
+ * anything under a second has nothing to find that the previous pass did not.
  */
 const MIN_SWEEP_INTERVAL_MS = 1_000
 
@@ -140,6 +230,11 @@ function integer(raw: string | undefined, fallback: number, minimum = 0): number
     throw new Error(`Expected an integer of at least ${minimum}, got "${raw}"`)
   }
   return value
+}
+
+/** An integer when the variable is set, `undefined` when it is not, so a derived default can apply. */
+function optionalInteger(raw: string | undefined, minimum = 0): number | undefined {
+  return raw === undefined || raw === '' ? undefined : integer(raw, 0, minimum)
 }
 
 /** A comma-separated list, trimmed, with empty entries dropped. */

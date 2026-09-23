@@ -140,6 +140,12 @@ presentation coverage. They are inside this comment so that they do not render.
 The paragraphs below expand the `AI` row above, one recovered strategy family
 at a time.
 
+The outer planner now submits commands in the original 81-slot roster order
+(`BIN-AI-003`). When two gangs compete for one affordable Equip or Bribe, the
+lower roster slot spends the shared cash budget first even if its reused gang
+record has a higher gang ID. Advanced policy expansion and idle recovery use
+the same slot order.
+
 The AI row includes all three handler-exact family-1 continuations in the live
 planner: previous None/Chaos selects Heal, Move, or Chaos; previous Heal repeats
 Heal or selects strict solo Control, then Move; and prior Control/Equip/Snitch

@@ -4,14 +4,21 @@ import {
   type SubmitOrdersRequest,
   type TurnReportRequest,
 } from '@chaos-overlords/contracts'
-import { activePlayers, humanParticipants, type Match, type SealedSlot } from '../domain/entities'
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../domain/errors'
+import {
+  activePlayers,
+  humanParticipants,
+  isInProgress,
+  type Match,
+  type SealedSlot,
+} from '../domain/entities'
+import { ConflictError, ValidationError } from '../domain/errors'
 import { hashOrderDocument, hashOrderSet } from '../logic/crypto'
 import { allActiveReady, assignSlots, evaluateConsensus, turnDeadline } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
-import { toPlayerView } from './MatchQueryService'
+import { requireInProgress, requireParticipant, requireTurn } from './guards'
+import { matchStartedEvent } from './MatchQueryService'
 import { mergeSeatSummaries } from './SnapshotService'
 
 export type SealTrigger = 'ready' | 'deadline'
@@ -24,7 +31,7 @@ export const FIRST_TURN = 1
  *
  * A seal in flight is seconds old and a verdict interrupted after its compare-and-swap is too, so
  * this window is generous by orders of magnitude for both. What it excludes is the standing
- * population of a public server: matches deliberately kept `running` for ninety days after everyone
+ * population of a public server: matches deliberately kept `running` for weeks after everyone
  * walked away, and matches parked in `desynced` because the host never uploaded a repair. Those
  * used to be re-judged, and joined against, on every single tick forever.
  */
@@ -63,20 +70,22 @@ export class TurnService {
   ): Promise<OwnSubmissionView> {
     const { match, player } = principal
     requireRunning(match)
-    if (player.status !== 'active' && player.status !== 'takeoverPending') {
-      throw new ForbiddenError('You are no longer part of this match', { reason: 'not_active' })
-    }
+    requireParticipant(player)
     assertOwnOps(request, player.slot)
     const ordersHash = await hashOrderDocument(request.orders)
+    const own: OwnSubmissionView = {
+      turn: number,
+      orders: request.orders,
+      ready: request.ready,
+      ordersHash,
+    }
     if (number !== match.currentTurn) {
       // The document may have been committed and sealed while its success response was lost. The
       // endpoint is a replacement, not an append, so an identical retry is an acknowledgement of
       // that durable row even after currentTurn advances. A different document remains a stale
       // write and is refused.
       const persisted = await this.deps.storage.turns.getOrderSummary(match.id, number, player.id)
-      if (persisted?.ordersHash === ordersHash && persisted.ready === request.ready) {
-        return { turn: number, orders: request.orders, ready: request.ready, ordersHash }
-      }
+      if (persisted?.ordersHash === ordersHash && persisted.ready === request.ready) return own
       throw new ConflictError(`Turn ${match.currentTurn} is the open turn`, {
         reason: 'not_current_turn',
         currentTurn: match.currentTurn,
@@ -107,7 +116,7 @@ export class TurnService {
       })
     }
     if (request.ready) await this.trySeal(match.id, number, 'ready')
-    return { turn: number, orders: request.orders, ready: request.ready, ordersHash }
+    return own
   }
 
   /** Seal `number` if its trigger condition holds. Returns whether THIS call sealed it. */
@@ -229,13 +238,10 @@ export class TurnService {
     if (await this.hasEvent(match.id, 'match.started')) return
     const seated = await this.deps.storage.players.listByMatch(match.id)
     this.deps.logger.warn('finished an interrupted start', { matchId: match.id })
-    await this.publisher.publish(match.id, {
-      type: 'match.started',
-      payload: {
-        seed: match.seed,
-        players: activePlayers(seated).map((player) => toPlayerView(player, match.hostPlayerId)),
-      },
-    })
+    await this.publisher.publish(
+      match.id,
+      matchStartedEvent(match.seed, seated, match.hostPlayerId),
+    )
   }
 
   /**
@@ -391,14 +397,9 @@ export class TurnService {
 
   async report(principal: Principal, number: number, request: TurnReportRequest): Promise<void> {
     const { match, player } = principal
-    if (match.status !== 'running' && match.status !== 'desynced') {
-      throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
-    }
-    if (player.status !== 'active' && player.status !== 'takeoverPending') {
-      throw new ForbiddenError('You are no longer part of this match', { reason: 'not_active' })
-    }
-    const turn = await this.deps.storage.turns.get(match.id, number)
-    if (!turn) throw new NotFoundError('No such turn', { reason: 'unknown_turn' })
+    requireInProgress(match)
+    requireParticipant(player)
+    const turn = await requireTurn(this.deps.storage.turns, match.id, number)
     if (turn.status === 'open') {
       throw new ConflictError('The turn has not been sealed yet', { reason: 'turn_open' })
     }
@@ -472,6 +473,11 @@ export class TurnService {
    * seats it finds absent, or by a vote on a seat that went quiet before anyone was present to ask,
    * is exactly as blocking as one raised by a kick, and each of those used to leave the countdown
    * running. `openTurn` applies the same rule to a turn opening while a prompt is already up.
+   *
+   * The pause is a no-op when there is no open turn to stop (during a seal, where the turn the
+   * absence was noticed on is already sealed and its successor opens paused instead) and when the
+   * clock is stopped already, so a second absent seat neither double-publishes nor disturbs the
+   * first pause.
    */
   async openTakeoverPrompt(matchId: string, playerId: string, turn: number): Promise<boolean> {
     const opened = await this.deps.storage.takeovers.openPrompt(
@@ -485,20 +491,8 @@ export class TurnService {
       type: 'match.takeoverVoteRequested',
       payload: { playerId, turn },
     })
-    await this.pauseForTakeoverVote(matchId)
-    return true
-  }
-
-  /**
-   * Pause the open turn while players decide what to do with an absent human seat.
-   *
-   * Only `openTakeoverPrompt` calls this, so every prompt pauses and none has to remember to. It is
-   * a no-op when there is no open turn to stop — during a seal, where the turn the absence was
-   * noticed on is already sealed and its successor opens paused instead — and when the clock is
-   * stopped already, so a second absent seat neither double-publishes nor disturbs the first pause.
-   */
-  private async pauseForTakeoverVote(matchId: string): Promise<void> {
     await this.clearOpenDeadline(matchId)
+    return true
   }
 
   /**
@@ -513,7 +507,7 @@ export class TurnService {
 
   private async clearOpenDeadline(matchId: string): Promise<void> {
     const match = await this.deps.storage.matches.get(matchId)
-    if (!match || (match.status !== 'running' && match.status !== 'desynced')) return
+    if (!match || !isInProgress(match)) return
     const turn = await this.deps.storage.turns.get(matchId, match.currentTurn)
     if (turn?.status !== 'open' || turn.deadlineAt === null) return
     if (!(await this.deps.storage.turns.rescheduleDeadline(matchId, match.currentTurn, null)))
@@ -546,17 +540,22 @@ export class TurnService {
       await this.clearOpenDeadline(matchId)
       return
     }
+    await this.announceDeadline(matchId, match.currentTurn, deadlineAt)
+  }
+
+  /** Tell clients the open turn's restarted clock, then arm the timer that seals it. */
+  private async announceDeadline(matchId: string, turn: number, deadlineAt: Date): Promise<void> {
     await this.publisher.publish(matchId, {
       type: 'turn.deadlineExtended',
-      payload: { turn: match.currentTurn, deadlineAt: deadlineAt.toISOString() },
+      payload: { turn, deadlineAt: deadlineAt.toISOString() },
     })
-    await this.deps.scheduler.schedule({ matchId, turn: match.currentTurn, dueAt: deadlineAt })
+    await this.deps.scheduler.schedule({ matchId, turn, dueAt: deadlineAt })
   }
 
   /** Re-run the verdict of every unconfirmed turn and the auto-seal of the open one. */
   async reevaluate(matchId: string): Promise<void> {
     const match = await this.deps.storage.matches.get(matchId)
-    if (!match || (match.status !== 'running' && match.status !== 'desynced')) return
+    if (!match || !isInProgress(match)) return
     const unsettled = await this.deps.storage.turns.listUnsettled(matchId)
     for (const turn of unsettled) {
       await this.settle(matchId, turn.number)
@@ -704,11 +703,7 @@ export class TurnService {
     ) {
       return
     }
-    await this.publisher.publish(matchId, {
-      type: 'turn.deadlineExtended',
-      payload: { turn: match.currentTurn, deadlineAt: deadlineAt.toISOString() },
-    })
-    await this.deps.scheduler.schedule({ matchId, turn: match.currentTurn, dueAt: deadlineAt })
+    await this.announceDeadline(matchId, match.currentTurn, deadlineAt)
   }
 }
 

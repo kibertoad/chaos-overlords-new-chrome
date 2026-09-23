@@ -28,6 +28,16 @@ public static class OptionsLayout
     public static Rectangle ExportDiagnostics => new(150, 342, 340, 26);
     public static Rectangle ColorDepth => new(150, 370, 340, 16);
     public static Rectangle OnlineLobbyPresentation => ColorDepth;
+
+    /// <summary>The first row below the two volume sliders.</summary>
+    public const int FirstToggleRow = 2;
+
+    /// <summary>The toggle rows in cursor order, starting at <see cref="FirstToggleRow"/>.</summary>
+    public static IReadOnlyList<Rectangle> ToggleRows { get; } =
+    [
+        BaseStatistics, DetailedCombat, SlidePanels, WarnIfIdleGangs, EventSiteImages, AdvancedAi,
+        ExportDiagnostics, OnlineLobbyPresentation
+    ];
 }
 
 public static class OptionsTooltip
@@ -144,60 +154,28 @@ public sealed partial class ChaosGame
 
     private void HandleOptionsClick(Point point)
     {
-        var level = Enumerable.Range(0, OptionsLayout.MusicLevels.Count)
-            .FirstOrDefault(index => OptionsLayout.MusicLevels[index].Contains(point), -1);
+        var level = HitTest.IndexAt(
+            OptionsLayout.MusicLevels.Count, index => OptionsLayout.MusicLevels[index], point);
         if (level >= 0)
         {
             _optionsRow = 0;
             SetMusicVolumeLevel(level);
             return;
         }
-        level = Enumerable.Range(0, OptionsLayout.SoundEffectLevels.Count)
-            .FirstOrDefault(index => OptionsLayout.SoundEffectLevels[index].Contains(point), -1);
+        level = HitTest.IndexAt(
+            OptionsLayout.SoundEffectLevels.Count, index => OptionsLayout.SoundEffectLevels[index], point);
         if (level >= 0)
         {
             _optionsRow = 1;
             SetSoundEffectVolumeLevel(level);
+            return;
         }
-        else if (OptionsLayout.BaseStatistics.Contains(point))
+        var toggle = HitTest.IndexAt(
+            OptionsLayout.ToggleRows.Count, index => OptionsLayout.ToggleRows[index], point);
+        if (toggle >= 0)
         {
-            _optionsRow = 2;
-            ToggleBaseStatistics();
-        }
-        else if (OptionsLayout.DetailedCombat.Contains(point))
-        {
-            _optionsRow = 3;
-            ToggleDetailedCombat();
-        }
-        else if (OptionsLayout.SlidePanels.Contains(point))
-        {
-            _optionsRow = 4;
-            ToggleSlidePanels();
-        }
-        else if (OptionsLayout.WarnIfIdleGangs.Contains(point))
-        {
-            _optionsRow = 5;
-            ToggleIdleGangWarning();
-        }
-        else if (OptionsLayout.EventSiteImages.Contains(point))
-        {
-            _optionsRow = 6;
-            ToggleEventSiteImageFilter();
-        }
-        else if (OptionsLayout.AdvancedAi.Contains(point))
-        {
-            _optionsRow = 7;
-            ToggleAdvancedAi();
-        }
-        else if (OptionsLayout.ExportDiagnostics.Contains(point))
-        {
-            _optionsRow = 8;
-            ExportDiagnostics();
-        }
-        else if (OptionsLayout.OnlineLobbyPresentation.Contains(point))
-        {
-            _optionsRow = 9;
-            ToggleOnlineLobbyPresentation();
+            _optionsRow = OptionsLayout.FirstToggleRow + toggle;
+            ToggleSelectedOption();
         }
         else if (OptionsLayout.Done.Contains(point)) CloseOptions();
     }
@@ -372,15 +350,17 @@ public sealed partial class ChaosGame
         }
     }
 
+    private Texture2D? ReturnScreenBackground(ClientScreen returnScreen) => returnScreen switch
+    {
+        ClientScreen.Title => _titleBackground,
+        ClientScreen.Setup => _setupBackground,
+        ClientScreen.Endgame => _endgameBackground,
+        _ => _cityBackground
+    };
+
     private void DrawOptions(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        var background = _optionsReturnScreen switch
-        {
-            ClientScreen.Title => _titleBackground,
-            ClientScreen.Setup => _setupBackground,
-            ClientScreen.Endgame => _endgameBackground,
-            _ => _cityBackground
-        };
+        var background = ReturnScreenBackground(_optionsReturnScreen);
         if (background is not null)
             batch.Draw(background, new Rectangle(0, 0, 640, 460), Color.White);
         batch.Draw(pixel, new Rectangle(0, 0, 640, 460), new Color(0, 0, 0, 190));
@@ -422,18 +402,7 @@ public sealed partial class ChaosGame
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
         if (_hoverPoint is { } hover)
-            DrawOptionsTooltip(batch, pixel, font, hover);
-    }
-
-    private static void DrawOptionsTooltip(
-        SpriteBatch batch,
-        Texture2D pixel,
-        PixelFont font,
-        Point point)
-    {
-        var lines = OptionsTooltip.At(point);
-        if (lines.Count == 0) return;
-        DrawHoverTooltip(batch, pixel, font, point, lines);
+            DrawHoverTooltip(batch, pixel, font, hover, OptionsTooltip.At(hover));
     }
 
     private static void DrawHoverTooltip(
@@ -441,17 +410,34 @@ public sealed partial class ChaosGame
         Texture2D pixel,
         PixelFont font,
         Point point,
-        IReadOnlyList<string> lines)
+        IReadOnlyList<string> lines,
+        int? coloredSuffixRow = null,
+        string? coloredSuffixPrefix = null,
+        Color? suffixColor = null,
+        int? coloredRow = null,
+        Color? rowColor = null)
     {
         if (lines.Count == 0) return;
         var panel = HoverTooltipLayout.Bounds(point, lines);
         batch.Draw(pixel, panel, new Color(8, 18, 16, 252));
         DrawBorder(batch, pixel, panel, Color.Lime, 2);
         for (var row = 0; row < lines.Count; row++)
-            font.Draw(batch, lines[row],
-                new Vector2(panel.X + 8,
-                    panel.Y + 8 + row * OriginalFontLayout.LineHeight),
-                row == 0 ? Color.Gold : Color.White, 1);
+        {
+            var position = new Vector2(panel.X + 8,
+                panel.Y + 8 + row * OriginalFontLayout.LineHeight);
+            var color = row == coloredRow && rowColor is { } requestedColor
+                ? requestedColor
+                : row == 0 ? Color.Gold : Color.White;
+            if (row == coloredSuffixRow && suffixColor is { } highlight
+                && coloredSuffixPrefix is { } prefix
+                && lines[row].StartsWith(prefix, StringComparison.Ordinal))
+            {
+                font.Draw(batch, prefix, position, color, 1);
+                font.Draw(batch, lines[row][prefix.Length..],
+                    position + new Vector2(prefix.Length * OriginalFontLayout.CellWidth, 0), highlight, 1);
+            }
+            else font.Draw(batch, lines[row], position, color, 1);
+        }
     }
 
     private void DrawOptionToggle(SpriteBatch batch, Texture2D pixel, PixelFont font,

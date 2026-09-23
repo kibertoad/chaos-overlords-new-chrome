@@ -52,13 +52,28 @@ public static class StatusConsoleLayout
 
 public static class StatusConsoleTooltip
 {
+    public const int QueuedChaosRangeRow = 4;
+    public const string QueuedChaosRangePrefix = "YOUR QUEUED CHAOS: ";
+    public const int EnemyChaosWarningRow = 16;
+    public const string EnemyChaosWarning = "ENEMY GANGS MAY ADD MORE CHAOS.";
+
     public static IReadOnlyList<string> At(Point point)
         => At(point, null, GameDuration.SixMonths);
+
+    public static bool Contains(Point point) =>
+        StatusConsoleLayout.Scenario.Contains(point)
+        || StatusConsoleLayout.Score.Contains(point)
+        || StatusConsoleLayout.Cash.Contains(point)
+        || Enumerable.Range(0, 5).Any(row => StatusConsoleLayout.SectorEntry(row).Contains(point));
 
     public static IReadOnlyList<string> At(
         Point point,
         ScenarioId? scenario,
-        GameDuration duration)
+        GameDuration duration,
+        int? tolerance = null,
+        ChaosRangeEstimate? chaosEstimate = null,
+        IReadOnlyList<string>? chaosBreakdown = null,
+        bool enemyGangsPresent = false)
     {
         if (scenario is { } mode && StatusConsoleLayout.Scenario.Contains(point))
             return ScenarioSetupTooltip.Lines(mode, duration);
@@ -79,7 +94,9 @@ public static class StatusConsoleTooltip
                 "IT IS NOT PASSIVE CASH; CONTROL PAYS $1 SECTOR TAX."
             ];
         if (StatusConsoleLayout.SectorEntry(2).Contains(point))
-            return ["TOLERANCE", "CHAOS ABOVE THIS VALUE TRIGGERS A POLICE CRACKDOWN."];
+            return tolerance is { } value && chaosEstimate is { } estimate
+                ? Tolerance(value, estimate, chaosBreakdown ?? [], enemyGangsPresent)
+                : ["TOLERANCE", "CHAOS ABOVE THIS VALUE TRIGGERS A POLICE CRACKDOWN."];
         if (StatusConsoleLayout.SectorEntry(3).Contains(point))
             return ["SUPPORT", "INFLUENCED-SITE SUPPORT ADDED AGAINST ENEMY CONTROL."];
         if (StatusConsoleLayout.SectorEntry(4).Contains(point))
@@ -90,17 +107,83 @@ public static class StatusConsoleTooltip
         return [];
     }
 
+    public static IReadOnlyList<string> Tolerance(
+        int tolerance,
+        ChaosRangeEstimate chaosEstimate,
+        IReadOnlyList<string> chaosBreakdown,
+        bool enemyGangsPresent = false)
+    {
+        List<string> lines =
+        [
+            "TOLERANCE",
+            "CHAOS ABOVE THIS VALUE TRIGGERS",
+            "A POLICE CRACKDOWN.",
+            "",
+            $"{QueuedChaosRangePrefix}{chaosEstimate.Range.Minimum}-{chaosEstimate.Range.Maximum}",
+            "",
+            "SUCCESS RANGE FROM YOUR QUEUED ORDERS.",
+            "EACH POINT ROLLS ONE STANDARD SIX-SIDED DIE.",
+            "ONLY ROLLS OF 5+ ADD CHAOS AND CASH.",
+            "ITEMS AND LOCAL SITES MODIFY THE ROLL POOL.",
+            "",
+            "CONTROLLED: EACH SUCCESS PAYS $1.",
+            "UNCONTROLLED: HALF THE COMBINED",
+            "SUCCESSES, ROUNDED DOWN.",
+            "CRACKDOWN: NO CHAOS CASH PAID.",
+            ""
+        ];
+        if (enemyGangsPresent) lines.Add(EnemyChaosWarning);
+        lines.Add(chaosEstimate.Range.CanTriggerCrackdown(tolerance)
+            ? "YOUR RANGE CAN TRIGGER A CRACKDOWN."
+            : "YOUR RANGE CANNOT TRIGGER A CRACKDOWN.");
+        lines.Add("");
+        lines.Add("CHAOS RANGE BREAKDOWN:");
+        lines.AddRange(chaosBreakdown);
+        return lines;
+    }
+
+    public static IReadOnlyList<string> Tolerance(
+        int tolerance,
+        ChaosRange chaosRange,
+        bool enemyGangsPresent = false) =>
+        Tolerance(tolerance, new ChaosRangeEstimate(chaosRange, []), [], enemyGangsPresent);
+
     public static Rectangle Bounds(Point point, IReadOnlyList<string> lines) =>
         HoverTooltipLayout.Bounds(point, lines);
 }
 
 public static class StatusConsolePresentation
 {
+    public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>
+        range.CanTriggerCrackdown(tolerance) ? Color.Red : Color.Lime;
+
     public static string Cash(int current, int projectedChange) =>
         $"{current} {projectedChange:+#;-#;0}";
 
     public static int SectorCash(PlayerId? owner, PlayerId activePlayer, int cash) =>
         owner == activePlayer ? cash : 0;
+
+    public static IReadOnlyList<string> ChaosBreakdown(
+        MatchState state,
+        ChaosRangeEstimate estimate)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var lines = estimate.Contributions.SelectMany(contribution =>
+        {
+            var gang = state.FindGang(contribution.Gang)!;
+            var name = state.Definitions.Gang(gang.DefinitionId).Name;
+            var values = new List<string>
+            {
+                $"{name}: {contribution.Dice} D6 ROLLS",
+                $"  {contribution.Income} INCOME + {contribution.Force} FORCE + {contribution.EffectiveChaos} CHAOS"
+            };
+            if (contribution.Dice != Math.Max(0, contribution.RawDice))
+                values.Add($"  ADJUSTED FROM {contribution.RawDice} TO {contribution.Dice} ROLLS");
+            return values;
+        }).ToList();
+        if (lines.Count == 0) lines.Add("NO QUEUED CHAOS GANGS.");
+        return lines;
+    }
 }
 
 public static class HoverTooltipLayout

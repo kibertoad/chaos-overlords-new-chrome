@@ -85,10 +85,7 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Left)) MoveComlinkCursor(-1);
         if (Pressed(keyboard, Keys.Right)) MoveComlinkCursor(1);
         if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute))
-        {
-            AcceptInput();
-            CloseComlink();
-        }
+            AcceptAndInvoke(CloseComlink);
     }
 
     private void UpdateComlinkSend(KeyboardState keyboard)
@@ -160,16 +157,12 @@ public sealed partial class ChaosGame
         if (ComlinkViewLayout.Previous.Contains(point)) MoveComlinkCursor(-1);
         else if (ComlinkViewLayout.Next.Contains(point)) MoveComlinkCursor(1);
         else if (ComlinkViewLayout.Ok.Contains(point))
-        {
-            AcceptInput();
-            CloseComlink();
-        }
+            AcceptAndInvoke(CloseComlink);
     }
 
     private void HandleComlinkSendClick(Point point)
     {
-        var recipient = Enumerable.Range(0, MatchLimits.PlayerCount)
-            .FirstOrDefault(slot => ComlinkSendLayout.RecipientHit(slot).Contains(point), -1);
+        var recipient = HitTest.IndexAt(MatchLimits.PlayerCount, ComlinkSendLayout.RecipientHit, point);
         if (recipient >= 0)
         {
             if (EligibleComlinkRecipient(recipient))
@@ -253,25 +246,13 @@ public sealed partial class ChaosGame
             .Select(index => new PlayerId(index))
             .ToArray();
         var result = _actions.SendComlinkMessage(sender, recipients, _comlinkEditor.Text);
-        ReportComlinkSendResult(result.Accepted, result.Message, pointerButton);
+        ReportButtonResult(result.Accepted, result.Message, pointerButton);
         if (!result.Accepted)
         {
             _comlinkStatus = _message;
             return;
         }
         CloseComlink();
-    }
-
-    private void ReportComlinkSendResult(bool accepted, string rejectionMessage, bool pointerButton)
-    {
-        if (!pointerButton)
-        {
-            ReportInputResult(accepted, rejectionMessage);
-            return;
-        }
-
-        _message = accepted ? string.Empty : CityStatusMessage.Error(rejectionMessage);
-        if (AudioRouting.PointerPushResultSound(accepted) is { } sound) PlayGeneralSound(sound);
     }
 
     private void CloseComlink() => _screens.Show(_managementReturnScreen);
@@ -283,8 +264,8 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawBoard(batch, pixel, font, state);
-        DrawComlinkPanel(batch, pixel, _comlinkViewBackground, ComlinkViewLayout.Panel);
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        DrawPanelArtwork(batch, pixel, _comlinkViewBackground, ComlinkViewLayout.Panel);
+        var playerId = ViewingPlayer(state);
         var messages = state.ComlinkFor(playerId).Messages;
         batch.Draw(pixel, ComlinkViewLayout.Page, Color.Black);
         batch.Draw(pixel, ComlinkViewLayout.Date, Color.Black);
@@ -319,7 +300,7 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawBoard(batch, pixel, font, state);
-        DrawComlinkPanel(batch, pixel, _comlinkSendBackground, ComlinkSendLayout.Panel);
+        DrawPanelArtwork(batch, pixel, _comlinkSendBackground, ComlinkSendLayout.Panel);
         for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
             var cell = ComlinkSendLayout.Recipient(slot);
@@ -351,13 +332,6 @@ public sealed partial class ChaosGame
         if (_comlinkStatus.Length > 0)
             font.Draw(batch, _comlinkStatus.Length <= 40 ? _comlinkStatus : _comlinkStatus[..40],
                 new Vector2(SharedPanelLayout.X(92), SharedPanelLayout.Y(181)), Color.OrangeRed, 1);
-    }
-
-    private static void DrawComlinkPanel(
-        SpriteBatch batch, Texture2D pixel, Texture2D? artwork, Rectangle panel)
-    {
-        if (artwork is not null) batch.Draw(artwork, panel, Color.White);
-        else batch.Draw(pixel, panel, new Color(0, 0, 0, 245));
     }
 
     private void DrawPressedComlinkSendButton(SpriteBatch batch)

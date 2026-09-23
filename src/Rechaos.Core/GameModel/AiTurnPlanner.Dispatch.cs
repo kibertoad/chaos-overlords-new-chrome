@@ -47,9 +47,7 @@ public static partial class AiTurnPlanner
             {
                 case 0:
                     PrepareFamilyZeroCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 1:
                     PrepareFamilyOneCommand(
@@ -57,71 +55,48 @@ public static partial class AiTurnPlanner
                     break;
                 case 2:
                     PrepareFamilyTwoCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 3:
                     PrepareFamilyThreeCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 4:
                     PrepareFamilyFourCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 5:
                     PrepareFamilyFiveCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 6:
                     PrepareFamilySixCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 7:
                     PrepareFamilySevenCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 9:
                     PrepareFamilyNineCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 10:
                     PrepareFamilyTenCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 11:
                     PrepareFamilyElevenCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder,
-                        snapshot.FamilySlots);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 12:
                     PrepareFamilyTwelveCommand(
-                        state, playerId, entry.gang, entry.slot,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, snapshot);
                     break;
                 case 13:
                 case 14:
                     PrepareObjectiveFamilyCommand(
-                        state, playerId, entry.gang, entry.slot, family,
-                        snapshot.SectorOwners, snapshot.SectorDisabled,
-                        snapshot.SectorGangCounts, snapshot.PlayerOrder);
+                        state, playerId, entry.gang, entry.slot, family, snapshot);
                     break;
             }
         }

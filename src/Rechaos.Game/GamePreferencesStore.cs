@@ -89,116 +89,25 @@ public static class GamePreferencesStore
             using var document = JsonDocument.Parse(bytes);
             if (!document.RootElement.TryGetProperty(nameof(GamePreferences.FormatVersion), out var version))
                 return GamePreferences.Default;
-            if (version.GetInt32() == 4)
+            var formatVersion = version.GetInt32();
+            VersionFourPreferences? legacy = formatVersion switch
             {
-                var legacy = JsonSerializer.Deserialize<VersionFourPreferences>(bytes, JsonOptions);
-                return IsValid(legacy)
-                    ? new GamePreferences(GamePreferences.CurrentFormatVersion, legacy!.MusicVolumeLevel,
-                        legacy.SoundEffectVolumeLevel, legacy.WarnIfIdleGangs,
-                        legacy.PlanningTimeLimit,
-                        OriginalOptionsPolicy.ShowBaseStatisticsByDefault,
-                        OriginalOptionsPolicy.DetailedCombatByDefault,
-                        OriginalOptionsPolicy.SlidePanelsByDefault,
-                        OriginalOptionsPolicy.FullscreenByDefault,
-                        OriginalOptionsPolicy.SmoothEventSiteImagesByDefault,
-                        GamePreferences.IntroMoviesSeenByDefault,
-                        OriginalOptionsPolicy.AiPolicyByDefault,
-                        OnlineServiceMode.Central,
-                        GamePreferences.DefaultCustomMultiplayerServer)
+                4 => Read<VersionFourPreferences>(bytes),
+                5 => Read<VersionFivePreferences>(bytes),
+                6 => Read<VersionSixPreferences>(bytes),
+                7 => Read<VersionSevenPreferences>(bytes),
+                8 => Read<VersionEightPreferences>(bytes),
+                9 => Read<VersionNinePreferences>(bytes),
+                10 => Read<VersionTenPreferences>(bytes),
+                _ => null
+            };
+            if (formatVersion is >= 4 and <= 10)
+            {
+                return legacy is not null && legacy.IsValid(formatVersion)
+                    ? legacy.Upgrade()
                     : GamePreferences.Default;
             }
-            if (version.GetInt32() == 5)
-            {
-                var legacy = JsonSerializer.Deserialize<VersionFivePreferences>(bytes, JsonOptions);
-                return IsValid(legacy)
-                    ? new GamePreferences(GamePreferences.CurrentFormatVersion,
-                        legacy!.MusicVolumeLevel, legacy.SoundEffectVolumeLevel,
-                        legacy.WarnIfIdleGangs, legacy.PlanningTimeLimit,
-                        legacy.ShowBaseStatistics, legacy.DetailedCombat,
-                        legacy.SlidePanels, OriginalOptionsPolicy.FullscreenByDefault,
-                        OriginalOptionsPolicy.SmoothEventSiteImagesByDefault,
-                        GamePreferences.IntroMoviesSeenByDefault,
-                        OriginalOptionsPolicy.AiPolicyByDefault,
-                        OnlineServiceMode.Central,
-                        GamePreferences.DefaultCustomMultiplayerServer)
-                    : GamePreferences.Default;
-            }
-            if (version.GetInt32() == 6)
-            {
-                var legacy = JsonSerializer.Deserialize<VersionSixPreferences>(bytes, JsonOptions);
-                return IsValid(legacy)
-                    ? new GamePreferences(GamePreferences.CurrentFormatVersion,
-                        legacy!.MusicVolumeLevel, legacy.SoundEffectVolumeLevel,
-                        legacy.WarnIfIdleGangs, legacy.PlanningTimeLimit,
-                        legacy.ShowBaseStatistics, legacy.DetailedCombat,
-                        legacy.SlidePanels, legacy.Fullscreen,
-                        OriginalOptionsPolicy.SmoothEventSiteImagesByDefault,
-                        GamePreferences.IntroMoviesSeenByDefault,
-                        OriginalOptionsPolicy.AiPolicyByDefault,
-                        OnlineServiceMode.Central,
-                        GamePreferences.DefaultCustomMultiplayerServer)
-                    : GamePreferences.Default;
-            }
-            if (version.GetInt32() == 7)
-            {
-                var legacy = JsonSerializer.Deserialize<VersionSevenPreferences>(bytes, JsonOptions);
-                return IsValid(legacy)
-                    ? new GamePreferences(GamePreferences.CurrentFormatVersion,
-                        legacy!.MusicVolumeLevel, legacy.SoundEffectVolumeLevel,
-                        legacy.WarnIfIdleGangs, legacy.PlanningTimeLimit,
-                        legacy.ShowBaseStatistics, legacy.DetailedCombat,
-                        legacy.SlidePanels, legacy.Fullscreen,
-                        legacy.SmoothEventSiteImages,
-                        GamePreferences.IntroMoviesSeenByDefault,
-                        OriginalOptionsPolicy.AiPolicyByDefault,
-                        OnlineServiceMode.Central,
-                        GamePreferences.DefaultCustomMultiplayerServer)
-                    : GamePreferences.Default;
-            }
-            if (version.GetInt32() == 8)
-            {
-                var legacy = JsonSerializer.Deserialize<VersionEightPreferences>(bytes, JsonOptions);
-                return IsValid(legacy)
-                    ? new GamePreferences(GamePreferences.CurrentFormatVersion,
-                        legacy!.MusicVolumeLevel, legacy.SoundEffectVolumeLevel,
-                        legacy.WarnIfIdleGangs, legacy.PlanningTimeLimit,
-                        legacy.ShowBaseStatistics, legacy.DetailedCombat,
-                        legacy.SlidePanels, legacy.Fullscreen,
-                        legacy.SmoothEventSiteImages, legacy.IntroMoviesSeen,
-                        OriginalOptionsPolicy.AiPolicyByDefault,
-                        OnlineServiceMode.Central,
-                        GamePreferences.DefaultCustomMultiplayerServer)
-                    : GamePreferences.Default;
-            }
-            if (version.GetInt32() == 9)
-            {
-                var legacy = JsonSerializer.Deserialize<VersionNinePreferences>(bytes, JsonOptions);
-                return IsValid(legacy)
-                    ? new GamePreferences(GamePreferences.CurrentFormatVersion,
-                        legacy!.MusicVolumeLevel, legacy.SoundEffectVolumeLevel,
-                        legacy.WarnIfIdleGangs, legacy.PlanningTimeLimit,
-                        legacy.ShowBaseStatistics, legacy.DetailedCombat,
-                        legacy.SlidePanels, legacy.Fullscreen,
-                        legacy.SmoothEventSiteImages, legacy.IntroMoviesSeen,
-                        legacy.DefaultAiPolicy, OnlineServiceMode.Central,
-                        GamePreferences.DefaultCustomMultiplayerServer)
-                    : GamePreferences.Default;
-            }
-            if (version.GetInt32() == 10)
-            {
-                var legacy = JsonSerializer.Deserialize<VersionTenPreferences>(bytes, JsonOptions);
-                return IsValid(legacy)
-                    ? new GamePreferences(GamePreferences.CurrentFormatVersion,
-                        legacy!.MusicVolumeLevel, legacy.SoundEffectVolumeLevel,
-                        legacy.WarnIfIdleGangs, legacy.PlanningTimeLimit,
-                        legacy.ShowBaseStatistics, legacy.DetailedCombat,
-                        legacy.SlidePanels, legacy.Fullscreen,
-                        legacy.SmoothEventSiteImages, legacy.IntroMoviesSeen,
-                        legacy.DefaultAiPolicy, legacy.OnlineService,
-                        legacy.CustomMultiplayerServer, OnlineLobbyPresentation.Modern)
-                    : GamePreferences.Default;
-            }
-            var preferences = JsonSerializer.Deserialize<GamePreferences>(bytes, JsonOptions);
+            var preferences = Read<GamePreferences>(bytes);
             return IsValid(preferences) ? preferences! : GamePreferences.Default;
         }
         catch
@@ -240,93 +149,25 @@ public static class GamePreferencesStore
         }
     }
 
+    private static T? Read<T>(byte[] bytes) => JsonSerializer.Deserialize<T>(bytes, JsonOptions);
+
     private static bool IsValid(GamePreferences? preferences) =>
-        preferences is
-        {
-            FormatVersion: GamePreferences.CurrentFormatVersion,
-            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
-                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
-            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
-                and <= AudioRouting.MaximumEffectVolumeLevel
-        } && Enum.IsDefined(preferences.PlanningTimeLimit)
-          && Enum.IsDefined(preferences.DefaultAiPolicy)
-          && Enum.IsDefined(preferences.OnlineService)
-          && Enum.IsDefined(preferences.LobbyPresentation)
-          && IsServerAddress(preferences.CustomMultiplayerServer);
+        preferences is { FormatVersion: GamePreferences.CurrentFormatVersion }
+        && LevelsAreValid(
+            preferences.MusicVolumeLevel,
+            preferences.SoundEffectVolumeLevel,
+            preferences.PlanningTimeLimit)
+        && Enum.IsDefined(preferences.DefaultAiPolicy)
+        && Enum.IsDefined(preferences.OnlineService)
+        && Enum.IsDefined(preferences.LobbyPresentation)
+        && IsServerAddress(preferences.CustomMultiplayerServer);
 
-    private static bool IsValid(VersionFourPreferences? preferences) =>
-        preferences is
-        {
-            FormatVersion: 4,
-            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
-                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
-            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
-                and <= AudioRouting.MaximumEffectVolumeLevel
-        } && Enum.IsDefined(preferences.PlanningTimeLimit);
-
-    private static bool IsValid(VersionFivePreferences? preferences) =>
-        preferences is
-        {
-            FormatVersion: 5,
-            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
-                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
-            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
-                and <= AudioRouting.MaximumEffectVolumeLevel
-        } && Enum.IsDefined(preferences.PlanningTimeLimit);
-
-    private static bool IsValid(VersionSevenPreferences? preferences) =>
-        preferences is
-        {
-            FormatVersion: 7,
-            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
-                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
-            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
-                and <= AudioRouting.MaximumEffectVolumeLevel
-        } && Enum.IsDefined(preferences.PlanningTimeLimit);
-
-    private static bool IsValid(VersionSixPreferences? preferences) =>
-        preferences is
-        {
-            FormatVersion: 6,
-            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
-                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
-            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
-                and <= AudioRouting.MaximumEffectVolumeLevel
-        } && Enum.IsDefined(preferences.PlanningTimeLimit);
-
-    private static bool IsValid(VersionEightPreferences? preferences) =>
-        preferences is
-        {
-            FormatVersion: 8,
-            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
-                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
-            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
-                and <= AudioRouting.MaximumEffectVolumeLevel
-        } && Enum.IsDefined(preferences.PlanningTimeLimit);
-
-    private static bool IsValid(VersionNinePreferences? preferences) =>
-        preferences is
-        {
-            FormatVersion: 9,
-            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
-                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
-            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
-                and <= AudioRouting.MaximumEffectVolumeLevel
-        } && Enum.IsDefined(preferences.PlanningTimeLimit)
-          && Enum.IsDefined(preferences.DefaultAiPolicy);
-
-    private static bool IsValid(VersionTenPreferences? preferences) =>
-        preferences is
-        {
-            FormatVersion: 10,
-            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
-                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
-            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
-                and <= AudioRouting.MaximumEffectVolumeLevel
-        } && Enum.IsDefined(preferences.PlanningTimeLimit)
-          && Enum.IsDefined(preferences.DefaultAiPolicy)
-          && Enum.IsDefined(preferences.OnlineService)
-          && IsServerAddress(preferences.CustomMultiplayerServer);
+    private static bool LevelsAreValid(int music, int effects, PlanningTimeLimit limit) =>
+        music is >= OriginalSoundtrackPolicy.MinimumVolumeLevel
+            and <= OriginalSoundtrackPolicy.MaximumVolumeLevel
+        && effects is >= AudioRouting.MinimumEffectVolumeLevel
+            and <= AudioRouting.MaximumEffectVolumeLevel
+        && Enum.IsDefined(limit);
 
     private static bool IsServerAddress(string address) =>
         !string.IsNullOrWhiteSpace(address)
@@ -334,14 +175,30 @@ public static class GamePreferencesStore
         && Uri.TryCreate(address, UriKind.Absolute, out var uri)
         && uri.Scheme is "http" or "https";
 
-    private sealed record VersionFourPreferences(
+    // Each older format is the one before it plus the fields its version added, so a record states
+    // only what is new: how to check it, and how to carry it into the current preferences. A field
+    // no version of the file stored keeps the value a fresh install has.
+    private record VersionFourPreferences(
         int FormatVersion,
         int MusicVolumeLevel,
         int SoundEffectVolumeLevel,
         bool WarnIfIdleGangs,
-        PlanningTimeLimit PlanningTimeLimit);
+        PlanningTimeLimit PlanningTimeLimit)
+    {
+        public virtual bool IsValid(int formatVersion) =>
+            FormatVersion == formatVersion
+            && LevelsAreValid(MusicVolumeLevel, SoundEffectVolumeLevel, PlanningTimeLimit);
 
-    private sealed record VersionFivePreferences(
+        public virtual GamePreferences Upgrade() => GamePreferences.Default with
+        {
+            MusicVolumeLevel = MusicVolumeLevel,
+            SoundEffectVolumeLevel = SoundEffectVolumeLevel,
+            WarnIfIdleGangs = WarnIfIdleGangs,
+            PlanningTimeLimit = PlanningTimeLimit
+        };
+    }
+
+    private record VersionFivePreferences(
         int FormatVersion,
         int MusicVolumeLevel,
         int SoundEffectVolumeLevel,
@@ -349,9 +206,19 @@ public static class GamePreferencesStore
         PlanningTimeLimit PlanningTimeLimit,
         bool ShowBaseStatistics,
         bool DetailedCombat,
-        bool SlidePanels);
+        bool SlidePanels)
+        : VersionFourPreferences(
+            FormatVersion, MusicVolumeLevel, SoundEffectVolumeLevel, WarnIfIdleGangs, PlanningTimeLimit)
+    {
+        public override GamePreferences Upgrade() => base.Upgrade() with
+        {
+            ShowBaseStatistics = ShowBaseStatistics,
+            DetailedCombat = DetailedCombat,
+            SlidePanels = SlidePanels
+        };
+    }
 
-    private sealed record VersionSixPreferences(
+    private record VersionSixPreferences(
         int FormatVersion,
         int MusicVolumeLevel,
         int SoundEffectVolumeLevel,
@@ -360,9 +227,15 @@ public static class GamePreferencesStore
         bool ShowBaseStatistics,
         bool DetailedCombat,
         bool SlidePanels,
-        bool Fullscreen);
+        bool Fullscreen)
+        : VersionFivePreferences(
+            FormatVersion, MusicVolumeLevel, SoundEffectVolumeLevel, WarnIfIdleGangs, PlanningTimeLimit,
+            ShowBaseStatistics, DetailedCombat, SlidePanels)
+    {
+        public override GamePreferences Upgrade() => base.Upgrade() with { Fullscreen = Fullscreen };
+    }
 
-    private sealed record VersionSevenPreferences(
+    private record VersionSevenPreferences(
         int FormatVersion,
         int MusicVolumeLevel,
         int SoundEffectVolumeLevel,
@@ -372,9 +245,16 @@ public static class GamePreferencesStore
         bool DetailedCombat,
         bool SlidePanels,
         bool Fullscreen,
-        bool SmoothEventSiteImages);
+        bool SmoothEventSiteImages)
+        : VersionSixPreferences(
+            FormatVersion, MusicVolumeLevel, SoundEffectVolumeLevel, WarnIfIdleGangs, PlanningTimeLimit,
+            ShowBaseStatistics, DetailedCombat, SlidePanels, Fullscreen)
+    {
+        public override GamePreferences Upgrade() =>
+            base.Upgrade() with { SmoothEventSiteImages = SmoothEventSiteImages };
+    }
 
-    private sealed record VersionEightPreferences(
+    private record VersionEightPreferences(
         int FormatVersion,
         int MusicVolumeLevel,
         int SoundEffectVolumeLevel,
@@ -385,9 +265,16 @@ public static class GamePreferencesStore
         bool SlidePanels,
         bool Fullscreen,
         bool SmoothEventSiteImages,
-        bool IntroMoviesSeen);
+        bool IntroMoviesSeen)
+        : VersionSevenPreferences(
+            FormatVersion, MusicVolumeLevel, SoundEffectVolumeLevel, WarnIfIdleGangs, PlanningTimeLimit,
+            ShowBaseStatistics, DetailedCombat, SlidePanels, Fullscreen, SmoothEventSiteImages)
+    {
+        public override GamePreferences Upgrade() =>
+            base.Upgrade() with { IntroMoviesSeen = IntroMoviesSeen };
+    }
 
-    private sealed record VersionNinePreferences(
+    private record VersionNinePreferences(
         int FormatVersion,
         int MusicVolumeLevel,
         int SoundEffectVolumeLevel,
@@ -399,7 +286,18 @@ public static class GamePreferencesStore
         bool Fullscreen,
         bool SmoothEventSiteImages,
         bool IntroMoviesSeen,
-        AiPolicyMode DefaultAiPolicy);
+        AiPolicyMode DefaultAiPolicy)
+        : VersionEightPreferences(
+            FormatVersion, MusicVolumeLevel, SoundEffectVolumeLevel, WarnIfIdleGangs, PlanningTimeLimit,
+            ShowBaseStatistics, DetailedCombat, SlidePanels, Fullscreen, SmoothEventSiteImages,
+            IntroMoviesSeen)
+    {
+        public override bool IsValid(int formatVersion) =>
+            base.IsValid(formatVersion) && Enum.IsDefined(DefaultAiPolicy);
+
+        public override GamePreferences Upgrade() =>
+            base.Upgrade() with { DefaultAiPolicy = DefaultAiPolicy };
+    }
 
     private sealed record VersionTenPreferences(
         int FormatVersion,
@@ -415,5 +313,21 @@ public static class GamePreferencesStore
         bool IntroMoviesSeen,
         AiPolicyMode DefaultAiPolicy,
         OnlineServiceMode OnlineService,
-        string CustomMultiplayerServer);
+        string CustomMultiplayerServer)
+        : VersionNinePreferences(
+            FormatVersion, MusicVolumeLevel, SoundEffectVolumeLevel, WarnIfIdleGangs, PlanningTimeLimit,
+            ShowBaseStatistics, DetailedCombat, SlidePanels, Fullscreen, SmoothEventSiteImages,
+            IntroMoviesSeen, DefaultAiPolicy)
+    {
+        public override bool IsValid(int formatVersion) =>
+            base.IsValid(formatVersion)
+            && Enum.IsDefined(OnlineService)
+            && IsServerAddress(CustomMultiplayerServer);
+
+        public override GamePreferences Upgrade() => base.Upgrade() with
+        {
+            OnlineService = OnlineService,
+            CustomMultiplayerServer = CustomMultiplayerServer
+        };
+    }
 }

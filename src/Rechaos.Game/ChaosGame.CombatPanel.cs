@@ -9,12 +9,9 @@ public sealed partial class ChaosGame
     private void DrawCombatPanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         if (_combatAnimationPlayer.Active is not { } clip) return;
-        if (_combatBackground is not null)
-            batch.Draw(_combatBackground, CombatPanelLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, CombatPanelLayout.Panel, new Color(0, 0, 0, 245));
+        DrawPanelArtwork(batch, pixel, _combatBackground, CombatPanelLayout.Panel);
 
-        var gameEvent = state.Events.FirstOrDefault(value => value.Sequence == clip.EventSequence);
+        var gameEvent = EventBySequence(state.Events, clip.EventSequence);
         var leftId = gameEvent?.Gang;
         var rightId = gameEvent?.Target.Kind == CommandTargetKind.Gang
             ? new GangId(gameEvent.Target.Id)
@@ -81,6 +78,7 @@ public sealed partial class ChaosGame
     private void DrawPoliceCombatant(SpriteBatch batch, Texture2D pixel, PixelFont font, bool rightSide)
     {
         font.Draw(batch, "POLICE", CombatPanelLayout.PoliceName(rightSide).ToVector2(), Color.LightBlue, 1);
+        batch.Draw(pixel, CombatPanelLayout.GangPortrait(rightSide), Color.Black);
         if (_policeSprites is not null)
             batch.Draw(_policeSprites, CombatPanelLayout.PolicePortrait(rightSide),
                 OriginalSpriteLayout.PolicePatrolCar, Color.White);
@@ -132,7 +130,7 @@ public sealed partial class ChaosGame
         int force,
         int damage)
     {
-        for (var track = 0; track < 2; track++)
+        for (var track = 0; track < CombatPanelLayout.ForceBarTracks; track++)
             DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide, track), force, damage);
     }
 

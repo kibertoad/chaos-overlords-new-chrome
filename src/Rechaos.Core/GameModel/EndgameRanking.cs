@@ -12,8 +12,7 @@ public static class EndgameRankingEvaluator
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(player);
-        if (state.FindPlayer(player.Id) != player)
-            throw new ArgumentException("Player does not belong to the match.", nameof(player));
+        state.RequirePlayer(player);
         return OriginalAiScenarioStandingRules.Score(state, player);
     }
 

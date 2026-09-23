@@ -8,11 +8,8 @@ public sealed partial class ChaosGame
 {
     private void DrawFinance(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_managementReturnScreen == ClientScreen.Sector)
-            DrawSectorDetails(batch, pixel, font, state);
-        else
-            DrawBoard(batch, pixel, font, state);
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        DrawMapBackdrop(batch, pixel, font, state, _managementReturnScreen);
+        var playerId = ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
         var background = _financeScope == FinanceScope.City
             ? _cityFinanceBackground
@@ -41,10 +38,10 @@ public sealed partial class ChaosGame
         for (var index = 0; index < rows.Length; index++)
             DrawFinanceValue(font, batch, rows[index], FinanceLayout.ValueY(index));
         DrawNativeFixedWidthValue(font, batch, projection.ProjectedGangCount,
-            FinanceLayout.ContractCountLeft, FinanceLayout.ValueY(1),
+            FinanceLayout.ContractCountLeft, FinanceLayout.ContractCountY,
             FinanceLayout.ContractCountWidth(projection.ProjectedGangCount));
         font.Draw(batch, ")", new Vector2(
-            FinanceLayout.ContractCountCloseLeft(projection.ProjectedGangCount), FinanceLayout.ValueY(1)), Color.Lime, 1);
+            FinanceLayout.ContractCountCloseLeft(projection.ProjectedGangCount), FinanceLayout.ContractCountY), Color.Lime, 1);
     }
 
     private static void DrawFinanceValue(
@@ -56,24 +53,18 @@ public sealed partial class ChaosGame
         for (var row = 0; row < FinanceLayout.RowCount; row++)
             batch.Draw(pixel, FinanceLayout.ValueField(row), Color.Black);
         batch.Draw(pixel, new Rectangle(FinanceLayout.ContractCountLeft,
-            FinanceLayout.ValueY(1), 2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+            FinanceLayout.ContractCountY, 2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
     }
 
     private void DrawSearch(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_managementReturnScreen == ClientScreen.Sector)
-            DrawSectorDetails(batch, pixel, font, state);
-        else
-            DrawBoard(batch, pixel, font, state);
-        if (_siteSearchBackground is not null)
-            batch.Draw(_siteSearchBackground, SiteSearchLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, SiteSearchLayout.Panel, new Color(0, 0, 0, 245));
+        DrawMapBackdrop(batch, pixel, font, state, _managementReturnScreen);
+        DrawPanelArtwork(batch, pixel, _siteSearchBackground, SiteSearchLayout.Panel);
 
         var sites = state.Definitions.Sites.OrderBy(site => site.Id)
             .Take(SiteSearchLayout.MaximumSites).ToArray();
         var selection = _siteSearchSelections.For(
-            state.Coordinator.ActivePlayer ?? new PlayerId(0));
+            ViewingPlayer(state));
         for (var index = 0; index < sites.Length; index++)
         {
             var row = SiteSearchLayout.Site(index);
@@ -161,23 +152,17 @@ public sealed partial class ChaosGame
     }
 
     private PlayerId SiteSearchPlayer() =>
-        _state?.Coordinator.ActivePlayer ?? new PlayerId(0);
+        _state is null ? new PlayerId(0) : ViewingPlayer(_state);
 
     private void DrawRanking(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_managementReturnScreen == ClientScreen.Sector)
-            DrawSectorDetails(batch, pixel, font, state);
-        else
-            DrawBoard(batch, pixel, font, state);
+        DrawMapBackdrop(batch, pixel, font, state, _managementReturnScreen);
         DrawRankingPanel(batch, pixel, font, state);
     }
 
     private void DrawRankingPanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_rankingBackground is not null)
-            batch.Draw(_rankingBackground, PlayerRankingLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, PlayerRankingLayout.Panel, new Color(0, 0, 0, 245));
+        DrawPanelArtwork(batch, pixel, _rankingBackground, PlayerRankingLayout.Panel);
         if (_uiSprites is null) return;
         foreach (var entry in PlayerRankingPresentation.Project(state))
         {
@@ -187,12 +172,4 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         }
     }
-
-    private void DrawManagementPanel(SpriteBatch batch, Texture2D pixel)
-    {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
-    }
-
 }

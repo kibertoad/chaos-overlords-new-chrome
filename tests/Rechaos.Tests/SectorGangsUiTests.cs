@@ -10,12 +10,12 @@ public sealed class SectorGangsUiTests
     public void LayoutMatchesOriginalGangsInSectorPanel()
     {
         Assert.Equal(new Rectangle(104, 124, 344, 209), SectorGangsLayout.Panel);
-        Assert.Equal(new Rectangle(144, 158, 32, 32), SectorGangsLayout.GangCard(0));
-        Assert.Equal(new Rectangle(304, 158, 32, 32), SectorGangsLayout.GangCard(5));
-        Assert.Equal(154, SectorGangsLayout.ValueRight(0));
-        Assert.Equal(314, SectorGangsLayout.ValueRight(5));
-        Assert.Equal(192, SectorGangsLayout.ValueY(0));
-        Assert.Equal(330, SectorGangsLayout.ValueY(15));
+        Assert.Equal(new Rectangle(248, 136, 32, 32), SectorGangsLayout.GangCard(0));
+        Assert.Equal(new Rectangle(408, 136, 32, 32), SectorGangsLayout.GangCard(5));
+        Assert.Equal(258, SectorGangsLayout.ValueLeft(0));
+        Assert.Equal(418, SectorGangsLayout.ValueLeft(5));
+        Assert.Equal(172, SectorGangsLayout.ValueY(0));
+        Assert.Equal(310, SectorGangsLayout.ValueY(15));
         Assert.Equal(EquipmentCommandLayout.Ok, SectorGangsLayout.Ok);
     }
 

@@ -1,7 +1,7 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-21
+Last updated: 2026-09-22
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-22 | [Fold the definition set into a fingerprint as a digest](#2026-09-22--fold-the-definition-set-into-a-fingerprint-as-a-digest) |
 | 2026-09-21 | [Fingerprint match state with XxHash128, not SHA-256](#2026-09-21--fingerprint-match-state-with-xxhash128-not-sha-256) |
 | 2026-09-19 | [Order a ctrl-picked selection of gangs at once](#2026-09-19--order-a-ctrl-picked-selection-of-gangs-at-once) |
 | 2026-09-18 | [Scope the Sector workspace's opponent gang view to detection](#2026-09-18--scope-the-sector-workspaces-opponent-gang-view-to-detection) |
@@ -30,6 +31,35 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-22 — Fold the definition set into a fingerprint as a digest
+
+**Decision.** A state fingerprint folds in the gameplay definitions as a cached
+128-bit digest of their canonical block rather than the block itself, and the
+state-hash format moves to 2. Native save format 27 and replay format 31 carry
+the new encoding and refuse every older format, and the multiplayer session
+version moves to 6. The rule that these move together is written up under
+[State fingerprint format](../AGENTS.md#state-fingerprint-format) and held by
+`StateFingerprintVersionCouplingTests`.
+
+**Reasoning.** The definition block is the same bytes on every call for a given
+definition set, and a turn hashes 8 + 2P boundaries, so the whole of every site,
+gang and item — names and descriptions included — was re-serialised and re-hashed
+for each one. The digest is computed once per `OriginalData` instance and held
+weakly, so a definition set the process stops using is still collectable. The
+fingerprint stays a comparison, never a claim of authenticity, so a 128-bit
+digest in place of the block costs nothing that matters.
+
+**Compatibility.** A fingerprint under the new encoding is well-formed and
+simply differs from the old one, and nothing in a save or a journal records
+which encoding wrote it. Left to compare, an older file would be reported as
+damage rather than as an older format — a save browser row drawn as playable,
+then a failed verification that costs the intact backup generation, and a
+journal reported as diverging on its first step. The format gates therefore move
+with the encoding, and an older file is refused as `OlderFormat` before its
+fingerprint is ever read. The game has not been released, so no player's file is
+stranded; the session bump retires in-progress online matches for the same
+reason, as [AGENTS.md](../AGENTS.md) requires when a state hash changes.
 
 ## 2026-09-21 — Fingerprint match state with XxHash128, not SHA-256
 
