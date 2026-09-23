@@ -75,22 +75,24 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
   private readonly logs = new Map<string, MatchLog>()
   private open_ = 0
   private lobbyOpen_ = 0
+  /** The share of `perProcess` lobby streams may hold; see `makeRoom`. */
+  private readonly lobbyCap: number
 
   constructor(
     private readonly events: EventRepository,
     private readonly heartbeatMs: number,
     private readonly limits: EventHubLimits = DEFAULT_EVENT_HUB_LIMITS,
     private readonly observer: EventHubObserver = {},
-  ) {}
+  ) {
+    this.lobbyCap = Math.max(1, Math.floor(limits.perProcess / 4))
+  }
 
   async notify(event: PersistedEvent): Promise<void> {
     // A stream opened in the lobby stays connected when play starts. Release its lobby quota now
     // rather than waiting for a reconnect that may never happen.
     if (event.type === 'match.started') {
       for (const subscription of this.listeners.get(event.matchId) ?? []) {
-        if (!subscription.lobby) continue
-        subscription.lobby = false
-        this.lobbyOpen_ -= 1
+        this.releaseLobby(subscription)
       }
     }
     // The notification carries the durable row, so its frame is formatted once here and every
@@ -162,18 +164,25 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
       this.observer.abandoned?.(input.matchId, input.playerId)
       return abandonedSseResponse()
     }
-    this.makeRoom(input.matchId, input.playerId, input.lobby === true)
+    const lobby = input.lobby === true
+    this.makeRoom(input.matchId, input.playerId, lobby)
     const log = this.logOf(input.matchId)
+    let subscription: Subscription | undefined
     return createSseResponse(
       {
-        page: (afterSeq, force) => log.page(afterSeq, force),
+        page: async (afterSeq, force) => {
+          const frames = await log.page(afterSeq, force)
+          // `lobby` was read when the request authenticated. A match that started in between
+          // announced it before this stream subscribed, so the release in `notify` missed it; the
+          // stream's own read of the log is where it learns the match is running.
+          if (subscription?.lobby && log.started) this.releaseLobby(subscription)
+          return frames
+        },
         caughtUp: (lastSeq) => log.caughtUp(lastSeq),
-        subscribe: (wake, close) =>
-          this.subscribe(
-            { matchId: input.matchId, playerId: input.playerId, lobby: input.lobby === true },
-            wake,
-            close,
-          ),
+        subscribe: (wake, close) => {
+          subscription = { playerId: input.playerId, lobby: lobby && !log.started, wake, close }
+          return this.subscribe(input.matchId, subscription)
+        },
       },
       {
         afterSeq: input.afterSeq,
@@ -192,28 +201,31 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     return log
   }
 
-  private subscribe(
-    input: { matchId: string; playerId: string; lobby: boolean },
-    wake: () => void,
-    close: () => void,
-  ): () => void {
-    const set = this.listeners.get(input.matchId) ?? new Set<Subscription>()
-    const subscription: Subscription = { playerId: input.playerId, lobby: input.lobby, wake, close }
+  private subscribe(matchId: string, subscription: Subscription): () => void {
+    const set = this.listeners.get(matchId) ?? new Set<Subscription>()
     set.add(subscription)
-    this.listeners.set(input.matchId, set)
+    this.listeners.set(matchId, set)
     this.open_ += 1
-    if (input.lobby) this.lobbyOpen_ += 1
+    if (subscription.lobby) this.lobbyOpen_ += 1
     return () => {
       if (!set.delete(subscription)) return
       this.open_ -= 1
-      if (subscription.lobby) this.lobbyOpen_ -= 1
+      // Clears the flag as well, so a page still in flight at close cannot release it twice.
+      this.releaseLobby(subscription)
       if (set.size === 0) {
-        this.listeners.delete(input.matchId)
+        this.listeners.delete(matchId)
         // Nothing reads this match any more, so its frames are only memory. The next stream of it
         // starts from the log, which is where the truth was all along.
-        this.logs.delete(input.matchId)
+        this.logs.delete(matchId)
       }
     }
+  }
+
+  /** Stop charging a stream to the lobby share once its match is running. */
+  private releaseLobby(subscription: Subscription): void {
+    if (!subscription.lobby) return
+    subscription.lobby = false
+    this.lobbyOpen_ -= 1
   }
 
   /**
@@ -245,7 +257,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     // three streams per token, so lobby streams cannot be allowed to occupy the whole process cap.
     // Running matches retain the other three quarters even when a single source spreads creation
     // across many IPv6 /64s and exhausts the lobby pool.
-    if (lobby && this.lobbyOpen_ >= Math.max(1, Math.floor(this.limits.perProcess / 4))) {
+    if (lobby && this.lobbyOpen_ >= this.lobbyCap) {
       throw new RateLimitedError('This server is holding as many lobby streams as it can', {
         reason: 'too_many_streams',
         scope: 'lobby',

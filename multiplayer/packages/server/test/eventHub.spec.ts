@@ -71,6 +71,30 @@ describe('LocalEventHub stream caps', () => {
     expect(hub.openStreams).toBe(0)
   })
 
+  it('releases the lobby share of a stream that authenticated just before its match started', async () => {
+    // The request read the match as a lobby, then `match.started` was published before the stream
+    // subscribed, so the notification had nobody to release. Its own read of the log must.
+    const started: PersistedEvent = {
+      seq: 1,
+      matchId: 'raced',
+      type: 'match.started',
+      payload: { seed: 1, players: [] },
+      createdAt: '2026-01-01T00:00:00.000Z',
+    } as PersistedEvent
+    const hub = new LocalEventHub(
+      { ...emptyEvents, listAfter: async (matchId) => (matchId === 'raced' ? [started] : []) },
+      60_000,
+      { perPlayer: 2, perMatch: 8, perProcess: 4 },
+    )
+    const raced = await open(hub, 'raced', 'player', true)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    // The lobby share of a four-stream process is one stream; the raced one no longer holds it.
+    const lobby = await open(hub, 'lobby', 'host', true)
+    raced.abort()
+    lobby.abort()
+    expect(hub.openStreams).toBe(0)
+  })
+
   /**
    * A stream is not a request. It lives until the client closes it and every event published to its
    * match costs it one query, so the per-minute limit on the call that opens one bounds nothing that
