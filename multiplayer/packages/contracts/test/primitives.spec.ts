@@ -92,6 +92,13 @@ describe('displayNameInputSchema', () => {
     expect(safeParse(displayNameInputSchema, 'SMGFUNDAGE THE THIRD').success).toBe(false)
   })
 
+  it('matches the game core for dotless i and long s', () => {
+    expect(originalPlayerNameProjection('smgm\u0131lk')).toBe('SMGM LK')
+    expect(originalPlayerNameProjection('long \u017f')).toBe('LONG S')
+    expect(safeParse(displayNameInputSchema, 'smgm\u0131lk').success).toBe(true)
+    expect(safeParse(displayNameInputSchema, 'smgi\u017flands').success).toBe(false)
+  })
+
   /**
    * The length is measured after normalisation, not before.
    *

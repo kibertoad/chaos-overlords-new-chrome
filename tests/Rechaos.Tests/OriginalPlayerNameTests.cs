@@ -8,6 +8,8 @@ public sealed class OriginalPlayerNameTests
     [Theory]
     [InlineData("Ada Lovelace", "ADA LOVELA")]
     [InlineData("a\u0001b", "A B")]
+    [InlineData("smgm\u0131lk", "SMGM LK")]
+    [InlineData("long \u017f", "LONG S")]
     [InlineData("\u738b", "")]
     public void ProjectMatchesTheNativeFixedNameRecord(string modernName, string expected)
     {

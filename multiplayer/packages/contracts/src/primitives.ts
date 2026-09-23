@@ -265,13 +265,15 @@ export const ORIGINAL_PLAYER_NAME_MAX_LENGTH = 10
  *
  * This mirrors <c>OriginalPlayerName.Project</c> in the game core. The lobby remains free to show
  * the full modern display name; this value is only for checking what a seeded native match would
- * actually receive.
+ * actually receive. ASCII lowercase letters and long s (U+017F) fold into this record; dotless i
+ * (U+0131) occupies a space because the game core does not fold it to I.
  */
 export function originalPlayerNameProjection(name: string): string {
   let output = ''
   for (let index = 0; index < name.length && index < ORIGINAL_PLAYER_NAME_MAX_LENGTH; index++) {
     const source = name[index] ?? ' '
-    const upper = source >= 'a' && source <= 'z' ? source.toUpperCase() : source
+    const upper =
+      (source >= 'a' && source <= 'z') || source === '\u017f' ? source.toUpperCase() : source
     output += upper >= ' ' && upper <= 'Z' ? upper : ' '
   }
   return output.trim()

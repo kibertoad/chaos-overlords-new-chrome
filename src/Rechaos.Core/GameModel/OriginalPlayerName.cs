@@ -18,7 +18,8 @@ public static class OriginalPlayerName
     /// <summary>
     /// Normalizes <paramref name="name"/> as the native text entry reaches the record, then bounds
     /// it to that record. Unsupported glyphs occupy their source character's cell as a space,
-    /// matching the executable's setup-copy filter.
+    /// matching the executable's setup-copy filter. The invariant per-character uppercase step
+    /// turns long s (U+017F) into S, but leaves dotless i (U+0131) unsupported.
     /// </summary>
     public static string Project(string name)
     {
