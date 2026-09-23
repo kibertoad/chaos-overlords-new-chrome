@@ -742,7 +742,7 @@ polish, and golden screenshots; it is not the first appearance of a usable UI.
 - Map every PX sheet and sub-rectangle in `UI-ATLAS.md`.
 - Complete the remaining original hit maps; mouse-first drag/drop, selection,
   targeting, button, and right-click/cancel semantics are implemented.
-- Add complete keyboard navigation and configurable bindings.
+- Complete keyboard navigation; single-key shortcut rebinding is implemented.
 - Complete letterboxing and optional widescreen without disturbing compatibility
   coordinates; persistent windowed/borderless-fullscreen switching is implemented.
 - Add readable modern scaling/accessibility options outside compatibility mode.
@@ -1096,7 +1096,7 @@ not require Computer Use and should continue where it can establish the fact.
    audio triggers, menu transitions, and RNG/action call order. Convert each
    high-confidence finding into a focused fixture without launching the GUI.
 6. Implement non-interactive polish that has objective specifications: remaining
-   mapped sound routes, configurable bindings, performance benchmarks, and
+   mapped sound routes, remaining keyboard navigation, performance benchmarks, and
    automated installer/package checks. Retain the privacy-filtered diagnostics
    export and deterministic Smacker playback/failure fixtures while native
    capture remains deferred.

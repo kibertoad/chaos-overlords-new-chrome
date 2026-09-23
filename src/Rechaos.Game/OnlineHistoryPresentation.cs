@@ -17,7 +17,7 @@ public static class OnlineHistoryPresentation
     /// <summary>Under the list, and the refusal when such a row is rejoined anyway.</summary>
     public const string IncompatibleReason = "INCOMPATIBLE SESSION  IT NEEDS ANOTHER GAME VERSION";
 
-    public const string Hint = "UP/DOWN SELECT  ENTER REJOINS";
+    public const string Hint = "SELECT A ROW  CONFIRM TO REJOIN";
 
     public static string Row(MultiplayerRecovery recovery)
     {

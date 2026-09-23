@@ -42,6 +42,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _autoSavePath;
     private readonly string _replayPath;
     private readonly string _preferencesPath;
+    private readonly string _keyBindingsPath;
+    private KeyBindingMap _keyBindings = KeyBindingMap.Default();
     private readonly string _multiplayerRecoveryPath;
     private readonly bool _debugPhaseStepping;
     private readonly RuntimeDiagnostics? _diagnostics;
@@ -250,6 +252,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _autoSave = new RollingAutoSave(_autoSavePath, ReportAutoSaveFailure);
         _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
         _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
+        _keyBindingsPath = Path.Combine(userDataRoot, "keybindings.json");
+        _keyBindings = KeyBindingStore.LoadOrDefault(_keyBindingsPath);
         _multiplayerRecoveryPath = Path.Combine(userDataRoot, "multiplayer-recovery.json");
         var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
         _musicVolumeLevel = preferences.MusicVolumeLevel;
@@ -415,10 +419,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var mouse = Mouse.GetState();
         _multiSelectModifier = keyboard.IsKeyDown(Keys.LeftControl)
             || keyboard.IsKeyDown(Keys.RightControl);
-        if (Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
-        var altEnter = Pressed(keyboard, Keys.Enter)
+        if (!_editingKeyBindings && Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
+        var altEnter = !_editingKeyBindings && Pressed(keyboard, Keys.Enter)
             && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
-        if (Pressed(keyboard, Keys.F11) || altEnter) ToggleFullscreen();
+        if ((!_editingKeyBindings && Pressed(keyboard, Keys.F11)) || altEnter)
+            ToggleFullscreen();
         if (altEnter || UpdateIntroMovies(gameTime, keyboard, mouse))
         {
             EndUpdate(gameTime, keyboard, mouse);
@@ -671,6 +676,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)
             HandleHelpScroll(virtualPoint, wheelDelta);
+        if (pointerMapped && _screens.Current == ClientScreen.Options
+            && _editingKeyBindings && KeyBindingsLayout.Panel.Contains(virtualPoint)
+            && wheelDelta != 0)
+            ScrollKeyBindings(wheelDelta);
         if (pointerMapped && mouse.LeftButton == ButtonState.Pressed)
         {
             _dragPoint = virtualPoint;
@@ -886,6 +895,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             && state.FindGang(new GangId(gameEvent.Target.Id))?.Owner == viewer;
     }
 
-    private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
+    private bool Pressed(KeyboardState current, Keys key) =>
+        RawPressed(current, _keyBindings.Physical(key));
+
+    private bool RawPressed(KeyboardState current, Keys key) =>
+        current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
 
 }
