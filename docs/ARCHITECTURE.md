@@ -298,6 +298,12 @@ Legacy color depth is always enabled by the modern renderer. Playback and prefer
 media state never enters Core, saves, replays, commands, events, or deterministic
 hashes.
 
+The game's single-key shortcuts use a separate bounded `keybindings.json` in
+the same local data directory. `KeyBindingMap` maps logical shortcut keys to
+unique physical keys, swapping assignments on collisions. The Options Keys
+panel edits and resets the map. Text-entry fields continue to read physical
+characters, and key binding data never enters a match, save, replay, or hash.
+
 Platform distribution scripts publish self-contained game and extractor
 payloads while forcing original assets out of every package. On Windows the
 game uses a directory deployment so MonoGame's SDL2 and OpenAL libraries remain

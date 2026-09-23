@@ -87,7 +87,7 @@ Tracking issues are linked from each area below.
 |---|---|
 | [Exact gameplay parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/135) | Capture native launch/setup/city fixtures that correlate the uptime-derived seed, startup `serialNum` state, and resulting RNG stream. Add runtime corroboration for the recovered transaction flow and the remaining Crackdown notification and special-objective edges that currently rely on static or manual evidence. |
 | [Original AI parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136) | Compare full native AI decisions and RNG consumption against fixed reference traces, expand multi-seed tournament coverage, and establish reliable evidence-led completion behavior for Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon. Current AI is playable and deterministic, but complete outer-planner parity is not proven. |
-| [Visual and input parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137) | Complete the remaining management-workflow hit maps and golden-screen comparisons, especially Search and the city view; validate the remaining offsets, transparency/color keys, bare-hand style, endgame/hot-seat sequencing, and per-screen right-click behavior against native captures. Configurable key bindings and broader accessibility work are not implemented. |
+| [Visual and input parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137) | Complete the remaining management-workflow hit maps and golden-screen comparisons, especially Search and the city view; validate the remaining offsets, transparency/color keys, bare-hand style, endgame/hot-seat sequencing, and per-screen right-click behavior against native captures. Single-key shortcuts can be rebound in Options; broader accessibility work remains. |
 | [Online experience](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138) | Late joining is limited to eligible AI seats that have never belonged to a human. Spectating, lobby chat, and online Comlink integration are not implemented. A desync still depends on the host supplying a snapshot, and live-runtime recovery coverage will grow as more failure modes are identified. Security and deployment limitations are documented in [Multiplayer](docs/MULTIPLAYER.md). |
 | [Media and platform polish](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139) | Original movie trigger/skip capture, broader native A/V validation, the remaining interface/impact sound triggers, and sound overlap/interruption behavior remain. Windows releases can be Authenticode-signed through SSL.com eSigner and Linux `.deb` releases can carry a verified detached OpenPGP signature; macOS signing and notarization, native interactive installer validation, and wider platform QA remain. |
 | [Help fidelity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140) | Help content and navigation are functional, but exact native WinHelp typography and paragraph geometry are intentionally approximated by the cross-platform viewer. Unsafe legacy macro/external-file execution remains disabled. |
@@ -218,6 +218,7 @@ asynchronously, but every client still applies them in the same sealed order.
 
 | Action | Keyboard | Mouse |
 |---|---|---|
+| Default shortcut map | The keys below are defaults; use Options > Keys to change them | Mouse controls remain available |
 | Select a sector | Arrow keys or WASD | Click a sector |
 | Open or confirm | Enter | Double-click the selected sector or click a panel control |
 | Cycle gangs | G | Click a gang card |
@@ -232,6 +233,9 @@ asynchronously, but every client still applies them in the same sealed order.
 | View/Send Comlink | M / N | Click the matching Comlink control |
 | Scenario information | J | Click Game Info |
 | Presentation and audio options | O | Click Options, then adjust the available gameplay-presentation, display, and audio choices |
+| Key bindings | K from Options | Click Keys in Options. Select a shortcut with Up/Down, the mouse wheel, or a row click; then press Enter or Change and the new key. An occupied key swaps its other shortcut. Reset restores defaults; right-click or Cancel stops key capture. Choices are saved locally. |
+| Key bindings | K from Options | Click Keys in Options. Select a shortcut with Up/Down or the mouse, then press Enter or Change and the new key. An occupied key swaps its other shortcut. Reset restores defaults; right-click or Cancel stops key capture. Choices are saved locally. |
+| Key bindings | K from Options | Click Keys in Options. Select a shortcut with Up/Down or the mouse, then press Enter or Change and the new key. An occupied key swaps its other shortcut. Reset restores defaults; right-click or Cancel stops key capture. Choices are saved locally. |
 | Windowed/fullscreen display | F11 or Alt+Enter | Use either shortcut from any screen; the choice is remembered between launches |
 | Save a screenshot | F12 | Writes the finished native window backbuffer as a PNG to the game-local `screenshots` folder |
 | Planning timer (setup) | L | Click None, 30 Seconds, 2 Minutes, or 5 Minutes |

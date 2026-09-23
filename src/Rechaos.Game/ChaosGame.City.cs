@@ -293,7 +293,7 @@ public sealed partial class ChaosGame
         // Online, the footer says where the turn stands instead of which keys save: a match nobody
         // can save is one where the only thing worth knowing is whether it is waiting on you.
         var footer = _session is null
-            ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
+            ? "OPTIONS > KEYS TO VIEW SHORTCUTS  CLICK PANELS"
             : OnlineTurnStatus();
         font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
         DrawPressedCityConsole(batch);

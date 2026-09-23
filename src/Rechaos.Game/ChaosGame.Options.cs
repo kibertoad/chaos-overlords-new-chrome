@@ -9,6 +9,7 @@ public static class OptionsLayout
 {
     public static Rectangle Panel => new(80, 24, 480, 412);
     public static Rectangle Done => new(264, 400, 112, 28);
+    public static Rectangle KeyBindings => new(120, 400, 112, 28);
     public static Rectangle Music => new(120, 52, 400, 58);
     public static Rectangle SoundEffects => new(120, 114, 400, 58);
     public static IReadOnlyList<Rectangle> MusicLevels { get; } =
@@ -89,6 +90,8 @@ public static class OptionsTooltip
             ];
         if (OptionsLayout.Done.Contains(point))
             return ["DONE", "RETURNS TO THE GAME; CHANGES ARE SAVED IMMEDIATELY."];
+        if (OptionsLayout.KeyBindings.Contains(point))
+            return ["KEYS", "CONFIGURE KEYBOARD SHORTCUTS."];
         return [];
     }
 
@@ -114,6 +117,7 @@ public sealed partial class ChaosGame
 
     private void OpenOptions()
     {
+        _editingKeyBindings = false;
         _optionsReturnToGameMenu = false;
         _optionsReturnScreen = _screens.Current;
         _optionsReturnMessage = _message;
@@ -140,6 +144,16 @@ public sealed partial class ChaosGame
 
     private void UpdateOptions(KeyboardState keyboard)
     {
+        if (_editingKeyBindings)
+        {
+            UpdateKeyBindings(keyboard);
+            return;
+        }
+        if (Pressed(keyboard, Keys.K))
+        {
+            OpenKeyBindings();
+            return;
+        }
         if (Pressed(keyboard, Keys.Up)) _optionsRow = Math.Max(0, _optionsRow - 1);
         if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(9, _optionsRow + 1);
         if (Pressed(keyboard, Keys.Left)) ChangeSelectedVolume(-1);
@@ -154,6 +168,11 @@ public sealed partial class ChaosGame
 
     private void HandleOptionsClick(Point point)
     {
+        if (_editingKeyBindings)
+        {
+            HandleKeyBindingsClick(point);
+            return;
+        }
         var level = HitTest.IndexAt(
             OptionsLayout.MusicLevels.Count, index => OptionsLayout.MusicLevels[index], point);
         if (level >= 0)
@@ -177,6 +196,7 @@ public sealed partial class ChaosGame
             _optionsRow = OptionsLayout.FirstToggleRow + toggle;
             ToggleSelectedOption();
         }
+        else if (OptionsLayout.KeyBindings.Contains(point)) OpenKeyBindings();
         else if (OptionsLayout.Done.Contains(point)) CloseOptions();
     }
 
@@ -360,6 +380,11 @@ public sealed partial class ChaosGame
 
     private void DrawOptions(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
+        if (_editingKeyBindings)
+        {
+            DrawKeyBindings(batch, pixel, font);
+            return;
+        }
         var background = ReturnScreenBackground(_optionsReturnScreen);
         if (background is not null)
             batch.Draw(background, new Rectangle(0, 0, 640, 460), Color.White);
@@ -396,11 +421,12 @@ public sealed partial class ChaosGame
 
         DrawCentered(font, batch,
             string.IsNullOrEmpty(_optionsStatus)
-                ? "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS"
+                ? "KEYS TO REBIND  UP/DOWN SELECT  LEFT/RIGHT ADJUST"
                 : _optionsStatus,
             388,
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
+        DrawButton(batch, pixel, font, OptionsLayout.KeyBindings, "KEYS", true);
         if (_hoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, OptionsTooltip.At(hover));
     }
