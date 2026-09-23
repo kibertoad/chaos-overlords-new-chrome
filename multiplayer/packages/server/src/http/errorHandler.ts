@@ -122,5 +122,8 @@ interface ErrorBody {
 
 function respond(c: Context<AppEnv>, { code, message, details, requestId }: ErrorBody): Response {
   const body: ErrorEnvelope = { error: { code, message, details, requestId } }
+  // Hono retains headers already set on this context when an error replaces a handler response.
+  // A sealed-orders handler may have marked that response immutable before validation failed.
+  c.header('Cache-Control', 'no-store')
   return c.json(validateSync(errorEnvelopeSchema, body), STATUS_BY_CODE[code] as 400)
 }
