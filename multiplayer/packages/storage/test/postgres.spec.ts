@@ -100,15 +100,19 @@ describe.skipIf(!url)('postgres', () => {
 
   // Polls until `waiters` backends are queued behind the holder's transaction, directly or
   // behind another waiter. A guard that skips its lock never queues, so this times out instead
-  // of letting the write run after the commit and pass by accident.
+  // of letting the write run after the commit and pass by accident. Reads pg_locks, not
+  // pg_stat_activity: the holder polls inside its open transaction, where stats views stay
+  // frozen at their first read.
   async function waitUntilBlocked(holder: pg.Client, waiters = 1, timeoutMs = 5_000) {
     const deadline = Date.now() + timeoutMs
     for (;;) {
       const { rows } = await holder.query<{ n: number }>(
         `with recursive blocked(pid) as (
-           select pid from pg_stat_activity where pg_backend_pid() = any(pg_blocking_pids(pid))
+           select pid from pg_locks
+            where not granted and pg_backend_pid() = any(pg_blocking_pids(pid))
            union
-           select a.pid from pg_stat_activity a, blocked b where b.pid = any(pg_blocking_pids(a.pid))
+           select l.pid from pg_locks l, blocked b
+            where not l.granted and b.pid = any(pg_blocking_pids(l.pid))
          )
          select count(*)::int as n from blocked`,
       )
