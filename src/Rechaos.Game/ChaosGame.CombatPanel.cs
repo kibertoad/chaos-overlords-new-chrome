@@ -16,8 +16,8 @@ public sealed partial class ChaosGame
         var rightId = gameEvent?.Target.Kind == CommandTargetKind.Gang
             ? new GangId(gameEvent.Target.Id)
             : clip.Defender;
-        var left = leftId is { } resolvedLeft ? state.FindGang(resolvedLeft) : null;
-        var right = state.FindGang(rightId);
+        var left = leftId is { } resolvedLeft ? state.FindCombatant(gameEvent, resolvedLeft) : null;
+        var right = state.FindCombatant(gameEvent, rightId);
         // Police fought where the crackdown is, which a gang that moved on afterwards has left.
         var sectorId = gameEvent?.PoliceAttack?.SectorId ?? left?.SectorId ?? right?.SectorId ?? 0;
         DrawCombatSector(batch, font, state, sectorId);

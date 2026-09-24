@@ -32,7 +32,7 @@ describe('sessionVersionSchema', () => {
  */
 describe('the two versions', () => {
   it('are separate numbers, not one renamed', () => {
-    expect(MULTIPLAYER_SESSION_VERSION).toBe(9)
+    expect(MULTIPLAYER_SESSION_VERSION).toBe(10)
     expect(MULTIPLAYER_PROTOCOL_VERSION).toBe(21)
     expect(MULTIPLAYER_PROTOCOL_VERSION).toBeGreaterThan(MULTIPLAYER_SESSION_VERSION)
   })

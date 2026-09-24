@@ -208,7 +208,7 @@ public sealed partial class ChaosGame
         for (var slot = 0; slot < Math.Min(forces.Count, MatchLimits.FriendlyGangsPerSector); slot++)
         {
             var force = forces[slot];
-            var gang = state.FindGang(force.Gang);
+            var gang = state.FindCombatant(force.Event, force.Gang);
             if (gang is null) continue;
             var cell = CombatResultsLayout.Force(slot, enemy);
             if (_gangPortraits is not null)
@@ -362,8 +362,8 @@ public static class CombatResultProjection
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution is null
             || gameEvent.Gang is not { } attackerId
             || gameEvent.Target.Kind != CommandTargetKind.Gang
-            || state.FindGang(attackerId) is not { } attacker
-            || state.FindGang(new GangId(gameEvent.Target.Id)) is not { } defender)
+            || state.FindCombatant(gameEvent, attackerId) is not { } attacker
+            || state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id)) is not { } defender)
             return null;
         return new CombatResultEntry(
             gameEvent, attacker.SectorId, attacker.Owner, attacker.Id,
@@ -380,7 +380,7 @@ public static class CombatResultProjection
     /// </remarks>
     private static CombatResultEntry? DescribePolice(MatchState state, GameEvent gameEvent) =>
         gameEvent is { Gang: { } policeTarget, PoliceAttack: { Detected: true } police }
-        && state.FindGang(policeTarget) is { } target
+        && state.FindCombatant(gameEvent, policeTarget) is { } target
             ? new CombatResultEntry(
                 gameEvent, police.SectorId, target.Owner, target.Id, null, null, true)
             : null;
