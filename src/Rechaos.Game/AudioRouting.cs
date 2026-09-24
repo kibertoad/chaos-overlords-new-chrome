@@ -96,10 +96,10 @@ public static class AudioRouting
     public static short GangAttackSound(MatchState state, GangId gangId, short? itemId)
     {
         ArgumentNullException.ThrowIfNull(state);
-        if (itemId is not null) return ItemSound(state, itemId.Value);
+        if (itemId is { } weapon) return ItemSound(state, weapon);
         var gang = state.FindGang(gangId)
             ?? throw new ArgumentOutOfRangeException(nameof(gangId));
-        return GangAttackSound(state, gang, itemId);
+        return GangAttackSound(state, gang, itemId: null);
     }
 
     /// <summary>The attack cue of <paramref name="gang"/>, which need not be in the roster any more.</summary>

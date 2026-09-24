@@ -304,7 +304,7 @@ public sealed partial class ChaosGame
                 ItemRotationPresentation.Frame(_inputTime), Color.White);
     }
 
-    private static string EventObject(MatchState state, GameNotification notification)
+    private string EventObject(MatchState state, GameNotification notification)
     {
         var related = RelatedEvent(state, notification);
         if (related?.Elimination is { } elimination)
@@ -316,7 +316,7 @@ public sealed partial class ChaosGame
             return site;
         if (related?.Hire is { } hire)
             return state.Definitions.Gang(hire.GangDefinitionId).Name;
-        if (notification.Gang is { } gangId && state.FindGang(gangId) is { } gang)
+        if (notification.Gang is { } gangId && state.FindCombatant(gangId, _combatants) is { } gang)
             return state.Definitions.Gang(gang.DefinitionId).Name;
         if (notification.SectorId is { } sectorId) return SectorCode(sectorId);
         return notification.Kind.ToString().ToUpperInvariant();

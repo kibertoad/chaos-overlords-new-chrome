@@ -216,6 +216,25 @@ public sealed class CombatResultProjectionTests
     }
 
     [Fact]
+    public void CombatantHistoryOutlivesOnlyAResumeOfTheSameOnlineMatch()
+    {
+        var match = CreateObservedCombatMatch();
+        var combatants = new CombatantHistory();
+        combatants.ResetTo("match-a");
+        combatants.Observe(match);
+        RetireAsHireDoes(match, new GangId(31));
+
+        combatants.ResetTo("match-a");
+        Assert.NotNull(combatants.Find(match, new GangId(31)));
+        combatants.ResetTo("match-b");
+        Assert.Null(combatants.Find(match, new GangId(31)));
+
+        combatants.Observe(CreateObservedCombatMatch());
+        combatants.ResetTo(null);
+        Assert.Null(combatants.Find(match, new GangId(31)));
+    }
+
+    [Fact]
     public void UndetectedPoliceAreNotCombatResults()
     {
         var match = CreateCrackdownMatch();

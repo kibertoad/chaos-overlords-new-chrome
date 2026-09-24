@@ -25,8 +25,9 @@ namespace Rechaos.Game;
 /// </para>
 /// <para>
 /// A gang absent from the current state is always a dead one — only an inactive slot is reused — so
-/// it comes back with no force. What is lost is the turn a match was loaded or resumed on: the
-/// gangs retired while resolving it were never on screen, and their fights stay unlisted.
+/// it comes back with no force. What is lost is the turn a match was loaded on, or an online match
+/// this client had not been playing was resumed on: the gangs retired while resolving it were
+/// never on screen, and their fights stay unlisted.
 /// </para>
 /// </remarks>
 public sealed class CombatantHistory
@@ -35,6 +36,7 @@ public sealed class CombatantHistory
     private readonly Dictionary<GangId, MatchGangState> _retired = [];
     private MatchState? _observedState;
     private ObservationKey _observedKey;
+    private string? _onlineMatch;
 
     /// <summary>Remembers the gangs in <paramref name="state"/>.</summary>
     /// <remarks>
@@ -82,6 +84,23 @@ public sealed class CombatantHistory
         _retired.Clear();
         _observedState = null;
         _observedKey = default;
+        _onlineMatch = null;
+    }
+
+    /// <summary>
+    /// Forgets the match unless <paramref name="onlineMatch"/> names the online match already
+    /// remembered, which a resume of it carries on from.
+    /// </summary>
+    /// <remarks>
+    /// A local match is always forgotten: loading a save can rewind the roster and hand its ids out
+    /// again. An online match is never rewound, so the gangs its planning frames saw still answer
+    /// for the turn that sealed while this client was reconnecting.
+    /// </remarks>
+    public void ResetTo(string? onlineMatch)
+    {
+        if (onlineMatch is null || !string.Equals(onlineMatch, _onlineMatch, StringComparison.Ordinal))
+            Clear();
+        _onlineMatch = onlineMatch;
     }
 
     private readonly record struct ObservationKey(

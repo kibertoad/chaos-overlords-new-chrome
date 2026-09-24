@@ -372,7 +372,7 @@ public sealed partial class ChaosGame
         _online.SelfPlayerId = _session.PlayerId;
         _online.DeadlineAt = _session.Bootstrap.Deadline;
         _online.AwaitedSlots = AwaitedSeats(view.Players);
-        ResetMatchPresentation(_session.Bootstrap.State);
+        ResetMatchPresentation(_session.Bootstrap.State, view.Id);
         if (_session.IsRestoring)
         {
             _online.Status = "RESTORING THE MATCH";
@@ -412,12 +412,17 @@ public sealed partial class ChaosGame
     /// alone and would happily show from the wrong match, and the gangs it remembers for combat,
     /// whose ids every match hands out again from the start.
     /// </remarks>
-    private void ResetMatchPresentation(MatchState state)
+    /// <param name="onlineMatch">
+    /// The server's id for an online match. A resume of the match the gangs were remembered from
+    /// keeps them: the turn that sealed while this client was away wiped out gangs only its planning
+    /// frames ever saw.
+    /// </param>
+    private void ResetMatchPresentation(MatchState state, string? onlineMatch = null)
     {
         _combatPresentationProgress.ResetTo(
             state.Players.Select(player => player.Id),
             state.Events.LastOrDefault()?.Sequence ?? -1);
-        _combatants.Clear();
+        _combatants.ResetTo(onlineMatch);
         ResetTransientMatchUi();
         _siteSearchSelections.Reset();
         _lastTurnEventArchive.Clear();
@@ -497,6 +502,10 @@ public sealed partial class ChaosGame
         _actions = new MatchActions(turn);
         _submittedPlanning = null;
         _state = turn.State;
+        // The session drains every notice in one frame, so a turn adopted here can be replaced by the
+        // next one before the frame's own observation runs; its roster is the only sight of a gang
+        // hired on it and wiped out on the turn after.
+        _combatants.Observe(_state);
         _online.PlanningTurn = authoritative.Coordinator.Turn;
         _online.Stage = submission?.Ready == true
             ? MultiplayerStage.WaitingForSeal
