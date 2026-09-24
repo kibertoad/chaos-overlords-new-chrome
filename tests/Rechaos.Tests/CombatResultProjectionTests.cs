@@ -133,6 +133,44 @@ public sealed class CombatResultProjectionTests
     }
 
     [Fact]
+    public void ClickedOpponentSelectsAFightTheyAreIn()
+    {
+        var viewer = new PlayerId(0);
+        var page = new CombatResultPage(12,
+        [
+            Attack(1, 12, 1, 20, 2, 30),
+            Attack(2, 12, 1, 21, 3, 40),
+            Attack(3, 12, 0, 10, 3, 41)
+        ]);
+
+        // Prefers the fight against the viewer, even when an earlier one also involves them.
+        Assert.Equal(3L, page.ResultAgainst(viewer, new PlayerId(3))!.Event.Sequence);
+        // Player 2 never fought the viewer, so their first fight is shown. Its first-listed player
+        // is player 1, which is why a click passes the opponent it was on instead of deriving it.
+        var selected = page.ResultAgainst(viewer, new PlayerId(2))!;
+        Assert.Equal(1L, selected.Event.Sequence);
+        Assert.Equal(new PlayerId(1), selected.OpponentFor(viewer));
+        Assert.Null(page.ResultAgainst(viewer, new PlayerId(4)));
+    }
+
+    [Fact]
+    public void RewindStopsAtTheLastEventBeforeTheTurn()
+    {
+        GameEvent At(long sequence, int turn) => Event(sequence, GameEventKind.CommandResolved,
+            new PlayerId(0), new GangId(1), GangAction.Attack, CommandTarget.Gang(new GangId(2)))
+            with { Turn = turn };
+        // Found by turn, not by comparing sequences: the sealed turn reuses numbers that local
+        // planning had already given its own events on the speculative copy.
+        GameEvent[] events = [At(3, 1), At(4, 1), At(5, 2), At(6, 2), At(7, 3)];
+
+        Assert.Equal(4L, CombatResultProjection.LastSequenceBefore(events, 2));
+        Assert.Equal(6L, CombatResultProjection.LastSequenceBefore(events, 3));
+        Assert.Equal(-1L, CombatResultProjection.LastSequenceBefore(events, 1));
+        Assert.Equal(7L, CombatResultProjection.LastSequenceBefore(events, 4));
+        Assert.Equal(-1L, CombatResultProjection.LastSequenceBefore([], 2));
+    }
+
+    [Fact]
     public void PoliceResultBelongsToItsTargetPlayer()
     {
         var gameEvent = Event(5, GameEventKind.PoliceAttackResolved, new PlayerId(0),

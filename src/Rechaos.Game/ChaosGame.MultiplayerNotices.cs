@@ -197,18 +197,15 @@ public sealed partial class ChaosGame
                 var cutOff = _online.Stage == MultiplayerStage.Playing;
                 if (AdoptOnlineState(resolved.State, restored: resolved.Planning))
                 {
-                    // Local planning events can reuse sequence numbers that the sealed turn gives
-                    // to real combat. Rewind presentation to the completed turn's boundary.
-                    var firstCompleted = resolved.State.Events
-                        .FirstOrDefault(gameEvent => gameEvent.Turn == resolved.State.Coordinator.Turn - 1);
-                    _combatPresentationProgress.ResetTo(
-                        [new PlayerId(_session!.Slot)], (firstCompleted?.Sequence ?? 0) - 1);
+                    RewindOnlineCombatPresentation(presentCompletedTurn: true);
                     _message = cutOff
                         ? resolved.IncludedOwnOrders
                             ? "TIME UP  THE TURN SEALED WITH THE ORDERS YOU HAD SENT"
                             : "TIME UP  YOUR SEAT GAVE NO ORDERS THIS TURN"
                         : "NEW TURN STARTED";
                     PlayGeneralSound(AudioRouting.OnlineTurnReadySound());
+                    // The next-player card marks the new turn, and Ready on it enters planning the
+                    // way a local turn does: hire offers prepared, then combat and turn reports.
                     _screens.Show(ClientScreen.Handoff);
                 }
                 return;
@@ -226,8 +223,13 @@ public sealed partial class ChaosGame
                     });
                 return;
             case MultiplayerNotice.Resynced resynced:
+                // Read before the adopt, which moves it: a repair that lands on a later turn than
+                // the one on screen carries a sealed turn whose combat this player has not seen.
+                var turnBeforeRepair = _online.PlanningTurn;
                 if (AdoptOnlineState(resynced.State, restored: resynced.Planning))
                 {
+                    RewindOnlineCombatPresentation(
+                        presentCompletedTurn: _online.PlanningTurn != turnBeforeRepair);
                     _message = string.Empty;
                     _screens.Show(ClientScreen.City);
                 }

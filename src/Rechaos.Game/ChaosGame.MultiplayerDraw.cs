@@ -45,7 +45,8 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// The countdown for the open turn, or an empty string when the match has no timer.
+    /// The countdown for the open turn, or an empty string when the match has no timer or its
+    /// deadline has passed.
     /// </summary>
     /// <remarks>
     /// It is recomputed every frame from the deadline rather than counted down, so a paused match
@@ -66,6 +67,10 @@ public sealed partial class ChaosGame
         }
         return _onlineCountdownText;
     }
+
+    /// <summary>Whether the open turn's deadline has passed and its seal is due.</summary>
+    private bool OnlineDeadlinePassed() =>
+        _online.DeadlineAt is { } deadline && deadline <= OnlineServerNow();
 
     /// <summary>
     /// The time now on the SERVER's clock, which every online deadline is an instant on.
@@ -119,15 +124,25 @@ public sealed partial class ChaosGame
                     ? "FINISHING TURN"
                     : _online.SeatedSeats > 0 && _online.ReadySeats >= _online.SeatedSeats
                         ? "ALL PLAYERS READY"
-                        : $"WAITING FOR OTHER PLAYERS  {OnlineSeatTally()} {OnlineCountdown()}",
+                        : $"WAITING FOR OTHER PLAYERS  {OnlineSeatTally()} {OnlineCountdown()}".TrimEnd(),
             // Here rather than on the message line, which anything else said since would have
             // taken over: the warning lasts exactly as long as the draft it is about.
             MultiplayerStage.Playing when _online.OpenTurnDraftUnsaved =>
-                $"TURN {_online.PlanningTurn}  ORDERS NOT SAVED YET  RETRYING  {OnlineCountdown()}",
-            MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineCountdown()}",
+                $"TURN {_online.PlanningTurn}  ORDERS NOT SAVED YET  RETRYING  {OnlineTurnClock()}"
+                    .TrimEnd(),
+            MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineTurnClock()}".TrimEnd(),
             _ => string.Empty,
         };
     }
+
+    /// <summary>
+    /// The countdown while the turn is still open to orders, and TIME UP once it is not.
+    /// </summary>
+    /// <remarks>
+    /// Only while planning: the player is still giving orders, and a clock that simply vanished
+    /// at zero would leave them giving more to a turn the server is already sealing.
+    /// </remarks>
+    private string OnlineTurnClock() => OnlineDeadlinePassed() ? "TIME UP" : OnlineCountdown();
 
     /// <summary>
     /// How many seats have finished planning, of the ones the turn seals on.

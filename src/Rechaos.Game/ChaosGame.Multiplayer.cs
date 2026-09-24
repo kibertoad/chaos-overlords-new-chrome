@@ -529,6 +529,27 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
+    /// Realigns combat presentation with a state just adopted from the server.
+    /// </summary>
+    /// <remarks>
+    /// Progress is a sequence number, and the one a turn's local planning reached means nothing in
+    /// the adopted state: planning events are numbered on the speculative copy, and the sealed turn
+    /// hands the same numbers to its own events, combat among them. Left alone, that combat reads
+    /// as already seen and never plays. With <paramref name="presentCompletedTurn"/> the completed
+    /// turn's combat is left to present; without it that turn counts as seen, for an adoption that
+    /// replaces a state whose combat was already presented.
+    /// </remarks>
+    private void RewindOnlineCombatPresentation(bool presentCompletedTurn)
+    {
+        if (_state is null) return;
+        var turn = _state.Coordinator.Turn;
+        _combatPresentationProgress.ResetTo(
+            [ViewingPlayer(_state)],
+            CombatResultProjection.LastSequenceBefore(
+                _state.Events, presentCompletedTurn ? turn - 1 : turn));
+    }
+
+    /// <summary>
     /// Settles on the final state and shows how the match ended.
     /// </summary>
     /// <remarks>
