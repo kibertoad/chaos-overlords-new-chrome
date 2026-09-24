@@ -62,6 +62,24 @@ public sealed class PlayerRankingUiTests
         ], PlayerRankingPresentation.Project(state));
     }
 
+    [Theory]
+    [InlineData(ScenarioId.Greed)]
+    [InlineData(ScenarioId.Power)]
+    [InlineData(ScenarioId.Dominance)]
+    [InlineData(ScenarioId.Big40)]
+    [InlineData(ScenarioId.Siege)]
+    [InlineData(ScenarioId.BigMan)]
+    public void StatusConsoleScoreMatchesRankingScore(ScenarioId scenario)
+    {
+        var state = CreateMatch(scenario, [300, 100], sectorOwners: [0, 0, 1]);
+        state.Players[0].Support = 4;
+        state.Players[0].BigManPoints = 12;
+
+        foreach (var entry in PlayerRankingPresentation.Project(state))
+            Assert.Equal(entry.Score, StatusConsolePresentation.Score(state, state.Players[entry.Player.Value]));
+        Assert.NotEqual(0, StatusConsolePresentation.Score(state, state.Players[0]));
+    }
+
     [Fact]
     public void TooltipExplainsBasisScoreAndEveryStanding()
     {

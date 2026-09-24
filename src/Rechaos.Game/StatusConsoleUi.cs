@@ -161,6 +161,14 @@ public static class StatusConsoleTooltip
 
 public static class StatusConsolePresentation
 {
+    /// <summary>
+    /// The status-console SCORE row: the same scenario standing score the ranking screen ranks
+    /// by, so objective scenarios show their progress (Big Man points, sectors held, ...) rather
+    /// than only the timed scenarios' scores.
+    /// </summary>
+    public static long Score(MatchState state, MatchPlayerState player) =>
+        EndgameRankingEvaluator.Score(state, player);
+
     public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>
         range.CanTriggerCrackdown(tolerance) ? Color.Red : Color.Lime;
 

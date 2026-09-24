@@ -248,7 +248,7 @@ public sealed partial class ChaosGame
             new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
         font.Draw(batch, MatchDate(state.Coordinator.Turn),
             new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
-        DrawPanelValue(font, batch, ScenarioScore(state, player).ToString(),
+        DrawPanelValue(font, batch, StatusConsolePresentation.Score(state, player).ToString(),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.ScoreY);
         DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
                 StatusConsolePresentation.UnspentCash(state, player),
@@ -446,15 +446,6 @@ public sealed partial class ChaosGame
     {
         var week = Math.Max(0, turn - 1);
         return $"{2050 + week / 52}.{week % 52 + 1:00}";
-    }
-
-    private static long ScenarioScore(MatchState state, MatchPlayerState player)
-    {
-        var definition = ScenarioCatalog.Get(state.Setup.Scenario);
-        return definition.IsTimed
-            ? ScenarioCatalog.TimedScore(state.Setup.Scenario, state.Setup.Duration,
-                MatchOutcomeEvaluator.Project(state, player))
-            : 0;
     }
 
     private static int SectorSupport(MatchState state, PlayerId player, MatchSectorState sector) =>
