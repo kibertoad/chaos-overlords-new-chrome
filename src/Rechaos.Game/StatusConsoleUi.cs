@@ -69,6 +69,26 @@ public static class StatusConsoleTooltip
         || StatusConsoleLayout.Cash.Contains(point)
         || Enumerable.Range(0, 5).Any(row => StatusConsoleLayout.SectorEntry(row).Contains(point));
 
+    /// <summary>
+    /// The SCORE row's explanation. The row shows the scenario standing score the Ranking screen
+    /// ranks by, which decides victory only where it is the objective's own statistic; Kill 'Em
+    /// All and Siege rate every survivor by the same count of inactive seats.
+    /// </summary>
+    public static IReadOnlyList<string> ScoreLines(ScenarioId? scenario)
+    {
+        if (scenario is not { } mode)
+            return ["SCORE", "CURRENT SCENARIO STANDING USED FOR RANKING."];
+        var lines = new List<string>
+        {
+            "SCORE",
+            $"{ScenarioCatalog.Get(mode).Name} RATES: {PlayerRankingTooltip.Basis(mode)}",
+            "USED FOR RANKING."
+        };
+        if (mode is ScenarioId.KillEmAll or ScenarioId.Siege)
+            lines.Add("SHARED BY EVERY SURVIVING OVERLORD.");
+        return lines;
+    }
+
     public static IReadOnlyList<string> At(
         Point point,
         ScenarioId? scenario,
@@ -81,7 +101,7 @@ public static class StatusConsoleTooltip
         if (scenario is { } mode && StatusConsoleLayout.Scenario.Contains(point))
             return ScenarioSetupTooltip.Lines(mode, duration);
         if (StatusConsoleLayout.Score.Contains(point))
-            return ["SCORE", "CURRENT SCENARIO PROGRESS USED FOR RANKING AND VICTORY."];
+            return ScoreLines(scenario);
         if (StatusConsoleLayout.Cash.Contains(point))
             return [
                 "CASH  N [UNSPENT] (DELTA)",
@@ -161,6 +181,15 @@ public static class StatusConsoleTooltip
 
 public static class StatusConsolePresentation
 {
+    /// <summary>
+    /// The status-console SCORE row: the same scenario standing score the ranking screen ranks
+    /// by, so objective scenarios show their standing (Big Man points, sectors controlled, HQ
+    /// sectors held, or the inactive-seat count Kill 'Em All and Siege share) rather than only
+    /// the timed scenarios' scores.
+    /// </summary>
+    public static long Score(MatchState state, MatchPlayerState player) =>
+        EndgameRankingEvaluator.Score(state, player);
+
     public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>
         range.CanTriggerCrackdown(tolerance) ? Color.Red : Color.Lime;
 
