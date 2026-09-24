@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-24 | [Mark objective sectors on the detailed-sector minimap](#2026-09-24--mark-objective-sectors-on-the-detailed-sector-minimap) |
 | 2026-09-24 | [Resolve cash transactions in player order](#2026-09-24--resolve-cash-transactions-in-player-order) |
 | 2026-09-23 | [Do not animate the panel slide-out](#2026-09-23--do-not-animate-the-panel-slide-out) |
 | 2026-09-22 | [Fold the definition set into a fingerprint as a digest](#2026-09-22--fold-the-definition-set-into-a-fingerprint-as-a-digest) |
@@ -33,6 +34,25 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-24 — Mark objective sectors on the detailed-sector minimap
+
+**Decision.** The detailed-sector screen's 3-by-3 neighborhood minimap draws
+the same exact-white-keyed `PX00129` objective pylons `(344,15,54,52)` that the
+whole-city map draws, over every visible Siege landmark and Big Man center
+sector 27, 28, 35, or 36. The crop is scaled into the minimap cell exactly as
+the cell's city artwork is, so the pylons keep their city-map placement.
+
+**Original behavior.** The recovered evidence places the pylon overlay only on
+the whole-city map; no native copy of that crop into the detailed-sector
+neighborhood has been identified.
+
+**Reasoning and compatibility.** Big Man points accrue only in the center
+sectors, and Siege landmarks decide that scenario, so a player working in the
+detailed view should not have to return to the city to see which neighboring
+sectors are objectives. The change is presentation only: rules, orders, saves,
+replays, fingerprints, and the multiplayer protocol and session versions are
+unaffected.
 
 ## 2026-09-24 — Resolve cash transactions in player order
 
