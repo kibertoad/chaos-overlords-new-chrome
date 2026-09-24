@@ -122,6 +122,17 @@ public sealed class CombatResultProjectionTests
     }
 
     [Fact]
+    public void SelectedFightIdentifiesItsActualOpponent()
+    {
+        var ownFight = Attack(1, 12, 0, 10, 2, 30);
+        var otherFight = Attack(2, 12, 1, 20, 3, 40);
+
+        Assert.Equal(new PlayerId(2), ownFight.OpponentFor(new PlayerId(0)));
+        Assert.Equal(new PlayerId(0), ownFight.OpponentFor(new PlayerId(2)));
+        Assert.Equal(new PlayerId(1), otherFight.OpponentFor(new PlayerId(0)));
+    }
+
+    [Fact]
     public void PoliceResultBelongsToItsTargetPlayer()
     {
         var gameEvent = Event(5, GameEventKind.PoliceAttackResolved, new PlayerId(0),
