@@ -47,6 +47,15 @@ function retryFloor(
   return Math.max(dueAtMs, fired.dueAtMs + EARLY_DEADLINE_RETRY_MS)
 }
 
+/** Whether a pending deadline is still exactly the one read earlier, due time included. */
+function isSameDeadline(pending: PendingDeadline | undefined, seen: PendingDeadline): boolean {
+  return (
+    pending?.matchId === seen.matchId &&
+    pending.turn === seen.turn &&
+    pending.dueAtMs === seen.dueAtMs
+  )
+}
+
 /**
  * One instance per match. It holds the open event streams of that match (so a notification from
  * any Worker isolate reaches every subscriber) and the alarm for the open turn's deadline. The
@@ -160,6 +169,14 @@ export class MatchHub {
     const stillDue =
       match?.status === 'running' && turn?.status === 'open' && turn.deadlineAt !== null
     if (stillDue) return
+    // Asked again after the D1 reads, which open the object's input gate: a ready seal in another
+    // isolate can arm its successor's deadline in between. Deleting on the first answer threw that
+    // deadline away, and the new turn then counted down to zero on every screen and sat there until
+    // a player ended it or the cron swept it. Nothing awaits between this read and the delete
+    // except the object's own storage, which keeps the gate shut.
+    if (!isSameDeadline(await this.state.storage.get<PendingDeadline>(DEADLINE_KEY), current)) {
+      return
+    }
     await this.state.storage.delete(DEADLINE_KEY)
     await this.state.storage.deleteAlarm()
   }

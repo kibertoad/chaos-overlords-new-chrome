@@ -160,7 +160,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings and available late-join seats with current gang, site, and sector counts. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
 | `POST /matches/join` | anyone | Joins by code (and password), under the caller's chosen `portraitId`. Returns that player's token. Capacity is a single atomic seat claim. |
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings`: the match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
-| `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |
+| `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
@@ -273,6 +273,12 @@ Durable Object whose clock is behind the isolate that set the deadline) does not
 itself for the deadline, at least 250 ms out, rather than leaving the turn to the sweep. On
 Cloudflare the retry also lands at least 250 ms past the time the alarm fired at, since the alarm
 scheduler keeps its own clock and would otherwise refire at once while the object's clock lags.
+A member reading the match view is the third path: the read seals an open turn whose deadline has
+already passed, then answers the match as it stands afterwards. A client whose countdown has been on
+zero for ten seconds with no seal resynchronises, and that rebuild's read is what seals a turn the
+timer lost and the sweep has not reached yet — on Cloudflare the cron can be minutes away. The read
+never seals a turn before its deadline, and a seal that fails there is logged and left to the timer
+and the sweep rather than failing the read.
 Sealing on the deadline includes whatever each player last submitted; a player who submitted
 nothing contributes no orders.
 
