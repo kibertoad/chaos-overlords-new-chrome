@@ -89,7 +89,7 @@ same change or neither. It describes the session as it is stored—the match row
 orders and its snapshots—and every match carries the version it was created under for the whole of
 its life. A client resumes a match only when the stored session version is the one it plays, so a
 bump retires every match in progress: players lose the seats they are holding, and the previous
-sessions browser marks those rows `INCOMPATIBLE` instead of rejoining them.
+sessions browser and the public match list leave those matches out instead of offering them.
 
 Bump the session version when a build could no longer correctly carry on a match an older build
 started:

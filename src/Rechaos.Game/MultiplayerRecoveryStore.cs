@@ -40,9 +40,9 @@ public sealed record MultiplayerRecovery(
 
     /// <summary>Whether this build plays the session this seat belongs to.</summary>
     /// <remarks>
-    /// The membership stays worth keeping either way — the seat is still held, and the browser
-    /// says why it cannot be taken — so this is asked beside <see cref="CanReconnect"/> rather
-    /// than folded into it.
+    /// The membership stays worth keeping either way — the seat is still held, and a build of that
+    /// session version can take it — so this is asked beside <see cref="CanReconnect"/> rather than
+    /// folded into it. The browser of this build lists only what it can resume.
     /// </remarks>
     public bool IsCompatible => MultiplayerSessionVersion.CanResume(SessionVersion);
 
@@ -89,8 +89,8 @@ public sealed record MultiplayerRecoveryFailure(
 /// A file from a build that did not write it has none, which reads back as a session without one.
 /// </para>
 /// <para>
-/// <see cref="SessionVersion"/> is kept so the browser can say that a seat cannot be taken before
-/// the game dials the server for it. It is additive in both directions, which is why it does not
+/// <see cref="SessionVersion"/> is kept so the browser can leave out a seat this build cannot take
+/// before the game dials the server for it. It is additive in both directions, which is why it does not
 /// move <see cref="MultiplayerRecoveryHistory.CurrentFormatVersion"/>: a build that does not know
 /// the field ignores it and keeps its reconnects, and a build that does reads a file without one
 /// as <see cref="MultiplayerSessionVersion.Initial"/>, the only version that can have been stored
@@ -145,7 +145,7 @@ public static class MultiplayerRecoveryStore
     private const long MaximumFileBytes = 131072;
 
     /// <summary>
-    /// Memberships kept.
+    /// Memberships kept that this build can resume.
     /// </summary>
     /// <remarks>
     /// Retired ones are already dropped, so this bounds only how many matches one player can have
@@ -153,6 +153,16 @@ public static class MultiplayerRecoveryStore
     /// number of live tokens it was worth holding.
     /// </remarks>
     private const int MaximumSessions = 8;
+
+    /// <summary>
+    /// Memberships kept from other session versions, bounded apart from <see cref="MaximumSessions"/>.
+    /// </summary>
+    /// <remarks>
+    /// This build never shows one of these, so they must not take a slot from a match it can play:
+    /// after a session-version bump a player holding old seats would otherwise see fewer rows than
+    /// the cap allows. They are still kept, because a build of their version can take the seat.
+    /// </remarks>
+    private const int MaximumOtherVersionSessions = 8;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -338,19 +348,36 @@ public static class MultiplayerRecoveryStore
     }
 
     /// <summary>
-    /// The memberships worth holding: well formed, still resumable, and no more than the cap.
+    /// The memberships worth holding: well formed, still live, and within the cap for their kind.
     /// </summary>
     /// <remarks>
     /// A completed match's token opens nothing anybody wants, and the server retires the match
     /// anyway, so holding it is a live credential on disk for no benefit. Filtering on the way in as
-    /// well as on the way out is what retires one an older build left behind.
+    /// well as on the way out is what retires one an older build left behind. Order is kept, so
+    /// the newest of each kind survive the caps.
     /// </remarks>
-    private static MultiplayerRecovery[] Keepable(IEnumerable<MultiplayerRecovery?> recoveries) =>
-        recoveries
-            .Where(recovery => IsValid(recovery) && recovery!.CanReconnect)
-            .Select(recovery => recovery!)
-            .Take(MaximumSessions)
-            .ToArray();
+    private static MultiplayerRecovery[] Keepable(IEnumerable<MultiplayerRecovery?> recoveries)
+    {
+        var kept = new List<MultiplayerRecovery>(MaximumSessions);
+        var compatible = 0;
+        var otherVersion = 0;
+        foreach (var recovery in recoveries)
+        {
+            if (!IsValid(recovery) || !recovery!.CanReconnect) continue;
+            if (recovery.IsCompatible)
+            {
+                if (compatible == MaximumSessions) continue;
+                compatible++;
+            }
+            else
+            {
+                if (otherVersion == MaximumOtherVersionSessions) continue;
+                otherVersion++;
+            }
+            kept.Add(recovery);
+        }
+        return kept.ToArray();
+    }
 
     private static PersistedRecovery Persist(MultiplayerRecovery recovery)
     {

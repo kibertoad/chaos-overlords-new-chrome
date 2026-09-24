@@ -34,7 +34,11 @@ export function registerPublicLobbyRoutes(api: Hono<AppEnv>): void {
         reason: 'listing_disabled',
       })
     }
-    return c.json(answering(c, { matches: await kernel.query.listPublicLobbies(50) }), 200)
+    const { sessionVersion } = c.req.valid('query')
+    return c.json(
+      answering(c, { matches: await kernel.query.listPublicLobbies(50, sessionVersion) }),
+      200,
+    )
   })
 
   buildHonoRoute(api, createMatchContract, async (c) => {

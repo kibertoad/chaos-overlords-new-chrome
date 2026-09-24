@@ -13,10 +13,16 @@ public sealed partial class ChaosGame
     /// The memberships the player can still take a seat in, cached until the list behind them moves.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// A membership from another session version is left off: this build cannot play it, so it is
+    /// not offered. It stays in the store, and a build of that version lists it again.
+    /// </para>
+    /// <para>
     /// Both screens that read this read it several times a frame — for the row count, for the
     /// scroll window, for the selected row, and once per row drawn — and it used to be a fresh
     /// filter and array allocation each time. It changes only when a membership is written back,
     /// which is a handful of times a match.
+    /// </para>
     /// </remarks>
     private IReadOnlyList<MultiplayerRecovery> RecoverableOnlineSessions
     {
@@ -25,7 +31,7 @@ public sealed partial class ChaosGame
             if (_recoverableSessions is null || _recoverableSessionsVersion != _multiplayerRecoveryVersion)
             {
                 _recoverableSessions =
-                    _multiplayerRecoveries.Where(recovery => recovery.CanReconnect).ToArray();
+                    _multiplayerRecoveries.Where(recovery => recovery.CanResume).ToArray();
                 _recoverableSessionsVersion = _multiplayerRecoveryVersion;
             }
             return _recoverableSessions;
@@ -38,10 +44,6 @@ public sealed partial class ChaosGame
     /// <summary>
     /// The row the browser is on, or null when there is nothing to browse.
     /// </summary>
-    /// <remarks>
-    /// A session this build cannot play is on the list rather than filtered out of it, so the
-    /// player is told why the seat they are holding cannot be taken instead of watching it vanish.
-    /// </remarks>
     private MultiplayerRecovery? SelectedOnlineRecovery
     {
         get

@@ -171,6 +171,45 @@ describe('server app over in-memory storage', () => {
     })
   })
 
+  /**
+   * The game names the session version it plays, and a public match stored under another one is
+   * left out: that client could neither join nor carry it on. A caller that names none sees all.
+   */
+  it('narrows the public list to the session version the caller names', async () => {
+    const server = build({ publicListing: true })
+    const host = (sessionVersion: number) =>
+      server.app.request('/api/v1/matches', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          settings: {
+            name: `v${sessionVersion}`,
+            maxPlayers: 2,
+            turnTimerSeconds: 0,
+            visibility: 'public',
+            gameSettings: {},
+          },
+          hostDisplayName: 'h',
+          sessionVersion,
+        }),
+      })
+    expect((await host(1)).status).toBe(201)
+    expect((await host(2)).status).toBe(201)
+    const names = async (query: string) =>
+      (
+        (await (await server.app.request(`/api/v1/matches${query}`)).json()) as {
+          matches: { name: string; sessionVersion: number }[]
+        }
+      ).matches.map((listing) => [listing.name, listing.sessionVersion])
+
+    expect(await names('?sessionVersion=2')).toEqual([['v2', 2]])
+    expect((await names('')).sort()).toEqual([
+      ['v1', 1],
+      ['v2', 2],
+    ])
+    expect((await server.app.request('/api/v1/matches?sessionVersion=x')).status).toBe(422)
+  })
+
   it('rate-limits the unauthenticated doors per client address', async () => {
     const limited = build({}, { anonymous: { limit: 2, windowMs: 60_000 } })
     const body = JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'x' })

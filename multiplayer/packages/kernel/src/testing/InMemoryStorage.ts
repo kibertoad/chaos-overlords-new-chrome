@@ -49,11 +49,12 @@ export class InMemoryStorage implements MultiplayerStorage {
     get: async (id) => clone(this.matchRows.get(id)),
     getByJoinCode: async (joinCode) =>
       clone([...this.matchRows.values()].find((match) => match.joinCode === joinCode)),
-    listPublicLobbies: async (limit) => {
+    listPublicLobbies: async (limit, sessionVersion) => {
       const lobbies: PublicLobbyRow[] = []
       for (const match of this.matchRows.values()) {
         if (!['lobby', 'running'].includes(match.status) || match.settings.visibility !== 'public')
           continue
+        if (sessionVersion !== undefined && match.sessionVersion !== sessionVersion) continue
         const humanCount = humanParticipants(
           [...this.playerRows.values()].filter((player) => player.matchId === match.id),
         ).length
@@ -70,6 +71,7 @@ export class InMemoryStorage implements MultiplayerStorage {
           maxPlayers: match.settings.maxPlayers,
           passwordProtected: match.passwordHash !== null,
           status: match.status,
+          sessionVersion: match.sessionVersion,
           settings: match.settings,
           availableSlots: [],
           availableSeatSummaries: [],

@@ -279,10 +279,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _online.Server.Set(preferences.CustomMultiplayerServer);
         _onlineLobbyPresentation = preferences.LobbyPresentation;
         _multiplayerRecoveries.AddRange(MultiplayerRecoveryStore.LoadAll(_multiplayerRecoveryPath));
+        // The player's own name carries over from any saved seat, including one from another
+        // session version; only the join code is limited to a match this build can play.
+        if (_multiplayerRecoveries.FirstOrDefault(saved => saved.CanReconnect) is { } latest)
+            _online.DisplayName.Set(latest.DisplayName);
         if (LatestOnlineRecovery is { } recovery)
         {
             _online.JoinCode.Set(recovery.JoinCode);
-            _online.DisplayName.Set(recovery.DisplayName);
             if (recovery.ShouldSuggestReconnect)
                 _message = "ONLINE MATCH INTERRUPTED  OPEN ONLINE TO RECONNECT";
         }
