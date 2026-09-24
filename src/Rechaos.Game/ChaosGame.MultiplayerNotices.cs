@@ -51,6 +51,7 @@ public sealed partial class ChaosGame
         while (_lobby?.TryDequeueNotice(out var lobbyNotice) == true) Apply(lobbyNotice);
         while (_session?.TryDequeueNotice(out var notice) == true) Apply(notice);
         CheckOnlineResolutionWatchdog();
+        CheckOnlineOverdueSeal();
     }
 
     private void Apply(LobbyNotice notice)

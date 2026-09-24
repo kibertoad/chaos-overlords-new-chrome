@@ -214,6 +214,43 @@ export class TurnService {
   }
 
   /**
+   * Seal the open turn of `match` if its deadline has already passed, and answer the match as it
+   * stands afterwards.
+   *
+   * The timer and the sweep are what normally seal a turn on its deadline, and either can come up
+   * short: a timer lost to a restart or replaced by a stale re-arm waits on the sweep, and on
+   * Cloudflare the sweep is a cron that runs every few minutes, if it was configured at all. For
+   * that whole time every client showed a countdown that had reached zero and a turn that never
+   * sealed, until somebody gave up and ended it themselves. A client that notices is resynchronising
+   * already, and the match view it reads to do so is the natural place to finish the job: a turn is
+   * never sealed early by this, only one the server is already late with.
+   *
+   * Best effort. A seal that fails here is still owed by the timer and the sweep, and the read the
+   * caller came for must not fail with it.
+   */
+  async sealIfOverdue(match: Match): Promise<Match> {
+    if (match.status !== 'running') return match
+    try {
+      const turn = await this.deps.storage.turns.get(match.id, match.currentTurn)
+      if (turn?.status !== 'open' || turn.deadlineAt === null) return match
+      if (turn.deadlineAt.getTime() > this.deps.clock.now().getTime()) return match
+      if (!(await this.trySeal(match.id, match.currentTurn, 'deadline'))) return match
+      this.deps.logger.warn('sealed an overdue turn on read', {
+        matchId: match.id,
+        turn: match.currentTurn,
+      })
+      return (await this.deps.storage.matches.get(match.id)) ?? match
+    } catch (error) {
+      this.deps.logger.warn('could not seal an overdue turn on read', {
+        matchId: match.id,
+        turn: match.currentTurn,
+        error: String(error),
+      })
+      return match
+    }
+  }
+
+  /**
    * Put a deadline timer that fired before its deadline back on the clock.
    *
    * A timer is not an exact instrument. `setTimeout` can fire a millisecond early by the wall

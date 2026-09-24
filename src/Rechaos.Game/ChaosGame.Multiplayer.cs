@@ -34,6 +34,9 @@ public sealed partial class ChaosGame
     private static readonly TimeSpan OnlineResolutionGrace =
         MatchEventStream.DefaultIdleTimeout + TimeSpan.FromSeconds(25);
 
+    /// <summary>Asks the server again about a turn whose clock ran out; see <see cref="CheckOnlineOverdueSeal"/>.</summary>
+    private readonly OnlineOverdueSealWatchdog _onlineOverdueSeal = new(OnlineResolutionGrace);
+
     private readonly MultiplayerUiState _online = new();
     /// <summary>
     /// The one client every online call goes through, bounded so a hostile server cannot answer with

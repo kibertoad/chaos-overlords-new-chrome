@@ -51,6 +51,33 @@ public sealed partial class ChaosGame
         session.RequestResync();
     }
 
+    /// <summary>
+    /// Resynchronises when the open turn's clock has run out and no seal has come.
+    /// </summary>
+    /// <remarks>
+    /// Only while the turn is still waiting on its seal. A desync pause and a finished match have
+    /// their own explanations on screen, and a lost connection is already being re-established.
+    /// </remarks>
+    private void CheckOnlineOverdueSeal()
+    {
+        if (_session is not { } session || !_online.IsConnected
+            || _online.Stage is not (MultiplayerStage.Playing or MultiplayerStage.WaitingForSeal))
+        {
+            _onlineOverdueSeal.Stop();
+            return;
+        }
+        if (!_onlineOverdueSeal.Advance(_online.DeadlineAt, OnlineServerNow(), MonotonicClock.Now))
+            return;
+        _diagnostics?.Write("multiplayer.turn-deadline.overdue",
+            new Dictionary<string, string?>
+            {
+                ["turn"] = _online.PlanningTurn.ToString(CultureInfo.InvariantCulture),
+                ["deadline"] = _online.DeadlineAt?.ToString("O", CultureInfo.InvariantCulture),
+            });
+        _online.Status = "TIME IS UP BUT THE TURN HAS NOT SEALED  RESYNCHRONISING WITH THE SERVER";
+        session.RequestResync();
+    }
+
     private string OnlineFailureMessage(string reason)
     {
         var message = $"ONLINE MATCH STOPPED: {reason.ToUpperInvariant()}";
