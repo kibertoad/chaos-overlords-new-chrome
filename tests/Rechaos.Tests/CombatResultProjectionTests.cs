@@ -223,7 +223,8 @@ public sealed class CombatResultProjectionTests
         Assert.Equal(0, page.SectorId);
         var force = Assert.Single(page.ForcesFor(defender));
         Assert.Equal(new GangId(30), force.Gang);
-        Assert.NotEmpty(CombatAnimationRouting.ForEvent(match, attack));
+        Assert.NotEmpty(CombatAnimationRouting.ForEvent(
+            match, attack, defender, CombatForceTimeline.For(match, attack)));
     }
 
     [Fact]
@@ -242,7 +243,8 @@ public sealed class CombatResultProjectionTests
             attack.Resolution!.Defender);
         var page = Assert.Single(CombatResultProjection.Pages(loaded, new PlayerId(2)));
         Assert.Equal(new GangId(30), Assert.Single(page.ForcesFor(new PlayerId(2))).Gang);
-        Assert.NotEmpty(CombatAnimationRouting.ForEvent(loaded, attack));
+        Assert.NotEmpty(CombatAnimationRouting.ForEvent(
+            loaded, attack, new PlayerId(2), CombatForceTimeline.For(loaded, attack)));
     }
 
     [Fact]

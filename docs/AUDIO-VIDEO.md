@@ -11,8 +11,9 @@ The extractor copies 28 `SND*.wav` resources without changing their bytes.
 The client keeps combat sounds separate from the recovered nine-entry general
 sound table. Combat events retain the equipped weapon sound at resolution time;
 unarmed and Martial Arts attacks use indices 0 and 1, detected police use 18,
-and evasion is silent. Detailed playback triggers a sound on the first frame of
-its corresponding animation clip, including delayed retaliation.
+and evasion is silent. Detailed playback triggers the attacker's sound on the
+first frame of the attack's clip. Retaliation plays inside that clip and has no
+sound of its own.
 
 The general table maps `SND00200` through `SND00208`; slot 5 is intentionally
 absent in the source table. Confirmed ownership is:

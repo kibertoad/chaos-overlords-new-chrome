@@ -11,9 +11,19 @@ public sealed record CombatAnimationClip(
     short AttackAnimation,
     short? HitAnimation,
     bool Reversed,
+    CombatClipForces Forces,
     bool Police = false,
     short? Sound = null,
-    CombatClipForces? Forces = null);
+    bool HandsOff = false)
+{
+    /// <summary>
+    /// The tick the clip ends on: the final-result tick when it hands off to the reply of a gang it
+    /// attacked, which the original plays without holding the result (BIN-COMBAT-PRESENT-001).
+    /// </summary>
+    public int CompletionTick => HandsOff
+        ? CombatAnimationRouting.FinalResultTick
+        : CombatAnimationRouting.CompletionTick;
+}
 
 public static class CombatAnimationRouting
 {
@@ -31,21 +41,35 @@ public static class CombatAnimationRouting
     public const short PoliceAttackAnimation = 28;
     public const short PoliceHitAnimation = 20;
 
-    public static IReadOnlyList<CombatAnimationClip> ForEvent(MatchState state, GameEvent gameEvent)
+    /// <summary>The detailed-combat clips of one event, as <paramref name="viewer"/> sees them.</summary>
+    /// <remarks>
+    /// The original presents each of the viewer's gangs on the left. Its own attack plays the
+    /// <c>PX070xx</c>/<c>PX071xx</c> pair; an attack on it, by a gang or the police, plays the
+    /// mirrored <c>PX072xx</c>/<c>PX073xx</c> pair with the attacker on the right. Retaliation has
+    /// no clip of its own: the attack's clip takes it off the attacker's force
+    /// (BIN-COMBAT-PRESENT-001). <paramref name="timeline"/> is the event's combat phase, shared by
+    /// every event of that phase so a turn's clips replay it once.
+    /// </remarks>
+    public static IReadOnlyList<CombatAnimationClip> ForEvent(
+        MatchState state,
+        GameEvent gameEvent,
+        PlayerId viewer,
+        CombatForceTimeline timeline)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gameEvent);
+        ArgumentNullException.ThrowIfNull(timeline);
+        if (!timeline.Covers(gameEvent))
+            throw new ArgumentException("The timeline is not the event's combat phase.", nameof(timeline));
         if (gameEvent.Kind == GameEventKind.PoliceAttackResolved
             && gameEvent.Gang is { } policeTarget
             && gameEvent.PoliceAttack is { } police)
         {
             if (!police.Detected) return [];
-            var policeForces = CombatForceTimeline.For(state, gameEvent)
-                .Forces(gameEvent.Sequence, retaliation: false, null, policeTarget);
             return [new CombatAnimationClip(gameEvent.Sequence, null, policeTarget,
                 PoliceAttackAnimation, HitAnimation(PoliceHitAnimation, police.Damage),
-                Reversed: true, Police: true, Sound: AudioRouting.PoliceSound,
-                Forces: policeForces)];
+                Reversed: true, timeline.Forces(gameEvent.Sequence, null, policeTarget),
+                Police: true, Sound: AudioRouting.PoliceSound)];
         }
         if (gameEvent.Action != GangAction.Attack
             || gameEvent.Gang is not { } attacker
@@ -62,30 +86,69 @@ public static class CombatAnimationRouting
         if (state.FindCombatant(gameEvent, attacker) is not { } attackingGang
             || state.FindCombatant(gameEvent, defender) is not { } defendingGang)
             return [];
+        if (resolution.Code is not (CommandResolutionCode.TargetEvaded or CommandResolutionCode.Resolved))
+            return [];
+        var incoming = attackingGang.Owner != viewer && defendingGang.Owner == viewer;
+        var forces = timeline.Forces(gameEvent.Sequence, attacker, defender);
         if (resolution.Code == CommandResolutionCode.TargetEvaded)
             return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
-                EvadedAnimation, 0, Reversed: false)];
-        if (resolution.Code != CommandResolutionCode.Resolved) return [];
+                EvadedAnimation, 0, Reversed: incoming, forces)];
 
-        var timeline = CombatForceTimeline.For(state, gameEvent);
         var attack = AnimationPair(state, attackingGang, resolution.ItemId, resolution.Damage);
-        var clips = new List<CombatAnimationClip>(2)
+        return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
+            attack.Attack, attack.Hit, Reversed: incoming, forces,
+            Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId))];
+    }
+
+    /// <summary>
+    /// The clips of <paramref name="events"/> as <paramref name="viewer"/> sees them, each combat
+    /// phase in the original's presentation order (<see cref="CombatPresentationOrder"/>).
+    /// </summary>
+    /// <remarks>
+    /// Routing omits a fight whose gangs neither the state nor the event can name, but it still
+    /// throws for an item id outside this state's definitions, which a client-side divergence can
+    /// pair with an event. Detailed combat is optional presentation, so such an event is left out
+    /// instead of crashing the game over it.
+    /// </remarks>
+    public static IReadOnlyList<CombatAnimationClip> ForPresentation(
+        MatchState state,
+        IEnumerable<GameEvent> events,
+        PlayerId viewer)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(events);
+        var clips = new List<CombatAnimationClip>();
+        // A turn has one combat phase.
+        foreach (var phase in events
+                     .OrderBy(gameEvent => gameEvent.Sequence)
+                     .GroupBy(gameEvent => gameEvent.Turn)
+                     .Select(turn => turn.ToArray()))
         {
-            new(gameEvent.Sequence, attacker, defender, attack.Attack, attack.Hit,
-                Reversed: false,
-                Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId),
-                Forces: timeline.Forces(gameEvent.Sequence, retaliation: false, attacker, defender))
-        };
-        if (resolution.RetaliationRolls is { Count: > 0 })
-        {
-            var retaliation = AnimationPair(
-                state, defendingGang, resolution.RetaliationItemId, resolution.RetaliationDamage);
-            clips.Add(new CombatAnimationClip(
-                gameEvent.Sequence, defender, attacker,
-                retaliation.Attack, retaliation.Hit, Reversed: true,
-                Sound: AudioRouting.GangAttackSound(
-                    state, defendingGang, resolution.RetaliationItemId),
-                Forces: timeline.Forces(gameEvent.Sequence, retaliation: true, defender, attacker)));
+            var presented = CombatPresentationOrder.Order(state, phase, viewer);
+            var timeline = CombatForceTimeline.ForPresentation(
+                state, presented.Select(entry => entry.Event).ToArray());
+            var phaseClips = new List<(CombatAnimationClip Clip, bool HandsOff)>();
+            foreach (var (gameEvent, handsOff) in presented)
+            {
+                try
+                {
+                    foreach (var clip in ForEvent(state, gameEvent, viewer, timeline))
+                        phaseClips.Add((clip, handsOff));
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                }
+            }
+            // A clip hands off only to the reply that actually plays straight after it.
+            for (var index = 0; index < phaseClips.Count; index++)
+            {
+                var (clip, handsOff) = phaseClips[index];
+                var reply = index + 1 < phaseClips.Count ? phaseClips[index + 1].Clip : null;
+                clips.Add(handsOff && reply is not null
+                        && reply.Attacker == clip.Defender && reply.Defender == clip.Attacker
+                    ? clip with { HandsOff = true }
+                    : clip);
+            }
         }
         return clips;
     }
@@ -190,7 +253,7 @@ public sealed class CombatAnimationPlayer
             TimelineTick++;
             if (TimelineTick == CombatAnimationRouting.FirstAnimationTick)
                 (started ??= []).Add(Active);
-            if (TimelineTick < CombatAnimationRouting.CompletionTick) continue;
+            if (TimelineTick < Active.CompletionTick) continue;
             Active = _queue.Count > 0 ? _queue.Dequeue() : null;
             TimelineTick = 0;
             if (Active is null) _elapsedMilliseconds = 0;

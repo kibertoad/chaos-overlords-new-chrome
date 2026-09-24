@@ -3,12 +3,17 @@ using Rechaos.Core.GameModel;
 namespace Rechaos.Game;
 
 /// <summary>
-/// The forces a detailed-combat clip shows: its defender before and after the hit lands, and its
-/// attacker while the hit is dealt (<c>null</c> for the police).
+/// The forces a detailed-combat clip shows before and after its hits land: its defender's, and its
+/// attacker's (<c>null</c> for the police), which drops by the retaliation it takes in that clip.
 /// </summary>
-public readonly record struct CombatClipForces(int DefenderBefore, int DefenderAfter, int? Attacker)
+public readonly record struct CombatClipForces(
+    int DefenderBefore,
+    int DefenderAfter,
+    int? AttackerBefore,
+    int? AttackerAfter)
 {
     public int DefenderDamage => DefenderBefore - DefenderAfter;
+    public int AttackerDamage => (AttackerBefore ?? 0) - (AttackerAfter ?? 0);
 }
 
 /// <summary>
@@ -20,24 +25,39 @@ public readonly record struct CombatClipForces(int DefenderBefore, int DefenderA
 /// roll, and apply the summed damage afterwards. The panel presents that phase one clip at a time,
 /// so drawing each clip from the final force plus the clip's own damage would show two gangs that
 /// attack the same target both taking it from full force: the second must start where the first
-/// left it. Hits are applied in event order, attack before retaliation, which is the order the
-/// clips are queued in.
+/// left it. Hits land in the order the clips play. The original has no retaliation clip: an
+/// attack's clip lands its damage on the defender and the retaliation on the attacker together.
+/// It also starts every bar at the phase-start force and moves it only by the clips it plays, so a
+/// presentation timeline leaves out the hits of fights the viewer is not shown
+/// (BIN-COMBAT-PRESENT-001).
 /// </remarks>
 public sealed class CombatForceTimeline
 {
     private readonly MatchState _state;
     private readonly IReadOnlyList<GameEvent> _events;
     private readonly List<Hit> _hits = [];
+    private readonly Dictionary<long, int> _clipOrder = [];
+    private readonly Dictionary<GangId, int> _phaseDamage = [];
     private readonly Dictionary<GangId, int> _initialForces = [];
 
-    private CombatForceTimeline(MatchState state, IReadOnlyList<GameEvent> events)
+    private CombatForceTimeline(
+        MatchState state,
+        IReadOnlyList<GameEvent> events,
+        IReadOnlyList<GameEvent> presented)
     {
         _state = state;
         _events = events;
-        foreach (var gameEvent in events) AddHits(gameEvent);
+        foreach (var gameEvent in events)
+            foreach (var hit in HitsOf(gameEvent, 0))
+                _phaseDamage[hit.Gang] = _phaseDamage.GetValueOrDefault(hit.Gang) + hit.Damage;
+        for (var order = 0; order < presented.Count; order++)
+        {
+            _clipOrder.Add(presented[order].Sequence, order);
+            _hits.AddRange(HitsOf(presented[order], order));
+        }
     }
 
-    /// <summary>The combat phase <paramref name="gameEvent"/> belongs to.</summary>
+    /// <summary>The combat phase <paramref name="gameEvent"/> belongs to, played in event order.</summary>
     public static CombatForceTimeline For(MatchState state, GameEvent gameEvent)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -53,21 +73,58 @@ public sealed class CombatForceTimeline
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(events);
         ArgumentNullException.ThrowIfNull(gameEvent);
-        return new CombatForceTimeline(state, CombatPhaseEvents(events, gameEvent));
+        var phase = CombatPhaseEvents(events, gameEvent);
+        return new CombatForceTimeline(state, phase, phase);
     }
 
-    /// <summary>The forces a clip of the event at <paramref name="sequence"/> shows.</summary>
-    /// <param name="retaliation">Whether the clip is the event's retaliation rather than its attack.</param>
-    public CombatClipForces Forces(long sequence, bool retaliation, GangId? attacker, GangId defender)
+    /// <summary>
+    /// The combat phase of <paramref name="presented"/>, played in that order and moved only by
+    /// those events.
+    /// </summary>
+    public static CombatForceTimeline ForPresentation(
+        MatchState state,
+        IReadOnlyList<GameEvent> presented)
     {
-        var step = Step(sequence, retaliation);
-        var before = ForceBefore(defender, step);
-        var after = step < _hits.Count && _hits[step].Sequence == sequence
-                && _hits[step].Retaliation == retaliation && _hits[step].Gang == defender
-            ? Math.Max(0, before - _hits[step].Damage)
-            : before;
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(presented);
+        if (presented.Count == 0)
+            throw new ArgumentException("A presentation needs at least one event.", nameof(presented));
+        var phase = CombatPhaseEvents(state.Events, presented[0]);
+        if (presented.Any(gameEvent => IndexOf(phase, gameEvent.Sequence) < 0))
+            throw new ArgumentException("Every presented event must belong to one combat phase.", nameof(presented));
+        return new CombatForceTimeline(state, phase, presented);
+    }
+
+    /// <summary>Whether <paramref name="gameEvent"/> belongs to this timeline's combat phase.</summary>
+    public bool Covers(GameEvent gameEvent)
+    {
+        ArgumentNullException.ThrowIfNull(gameEvent);
+        return IndexOf(_events, gameEvent.Sequence) >= 0;
+    }
+
+    /// <summary>The forces the clip of the event at <paramref name="sequence"/> shows.</summary>
+    public CombatClipForces Forces(long sequence, GangId? attacker, GangId defender)
+    {
+        // An event the timeline does not play shows the forces after every clip it does.
+        var order = _clipOrder.TryGetValue(sequence, out var played) ? played : int.MaxValue;
+        var step = Step(order);
+        var defenderBefore = ForceBefore(defender, step);
+        var defenderAfter = ForceAfter(defender, defenderBefore, order, step);
+        if (attacker is not { } dealer)
+            return new CombatClipForces(defenderBefore, defenderAfter, null, null);
+        var attackerBefore = ForceBefore(dealer, step);
         return new CombatClipForces(
-            before, after, attacker is { } dealer ? ForceBefore(dealer, step) : null);
+            defenderBefore, defenderAfter,
+            attackerBefore, ForceAfter(dealer, attackerBefore, order, step));
+    }
+
+    /// <summary>The force <paramref name="gang"/> keeps once the clip's own hits have landed.</summary>
+    private int ForceAfter(GangId gang, int force, int order, int step)
+    {
+        for (var index = step; index < _hits.Count && _hits[index].Order == order; index++)
+            if (_hits[index].Gang == gang)
+                force = Math.Max(0, force - _hits[index].Damage);
+        return force;
     }
 
     private int ForceBefore(GangId gang, int step)
@@ -79,14 +136,11 @@ public sealed class CombatForceTimeline
         return force;
     }
 
-    /// <summary>The number of hits that land before the clip identified by the arguments.</summary>
-    private int Step(long sequence, bool retaliation)
+    /// <summary>The number of hits that land before the clip played at <paramref name="order"/>.</summary>
+    private int Step(int order)
     {
         var step = 0;
-        while (step < _hits.Count
-               && (_hits[step].Sequence < sequence
-                   || _hits[step].Sequence == sequence && retaliation && !_hits[step].Retaliation))
-            step++;
+        while (step < _hits.Count && _hits[step].Order < order) step++;
         return step;
     }
 
@@ -117,29 +171,26 @@ public sealed class CombatForceTimeline
 
     private int RecoveredInitialForce(GangId gang)
     {
-        var total = 0;
-        foreach (var hit in _hits)
-            if (hit.Gang == gang) total += hit.Damage;
         var current = _state.FindGang(gang)?.Force ?? 0;
-        return Math.Min(ManualRules.MaximumForce, current + total);
+        return Math.Min(ManualRules.MaximumForce, current + _phaseDamage.GetValueOrDefault(gang));
     }
 
-    private void AddHits(GameEvent gameEvent)
+    private static IEnumerable<Hit> HitsOf(GameEvent gameEvent, int order)
     {
         if (gameEvent.Kind == GameEventKind.PoliceAttackResolved
             && gameEvent.PoliceAttack is { Detected: true } police
             && gameEvent.Gang is { } policeTarget)
         {
-            _hits.Add(new Hit(gameEvent.Sequence, Retaliation: false, policeTarget, police.Damage));
-            return;
+            yield return new Hit(order, policeTarget, police.Damage);
+            yield break;
         }
         if (gameEvent.Kind != GameEventKind.CommandResolved
             || !IsGangAttack(gameEvent)
             || gameEvent.Gang is not { } attacker
             || gameEvent.Resolution is not { Code: CommandResolutionCode.Resolved } resolution)
-            return;
-        _hits.Add(new Hit(gameEvent.Sequence, Retaliation: false, TargetGang(gameEvent), resolution.Damage));
-        _hits.Add(new Hit(gameEvent.Sequence, Retaliation: true, attacker, resolution.RetaliationDamage));
+            yield break;
+        yield return new Hit(order, TargetGang(gameEvent), resolution.Damage);
+        yield return new Hit(order, attacker, resolution.RetaliationDamage);
     }
 
     /// <summary>
@@ -182,5 +233,5 @@ public sealed class CombatForceTimeline
 
     private static GangId TargetGang(GameEvent gameEvent) => new(gameEvent.Target.Id);
 
-    private readonly record struct Hit(long Sequence, bool Retaliation, GangId Gang, int Damage);
+    private readonly record struct Hit(int Order, GangId Gang, int Damage);
 }

@@ -154,21 +154,13 @@ public static partial class CommandResolver
         var snapshots = state.Players.SelectMany(player => player.Gangs)
             .ToDictionary(gang => gang.Id, gang => CombatSnapshot.For(state, gang));
         var outcomes = new List<CombatOutcome>(orderedCommands.Length);
-        var commandsByGang = orderedCommands.ToDictionary(queued => queued.Command.Gang);
-        var resolvedReciprocalEncounters = new HashSet<(int First, int Second)>();
+        // Every Attack order rolls its own attack and retaliation, including two gangs that attack
+        // each other: the original resolver has no branch that merges such a pair
+        // (BIN-COMBAT-PRESENT-001).
         foreach (var queued in orderedCommands)
         {
             var attacker = snapshots[queued.Command.Gang];
-            var targetId = new GangId(queued.Command.Target.Id);
-            var target = snapshots[targetId];
-            if (commandsByGang.TryGetValue(targetId, out var reverse)
-                && reverse.Command.Target == CommandTarget.Gang(attacker.Id))
-            {
-                var encounter = attacker.Id.Value < target.Id.Value
-                    ? (attacker.Id.Value, target.Id.Value)
-                    : (target.Id.Value, attacker.Id.Value);
-                if (!resolvedReciprocalEncounters.Add(encounter)) continue;
-            }
+            var target = snapshots[new GangId(queued.Command.Target.Id)];
             int? detectionRoll = null;
             int? detectionChance = null;
             if (target.Hidden)

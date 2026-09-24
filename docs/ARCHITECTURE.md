@@ -267,8 +267,9 @@ submit through that same recorder; its policy is not an original-parity claim.
 The audio router consumes newly appended combat-resolution events and maps
 equipped items, unarmed attacks, and detected police attacks to their original
 `SND005xx` cues while leaving evasion silent. Each cue travels with its Detailed
-Combat clip and plays at that clip's first animation tick, including the
-separately queued retaliation clip. It also owns the recovered
+Combat clip and plays at that clip's first animation tick. Each attack has one
+clip carrying its attacker's cue; retaliation lands inside it and has no cue.
+It also owns the recovered
 nine-entry general-effect slot table (`SND00200`-`SND00208`, with no slot 5);
 named slot identities replace presentation magic numbers. Setup uses the
 statically identified slot 3 accepted-input and slot 4 rejected-input cues,
