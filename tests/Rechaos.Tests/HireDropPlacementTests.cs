@@ -36,6 +36,26 @@ public sealed class HireDropPlacementTests
         Assert.Null(HireDropPlacement.Rejection(match, new PlayerId(0), OwnedSector));
     }
 
+    [Fact]
+    public void AGangOrderedToMoveAwayDoesNotTakeUpRoom()
+    {
+        var match = CreateMatch(MatchLimits.FriendlyGangsPerSector);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(20), GangAction.Move, CommandTarget.Sector(OwnedSector + 1))).Accepted);
+
+        Assert.Null(HireDropPlacement.Rejection(match, new PlayerId(0), OwnedSector));
+    }
+
+    [Fact]
+    public void AGangOrderedToTerminateDoesNotTakeUpRoom()
+    {
+        var match = CreateMatch(MatchLimits.FriendlyGangsPerSector);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(20), GangAction.Terminate, CommandTarget.None)).Accepted);
+
+        Assert.Null(HireDropPlacement.Rejection(match, new PlayerId(0), OwnedSector));
+    }
+
     private static MatchState CreateMatch(int gangsInSector, int inactiveGangs = 0)
     {
         var data = BundledOriginalData.Load();
