@@ -231,8 +231,12 @@ comparison between Strength, Fighting, and Martial Arts. An evaded hidden
 target selects attacker strip `PX07027` together with recipient strip
 `PX07100`; omitting that second strip leaves the target aperture black. For
 both unarmed and equipped attacks, zero damage overrides the normal recipient
-strip with `PX07101`. The mirrored retaliation path applies the same rules to
-`PX072xx`/`PX073xx`. Detected police selects `PX07228` with `PX07320` on
+strip with `PX07101`. The mirrored path applies the same rules to
+`PX072xx`/`PX073xx`. It plays an attack on the viewer's gang, drawn with the
+attacker on the right, and never plays retaliation, which has no clip or cue
+of its own ([BIN-COMBAT-PRESENT-001](combat-and-police.md#bin-combat-present-001---retaliation-lands-inside-the-attacks-clip)).
+An earlier reading of this finding called the mirrored path retaliation.
+Detected police selects `PX07228` with `PX07320` on
 damage or `PX07301` on zero damage, while the undetected branch never enters
 the presenter.
 
@@ -299,9 +303,9 @@ Equipped, unarmed, and detected-police combat events route their recovered
 sounds, while evasion remains silent. Combat and general effects share the
 independent recovered Effects level and its level-6 default, and both audio
 levels persist in the recreation-native preferences file. Each Detailed Combat
-clip carries its event-time cue; the player emits it on the recovered first
-animation tick, so retaliation waits for its reversed second clip instead of
-playing with the opening attack. Simple Combat does not enter this presenter.
+clip carries its attacker's event-time cue, and the player emits it on the
+recovered first animation tick. Retaliation plays no cue. Simple Combat does
+not enter this presenter.
 
 **Next validation:** Validate per-record Comlink acknowledgement, the slot-6
 cadence, countdown-warning cadence, and native amplitude behavior at runtime.

@@ -92,6 +92,7 @@ const FINDING_FAMILIES = new Map([
   ["BIN-ATTACK", "Combat"],
   ["BIN-COMBAT-ORDER", "Combat"],
   ["BIN-COMBAT-STATS", "Combat"],
+  ["BIN-COMBAT-PRESENT", "Combat"],
   ["BIN-COMBAT-RESULTS", "Combat"],
   ["BIN-DETECT", "Combat"],
   ["BIN-CHAOS", "Chaos and police"],

@@ -20,6 +20,7 @@ reference executable fingerprinted there.
   - [BIN-COMBAT-ORDER-001 - player/roster attack and police rolls](#bin-combat-order-001---playerroster-attack-and-police-rolls)
   - [BIN-COMBAT-RESULTS-001 - results pager, selection map, and bottom control](#bin-combat-results-001---results-pager-selection-map-and-bottom-control)
   - [BIN-COMBAT-STATS-001 - full opening damage is credited](#bin-combat-stats-001---full-opening-damage-is-credited)
+  - [BIN-COMBAT-PRESENT-001 - retaliation lands inside the attack's clip](#bin-combat-present-001---retaliation-lands-inside-the-attacks-clip)
   - [BIN-DETECT-001 - cooperative sector visibility aggregation](#bin-detect-001---cooperative-sector-visibility-aggregation)
 - [Chaos and police](#chaos-and-police)
   - [BIN-CHAOS-001 - roster-order rolls and grouped uncontrolled payout](#bin-chaos-001---roster-order-rolls-and-grouped-uncontrolled-payout)
@@ -108,6 +109,75 @@ collectively overkill it. Only Force application is floored at zero;
 retaliation damage is deliberately excluded from the statistic.
 
 **Confidence:** High from the sole-write inventory and local dataflow.
+
+### BIN-COMBAT-PRESENT-001 - retaliation lands inside the attack's clip
+
+**Observation:** Resolver `0x00472775` keeps one 10-byte combat record per gang
+at `0x004a11e8 + 10 * (player * 81 + roster)`, filled at decompiler lines
+487-496: byte 0 is the gang definition, bytes 1-3 its phase-start, final and
+displayed Force, byte 4 the opening damage it dealt (`-1` when the target
+evaded), byte 5 the retaliation damage it took, bytes 6-8 its equipment, and
+byte 9 the police damage it took (`-1` for none).
+The retaliation roll at lines 400-422 writes into the attacking gang's own
+slot, so an attack and its retaliation share the attacker's record and no
+record describes the retaliation on its own.
+
+Detailed Combat `0x0042e040` takes the viewing player and walks only that
+player's gangs, sector by sector and then by sector slot. For each such focal
+gang, `0x0043087e` builds an ordered list: the focal gang, then its own target,
+then every other gang in the sector whose target is the focal gang (in
+player-then-slot order, skipping the target already listed), then one police
+entry (`0xfffe`) when the focal record carries police damage. The presenter then
+runs two tests on each listed entry:
+
+- When the entry is the focal gang's target, it loads `7000 + n` and
+  `7100 + n`, the focal gang's attack sound, and subtracts byte 4 from the
+  target's Force and byte 5 from the focal gang's Force before calling
+  timeline `0x00430c23`. The timeline compares both bars with their pre-damage
+  width and flashes each changed bar in white on ticks 13 and 15. The
+  retaliation loss therefore flashes on the attacker's bar during the attack's
+  own clip.
+- When the entry's target is the focal gang, it loads `7200 + n` and
+  `7300 + n` with the entry's own attack sound and subtracts the entry's byte 4
+  from the focal gang and its byte 5 from the entry. This is the other gang's
+  opening attack, drawn from the viewer's side with the attacker on the right.
+  The police entry takes the same branch with `7228`, `7320` or `7301`, and
+  `SND00518`.
+
+An entry that passes both tests is a pair of gangs attacking each other. Its
+first clip is called with the timeline's hold flag cleared, so the timeline
+exits at tick 16 and the mirrored clip follows straight away. Every other clip
+holds the result through tick 21.
+
+**Interpretation:** Retaliation has no animation, sound or clip of its own in
+the original. The mirrored `PX072xx`/`PX073xx` pair means "the viewer's gang
+is attacked" and does not mean retaliation. This matches a controlled check of
+the original game on 2026-09-25, in which a retaliation dealt its damage
+inside the attacker's animation without a strike-back animation. The
+presenter shows a gang attack only through a gang the viewer owns, and it
+orders clips by sector, then the viewer's sector slot, then the list above.
+The recreation plays one clip per event in event order.
+
+The resolver's attack block has no branch that skips a gang whose target
+attacks it back: every gang with action 1 rolls its own attack and retaliation.
+That disagrees with the reciprocal-order coalescing in `RULE-ATTACK-001`, which
+rests on a supplied runtime observation. This finding does not change that
+rule. Coalescing may happen at order entry, which was not inspected here.
+
+**Confidence:** High for the record layout, the retaliation write, the list
+order, both presenter branches, and the shared-clip damage application. The
+reciprocal-coalescing disagreement is Medium, because only the resolver was
+inspected.
+
+**Recreation status:** `CombatAnimationRouting.ForEvent` returns one clip per
+attack. The attacker's retaliation loss comes from `CombatClipForces` and
+flashes in that clip. When the viewer's gang is the defender, the clip is
+mirrored and the attacker is drawn on the right; police clips are always
+mirrored, with the police on the right.
+
+**Next validation:** Capture two gangs attacking each other in the original to
+settle the coalescing question, and capture a sector with several of the
+viewer's gangs to confirm the per-focal-gang clip order.
 
 ### BIN-DETECT-001 - cooperative sector visibility aggregation
 

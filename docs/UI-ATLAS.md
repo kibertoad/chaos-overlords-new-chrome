@@ -331,14 +331,18 @@ silently exposed as compatible online modes.
 - Live Combat and Combat Results preserve the sector tile's native 54-by-52
   dimensions inside their map apertures, with the coordinate printed below the
   Combat Results tile.
-- Resolved combat plays the item-selected `PX070xx`+`PX071xx` eight-frame pair;
-  retaliation uses the mirrored `PX072xx`+`PX073xx` pair. The presentation also
-  routes the recovered question/evasion and police-car/beam sheets. Weapon IDs
+- The viewer's gang is drawn on the left. Its own attack plays the
+  item-selected `PX070xx`+`PX071xx` eight-frame pair, and an attack on it plays
+  the mirrored `PX072xx`+`PX073xx` pair with the attacker, a gang or the police,
+  on the right. Retaliation has no clip: the attack's clip also takes the
+  retaliation off the attacker's bar (`BIN-COMBAT-PRESENT-001`). The
+  presentation also routes the recovered question/evasion and police-car/beam
+  sheets. Weapon IDs
   used by both sides are retained in the combat event so later elimination or
   equipment changes cannot alter sound or animation selection. Static analysis
   establishes a 6 Hz presentation timer for these strips: each frame remains
   visible for 166 ms, making a complete eight-frame clip about 1.33 seconds.
-  After the strip finishes, the force lost by the struck gang alternates as a
+  After the strip finishes, the force each gang lost in the clip alternates as a
   white segment twice before the bar settles to green remaining force and red
   missing force; the recovered timer state machine also retains the result for
   five final ticks.

@@ -12,23 +12,23 @@ public sealed partial class ChaosGame
         DrawPanelArtwork(batch, pixel, _combatBackground, CombatPanelLayout.Panel);
 
         var gameEvent = EventBySequence(state.Events, clip.EventSequence);
-        var leftId = gameEvent?.Gang;
-        var rightId = gameEvent?.Target.Kind == CommandTargetKind.Gang
-            ? new GangId(gameEvent.Target.Id)
-            : clip.Defender;
-        var left = leftId is { } resolvedLeft ? state.FindCombatant(gameEvent, resolvedLeft) : null;
-        var right = state.FindCombatant(gameEvent, rightId);
+        // A reversed clip is an attack on the viewer's gang, which keeps the left side while its
+        // attacker, a gang or the police, strikes from the right.
+        var attacker = clip.Attacker is { } attackerId ? state.FindCombatant(gameEvent, attackerId) : null;
+        var defender = state.FindCombatant(gameEvent, clip.Defender);
         // Police fought where the crackdown is, which a gang that moved on afterwards has left.
-        var sectorId = gameEvent?.PoliceAttack?.SectorId ?? left?.SectorId ?? right?.SectorId ?? 0;
+        var sectorId = gameEvent?.PoliceAttack?.SectorId
+            ?? attacker?.SectorId ?? defender?.SectorId ?? 0;
         DrawCombatSector(batch, font, state, sectorId);
 
+        var attackerOnRight = clip.Reversed;
         if (clip.Police)
-            DrawPoliceCombatant(batch, pixel, font, rightSide: false);
-        else if (left is not null)
-            DrawCombatant(batch, pixel, font, state, left, rightSide: false,
+            DrawPoliceCombatant(batch, pixel, font, rightSide: attackerOnRight);
+        else if (attacker is not null)
+            DrawCombatant(batch, pixel, font, state, attacker, rightSide: attackerOnRight,
                 gameEvent?.Resolution?.ItemId, clip, gameEvent);
-        if (right is not null)
-            DrawCombatant(batch, pixel, font, state, right, rightSide: true,
+        if (defender is not null)
+            DrawCombatant(batch, pixel, font, state, defender, rightSide: !attackerOnRight,
                 gameEvent?.Resolution?.RetaliationItemId, clip, gameEvent);
 
         DrawCombatFrames(batch, pixel, clip);
@@ -161,8 +161,9 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// The force a combatant shows in <paramref name="clip"/> and the damage it takes there. A clip
-    /// carries the forces as of its place in the phase; one without them falls back to the final force.
+    /// The force a combatant shows in <paramref name="clip"/> and the damage it takes there: the
+    /// defender the attack's damage, the attacker its retaliation. A clip carries the forces as of
+    /// its place in the phase; one without them falls back to the final force.
     /// </summary>
     private static (int Force, int Damage) CombatantForce(
         MatchGangState gang,
@@ -172,17 +173,19 @@ public sealed partial class ChaosGame
         if (clip.Forces is { } forces)
         {
             if (gang.Id == clip.Defender) return (forces.DefenderAfter, forces.DefenderDamage);
-            if (gang.Id == clip.Attacker && forces.Attacker is { } attacker) return (attacker, 0);
+            if (gang.Id == clip.Attacker && forces.AttackerAfter is { } attacker)
+                return (attacker, forces.AttackerDamage);
         }
-        return (gang.Force, gang.Id == clip.Defender ? CombatDamage(gameEvent, clip) : 0);
+        return (gang.Force, CombatDamage(gameEvent, clip, gang.Id));
     }
 
-    private static int CombatDamage(GameEvent? gameEvent, CombatAnimationClip clip)
+    private static int CombatDamage(GameEvent? gameEvent, CombatAnimationClip clip, GangId gang)
     {
         if (gameEvent?.Kind == GameEventKind.PoliceAttackResolved)
-            return gameEvent.PoliceAttack?.Damage ?? 0;
+            return gang == clip.Defender ? gameEvent.PoliceAttack?.Damage ?? 0 : 0;
         if (gameEvent?.Resolution is not { } resolution) return 0;
-        return clip.Reversed ? resolution.RetaliationDamage : resolution.Damage;
+        if (gang == clip.Defender) return resolution.Damage;
+        return gang == clip.Attacker ? resolution.RetaliationDamage : 0;
     }
 
     private void DrawCombatFrames(SpriteBatch batch, Texture2D pixel, CombatAnimationClip clip)

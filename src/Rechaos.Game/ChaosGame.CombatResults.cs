@@ -39,7 +39,7 @@ public sealed partial class ChaosGame
         var events = VisibleCombatResults(_state, viewer)
             .Where(gameEvent => IsVisibleCombatEvent(_state, viewer, gameEvent))
             .OrderBy(gameEvent => gameEvent.Sequence);
-        var clips = events.SelectMany(gameEvent => CombatClipsOrNone(_state, gameEvent)).ToArray();
+        var clips = events.SelectMany(gameEvent => CombatClipsOrNone(_state, gameEvent, viewer)).ToArray();
         if (_combatAnimationTextures.Count == 0 || clips.Length == 0)
         {
             RejectInput("COMBAT DETAIL UNAVAILABLE");
@@ -89,7 +89,7 @@ public sealed partial class ChaosGame
             RejectInput("NO COMBAT DETAIL AVAILABLE");
             return;
         }
-        var clips = CombatClipsOrNone(_state, gameEvent);
+        var clips = CombatClipsOrNone(_state, gameEvent, viewer);
         if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
         {
             RejectInput("COMBAT DETAIL UNAVAILABLE");
@@ -109,11 +109,12 @@ public sealed partial class ChaosGame
     /// </remarks>
     private static IReadOnlyList<CombatAnimationClip> CombatClipsOrNone(
         MatchState state,
-        GameEvent gameEvent)
+        GameEvent gameEvent,
+        PlayerId viewer)
     {
         try
         {
-            return CombatAnimationRouting.ForEvent(state, gameEvent);
+            return CombatAnimationRouting.ForEvent(state, gameEvent, viewer);
         }
         catch (ArgumentOutOfRangeException)
         {

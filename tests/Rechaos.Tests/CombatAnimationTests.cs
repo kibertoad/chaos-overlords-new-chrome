@@ -8,7 +8,7 @@ namespace Rechaos.Tests;
 public sealed class CombatAnimationTests
 {
     [Fact]
-    public void EquippedAttackAndRetaliationUseRecordedWeaponAnimationPairs()
+    public void RetaliationPlaysNoClipOfItsOwn()
     {
         var state = CreateState();
         var gameEvent = AttackEvent(new CommandResolutionDetails(
@@ -19,17 +19,43 @@ public sealed class CombatAnimationTests
             Damage: 1,
             RetaliationDamage: 1));
 
-        var clips = CombatAnimationRouting.ForEvent(state, gameEvent);
+        var clip = Assert.Single(CombatAnimationRouting.ForEvent(state, gameEvent, new PlayerId(0)));
 
-        Assert.Equal(2, clips.Count);
-        Assert.Equal((short)3, clips[0].AttackAnimation);
-        Assert.Equal((short)2, clips[0].HitAnimation);
-        Assert.Equal(state.Definitions.Items[0].Sound, clips[0].Sound);
-        Assert.False(clips[0].Reversed);
-        Assert.Equal((short)4, clips[1].AttackAnimation);
-        Assert.Equal((short)3, clips[1].HitAnimation);
-        Assert.Equal(state.Definitions.Items[1].Sound, clips[1].Sound);
-        Assert.True(clips[1].Reversed);
+        Assert.Equal(new GangId(10), clip.Attacker);
+        Assert.Equal((short)3, clip.AttackAnimation);
+        Assert.Equal((short)2, clip.HitAnimation);
+        Assert.Equal(state.Definitions.Items[0].Sound, clip.Sound);
+        Assert.False(clip.Reversed);
+        Assert.Equal(1, clip.Forces!.Value.AttackerDamage);
+    }
+
+    [Fact]
+    public void AttackOnTheViewersGangPlaysTheMirroredPairWithTheAttackersCue()
+    {
+        var state = CreateState();
+        var gameEvent = AttackEvent(new CommandResolutionDetails(
+            CommandResolutionCode.Resolved, [], 0,
+            ItemId: 0,
+            RetaliationRolls: [4],
+            RetaliationItemId: 1,
+            Damage: 1,
+            RetaliationDamage: 1));
+
+        var clip = Assert.Single(CombatAnimationRouting.ForEvent(state, gameEvent, new PlayerId(1)));
+
+        Assert.True(clip.Reversed);
+        Assert.Equal(new GangId(10), clip.Attacker);
+        Assert.Equal(new GangId(20), clip.Defender);
+        Assert.Equal((short)3, clip.AttackAnimation);
+        Assert.Equal((short)2, clip.HitAnimation);
+        Assert.Equal(state.Definitions.Items[0].Sound, clip.Sound);
+        Assert.Equal("PX07203.bmp", CombatAnimationRouting.AttackFile(clip.AttackAnimation, clip.Reversed));
+        Assert.Equal("PX07302.bmp", CombatAnimationRouting.HitFile(clip.HitAnimation!.Value, clip.Reversed));
+
+        var evaded = Assert.Single(CombatAnimationRouting.ForEvent(state,
+            AttackEvent(new CommandResolutionDetails(CommandResolutionCode.TargetEvaded, [], 0)),
+            new PlayerId(1)));
+        Assert.True(evaded.Reversed);
     }
 
     [Fact]
@@ -137,17 +163,17 @@ public sealed class CombatAnimationTests
         GameEvent[] events = [first, second];
 
         var firstForces = CombatForceTimeline.For(state, events, first)
-            .Forces(first.Sequence, retaliation: false, new GangId(10), target.Id);
+            .Forces(first.Sequence, new GangId(10), target.Id);
         var secondForces = CombatForceTimeline.For(state, events, second)
-            .Forces(second.Sequence, retaliation: false, new GangId(11), target.Id);
+            .Forces(second.Sequence, new GangId(11), target.Id);
 
-        Assert.Equal(new CombatClipForces(10, 0, 10), firstForces);
+        Assert.Equal(new CombatClipForces(10, 0, 10, 10), firstForces);
         Assert.Equal((0, 0), (secondForces.DefenderBefore, secondForces.DefenderAfter));
         Assert.Equal(0, secondForces.DefenderDamage);
     }
 
     [Fact]
-    public void ForcesFollowAttackThenRetaliationThenPoliceThroughThePhase()
+    public void ForcesFollowAttackWithItsRetaliationThenPoliceThroughThePhase()
     {
         var state = CreateState();
         state.FindGang(new GangId(10))!.Force = 4;
@@ -163,13 +189,12 @@ public sealed class CombatAnimationTests
         GameEvent[] events = [attack, police];
         var timeline = CombatForceTimeline.For(state, events, attack);
 
-        Assert.Equal(new CombatClipForces(10, 5, 10),
-            timeline.Forces(1, retaliation: false, new GangId(10), new GangId(20)));
-        // The attacker entered with its current force plus every hit it took, since no event targets it.
-        Assert.Equal(new CombatClipForces(10, 4, 5),
-            timeline.Forces(1, retaliation: true, new GangId(20), new GangId(10)));
-        Assert.Equal(new CombatClipForces(5, 3, null),
-            timeline.Forces(2, retaliation: false, null, new GangId(20)));
+        // The attacker entered with its current force plus every hit it took, since no event
+        // targets it, and loses its retaliation in the attack's own clip.
+        Assert.Equal(new CombatClipForces(10, 5, 10, 4),
+            timeline.Forces(1, new GangId(10), new GangId(20)));
+        Assert.Equal(new CombatClipForces(5, 3, null, null),
+            timeline.Forces(2, null, new GangId(20)));
     }
 
     [Fact]
@@ -178,12 +203,11 @@ public sealed class CombatAnimationTests
         var state = CreateState();
         state.FindGang(new GangId(10))!.Force = 8;
         state.FindGang(new GangId(20))!.Force = 7;
-        var clips = CombatAnimationRouting.ForEvent(state, AttackEvent(new CommandResolutionDetails(
+        var clip = Assert.Single(CombatAnimationRouting.ForEvent(state, AttackEvent(new CommandResolutionDetails(
             CommandResolutionCode.Resolved, [], 0, PreviousValue: 10, ResultValue: 7,
-            RetaliationRolls: [6], Damage: 3, RetaliationDamage: 2)));
+            RetaliationRolls: [6], Damage: 3, RetaliationDamage: 2))));
 
-        Assert.Equal(new CombatClipForces(10, 7, 10), clips[0].Forces);
-        Assert.Equal(new CombatClipForces(10, 8, 7), clips[1].Forces);
+        Assert.Equal(new CombatClipForces(10, 7, 10, 8), clip.Forces);
     }
 
     [Fact]

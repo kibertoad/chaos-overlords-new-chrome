@@ -31,7 +31,18 @@ public static class CombatAnimationRouting
     public const short PoliceAttackAnimation = 28;
     public const short PoliceHitAnimation = 20;
 
-    public static IReadOnlyList<CombatAnimationClip> ForEvent(MatchState state, GameEvent gameEvent)
+    /// <summary>The detailed-combat clips of one event, as <paramref name="viewer"/> sees them.</summary>
+    /// <remarks>
+    /// The original presents each of the viewer's gangs on the left. Its own attack plays the
+    /// <c>PX070xx</c>/<c>PX071xx</c> pair; an attack on it, by a gang or the police, plays the
+    /// mirrored <c>PX072xx</c>/<c>PX073xx</c> pair with the attacker on the right. Retaliation has
+    /// no clip of its own: the attack's clip takes it off the attacker's force
+    /// (BIN-COMBAT-PRESENT-001). Without a viewer the attacker takes the left.
+    /// </remarks>
+    public static IReadOnlyList<CombatAnimationClip> ForEvent(
+        MatchState state,
+        GameEvent gameEvent,
+        PlayerId? viewer = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gameEvent);
@@ -41,7 +52,7 @@ public static class CombatAnimationRouting
         {
             if (!police.Detected) return [];
             var policeForces = CombatForceTimeline.For(state, gameEvent)
-                .Forces(gameEvent.Sequence, retaliation: false, null, policeTarget);
+                .Forces(gameEvent.Sequence, null, policeTarget);
             return [new CombatAnimationClip(gameEvent.Sequence, null, policeTarget,
                 PoliceAttackAnimation, HitAnimation(PoliceHitAnimation, police.Damage),
                 Reversed: true, Police: true, Sound: AudioRouting.PoliceSound,
@@ -62,32 +73,22 @@ public static class CombatAnimationRouting
         if (state.FindCombatant(gameEvent, attacker) is not { } attackingGang
             || state.FindCombatant(gameEvent, defender) is not { } defendingGang)
             return [];
+        var incoming = viewer is { } seen
+            && attackingGang.Owner != seen
+            && defendingGang.Owner == seen;
         if (resolution.Code == CommandResolutionCode.TargetEvaded)
             return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
-                EvadedAnimation, 0, Reversed: false)];
+                EvadedAnimation, 0, Reversed: incoming,
+                Forces: CombatForceTimeline.For(state, gameEvent)
+                    .Forces(gameEvent.Sequence, attacker, defender))];
         if (resolution.Code != CommandResolutionCode.Resolved) return [];
 
-        var timeline = CombatForceTimeline.For(state, gameEvent);
         var attack = AnimationPair(state, attackingGang, resolution.ItemId, resolution.Damage);
-        var clips = new List<CombatAnimationClip>(2)
-        {
-            new(gameEvent.Sequence, attacker, defender, attack.Attack, attack.Hit,
-                Reversed: false,
-                Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId),
-                Forces: timeline.Forces(gameEvent.Sequence, retaliation: false, attacker, defender))
-        };
-        if (resolution.RetaliationRolls is { Count: > 0 })
-        {
-            var retaliation = AnimationPair(
-                state, defendingGang, resolution.RetaliationItemId, resolution.RetaliationDamage);
-            clips.Add(new CombatAnimationClip(
-                gameEvent.Sequence, defender, attacker,
-                retaliation.Attack, retaliation.Hit, Reversed: true,
-                Sound: AudioRouting.GangAttackSound(
-                    state, defendingGang, resolution.RetaliationItemId),
-                Forces: timeline.Forces(gameEvent.Sequence, retaliation: true, defender, attacker)));
-        }
-        return clips;
+        return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
+            attack.Attack, attack.Hit, Reversed: incoming,
+            Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId),
+            Forces: CombatForceTimeline.For(state, gameEvent)
+                .Forces(gameEvent.Sequence, attacker, defender))];
     }
 
     public static string AttackFile(short animation, bool reversed)

@@ -65,7 +65,7 @@ are grouped by subsystem, each group names the document that holds it, and rows
 are in ID order.
 
 <!-- doc-index:begin finding-index -->
-109 findings.
+110 findings.
 
 **Executable image** — [executable-and-platform.md](original-internals/executable-and-platform.md)
 
@@ -187,6 +187,7 @@ are in ID order.
 |---|---|
 | [BIN-ATTACK-001](original-internals/combat-and-police.md#bin-attack-001---attack-picker-selector-and-target-hit-map) | Attack picker selector and target hit map |
 | [BIN-COMBAT-ORDER-001](original-internals/combat-and-police.md#bin-combat-order-001---playerroster-attack-and-police-rolls) | player/roster attack and police rolls |
+| [BIN-COMBAT-PRESENT-001](original-internals/combat-and-police.md#bin-combat-present-001---retaliation-lands-inside-the-attacks-clip) | retaliation lands inside the attack's clip |
 | [BIN-COMBAT-RESULTS-001](original-internals/combat-and-police.md#bin-combat-results-001---results-pager-selection-map-and-bottom-control) | results pager, selection map, and bottom control |
 | [BIN-COMBAT-STATS-001](original-internals/combat-and-police.md#bin-combat-stats-001---full-opening-damage-is-credited) | full opening damage is credited |
 | [BIN-DETECT-001](original-internals/combat-and-police.md#bin-detect-001---cooperative-sector-visibility-aggregation) | cooperative sector visibility aggregation |
