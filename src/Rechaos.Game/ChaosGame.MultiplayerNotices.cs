@@ -197,13 +197,19 @@ public sealed partial class ChaosGame
                 var cutOff = _online.Stage == MultiplayerStage.Playing;
                 if (AdoptOnlineState(resolved.State, restored: resolved.Planning))
                 {
+                    // Local planning events can reuse sequence numbers that the sealed turn gives
+                    // to real combat. Rewind presentation to the completed turn's boundary.
+                    var firstCompleted = resolved.State.Events
+                        .FirstOrDefault(gameEvent => gameEvent.Turn == resolved.State.Coordinator.Turn - 1);
+                    _combatPresentationProgress.ResetTo(
+                        [new PlayerId(_session!.Slot)], (firstCompleted?.Sequence ?? 0) - 1);
                     _message = cutOff
                         ? resolved.IncludedOwnOrders
                             ? "TIME UP  THE TURN SEALED WITH THE ORDERS YOU HAD SENT"
                             : "TIME UP  YOUR SEAT GAVE NO ORDERS THIS TURN"
-                        : "NEW TURN READY  PLAY AGAIN";
+                        : "NEW TURN STARTED";
                     PlayGeneralSound(AudioRouting.OnlineTurnReadySound());
-                    ShowTurnReportsOrCity();
+                    _screens.Show(ClientScreen.Handoff);
                 }
                 return;
             case MultiplayerNotice.TakeoverVoteFailed failedVote:
@@ -303,7 +309,7 @@ public sealed partial class ChaosGame
                 {
                     _online.ReadySubmissionPending = false;
                     _online.ReadySubmissionAcknowledged = true;
-                    _message = "SERVER ACKNOWLEDGED FINISHED TURN";
+                    _message = string.Empty;
                     _diagnostics?.Write("multiplayer.orders.acknowledged",
                         new Dictionary<string, string?>
                         {

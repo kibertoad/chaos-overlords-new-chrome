@@ -25,7 +25,25 @@ public sealed partial class ChaosGame
     {
         OpenCombatResults(returnScreen);
         if (_screens.Current == ClientScreen.CombatSummary)
-            ReplaySelectedCombatDetail();
+            ReplayAllCombatDetail();
+    }
+
+    private void ReplayAllCombatDetail()
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        var events = VisibleCombatResults(_state, viewer)
+            .Where(gameEvent => IsVisibleCombatEvent(_state, viewer, gameEvent))
+            .OrderBy(gameEvent => gameEvent.Sequence);
+        var clips = events.SelectMany(gameEvent => CombatAnimationRouting.ForEvent(_state, gameEvent))
+            .ToArray();
+        if (_combatAnimationTextures.Count == 0 || clips.Length == 0)
+        {
+            RejectInput("COMBAT DETAIL UNAVAILABLE");
+            return;
+        }
+        _combatAnimationPlayer.Clear();
+        foreach (var clip in clips) _combatAnimationPlayer.Enqueue(clip);
+        _message = string.Empty;
     }
 
     private void HandleCombatSummaryClick(Point point)
@@ -253,14 +271,17 @@ public sealed partial class ChaosGame
             var forces = page.ForcesFor(opponents[opponentSlot]);
             if (forces.Count == 0 || _combatSummaryOpponent == opponents[opponentSlot]) return;
             AcceptInput();
-            _combatSummaryOpponent = opponents[opponentSlot];
-            _combatSummaryEventSequence = forces[0].Event.Sequence;
+            var selected = page.Results.FirstOrDefault(result =>
+                    result.Involves(opponents[opponentSlot]) && result.Involves(viewer))
+                ?? page.Results.First(result => result.Involves(opponents[opponentSlot]));
+            SelectCombatResult(viewer, selected);
             return;
         }
         var viewerForces = page.ForcesFor(viewer);
         var forceSlot = CombatResultsLayout.FriendlyForceSlotAt(point);
         if (forceSlot is { } slot && slot < viewerForces.Count)
-            _combatSummaryEventSequence = viewerForces[slot].Event.Sequence;
+            SelectCombatResult(viewer, page.Results.First(result =>
+                result.Event.Sequence == viewerForces[slot].Event.Sequence));
     }
 
     private void EnsureCombatResultSelection(MatchState state, PlayerId viewer, CombatResultPage page)
@@ -271,16 +292,15 @@ public sealed partial class ChaosGame
 
     private void SelectDefaultCombatResult(MatchState state, PlayerId viewer, CombatResultPage page)
     {
-        _combatSummaryEventSequence = page.ForcesFor(viewer).FirstOrDefault()?.Event.Sequence
-            ?? page.Results[0].Event.Sequence;
-        _combatSummaryOpponent = null;
-        foreach (var player in state.Players.Select(candidate => candidate.Id)
-                     .Where(player => player != viewer).OrderBy(player => player.Value))
-        {
-            if (page.ForcesFor(player).Count == 0) continue;
-            _combatSummaryOpponent = player;
-            break;
-        }
+        var selected = page.Results.FirstOrDefault(result => result.Involves(viewer))
+            ?? page.Results[0];
+        SelectCombatResult(viewer, selected);
+    }
+
+    private void SelectCombatResult(PlayerId viewer, CombatResultEntry selected)
+    {
+        _combatSummaryEventSequence = selected.Event.Sequence;
+        _combatSummaryOpponent = selected.OpponentFor(viewer);
     }
 
     private GameEvent? SelectedCombatResult(CombatResultPage page) => page.Results
@@ -376,6 +396,10 @@ public sealed record CombatResultEntry(
     bool Police)
 {
     public bool Involves(PlayerId player) => FirstPlayer == player || SecondPlayer == player;
+
+    public PlayerId? OpponentFor(PlayerId player) => FirstPlayer == player
+        ? SecondPlayer
+        : SecondPlayer == player ? FirstPlayer : FirstPlayer;
 
     public GangId? GangFor(PlayerId player) => FirstPlayer == player
         ? FirstGang

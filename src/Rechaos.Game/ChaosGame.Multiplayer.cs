@@ -445,6 +445,7 @@ public sealed partial class ChaosGame
     private void ResetTransientMatchUi()
     {
         _idleGangWarningOpen = false;
+        CancelHireReject();
         ForgetGangDrag();
         _combatAnimationPlayer.Clear();
         _automaticDetailedCombatPresentation = false;
@@ -518,6 +519,7 @@ public sealed partial class ChaosGame
         // The idle-gang warning belongs to the turn that is being replaced. Left open, OK on it
         // submits the new turn as ready with no orders, and there is no taking that back.
         _idleGangWarningOpen = false;
+        CancelHireReject();
         _selectedGangIndex = 0;
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
             .FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;

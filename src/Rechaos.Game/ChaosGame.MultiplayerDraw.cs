@@ -55,7 +55,7 @@ public sealed partial class ChaosGame
     {
         if (_online.DeadlineAt is not { } deadline) return string.Empty;
         var remaining = deadline - OnlineServerNow();
-        if (remaining <= TimeSpan.Zero) return "SEALING";
+        if (remaining <= TimeSpan.Zero) return string.Empty;
         // Built when the second changes, not every frame: the string is identical in between, and
         // this runs in the draw loop of every frame a timed online turn is on screen.
         var whole = (int)remaining.TotalSeconds;
@@ -116,11 +116,10 @@ public sealed partial class ChaosGame
                     + "COMPUTER CONTROL OF YOUR SEAT",
             MultiplayerStage.WaitingForSeal =>
                 _online.ReadySubmissionPending
-                    ? "SENDING FINISHED TURN  AWAITING SERVER ACKNOWLEDGEMENT"
+                    ? "FINISHING TURN"
                     : _online.SeatedSeats > 0 && _online.ReadySeats >= _online.SeatedSeats
-                        ? $"SERVER ACKNOWLEDGED  ALL PLAYERS READY {OnlineSeatTally()}"
-                        : $"SERVER ACKNOWLEDGED  WAITING FOR OTHER PLAYERS "
-                            + $"{OnlineSeatTally()} {OnlineCountdown()}",
+                        ? "ALL PLAYERS READY"
+                        : $"WAITING FOR OTHER PLAYERS  {OnlineSeatTally()} {OnlineCountdown()}",
             // Here rather than on the message line, which anything else said since would have
             // taken over: the warning lasts exactly as long as the draft it is about.
             MultiplayerStage.Playing when _online.OpenTurnDraftUnsaved =>
