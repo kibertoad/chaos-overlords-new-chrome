@@ -203,8 +203,9 @@ internal static class HireResolver
         {
             var definition = state.Definitions.Gang(pending.GangDefinitionId);
             var cost = HireRules.InitialCost(definition);
-            var hasSectorCapacity = state.Players
-                .SelectMany(candidate => candidate.Gangs)
+            // The bound is six friendly gangs, as for Move: an opponent's gangs sharing the sector
+            // do not take one of the hiring player's places (see DECISIONS.md, 2026-09-24).
+            var hasSectorCapacity = player.Gangs
                 .Count(gang => gang.IsActive && gang.SectorId == pending.TargetSectorId)
                 < MatchLimits.FriendlyGangsPerSector;
             var canAfford = HireRules.CanAffordInitialCost(player.Cash, definition);

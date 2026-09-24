@@ -106,6 +106,11 @@ Generated from the `###` headings of this file by `node tools/update-doc-indexes
   and the contract debit leaves a negative balance at the Hire boundary. It
   excludes the following turn's income and Upkeep; a queued Sell or projected
   Chaos payout can therefore fund a reservation without a warning.
+- Sector limit: a hire fails without RNG, payment, or tombstone when the
+  hiring player already has six active gangs in the target sector. The check
+  runs before the cash check. Opponents' gangs in the sector do not count; the
+  original's all-record count is a deliberate deviation
+  ([decision](DECISIONS.md#2026-09-24--count-only-friendly-gangs-against-a-hires-sector-limit)).
 - Current exclusions: controlled runtime corroboration and behavior with
   modified or incomplete definition data remain pending.
 - Confidence: High for the range, static call sites, rejection behavior and RNG
