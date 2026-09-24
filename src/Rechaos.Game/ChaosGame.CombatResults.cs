@@ -102,9 +102,10 @@ public sealed partial class ChaosGame
 
     /// <summary>The clips for one combat event, or none when the event cannot be drawn.</summary>
     /// <remarks>
-    /// Routing throws for an item or gang this state does not know, which a restored history or a
-    /// client-side divergence can pair with an event. Detailed combat is optional presentation, so
-    /// every path that plays it omits such an event instead of crashing the game over it.
+    /// Routing already omits a fight whose gangs neither the state nor the event can name, but it
+    /// still throws for an item id outside this state's definitions, which a client-side divergence
+    /// can pair with an event. Detailed combat is optional presentation, so every path that plays
+    /// it omits such an event instead of crashing the game over it.
     /// </remarks>
     private static IReadOnlyList<CombatAnimationClip> CombatClipsOrNone(
         MatchState state,

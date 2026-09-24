@@ -69,8 +69,28 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>Whether the open turn's deadline has passed and its seal is due.</summary>
+    /// <remarks>
+    /// Not for <see cref="_sealedTurnDeadline"/>, which is the turn before's: it stays on screen
+    /// until the stream delivers the new turn's deadline, and a turn that has only just opened is
+    /// not out of time.
+    /// </remarks>
     private bool OnlineDeadlinePassed() =>
-        _online.DeadlineAt is { } deadline && deadline <= OnlineServerNow();
+        OnlineDeadlinePolicy.HasPassed(_online.DeadlineAt, _sealedTurnDeadline, OnlineServerNow());
+
+    /// <summary>
+    /// The deadline that had already passed when a new planning turn was adopted, which can only
+    /// be the sealed turn's; see <see cref="SetAsideSealedTurnDeadline"/>.
+    /// </summary>
+    private DateTimeOffset? _sealedTurnDeadline;
+
+    /// <summary>Notes a deadline the planning turn about to open must not be judged by.</summary>
+    /// <remarks>
+    /// Taken only when it has already passed. A deadline still ahead at that moment is the new
+    /// turn's, delivered first, and if the order is ever other than expected the cost is a clock
+    /// that shows nothing rather than one that says TIME UP on a turn that has just begun.
+    /// </remarks>
+    private void SetAsideSealedTurnDeadline() =>
+        _sealedTurnDeadline = OnlineDeadlinePolicy.SetAside(_online.DeadlineAt, OnlineServerNow());
 
     /// <summary>
     /// The time now on the SERVER's clock, which every online deadline is an instant on.
@@ -243,4 +263,20 @@ public sealed partial class ChaosGame
         DrawReconnectPopup(_batch, _pixel, _font);
         _batch.End();
     }
+}
+
+/// <summary>Reads an online turn's deadline, which can briefly still be the sealed turn's.</summary>
+public static class OnlineDeadlinePolicy
+{
+    /// <summary>
+    /// The deadline to set aside as the sealed turn's when a new planning turn opens: the one on
+    /// screen if it has already passed, since a new turn's own deadline is still ahead.
+    /// </summary>
+    public static DateTimeOffset? SetAside(DateTimeOffset? deadline, DateTimeOffset serverNow) =>
+        deadline is { } due && due <= serverNow ? due : null;
+
+    /// <summary>Whether the open turn is out of time, not counting the set-aside deadline.</summary>
+    public static bool HasPassed(
+        DateTimeOffset? deadline, DateTimeOffset? setAside, DateTimeOffset serverNow) =>
+        deadline is { } due && due != setAside && due <= serverNow;
 }

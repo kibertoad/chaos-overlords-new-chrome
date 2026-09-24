@@ -499,6 +499,7 @@ public sealed partial class ChaosGame
         _actions = new MatchActions(turn);
         _submittedPlanning = null;
         _state = turn.State;
+        if (authoritative.Coordinator.Turn != _online.PlanningTurn) SetAsideSealedTurnDeadline();
         _online.PlanningTurn = authoritative.Coordinator.Turn;
         _online.Stage = submission?.Ready == true
             ? MultiplayerStage.WaitingForSeal
