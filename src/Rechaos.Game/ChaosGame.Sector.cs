@@ -607,6 +607,11 @@ public sealed partial class ChaosGame
                 batch.Draw(layer, destination, CityMapLayout.Source(sectorId), Color.White);
             else
                 batch.Draw(pixel, destination, new Color(24, 37, 39));
+            if (_uiKeyedSprites is not null
+                && ObjectiveSectorMarkerPresentation.IsMarked(
+                    state.Setup.Scenario, sectorId, sector.IsImportant))
+                batch.Draw(_uiKeyedSprites, destination,
+                    OriginalSpriteLayout.ObjectiveSectorPylons, Color.White);
             DrawBorder(batch, pixel, destination,
                 column == 1 && row == 1 ? Color.White : new Color(0, 150, 45),
                 column == 1 && row == 1 ? 2 : 1);

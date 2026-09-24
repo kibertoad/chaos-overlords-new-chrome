@@ -240,6 +240,8 @@ silently exposed as compatible online modes.
   Siege landmark and over Big Man sectors 27, 28, 35, and 36. The crop contains
   the original pair of gray pylons and exactly covers the native 54-by-52 city
   cell; the prior procedural approximation and missing Big Man markers are gone.
+  The detailed-sector 3-by-3 minimap scales the same crop over each visible
+  marked sector as a recreation convenience (see DECISIONS.md, 2026-09-24).
 - The upper-right status console shows current Cash followed by the signed
   whole-city Financial projection. Hover text explains Score, Cash, Sector,
   Income, Tolerance, Support, and Chaos. In particular, sector Income is the
