@@ -267,7 +267,9 @@ public static partial class CommandResolver
                     RetaliationDamage: outcome.RetaliationDamage,
                     DetectionRoll: outcome.DetectionRoll,
                     DetectionChance: outcome.DetectionChance,
-                    RetaliationItemId: outcome.Target.WeaponItemId),
+                    RetaliationItemId: outcome.Target.WeaponItemId,
+                    Attacker: outcome.Attacker.Details,
+                    Defender: outcome.Target.Details),
                 GameNotificationKind.Combat);
             results.Add(result);
             firstEventByGang.TryAdd(outcome.Target.Id, result.Event!.Sequence);
@@ -289,7 +291,8 @@ public static partial class CommandResolver
                 outcome.Successes,
                 Math.Min(outcome.Successes, outcome.Target.Force),
                 outcome.Target.Force,
-                gang.Force);
+                gang.Force,
+                outcome.Target.Details);
             var gameEvent = state.AppendPoliceAttackEvent(outcome.Target.Owner, outcome.Target.Id, details);
             state.QueueNotification(
                 outcome.Target.Owner, GameNotificationKind.Police, outcome.Target.Id,
@@ -373,13 +376,15 @@ public static partial class CommandResolver
         bool Hidden,
         EffectiveStatistics Statistics,
         short? WeaponType,
-        short? WeaponItemId)
+        short? WeaponItemId,
+        CombatantDetails Details)
     {
         public static CombatSnapshot For(MatchState state, MatchGangState gang) => new(
             gang.Id, gang.Owner, gang.SectorId, gang.Force, gang.Hidden,
             EffectiveStatisticsCalculator.ForGang(state, gang),
             gang.WeaponItemId is { } weapon ? state.Definitions.Items[weapon].Type : null,
-            gang.WeaponItemId);
+            gang.WeaponItemId,
+            CombatantDetails.Of(gang));
     }
 
     private sealed record CombatOutcome(

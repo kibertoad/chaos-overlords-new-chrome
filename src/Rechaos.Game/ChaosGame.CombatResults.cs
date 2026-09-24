@@ -88,7 +88,7 @@ public sealed partial class ChaosGame
         IReadOnlyList<CombatAnimationClip> clips;
         try
         {
-            clips = CombatAnimationRouting.ForEvent(_state, gameEvent, _combatants);
+            clips = CombatAnimationRouting.ForEvent(_state, gameEvent);
         }
         catch (ArgumentOutOfRangeException)
         {
@@ -176,7 +176,7 @@ public sealed partial class ChaosGame
         }
         if (_combatResultCache.TryGetValue(viewer, out var cached) && cached.Key == key)
             return cached.Pages;
-        var pages = CombatResultProjection.Pages(state, viewer, _combatants);
+        var pages = CombatResultProjection.Pages(state, viewer);
         _combatResultCache[viewer] = (key, pages);
         return pages;
     }
@@ -208,7 +208,7 @@ public sealed partial class ChaosGame
         for (var slot = 0; slot < Math.Min(forces.Count, MatchLimits.FriendlyGangsPerSector); slot++)
         {
             var force = forces[slot];
-            var gang = state.FindCombatant(force.Gang, _combatants);
+            var gang = state.FindCombatant(force.Event, force.Gang);
             if (gang is null) continue;
             var cell = CombatResultsLayout.Force(slot, enemy);
             if (_gangPortraits is not null)
@@ -312,13 +312,7 @@ public sealed partial class ChaosGame
 
 public static class CombatResultProjection
 {
-    /// <param name="combatants">
-    /// Resolves gangs retired since the turn resolved; without it their fights are left out.
-    /// </param>
-    public static IReadOnlyList<CombatResultPage> Pages(
-        MatchState state,
-        PlayerId viewer,
-        CombatantHistory? combatants = null)
+    public static IReadOnlyList<CombatResultPage> Pages(MatchState state, PlayerId viewer)
     {
         ArgumentNullException.ThrowIfNull(state);
         var completedTurn = state.Coordinator.Turn - 1;
@@ -328,8 +322,7 @@ public static class CombatResultProjection
         for (var index = first; index < state.Events.Count; index++)
         {
             var gameEvent = state.Events[index];
-            if (gameEvent.Turn != completedTurn
-                || Describe(state, gameEvent, combatants) is not { } entry) continue;
+            if (gameEvent.Turn != completedTurn || Describe(state, gameEvent) is not { } entry) continue;
             entries.Add(entry);
         }
         var occupied = state.FindPlayer(viewer)?.Gangs
@@ -362,18 +355,15 @@ public static class CombatResultProjection
         return eventTurn == currentTurn - 1;
     }
 
-    private static CombatResultEntry? Describe(
-        MatchState state,
-        GameEvent gameEvent,
-        CombatantHistory? combatants)
+    private static CombatResultEntry? Describe(MatchState state, GameEvent gameEvent)
     {
         if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
-            return DescribePolice(state, gameEvent, combatants);
+            return DescribePolice(state, gameEvent);
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution is null
             || gameEvent.Gang is not { } attackerId
             || gameEvent.Target.Kind != CommandTargetKind.Gang
-            || state.FindCombatant(attackerId, combatants) is not { } attacker
-            || state.FindCombatant(new GangId(gameEvent.Target.Id), combatants) is not { } defender)
+            || state.FindCombatant(gameEvent, attackerId) is not { } attacker
+            || state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id)) is not { } defender)
             return null;
         return new CombatResultEntry(
             gameEvent, attacker.SectorId, attacker.Owner, attacker.Id,
@@ -388,12 +378,9 @@ public static class CombatResultProjection
     /// the police against a gang they did not attack, give Combat Summary a page with nothing to
     /// replay, and open the automatic combat presentation for a turn without any combat.
     /// </remarks>
-    private static CombatResultEntry? DescribePolice(
-        MatchState state,
-        GameEvent gameEvent,
-        CombatantHistory? combatants) =>
+    private static CombatResultEntry? DescribePolice(MatchState state, GameEvent gameEvent) =>
         gameEvent is { Gang: { } policeTarget, PoliceAttack: { Detected: true } police }
-        && state.FindCombatant(policeTarget, combatants) is { } target
+        && state.FindCombatant(gameEvent, policeTarget) is { } target
             ? new CombatResultEntry(
                 gameEvent, police.SectorId, target.Owner, target.Id, null, null, true)
             : null;

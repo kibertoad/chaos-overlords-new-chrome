@@ -177,7 +177,7 @@ public sealed partial class ChaosGame
                         DateTimeStyles.RoundtripKind, out var parsed)
                         ? parsed
                         : null;
-                ResetMatchPresentation(resumed.State, resumed.Match.Id);
+                ResetMatchPresentation(resumed.State);
                 _online.AwaitedSlots = AwaitedSeats(resumed.Match.Players);
                 _online.Status = string.Empty;
                 if (AdoptOnlineState(resumed.State, resumed.Submission, resumed.Turn))

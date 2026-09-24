@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-24 | [Record the gangs that fought in each combat event](#2026-09-24--record-the-gangs-that-fought-in-each-combat-event) |
 | 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
 | 2026-09-24 | [Mark objective sectors on the detailed-sector minimap](#2026-09-24--mark-objective-sectors-on-the-detailed-sector-minimap) |
 | 2026-09-24 | [Resolve cash transactions in player order](#2026-09-24--resolve-cash-transactions-in-player-order) |
@@ -35,6 +36,35 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-24 — Record the gangs that fought in each combat event
+
+**Decision.** A gang-on-gang combat event records both combatants, and a police
+attack records its target, as a `CombatantDetails` (owner, gang definition,
+sector and equipment) taken when the fight resolved. The combat reports read a
+gang that has left the roster from its event instead of dropping the fight. The
+records are part of the canonical event encoding, so the state-hash format moves
+to 3, native save format to 28, replay format to 32 and the multiplayer session
+version to 10, under
+[State fingerprint format](../AGENTS.md#state-fingerprint-format).
+
+**Reasoning.** A gang wiped out in Combat keeps its roster slot only until the
+Hire phase of the same turn: the first hire its owner resolves reuses the slot,
+and the dead gang's id stops resolving. The events carried only ids, so Combat
+Summary, Combat Detail and the automatic presentation left out exactly the
+battles that eliminated a gang, which online, where every seat hires on most
+turns, was the common case. A presentation-side memory of every gang the client
+had seen covered only turns this client had watched being planned: the turn a
+match was loaded on, and a turn that sealed while an online client was away,
+stayed unlisted. The event is the one record every client, save and replay
+already shares.
+
+**Compatibility.** The game has not been released, so no player's file is
+stranded. Older saves and journals are refused as older formats before their
+fingerprint is compared, and the session bump retires in-progress online
+matches, as [AGENTS.md](../AGENTS.md) requires when a state hash changes. The
+protocol version does not move: the server stores sessions as opaque history and
+never reads an event.
 
 ## 2026-09-24 — Refuse a hire drop on a sector already holding six friendly gangs
 

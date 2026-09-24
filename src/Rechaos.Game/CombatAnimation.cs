@@ -31,13 +31,7 @@ public static class CombatAnimationRouting
     public const short PoliceAttackAnimation = 28;
     public const short PoliceHitAnimation = 20;
 
-    /// <param name="combatants">
-    /// Resolves gangs retired since the event; without it their fights have no clips.
-    /// </param>
-    public static IReadOnlyList<CombatAnimationClip> ForEvent(
-        MatchState state,
-        GameEvent gameEvent,
-        CombatantHistory? combatants = null)
+    public static IReadOnlyList<CombatAnimationClip> ForEvent(MatchState state, GameEvent gameEvent)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gameEvent);
@@ -61,12 +55,12 @@ public static class CombatAnimationRouting
 
         var defender = new GangId(gameEvent.Target.Id);
         // Presentation can encounter an event whose gang is absent from the state being drawn: a
-        // hire in the same turn reuses the slot of a gang the fight wiped out, which the history
-        // answers for, and a restored history or a client-side divergence can still pair an event
-        // with a gang nothing remembers. Detailed combat is optional, so omit the clip instead of
-        // turning an existing synchronization problem into a game crash.
-        if (state.FindCombatant(attacker, combatants) is not { } attackingGang
-            || state.FindCombatant(defender, combatants) is not { } defendingGang)
+        // hire in the same turn reuses the slot of a gang the fight wiped out, which the event's own
+        // record answers for, and a client-side divergence can still pair an event with a gang
+        // neither the state nor the event knows. Detailed combat is optional, so omit the clip
+        // instead of turning an existing synchronization problem into a game crash.
+        if (state.FindCombatant(gameEvent, attacker) is not { } attackingGang
+            || state.FindCombatant(gameEvent, defender) is not { } defendingGang)
             return [];
         if (resolution.Code == CommandResolutionCode.TargetEvaded)
             return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,

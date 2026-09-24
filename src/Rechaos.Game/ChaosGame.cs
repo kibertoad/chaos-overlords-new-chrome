@@ -207,7 +207,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
     private readonly CombatPresentationProgress _combatPresentationProgress = new();
-    private readonly CombatantHistory _combatants = new();
     private TimeSpan _inputTime;
     private ClientScreen _gangDetailsReturnScreen = ClientScreen.City;
     private GangId? _gangDetailsInstanceId;
@@ -443,9 +442,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // Before the planning timer, so a turn that resolved on the server is adopted even on the
         // frame the local clock would otherwise have taken over the loop.
         UpdateOnlineSession();
-        // Before anything this frame can resolve a turn: the gangs a combat wipes out are only
-        // ever seen in the state that planned it.
-        if (_state is not null) _combatants.Observe(_state);
         var rightClicked = PointerButtonEdges.Pressed(
             mouse.RightButton, _previousMouse.RightButton);
         if (!_gameMenuOpen && UpdatePlanningTimer(gameTime.TotalGameTime))
@@ -895,13 +891,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     private static int Mod(int value, int divisor) => (value % divisor + divisor) % divisor;
 
-    private bool IsVisibleCombatEvent(MatchState state, PlayerId viewer, GameEvent gameEvent)
+    private static bool IsVisibleCombatEvent(MatchState state, PlayerId viewer, GameEvent gameEvent)
     {
         if (gameEvent.Kind == GameEventKind.PoliceAttackResolved) return gameEvent.Player == viewer;
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution is null) return false;
         if (gameEvent.Player == viewer) return true;
         return gameEvent.Target.Kind == CommandTargetKind.Gang
-            && state.FindCombatant(new GangId(gameEvent.Target.Id), _combatants)?.Owner == viewer;
+            && state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id))?.Owner == viewer;
     }
 
     private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
