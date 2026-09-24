@@ -122,6 +122,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentPortraitClicks = new();
+    private readonly IndexedDoubleClickTracker _attackTargetClicks = new();
     private readonly IndexedDoubleClickTracker _gangEquipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _hirePortraitClicks = new();
     private readonly short[] _playerPortraits = Enumerable.Range(0, MatchLimits.PlayerCount)
@@ -900,7 +901,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution is null) return false;
         if (gameEvent.Player == viewer) return true;
         return gameEvent.Target.Kind == CommandTargetKind.Gang
-            && state.FindGang(new GangId(gameEvent.Target.Id))?.Owner == viewer;
+            && state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id))?.Owner == viewer;
     }
 
     private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);

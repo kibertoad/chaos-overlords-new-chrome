@@ -493,6 +493,9 @@ original-game captures. The recreation implements `PX05005` and the two-stage
 player/gang selection of `PX05003`. Their acting-gang aperture, shared with the
 other gang-command panels, is the template's local `(26,17,64,64)` rectangle at
 screen `(130,142,64,64)`; Attack's opponent cells begin at screen x 202.
+As recreation QoL, a stationary double-click on an Attack target cell opens
+`PX05000` for that enemy gang; closing it returns to the same picker and
+target selection, with gang cycling disabled.
 `PX05001` is now shared by Purchase and Research: a stationary item-row
 double-click opens its art, type, description, cost, tech level and fourteen
 modifiers, then returns to the same tab/selection. It uses the same 320-pixel
