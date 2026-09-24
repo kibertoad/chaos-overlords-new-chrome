@@ -40,7 +40,10 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 **Decision.** Dropping a Hire offer on a sector where the player already has
 six active gangs is refused on the spot with "Sector gang limit reached." The
 offer stays unselected instead of being reserved as a hire. The count is the
-same current friendly count a Move into that sector is validated against.
+current friendly count a Move into that sector is validated against, less any
+gang the player has already ordered to Move away or Terminate: both resolve in
+the Execution phase, before hires, so the room they leave is there when the
+hire is placed.
 
 **Original behavior.** `BIN-HIRE-001` establishes that the shipped drop handler
 writes the destination without any capacity check, and the resolver only
