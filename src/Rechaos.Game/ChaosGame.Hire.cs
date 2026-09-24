@@ -215,6 +215,11 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
+        if (HireDropPlacement.Rejection(_state, playerId, sectorId) is { } rejection)
+        {
+            ReportInputResult(false, rejection.Message);
+            return;
+        }
         var result = _actions.QueueHire(playerId, definitionId.Value, sectorId);
         ReportHireSubmission(result, _state.FindPlayer(playerId)!);
     }

@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
 | 2026-09-24 | [Mark objective sectors on the detailed-sector minimap](#2026-09-24--mark-objective-sectors-on-the-detailed-sector-minimap) |
 | 2026-09-24 | [Resolve cash transactions in player order](#2026-09-24--resolve-cash-transactions-in-player-order) |
 | 2026-09-23 | [Do not animate the panel slide-out](#2026-09-23--do-not-animate-the-panel-slide-out) |
@@ -34,6 +35,27 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-24 — Refuse a hire drop on a sector already holding six friendly gangs
+
+**Decision.** Dropping a Hire offer on a sector where the player already has
+six active gangs is refused on the spot with "Sector gang limit reached." The
+offer stays unselected instead of being reserved as a hire. The count is the
+current friendly count a Move into that sector is validated against, less any
+gang the player has already ordered to Move away or Terminate: both resolve in
+the Execution phase, before hires, so the room they leave is there when the
+hire is placed.
+
+**Original behavior.** `BIN-HIRE-001` establishes that the shipped drop handler
+writes the destination without any capacity check, and the resolver only
+counts the gangs in the target sector at resolution, where six fail the hire.
+The recreation keeps that resolver check unchanged.
+
+**Reasoning and compatibility.** A reserved hire into a full sector showed as
+hired for the rest of the planning turn and could only fail. The refusal lives
+in the client's drop handling, not in `HireRules`, so AI hiring, replay
+validation and turn resolution are untouched; no session, save, replay or
+fingerprint version moves.
 
 ## 2026-09-24 — Mark objective sectors on the detailed-sector minimap
 
