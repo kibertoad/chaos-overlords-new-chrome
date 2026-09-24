@@ -897,7 +897,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution is null) return false;
         if (gameEvent.Player == viewer) return true;
         return gameEvent.Target.Kind == CommandTargetKind.Gang
-            && state.FindGang(new GangId(gameEvent.Target.Id))?.Owner == viewer;
+            && state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id))?.Owner == viewer;
     }
 
     private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);

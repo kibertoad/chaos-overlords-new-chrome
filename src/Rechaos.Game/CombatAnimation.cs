@@ -55,34 +55,36 @@ public static class CombatAnimationRouting
 
         var defender = new GangId(gameEvent.Target.Id);
         // Presentation can encounter an event whose gang is absent from the state being drawn: a
-        // restored history may outlive a retired roster slot, and a client-side divergence can pair
-        // an event with the wrong state before the desync repair arrives. The identifier was not
-        // randomly generated; it is simply unusable in this state. Detailed combat is optional, so
-        // omit the clip instead of turning an existing synchronization problem into a game crash.
-        if (state.FindGang(attacker) is null || state.FindGang(defender) is null) return [];
+        // hire in the same turn reuses the slot of a gang the fight wiped out, which the event's own
+        // record answers for, and a client-side divergence can still pair an event with a gang
+        // neither the state nor the event knows. Detailed combat is optional, so omit the clip
+        // instead of turning an existing synchronization problem into a game crash.
+        if (state.FindCombatant(gameEvent, attacker) is not { } attackingGang
+            || state.FindCombatant(gameEvent, defender) is not { } defendingGang)
+            return [];
         if (resolution.Code == CommandResolutionCode.TargetEvaded)
             return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
                 EvadedAnimation, 0, Reversed: false)];
         if (resolution.Code != CommandResolutionCode.Resolved) return [];
 
         var timeline = CombatForceTimeline.For(state, gameEvent);
-        var attack = AnimationPair(state, attacker, resolution.ItemId, resolution.Damage);
+        var attack = AnimationPair(state, attackingGang, resolution.ItemId, resolution.Damage);
         var clips = new List<CombatAnimationClip>(2)
         {
             new(gameEvent.Sequence, attacker, defender, attack.Attack, attack.Hit,
                 Reversed: false,
-                Sound: AudioRouting.GangAttackSound(state, attacker, resolution.ItemId),
+                Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId),
                 Forces: timeline.Forces(gameEvent.Sequence, retaliation: false, attacker, defender))
         };
         if (resolution.RetaliationRolls is { Count: > 0 })
         {
             var retaliation = AnimationPair(
-                state, defender, resolution.RetaliationItemId, resolution.RetaliationDamage);
+                state, defendingGang, resolution.RetaliationItemId, resolution.RetaliationDamage);
             clips.Add(new CombatAnimationClip(
                 gameEvent.Sequence, defender, attacker,
                 retaliation.Attack, retaliation.Hit, Reversed: true,
                 Sound: AudioRouting.GangAttackSound(
-                    state, defender, resolution.RetaliationItemId),
+                    state, defendingGang, resolution.RetaliationItemId),
                 Forces: timeline.Forces(gameEvent.Sequence, retaliation: true, defender, attacker)));
         }
         return clips;
@@ -108,7 +110,7 @@ public static class CombatAnimationRouting
 
     private static (short Attack, short Hit) AnimationPair(
         MatchState state,
-        GangId gangId,
+        MatchGangState gang,
         short? itemId,
         int damage)
     {
@@ -119,8 +121,6 @@ public static class CombatAnimationRouting
             var item = state.Definitions.Items[equipped];
             return (item.AttackAnimation, HitAnimation(item.HitAnimation, damage));
         }
-        var gang = state.FindGang(gangId)
-            ?? throw new ArgumentOutOfRangeException(nameof(gangId));
         var definition = state.Definitions.Gang(gang.DefinitionId);
         var martialArts = definition.Stats.MartialArts > 0;
         return (

@@ -1,5 +1,6 @@
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Assets;
+using Rechaos.Core.Persistence;
 using Rechaos.Game;
 using Xunit;
 
@@ -212,6 +213,84 @@ public sealed class CombatResultProjectionTests
     }
 
     [Fact]
+    public void CombatAgainstAGangWhoseSlotWasRehiredIsStillPresented()
+    {
+        var (match, attack) = ResolveAttackThenRehireTheDefendersSlot();
+        var defender = new PlayerId(2);
+
+        Assert.Null(match.FindGang(new GangId(30)));
+        var page = Assert.Single(CombatResultProjection.Pages(match, defender));
+        Assert.Equal(0, page.SectorId);
+        var force = Assert.Single(page.ForcesFor(defender));
+        Assert.Equal(new GangId(30), force.Gang);
+        Assert.NotEmpty(CombatAnimationRouting.ForEvent(match, attack));
+    }
+
+    [Fact]
+    public void ALoadedMatchStillPresentsCombatAgainstARehiredSlot()
+    {
+        var (match, _) = ResolveAttackThenRehireTheDefendersSlot();
+        using var stream = new MemoryStream();
+        NativeSaveSerializer.Save(stream, match);
+        stream.Position = 0;
+
+        var loaded = NativeSaveSerializer.Load(stream, match.Definitions);
+
+        var attack = Assert.Single(loaded.Events, gameEvent =>
+            gameEvent is { Kind: GameEventKind.CommandResolved, Action: GangAction.Attack });
+        Assert.Equal(new CombatantDetails(new PlayerId(2), 1, 0, null, null, null),
+            attack.Resolution!.Defender);
+        var page = Assert.Single(CombatResultProjection.Pages(loaded, new PlayerId(2)));
+        Assert.Equal(new GangId(30), Assert.Single(page.ForcesFor(new PlayerId(2))).Gang);
+        Assert.NotEmpty(CombatAnimationRouting.ForEvent(loaded, attack));
+    }
+
+    [Fact]
+    public void CombatEventsRecordBothCombatantsAsTheyFought()
+    {
+        var (_, attack) = ResolveAttackThenRehireTheDefendersSlot();
+
+        Assert.Equal(new CombatantDetails(new PlayerId(1), 1, 0, null, null, null),
+            attack.Resolution!.Attacker);
+        Assert.Equal(new CombatantDetails(new PlayerId(2), 1, 0, null, null, null),
+            attack.Resolution.Defender);
+    }
+
+    [Fact]
+    public void CombatantLookupPrefersTheLiveGangAndFallsBackToTheEvent()
+    {
+        var (match, attack) = ResolveAttackThenRehireTheDefendersSlot();
+
+        Assert.Same(match.FindGang(new GangId(20)), match.FindCombatant(attack, new GangId(20)));
+        var retired = match.FindCombatant(attack, new GangId(30))!;
+        Assert.Equal(new PlayerId(2), retired.Owner);
+        Assert.Equal(0, retired.Force);
+        Assert.Same(retired, match.FindCombatant(attack, new GangId(30)));
+        Assert.Null(match.FindCombatant(null, new GangId(30)));
+        Assert.Null(match.FindCombatant(attack, new GangId(99)));
+    }
+
+    [Fact]
+    public void PoliceAttackOnAGangWhoseSlotWasRehiredIsStillPresented()
+    {
+        var match = CreateCrackdownMatch();
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+        foreach (var _ in TurnStructure.ExecutionOrder) match.FinishExecutionPhase();
+        var police = Assert.Single(match.Events,
+            gameEvent => gameEvent.PoliceAttack is { Detected: true });
+        var target = police.Gang!.Value;
+        Assert.Equal(CombatantDetails.Of(match.FindGang(target)!),
+            police.PoliceAttack!.Target);
+        RetireAsHireDoes(match, target);
+        match.FinishHire(new PlayerId(0));
+        match.FinishPlayerElimination();
+
+        var page = Assert.Single(CombatResultProjection.Pages(match, new PlayerId(0)));
+        Assert.Equal(police.Sequence, Assert.Single(page.Results).Event.Sequence);
+    }
+
+    [Fact]
     public void UndetectedPoliceAreNotCombatResults()
     {
         var match = CreateCrackdownMatch();
@@ -251,6 +330,42 @@ public sealed class CombatResultProjectionTests
 
         Assert.Contains(match.Events, gameEvent => gameEvent.PoliceAttack is { Detected: false });
         Assert.Empty(CombatResultProjection.Pages(match, new PlayerId(0)));
+    }
+
+    /// <summary>
+    /// Gang 20 attacks gang 30, which is then retired the way a same-turn hire retires it.
+    /// </summary>
+    private static (MatchState Match, GameEvent Attack) ResolveAttackThenRehireTheDefendersSlot()
+    {
+        var match = CreateObservedCombatMatch();
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(1), new GangId(20), GangAction.Attack,
+            CommandTarget.Gang(new GangId(30)))).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        match.FinishCommand(new PlayerId(2));
+        foreach (var _ in TurnStructure.ExecutionOrder) match.FinishExecutionPhase();
+        RetireAsHireDoes(match, new GangId(30));
+        foreach (var player in match.Players) match.FinishHire(player.Id);
+        match.FinishPlayerElimination();
+        var attack = Assert.Single(match.Events, gameEvent =>
+            gameEvent is { Kind: GameEventKind.CommandResolved, Action: GangAction.Attack });
+        return (match, attack);
+    }
+
+    /// <summary>
+    /// What resolving a hire does to the slot of a gang with no force left: the dead gang is
+    /// replaced and its id stops resolving.
+    /// </summary>
+    private static void RetireAsHireDoes(MatchState match, GangId gangId)
+    {
+        var gang = match.FindGang(gangId)!;
+        gang.Force = 0;
+        var owner = match.FindPlayer(gang.Owner)!;
+        var slot = owner.Gangs.ToList().IndexOf(gang);
+        owner.ReplaceGang(slot, new MatchGangState(
+            match.NextGangId(), gang.Owner, definitionId: 2, gang.SectorId, force: 7));
     }
 
     private static CombatResultEntry Attack(
