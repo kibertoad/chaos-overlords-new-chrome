@@ -354,11 +354,9 @@ claim about original-game behavior.
   the opponent is also a bare-handed Martial Artist.
 - Interpretation: snapshot every gang at the Combat boundary, roll queued
   attacks and eligible retaliation in player/roster-slot order, then apply all
-  damage together. Reciprocal orders between the same two gangs form one
-  encounter: the first gang reached in the fixed scan supplies the opening
-  attack and the reverse order is represented by that encounter's single
-  retaliation, rather than creating a second attack/retaliation pair.
-  Consequently, a gang eliminated by one result still completes
+  damage together. Two gangs that attack each other each roll their own attack
+  and their own retaliation when the scan reaches them, so the pair deals two
+  opening attacks and two retaliations. Consequently, a gang eliminated by one result still completes
   attacks and retaliation calculated from its phase-start Force. Force is
   floored at zero. The executable marks a dead gang inactive without erasing
   its equipment bytes; the recreation retains those inaccessible values for
@@ -374,17 +372,20 @@ claim about original-game behavior.
   positive effective Martial Arts, has a weapon equipped, or faces a defender
   who is also an unarmed positive-Martial-Arts gang. The sole Damage Inflicted
   write adds the computed opening damage before accumulated damage is applied,
-  with no remaining-Force cap.
+  with no remaining-Force cap. No step between order entry and resolution
+  merges two gangs that attack each other (`BIN-COMBAT-PRESENT-001`). This
+  replaces an earlier reading, which no capture backed, that merged such a
+  pair into one attack and one retaliation.
 - Current exclusions: controlled native combat fixture coverage.
 - Confidence: High for weapon-skill associations, the complete Martial Arts /
   weapon / Hide retaliation gate, its damage formula, player/roster roll
-  ordering, overkill statistic accounting, and hidden-state timing;
-  Medium/High for the Force-corrected opening formula.
+  ordering, both attacks of a mutual pair, overkill statistic accounting, and
+  hidden-state timing; Medium/High for the Force-corrected opening formula.
 - Implementation: `ManualRules.CombatRating`, `ManualRules.AttackDiceCount`,
   `ManualRules.RetaliationDamage`, and `CommandResolver.ResolveCombatPhase`.
 - Tests: `CombatResolutionTests` covers effective attack/defense pools,
   retaliation, phase-start simultaneity, Martial Arts, hidden targets,
-  reciprocal-order coalescing, reversed-submission roster order,
+  both attacks of a mutual pair, reversed-submission roster order,
   elimination/equipment retention, full overkill credit from multiple attacks,
   statistics, RNG consumption, notifications, and hashes; `ManualRulesTests`
   covers the formulas.

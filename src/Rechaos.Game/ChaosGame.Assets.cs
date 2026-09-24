@@ -188,7 +188,7 @@ public sealed partial class ChaosGame
                     && IsVisibleCombatEvent(_state, viewer, gameEvent))
                     presented.Add(gameEvent);
             }
-            foreach (var clip in CombatClipsOrNone(_state, presented, viewer))
+            foreach (var clip in CombatAnimationRouting.ForPresentation(_state, presented, viewer))
                 _combatAnimationPlayer.Enqueue(clip);
         }
         _combatPresentationProgress.MarkSeen(viewer, events[^1].Sequence);

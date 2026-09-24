@@ -36,10 +36,8 @@ public sealed partial class ChaosGame
     private void ReplayAllCombatDetail()
     {
         if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
-        var events = VisibleCombatResults(_state, viewer)
-            .Where(gameEvent => IsVisibleCombatEvent(_state, viewer, gameEvent))
-            .OrderBy(gameEvent => gameEvent.Sequence);
-        var clips = CombatClipsOrNone(_state, events, viewer);
+        var clips = CombatAnimationRouting.ForPresentation(
+            _state, VisibleCombatEvents(_state, viewer), viewer);
         if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
         {
             RejectInput("COMBAT DETAIL UNAVAILABLE");
@@ -89,7 +87,16 @@ public sealed partial class ChaosGame
             RejectInput("NO COMBAT DETAIL AVAILABLE");
             return;
         }
-        var clips = CombatClipsOrNone(_state, [gameEvent], viewer);
+        // A fight of the viewer's keeps the forces it has in the whole turn's presentation; one the
+        // pager shows between other players plays from the phase-start forces. Either plays alone,
+        // so it holds its result instead of handing off to a reply that is not queued.
+        var turn = VisibleCombatEvents(_state, viewer);
+        var clips = CombatAnimationRouting.ForPresentation(
+                _state, turn.Any(visible => visible.Sequence == gameEvent.Sequence) ? turn : [gameEvent],
+                viewer)
+            .Where(clip => clip.EventSequence == gameEvent.Sequence)
+            .Select(clip => clip with { HandsOff = false })
+            .ToList();
         if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
         {
             RejectInput("COMBAT DETAIL UNAVAILABLE");
@@ -100,35 +107,12 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
-    /// <summary>The clips for <paramref name="events"/> in order, omitting any event that cannot be drawn.</summary>
-    /// <remarks>
-    /// Routing already omits a fight whose gangs neither the state nor the event can name, but it
-    /// still throws for an item id outside this state's definitions, which a client-side divergence
-    /// can pair with an event. Detailed combat is optional presentation, so every path that plays
-    /// it omits such an event instead of crashing the game over it. Consecutive events of one
-    /// combat phase share that phase's force timeline instead of each replaying it.
-    /// </remarks>
-    private static List<CombatAnimationClip> CombatClipsOrNone(
-        MatchState state,
-        IEnumerable<GameEvent> events,
-        PlayerId viewer)
-    {
-        var clips = new List<CombatAnimationClip>();
-        CombatForceTimeline? timeline = null;
-        foreach (var gameEvent in events)
-        {
-            if (timeline is null || !timeline.Covers(gameEvent))
-                timeline = CombatForceTimeline.For(state, gameEvent);
-            try
-            {
-                clips.AddRange(CombatAnimationRouting.ForEvent(state, gameEvent, viewer, timeline));
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
-        }
-        return clips;
-    }
+    /// <summary>The completed turn's fights the viewer can see, in event order.</summary>
+    private IReadOnlyList<GameEvent> VisibleCombatEvents(MatchState state, PlayerId viewer) =>
+        VisibleCombatResults(state, viewer)
+            .Where(gameEvent => IsVisibleCombatEvent(state, viewer, gameEvent))
+            .OrderBy(gameEvent => gameEvent.Sequence)
+            .ToArray();
 
     private void MoveCombatSummary(int delta)
     {

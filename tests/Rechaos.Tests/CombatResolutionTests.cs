@@ -52,7 +52,7 @@ public sealed class CombatResolutionTests
     }
 
     [Fact]
-    public void ReciprocalOrdersResolveAsOneAttackAndOneRetaliation()
+    public void GangsAttackingEachOtherEachRollAnAttackAndARetaliation()
     {
         var match = CreateMatch(playerZeroForce: 2, playerOneForce: 2);
         QueueAndEnterCombat(match, GangAction.Attack);
@@ -61,15 +61,49 @@ public sealed class CombatResolutionTests
 
         match.FinishExecutionPhase();
 
-        var result = Assert.Single(match.LastPhaseResolutions);
-        Assert.Equal(CommandResolutionCode.Resolved, result.Code);
-        var encounter = result.Event!.Resolution!;
-        Assert.Equal(Math.Max(0, initialZero - encounter.RetaliationDamage),
+        Assert.Equal([new GangId(10), new GangId(20)],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+        var zero = match.LastPhaseResolutions[0].Event!.Resolution!;
+        var one = match.LastPhaseResolutions[1].Event!.Resolution!;
+        Assert.All(match.LastPhaseResolutions,
+            result => Assert.Equal(CommandResolutionCode.Resolved, result.Code));
+        Assert.All([zero, one], resolution =>
+        {
+            Assert.NotEmpty(resolution.Rolls);
+            Assert.NotEmpty(resolution.RetaliationRolls!);
+        });
+        // Both attacks and both retaliations roll from phase-start Force, then land together.
+        Assert.Equal(Math.Max(0, initialZero - zero.RetaliationDamage - one.Damage),
             match.FindGang(new GangId(10))!.Force);
-        Assert.Equal(Math.Max(0, initialOne - encounter.Damage),
+        Assert.Equal(Math.Max(0, initialOne - zero.Damage - one.RetaliationDamage),
             match.FindGang(new GangId(20))!.Force);
-        Assert.NotEmpty(encounter.Rolls);
-        Assert.NotEmpty(encounter.RetaliationRolls!);
+    }
+
+    [Theory]
+    [InlineData(0, 10, 20)]
+    [InlineData(1, 20, 10)]
+    public void MutualAttackPlaysTheViewersAttackThenHandsOffToTheReply(
+        int viewer,
+        int viewersGang,
+        int opponent)
+    {
+        var match = CreateMatch(playerZeroForce: 8, playerOneForce: 8);
+        QueueAndEnterCombat(match, GangAction.Attack);
+        match.FinishExecutionPhase();
+        var events = match.LastPhaseResolutions.Select(result => result.Event!).ToArray();
+
+        var clips = CombatAnimationRouting.ForPresentation(match, events, new PlayerId(viewer));
+
+        Assert.Equal(2, clips.Count);
+        Assert.Equal((new GangId(viewersGang), false, true),
+            (clips[0].Attacker!.Value, clips[0].Reversed, clips[0].HandsOff));
+        Assert.Equal((new GangId(opponent), true, false),
+            (clips[1].Attacker!.Value, clips[1].Reversed, clips[1].HandsOff));
+        // The reply starts from the forces the first clip left, and ends on the resolved forces.
+        Assert.Equal(clips[0].Forces.AttackerAfter, clips[1].Forces.DefenderBefore);
+        Assert.Equal(clips[0].Forces.DefenderAfter, clips[1].Forces.AttackerBefore);
+        Assert.Equal(match.FindGang(new GangId(viewersGang))!.Force, clips[1].Forces.DefenderAfter);
+        Assert.Equal(match.FindGang(new GangId(opponent))!.Force, clips[1].Forces.AttackerAfter);
     }
 
     [Fact]

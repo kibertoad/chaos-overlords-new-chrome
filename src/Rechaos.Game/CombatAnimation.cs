@@ -13,7 +13,17 @@ public sealed record CombatAnimationClip(
     bool Reversed,
     CombatClipForces Forces,
     bool Police = false,
-    short? Sound = null);
+    short? Sound = null,
+    bool HandsOff = false)
+{
+    /// <summary>
+    /// The tick the clip ends on: the final-result tick when it hands off to the reply of a gang it
+    /// attacked, which the original plays without holding the result (BIN-COMBAT-PRESENT-001).
+    /// </summary>
+    public int CompletionTick => HandsOff
+        ? CombatAnimationRouting.FinalResultTick
+        : CombatAnimationRouting.CompletionTick;
+}
 
 public static class CombatAnimationRouting
 {
@@ -88,6 +98,59 @@ public static class CombatAnimationRouting
         return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
             attack.Attack, attack.Hit, Reversed: incoming, forces,
             Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId))];
+    }
+
+    /// <summary>
+    /// The clips of <paramref name="events"/> as <paramref name="viewer"/> sees them, each combat
+    /// phase in the original's presentation order (<see cref="CombatPresentationOrder"/>).
+    /// </summary>
+    /// <remarks>
+    /// Routing omits a fight whose gangs neither the state nor the event can name, but it still
+    /// throws for an item id outside this state's definitions, which a client-side divergence can
+    /// pair with an event. Detailed combat is optional presentation, so such an event is left out
+    /// instead of crashing the game over it.
+    /// </remarks>
+    public static IReadOnlyList<CombatAnimationClip> ForPresentation(
+        MatchState state,
+        IEnumerable<GameEvent> events,
+        PlayerId viewer)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(events);
+        var clips = new List<CombatAnimationClip>();
+        // A turn has one combat phase.
+        foreach (var phase in events
+                     .OrderBy(gameEvent => gameEvent.Sequence)
+                     .GroupBy(gameEvent => gameEvent.Turn)
+                     .Select(turn => turn.ToArray()))
+        {
+            var presented = CombatPresentationOrder.Order(state, phase, viewer);
+            var timeline = CombatForceTimeline.ForPresentation(
+                state, presented.Select(entry => entry.Event).ToArray());
+            var phaseClips = new List<(CombatAnimationClip Clip, bool HandsOff)>();
+            foreach (var (gameEvent, handsOff) in presented)
+            {
+                try
+                {
+                    foreach (var clip in ForEvent(state, gameEvent, viewer, timeline))
+                        phaseClips.Add((clip, handsOff));
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                }
+            }
+            // A clip hands off only to the reply that actually plays straight after it.
+            for (var index = 0; index < phaseClips.Count; index++)
+            {
+                var (clip, handsOff) = phaseClips[index];
+                var reply = index + 1 < phaseClips.Count ? phaseClips[index + 1].Clip : null;
+                clips.Add(handsOff && reply is not null
+                        && reply.Attacker == clip.Defender && reply.Defender == clip.Attacker
+                    ? clip with { HandsOff = true }
+                    : clip);
+            }
+        }
+        return clips;
     }
 
     public static string AttackFile(short animation, bool reversed)
@@ -190,7 +253,7 @@ public sealed class CombatAnimationPlayer
             TimelineTick++;
             if (TimelineTick == CombatAnimationRouting.FirstAnimationTick)
                 (started ??= []).Add(Active);
-            if (TimelineTick < CombatAnimationRouting.CompletionTick) continue;
+            if (TimelineTick < Active.CompletionTick) continue;
             Active = _queue.Count > 0 ? _queue.Dequeue() : null;
             TimelineTick = 0;
             if (Active is null) _elapsedMilliseconds = 0;

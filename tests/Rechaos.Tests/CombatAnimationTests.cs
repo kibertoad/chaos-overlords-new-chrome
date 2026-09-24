@@ -340,6 +340,63 @@ public sealed class CombatAnimationTests
         Assert.Null(player.Active);
     }
 
+    [Fact]
+    public void PresentationWalksTheViewersGangsBySectorThenOwnAttackReplyIncomingAndPolice()
+    {
+        var state = CreateState();
+        GameEvent Attack(long sequence, int gang, int owner, int target, int targetOwner, int sector) =>
+            AttackEvent(new CommandResolutionDetails(
+                CommandResolutionCode.Resolved, [], 0, Damage: 1,
+                Attacker: new CombatantDetails(new PlayerId(owner), 0, sector, null, null, null),
+                Defender: new CombatantDetails(new PlayerId(targetOwner), 0, sector, null, null, null))) with
+            {
+                Sequence = sequence,
+                Player = new PlayerId(owner),
+                Gang = new GangId(gang),
+                Target = CommandTarget.Gang(new GangId(target)),
+            };
+        GameEvent[] phase =
+        [
+            Attack(1, 10, 0, 20, 1, sector: 5),
+            Attack(2, 20, 1, 10, 0, sector: 5),
+            Attack(3, 21, 1, 10, 0, sector: 5),
+            Attack(4, 22, 1, 11, 0, sector: 2),
+            new GameEvent(
+                5, 1, TurnPhase.Execution, ExecutionPhase.Combat,
+                GameEventKind.PoliceAttackResolved, new PlayerId(0), new GangId(10),
+                GangAction.None, CommandTarget.Sector(5),
+                PoliceAttack: new PoliceAttackResolutionDetails(5, 100, 1, true, 20, 0, [4], 1, 1, 10, 9)),
+        ];
+
+        var presented = CombatPresentationOrder.Order(state, phase, Attacker);
+
+        // Gang 11 fights in sector 2, so it plays before gang 10 in sector 5. Gang 10's own attack
+        // hands off to gang 20's reply, then the other attack on it and the police follow.
+        Assert.Equal([4L, 1L, 2L, 3L, 5L], presented.Select(entry => entry.Event.Sequence).ToArray());
+        Assert.Equal([false, true, false, false, false],
+            presented.Select(entry => entry.HandsOff).ToArray());
+    }
+
+    [Fact]
+    public void AClipThatHandsOffEndsOnTheFinalResultTick()
+    {
+        var player = new CombatAnimationPlayer();
+        var forces = new CombatClipForces(10, 9, 10, 8);
+        var attack = new CombatAnimationClip(
+            1, new GangId(10), new GangId(20), 3, 2, false, forces, HandsOff: true);
+        var reply = new CombatAnimationClip(2, new GangId(20), new GangId(10), 3, 2, true, forces);
+        player.Enqueue(attack);
+        player.Enqueue(reply);
+
+        player.Advance(TimeSpan.FromMilliseconds(
+            (CombatAnimationRouting.FinalResultTick - 1) * CombatAnimationRouting.FrameMilliseconds));
+        Assert.Equal(attack, player.Active);
+        player.Advance(TimeSpan.FromMilliseconds(CombatAnimationRouting.FrameMilliseconds));
+
+        Assert.Equal(reply, player.Active);
+        Assert.Equal(CombatAnimationRouting.CompletionTick, reply.CompletionTick);
+    }
+
     private static readonly PlayerId Attacker = new(0);
     private static readonly PlayerId Defender = new(1);
 
