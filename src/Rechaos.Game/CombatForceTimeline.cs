@@ -67,15 +67,13 @@ public sealed class CombatForceTimeline
     {
         var step = Step(sequence);
         var defenderBefore = ForceBefore(defender, step);
+        var defenderAfter = ForceAfter(defender, defenderBefore, sequence, step);
         if (attacker is not { } dealer)
-            return new CombatClipForces(
-                defenderBefore, ForceAfter(defender, defenderBefore, sequence, step), null, null);
+            return new CombatClipForces(defenderBefore, defenderAfter, null, null);
         var attackerBefore = ForceBefore(dealer, step);
         return new CombatClipForces(
-            defenderBefore,
-            ForceAfter(defender, defenderBefore, sequence, step),
-            attackerBefore,
-            ForceAfter(dealer, attackerBefore, sequence, step));
+            defenderBefore, defenderAfter,
+            attackerBefore, ForceAfter(dealer, attackerBefore, sequence, step));
     }
 
     /// <summary>The force <paramref name="gang"/> keeps once the event's own hits have landed.</summary>

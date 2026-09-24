@@ -73,22 +73,22 @@ public static class CombatAnimationRouting
         if (state.FindCombatant(gameEvent, attacker) is not { } attackingGang
             || state.FindCombatant(gameEvent, defender) is not { } defendingGang)
             return [];
+        if (resolution.Code is not (CommandResolutionCode.TargetEvaded or CommandResolutionCode.Resolved))
+            return [];
         var incoming = viewer is { } seen
             && attackingGang.Owner != seen
             && defendingGang.Owner == seen;
+        var forces = CombatForceTimeline.For(state, gameEvent)
+            .Forces(gameEvent.Sequence, attacker, defender);
         if (resolution.Code == CommandResolutionCode.TargetEvaded)
             return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
-                EvadedAnimation, 0, Reversed: incoming,
-                Forces: CombatForceTimeline.For(state, gameEvent)
-                    .Forces(gameEvent.Sequence, attacker, defender))];
-        if (resolution.Code != CommandResolutionCode.Resolved) return [];
+                EvadedAnimation, 0, Reversed: incoming, Forces: forces)];
 
         var attack = AnimationPair(state, attackingGang, resolution.ItemId, resolution.Damage);
         return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
             attack.Attack, attack.Hit, Reversed: incoming,
             Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId),
-            Forces: CombatForceTimeline.For(state, gameEvent)
-                .Forces(gameEvent.Sequence, attacker, defender))];
+            Forces: forces)];
     }
 
     public static string AttackFile(short animation, bool reversed)

@@ -230,7 +230,7 @@ public sealed class CombatAnimationTests
         var first = new CombatAnimationClip(
             1, new GangId(10), new GangId(20), 3, 2, false, Sound: 5);
         var second = new CombatAnimationClip(
-            1, new GangId(20), new GangId(10), 4, 3, true, Sound: 8);
+            2, new GangId(20), new GangId(10), 4, 3, true, Sound: 8);
         player.Enqueue(first);
         player.Enqueue(second);
 
@@ -277,7 +277,7 @@ public sealed class CombatAnimationTests
     {
         var player = new CombatAnimationPlayer();
         player.Enqueue(new CombatAnimationClip(1, new GangId(10), new GangId(20), 3, 2, false));
-        player.Enqueue(new CombatAnimationClip(1, new GangId(20), new GangId(10), 4, 3, true));
+        player.Enqueue(new CombatAnimationClip(2, new GangId(20), new GangId(10), 4, 3, true));
 
         player.Advance(TimeSpan.FromMilliseconds(500));
         player.Clear();
