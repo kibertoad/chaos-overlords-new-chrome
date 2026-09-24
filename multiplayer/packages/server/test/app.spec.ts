@@ -203,7 +203,7 @@ describe('server app over in-memory storage', () => {
       ).matches.map((listing) => [listing.name, listing.sessionVersion])
 
     expect(await names('?sessionVersion=2')).toEqual([['v2', 2]])
-    expect((await names('')).toSorted()).toEqual([
+    expect((await names('')).sort()).toEqual([
       ['v1', 1],
       ['v2', 2],
     ])

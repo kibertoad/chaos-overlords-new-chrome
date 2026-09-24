@@ -385,9 +385,10 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
      */
     it('narrows the public listing to one session version before the limit', async () => {
       const current = matchFixture({ createdAt: new Date('2026-03-01T09:00:00.000Z') })
+      // Newer than anything another test stores, so it heads the unfiltered page.
       const newer = matchFixture({
         sessionVersion: 2,
-        createdAt: new Date('2026-03-01T12:00:00.000Z'),
+        createdAt: new Date('2099-03-01T12:00:00.000Z'),
       })
       for (const match of [current, newer]) {
         await storage.matches.create(match)
@@ -405,9 +406,11 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         mine.has(entry.id),
       )
       expect(onlyNewer.map((entry) => entry.id)).toEqual([newer.id])
-      expect(
-        (await storage.matches.listPublicLobbies(1, 1)).some((entry) => entry.id === newer.id),
-      ).toBe(false)
+      // Filtered after the limit, the one place on the page would go to `newer` and then be
+      // dropped, leaving nothing; filtered before it, a version-1 match takes that place.
+      const onePage = await storage.matches.listPublicLobbies(1, 1)
+      expect(onePage).toHaveLength(1)
+      expect(onePage[0]?.sessionVersion).toBe(1)
     })
 
     it('finds players by token hash, orders them by slot then join order, and updates status/slots', async () => {

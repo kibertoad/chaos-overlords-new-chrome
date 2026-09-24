@@ -89,8 +89,8 @@ public sealed record MultiplayerRecoveryFailure(
 /// A file from a build that did not write it has none, which reads back as a session without one.
 /// </para>
 /// <para>
-/// <see cref="SessionVersion"/> is kept so the browser can say that a seat cannot be taken before
-/// the game dials the server for it. It is additive in both directions, which is why it does not
+/// <see cref="SessionVersion"/> is kept so the browser can leave out a seat this build cannot take
+/// before the game dials the server for it. It is additive in both directions, which is why it does not
 /// move <see cref="MultiplayerRecoveryHistory.CurrentFormatVersion"/>: a build that does not know
 /// the field ignores it and keeps its reconnects, and a build that does reads a file without one
 /// as <see cref="MultiplayerSessionVersion.Initial"/>, the only version that can have been stored

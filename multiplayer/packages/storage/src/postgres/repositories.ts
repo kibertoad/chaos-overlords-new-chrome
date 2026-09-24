@@ -134,8 +134,8 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
           and(
             inArray(matches.status, ['lobby', 'running']),
             eq(matches.visibility, 'public'),
-            or(ne(matches.status, 'running'), sql`${humanSeats} > 0`),
             sessionVersion === undefined ? undefined : eq(matches.sessionVersion, sessionVersion),
+            or(ne(matches.status, 'running'), sql`${humanSeats} > 0`),
           ),
         )
         .orderBy(desc(matches.createdAt), asc(matches.id))
