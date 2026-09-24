@@ -31,8 +31,12 @@ public sealed partial class ChaosGame
     ///
     /// The grace is re-armed rather than cleared, so a second silence of the same length asks
     /// again; the request is cheap and idempotent.
+    ///
+    /// When <paramref name="resyncRequested"/> says the overdue-seal watchdog already asked on this
+    /// frame, the grace is still re-armed but its resync and status are left to that request, so
+    /// the message line is not decided by which of the two happened to run last.
     /// </remarks>
-    private void CheckOnlineResolutionWatchdog()
+    private void CheckOnlineResolutionWatchdog(bool resyncRequested)
     {
         if (_session is not { } session
             || _online.ResolutionExpectedSince is not { } since
@@ -47,6 +51,7 @@ public sealed partial class ChaosGame
                 ["seated"] = _online.SeatedSeats.ToString(CultureInfo.InvariantCulture),
             });
         _online.ResolutionExpectedSince = MonotonicClock.Now;
+        if (resyncRequested) return;
         _online.Status = "NO SEALED TURN YET  RESYNCHRONISING WITH THE SERVER";
         session.RequestResync();
     }
@@ -57,18 +62,19 @@ public sealed partial class ChaosGame
     /// <remarks>
     /// Only while the turn is still waiting on its seal. A desync pause and a finished match have
     /// their own explanations on screen, and a lost connection is already being re-established.
+    /// Answers whether it asked for a resync on this frame.
     /// </remarks>
-    private void CheckOnlineOverdueSeal()
+    private bool CheckOnlineOverdueSeal()
     {
         if (_session is not { } session || !_online.IsConnected
             || _online.Stage is not (MultiplayerStage.Playing or MultiplayerStage.WaitingForSeal))
         {
             _onlineOverdueSeal.Stop();
-            return;
+            return false;
         }
         if (!_onlineOverdueSeal.Advance(
                 _online.PlanningTurn, _online.DeadlineAt, OnlineServerNow(), MonotonicClock.Now))
-            return;
+            return false;
         _diagnostics?.Write("multiplayer.turn-deadline.overdue",
             new Dictionary<string, string?>
             {
@@ -77,6 +83,7 @@ public sealed partial class ChaosGame
             });
         _online.Status = "TIME IS UP BUT THE TURN HAS NOT SEALED  RESYNCHRONISING WITH THE SERVER";
         session.RequestResync();
+        return true;
     }
 
     private string OnlineFailureMessage(string reason)

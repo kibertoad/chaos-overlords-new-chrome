@@ -178,39 +178,54 @@ export class TurnService {
 
   /** Seal `number` if its trigger condition holds. Returns whether THIS call sealed it. */
   async trySeal(matchId: string, number: number, trigger: SealTrigger): Promise<boolean> {
+    const match = await this.claimSeal(matchId, number, trigger)
+    if (!match) return false
+    await this.completeSeal(match, number)
+    return true
+  }
+
+  /**
+   * The CAS half of {@link trySeal}: move `number` from open to sealed if its trigger condition
+   * holds, and answer the match it was sealed in, or null when this call did not seal it. The
+   * caller owes the seal its `completeSeal`, which the sweep also finishes if the caller cannot.
+   */
+  private async claimSeal(
+    matchId: string,
+    number: number,
+    trigger: SealTrigger,
+  ): Promise<Match | null> {
     const match = await this.deps.storage.matches.get(matchId)
-    if (match?.status !== 'running') return false
+    if (match?.status !== 'running') return null
     const turn = await this.deps.storage.turns.get(matchId, number)
-    if (turn?.status !== 'open') return false
+    if (turn?.status !== 'open') return null
     if (trigger === 'deadline') {
-      if (turn.deadlineAt === null) return false
+      if (turn.deadlineAt === null) return null
       const now = this.deps.clock.now()
       if (turn.deadlineAt.getTime() > now.getTime()) {
         await this.rearmEarlyDeadline(matchId, number, turn.deadlineAt, now)
-        return false
+        return null
       }
       // A second guard behind `pauseAbandonedMatch`: a deadline that survived it, or one armed
       // before this rule existed, must not go on sealing empty turns in a match nobody is in.
       const roster = await this.deps.storage.players.listByMatch(matchId)
       if (activePlayers(roster).length === 0) {
         await this.clearOpenDeadline(matchId)
-        return false
+        return null
       }
     } else {
       const [awaited, orders] = await Promise.all([
         this.awaitedRoster(matchId),
         this.deps.storage.turns.listOrderSummaries(matchId, number),
       ])
-      if (!allAwaitedReady(awaited, orders)) return false
+      if (!allAwaitedReady(awaited, orders)) return null
     }
     const won = await this.deps.storage.turns.transition(matchId, number, ['open'], {
       status: 'sealed',
       sealedAt: this.deps.clock.now(),
     })
-    if (!won) return false
+    if (!won) return null
     this.deps.logger.info('turn sealed', { matchId, turn: number, trigger })
-    await this.completeSeal(match, number)
-    return true
+    return match
   }
 
   /**
@@ -236,25 +251,32 @@ export class TurnService {
   async sealIfOverdue(match: Match): Promise<Match> {
     // An untimed match never has a deadline to be late with, so it costs the read no query.
     if (match.status !== 'running' || match.settings.turnTimerSeconds === 0) return match
+    // Whether this call won the CAS, so a failure after it is not reported as a seal that failed:
+    // the turn is sealed by then, and only its completion is left to the sweep.
+    let claimed = false
     try {
       const turn = await this.deps.storage.turns.get(match.id, match.currentTurn)
       if (turn?.status === 'open') {
         if (turn.deadlineAt === null) return match
         if (turn.deadlineAt.getTime() > this.deps.clock.now().getTime()) return match
-        if (await this.trySeal(match.id, match.currentTurn, 'deadline')) {
+        const sealedIn = await this.claimSeal(match.id, match.currentTurn, 'deadline')
+        if (sealedIn) {
+          claimed = true
           this.deps.logger.warn('sealed an overdue turn on read', {
             matchId: match.id,
             turn: match.currentTurn,
           })
+          await this.completeSeal(sealedIn, match.currentTurn)
         }
       }
       return (await this.deps.storage.matches.get(match.id)) ?? match
     } catch (error) {
-      this.deps.logger.warn('could not seal an overdue turn on read', {
-        matchId: match.id,
-        turn: match.currentTurn,
-        error: String(error),
-      })
+      this.deps.logger.warn(
+        claimed
+          ? 'sealed an overdue turn on read but could not complete it; the sweep finishes it'
+          : 'could not seal an overdue turn on read',
+        { matchId: match.id, turn: match.currentTurn, error: String(error) },
+      )
       return match
     }
   }

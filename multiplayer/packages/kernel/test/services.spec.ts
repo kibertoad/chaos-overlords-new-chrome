@@ -916,6 +916,26 @@ describe('the lobby, the roster and the turn barrier', () => {
     }
 
     expect(await h.kernel.turns.sealIfOverdue(match)).toBe(match)
+    expect(h.logger.lines.at(-1)?.msg).toBe('could not seal an overdue turn on read')
+  })
+
+  it('reports a seal won on read whose completion failed as sealed, not as a failed seal', async () => {
+    const { host } = await h.startedMatch(60)
+    h.clock.advance(61_000)
+    const match = (await h.principalOf(host.token)).match
+    // Fails only after the CAS has already moved the turn to sealed.
+    h.storage.turns.freezeSeal = async () => {
+      throw new Error('database blip')
+    }
+
+    expect(await h.kernel.turns.sealIfOverdue(match)).toBe(match)
+    expect((await h.storage.turns.get(match.id, 1))?.status).toBe('sealed')
+    const warnings = h.logger.lines.filter((line) => line.level === 'warn').map((line) => line.msg)
+    expect(warnings).toContain('sealed an overdue turn on read')
+    expect(warnings).not.toContain('could not seal an overdue turn on read')
+    expect(warnings.at(-1)).toBe(
+      'sealed an overdue turn on read but could not complete it; the sweep finishes it',
+    )
   })
 
   it('does not re-arm a paused turn, which has no deadline to wait for', async () => {

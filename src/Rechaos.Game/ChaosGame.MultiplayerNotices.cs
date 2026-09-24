@@ -50,8 +50,9 @@ public sealed partial class ChaosGame
     {
         while (_lobby?.TryDequeueNotice(out var lobbyNotice) == true) Apply(lobbyNotice);
         while (_session?.TryDequeueNotice(out var notice) == true) Apply(notice);
-        CheckOnlineResolutionWatchdog();
-        CheckOnlineOverdueSeal();
+        // The overdue check goes first and the resolution watchdog defers to it: an all-ready turn
+        // past its deadline trips both on one frame, and the status names the one cause asked about.
+        CheckOnlineResolutionWatchdog(resyncRequested: CheckOnlineOverdueSeal());
     }
 
     private void Apply(LobbyNotice notice)
