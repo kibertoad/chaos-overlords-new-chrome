@@ -96,16 +96,27 @@ public static class AudioRouting
     public static short GangAttackSound(MatchState state, GangId gangId, short? itemId)
     {
         ArgumentNullException.ThrowIfNull(state);
-        if (itemId is { } weapon)
-        {
-            if (weapon < 0 || weapon >= state.Definitions.Items.Count)
-                throw new ArgumentOutOfRangeException(nameof(itemId));
-            return state.Definitions.Items[weapon].Sound;
-        }
+        if (itemId is not null) return ItemSound(state, itemId.Value);
         var gang = state.FindGang(gangId)
             ?? throw new ArgumentOutOfRangeException(nameof(gangId));
+        return GangAttackSound(state, gang, itemId);
+    }
+
+    /// <summary>The attack cue of <paramref name="gang"/>, which need not be in the roster any more.</summary>
+    public static short GangAttackSound(MatchState state, MatchGangState gang, short? itemId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(gang);
+        if (itemId is { } weapon) return ItemSound(state, weapon);
         var definition = state.Definitions.Gang(gang.DefinitionId);
         return definition.Stats.MartialArts > 0 ? MartialArtsSound : UnarmedSound;
+    }
+
+    private static short ItemSound(MatchState state, short weapon)
+    {
+        if (weapon < 0 || weapon >= state.Definitions.Items.Count)
+            throw new ArgumentOutOfRangeException("itemId");
+        return state.Definitions.Items[weapon].Sound;
     }
 
     public static string SoundFile(short index)

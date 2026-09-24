@@ -409,13 +409,15 @@ public sealed partial class ChaosGame
     /// leaves its combat progress behind — the new match's events carry lower sequence numbers, so
     /// they read as already seen and their animations never play — along with its site-search
     /// markers and its last-turn reports, which the events panel matches on player and turn number
-    /// alone and would happily show from the wrong match.
+    /// alone and would happily show from the wrong match, and the gangs it remembers for combat,
+    /// whose ids every match hands out again from the start.
     /// </remarks>
     private void ResetMatchPresentation(MatchState state)
     {
         _combatPresentationProgress.ResetTo(
             state.Players.Select(player => player.Id),
             state.Events.LastOrDefault()?.Sequence ?? -1);
+        _combatants.Clear();
         ResetTransientMatchUi();
         _siteSearchSelections.Reset();
         _lastTurnEventArchive.Clear();
