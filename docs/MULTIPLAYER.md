@@ -157,10 +157,10 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | Call | Who | Effect |
 |---|---|---|
 | `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `hostPortraitId` is the overlord face the host sits down under, stored on their roster row. `settings.gameSettings` is an object the server stores for clients (scenario, the portraits that dress the unclaimed seats, difficulty) and reads two keys of: `allowLateJoin` gates the late-join door, and `seatSummaries` is written back from the host's snapshot uploads and hash reports for the public listing. Everything else in it is opaque. The server also reads `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`. An optional `password` gates joining. |
-| `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings and available late-join seats with current gang, site, and sector counts. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
+| `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings, each match's `sessionVersion`, and available late-join seats with current gang, site, and sector counts. `?sessionVersion=N` narrows the list to matches stored under that session version before the page limit applies; the desktop client always sends its own, so a public match it could not play is never listed. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
 | `POST /matches/join` | anyone | Joins by code (and password), under the caller's chosen `portraitId`. Returns that player's token. Capacity is a single atomic seat claim. |
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings`: the match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
-| `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |
+| `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
@@ -273,6 +273,12 @@ Durable Object whose clock is behind the isolate that set the deadline) does not
 itself for the deadline, at least 250 ms out, rather than leaving the turn to the sweep. On
 Cloudflare the retry also lands at least 250 ms past the time the alarm fired at, since the alarm
 scheduler keeps its own clock and would otherwise refire at once while the object's clock lags.
+A member reading the match view is the third path: the read seals an open turn whose deadline has
+already passed, then answers the match as it stands afterwards. A client whose countdown has been on
+zero for ten seconds with no seal resynchronises, and that rebuild's read is what seals a turn the
+timer lost and the sweep has not reached yet — on Cloudflare the cron can be minutes away. The read
+never seals a turn before its deadline, and a seal that fails there is logged and left to the timer
+and the sweep rather than failing the read.
 Sealing on the deadline includes whatever each player last submitted; a player who submitted
 nothing contributes no orders.
 
@@ -726,9 +732,9 @@ does not retain the response body, credentials, player names, settings, or order
 what the list of unfinished sessions is read by: each row names the game and says when it was last
 played, so a player with seats in more than one match can tell them apart. A normal shutdown
 marks that record clean; an unclean exit leaves it resumable, so the next launch points the player
-to a Reconnect action. The previous-sessions browser lists a seat whose session version this build
-does not play with `INCOMPATIBLE` beside it and refuses to rejoin it, rather than dropping the row
-or spending a round trip on a refusal the match view would answer with anyway. Terminal online
+to a Reconnect action. The previous-sessions browser leaves out a seat whose session version this build
+does not play: the record stays on disk, so a build of that session version lists it again, but
+this one neither offers it nor prefills its join code. Terminal online
 errors are shown on the title screen and name that recovery path when the saved membership may
 still be valid. A completed match or an explicit Leave retires
 the recovery record, and a retired record is dropped rather than written back: the token is a full

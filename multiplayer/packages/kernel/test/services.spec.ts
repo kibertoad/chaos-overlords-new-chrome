@@ -866,6 +866,78 @@ describe('the lobby, the roster and the turn barrier', () => {
     })
   })
 
+  it('seals a turn whose deadline passed with no timer when a member reads the match', async () => {
+    const { host } = await h.startedMatch(60)
+    // The timer that should have sealed turn 1 is lost; nothing but the read below can seal it.
+    h.clock.advance(61_000)
+    const before = (await h.principalOf(host.token)).match
+
+    const after = await h.kernel.turns.sealIfOverdue(before)
+
+    expect(after.currentTurn).toBe(2)
+    expect((await h.kernel.query.view(after)).turn?.number).toBe(2)
+    const types = h.notifier.events.map((event) => event.type)
+    expect(types.slice(-2)).toEqual(['turn.sealed', 'turn.opened'])
+  })
+
+  it('never seals a turn on read before its deadline, nor one without a clock', async () => {
+    const timed = await h.startedMatch(60)
+    h.clock.advance(59_000)
+    const running = (await h.principalOf(timed.host.token)).match
+    expect(await h.kernel.turns.sealIfOverdue(running)).toBe(running)
+    const untimed = await h.startedMatch(0)
+    h.clock.advance(3_600_000)
+    const paused = (await h.principalOf(untimed.host.token)).match
+    expect(await h.kernel.turns.sealIfOverdue(paused)).toBe(paused)
+
+    expect(h.notifier.events.map((event) => event.type)).not.toContain('turn.sealed')
+  })
+
+  it('answers the match as it stands when somebody else sealed the turn after it was loaded', async () => {
+    const { host, guest } = await h.startedMatch(60)
+    h.clock.advance(61_000)
+    const loaded = (await h.principalOf(host.token)).match
+    // The seal the read would have made is made by a ready seal in between, on the copy it holds.
+    await h.submit(await h.principalOf(host.token), 1, 1, true)
+    await h.submit(await h.principalOf(guest.token), 1, 2, true)
+
+    const after = await h.kernel.turns.sealIfOverdue(loaded)
+
+    expect(loaded.currentTurn).toBe(1)
+    expect(after.currentTurn).toBe(2)
+  })
+
+  it('answers the match unchanged when sealing an overdue turn on read fails', async () => {
+    const { host } = await h.startedMatch(60)
+    h.clock.advance(61_000)
+    const match = (await h.principalOf(host.token)).match
+    h.storage.turns.get = async () => {
+      throw new Error('database blip')
+    }
+
+    expect(await h.kernel.turns.sealIfOverdue(match)).toBe(match)
+    expect(h.logger.lines.at(-1)?.msg).toBe('could not seal an overdue turn on read')
+  })
+
+  it('reports a seal won on read whose completion failed as sealed, not as a failed seal', async () => {
+    const { host } = await h.startedMatch(60)
+    h.clock.advance(61_000)
+    const match = (await h.principalOf(host.token)).match
+    // Fails only after the CAS has already moved the turn to sealed.
+    h.storage.turns.freezeSeal = async () => {
+      throw new Error('database blip')
+    }
+
+    expect(await h.kernel.turns.sealIfOverdue(match)).toBe(match)
+    expect((await h.storage.turns.get(match.id, 1))?.status).toBe('sealed')
+    const warnings = h.logger.lines.filter((line) => line.level === 'warn').map((line) => line.msg)
+    expect(warnings).toContain('sealed an overdue turn on read')
+    expect(warnings).not.toContain('could not seal an overdue turn on read')
+    expect(warnings.at(-1)).toBe(
+      'sealed an overdue turn on read but could not complete it; the sweep finishes it',
+    )
+  })
+
   it('does not re-arm a paused turn, which has no deadline to wait for', async () => {
     const { host } = await h.startedMatch(0)
     h.scheduler.scheduled.length = 0

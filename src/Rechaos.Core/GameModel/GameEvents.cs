@@ -40,7 +40,32 @@ public sealed record CommandResolutionDetails(
     int? ChanceSides = null,
     short? RetaliationItemId = null,
     IReadOnlyList<short>? ItemIds = null,
-    IReadOnlyList<short>? ReplacedItemIds = null);
+    IReadOnlyList<short>? ReplacedItemIds = null,
+    CombatantDetails? Attacker = null,
+    CombatantDetails? Defender = null);
+
+/// <summary>A gang as it stood when it fought, recorded with the fight.</summary>
+/// <remarks>
+/// A gang wiped out in Combat keeps its roster slot only until the Hire phase of the same turn,
+/// where the first hire its owner resolves reuses the slot and its id stops resolving through
+/// <see cref="MatchState.FindGang"/>. The event is then the only place left that knows who fought,
+/// so the combat reports read the retired gang from here rather than dropping the fight.
+/// </remarks>
+public sealed record CombatantDetails(
+    PlayerId Owner,
+    short DefinitionId,
+    int SectorId,
+    short? WeaponItemId,
+    short? ArmorItemId,
+    short? MiscellaneousItemId)
+{
+    public static CombatantDetails Of(MatchGangState gang)
+    {
+        ArgumentNullException.ThrowIfNull(gang);
+        return new(gang.Owner, gang.DefinitionId, gang.SectorId,
+            gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId);
+    }
+}
 
 public sealed record EconomyResolutionDetails(
     int PreviousCash,
@@ -89,7 +114,8 @@ public sealed record PoliceAttackResolutionDetails(
     int Successes,
     int Damage,
     int PreviousForce,
-    int ResultForce);
+    int ResultForce,
+    CombatantDetails? Target = null);
 
 /// <summary>An ordered mechanical fact suitable for UI, replay, and parity fixtures.</summary>
 public sealed record GameEvent(

@@ -45,7 +45,8 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// The countdown for the open turn, or an empty string when the match has no timer.
+    /// The countdown for the open turn, or an empty string when the match has no timer or its
+    /// deadline has passed.
     /// </summary>
     /// <remarks>
     /// It is recomputed every frame from the deadline rather than counted down, so a paused match
@@ -55,7 +56,7 @@ public sealed partial class ChaosGame
     {
         if (_online.DeadlineAt is not { } deadline) return string.Empty;
         var remaining = deadline - OnlineServerNow();
-        if (remaining <= TimeSpan.Zero) return "SEALING";
+        if (remaining <= TimeSpan.Zero) return string.Empty;
         // Built when the second changes, not every frame: the string is identical in between, and
         // this runs in the draw loop of every frame a timed online turn is on screen.
         var whole = (int)remaining.TotalSeconds;
@@ -66,6 +67,30 @@ public sealed partial class ChaosGame
         }
         return _onlineCountdownText;
     }
+
+    /// <summary>Whether the open turn's deadline has passed and its seal is due.</summary>
+    /// <remarks>
+    /// Not for <see cref="_sealedTurnDeadline"/>, which is the turn before's: it stays on screen
+    /// until the stream delivers the new turn's deadline, and a turn that has only just opened is
+    /// not out of time.
+    /// </remarks>
+    private bool OnlineDeadlinePassed() =>
+        OnlineDeadlinePolicy.HasPassed(_online.DeadlineAt, _sealedTurnDeadline, OnlineServerNow());
+
+    /// <summary>
+    /// The deadline that had already passed when a new planning turn was adopted, which can only
+    /// be the sealed turn's; see <see cref="SetAsideSealedTurnDeadline"/>.
+    /// </summary>
+    private DateTimeOffset? _sealedTurnDeadline;
+
+    /// <summary>Notes a deadline the planning turn about to open must not be judged by.</summary>
+    /// <remarks>
+    /// Taken only when it has already passed. A deadline still ahead at that moment is the new
+    /// turn's, delivered first, and if the order is ever other than expected the cost is a clock
+    /// that shows nothing rather than one that says TIME UP on a turn that has just begun.
+    /// </remarks>
+    private void SetAsideSealedTurnDeadline() =>
+        _sealedTurnDeadline = OnlineDeadlinePolicy.SetAside(_online.DeadlineAt, OnlineServerNow());
 
     /// <summary>
     /// The time now on the SERVER's clock, which every online deadline is an instant on.
@@ -116,19 +141,28 @@ public sealed partial class ChaosGame
                     + "COMPUTER CONTROL OF YOUR SEAT",
             MultiplayerStage.WaitingForSeal =>
                 _online.ReadySubmissionPending
-                    ? "SENDING FINISHED TURN  AWAITING SERVER ACKNOWLEDGEMENT"
+                    ? "FINISHING TURN"
                     : _online.SeatedSeats > 0 && _online.ReadySeats >= _online.SeatedSeats
-                        ? $"SERVER ACKNOWLEDGED  ALL PLAYERS READY {OnlineSeatTally()}"
-                        : $"SERVER ACKNOWLEDGED  WAITING FOR OTHER PLAYERS "
-                            + $"{OnlineSeatTally()} {OnlineCountdown()}",
+                        ? "ALL PLAYERS READY"
+                        : $"WAITING FOR OTHER PLAYERS  {OnlineSeatTally()} {OnlineCountdown()}".TrimEnd(),
             // Here rather than on the message line, which anything else said since would have
             // taken over: the warning lasts exactly as long as the draft it is about.
             MultiplayerStage.Playing when _online.OpenTurnDraftUnsaved =>
-                $"TURN {_online.PlanningTurn}  ORDERS NOT SAVED YET  RETRYING  {OnlineCountdown()}",
-            MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineCountdown()}",
+                $"TURN {_online.PlanningTurn}  ORDERS NOT SAVED YET  RETRYING  {OnlineTurnClock()}"
+                    .TrimEnd(),
+            MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineTurnClock()}".TrimEnd(),
             _ => string.Empty,
         };
     }
+
+    /// <summary>
+    /// The countdown while the turn is still open to orders, and TIME UP once it is not.
+    /// </summary>
+    /// <remarks>
+    /// Only while planning: the player is still giving orders, and a clock that simply vanished
+    /// at zero would leave them giving more to a turn the server is already sealing.
+    /// </remarks>
+    private string OnlineTurnClock() => OnlineDeadlinePassed() ? "TIME UP" : OnlineCountdown();
 
     /// <summary>
     /// How many seats have finished planning, of the ones the turn seals on.
@@ -229,4 +263,20 @@ public sealed partial class ChaosGame
         DrawReconnectPopup(_batch, _pixel, _font);
         _batch.End();
     }
+}
+
+/// <summary>Reads an online turn's deadline, which can briefly still be the sealed turn's.</summary>
+public static class OnlineDeadlinePolicy
+{
+    /// <summary>
+    /// The deadline to set aside as the sealed turn's when a new planning turn opens: the one on
+    /// screen if it has already passed, since a new turn's own deadline is still ahead.
+    /// </summary>
+    public static DateTimeOffset? SetAside(DateTimeOffset? deadline, DateTimeOffset serverNow) =>
+        deadline is { } due && due <= serverNow ? due : null;
+
+    /// <summary>Whether the open turn is out of time, not counting the set-aside deadline.</summary>
+    public static bool HasPassed(
+        DateTimeOffset? deadline, DateTimeOffset? setAside, DateTimeOffset serverNow) =>
+        deadline is { } due && due != setAside && due <= serverNow;
 }

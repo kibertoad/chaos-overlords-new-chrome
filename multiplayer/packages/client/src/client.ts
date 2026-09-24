@@ -147,8 +147,13 @@ export class MultiplayerClient {
     })
   }
 
-  listLobbies(): Promise<LobbyList> {
-    return this.call(listLobbiesContract, listLobbiesContract.pathResolver())
+  /** Public lobbies; a `sessionVersion` narrows them to the matches stored under it. */
+  listLobbies(sessionVersion?: number): Promise<LobbyList> {
+    const path = listLobbiesContract.pathResolver()
+    return this.call(
+      listLobbiesContract,
+      sessionVersion === undefined ? path : `${path}?sessionVersion=${sessionVersion}`,
+    )
   }
 
   createMatch(request: CreateMatchRequest): Promise<MembershipView> {

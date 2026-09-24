@@ -19,6 +19,8 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | Date | Decision |
 |---|---|
 | 2026-09-24 | [Count only friendly gangs against a hire's sector limit](#2026-09-24--count-only-friendly-gangs-against-a-hires-sector-limit) |
+| 2026-09-24 | [Record the gangs that fought in each combat event](#2026-09-24--record-the-gangs-that-fought-in-each-combat-event) |
+| 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
 | 2026-09-24 | [Mark objective sectors on the detailed-sector minimap](#2026-09-24--mark-objective-sectors-on-the-detailed-sector-minimap) |
 | 2026-09-24 | [Resolve cash transactions in player order](#2026-09-24--resolve-cash-transactions-in-player-order) |
 | 2026-09-23 | [Do not animate the panel slide-out](#2026-09-23--do-not-animate-the-panel-slide-out) |
@@ -53,10 +55,62 @@ sector (`RULE-MOVE-001`), Move validation and simultaneous Move normalization,
 the immediate-payment hire validator, the AI hire-placement occupancy test, and
 state validation. A player sees their own five gangs and a hire that fails for
 a reason the Hire panel never shows. The failure keeps its place in the
-resolver: before the cash check, with no RNG drawn. This rule deviation changes
-deterministic turn outcomes, so multiplayer session version 10 retires sessions
-started under version 9. Native saves and replay journals keep their format
+resolver: before the cash check, with no RNG drawn. The client-side drop
+refusal (see the decision below) already counted only friendly gangs, so the
+drop check and the resolver now agree. This rule deviation changes
+deterministic turn outcomes, so multiplayer session version 11 retires sessions
+started under version 10. Native saves and replay journals keep their format
 gates because their schema and fingerprint encoding have not changed.
+
+## 2026-09-24 — Record the gangs that fought in each combat event
+
+**Decision.** A gang-on-gang combat event records both combatants, and a police
+attack records its target, as a `CombatantDetails` (owner, gang definition,
+sector and equipment) taken when the fight resolved. The combat reports read a
+gang that has left the roster from its event instead of dropping the fight. The
+records are part of the canonical event encoding, so the state-hash format moves
+to 3, native save format to 28, replay format to 32 and the multiplayer session
+version to 10, under
+[State fingerprint format](../AGENTS.md#state-fingerprint-format).
+
+**Reasoning.** A gang wiped out in Combat keeps its roster slot only until the
+Hire phase of the same turn: the first hire its owner resolves reuses the slot,
+and the dead gang's id stops resolving. The events carried only ids, so Combat
+Summary, Combat Detail and the automatic presentation left out exactly the
+battles that eliminated a gang, which online, where every seat hires on most
+turns, was the common case. A presentation-side memory of every gang the client
+had seen covered only turns this client had watched being planned: the turn a
+match was loaded on, and a turn that sealed while an online client was away,
+stayed unlisted. The event is the one record every client, save and replay
+already shares.
+
+**Compatibility.** The game has not been released, so no player's file is
+stranded. Older saves and journals are refused as older formats before their
+fingerprint is compared, and the session bump retires in-progress online
+matches, as [AGENTS.md](../AGENTS.md) requires when a state hash changes. The
+protocol version does not move: the server stores sessions as opaque history and
+never reads an event.
+
+## 2026-09-24 — Refuse a hire drop on a sector already holding six friendly gangs
+
+**Decision.** Dropping a Hire offer on a sector where the player already has
+six active gangs is refused on the spot with "Sector gang limit reached." The
+offer stays unselected instead of being reserved as a hire. The count is the
+current friendly count a Move into that sector is validated against, less any
+gang the player has already ordered to Move away or Terminate: both resolve in
+the Execution phase, before hires, so the room they leave is there when the
+hire is placed.
+
+**Original behavior.** `BIN-HIRE-001` establishes that the shipped drop handler
+writes the destination without any capacity check, and the resolver only
+counts the gangs in the target sector at resolution, where six fail the hire.
+The recreation keeps that resolver check unchanged.
+
+**Reasoning and compatibility.** A reserved hire into a full sector showed as
+hired for the rest of the planning turn and could only fail. The refusal lives
+in the client's drop handling, not in `HireRules`, so AI hiring, replay
+validation and turn resolution are untouched; no session, save, replay or
+fingerprint version moves.
 
 ## 2026-09-24 — Mark objective sectors on the detailed-sector minimap
 

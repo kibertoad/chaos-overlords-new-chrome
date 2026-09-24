@@ -277,6 +277,12 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         DrawCentered(font, batch, player.Setup.Name, HandoffLayout.NameY,
             PlayerColors[playerId.Value], 1);
+        if (_session is null) return;
+        // Online the card is the break between turns rather than a privacy gate, and the server's
+        // clock keeps running behind it. It says how the last turn sealed in full, which the city's
+        // 32-character message line cannot, and where the new one stands.
+        DrawCentered(font, batch, _message, HandoffLayout.Panel.Bottom + 14, Color.Gold, 1);
+        font.Draw(batch, OnlineTurnStatus(), new Vector2(18, 439), new Color(180, 190, 190), 1);
     }
 
     /// <summary>

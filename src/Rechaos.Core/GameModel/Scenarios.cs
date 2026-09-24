@@ -70,18 +70,6 @@ public static class ScenarioCatalog
         _ => throw new ArgumentOutOfRangeException(nameof(duration), duration, null)
     };
 
-    public static long TimedScore(
-        ScenarioId scenario,
-        GameDuration duration,
-        PlayerScoreState state) => scenario switch
-    {
-        ScenarioId.Greed => state.Cash,
-        ScenarioId.Power => state.ControlledSectors,
-        ScenarioId.Acceptance => state.Support,
-        ScenarioId.Dominance => DominanceScore(duration, state),
-        _ => throw new ArgumentException($"{scenario} is not a timed scoring scenario.", nameof(scenario))
-    };
-
     public static bool HasObjectiveVictory(ScenarioId scenario, PlayerScoreState state) => scenario switch
     {
         ScenarioId.KillEmAll => state.IsAlive && state.OpponentsAlive == 0,
@@ -93,14 +81,6 @@ public static class ScenarioCatalog
             && state.ControlledSectors >= MatchLimits.SectorCount,
         _ => false
     };
-
-    private static long DominanceScore(GameDuration duration, PlayerScoreState state)
-    {
-        var weights = Weights(duration);
-        return ((long)state.Cash * weights.Cash
-            + (long)state.Support * weights.Support
-            + (long)state.ControlledSectors * weights.ControlledSector) / 10;
-    }
 }
 
 public readonly record struct PlayerScoreState(

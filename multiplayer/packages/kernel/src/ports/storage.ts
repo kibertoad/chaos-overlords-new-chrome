@@ -44,8 +44,11 @@ export interface MatchRepository {
    * `playerCount` and `hasSnapshot` come out of the same statement rather than from a read per
    * listed match, and a running match with no human left in it is left out — it is unjoinable, so
    * advertising it only costs the reader a row and the server the two queries behind it.
+   *
+   * Given a `sessionVersion`, only matches stored under it are listed, and the filter applies
+   * before `limit` so matches the reader cannot play never take a place on the page.
    */
-  listPublicLobbies(limit: number): Promise<PublicLobbyRow[]>
+  listPublicLobbies(limit: number, sessionVersion?: number): Promise<PublicLobbyRow[]>
   /**
    * Atomically take a seat while the match is in the lobby and below capacity. Returns the seat's
    * position in the match's monotonic join sequence, or null when no seat was available.

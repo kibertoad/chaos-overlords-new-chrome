@@ -61,7 +61,8 @@ public static class PlayerRankingTooltip
         return lines;
     }
 
-    private static string Basis(ScenarioId scenario) => scenario switch
+    /// <summary>What <paramref name="scenario"/> rates overlords on, as the standing score states it.</summary>
+    public static string Basis(ScenarioId scenario) => scenario switch
     {
         ScenarioId.Greed => "CASH ON HAND",
         ScenarioId.Power => "SECTORS CONTROLLED",

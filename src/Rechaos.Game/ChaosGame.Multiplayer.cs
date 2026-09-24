@@ -34,6 +34,9 @@ public sealed partial class ChaosGame
     private static readonly TimeSpan OnlineResolutionGrace =
         MatchEventStream.DefaultIdleTimeout + TimeSpan.FromSeconds(25);
 
+    /// <summary>Asks the server again about a turn whose clock ran out; see <see cref="CheckOnlineOverdueSeal"/>.</summary>
+    private readonly OnlineOverdueSealWatchdog _onlineOverdueSeal = new(OnlineResolutionGrace);
+
     private readonly MultiplayerUiState _online = new();
     /// <summary>
     /// The one client every online call goes through, bounded so a hostile server cannot answer with
@@ -63,7 +66,7 @@ public sealed partial class ChaosGame
     /// <remarks>Null when no lobby has been joined; see <see cref="RememberLocalSetup"/>.</remarks>
     private LocalSetupChoices? _localSetupBeforeLobby;
     private MultiplayerRecovery? LatestOnlineRecovery =>
-        _multiplayerRecoveries.FirstOrDefault(recovery => recovery.CanReconnect);
+        _multiplayerRecoveries.FirstOrDefault(recovery => recovery.CanResume);
 
     private void OpenOnline()
     {
@@ -252,14 +255,9 @@ public sealed partial class ChaosGame
 
     private void ResumeSelectedOnlineMatch()
     {
+        // The browser lists only sessions this build plays, and the match view settles the version
+        // again on the way in.
         if (SelectedOnlineRecovery is not { } recovery) return;
-        // The match view settles this again on the way in; refusing here only spares the player a
-        // round trip that ends in the same answer, beside the row that caused it.
-        if (!recovery.IsCompatible)
-        {
-            _online.Status = OnlineHistoryPresentation.IncompatibleReason;
-            return;
-        }
         if (!Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server))
         {
             _online.Status = "THE SAVED SERVER ADDRESS IS INVALID";
@@ -445,6 +443,7 @@ public sealed partial class ChaosGame
     private void ResetTransientMatchUi()
     {
         _idleGangWarningOpen = false;
+        CancelHireReject();
         ForgetGangDrag();
         _combatAnimationPlayer.Clear();
         _automaticDetailedCombatPresentation = false;
@@ -495,6 +494,7 @@ public sealed partial class ChaosGame
         _actions = new MatchActions(turn);
         _submittedPlanning = null;
         _state = turn.State;
+        if (authoritative.Coordinator.Turn != _online.PlanningTurn) SetAsideSealedTurnDeadline();
         _online.PlanningTurn = authoritative.Coordinator.Turn;
         _online.Stage = submission?.Ready == true
             ? MultiplayerStage.WaitingForSeal
@@ -518,12 +518,34 @@ public sealed partial class ChaosGame
         // The idle-gang warning belongs to the turn that is being replaced. Left open, OK on it
         // submits the new turn as ready with no orders, and there is no taking that back.
         _idleGangWarningOpen = false;
+        CancelHireReject();
         _selectedGangIndex = 0;
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
             .FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
         if (submission?.Ready == true) CloseOnlinePlanning();
         TouchOnlineRecovery();
         return true;
+    }
+
+    /// <summary>
+    /// Realigns combat presentation with a state just adopted from the server.
+    /// </summary>
+    /// <remarks>
+    /// Progress is a sequence number, and the one a turn's local planning reached means nothing in
+    /// the adopted state: planning events are numbered on the speculative copy, and the sealed turn
+    /// hands the same numbers to its own events, combat among them. Left alone, that combat reads
+    /// as already seen and never plays. With <paramref name="presentCompletedTurn"/> the completed
+    /// turn's combat is left to present; without it that turn counts as seen, for an adoption that
+    /// replaces a state whose combat was already presented.
+    /// </remarks>
+    private void RewindOnlineCombatPresentation(bool presentCompletedTurn)
+    {
+        if (_state is null) return;
+        var turn = _state.Coordinator.Turn;
+        _combatPresentationProgress.ResetTo(
+            [ViewingPlayer(_state)],
+            CombatResultProjection.LastSequenceBefore(
+                _state.Events, presentCompletedTurn ? turn - 1 : turn));
     }
 
     /// <summary>

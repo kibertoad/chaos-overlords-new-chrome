@@ -50,7 +50,9 @@ public sealed partial class ChaosGame
     {
         while (_lobby?.TryDequeueNotice(out var lobbyNotice) == true) Apply(lobbyNotice);
         while (_session?.TryDequeueNotice(out var notice) == true) Apply(notice);
-        CheckOnlineResolutionWatchdog();
+        // The overdue check goes first and the resolution watchdog defers to it: an all-ready turn
+        // past its deadline trips both on one frame, and the status names the one cause asked about.
+        CheckOnlineResolutionWatchdog(resyncRequested: CheckOnlineOverdueSeal());
     }
 
     private void Apply(LobbyNotice notice)
@@ -197,13 +199,16 @@ public sealed partial class ChaosGame
                 var cutOff = _online.Stage == MultiplayerStage.Playing;
                 if (AdoptOnlineState(resolved.State, restored: resolved.Planning))
                 {
+                    RewindOnlineCombatPresentation(presentCompletedTurn: true);
                     _message = cutOff
                         ? resolved.IncludedOwnOrders
                             ? "TIME UP  THE TURN SEALED WITH THE ORDERS YOU HAD SENT"
                             : "TIME UP  YOUR SEAT GAVE NO ORDERS THIS TURN"
-                        : "NEW TURN READY  PLAY AGAIN";
+                        : "NEW TURN STARTED";
                     PlayGeneralSound(AudioRouting.OnlineTurnReadySound());
-                    ShowTurnReportsOrCity();
+                    // The next-player card marks the new turn, and Ready on it enters planning the
+                    // way a local turn does: hire offers prepared, then combat and turn reports.
+                    _screens.Show(ClientScreen.Handoff);
                 }
                 return;
             case MultiplayerNotice.TakeoverVoteFailed failedVote:
@@ -220,8 +225,13 @@ public sealed partial class ChaosGame
                     });
                 return;
             case MultiplayerNotice.Resynced resynced:
+                // Read before the adopt, which moves it: a repair that lands on a later turn than
+                // the one on screen carries a sealed turn whose combat this player has not seen.
+                var turnBeforeRepair = _online.PlanningTurn;
                 if (AdoptOnlineState(resynced.State, restored: resynced.Planning))
                 {
+                    RewindOnlineCombatPresentation(
+                        presentCompletedTurn: _online.PlanningTurn != turnBeforeRepair);
                     _message = string.Empty;
                     _screens.Show(ClientScreen.City);
                 }
@@ -303,7 +313,7 @@ public sealed partial class ChaosGame
                 {
                     _online.ReadySubmissionPending = false;
                     _online.ReadySubmissionAcknowledged = true;
-                    _message = "SERVER ACKNOWLEDGED FINISHED TURN";
+                    _message = string.Empty;
                     _diagnostics?.Write("multiplayer.orders.acknowledged",
                         new Dictionary<string, string?>
                         {

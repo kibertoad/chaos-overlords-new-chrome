@@ -21,7 +21,7 @@ public sealed class MultiplayerApiRouteTests
     private static readonly (string Template, string Built)[] Routes =
     [
         (RouteTemplates.Handshake, $"POST {ApiRoutes.Handshake}"),
-        (RouteTemplates.ListLobbies, $"GET {ApiRoutes.Matches}"),
+        (RouteTemplates.ListLobbies, $"GET {ApiRoutes.Lobbies(3)}"),
         (RouteTemplates.CreateMatch, $"POST {ApiRoutes.Matches}"),
         (RouteTemplates.JoinMatch, $"POST {ApiRoutes.JoinMatch}"),
         (RouteTemplates.JoinRunningMatch, $"POST {ApiRoutes.JoinRunningMatch}"),
@@ -105,5 +105,6 @@ public sealed class MultiplayerApiRouteTests
         .Replace($"/{PlayerId}/", "/:playerId/", StringComparison.Ordinal)
         .Replace("/turns/7/", "/turns/:turn/", StringComparison.Ordinal)
         .Replace("/snapshots/7", "/snapshots/:turn", StringComparison.Ordinal)
-        .Replace("/events?after=0&limit=200", "/events", StringComparison.Ordinal);
+        .Replace("/events?after=0&limit=200", "/events", StringComparison.Ordinal)
+        .Replace("/matches?sessionVersion=3", "/matches", StringComparison.Ordinal);
 }

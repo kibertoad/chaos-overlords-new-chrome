@@ -34,6 +34,10 @@ public sealed partial class ChaosGame
         {
             if (!AttackCommandLayout.TargetHit(slot).Contains(point)) continue;
             _commandTargetCursor = targets[slot];
+            var targetId = _commandTargetOptions[_commandTargetCursor].Target.Id;
+            if (_attackTargetClicks.Register(targetId, _inputTime)
+                && _state.FindGang(new GangId(targetId)) is { } target)
+                OpenGangDetails(target, ClientScreen.Commands);
             return;
         }
         if (!AttackCommandLayout.Panel.Contains(point)) BackFromCommands();

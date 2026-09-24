@@ -316,7 +316,7 @@ public sealed partial class ChaosGame
             return site;
         if (related?.Hire is { } hire)
             return state.Definitions.Gang(hire.GangDefinitionId).Name;
-        if (notification.Gang is { } gangId && state.FindGang(gangId) is { } gang)
+        if (notification.Gang is { } gangId && state.FindCombatant(related, gangId) is { } gang)
             return state.Definitions.Gang(gang.DefinitionId).Name;
         if (notification.SectorId is { } sectorId) return SectorCode(sectorId);
         return notification.Kind.ToString().ToUpperInvariant();

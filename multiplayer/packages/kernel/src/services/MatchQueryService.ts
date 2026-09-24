@@ -95,9 +95,12 @@ export class MatchQueryService {
    * whether a snapshot exists, and the seats of every match that could still advertise one are read
    * together. It used to be two more queries for each running match on the page, on a route no
    * token guards.
+   *
+   * A `sessionVersion` narrows the list to the matches the caller could play; see
+   * `lobbyListQuerySchema`.
    */
-  async listPublicLobbies(limit: number): Promise<LobbyListing[]> {
-    const rows = await this.storage.matches.listPublicLobbies(limit)
+  async listPublicLobbies(limit: number, sessionVersion?: number): Promise<LobbyListing[]> {
+    const rows = await this.storage.matches.listPublicLobbies(limit, sessionVersion)
     const lateJoinable = rows.filter(
       (row) =>
         row.status === 'running' &&
