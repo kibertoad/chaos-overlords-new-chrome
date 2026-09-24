@@ -1,7 +1,6 @@
 # Multiplayer
 
 Status: implemented server, game client wired
-Last updated: 2026-09-20
 
 Online play for *Chaos Overlords: New Chrome* runs through a coordination server that any player
 can host and that can also run as a central public service. The server code lives under

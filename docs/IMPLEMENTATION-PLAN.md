@@ -1,7 +1,6 @@
 # Complete implementation and migration plan
 
 Status: active roadmap
-Last updated: 2026-09-24
 Target: a deterministic, cross-platform MonoGame recreation of the Windows 95
 release of *Chaos Overlords*, requiring a user-owned original asset pack.
 

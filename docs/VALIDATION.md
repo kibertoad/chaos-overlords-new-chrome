@@ -1,7 +1,6 @@
 # Recreation validation procedure
 
 Status: maintained canonical procedure
-Last updated: 2026-09-22
 
 <!-- doc-index:begin toc depth=2 -->
 - [Validation layers](#validation-layers)

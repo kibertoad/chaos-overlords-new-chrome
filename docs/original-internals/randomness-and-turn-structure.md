@@ -1,7 +1,6 @@
 # Randomness and turn structure
 
 Status: active clean-room research log
-Last updated: 2026-09-20
 
 The two things every other finding is timed against: where the original's
 randomness comes from, and the order a turn runs in. The process seed, the

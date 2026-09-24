@@ -1,7 +1,6 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-24
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.

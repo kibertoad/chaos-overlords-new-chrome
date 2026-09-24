@@ -1,7 +1,6 @@
 # Audio, music, and video
 
 Status: active clean-room research log
-Last updated: 2026-09-23
 
 The media layer: CD track programs and their lifecycle, and the sound-effect
 slots, volume handling, and setup cues that drive them. The imports these paths

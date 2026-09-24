@@ -1,7 +1,6 @@
 # New-game setup and city generation
 
 Status: active clean-room research log
-Last updated: 2026-09-20
 
 Everything between a fresh setup screen and the first playable turn: city
 generation from the density field, site rejection sampling, headquarters and
