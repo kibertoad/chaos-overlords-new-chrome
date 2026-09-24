@@ -893,6 +893,20 @@ describe('the lobby, the roster and the turn barrier', () => {
     expect(h.notifier.events.map((event) => event.type)).not.toContain('turn.sealed')
   })
 
+  it('answers the match as it stands when somebody else sealed the turn after it was loaded', async () => {
+    const { host, guest } = await h.startedMatch(60)
+    h.clock.advance(61_000)
+    const loaded = (await h.principalOf(host.token)).match
+    // The seal the read would have made is made by a ready seal in between, on the copy it holds.
+    await h.submit(await h.principalOf(host.token), 1, 1, true)
+    await h.submit(await h.principalOf(guest.token), 1, 2, true)
+
+    const after = await h.kernel.turns.sealIfOverdue(loaded)
+
+    expect(loaded.currentTurn).toBe(1)
+    expect(after.currentTurn).toBe(2)
+  })
+
   it('answers the match unchanged when sealing an overdue turn on read fails', async () => {
     const { host } = await h.startedMatch(60)
     h.clock.advance(61_000)

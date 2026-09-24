@@ -66,7 +66,8 @@ public sealed partial class ChaosGame
             _onlineOverdueSeal.Stop();
             return;
         }
-        if (!_onlineOverdueSeal.Advance(_online.DeadlineAt, OnlineServerNow(), MonotonicClock.Now))
+        if (!_onlineOverdueSeal.Advance(
+                _online.PlanningTurn, _online.DeadlineAt, OnlineServerNow(), MonotonicClock.Now))
             return;
         _diagnostics?.Write("multiplayer.turn-deadline.overdue",
             new Dictionary<string, string?>

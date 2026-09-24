@@ -1,6 +1,6 @@
 import { env, runInDurableObject, SELF } from 'cloudflare:test'
 import { MultiplayerClient } from '@chaos-overlords/client'
-import { EARLY_DEADLINE_RETRY_MS } from '@chaos-overlords/kernel'
+import { EARLY_DEADLINE_RETRY_MS, type MultiplayerStorage } from '@chaos-overlords/kernel'
 import { expect, it } from 'vitest'
 import { hubFor } from '../src/kernel'
 import type { MatchHub } from '../src/MatchHub'
@@ -143,4 +143,57 @@ it('re-arms an alarm that fires before the deadline, so the turn still seals on 
     expect(await state.storage.getAlarm()).toBe(retryAt + EARLY_DEADLINE_RETRY_MS)
   })
   expect((await api.get()).match.currentTurn).toBe(1)
+})
+
+it('keeps a successor deadline armed while the spent one was being judged', async () => {
+  const client = new MultiplayerClient({
+    baseUrl: 'http://worker',
+    fetch: (input, init) => SELF.fetch(input, init),
+  })
+  const host = await client.createMatch({
+    settings: {
+      name: 'Timed',
+      maxPlayers: 2,
+      turnTimerSeconds: 30,
+      visibility: 'private',
+      gameSettings: {},
+    },
+    hostDisplayName: 'Ada',
+  })
+  const guest = await client.join({ joinCode: host.joinCode, displayName: 'Grace' })
+  const hostApi = client.withToken(host.token).match(host.match.id)
+  const guestApi = client.withToken(guest.token).match(host.match.id)
+  await hostApi.start()
+  await hostApi.submitOrders(1, {
+    orders: { schemaVersion: 1, ops: [{ op: 'cancelCommand', player: 0, gang: 1 }] },
+    ready: true,
+  })
+  await guestApi.submitOrders(1, {
+    orders: { schemaVersion: 1, ops: [{ op: 'cancelCommand', player: 1, gang: 1 }] },
+    ready: true,
+  })
+  expect((await hostApi.get()).match.currentTurn).toBe(2)
+
+  const stub = hubFor(env, host.match.id)
+  await runInDurableObject(stub as never, async (instance: MatchHub, state) => {
+    const successor = await state.storage.get<{ turn: number; dueAtMs: number }>('deadline')
+    expect(successor?.turn).toBe(2)
+    // Turn 1's alarm fires before the ready seal's re-arm reached this object, and the re-arm lands
+    // while the alarm is reading D1 to decide whether turn 1 is still due.
+    await state.storage.put('deadline', { matchId: host.match.id, turn: 1, dueAtMs: 1 })
+    const turns = (instance as unknown as { repositories: MultiplayerStorage }).repositories.turns
+    const read = turns.get.bind(turns)
+    turns.get = async (matchId, number) => {
+      await state.storage.put('deadline', successor)
+      await state.storage.setAlarm(successor?.dueAtMs as number)
+      return read(matchId, number)
+    }
+    try {
+      await instance.alarm()
+    } finally {
+      turns.get = read
+    }
+    expect(await state.storage.get('deadline')).toEqual(successor)
+    expect(await state.storage.getAlarm()).toBe(successor?.dueAtMs)
+  })
 })
