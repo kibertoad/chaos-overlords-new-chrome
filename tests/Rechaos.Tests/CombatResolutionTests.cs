@@ -361,7 +361,8 @@ public sealed class CombatResolutionTests
         detailed.FinishExecutionPhase();
         var player = new CombatAnimationPlayer();
         var detailedEvent = Assert.Single(detailed.LastPhaseResolutions).Event!;
-        foreach (var clip in CombatAnimationRouting.ForEvent(detailed, detailedEvent))
+        foreach (var clip in CombatAnimationRouting.ForEvent(
+            detailed, detailedEvent, detailedEvent.Player, CombatForceTimeline.For(detailed, detailedEvent)))
             player.Enqueue(clip);
         player.Advance(TimeSpan.FromDays(1));
 

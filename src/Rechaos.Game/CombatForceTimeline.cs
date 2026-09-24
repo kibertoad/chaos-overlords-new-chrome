@@ -62,6 +62,13 @@ public sealed class CombatForceTimeline
         return new CombatForceTimeline(state, CombatPhaseEvents(events, gameEvent));
     }
 
+    /// <summary>Whether <paramref name="gameEvent"/> belongs to this timeline's combat phase.</summary>
+    public bool Covers(GameEvent gameEvent)
+    {
+        ArgumentNullException.ThrowIfNull(gameEvent);
+        return IndexOf(_events, gameEvent.Sequence) >= 0;
+    }
+
     /// <summary>The forces the clip of the event at <paramref name="sequence"/> shows.</summary>
     public CombatClipForces Forces(long sequence, GangId? attacker, GangId defender)
     {

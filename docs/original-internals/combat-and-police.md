@@ -173,7 +173,10 @@ inspected.
 attack. The attacker's retaliation loss comes from `CombatClipForces` and
 flashes in that clip. When the viewer's gang is the defender, the clip is
 mirrored and the attacker is drawn on the right; police clips are always
-mirrored, with the police on the right.
+mirrored, with the police on the right. Two gangs attacking each other still
+resolve as one encounter under `RULE-ATTACK-001`, so the recreation has no
+second clip and no tick-16 hand-off between them; both follow once the
+coalescing question is settled.
 
 **Next validation:** Capture two gangs attacking each other in the original to
 settle the coalescing question, and capture a sector with several of the

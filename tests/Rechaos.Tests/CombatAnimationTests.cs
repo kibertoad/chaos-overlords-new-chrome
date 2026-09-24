@@ -19,14 +19,14 @@ public sealed class CombatAnimationTests
             Damage: 1,
             RetaliationDamage: 1));
 
-        var clip = Assert.Single(CombatAnimationRouting.ForEvent(state, gameEvent, new PlayerId(0)));
+        var clip = Assert.Single(Clips(state, gameEvent, new PlayerId(0)));
 
         Assert.Equal(new GangId(10), clip.Attacker);
         Assert.Equal((short)3, clip.AttackAnimation);
         Assert.Equal((short)2, clip.HitAnimation);
         Assert.Equal(state.Definitions.Items[0].Sound, clip.Sound);
         Assert.False(clip.Reversed);
-        Assert.Equal(1, clip.Forces!.Value.AttackerDamage);
+        Assert.Equal(1, clip.Forces.AttackerDamage);
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public sealed class CombatAnimationTests
             Damage: 1,
             RetaliationDamage: 1));
 
-        var clip = Assert.Single(CombatAnimationRouting.ForEvent(state, gameEvent, new PlayerId(1)));
+        var clip = Assert.Single(Clips(state, gameEvent, new PlayerId(1)));
 
         Assert.True(clip.Reversed);
         Assert.Equal(new GangId(10), clip.Attacker);
@@ -52,7 +52,7 @@ public sealed class CombatAnimationTests
         Assert.Equal("PX07203.bmp", CombatAnimationRouting.AttackFile(clip.AttackAnimation, clip.Reversed));
         Assert.Equal("PX07302.bmp", CombatAnimationRouting.HitFile(clip.HitAnimation!.Value, clip.Reversed));
 
-        var evaded = Assert.Single(CombatAnimationRouting.ForEvent(state,
+        var evaded = Assert.Single(Clips(state,
             AttackEvent(new CommandResolutionDetails(CommandResolutionCode.TargetEvaded, [], 0)),
             new PlayerId(1)));
         Assert.True(evaded.Reversed);
@@ -62,8 +62,8 @@ public sealed class CombatAnimationTests
     public void EvasionAndDetectedPoliceUseRecoveredPairedSheets()
     {
         var state = CreateState();
-        var evaded = Assert.Single(CombatAnimationRouting.ForEvent(state,
-            AttackEvent(new CommandResolutionDetails(CommandResolutionCode.TargetEvaded, [], 0))));
+        var evaded = Assert.Single(Clips(state,
+            AttackEvent(new CommandResolutionDetails(CommandResolutionCode.TargetEvaded, [], 0)), Attacker));
         Assert.Equal(CombatAnimationRouting.EvadedAnimation, evaded.AttackAnimation);
         Assert.Equal((short)0, evaded.HitAnimation);
         Assert.Null(evaded.Sound);
@@ -73,7 +73,7 @@ public sealed class CombatAnimationTests
             GameEventKind.PoliceAttackResolved, new PlayerId(1), new GangId(20),
             GangAction.None, CommandTarget.Sector(0),
             PoliceAttack: new PoliceAttackResolutionDetails(0, 100, 1, true, 20, 0, [4], 1, 1, 10, 9));
-        var police = Assert.Single(CombatAnimationRouting.ForEvent(state, policeEvent));
+        var police = Assert.Single(Clips(state, policeEvent, Defender));
         Assert.Equal((short)28, police.AttackAnimation);
         Assert.Equal((short)20, police.HitAnimation);
         Assert.True(police.Reversed);
@@ -89,10 +89,11 @@ public sealed class CombatAnimationTests
         short expectedAttack,
         short expectedHit)
     {
-        var clip = Assert.Single(CombatAnimationRouting.ForEvent(
+        var clip = Assert.Single(Clips(
             CreateState(gangDefinition),
             AttackEvent(new CommandResolutionDetails(
-                CommandResolutionCode.Resolved, [], 0, Damage: 1))));
+                CommandResolutionCode.Resolved, [], 0, Damage: 1)),
+            Attacker));
 
         Assert.Equal(expectedAttack, clip.AttackAnimation);
         Assert.Equal(expectedHit, clip.HitAnimation);
@@ -102,17 +103,17 @@ public sealed class CombatAnimationTests
     public void ZeroDamageUsesNoDamageHitSheetForWeaponsUnarmedAndPolice()
     {
         var state = CreateState();
-        var weapon = Assert.Single(CombatAnimationRouting.ForEvent(state,
+        var weapon = Assert.Single(Clips(state,
             AttackEvent(new CommandResolutionDetails(
-                CommandResolutionCode.Resolved, [], 0, ItemId: 0, Damage: 0))));
-        var unarmed = Assert.Single(CombatAnimationRouting.ForEvent(state,
+                CommandResolutionCode.Resolved, [], 0, ItemId: 0, Damage: 0)), Attacker));
+        var unarmed = Assert.Single(Clips(state,
             AttackEvent(new CommandResolutionDetails(
-                CommandResolutionCode.Resolved, [], 0, Damage: 0))));
-        var police = Assert.Single(CombatAnimationRouting.ForEvent(state, new GameEvent(
+                CommandResolutionCode.Resolved, [], 0, Damage: 0)), Attacker));
+        var police = Assert.Single(Clips(state, new GameEvent(
             2, 1, TurnPhase.Execution, ExecutionPhase.Combat,
             GameEventKind.PoliceAttackResolved, new PlayerId(1), new GangId(20),
             GangAction.None, CommandTarget.Sector(0),
-            PoliceAttack: new PoliceAttackResolutionDetails(0, 100, 1, true, 20, 0, [], 0, 0, 10, 10))));
+            PoliceAttack: new PoliceAttackResolutionDetails(0, 100, 1, true, 20, 0, [], 0, 0, 10, 10)), Defender));
 
         Assert.Equal((short)1, weapon.HitAnimation);
         Assert.Equal((short)1, unarmed.HitAnimation);
@@ -129,7 +130,7 @@ public sealed class CombatAnimationTests
             GangAction.None, CommandTarget.Sector(0),
             PoliceAttack: new PoliceAttackResolutionDetails(0, 0, 20, false, 20, 0, [], 0, 0, 10, 10));
 
-        Assert.Empty(CombatAnimationRouting.ForEvent(state, policeEvent));
+        Assert.Empty(Clips(state, policeEvent, Defender));
     }
 
     [Fact]
@@ -142,7 +143,7 @@ public sealed class CombatAnimationTests
             Gang = new GangId(999),
         };
 
-        Assert.Empty(CombatAnimationRouting.ForEvent(state, gameEvent));
+        Assert.Empty(Clips(state, gameEvent, Attacker));
         Assert.Null(AudioRouting.CombatSound(state, gameEvent));
     }
 
@@ -203,11 +204,48 @@ public sealed class CombatAnimationTests
         var state = CreateState();
         state.FindGang(new GangId(10))!.Force = 8;
         state.FindGang(new GangId(20))!.Force = 7;
-        var clip = Assert.Single(CombatAnimationRouting.ForEvent(state, AttackEvent(new CommandResolutionDetails(
+        var clip = Assert.Single(Clips(state, AttackEvent(new CommandResolutionDetails(
             CommandResolutionCode.Resolved, [], 0, PreviousValue: 10, ResultValue: 7,
-            RetaliationRolls: [6], Damage: 3, RetaliationDamage: 2))));
+            RetaliationRolls: [6], Damage: 3, RetaliationDamage: 2)), Attacker));
 
         Assert.Equal(new CombatClipForces(10, 7, 10, 8), clip.Forces);
+    }
+
+    [Fact]
+    public void OnePhaseTimelineRoutesEveryEventOfThatPhase()
+    {
+        var state = CreateState();
+        var attack = AttackEvent(new CommandResolutionDetails(
+            CommandResolutionCode.Resolved, [], 0, PreviousValue: 10, ResultValue: 3,
+            RetaliationRolls: [6], Damage: 5, RetaliationDamage: 6));
+        var police = new GameEvent(
+            2, 1, TurnPhase.Execution, ExecutionPhase.Combat,
+            GameEventKind.PoliceAttackResolved, new PlayerId(1), new GangId(20),
+            GangAction.None, CommandTarget.Sector(0),
+            PoliceAttack: new PoliceAttackResolutionDetails(0, 100, 1, true, 20, 0, [4, 4], 2, 2, 10, 3));
+        GameEvent[] events = [attack, police];
+        var timeline = CombatForceTimeline.For(state, events, attack);
+
+        Assert.True(timeline.Covers(police));
+        var policeClip = Assert.Single(
+            CombatAnimationRouting.ForEvent(state, police, Defender, timeline));
+        Assert.Equal(new CombatClipForces(5, 3, null, null), policeClip.Forces);
+    }
+
+    [Fact]
+    public void RoutingRefusesATimelineOfAnotherPhase()
+    {
+        var state = CreateState();
+        var attack = AttackEvent(new CommandResolutionDetails(
+            CommandResolutionCode.Resolved, [], 0, Damage: 1));
+        var later = attack with { Sequence = 2, Turn = 2 };
+        GameEvent[] events = [attack, later];
+
+        var timeline = CombatForceTimeline.For(state, events, attack);
+
+        Assert.False(timeline.Covers(later));
+        Assert.Throws<ArgumentException>(() =>
+            CombatAnimationRouting.ForEvent(state, later, Attacker, timeline));
     }
 
     [Fact]
@@ -228,9 +266,9 @@ public sealed class CombatAnimationTests
     {
         var player = new CombatAnimationPlayer();
         var first = new CombatAnimationClip(
-            1, new GangId(10), new GangId(20), 3, 2, false, Sound: 5);
+            1, new GangId(10), new GangId(20), 3, 2, false, default, Sound: 5);
         var second = new CombatAnimationClip(
-            2, new GangId(20), new GangId(10), 4, 3, true, Sound: 8);
+            2, new GangId(20), new GangId(10), 4, 3, true, default, Sound: 8);
         player.Enqueue(first);
         player.Enqueue(second);
 
@@ -276,8 +314,8 @@ public sealed class CombatAnimationTests
     public void PlayerCanClearAQueuedDetailedPresentationWithoutAdvancingSimulation()
     {
         var player = new CombatAnimationPlayer();
-        player.Enqueue(new CombatAnimationClip(1, new GangId(10), new GangId(20), 3, 2, false));
-        player.Enqueue(new CombatAnimationClip(2, new GangId(20), new GangId(10), 4, 3, true));
+        player.Enqueue(new CombatAnimationClip(1, new GangId(10), new GangId(20), 3, 2, false, default));
+        player.Enqueue(new CombatAnimationClip(2, new GangId(20), new GangId(10), 4, 3, true, default));
 
         player.Advance(TimeSpan.FromMilliseconds(500));
         player.Clear();
@@ -294,13 +332,22 @@ public sealed class CombatAnimationTests
     {
         var player = new CombatAnimationPlayer();
         for (var index = 0; index < 1_000; index++)
-            player.Enqueue(new CombatAnimationClip(index, new GangId(10), new GangId(20), 3, 2, false));
+            player.Enqueue(new CombatAnimationClip(index, new GangId(10), new GangId(20), 3, 2, false, default));
 
         player.Advance(TimeSpan.FromDays(1));
 
         Assert.False(player.IsPlaying);
         Assert.Null(player.Active);
     }
+
+    private static readonly PlayerId Attacker = new(0);
+    private static readonly PlayerId Defender = new(1);
+
+    private static IReadOnlyList<CombatAnimationClip> Clips(
+        MatchState state,
+        GameEvent gameEvent,
+        PlayerId viewer) =>
+        CombatAnimationRouting.ForEvent(state, gameEvent, viewer, CombatForceTimeline.For(state, gameEvent));
 
     private static GameEvent AttackEvent(CommandResolutionDetails resolution) => new(
         1, 1, TurnPhase.Execution, ExecutionPhase.Combat,

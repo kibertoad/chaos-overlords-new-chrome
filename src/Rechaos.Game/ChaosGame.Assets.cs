@@ -177,17 +177,21 @@ public sealed partial class ChaosGame
         var events = _state.Events;
         var first = events.Count;
         while (first > 0 && events[first - 1].Sequence > lastSeen) first--;
-        for (var index = first; index < events.Count; index++)
+        if (first == events.Count) return;
+        if (_detailedCombat && _combatAnimationTextures.Count > 0)
         {
-            var gameEvent = events[index];
-            if (_detailedCombat && _combatAnimationTextures.Count > 0
-                && CombatResultProjection.IsFromLastCompletedTurn(
-                    gameEvent.Turn, _state.Coordinator.Turn)
-                && IsVisibleCombatEvent(_state, viewer, gameEvent))
-                foreach (var clip in CombatClipsOrNone(_state, gameEvent, viewer))
-                    _combatAnimationPlayer.Enqueue(clip);
-            _combatPresentationProgress.MarkSeen(viewer, gameEvent.Sequence);
+            var presented = new List<GameEvent>();
+            for (var index = first; index < events.Count; index++)
+            {
+                var gameEvent = events[index];
+                if (CombatResultProjection.IsFromLastCompletedTurn(gameEvent.Turn, _state.Coordinator.Turn)
+                    && IsVisibleCombatEvent(_state, viewer, gameEvent))
+                    presented.Add(gameEvent);
+            }
+            foreach (var clip in CombatClipsOrNone(_state, presented, viewer))
+                _combatAnimationPlayer.Enqueue(clip);
         }
+        _combatPresentationProgress.MarkSeen(viewer, events[^1].Sequence);
     }
 
     private void ValidateAssetPack()

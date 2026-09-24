@@ -39,8 +39,8 @@ public sealed partial class ChaosGame
         var events = VisibleCombatResults(_state, viewer)
             .Where(gameEvent => IsVisibleCombatEvent(_state, viewer, gameEvent))
             .OrderBy(gameEvent => gameEvent.Sequence);
-        var clips = events.SelectMany(gameEvent => CombatClipsOrNone(_state, gameEvent, viewer)).ToArray();
-        if (_combatAnimationTextures.Count == 0 || clips.Length == 0)
+        var clips = CombatClipsOrNone(_state, events, viewer);
+        if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
         {
             RejectInput("COMBAT DETAIL UNAVAILABLE");
             return;
@@ -89,7 +89,7 @@ public sealed partial class ChaosGame
             RejectInput("NO COMBAT DETAIL AVAILABLE");
             return;
         }
-        var clips = CombatClipsOrNone(_state, gameEvent, viewer);
+        var clips = CombatClipsOrNone(_state, [gameEvent], viewer);
         if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
         {
             RejectInput("COMBAT DETAIL UNAVAILABLE");
@@ -100,26 +100,34 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
-    /// <summary>The clips for one combat event, or none when the event cannot be drawn.</summary>
+    /// <summary>The clips for <paramref name="events"/> in order, omitting any event that cannot be drawn.</summary>
     /// <remarks>
     /// Routing already omits a fight whose gangs neither the state nor the event can name, but it
     /// still throws for an item id outside this state's definitions, which a client-side divergence
     /// can pair with an event. Detailed combat is optional presentation, so every path that plays
-    /// it omits such an event instead of crashing the game over it.
+    /// it omits such an event instead of crashing the game over it. Consecutive events of one
+    /// combat phase share that phase's force timeline instead of each replaying it.
     /// </remarks>
-    private static IReadOnlyList<CombatAnimationClip> CombatClipsOrNone(
+    private static List<CombatAnimationClip> CombatClipsOrNone(
         MatchState state,
-        GameEvent gameEvent,
+        IEnumerable<GameEvent> events,
         PlayerId viewer)
     {
-        try
+        var clips = new List<CombatAnimationClip>();
+        CombatForceTimeline? timeline = null;
+        foreach (var gameEvent in events)
         {
-            return CombatAnimationRouting.ForEvent(state, gameEvent, viewer);
+            if (timeline is null || !timeline.Covers(gameEvent))
+                timeline = CombatForceTimeline.For(state, gameEvent);
+            try
+            {
+                clips.AddRange(CombatAnimationRouting.ForEvent(state, gameEvent, viewer, timeline));
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
         }
-        catch (ArgumentOutOfRangeException)
-        {
-            return [];
-        }
+        return clips;
     }
 
     private void MoveCombatSummary(int delta)

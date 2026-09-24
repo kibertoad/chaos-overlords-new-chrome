@@ -11,9 +11,9 @@ public sealed record CombatAnimationClip(
     short AttackAnimation,
     short? HitAnimation,
     bool Reversed,
+    CombatClipForces Forces,
     bool Police = false,
-    short? Sound = null,
-    CombatClipForces? Forces = null);
+    short? Sound = null);
 
 public static class CombatAnimationRouting
 {
@@ -37,26 +37,29 @@ public static class CombatAnimationRouting
     /// <c>PX070xx</c>/<c>PX071xx</c> pair; an attack on it, by a gang or the police, plays the
     /// mirrored <c>PX072xx</c>/<c>PX073xx</c> pair with the attacker on the right. Retaliation has
     /// no clip of its own: the attack's clip takes it off the attacker's force
-    /// (BIN-COMBAT-PRESENT-001). Without a viewer the attacker takes the left.
+    /// (BIN-COMBAT-PRESENT-001). <paramref name="timeline"/> is the event's combat phase, shared by
+    /// every event of that phase so a turn's clips replay it once.
     /// </remarks>
     public static IReadOnlyList<CombatAnimationClip> ForEvent(
         MatchState state,
         GameEvent gameEvent,
-        PlayerId? viewer = null)
+        PlayerId viewer,
+        CombatForceTimeline timeline)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gameEvent);
+        ArgumentNullException.ThrowIfNull(timeline);
+        if (!timeline.Covers(gameEvent))
+            throw new ArgumentException("The timeline is not the event's combat phase.", nameof(timeline));
         if (gameEvent.Kind == GameEventKind.PoliceAttackResolved
             && gameEvent.Gang is { } policeTarget
             && gameEvent.PoliceAttack is { } police)
         {
             if (!police.Detected) return [];
-            var policeForces = CombatForceTimeline.For(state, gameEvent)
-                .Forces(gameEvent.Sequence, null, policeTarget);
             return [new CombatAnimationClip(gameEvent.Sequence, null, policeTarget,
                 PoliceAttackAnimation, HitAnimation(PoliceHitAnimation, police.Damage),
-                Reversed: true, Police: true, Sound: AudioRouting.PoliceSound,
-                Forces: policeForces)];
+                Reversed: true, timeline.Forces(gameEvent.Sequence, null, policeTarget),
+                Police: true, Sound: AudioRouting.PoliceSound)];
         }
         if (gameEvent.Action != GangAction.Attack
             || gameEvent.Gang is not { } attacker
@@ -75,20 +78,16 @@ public static class CombatAnimationRouting
             return [];
         if (resolution.Code is not (CommandResolutionCode.TargetEvaded or CommandResolutionCode.Resolved))
             return [];
-        var incoming = viewer is { } seen
-            && attackingGang.Owner != seen
-            && defendingGang.Owner == seen;
-        var forces = CombatForceTimeline.For(state, gameEvent)
-            .Forces(gameEvent.Sequence, attacker, defender);
+        var incoming = attackingGang.Owner != viewer && defendingGang.Owner == viewer;
+        var forces = timeline.Forces(gameEvent.Sequence, attacker, defender);
         if (resolution.Code == CommandResolutionCode.TargetEvaded)
             return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
-                EvadedAnimation, 0, Reversed: incoming, Forces: forces)];
+                EvadedAnimation, 0, Reversed: incoming, forces)];
 
         var attack = AnimationPair(state, attackingGang, resolution.ItemId, resolution.Damage);
         return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
-            attack.Attack, attack.Hit, Reversed: incoming,
-            Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId),
-            Forces: forces)];
+            attack.Attack, attack.Hit, Reversed: incoming, forces,
+            Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId))];
     }
 
     public static string AttackFile(short animation, bool reversed)
