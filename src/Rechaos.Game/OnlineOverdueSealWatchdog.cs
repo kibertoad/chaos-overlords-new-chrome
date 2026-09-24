@@ -6,7 +6,7 @@ namespace Rechaos.Game;
 /// <remarks>
 /// <para>
 /// A client never seals an online turn itself; when the countdown reaches zero it shows
-/// "SEALING" and waits for the server. The resolution watchdog only covered the turn every seat
+/// "TIME UP" and waits for the server. The resolution watchdog only covered the turn every seat
 /// had finished, so a turn that ran out of time while the player was still planning was covered
 /// by nothing: a seal the server was late with, or one the event stream never delivered, left the
 /// countdown on zero until the player ended the turn by hand. A resynchronisation settles both —

@@ -184,7 +184,7 @@ public sealed partial class ChaosGame
                 && CombatResultProjection.IsFromLastCompletedTurn(
                     gameEvent.Turn, _state.Coordinator.Turn)
                 && IsVisibleCombatEvent(_state, viewer, gameEvent))
-                foreach (var clip in CombatAnimationRouting.ForEvent(_state, gameEvent))
+                foreach (var clip in CombatClipsOrNone(_state, gameEvent))
                     _combatAnimationPlayer.Enqueue(clip);
             _combatPresentationProgress.MarkSeen(viewer, gameEvent.Sequence);
         }
