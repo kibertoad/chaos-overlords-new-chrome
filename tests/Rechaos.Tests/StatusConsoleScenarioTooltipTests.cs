@@ -21,6 +21,24 @@ public sealed class StatusConsoleScenarioTooltipTests
     }
 
     [Fact]
+    public void ScoreTooltipStatesWhatTheScenarioRates()
+    {
+        foreach (var scenario in Enum.GetValues<ScenarioId>())
+        {
+            var point = StatusConsoleLayout.Score.Center;
+            var lines = StatusConsoleTooltip.At(point, scenario, GameDuration.TwoYears);
+
+            Assert.Equal("SCORE", lines[0]);
+            Assert.Contains(PlayerRankingTooltip.Basis(scenario), lines[1]);
+            Assert.DoesNotContain(lines, line => line.Contains("VICTORY"));
+            Assert.Equal(scenario is ScenarioId.KillEmAll or ScenarioId.Siege,
+                lines.Contains("SHARED BY EVERY SURVIVING OVERLORD."));
+            Assert.True(lines.Max(line => line.Length) * OriginalFontLayout.CellWidth + 16
+                <= VirtualInput.Width - 16);
+        }
+    }
+
+    [Fact]
     public void TolerancePresentationRelatesQueuedChaosRangeToThreshold()
     {
         var range = new ChaosRange(0, 9);
