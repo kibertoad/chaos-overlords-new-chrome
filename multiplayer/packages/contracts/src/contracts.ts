@@ -6,7 +6,7 @@ import { errorEnvelopeSchema } from './errors'
 import { eventPageSchema, MATCH_EVENT_SSE_NAME, matchEventSchema } from './events'
 import { resourceIdSchema, turnPathParamSchema } from './primitives'
 import { handshakeRequestSchema, handshakeResponseSchema } from './protocol'
-import { eventsQuerySchema } from './queries'
+import { eventsQuerySchema, lobbyListQuerySchema } from './queries'
 import {
   createMatchRequestSchema,
   joinMatchRequestSchema,
@@ -89,6 +89,7 @@ export const handshakeContract = defineApiContract({
 export const listLobbiesContract = defineApiContract({
   method: 'get',
   pathResolver: () => '/matches',
+  requestQuerySchema: lobbyListQuerySchema,
   responsesByStatusCode: { 200: lobbyListSchema, ...REFUSALS },
   summary: 'Public lobbies, when the server enables listing.',
 })

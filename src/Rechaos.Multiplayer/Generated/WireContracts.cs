@@ -649,6 +649,7 @@ public sealed record LobbyListing(
     [property: JsonPropertyName("maxPlayers")] int MaxPlayers,
     [property: JsonPropertyName("passwordProtected")] bool PasswordProtected,
     [property: JsonPropertyName("status")] MatchStatus Status,
+    [property: JsonPropertyName("sessionVersion")] int SessionVersion,
     [property: JsonPropertyName("settings")] MatchSettings Settings,
     [property: JsonPropertyName("availableSlots")] IReadOnlyList<int> AvailableSlots,
     [property: JsonPropertyName("availableSeatSummaries")] IReadOnlyList<AiSeatSummary> AvailableSeatSummaries,

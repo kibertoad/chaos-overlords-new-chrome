@@ -40,9 +40,9 @@ public sealed record MultiplayerRecovery(
 
     /// <summary>Whether this build plays the session this seat belongs to.</summary>
     /// <remarks>
-    /// The membership stays worth keeping either way — the seat is still held, and the browser
-    /// says why it cannot be taken — so this is asked beside <see cref="CanReconnect"/> rather
-    /// than folded into it.
+    /// The membership stays worth keeping either way — the seat is still held, and a build of that
+    /// session version can take it — so this is asked beside <see cref="CanReconnect"/> rather than
+    /// folded into it. The browser of this build lists only what it can resume.
     /// </remarks>
     public bool IsCompatible => MultiplayerSessionVersion.CanResume(SessionVersion);
 

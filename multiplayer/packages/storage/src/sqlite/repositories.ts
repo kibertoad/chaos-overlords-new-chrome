@@ -112,7 +112,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
      * on them and the takeover vote is what decides otherwise — so counting only `active` hid
      * live matches from the listing and understated the players in the ones it kept.
      */
-    async listPublicLobbies(limit): Promise<PublicLobbyRow[]> {
+    async listPublicLobbies(limit, sessionVersion): Promise<PublicLobbyRow[]> {
       const humanSeats = sql<number>`(select count(*) from ${players} where ${players.matchId} = ${matches.id} and ${players.status} in ('active', 'takeoverPending'))`
       const rows = await db
         .select({
@@ -125,6 +125,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
           maxPlayers: matches.maxPlayers,
           passwordHash: matches.passwordHash,
           status: matches.status,
+          sessionVersion: matches.sessionVersion,
           settings: matches.settings,
           createdAt: matches.createdAt,
           hasSnapshot: exists(
@@ -141,6 +142,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
             inArray(matches.status, ['lobby', 'running']),
             eq(matches.visibility, 'public'),
             or(ne(matches.status, 'running'), sql`${humanSeats} > 0`),
+            sessionVersion === undefined ? undefined : eq(matches.sessionVersion, sessionVersion),
           ),
         )
         .orderBy(desc(matches.createdAt), asc(matches.id))

@@ -66,7 +66,7 @@ public sealed partial class ChaosGame
     /// <remarks>Null when no lobby has been joined; see <see cref="RememberLocalSetup"/>.</remarks>
     private LocalSetupChoices? _localSetupBeforeLobby;
     private MultiplayerRecovery? LatestOnlineRecovery =>
-        _multiplayerRecoveries.FirstOrDefault(recovery => recovery.CanReconnect);
+        _multiplayerRecoveries.FirstOrDefault(recovery => recovery.CanResume);
 
     private void OpenOnline()
     {
@@ -255,14 +255,9 @@ public sealed partial class ChaosGame
 
     private void ResumeSelectedOnlineMatch()
     {
+        // The browser lists only sessions this build plays, and the match view settles the version
+        // again on the way in.
         if (SelectedOnlineRecovery is not { } recovery) return;
-        // The match view settles this again on the way in; refusing here only spares the player a
-        // round trip that ends in the same answer, beside the row that caused it.
-        if (!recovery.IsCompatible)
-        {
-            _online.Status = OnlineHistoryPresentation.IncompatibleReason;
-            return;
-        }
         if (!Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server))
         {
             _online.Status = "THE SAVED SERVER ADDRESS IS INVALID";

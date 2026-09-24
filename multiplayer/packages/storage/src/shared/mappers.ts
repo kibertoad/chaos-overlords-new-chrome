@@ -218,6 +218,7 @@ export interface PublicLobbyRowShape {
   maxPlayers: number
   passwordHash: string | null
   status: string
+  sessionVersion: number
   settings: unknown
   createdAt: Date
   hasSnapshot: unknown
@@ -231,6 +232,7 @@ export const toPublicLobbyRow = (row: PublicLobbyRowShape): PublicLobbyRow => ({
   playerCount: row.status === 'running' ? countColumn(row.humanCount) : row.seatCount,
   maxPlayers: row.maxPlayers,
   status: row.status as LobbyListing['status'],
+  sessionVersion: databaseVersion(row.sessionVersion, 'matches.session_version'),
   settings: row.settings as LobbyListing['settings'],
   availableSlots: [],
   availableSeatSummaries: [],

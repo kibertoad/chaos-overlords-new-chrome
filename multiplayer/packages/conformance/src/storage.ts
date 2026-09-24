@@ -378,6 +378,38 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(listing.some((entry) => entry.id === abandoned.id)).toBe(false)
     })
 
+    /**
+     * A reader that names its session version is shown only the matches stored under it, and the
+     * filter runs before the limit: a page of matches the reader cannot play would otherwise push a
+     * playable one off the end of it.
+     */
+    it('narrows the public listing to one session version before the limit', async () => {
+      const current = matchFixture({ createdAt: new Date('2026-03-01T09:00:00.000Z') })
+      const newer = matchFixture({
+        sessionVersion: 2,
+        createdAt: new Date('2026-03-01T12:00:00.000Z'),
+      })
+      for (const match of [current, newer]) {
+        await storage.matches.create(match)
+        await storage.players.create(playerFixture(match, { id: match.hostPlayerId }))
+      }
+      const mine = new Set([current.id, newer.id])
+      const all = (await storage.matches.listPublicLobbies(100)).filter((entry) =>
+        mine.has(entry.id),
+      )
+      expect(all.map((entry) => [entry.id, entry.sessionVersion])).toEqual([
+        [newer.id, 2],
+        [current.id, 1],
+      ])
+      const onlyNewer = (await storage.matches.listPublicLobbies(100, 2)).filter((entry) =>
+        mine.has(entry.id),
+      )
+      expect(onlyNewer.map((entry) => entry.id)).toEqual([newer.id])
+      expect(
+        (await storage.matches.listPublicLobbies(1, 1)).some((entry) => entry.id === newer.id),
+      ).toBe(false)
+    })
+
     it('finds players by token hash, orders them by slot then join order, and updates status/slots', async () => {
       const match = matchFixture()
       await storage.matches.create(match)

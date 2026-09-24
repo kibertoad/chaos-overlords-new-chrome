@@ -32,3 +32,17 @@ export const eventsQuerySchema = strictObject({
 })
 
 export type EventsQuery = InferOutput<typeof eventsQuerySchema>
+
+/**
+ * `?sessionVersion=`, optional.
+ *
+ * The session version the caller plays. When it is given, the public list holds only the matches
+ * stored under it: any other is one the caller could neither join nor carry on, and filtering it
+ * before the page limit keeps it from crowding out a match that is playable. Without it the list is
+ * every public match, for a caller that only looks.
+ */
+export const lobbyListQuerySchema = strictObject({
+  sessionVersion: optional(integerQueryParam(0, INT32_MAX)),
+})
+
+export type LobbyListQuery = InferOutput<typeof lobbyListQuerySchema>
