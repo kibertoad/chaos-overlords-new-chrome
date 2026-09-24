@@ -32,6 +32,45 @@ public sealed class CombatAnimationTests
         Assert.True(clips[1].Reversed);
     }
 
+    /// <summary>
+    /// Whichever side the viewer is on, the gang whose order it was strikes first and its target
+    /// answers second: a viewer attacked sees the enemy's blow before their own retaliation, and a
+    /// viewer attacking sees their own blow before the enemy's.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void AttackPlaysBeforeRetaliationFromEitherSide(int attackingPlayer)
+    {
+        var state = CreateState();
+        var attacker = new GangId(attackingPlayer == 0 ? 10 : 20);
+        var defender = new GangId(attackingPlayer == 0 ? 20 : 10);
+        var gameEvent = AttackEvent(new CommandResolutionDetails(
+            CommandResolutionCode.Resolved, [], 0,
+            RetaliationRolls: [4], Damage: 1, RetaliationDamage: 1),
+            new PlayerId(attackingPlayer), attacker, defender);
+
+        var player = new CombatAnimationPlayer();
+        foreach (var clip in CombatAnimationRouting.ForEvent(state, gameEvent)) player.Enqueue(clip);
+        var started = player.Advance(TimeSpan.FromMilliseconds(
+            (CombatAnimationRouting.CompletionTick + CombatAnimationRouting.FirstAnimationTick)
+            * CombatAnimationRouting.FrameMilliseconds));
+
+        Assert.Collection(started,
+            clip =>
+            {
+                Assert.Equal(attacker, clip.Attacker);
+                Assert.Equal(defender, clip.Defender);
+                Assert.False(clip.Reversed);
+            },
+            clip =>
+            {
+                Assert.Equal(defender, clip.Attacker);
+                Assert.Equal(attacker, clip.Defender);
+                Assert.True(clip.Reversed);
+            });
+    }
+
     [Fact]
     public void EvasionAndDetectedPoliceUseRecoveredPairedSheets()
     {
@@ -278,13 +317,20 @@ public sealed class CombatAnimationTests
         Assert.Null(player.Active);
     }
 
-    private static GameEvent AttackEvent(CommandResolutionDetails resolution) => new(
+    private static GameEvent AttackEvent(CommandResolutionDetails resolution) =>
+        AttackEvent(resolution, new PlayerId(0), new GangId(10), new GangId(20));
+
+    private static GameEvent AttackEvent(
+        CommandResolutionDetails resolution,
+        PlayerId player,
+        GangId attacker,
+        GangId defender) => new(
         1, 1, TurnPhase.Execution, ExecutionPhase.Combat,
         resolution.Code == CommandResolutionCode.Resolved
             ? GameEventKind.CommandResolved
             : GameEventKind.CommandFailed,
-        new PlayerId(0), new GangId(10), GangAction.Attack,
-        CommandTarget.Gang(new GangId(20)), Resolution: resolution);
+        player, attacker, GangAction.Attack,
+        CommandTarget.Gang(defender), Resolution: resolution);
 
     private static MatchState CreateState(short attackerDefinition = 0)
     {
