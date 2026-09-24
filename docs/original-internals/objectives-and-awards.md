@@ -1,7 +1,6 @@
 # Objectives, ranking, and awards
 
 Status: active clean-room research log
-Last updated: 2026-09-20
 
 How the original ranks players while a match runs and scores them when it ends:
 the player-rail portrait positions, and the endgame award thresholds, their

@@ -1,7 +1,6 @@
 # Original executable internals research
 
 Status: active clean-room research log
-Last updated: 2026-09-24
 Reference executable SHA-256:
 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
 
@@ -66,7 +65,7 @@ are grouped by subsystem, each group names the document that holds it, and rows
 are in ID order.
 
 <!-- doc-index:begin finding-index -->
-108 findings.
+109 findings.
 
 **Executable image** — [executable-and-platform.md](original-internals/executable-and-platform.md)
 
@@ -138,6 +137,7 @@ are in ID order.
 | ID | Finding |
 |---|---|
 | [BIN-HIRE-001](original-internals/commands-and-economy.md#bin-hire-001---initial-and-replacement-offers) | initial and replacement offers |
+| [BIN-HIRE-002](original-internals/commands-and-economy.md#bin-hire-002---hire-capacity-uses-only-the-current-players-roster) | hire capacity uses only the current player's roster |
 | [BIN-HIRE-COMPARISON-001](original-internals/commands-and-economy.md#bin-hire-comparison-001---fixed-width-signed-values-in-the-three-offer-panel) | fixed-width signed values in the three-offer panel |
 
 **Instant commands** — [commands-and-economy.md](original-internals/commands-and-economy.md)

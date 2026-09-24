@@ -1,7 +1,6 @@
 # Server-authoritative turn replay
 
 Status: design, not implemented
-Last updated: 2026-09-23
 
 This document designs the change that [MULTIPLAYER.md](MULTIPLAYER.md) leaves room for and
 names twice: moving turn resolution onto the coordination server behind a `TurnResolver` port.

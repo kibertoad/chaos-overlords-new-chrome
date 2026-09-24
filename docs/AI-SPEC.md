@@ -1,7 +1,6 @@
 # AI specification
 
 Status: provisional recreation baseline  
-Last updated: 2026-09-20
 
 The original executable's complete difficulty branches and evaluation weights
 have not yet been recovered. Static analysis has recovered the outer per-gang

@@ -1,7 +1,6 @@
 # Recreation-native save format
 
 Status: implemented format version 26
-Last updated: 2026-09-21
 
 This format belongs to the recreation. It is deliberately separate from the
 original *Chaos Overlords* fixed-memory save envelopes and makes no claim of

@@ -1,7 +1,6 @@
 # Development handover
 
 Status: active at a validated local checkpoint
-Last updated: 2026-09-24
 
 <!-- doc-index:begin toc depth=3 -->
 - [Repository state](#repository-state)

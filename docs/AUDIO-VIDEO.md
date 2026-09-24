@@ -1,7 +1,6 @@
 # Audio and video
 
 Status: active media map
-Last updated: 2026-09-23
 
 All files described here come from a user-owned, extractor-verified original
 asset pack. None are distributed by this repository.

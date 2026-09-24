@@ -1,7 +1,6 @@
 # Combat, chaos, and police
 
 Status: active clean-room research log
-Last updated: 2026-09-24
 
 How the board resolves violence: the fixed player and roster order the attack
 and police rolls run in, the exact detection and damage formulas, how opening

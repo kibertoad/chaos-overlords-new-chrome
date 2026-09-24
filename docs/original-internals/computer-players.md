@@ -1,7 +1,6 @@
 # Computer players
 
 Status: active clean-room research log
-Last updated: 2026-09-20
 
 The original computer player, from the outer planning pass down to a single
 gang's action: the per-gang command dispatcher and its handlers, command

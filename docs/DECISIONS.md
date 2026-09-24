@@ -1,7 +1,6 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-24
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
@@ -18,7 +17,6 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
-| 2026-09-24 | [Count only friendly gangs against a hire's sector limit](#2026-09-24--count-only-friendly-gangs-against-a-hires-sector-limit) |
 | 2026-09-24 | [Record the gangs that fought in each combat event](#2026-09-24--record-the-gangs-that-fought-in-each-combat-event) |
 | 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
 | 2026-09-24 | [Mark objective sectors on the detailed-sector minimap](#2026-09-24--mark-objective-sectors-on-the-detailed-sector-minimap) |
@@ -37,30 +35,6 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
-
-## 2026-09-24 — Count only friendly gangs against a hire's sector limit
-
-**Decision.** A hire fails as `SECTOR AT CAPACITY` only when the hiring player
-already has six active gangs in the target sector. An opponent's gangs in the
-same sector do not count toward that player's limit.
-
-**Original behavior.** The static reading in `BIN-HIRE-001` has the shipped
-resolver count every gang record in the target sector before the cash check.
-Read that way, an opponent's gangs take places from the hiring player: five
-friendly gangs and one enemy gang in a contested sector is full.
-
-**Reasoning and compatibility.** Every other place that enforces the limit
-counts only the player's own active gangs: the manual's six friendly gangs per
-sector (`RULE-MOVE-001`), Move validation and simultaneous Move normalization,
-the immediate-payment hire validator, the AI hire-placement occupancy test, and
-state validation. A player sees their own five gangs and a hire that fails for
-a reason the Hire panel never shows. The failure keeps its place in the
-resolver: before the cash check, with no RNG drawn. The client-side drop
-refusal (see the decision below) already counted only friendly gangs, so the
-drop check and the resolver now agree. This rule deviation changes
-deterministic turn outcomes, so multiplayer session version 11 retires sessions
-started under version 10. Native saves and replay journals keep their format
-gates because their schema and fingerprint encoding have not changed.
 
 ## 2026-09-24 — Record the gangs that fought in each combat event
 

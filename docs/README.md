@@ -1,7 +1,6 @@
 # Documentation index
 
 Status: maintained index
-Last updated: 2026-09-24
 
 This directory holds the technical documentation of *Chaos Overlords: New
 Chrome*. This page is the entry point: it says what each document is for, which
@@ -41,9 +40,8 @@ and contributor working rules are in [AGENTS.md](../AGENTS.md).
 
 ## Document catalog
 
-Every document opens with a `Status:` line saying how settled it is and a
-`Last updated:` date, except the generated asset catalog and the procedure
-guides, which are current by construction or change rarely.
+Maintained research and design documents open with a `Status:` line saying
+how settled they are. Git history provides change dates.
 
 ### Orientation, process, and status
 
@@ -115,7 +113,7 @@ the subsystem's rows.
 | New-game setup and city generation | [RULE-SETUP-001](GAME-RULES.md#rule-setup-001--starting-resources-and-smgfundage) | [BIN-CITY-001](original-internals/new-game-setup.md#bin-city-001---density-derived-sector-income-and-tolerance), [BIN-CITY-002](original-internals/new-game-setup.md#bin-city-002---three-site-rejection-sampling), [BIN-CITY-003](original-internals/new-game-setup.md#bin-city-003---headquarters-and-right-hands), [BIN-SETUP-000](original-internals/new-game-setup.md#bin-setup-000---fresh-setup-defaults-to-kill-em-all), [BIN-SETUP-002](original-internals/new-game-setup.md#bin-setup-002---local-missing-slots-become-computer-players), [BIN-SETUP-005](original-internals/new-game-setup.md#bin-setup-005---exact-local-player-card-interaction-geometry), [BIN-RNG-005](original-internals/randomness-and-turn-structure.md#bin-rng-005---accepted-local-setup-through-initial-city) | [UI atlas: PX00143 hit map](UI-ATLAS.md#px00143-hit-map); [Legacy session setup screens](UI-ATLAS.md#legacy-session-setup-screens); [parity: City, Players, Starting state](PARITY-MATRIX.md#turn-structure-and-match-state); [workstream D](IMPLEMENTATION-PLAN.md#d-new-game-setup-and-city-generation) |
 | Exact-name modifiers | [RULE-SETUP-001](GAME-RULES.md#rule-setup-001--starting-resources-and-smgfundage) | [BIN-SETUP-001](original-internals/new-game-setup.md#bin-setup-001---smgfundage-starting-cash-override), [BIN-SETUP-003](original-internals/new-game-setup.md#bin-setup-003---smgislands-permanent-neutral-sector-crackdown), [BIN-SETUP-004](original-internals/new-game-setup.md#bin-setup-004---extra-gang-and-global-visibility-name-modifiers) | [README: online name projection refuses cheat names](../README.md#quality-of-life-additions) |
 | Hot-seat play and handoff | — | [BIN-HOTSEAT-002](original-internals/new-game-setup.md#bin-hotseat-002---private-handoff-ordering-and-terminal-player-path), [BIN-SETUP-002](original-internals/new-game-setup.md#bin-setup-002---local-missing-slots-become-computer-players) | [parity: Hot-seat](PARITY-MATRIX.md#multiple-players-and-networking); [handover: reports and handoff](HANDOVER.md#turn-reports-and-hot-seat-handoff); [workstream M](IMPLEMENTATION-PLAN.md#m-hot-seat-play) |
-| Hiring | [RULE-HIRE-001](GAME-RULES.md#rule-hire-001--offer-replacement-and-starting-force) | [BIN-HIRE-001](original-internals/commands-and-economy.md#bin-hire-001---initial-and-replacement-offers), [BIN-HIRE-COMPARISON-001](original-internals/commands-and-economy.md#bin-hire-comparison-001---fixed-width-signed-values-in-the-three-offer-panel), [BIN-AI-003A](original-internals/computer-players.md#bin-ai-003a---strategic-hire-offer-ranking), [BIN-AI-003B](original-internals/computer-players.md#bin-ai-003b---base-hire-role-schedule), [BIN-AI-003C](original-internals/computer-players.md#bin-ai-003c---ai-hire-destination-and-persistent-placement-anchor) | [parity: Hire pool](PARITY-MATRIX.md#commands-and-economy); [decision: AI hire slot/role indexing](DECISIONS.md#2026-09-17--correct-the-original-ai-hire-slotrole-indexing-defect) |
+| Hiring | [RULE-HIRE-001](GAME-RULES.md#rule-hire-001--offer-replacement-and-starting-force) | [BIN-HIRE-001](original-internals/commands-and-economy.md#bin-hire-001---initial-and-replacement-offers), [BIN-HIRE-002](original-internals/commands-and-economy.md#bin-hire-002---hire-capacity-uses-only-the-current-players-roster), [BIN-HIRE-COMPARISON-001](original-internals/commands-and-economy.md#bin-hire-comparison-001---fixed-width-signed-values-in-the-three-offer-panel), [BIN-AI-003A](original-internals/computer-players.md#bin-ai-003a---strategic-hire-offer-ranking), [BIN-AI-003B](original-internals/computer-players.md#bin-ai-003b---base-hire-role-schedule), [BIN-AI-003C](original-internals/computer-players.md#bin-ai-003c---ai-hire-destination-and-persistent-placement-anchor) | [parity: Hire pool](PARITY-MATRIX.md#commands-and-economy); [decision: AI hire slot/role indexing](DECISIONS.md#2026-09-17--correct-the-original-ai-hire-slotrole-indexing-defect) |
 | Movement | [RULE-MOVE-001](GAME-RULES.md#rule-move-001--adjacent-movement-and-friendly-capacity) | [BIN-MOVEMENT-001](original-internals/commands-and-economy.md#bin-movement-001---terminate-pass-before-roster-ordered-move), [BIN-MOVEMENT-002](original-internals/commands-and-economy.md#bin-movement-002---move-panel-neighborhood-target-mapping) | [parity: Movement](PARITY-MATRIX.md#commands-and-economy) |
 | Sector control | [RULE-CONTROL-001](GAME-RULES.md#rule-control-001--cooperative-sector-control-comparison) | [BIN-CONTROL-001](original-internals/commands-and-economy.md#bin-control-001---cross-player-winner-and-zero-margin-neutral-candidate) | [parity: Sector control](PARITY-MATRIX.md#commands-and-economy) |
 | Influence and sites | [RULE-INFLUENCE-001](GAME-RULES.md#rule-influence-001--cooperative-site-influence), [RULE-SITE-STATS-001](GAME-RULES.md#rule-site-stats-001--influenced-site-local-modifiers) | [BIN-INFLUENCE-001](original-internals/commands-and-economy.md#bin-influence-001---influence-picker-targets-and-detail-entry), [BIN-SITE-INFO-001](original-internals/interface-and-options.md#bin-site-info-001---px05002-alternate-site-information-panel), [BIN-EFFECTIVE-STATS-001](original-internals/commands-and-economy.md#bin-effective-stats-001---gang-equipment-and-controlled-site-aggregation) | [parity: Influence](PARITY-MATRIX.md#commands-and-economy); [SITES table](ORIGINAL-FILE-FORMATS.md#sites) |
@@ -152,7 +150,7 @@ the subsystem's rows.
 | `Manual` | Evidence label for a behavior inspected in the manual but not yet confirmed in the binary. | [PARITY-MATRIX.md](PARITY-MATRIX.md) |
 | `MANUAL-GOG-1`, `EXE-GOG-1.1` | Named evidence sources for rules. | [Evidence sources](GAME-RULES.md#evidence-sources) |
 | Source hierarchy | Which source wins when they disagree. | [10. Source hierarchy](IMPLEMENTATION-PLAN.md#10-source-hierarchy) |
-| `Status:` / `Last updated:` | Header lines at the top of each maintained document. | This directory |
+| `Status:` | Header line describing how settled a maintained document is. | This directory |
 | `<!-- doc-index:begin … -->` | A generated table of contents or index. Rebuild with `node tools/update-doc-indexes.mjs`; `--check` fails when a block is stale, and either mode fails when a relative link or `#anchor` between these documents no longer resolves. | [tools/update-doc-indexes.mjs](../tools/update-doc-indexes.mjs) |
 
 ## Canonical identities
@@ -187,7 +185,7 @@ from [HANDOVER.md](HANDOVER.md#repository-state) and
   in a document with a `doc-index` block, run `node tools/update-doc-indexes.mjs`.
   ASSET-CATALOG.md is rewritten by `dotnet run --project src/Rechaos.Extractor -- --catalog`
   from a fully verified pack.
-- **Adding a document**: give it `Status:` and `Last updated:` lines, add it to
+- **Adding a document**: give it a `Status:` line, add it to
   the catalog above and to the [documents-to-maintain table](IMPLEMENTATION-PLAN.md#41-documents-to-maintain)
   when it carries parity evidence, and link it from the topic index.
 - **Keep evidence and claims apart**: what the executable does, what the manual

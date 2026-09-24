@@ -1,7 +1,6 @@
 # Commands, gangs, and economy
 
 Status: active clean-room research log
-Last updated: 2026-09-24
 
 The commands a gang can be given and the money that pays for them: hire offers
 and their comparison panel, the Instant commands resolved before the board, the
@@ -18,6 +17,7 @@ reference executable fingerprinted there.
 <!-- doc-index:begin toc depth=3 -->
 - [Hiring](#hiring)
   - [BIN-HIRE-001 - initial and replacement offers](#bin-hire-001---initial-and-replacement-offers)
+  - [BIN-HIRE-002 - hire capacity uses only the current player's roster](#bin-hire-002---hire-capacity-uses-only-the-current-players-roster)
   - [BIN-HIRE-COMPARISON-001 - fixed-width signed values in the three-offer panel](#bin-hire-comparison-001---fixed-width-signed-values-in-the-three-offer-panel)
 - [Instant commands](#instant-commands)
   - [BIN-BRIBE-001 - shipped three-dollar cost and direct tolerance delta](#bin-bribe-001---shipped-three-dollar-cost-and-direct-tolerance-delta)
@@ -71,8 +71,11 @@ rather than directly snubbing it. Dragging an offer writes the new destination
 to that slot and unconditionally clears the other two slots, so a later drag
 replaces the earlier selection and dragging the same offer can retarget it.
 The handler does not read or update cash or cumulative cash spent. The resolver
-first counts all gang records in the target sector at `0x0047592b`-
-`0x004759a8`; six causes a failure with no random draw. It then checks
+first counts gangs in the hiring player's own 81-record array whose sector
+byte equals the target, at `0x0047592b`-`0x004759a8`. The gang address uses
+the current player index times `0xa20` plus the record index times `0x20`;
+there is no second player loop in this count. Six causes a failure with no
+random draw. It then checks
 then-current cash at `0x004759bd`-`0x00475a15`. Only after those checks does it
 roll Force at `0x00475ac4`; it subsequently searches the player's 80 gang slots
 at `0x00475bdb`-`0x00475c2d`, so a full roster failure consumes the Force draw.
@@ -90,6 +93,11 @@ cannot immediately replace itself. Hired Force is uniformly 5 through 9 through
 the recovered bounded wrapper. Selecting a hire reserves no cash: affordability
 is evaluated during resolution, and an unaffordable action is cleared without
 creating a vacancy.
+
+The sector-capacity failure is the sole six-gang gate in the hire-resolution
+block. The later checks concern current cash and an available gang slot in
+the same player's roster. Opponent gangs in the target sector do not affect
+this gate; the previously documented all-player reading was incorrect.
 
 Hire resolution is reached from the outer turn loop through the direct call
 chain `0x0046f706` -> `0x004726c0`, then `0x00472750` -> `0x00472775`. The
@@ -115,6 +123,27 @@ scenario or controller rule.
 mutual exclusion, resolver/refill order, call sites, RNG bounds, and the exact
 `SMGMILK` trigger/effect; a controlled runtime sequence remains useful
 corroboration.
+
+### BIN-HIRE-002 - hire capacity uses only the current player's roster
+
+**Observation:** In the pinned GOG 1.1 executable, the hire block of
+`0x00472775` iterates player index 0..5 and offer slot 0..2. For a queued hire,
+it resets a counter and scans 81 gang records at `0x00498daa + player * 0xa20
++ record * 0x20`, comparing each record's sector byte with that offer's target
+byte at `0x004a27c8 + slot + player * 3`. The counter reaches the `< 6`
+branch only through this one player-indexed scan. On failure, the block emits
+the sector-capacity report and clears the offer action. On success it tests
+cash, then draws Force, then searches for a free record in the same player's
+roster. There is no second sector-capacity predicate in this hire block.
+
+**Interpretation:** An opponent's gangs in the target sector do not consume
+the hiring player's six places. This corrects the earlier all-player reading
+of `BIN-HIRE-001`; the recreation's friendly-only capacity check restores
+original behavior and needs no compatibility toggle.
+
+**Confidence:** High for the player-indexed address expression, sole capacity
+branch in the bounded hire block, and ordering of cash, RNG and roster-slot
+checks. Controlled runtime corroboration remains pending.
 
 ### BIN-HIRE-COMPARISON-001 - fixed-width signed values in the three-offer panel
 

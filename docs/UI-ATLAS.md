@@ -1,7 +1,6 @@
 # Original UI atlas
 
 Status: partial, active mapping
-Last updated: 2026-09-20
 
 This file assigns presentation resources from the verified extracted asset pack
 to visible workflows. Coordinates use the original 640 by 460 virtual canvas.

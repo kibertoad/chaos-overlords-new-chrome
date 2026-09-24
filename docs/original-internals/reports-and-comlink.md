@@ -1,7 +1,6 @@
 # Turn reports, Comlink, and Search
 
 Status: active clean-room research log
-Last updated: 2026-09-20
 
 The per-player information channels: the Last Turn report table with its types
 and lifetime, its pager and exit control, the Comlink message queue with its

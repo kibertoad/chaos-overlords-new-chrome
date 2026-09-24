@@ -1,7 +1,6 @@
 # Executable image and platform boundaries
 
 Status: active clean-room research log
-Last updated: 2026-09-20
 
 What the reference executable is as a binary, and where it hands work to the
 platform: the PE layout and section table, the toolchain fingerprint, the

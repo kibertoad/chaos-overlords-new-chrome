@@ -1,7 +1,6 @@
 # Screens, panels, and options
 
 Status: active clean-room research log
-Last updated: 2026-09-20
 
 Exact presentation facts recovered from draw and pointer call arguments: copy
 modes and main-console geometry, the city and detailed-sector panels, the
