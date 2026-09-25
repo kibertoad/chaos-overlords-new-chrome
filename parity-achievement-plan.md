@@ -80,8 +80,9 @@ them and show whether they expand to the installed files.
 A row is `validated` only when its Tests column lists a test that compares the rebuild with
 evidence from the original (see [docs/VALIDATION.md](docs/VALIDATION.md#tests-against-the-original)).
 
-- Formats first, since they need no new experiments: tests that decode every shipped file for
-  FMT-DATA-001 to FMT-DATA-003, FMT-GFX-001 to FMT-GFX-003, the audio, video and help formats.
+- Formats: FMT-DATA-001 to 003, FMT-GFX-001 to 003, FMT-VIDEO-001 and FMT-HELP-001 to 002 are
+  validated against every shipped file. FMT-AUDIO-001 and 002 have file tests too, but the
+  rebuild hands those files to the framework whole, so no decoder of its own is compared.
 - Rules next, as each `EXP-` fixture from step 12 lands: a test replays the fixture and compares
   events and end state. A test that reaches a `mandatory` deviation cites its ID and allows for it.
 - Screens last, against captures of the original, with masks for the areas a deviation draws.

@@ -1,7 +1,7 @@
 # Original asset catalog
 
 Status: generated inventory; semantic ownership remains incomplete
-Manifest format: 6
+Manifest format: 7
 Extractor version: 0.10.4
 Source fingerprint: `ad958a934a691318f31a27a87252f420dd89a0ad03759457d8feaf49914d29e3`
 Asset count: 686
