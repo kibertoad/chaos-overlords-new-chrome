@@ -126,7 +126,12 @@ public static class StatusConsoleTooltip
                 ? Tolerance(value, estimate, chaosBreakdown ?? [], enemyGangsPresent, toleranceParts)
                 : ["TOLERANCE", "CHAOS ABOVE THIS VALUE TRIGGERS A POLICE CRACKDOWN."];
         if (StatusConsoleLayout.SectorEntry(3).Contains(point))
-            return ["SUPPORT", "INFLUENCED-SITE SUPPORT ADDED AGAINST ENEMY CONTROL."];
+            // RULE-CONTROL-001
+            return [
+                "SUPPORT",
+                "COMPLETED-SITE SUPPORT, SET BEFORE PLANNING.",
+                "A CHALLENGER'S CONTROL MUST BEAT INCOME PLUS SUPPORT."
+            ];
         if (StatusConsoleLayout.SectorEntry(4).Contains(point))
             return [
                 "SECTOR CASH",
@@ -158,13 +163,17 @@ public static class StatusConsoleTooltip
             "CONTROLLED: EACH SUCCESS PAYS $1.",
             "UNCONTROLLED: HALF THE COMBINED",
             "SUCCESSES, ROUNDED DOWN.",
-            "CRACKDOWN: NO CHAOS CASH PAID.",
+            "CRACKDOWN THIS TURN: NO CHAOS CASH.",
             ""
         ];
         if (enemyGangsPresent) lines.Add(EnemyChaosWarning);
         lines.Add(chaosEstimate.Range.CanTriggerCrackdown(tolerance)
             ? "YOUR RANGE CAN TRIGGER A CRACKDOWN."
             : "YOUR RANGE CANNOT TRIGGER A CRACKDOWN.");
+        // RULE-POLICE-002, RULE-CHAOS-002
+        lines.Add("THE THIRD CRACKDOWN IN 5 TURNS MAKES");
+        lines.Add("THE SECTOR NEUTRAL AND BRINGS POLICE");
+        lines.Add("FOR 3-5 TURNS. POLICE DO NOT STOP PAY.");
         lines.Add("");
         // RULE-SITE-001, RULE-TOLERANCE-001, RULE-TOLERANCE-002: the value is the base plus the
         // completed sites, set before planning; the base moves while the orders resolve.

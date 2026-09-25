@@ -65,9 +65,12 @@ public sealed class StatusConsoleScenarioTooltipTests
                 "CONTROLLED: EACH SUCCESS PAYS $1.",
                 "UNCONTROLLED: HALF THE COMBINED",
                 "SUCCESSES, ROUNDED DOWN.",
-                "CRACKDOWN: NO CHAOS CASH PAID.",
+                "CRACKDOWN THIS TURN: NO CHAOS CASH.",
                 "",
                 "YOUR RANGE CANNOT TRIGGER A CRACKDOWN.",
+                "THE THIRD CRACKDOWN IN 5 TURNS MAKES",
+                "THE SECTOR NEUTRAL AND BRINGS POLICE",
+                "FOR 3-5 TURNS. POLICE DO NOT STOP PAY.",
                 "",
                 "CHAOS RANGE BREAKDOWN:",
                 ..breakdown

@@ -31,18 +31,22 @@ public static class CrackdownResolver
         ArgumentNullException.ThrowIfNull(sector);
         state.RequireSector(sector);
 
+        // RULE-POLICE-002: a Crackdown fills a free slot of the five-turn history and brings no
+        // police. The third within the window neutralizes the sector, clears its sites' progress
+        // and only then adds 3 to 5 turns of police, drawn after the history update
+        // (FND-POLICE-004). A neutral sector is neutralized again and gets the police too.
         var previousOwner = sector.Owner;
-        var controlLost = sector.RecordCrackdown(state.Coordinator.Turn) && previousOwner is not null;
-        if (controlLost)
-        {
-            SectorControlResolver.Neutralize(state, sector);
-            if (emitControlLostNotification)
-                state.QueueNotification(
-                    previousOwner!.Value,
-                    GameNotificationKind.ControlLost,
-                    sectorId: sector.Id,
-                    executionPhase: notificationPhase);
-        }
+        if (!sector.RecordCrackdown(state.Coordinator.Turn))
+            return new CrackdownTriggerResult(0, previousOwner, ControlLost: false);
+
+        var controlLost = previousOwner is not null;
+        SectorControlResolver.Neutralize(state, sector);
+        if (controlLost && emitControlLostNotification)
+            state.QueueNotification(
+                previousOwner!.Value,
+                GameNotificationKind.ControlLost,
+                sectorId: sector.Id,
+                executionPhase: notificationPhase);
         var duration = state.Random.NextInclusive(
             ManualRules.MaximumCrackdownTurns - ManualRules.MinimumCrackdownTurns + 1)
             + ManualRules.MinimumCrackdownTurns - 1;

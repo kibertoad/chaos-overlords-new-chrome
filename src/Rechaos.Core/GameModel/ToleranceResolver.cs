@@ -84,10 +84,16 @@ public static class ToleranceResolver
         foreach (var sector in state.Sectors)
         {
             var tolerance = sector.BaseTolerance;
+            var support = 0;
             foreach (var site in sector.Sites)
-                if (SiteControlRules.Controller(sector, site) is not null)
-                    tolerance = SignedByte(tolerance + state.Definitions.Site(site.DefinitionId).Tolerance);
+            {
+                if (SiteControlRules.Controller(sector, site) is null) continue;
+                var definition = state.Definitions.Site(site.DefinitionId);
+                tolerance = SignedByte(tolerance + definition.Tolerance);
+                support = SignedByte(support + definition.Support);
+            }
             sector.Tolerance = tolerance;
+            sector.Support = support;
         }
     }
 

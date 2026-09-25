@@ -223,7 +223,8 @@ public sealed class MatchSectorState
         int income = ManualRules.MinimumSectorIncome,
         int crackdownTurnsRemaining = 0,
         IReadOnlyList<int>? crackdownHistory = null,
-        int? baseTolerance = null)
+        int? baseTolerance = null,
+        int support = 0)
     {
         if (id is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(id));
@@ -246,6 +247,7 @@ public sealed class MatchSectorState
         Owner = owner;
         Tolerance = tolerance;
         BaseTolerance = baseTolerance ?? tolerance;
+        Support = support;
         LegacyChaos = chaos;
         // Only a newly activated sector needs the minimum; restores preserve a decayed duration.
         CrackdownTurnsRemaining = crackdownActive
@@ -272,6 +274,13 @@ public sealed class MatchSectorState
     /// keeps it as a signed byte.
     /// </summary>
     public int BaseTolerance { get; internal set; }
+
+    /// <summary>
+    /// The Support of the sector's completed sites, rebuilt before planning with the Tolerance and
+    /// read by the Control pass (FMT-STATE-002, RULE-CONTROL-001). A site lost during resolution
+    /// still counts until the next rebuild.
+    /// </summary>
+    public int Support { get; internal set; }
     // Retained only so pre-v24 saves/replays can verify their historical fingerprints.
     // The original executable has no persistent sector-Chaos accumulator.
     internal int LegacyChaos { get; }
