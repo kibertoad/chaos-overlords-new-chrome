@@ -13,6 +13,12 @@ public sealed partial class ChaosGame
     private bool _bulkCommand;
 
     /// <summary>
+    /// Whether that selection is the sector's gangs, picked by the group order strip, which lists
+    /// the original's group menus.
+    /// </summary>
+    private bool _groupCommand;
+
+    /// <summary>
     /// Whether the ctrl-picked selection survives the screen now showing, which
     /// <see cref="GangSelectionScreens"/> decides from the panels standing open.
     /// </summary>
@@ -51,7 +57,8 @@ public sealed partial class ChaosGame
     {
         if (_state is null || _actions is null) return false;
         var selected = _gangSelection.Count;
-        var plan = BulkGangCommands.Plan(_state, player, _gangSelection.Gangs, intent);
+        var plan = BulkGangCommands.Plan(
+            _state, player, _gangSelection.Gangs, intent, _groupCommand);
         var ordered = 0;
         foreach (var command in plan.Commands)
             if (_actions.Submit(command).Accepted) ordered++;

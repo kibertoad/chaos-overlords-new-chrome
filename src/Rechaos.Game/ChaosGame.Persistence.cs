@@ -70,12 +70,16 @@ public sealed partial class ChaosGame
         try
         {
             var loaded = load();
+            KeepRunRandomState();
             // The save is the match; the companion journal, when the slot has one that belongs to
             // it, is only how it got there — the history from the first turn, which is what lets a
             // bug report filed after a load reproduce the whole session rather than the tail of it.
             // Either way the state that is played on is the one that was saved.
             _state = loaded;
             _actions = new MatchActions(journal(loaded) ?? new MatchReplayRecorder(loaded));
+            // RULE-RNG-001: the loaded match draws on from the run's sequence, so reloading a save
+            // does not replay its luck. The journal records the move, and replays it.
+            _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
             ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
@@ -156,6 +160,7 @@ public sealed partial class ChaosGame
         {
             var result = MatchReplayStore.LoadAndReplayRecoveringBackup(
                 _replayPath, _state.Definitions);
+            KeepRunRandomState();
             _state = result.State;
             _actions = new MatchActions(new MatchReplayRecorder(_state));
             ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);

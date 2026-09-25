@@ -219,7 +219,8 @@ Only the Slide Panels-gated cues are affected:
 
 - a panel-to-panel change plays slot 1 and then slot 0, and the slot-1 close cue
   is not heard;
-- confirming the idle-gang warning plays slot 1 and then the turn-start slot 9.
+- confirming the idle-gang warning plays slot 1 and then, in an online match, the turn-start
+  slot 9.
 
 With Slide Panels off, the original plays neither slot 0 nor slot 1, and the
 recreation matches it exactly.

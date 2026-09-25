@@ -28,6 +28,47 @@ public sealed class BulkGangCommandsTests
         Assert.False(BulkGangCommands.Allows(GangAction.Terminate));
     }
 
+    // RULE-TURN-005, SCR-UI-004: the group order strip's menus, with Research left out of the
+    // recurring one.
+    [Fact]
+    public void TheGroupOrderMenusAreTheOriginals()
+    {
+        Assert.Equal(
+        [
+            GangAction.Attack, GangAction.Bribe, GangAction.Chaos, GangAction.Control,
+            GangAction.Heal, GangAction.Hide, GangAction.Influence, GangAction.Move,
+            GangAction.Snitch, GangAction.None, GangAction.Terminate
+        ], BulkGangCommands.GroupActionsFor(recurring: false));
+        Assert.Equal(
+        [
+            GangAction.Chaos, GangAction.Control, GangAction.Heal, GangAction.Hide,
+            GangAction.Influence, GangAction.None
+        ], BulkGangCommands.GroupActionsFor(recurring: true));
+        Assert.True(BulkGangCommands.Allows(GangAction.Terminate, group: true));
+        Assert.False(BulkGangCommands.Allows(GangAction.Research, group: true));
+        Assert.False(BulkGangCommands.Allows(GangAction.Terminate, group: false));
+    }
+
+    // RULE-TURN-005: a group Chaos or Terminate reaches every gang of the sector.
+    [Theory]
+    [InlineData(GangAction.Chaos, true)]
+    [InlineData(GangAction.Terminate, false)]
+    public void AGroupOrderGoesToEveryGangOfTheSector(GangAction action, bool recurring)
+    {
+        var match = CreateMatch(sectorOwner: Player);
+        var gangs = Gangs(match);
+
+        var options = BulkGangCommands.Options(match, Player, gangs, recurring, group: true);
+        var plan = BulkGangCommands.Plan(match, Player, gangs,
+            new BulkCommandIntent(action, CommandTarget.None, recurring), group: true);
+
+        Assert.Contains(options, command => command.Action == action);
+        Assert.Equal(gangs.Count, plan.Commands.Count);
+        Assert.All(plan.Commands, command => Assert.Equal(recurring, command.Repeat));
+        Assert.Throws<ArgumentOutOfRangeException>(() => BulkGangCommands.Plan(match, Player,
+            gangs, new BulkCommandIntent(action, CommandTarget.None, recurring)));
+    }
+
     [Fact]
     public void OptionsListEveryReachableTargetOnceAndNothingOffTheAllowlist()
     {

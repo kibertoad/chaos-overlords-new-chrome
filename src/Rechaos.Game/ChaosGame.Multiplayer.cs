@@ -491,6 +491,7 @@ public sealed partial class ChaosGame
             return false;
         }
         var turn = restored ?? SpeculativeTurn.For(authoritative, _definitions, _session.Slot);
+        KeepRunRandomState();
         _actions = new MatchActions(turn);
         _submittedPlanning = null;
         _state = turn.State;

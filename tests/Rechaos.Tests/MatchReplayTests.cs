@@ -38,7 +38,8 @@ public sealed class MatchReplayTests
                 (ReplayOperationKind.MarkComlinkRead, 14),
                 (ReplayOperationKind.PrepareSimultaneousHireOffers, 15),
                 (ReplayOperationKind.TransferPlayerToComputer, 16),
-                (ReplayOperationKind.TransferPlayerToHuman, 17)
+                (ReplayOperationKind.TransferPlayerToHuman, 17),
+                (ReplayOperationKind.ContinueRandomStream, 18)
             },
             Enum.GetValues<ReplayOperationKind>().Select(kind => (kind, (int)kind)));
     }
@@ -379,6 +380,28 @@ public sealed class MatchReplayTests
                 TertiaryTarget: CommandTarget.Item(miscellaneous))));
         Assert.Equal(AiActionTarget.None, OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Hide, CommandTarget.None)));
+    }
+
+    // RULE-RNG-001: a local load moves the generator to the run's sequence, and the journal
+    // replays the move.
+    [Fact]
+    public void ReplaysTheMoveToTheRunsRandomSequence()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        recorder.FinishUpkeep();
+        var consumed = recorder.State.Random.ConsumptionCount;
+        recorder.ContinueRandomStream(0x1234ABCDu);
+        Assert.Equal(0x1234ABCDu, recorder.State.Random.State);
+        Assert.Equal(consumed, recorder.State.Random.ConsumptionCount);
+        FinishCommands(recorder);
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
+
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]

@@ -207,7 +207,9 @@ public sealed partial class ChaosGame
                             ? "TIME UP  THE TURN SEALED WITH THE ORDERS YOU HAD SENT"
                             : "TIME UP  YOUR SEAT GAVE NO ORDERS THIS TURN"
                         : "NEW TURN STARTED";
-                    PlayGeneralSound(AudioRouting.OnlineTurnReadySound());
+                    // RULE-AUDIO-006, BUG-AUDIO-001: the cue skips the effects-enabled test.
+                    if (AudioRouting.TurnStartSound(networkGame: true) is { } cue)
+                        PlayGeneralSound(cue, ignoresEffectsEnabled: true);
                     // The next-player card marks the new turn, and Ready on it enters planning the
                     // way a local turn does: hire offers prepared, then combat and turn reports.
                     _screens.Show(ClientScreen.Handoff);

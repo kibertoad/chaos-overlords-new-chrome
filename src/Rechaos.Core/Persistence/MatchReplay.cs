@@ -26,7 +26,9 @@ public enum ReplayOperationKind : byte
     /// <summary>One authoritative, one-way handover of a departed human seat.</summary>
     TransferPlayerToComputer,
     /// <summary>Returns an AI-held online seat to its authenticated human owner.</summary>
-    TransferPlayerToHuman
+    TransferPlayerToHuman,
+    /// <summary>A local load moves the generator to the run's sequence (RULE-RNG-001).</summary>
+    ContinueRandomStream
 }
 
 public sealed record ReplayStep(
@@ -41,7 +43,8 @@ public sealed record ReplayStep(
     int? ValidationCode = null,
     IReadOnlyList<PlayerId>? Recipients = null,
     string? Text = null,
-    long? ComlinkSequence = null);
+    long? ComlinkSequence = null,
+    uint? RandomState = null);
 
 /// <summary>
 /// Records every public match mutation together with its resulting canonical hash.
@@ -287,6 +290,14 @@ public sealed class MatchReplayRecorder
         return changed;
     }
 
+    public void ContinueRandomStream(uint state)
+    {
+        EnsureSynchronized();
+        State.ContinueRandomStream(state);
+        Add(new ReplayStep(
+            ReplayOperationKind.ContinueRandomStream, CurrentHash(), RandomState: state));
+    }
+
     internal ReplayDocument Capture()
     {
         EnsureSynchronized();
@@ -332,7 +343,7 @@ public static class MatchReplaySerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: a journal is verified step
     // by step against the fingerprint of its day, so a journal from format 31 would diverge on its
     // first step and be reported as damage rather than as an older format.
-    public const int CurrentFormatVersion = 44;
+    public const int CurrentFormatVersion = 45;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -595,6 +606,9 @@ public static class MatchReplaySerializer
                         $"Replay step {index} produced a different control-transfer result.");
                 break;
             }
+            case ReplayOperationKind.ContinueRandomStream:
+                state.ContinueRandomStream(Required(step.RandomState, index));
+                break;
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }
     }
@@ -612,6 +626,7 @@ public static class MatchReplaySerializer
         if (step.Recipients is not null) actual |= ReplayStepFields.Recipients;
         if (step.Text is not null) actual |= ReplayStepFields.Text;
         if (step.ComlinkSequence is not null) actual |= ReplayStepFields.ComlinkSequence;
+        if (step.RandomState is not null) actual |= ReplayStepFields.RandomState;
 
         var result = ReplayStepFields.Accepted | ReplayStepFields.Validation;
         var expected = step.Kind switch
@@ -633,6 +648,7 @@ public static class MatchReplaySerializer
                 | ReplayStepFields.Accepted | ReplayStepFields.ComlinkSequence,
             ReplayOperationKind.TransferPlayerToComputer or ReplayOperationKind.TransferPlayerToHuman =>
                 ReplayStepFields.Player | ReplayStepFields.Accepted,
+            ReplayOperationKind.ContinueRandomStream => ReplayStepFields.RandomState,
             ReplayOperationKind.SendComlinkMessage => ReplayStepFields.Player | result
                 | ReplayStepFields.Recipients | ReplayStepFields.Text,
             ReplayOperationKind.FinishUpkeep
@@ -680,7 +696,8 @@ public static class MatchReplaySerializer
         Validation = 1 << 6,
         Recipients = 1 << 7,
         Text = 1 << 8,
-        ComlinkSequence = 1 << 9
+        ComlinkSequence = 1 << 9,
+        RandomState = 1 << 10
     }
 }
 

@@ -86,8 +86,20 @@ public sealed partial class ChaosGame
         }
     }
 
-    private readonly int _originalProcessSeed = DeterministicRandom.SeedFromTimerMilliseconds(
-        unchecked((uint)Environment.TickCount));
+    /// <summary>
+    /// RULE-RNG-001, DEV-RNG-001: where the run's one random sequence stands while no local match
+    /// holds it. It starts from the clock once per run; each local match draws on from it and
+    /// hands it back when it is left, so a second New Game continues the sequence as in the
+    /// original.
+    /// </summary>
+    private uint _runRandomState = unchecked((uint)DeterministicRandom.SeedFromTimerMilliseconds(
+        unchecked((uint)Environment.TickCount)));
+
+    /// <summary>Takes the run's sequence back from a local match that is being left.</summary>
+    private void KeepRunRandomState()
+    {
+        if (_state is not null && HotSeatJournal is not null) _runRandomState = _state.Random.State;
+    }
 
     private void ChangeScenario(int delta)
     {
@@ -367,8 +379,9 @@ public sealed partial class ChaosGame
                 PlayerController.Human,
                 _playerPortraits[slot]))
             .ToArray();
+        KeepRunRandomState();
         var setup = new MatchSetup(
-            _selectedScenario, _selectedDuration, _originalProcessSeed, players,
+            _selectedScenario, _selectedDuration, unchecked((int)_runRandomState), players,
             _selectedAiMentality, allowSparsePlayerIds: true,
             aiPolicy: _defaultAiPolicy);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>

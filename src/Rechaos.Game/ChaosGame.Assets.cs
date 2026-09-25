@@ -93,9 +93,10 @@ public sealed partial class ChaosGame
     private static PlayerId ViewingPlayer(MatchState state) =>
         state.Coordinator.ActivePlayer ?? new PlayerId(0);
 
-    private void PlayGeneralSound(int slot)
+    private void PlayGeneralSound(int slot, bool ignoresEffectsEnabled = false)
     {
-        if (_generalSounds.TryGetValue(slot, out var sound)) TryPlaySound(sound);
+        if (_generalSounds.TryGetValue(slot, out var sound))
+            TryPlaySound(sound, ignoresEffectsEnabled);
     }
 
     private void ReportInputResult(bool accepted, string rejectionMessage)
@@ -136,9 +137,14 @@ public sealed partial class ChaosGame
         _screens.Show(screen);
     }
 
-    private void TryPlaySound(SoundEffect sound)
+    /// <remarks>
+    /// <paramref name="ignoresEffectsEnabled"/> plays the sound at effects level 0 as the original's
+    /// direct call does (BUG-AUDIO-001). The level still sets the volume (RULE-AUDIO-003), so at
+    /// level 0 the sound is silent, but it still stops the effect before it.
+    /// </remarks>
+    private void TryPlaySound(SoundEffect sound, bool ignoresEffectsEnabled = false)
     {
-        if (_soundEffectVolumeLevel == 0) return;
+        if (_soundEffectVolumeLevel == 0 && !ignoresEffectsEnabled) return;
         SoundEffectInstance? next = null;
         try
         {

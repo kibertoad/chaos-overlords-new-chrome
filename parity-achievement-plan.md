@@ -36,13 +36,6 @@ DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay
 
 ## Step 9: Remaining rule details
 
-- RULE-TURN-005: record whether the sector-wide order leaves Research out of the recurring
-  choices, and match it.
-- RULE-AUDIO-006: the turn-start sound plays only where the original plays it; check it with
-  effects off (BUG-AUDIO-001).
-- RULE-RNG-001, RULE-TERMINATE-001 and RULE-GANG-002: their differences are covered by
-  deviations or by the representation decision of 2026-09-26; confirm nothing else differs and
-  mark them `complete`.
 - FMT-STATE-001 to FMT-STATE-009: map every field a rule reads or writes to the rebuild state
   that holds it, as the 2026-09-26 decision asks, and mark each row by what the mapping shows.
 

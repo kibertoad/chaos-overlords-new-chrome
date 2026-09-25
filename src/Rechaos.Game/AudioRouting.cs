@@ -56,22 +56,14 @@ public static class AudioRouting
     public static int? IncomingMessageSound(bool hasUnread) =>
         hasUnread ? GeneralSoundSlot.IncomingMessageAlert : null;
 
-    public static int OnlineTurnReadySound() => GeneralSoundSlot.IncomingMessageAlert;
-
-    /// <summary>The later-turn cue for a local turn advance (<c>RULE-AUDIO-006</c>).</summary>
+    /// <summary>The cue for a turn after the first (<c>RULE-AUDIO-006</c>).</summary>
     /// <remarks>
-    /// Only an advanced turn counter plays it, so the first turn stays silent as in the original,
-    /// and an ended match goes straight to its endgame. Turns no local human remains to plan are
-    /// silent too: the recreation plays those at one per frame.
+    /// The original plays it only in network games, on the host and on every computer that joined;
+    /// a game started with New Game, which is how it plays hot-seat, has no turn-start sound. The
+    /// rebuild's online matches are its network games.
     /// </remarks>
-    public static int? TurnStartSound(
-        int previousTurn,
-        int currentTurn,
-        bool matchOver,
-        bool humanPlaying) =>
-        currentTurn != previousTurn && !matchOver && humanPlaying
-            ? GeneralSoundSlot.TurnStartCue
-            : null;
+    public static int? TurnStartSound(bool networkGame) =>
+        networkGame ? GeneralSoundSlot.TurnStartCue : null;
 
     public static int InputResultSound(bool accepted) =>
         accepted ? GeneralSoundSlot.AcceptedSelection : GeneralSoundSlot.RejectedInput;
