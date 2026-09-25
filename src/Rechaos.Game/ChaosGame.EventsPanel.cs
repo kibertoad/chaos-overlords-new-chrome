@@ -144,30 +144,105 @@ public sealed partial class ChaosGame
         _eventCursor = 0;
         _eventViewedPages.Clear();
         if (count > 0) _eventViewedPages.Add(0);
+        _eventPageShownAt = _inputTime;
+        CancelEventsButton();
     }
 
+    /// <summary>
+    /// A press on the panel (SCR-EVENT-001, FND-EVENT-005). Previous and Next play slot 3 and
+    /// hold their pressed face when a step is allowed, and play slot 4 without holding on the
+    /// first or last report. Exit plays slot 3 and holds its face through <c>fn_00418821</c>. All
+    /// three act on a release inside themselves.
+    /// </summary>
     private void HandleEventsClick(Point point)
     {
-        if (LastTurnEventsLayout.Previous.Contains(point)) MoveEventCursor(-1);
-        else if (LastTurnEventsLayout.Next.Contains(point)) MoveEventCursor(1);
-        else if (LastTurnEventsLayout.Ok.Contains(point))
-            AcceptAndInvoke(CloseEvents);
+        switch (LastTurnEventsLayout.ButtonAt(point))
+        {
+            case LastTurnEventsButton.Previous:
+                BeginEventStepButton(LastTurnEventsButton.Previous, -1);
+                break;
+            case LastTurnEventsButton.Next:
+                BeginEventStepButton(LastTurnEventsButton.Next, 1);
+                break;
+            case LastTurnEventsButton.Exit:
+                _pressedEventsButton = LastTurnEventsButton.Exit;
+                AcceptInput();
+                break;
+        }
     }
 
+    private LastTurnEventsButton? _pressedEventsButton;
+
+    private void BeginEventStepButton(LastTurnEventsButton button, int delta)
+    {
+        if (!CanStepEventPage(delta))
+        {
+            PlayGeneralSound(AudioRouting.PageNavigationSound(false));
+            return;
+        }
+        PlayGeneralSound(AudioRouting.PageNavigationSound(true));
+        _pressedEventsButton = button;
+    }
+
+    private void CompleteEventsButton(Point point)
+    {
+        var button = _pressedEventsButton;
+        CancelEventsButton();
+        if (button is not { } pressed || _screens.Current != ClientScreen.Events
+            || !LastTurnEventsLayout.Hit(pressed).Contains(point)) return;
+        switch (pressed)
+        {
+            case LastTurnEventsButton.Previous:
+                StepEventPage(-1);
+                break;
+            case LastTurnEventsButton.Next:
+                StepEventPage(1);
+                break;
+            default:
+                CloseEvents();
+                break;
+        }
+    }
+
+    private void CancelEventsButton() => _pressedEventsButton = null;
+
+    /// <summary>
+    /// Left or Right (SCR-EVENT-001): slot 3 and the pressed face for a short wait, then the step;
+    /// slot 4 on the first or last report. The original waits through <c>fn_00464CD9(1)</c>,
+    /// which was not read, so the face stays up for one tick of the presentation clock as the
+    /// other pressed key faces do (RULE-TIMER-004).
+    /// </summary>
     private void MoveEventCursor(int delta)
+    {
+        if (!CanStepEventPage(delta))
+        {
+            PlayGeneralSound(AudioRouting.PageNavigationSound(false));
+            return;
+        }
+        var button = delta < 0 ? LastTurnEventsButton.Previous : LastTurnEventsButton.Next;
+        PlayGeneralSound(AudioRouting.PageNavigationSound(true));
+        _tickedPresentation.Start(TickedPresentationKind.KeyFace,
+            LastTurnEventsLayout.Face(button), LastTurnEventsLayout.PressedSource(button),
+            () => StepEventPage(delta), _inputTime);
+    }
+
+    private bool CanStepEventPage(int delta)
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId) return false;
+        var count = ReviewableReports(_state, playerId).Count;
+        return count > 0 && BoundedPageNavigation.Move(_eventCursor, count, delta) != _eventCursor;
+    }
+
+    private void StepEventPage(int delta)
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
         var count = ReviewableReports(_state, playerId).Count;
-        if (count > 0)
-        {
-            var next = BoundedPageNavigation.Move(_eventCursor, count, delta);
-            PlayGeneralSound(AudioRouting.PageNavigationSound(next != _eventCursor));
-            if (next != _eventCursor)
-            {
-                _eventCursor = next;
-                _eventViewedPages.Add(_eventCursor);
-            }
-        }
+        if (count == 0) return;
+        var next = BoundedPageNavigation.Move(_eventCursor, count, delta);
+        if (next == _eventCursor) return;
+        _eventCursor = next;
+        _eventViewedPages.Add(_eventCursor);
+        _eventPageShownAt = _inputTime;
     }
 
     private void CloseEvents()
@@ -254,24 +329,53 @@ public sealed partial class ChaosGame
 
         var playerId = ViewingPlayer(state);
         var reportCount = ReviewableReports(state, playerId).Count;
-        font.Draw(batch, $"{_eventCursor + 1:00} OF {reportCount:00}",
-            new Vector2(SharedPanelLayout.X(34), SharedPanelLayout.Y(13)), Color.Lime, 1);
+        // SCR-EVENT-001: page number and count as two digits each, with the panel art's OF
+        // between them, and the arrow faces, greyed on the first and last page. A black cell
+        // stands for the opaque copy of each digit cell.
+        DrawDigitCells(batch, pixel, font, $"{Math.Min(_eventCursor + 1, 99):00}",
+            LastTurnEventsLayout.PageNumber);
+        DrawDigitCells(batch, pixel, font, $"{Math.Min(reportCount, 99):00}",
+            LastTurnEventsLayout.PageCount);
+        if (_uiSprites is not null)
+        {
+            batch.Draw(_uiSprites, LastTurnEventsLayout.Previous,
+                LastTurnEventsLayout.PreviousSource(firstPage: _eventCursor == 0), Color.White);
+            batch.Draw(_uiSprites, LastTurnEventsLayout.Next,
+                LastTurnEventsLayout.NextSource(lastPage: _eventCursor == reportCount - 1),
+                Color.White);
+            // SCR-EVENT-001: a held button shows its pressed face while the pointer is inside
+            // it, and its plain face otherwise.
+            if (_pressedEventsButton is { } pressed && _hoverPoint is { } hover
+                && LastTurnEventsLayout.Hit(pressed).Contains(hover))
+                batch.Draw(_uiSprites, LastTurnEventsLayout.Face(pressed),
+                    LastTurnEventsLayout.PressedSource(pressed), Color.White);
+        }
         DrawEventArtworkForeground(batch, state, notification);
-        font.Draw(batch, MatchDate(notification.Turn),
-            new Vector2(LastTurnEventsLayout.DateValue.X, LastTurnEventsLayout.DateValue.Y),
-            Color.Lime, 1);
-        var eventObject = EventObject(state, notification);
-        var objectColumns = LastTurnEventsLayout.ObjectValue.Width / OriginalFontLayout.CellWidth;
-        if (eventObject.Length > objectColumns) eventObject = eventObject[..objectColumns];
-        font.Draw(batch, eventObject,
-            new Vector2(LastTurnEventsLayout.ObjectValue.X, LastTurnEventsLayout.ObjectValue.Y),
-            Color.Lime, 1);
+        // SCR-EVENT-001: the date is elapsed_turns (turns completed) as year and week, drawn
+        // over the panel art's 0000.00 and left out at 0.
+        if (LastTurnEventsLayout.Date(state.Coordinator.Turn - 1) is var (year, week))
+        {
+            DrawDigitCells(batch, pixel, font, year, LastTurnEventsLayout.Year);
+            DrawDigitCells(batch, pixel, font, week, LastTurnEventsLayout.Week);
+        }
+        // SCR-EVENT-001: the subject is not cut; only a cash report's gang name is, to 20
+        // characters, inside LastTurnEventPresentation.Subject.
+        font.Draw(batch, EventObject(state, notification),
+            LastTurnEventsLayout.Subject.ToVector2(), Color.Lime, 1);
+        // SCR-EVENT-001 draws the caption from STRING/33 to STRING/44 of the executable, cut to
+        // 35 characters (FND-EVENT-005). The rebuild reads no string resources from the
+        // executable, so the text is its own wording until it does.
         var status = NotificationPresentation.LastTurnStatus(notification, RelatedEvent(state, notification));
-        var statusColumns = LastTurnEventsLayout.StatusValue.Width / OriginalFontLayout.CellWidth;
-        if (status.Length > statusColumns) status = status[..statusColumns];
-        font.Draw(batch, status,
-            new Vector2(LastTurnEventsLayout.StatusValue.X, LastTurnEventsLayout.StatusValue.Y),
-            Color.Lime, 1);
+        if (status.Length > LastTurnEventsLayout.CaptionColumns)
+            status = status[..LastTurnEventsLayout.CaptionColumns];
+        font.Draw(batch, status, LastTurnEventsLayout.Caption.ToVector2(), Color.Lime, 1);
+    }
+
+    private static void DrawDigitCells(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, string digits, Rectangle cells)
+    {
+        batch.Draw(pixel, cells, Color.Black);
+        font.Draw(batch, digits, cells.Location.ToVector2(), Color.Lime, 1);
     }
 
     private bool DrawInfluenceSiteBackground(
@@ -298,12 +402,25 @@ public sealed partial class ChaosGame
         var artworkIndex = LastTurnEventPresentation.ArtworkIndex(notification, related);
         if (artworkIndex > 0 && _lastTurnEventArtwork[artworkIndex] is { } artwork)
             batch.Draw(artwork, LastTurnEventsLayout.Artwork, Color.White);
+        // SCR-EVENT-001: the researched item starts at frame 0 when the panel opens and after
+        // each page change.
         if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId
             && itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, LastTurnEventsLayout.ResearchItem,
-                ItemRotationPresentation.Frame(_inputTime), Color.White);
+                ItemRotationPresentation.Frame(
+                    _inputTime > _eventPageShownAt ? _inputTime - _eventPageShownAt : TimeSpan.Zero),
+                Color.White);
+        // SCR-EVENT-001: an elimination report adds the eliminated player's 32-by-32 portrait,
+        // stretched to 48 by 48 over its illustration.
+        var record = LastTurnEventPresentation.Record(state, notification, related);
+        if (record.Type == LastTurnReportRecord.Elimination && _uiSprites is not null
+            && state.FindPlayer(new PlayerId(record.Arg1)) is { } eliminated)
+            batch.Draw(_uiSprites, LastTurnEventsLayout.EliminatedPortrait,
+                OriginalSpriteLayout.OverlordPortrait(eliminated.Setup.PortraitId), Color.White);
     }
+
+    private TimeSpan _eventPageShownAt;
 
     private static string EventObject(MatchState state, GameNotification notification)
     {
@@ -384,10 +501,9 @@ public sealed partial class ChaosGame
 
     private static void ClearLastTurnEventFields(SpriteBatch batch, Texture2D pixel)
     {
-        batch.Draw(pixel, LastTurnEventsLayout.Page, Color.Black);
-        batch.Draw(pixel, LastTurnEventsLayout.DateValue, Color.Black);
-        batch.Draw(pixel, LastTurnEventsLayout.ObjectValue, Color.Black);
-        batch.Draw(pixel, LastTurnEventsLayout.StatusValue, Color.Black);
+        // SCR-EVENT-001: the compositor's two black fills behind the subject and the caption.
+        batch.Draw(pixel, LastTurnEventsLayout.SubjectBacking, Color.Black);
+        batch.Draw(pixel, LastTurnEventsLayout.CaptionBacking, Color.Black);
     }
 }
 

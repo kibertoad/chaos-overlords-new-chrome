@@ -71,6 +71,13 @@ public sealed partial class ChaosGame
             return;
         }
 
+        if (_pressedEventsButton is not null)
+        {
+            if (pointerMapped) CompleteEventsButton(point);
+            else CancelEventsButton();
+            return;
+        }
+
         if (_pressedCommandPanelButton is not null)
         {
             if (pointerMapped) CompleteCommandPanelButton(point);

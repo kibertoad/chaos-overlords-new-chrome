@@ -720,13 +720,9 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(306, 284, 32, 32), CombatResultsLayout.Opponent(4));
         Assert.Equal(new Point(156, 246), CombatResultsLayout.SectorCodeText);
         Assert.Equal(EquipmentCommandLayout.Panel, LastTurnEventsLayout.Panel);
-        Assert.Equal(new Rectangle(138, 137, 47, 7), LastTurnEventsLayout.Page);
-        Assert.Equal(new Rectangle(198, 132, 242, 158), LastTurnEventsLayout.Artwork);
-        Assert.Equal(new Rectangle(296, 186, 48, 48), LastTurnEventsLayout.ResearchItem);
+        // SCR-EVENT-001; LastTurnEventsLayoutTests pins every element of the panel.
+        Assert.Equal(new Rectangle(198, 135, 242, 158), LastTurnEventsLayout.Artwork);
         Assert.Equal(new Rectangle(135, 157, 26, 23), LastTurnEventsLayout.Previous);
-        Assert.Equal(new Rectangle(225, 298, 43, 7), LastTurnEventsLayout.DateValue);
-        Assert.Equal(new Rectangle(305, 298, 135, 7), LastTurnEventsLayout.ObjectValue);
-        Assert.Equal(new Rectangle(239, 307, 201, 7), LastTurnEventsLayout.StatusValue);
     }
 
     [Theory]
