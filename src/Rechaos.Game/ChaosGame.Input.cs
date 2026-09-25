@@ -139,9 +139,7 @@ public sealed partial class ChaosGame
             case ClientScreen.Ranking:
                 _screens.Show(_managementReturnScreen);
                 break;
-            case ClientScreen.CombatSummary:
-                CloseCombatResults();
-                break;
+            // Combat Results takes no right-button input (SCR-COMBAT-001).
             case ClientScreen.Items:
                 _screens.Show(ClientScreen.City);
                 break;

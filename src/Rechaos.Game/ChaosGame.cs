@@ -88,6 +88,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private SoundEffectInstance? _activeEffectVoice;
     private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
+    private readonly DetailedCombatExit _combatExit = new();
     private readonly PanelSlideTransition _panelSlideTransition = new();
     private MatchState? _state;
     /// <summary>
@@ -139,7 +140,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _hireCursor;
     private int _itemCursor;
     private int _combatSummaryCursor;
-    private long _combatSummaryEventSequence = -1;
+    private int _combatSummarySector = -1;
+    private GangId? _combatSummaryFocal;
+    private GangId? _combatSummaryFocalTarget;
     private PlayerId? _combatSummaryOpponent;
     private bool _openEventsAfterCombat;
     private bool _automaticDetailedCombatPresentation;
@@ -465,28 +468,31 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (clip.Sound is { } soundIndex) PlayCombatSound(soundIndex);
         if (_combatAnimationPlayer.IsPlaying)
         {
-            var cancelPointMapped = VirtualInput.TryMap(
-                GraphicsDevice.Viewport, mouse.Position, out var cancelPoint);
-            var cancelClicked = cancelPointMapped
-                && mouse.LeftButton == ButtonState.Pressed
-                && _previousMouse.LeftButton == ButtonState.Released
-                && CombatPanelLayout.Cancel.Contains(cancelPoint);
-            if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)
-                || cancelClicked || rightClicked)
+            var exitPointMapped = VirtualInput.TryMap(
+                GraphicsDevice.Viewport, mouse.Position, out var exitPoint);
+            var pointer = _combatExit.Update(exitPointMapped ? exitPoint : null,
+                mouse.LeftButton == ButtonState.Pressed,
+                _previousMouse.LeftButton == ButtonState.Pressed);
+            if (pointer == DetailedCombatPointerResult.Rejected)
+                PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+            // Escape and a release on the Exit face end the whole presentation (SCR-COMBAT-002);
+            // the right button does too (DEV-COMBAT-001).
+            if (Pressed(keyboard, Keys.Escape)
+                || pointer == DetailedCombatPointerResult.EndPresentation || rightClicked)
             {
                 // The cue belongs to the clip being skipped, and the original unloads slot 5 once
                 // a combatant's sequence ends, so it does not outlive the presentation.
                 _combatAnimationPlayer.Clear();
+                _combatExit.Reset();
                 StopEffectVoice();
                 _message = string.Empty;
-                rightClicked = false;
             }
-            else
-            {
-                EndUpdate(gameTime, keyboard, mouse);
-                return;
-            }
+            // The key or button that ended the presentation does nothing else this frame, so
+            // Escape does not also open the game menu.
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
         }
+        _combatExit.Reset();
         if (_automaticDetailedCombatPresentation)
             FinishAutomaticCombatPresentation();
         if (rightClicked && !_gameMenuOpen) CancelCurrentInteraction();
@@ -680,10 +686,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         AcceptAndInvoke(CloseSellEquipment);
                     break;
                 case ClientScreen.CombatSummary:
-                    if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveCombatSummary(-1);
-                    if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveCombatSummary(1);
+                    // Left and Right page and Enter or Execute (0x2B) closes; the panel handles no
+                    // other key, Escape included (SCR-COMBAT-001). D replays the selected fight
+                    // (DEV-COMBAT-002).
+                    if (Pressed(keyboard, Keys.Left)) MoveCombatSummary(-1);
+                    if (Pressed(keyboard, Keys.Right)) MoveCombatSummary(1);
                     if (Pressed(keyboard, Keys.D)) ReplaySelectedCombatDetail();
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute))
                         AcceptAndInvoke(CloseCombatResults);
                     break;
                 case ClientScreen.Search:
