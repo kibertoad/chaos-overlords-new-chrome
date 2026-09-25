@@ -1,7 +1,7 @@
 ---
 id: FMT-DATA-002
 title: Gang definition records in DATA/Gangs
-status: sourced
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 files: ["DATA/Gangs"]
@@ -9,7 +9,7 @@ byte_order: little
 size: 156
 text: false
 definition: fmt_data_002.ksy
-evidence: [FND-DATA-002, FND-ASSET-001, FND-GANG-001, FND-AI-008, FND-UPKEEP-001, FND-HIRE-006, FND-HIRE-007, FND-HIRE-009, FND-RESEARCH-003, SRC-RECHAOS-3561D41]
+evidence: [FND-DATA-002, FND-DATA-006, FND-DATA-007, FND-GANG-007, FND-ASSET-001, FND-GANG-001, FND-AI-008, FND-UPKEEP-001, FND-HIRE-006, FND-HIRE-007, FND-HIRE-009, FND-RESEARCH-003, SRC-RECHAOS-3561D41]
 conflicting: []
 split_with: []
 related: []
@@ -59,8 +59,10 @@ None known.
 `DATA/Gangs` of BLD-GOG-EN-1.1 (14,040 bytes) was read with a script as 90
 records of this layout (FND-DATA-002). Every byte falls in a field, every `id`
 equals its record's index, every name has the NUL-then-spaces form, and no
-description holds a NUL. The Kaitai definition has not been compiled or run
-against the file.
+description holds a NUL. The Kaitai definition compiles and parses the file
+(FND-DATA-006). The executable loads the whole file into `0x004A2800` and
+reads the fields at these offsets (FND-DATA-007); the statistics rebuild reads
+`combat` to `martial_arts` in the pairing FND-GANG-007 gives.
 
 ## Open questions
 

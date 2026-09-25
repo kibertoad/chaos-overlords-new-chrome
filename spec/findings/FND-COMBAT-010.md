@@ -80,7 +80,10 @@ byte is 1:
 
 - When the entry is the focal gang's target (`0x0042E69B`), it picks the strips
   and sound from the focal gang's weapon (item words at `0x9E`, `0xA0` and
-  `0xA2`, read at `0x0042E749`, `0x0042E769` and `0x0042E729`), or, unarmed,
+  `0xA2`, read at `0x0042E749`, `0x0042E769` and `0x0042E729`: the word at
+  `0x9E` plus 7000 is the attack strip loaded at `0x0042E812`, the word at
+  `0xA0` plus 7100 the hit strip loaded at `0x0042E86D`, and the word at
+  `0xA2` plus 500 the sound at `0x0042E883`), or, unarmed,
   from the base Martial Arts word of the focal gang's definition
   (`0x004A289A + definition * 0x9C`, `0x0042E6CE`), with attack strip 2 for
   definition 63 (`0x0042E711`). A damage byte of 0 selects hit strip 1, and -1

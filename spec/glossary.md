@@ -252,9 +252,10 @@ value the game keeps: at `0x00487808` [FND-AUDIO-002]; its type is not recorded
 ## comlink_blink_step
 
 The eight-step animation counter the event pump advances once per
-`presentation_tick`; it blinks the Comlink button and times the alert repeat.
-Any other value the game keeps [FND-AUDIO-012], at an address not recorded
-(unknown).
+`presentation_tick`, from 0 to 7 and back to 0; on even values it blinks the
+Events and Comlink lights, and it times the alert repeat and the selected
+sector frame. Any other value the game keeps: at `0x00487804`
+[FND-AUDIO-012, FND-EVENT-006].
 
 ## comlink_count
 
@@ -315,6 +316,18 @@ For each player slot, whether the player is picked as a recipient in the Send
 panel; shown as a green card frame. Any other value the game keeps:
 `UINT8[6]` [FND-COMLINK-003] at `0x00498114`, set to 0 each time the Send
 panel opens [FND-COMLINK-007].
+
+## comlink_view_open
+
+Set while the active player's Comlink View panel is open. Any other value the
+game keeps: `UINT8` at `0x004877CC` [FND-COMLINK-009].
+
+## comlink_view_refresh
+
+Set by the Comlink recorder when it stores a message for the active player
+while `comlink_view_open` is set; the View panel clears it and redraws the
+message on show with the new count. Any other value the game keeps: `UINT8` at
+`0x004877D0` [FND-COMLINK-009].
 
 ## ComlinkAlert
 
@@ -515,8 +528,8 @@ RULE-EVENT-005.
 ## events_unviewed
 
 Set while some Last Turn report of the active player has not been shown; it
-lights the Events control. Any other value the game keeps: `UINT8` at
-`0x00487814` [FND-EVENT-005].
+makes the Events control's light blink. Any other value the game keeps:
+`UINT8` at `0x00487814` [FND-EVENT-005, FND-EVENT-006].
 
 ## fight_list
 

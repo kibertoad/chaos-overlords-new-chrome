@@ -128,14 +128,6 @@ order of priority, unless a group says otherwise.
 - SCR-COMBAT-002: the x positions of the Force tracks, the portrait resource,
   the Cancel cell and any key handling in `0x0042E040`/`0x00430C23`.
 
-## Last Turn Events, Comlink and Search
-
-- RULE-EVENT-005: which branch of the event pump `fn_00462579` restores the
-  Events control while `events_unviewed` (`0x00487814`) is set, so the light
-  can be described as blinking or steady (FND-EVENT-005, `0x00463267`).
-- RULE-COMLINK-001: what `g_004877CC` and `g_004877D0` are; the recorder sets
-  the second when the first is set and the message is for `active_player`.
-
 ## Setup, city generation, objectives and awards
 
 - SCR-SETUP-001, RULE-SETUP-002, RULE-OBJECTIVE-004: find the local setup

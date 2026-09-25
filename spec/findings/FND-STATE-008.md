@@ -85,7 +85,7 @@ region's fields, the row names the finding and does not repeat them.
 | `0x00498000..0x0049809F` | 8 records of 20 bytes | `fn_00458290`, `fn_004584BA`, `fn_0045851A` | `fn_00458895` | CD track records (FND-AUDIO-006) |
 | `0x004980A0..0x004980BF` | MCI blocks | `fn_00458B43`, `fn_00458EA6` | `fn_00458C5F` | MCI parameters (FND-AUDIO-007) |
 | `0x004980C0..0x004980FF` | PAINTSTRUCT | none | `fn_0045CD70`, `fn_0045CDA4` | the paint structure of `fn_0045CD70` and `fn_0045CDA4` |
-| `0x00498100..0x00498125` | dwords | `fn_0043B290`, `fn_0043DAD9`, `fn_0043F692`, 24 more | `fn_0045D2F0`, `fn_0045FDF1`, `fn_0046023C`, 1 more | the open panel's state and the Comlink draft (FND-UI-013, FND-COMLINK-006) |
+| `0x00498100..0x00498125` | dwords | `fn_0043B290`, `fn_0043DAD9`, `fn_0043F692`, 24 more | `fn_0045D2F0`, `fn_0045FDF1`, `fn_0046023C`, 1 more | the double-click toggle at `0x00498100` (see below), the open panel's state and the Comlink draft (FND-UI-013, FND-COMLINK-006) |
 | `0x004981C8..0x004981F7` | dwords | `fn_0045D2F0`, `fn_0045D61A`, `fn_0045E7CE`, 2 more | `fn_0045E04D` | Comlink panel state (FND-COMLINK-001) |
 | `0x004981F8..0x004981FF` | dword | `fn_00460CCF` | `fn_0041953E`, `fn_004196F5` | a value WinMain writes and `fn_0041953E` and `fn_004196F5` read (FND-TIMER-002) |
 | `0x00498200..0x004982FF` | path | none | `fn_00460CCF` | the save file path (FND-PLATFORM-010, FND-SAVE-002) |
@@ -115,12 +115,16 @@ The regions up to `0x00487B98` lie in the initialized part of `.data` and
 have values in the image; the regions from `0x0048FB70` on lie in the
 uninitialized part.
 
-The event record at `0x00498360` is filled by the window procedure
-`fn_0045C33B`, which `fn_0045C180` wraps. The event types it stores are 1 for
-a menu command, 2 for a key press (the third field is the virtual key), 3, 4
-and 5 for a left button press, release and double-click, 6 for a close
-request, 7 for a repaint, 8 and 9 for the two cases of the application activation message, 0x10 for the window being destroyed, and 0x11, 0x12 and 0x13 for
-the right button's press, release and double-click.
+The event record at `0x00498360` (type, window, then two values) is filled by
+the window procedure `fn_0045C33B`, which `fn_0045C180` wraps. It stores type
+1 for a menu command (the two values are the command's high and low byte), 2 for
+a key press (the first value is the virtual key), 3 and 4 for a left button
+press and release, 6 for a close request, 7 for a repaint, 9 and 8 when the
+application is activated and deactivated, 0x10 when the window is destroyed,
+and 0x11 and 0x12 for a right button press and release. A double-click
+toggles the byte at `0x00498100` and stores 5 (left) or 0x13 (right) when the
+byte becomes 1, and 3 or 0x11 when it becomes 0 (`0x0045C8DD`,
+`0x0045C940`); a right button press clears the byte (`0x0045C877`).
 
 ## Interpretation
 

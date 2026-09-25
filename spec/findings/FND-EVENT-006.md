@@ -1,6 +1,6 @@
 ---
 id: FND-EVENT-006
-title: The event pump blinks the Events, Comlink and a third light together, lit for two presentation ticks and dark for two
+title: The event pump blinks the Events, Comlink and Done lights together, lit for two timer-0 ticks and dark for two
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -71,9 +71,12 @@ lamp lights on the next lit step.
 The counter `0x00487804` is the one that paces the Comlink alert repeat
 (FND-AUDIO-012) and the selected-sector frame (FND-UI-017); it wraps at 8
 exactly as stored. The third lamp, at (592, 282), follows `0x0048780C`, which
-the match function sets while it runs the planning loop for a surviving
-player at the end of the match (FND-OBJECTIVE-004); which control sits under
-it was not read.
+the match function sets while it runs the planning loop for a surviving player
+at the end of the match (FND-OBJECTIVE-004). That lamp sits in the top right
+corner of the Done control, whose input rectangle is x 500..600, y 282..330
+(FND-UI-032), as the Events lamp sits in the Events control (x 500..548, y
+126..174) and the Comlink lamp in the View half of the Comlink control (x
+552..600, y 126..159).
 
 ## Alternatives
 

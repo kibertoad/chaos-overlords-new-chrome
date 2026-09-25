@@ -4,7 +4,7 @@ title: The Last Turn Events panel shows the viewer's recorded reports in the ord
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, FND-EVENT-002, FND-EVENT-003, FND-EVENT-005, SRC-MANUAL-GOG]
+evidence: [FND-EVENT-001, FND-EVENT-002, FND-EVENT-003, FND-EVENT-005, FND-EVENT-006, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [SCR-EVENT-001, FMT-STATE-006]
@@ -14,8 +14,8 @@ related: [SCR-EVENT-001, FMT-STATE-006]
 
 The panel pages through the active player's reports one at a time, first
 recorded first. It opens by itself at the start of a player's planning when
-the last turn left that player at least one report, and the Events light stays
-on until every report has been shown once. With no reports the panel does not
+the last turn left that player at least one report, and the Events light blinks
+until every report has been shown once. With no reports the panel does not
 open.
 
 ## When it runs
@@ -72,7 +72,10 @@ from 0 without gaps (RULE-EVENT-002), so the pages are the reports in the
 order they were recorded. The panel keeps `events_page` when it closes, so
 the Events control reopens it at the page shown last, until the next planning
 visit starts again at page 0. `events_unviewed` is the Events light
-(SCR-EVENT-001 describes what each page draws).
+(SCR-EVENT-001 describes what each page draws). While it is set, the event
+pump blinks the light on even values of `comlink_blink_step`, lit for two
+ticks of `presentation_tick` and dark for two, in step with the Comlink light;
+when it clears, the light goes out at the next dark step [FND-EVENT-006].
 
 ## Edge cases
 
@@ -96,5 +99,4 @@ None known.
 
 ## Open questions
 
-- Whether the light blinks or stays lit depends on the event pump's phases,
-  which FND-EVENT-005 does not fully trace.
+None.

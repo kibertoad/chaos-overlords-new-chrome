@@ -74,7 +74,7 @@ When the recipient is the active player, first sets `comlink_pending`, emits
 `ComlinkAlert` and restarts the alert's repeat timing, then stores the
 message. When the active player's View panel is open, sets
 `comlink_view_refresh`, and the panel redraws the message on show with the new
-count (SCR-COMLINK-002) [FND-COMLINK-009].
+count (SCR-COMLINK-001) [FND-COMLINK-009].
 
 ## Edge cases
 

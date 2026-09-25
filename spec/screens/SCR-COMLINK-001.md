@@ -5,10 +5,10 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-COMLINK-002, FND-COMLINK-004, FND-COMLINK-007, FND-EVENT-005, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG]
+evidence: [FND-COMLINK-002, FND-COMLINK-004, FND-COMLINK-007, FND-COMLINK-009, FND-EVENT-005, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
-related: [RULE-COMLINK-004, RULE-COMLINK-005]
+related: [RULE-COMLINK-001, RULE-COMLINK-004, RULE-COMLINK-005]
 ---
 
 ## Drawn elements
@@ -49,7 +49,9 @@ related: [RULE-COMLINK-004, RULE-COMLINK-005]
 
 ## Other input
 
-None.
+| Device | Input | Enabled when | Effect | Evidence |
+|---|---|---|---|---|
+| Network | A message stored for the viewing player (RULE-COMLINK-001), which sets `comlink_view_refresh` | While open | After the event that stored it, redraws the message at `comlink_cursor` with the new count and copies the panel to the screen again; the new message is not shown, and the shown one changes only when it was dropped from a full inbox | FND-COMLINK-009 |
 
 ## Sounds
 

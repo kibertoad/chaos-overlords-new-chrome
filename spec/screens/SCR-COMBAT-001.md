@@ -8,7 +8,7 @@ resolution: 640x480
 evidence: [FND-AUDIO-002, FND-AUDIO-011, FND-COMBAT-002, FND-COMBAT-004, FND-COMBAT-007, FND-COMBAT-009, FND-COMBAT-012, FND-EXE-004]
 conflicting: []
 split_with: []
-related: [RULE-COMBAT-002, FMT-STATE-008]
+related: [RULE-COMBAT-002]
 ---
 
 ## Drawn elements

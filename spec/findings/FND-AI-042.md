@@ -1,6 +1,6 @@
 ---
 id: FND-AI-042
-title: Byte +1 of a planning record is set for an empty roster slot and by the Greed Terminate branches, and bytes +11 and +15 are never used
+title: Byte +1 of a planning record is set for an empty roster slot and by the Greed Terminate branches, and byte +11 is never used
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -41,9 +41,10 @@ At `0x00459303..0x00459353` an empty slot also has the 32-bit value at
 `0x0048DB48 + player * 0x144 + slot * 4` and both 16-bit cooldowns at +12 and
 +14 set to 0; its history bytes +2..+10 are not touched.
 
-No instruction references byte +11 (`0x0048A25B`) or byte +15 (`0x0048A25F`)
-of any record. They are moved only by the save and load functions, which
-transfer the whole `0x1E60`-byte block from `0x0048A250`.
+No instruction references byte +11 (`0x0048A25B`) of any record. It is moved
+only by the save and load functions, which transfer the whole `0x1E60`-byte
+block from `0x0048A250`. Byte +15 is the high byte of the 16-bit armor
+cooldown at +14.
 
 On a player's first pass (`0x00458FB1..0x00459040`), after calling
 `0x00409DE1` for the 81 slots, `0x00458FA0` also clears the planned action of
@@ -68,7 +69,7 @@ The previous hire role (`0x00482160`) is the role chosen at the end of the
 previous turn's pass, copied at the start of the current pass whether or not
 the player then hires.
 
-Bytes +11 and +15 are padding. The array at `0x00482140` is set but unused.
+Byte +11 is padding. The array at `0x00482140` is set but unused.
 
 ## Alternatives
 
@@ -83,6 +84,5 @@ takes the lowest free slot is not checked here.
 ## How to reproduce
 
 List the references to `0x0048A251`: every write is a byte store of 0 or 1 at
-the addresses above. The references to `0x0048A25B` and `0x0048A25F` are
-empty. The first-pass block is at the start of `0x00458FA0`, guarded by the
+the addresses above. The references to `0x0048A25B` are empty. The first-pass block is at the start of `0x00458FA0`, guarded by the
 byte at `0x00482108 + player`.

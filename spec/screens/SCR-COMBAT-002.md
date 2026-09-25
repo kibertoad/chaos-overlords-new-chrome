@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-005, FND-COMBAT-009, FND-DATA-003, FND-UI-001, FND-UI-010]
+evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-005, FND-COMBAT-009, FND-COMBAT-010, FND-COMBAT-011, FND-DATA-003, FND-EXE-004, FND-UI-001, FND-UI-010]
 conflicting: []
 split_with: []
 related: [RULE-COMBAT-004]
@@ -15,15 +15,17 @@ related: [RULE-COMBAT-004]
 
 The panel is built in a back buffer whose rows 144 to 353 are copied to the
 screen at `(104,124)` [FND-UI-001], so panel-local `(x, y)` is screen
-`(104 + x, 124 + y)`. The left side is always the viewer's gang.
+`(104 + x, 124 + y)`. The left side is always the viewer's gang. The
+presentation is `fn_0042E040` and each clip is played by `fn_00430C23`
+(ranges in FND-EXE-004) [FND-COMBAT-010].
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Panel | `DATA/PX16/PX05014` | None | `(104, 124, 344, 209)` | While the presentation runs | FND-UI-001 |
 | Sector tile | The city map art | The sector of the current clip | `(135, 135, 54, 52)` | During each clip | FND-UI-001 |
 | Sector code | Not recorded | The sector's code | Text at `(156, 190)` | During each clip | FND-UI-001 |
-| Gang portraits | Not recorded | The viewer's gang on the left, the other gang on the right | `(254, 172, 64, 64)` and `(327, 172, 64, 64)` | During each clip | FND-UI-001, FND-UI-010 |
-| Force tracks | `DATA/PX16/PX00129`: the 60-by-3 red track `(354,3)`, then `6 * value` pixels of the green strip `(354,0)` | Two tracks per gang from its copy of the first eight bytes of its `combat_records` entry: the upper shows `force_start`, the lower `force_shown` as RULE-COMBAT-004 lowers it. Each track has a light, a full and a dark row | Left gang `(256, 240, 60, 3)` and `(256, 247, 60, 3)`; right gang `(329, 240, 60, 3)` and `(329, 247, 60, 3)` | During each clip | FND-UI-001, FND-UI-010, FND-COMBAT-009 |
+| Gang portraits | 64-by-64 cell of surface 3, column `n % 10` and row `n / 10`, where `n` is the definition's portrait number; for the police, from resource 300 loaded into surface 7 | The viewer's gang on the left, the other gang on the right | `(254, 172, 64, 64)` and `(327, 172, 64, 64)` | During each clip | FND-UI-001, FND-UI-010, FND-COMBAT-010 |
+| Force tracks | `DATA/PX16/PX00129`: the 60-by-3 red track `(354,3)`, then `6 * value` pixels of the green strip `(354,0)` | Two tracks per gang from its copy of the first eight bytes of its `combat_records` entry: the upper shows `force_start`, the lower `force_shown` as RULE-COMBAT-004 lowers it. Each track has a light, a full and a dark row | Left gang `(256, 240, 60, 3)` and `(256, 247, 60, 3)`; right gang `(329, 240, 60, 3)` and `(329, 247, 60, 3)`, from buffer x 152 and 225 and buffer rows 260 and 267 | During each clip | FND-UI-001, FND-UI-010, FND-COMBAT-009, FND-COMBAT-010 |
 | Equipment, left | The item's `PX04xxx` rotation strip, one 48 by 48 frame chosen by the item record's last word | The left gang's weapon, armor and miscellaneous item | `(204, 172, 48, 48)`, `(204, 221, 48, 48)`, `(204, 270, 48, 48)` | During each clip, for each equipped item | FND-AUDIO-013 |
 | Equipment, right | As on the left | The right gang's items | `(393, 172, 48, 48)`, `(393, 221, 48, 48)`, `(393, 270, 48, 48)` | During each clip, for each equipped item | FND-AUDIO-013 |
 | Attack strip | See below | Eight 64 by 64 frames of the attacker | `(254, 254, 64, 64)` in a clip the viewer's gang makes, `(327, 254, 64, 64)` in a mirrored clip | Ticks 3 to 10 of each clip | FND-AUDIO-013, FND-COMBAT-005, FND-UI-001 |
@@ -33,11 +35,14 @@ screen at `(104,124)` [FND-UI-001], so panel-local `(x, y)` is screen
 The strips of a clip the viewer's gang makes, attack strip first:
 
 - equipped weapon: `DATA/PX16/PX070nn` and `DATA/PX16/PX071nn`, with `nn`
-  from the weapon's record in `DATA/ITEMS`;
+  the weapon record's `attack_animation` and `hit_animation` words
+  [FND-COMBAT-010];
 - unarmed, base Martial Arts 0 or less: `DATA/PX16/PX07000` and
   `DATA/PX16/PX07102`;
 - unarmed, base Martial Arts above 0: `DATA/PX16/PX07001` and
   `DATA/PX16/PX07118`;
+- unarmed, definition 63: attack strip `DATA/PX16/PX07002`
+  [FND-COMBAT-010];
 - any attack that does no damage: the hit strip becomes `DATA/PX16/PX07101`;
 - the target evaded: `DATA/PX16/PX07027` and `DATA/PX16/PX07100`.
 
@@ -49,11 +54,16 @@ shown.
 
 ## Mouse input
 
-None known.
+| Region | Rectangle | Enabled when | Effect | Evidence |
+|---|---|---|---|---|
+| Exit | Local `(33, 169, 50, 23)`, tracked as screen `(137, 293)-(187, 316)`; acts on release over the face | During a clip | Ends the whole presentation: every remaining clip is skipped | FND-COMBAT-010 |
+| Outside the panel | Anywhere outside screen `(104, 124)-(448, 333)` | During a clip | Plays the rejected sound | FND-COMBAT-010 |
 
 ## Keyboard input
 
-None known.
+| Key | Enabled when | Effect | Evidence |
+|---|---|---|---|
+| Escape (`0x1B`) | During a clip | Draws the pressed Exit face and ends the whole presentation | FND-COMBAT-010, FND-COMBAT-011 |
 
 ## Other input
 
@@ -75,7 +85,7 @@ sound [FND-AUDIO-002].
 | State | Entered when | Left when | Evidence |
 |---|---|---|---|
 | Clip | RULE-COMBAT-004 emits `CombatClip` | Tick 22, or tick 16 when the clip's hold flag is cleared | FND-COMBAT-005, FND-UI-001 |
-| Closed | The last clip ends | None | FND-COMBAT-005 |
+| Closed | The last clip ends, or the player presses Escape or the Exit face | None | FND-COMBAT-005, FND-COMBAT-010 |
 
 ## Timing
 
@@ -93,17 +103,11 @@ None known.
 
 ## Open questions
 
-- The tracks are drawn at panel-local y 116 and 123 (FND-COMBAT-009); the
-  capture of FND-UI-010 measured y 114 and 121. Which is right depends on the
+- The tracks are drawn at panel-local y 116 and 123 (FND-COMBAT-009,
+  FND-COMBAT-010); the capture of FND-UI-010 measured y 114 and 121. Which is right depends on the
   capture's unrecorded settings.
-- The Cancel control and any key that ends or skips the presentation are not
-  recorded in a finding.
-- The resources of the gang portraits and the sector code's font.
-- Which words of the item record hold the strip numbers `nn`: FND-DATA-003
-  matches two words to the ranges of the `PX070xx` and `PX071xx` files by
-  range only.
-- The presentation of an evaded attack: which bars change, since the record
-  holds -1 as its damage.
+- Which resource surface 3 holds when the presentation runs, and so the
+  portraits' file, and the sector code's font [FND-COMBAT-010].
 - A freeze of the original during this presentation has been reported but not
   reproduced (BUG-COMBAT-001).
 - The panel exists as `DATA/PX08/PX05014` too, and each strip as a `PX08` file;

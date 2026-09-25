@@ -116,7 +116,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-SETUP-001` | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported | complete | None | `DEV-SETUP-001` | implemented | None |
-| `RULE-SETUP-002` | A fresh local setup selects the stored scenario preference, which is Kill 'Em All when nothing is stored | established | complete | None | None | implemented | None |
+| `RULE-SETUP-002` | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported | partial | None | None | supported | The rebuild starts every setup on Kill 'Em All and keeps no scenario preference; value 0 is Greed (FND-SETUP-013, FND-OBJECTIVE-003). |
 | `RULE-SETUP-003` | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | supported | complete | None | None | implemented | None |
 | `RULE-SETUP-004` | A new match draws the computer players' reactions, then generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported | complete | None | None | implemented | The initial-state fixture from the original that would confirm the draw order is still pending. |
 | `RULE-SETUP-005` | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | supported | complete | None | `DEV-SETUP-001` | implemented | None |
@@ -272,7 +272,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | supported | partial | None | `DEV-HELP-002` | supported | The rebuild lowers the attitude only for an attack that was not evaded, where the original also lowers it for an evaded attack, and its Martial Arts test on the attacker is `> 0` where the original tests `== 0` (FND-COMBAT-008, FND-AI-047). |
 | `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
-| `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | partial | None | `DEV-ATTACK-001`, `DEV-UI-008` | supported | Opponent and target hit maps are the original's; the panel origin, confirm and cancel controls and target marker are not pinned by findings. |
+| `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | partial | None | `DEV-ATTACK-001`, `DEV-UI-008` | supported | Opponent and target hit maps are the original's. FND-ATTACK-003 now records the panel origin, the Confirm and Cancel faces, Enter, plus and Escape, the acting gang's portrait and equipment and the initial selection; the rebuild was not compared with them. |
 
 ## COMBAT
 
@@ -282,8 +282,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | partial | None | None | supported | Damage, deaths and order follow the rule, but the rebuild keeps combat events with combatant details instead of the per-gang combat records and per-sector result rows. |
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
-| `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | partial | None | `DEV-COMBAT-002` | supported | Paging, opponent strip and exit follow the original; the force selector's effect and several drawn elements are not pinned. |
-| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips and 166 ms cadence are implemented; the force-track x positions, portrait resources and cancel control are not pinned by findings. |
+| `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | partial | None | `DEV-COMBAT-002` | supported | Paging, opponent strip and exit follow the original. FND-COMBAT-012 now records the arrow and Enter/plus keys (Escape is not handled), the force selector's focus and its outlines, and the grid cells' portraits and tracks; the rebuild was not compared with them. |
+| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips and 166 ms cadence are implemented. FND-COMBAT-010 now records the track positions, the portrait cells, the Exit face and Escape, which end the whole presentation; the rebuild was not compared with them. The portraits' resource file is still not traced. |
 
 ## DETECT
 
@@ -303,7 +303,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-POLICE-001` | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | supported | complete | None | None | implemented | None |
-| `RULE-POLICE-002` | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | supported | partial | None | None | supported | The rebuild adds police presence, with its draw, on every Crackdown, where the original does so only on the third (FND-POLICE-004). It also resets more on neutralization (Support, Tolerance modifiers, resistance) than the three influence values the finding names, pending which values the original clears. |
+| `RULE-POLICE-002` | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | supported | partial | None | None | supported | The rebuild adds police presence, with its draw, on every Crackdown, where the original does so only on the third (FND-POLICE-004). It also resets more on neutralization (Support, Tolerance modifiers, resistance) than the original, which clears only the three site progress bytes (FND-CHAOS-002). |
 | `RULE-POLICE-003` | Police presence counts down by one at the end of every turn unless it is permanent | supported | complete | None | None | implemented | None |
 | `RULE-POLICE-004` | Crackdown reports go to the players who had a gang in the sector when resolution began | supported | complete | None | None | implemented | None |
 

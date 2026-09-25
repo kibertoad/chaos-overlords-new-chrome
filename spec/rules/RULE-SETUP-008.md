@@ -4,7 +4,7 @@ title: A local human's planning opens with the Ready card when several humans sh
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-010, FND-SETUP-015, FND-OBJECTIVE-004, FND-AUDIO-002, FND-AUDIO-012, SRC-MANUAL-GOG]
+evidence: [FND-SETUP-010, FND-SETUP-015, FND-OBJECTIVE-004, FND-AUDIO-002, FND-AUDIO-012, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-002, SCR-UI-008, SCR-COMBAT-001, RULE-COMBAT-004, RULE-EVENT-005]

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-032, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, SRC-MANUAL-GOG]
+evidence: [FND-UI-032, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-UI-012, RULE-TIMER-002, RULE-TIMER-003, RULE-OPTIONS-003, RULE-AUDIO-001, RULE-AUDIO-007, RULE-AUDIO-008, SCR-UI-004, SCR-UI-005, SCR-UI-008, SCR-OPTIONS-001, SCR-HIRE-001]
@@ -26,6 +26,7 @@ related: [RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-
 | Overlord bar portraits | `DATA/PX16/PX00129` portraits at source y 480, 32 by 32, opaque | Each player's Overlord; the row at source y 594 for a player with no gang the active player can see in the sector, on SCR-UI-004 | `(18 + 70*n, 5, 32, 32)` for player `n`; an empty seat shows the 54-by-32 art at `(404,448)`, cycling through three frames 27 pixels apart | Always | FND-UI-017, FND-UI-031 |
 | Active-player marker | `DATA/PX16/PX00129` twelve 20-by-20 frames at source y 626, opaque | The viewed player (`0x00487B8C`), which is the planning player on this screen | `(50 + 70*n, 6, 20, 20)`, frames stepped by the input pump | While player `n` is viewed | FND-UI-017, FND-UI-031 |
 | Planning lights | `DATA/PX16/PX00129` `(66,347,20,6)`, or black | Whether a human seat has yet to complete its orders | `(51 + 70*n, 30, 20, 6)` | For each seat in play | FND-UI-017 |
+| Control lights | `DATA/PX16/PX00129` `(488,512,8,16)`, opaque; the control from the back buffer when dark | Events: `events_unviewed`; Comlink: `comlink_pending`; Done: the end-of-match planning visit | Events `(540,126,8,16)`, Comlink `(592,126,8,16)`, Done `(592,282,8,16)` | While the flag is set, lit on alternate even values of `comlink_blink_step` (see Timing) | FND-EVENT-006 |
 | Sector values | The font strip of `DATA/PX16/PX00129` | Income, Tolerance, Support and Cash of the selected sector (RULE-UI-011) | Sector name, Income word, Tolerance, Support and Cash at x 568, y 60, 69, 78, 87 and 96; Support and Cash show 0 unless the active player owns the sector | When a sector is selected | FND-UI-017, FND-UI-035 |
 | Pressed console tiles | `DATA/PX16/PX00129` 48-by-48 cells at `(0,512)`, `(48,512)`, `(96,512)`, `(144,512)`, `(192,512)` and `(240,512)`; Done `(288,512,100,48)`; Game Info `(190,386,26,34)`; all opaque | None | Over the tile pressed | While a tile is held and the pointer is over it (RULE-UI-001) | FND-UI-032 |
 | Planning clock bar | `DATA/PX16/PX00129` green strip `(354,0,60,3)` | The remaining planning time, as the width RULE-TIMER-003 gives | `(520,336,60,3)`, drawn full when planning starts and ends | While a timed human player plans | FND-TIMER-001, FND-UI-017 |
@@ -88,6 +89,10 @@ related: [RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-
 The planning clock bar is redrawn on every sixth call of the input pump
 (RULE-TIMER-003); how often that is in milliseconds is not recorded. The Comlink
 alert repeats every 24 ticks of `presentation_tick`, about four seconds.
+The Events, Comlink and Done lights blink together: each lit light is drawn on
+one even value of `comlink_blink_step` and restored on the next, so it is lit
+for two ticks of `presentation_tick` and dark for two, a period of about two
+thirds of a second [FND-EVENT-006].
 
 ## Differences between builds
 

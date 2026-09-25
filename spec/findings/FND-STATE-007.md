@@ -94,7 +94,7 @@ functions appear only the first three by address are named.
 | `0x004A5EF0..0x004A5EF5` | UINT8[6] | `fn_0046DC10`, `fn_0046E766` | `fn_00472775` | `modifier_force_hire`, save block 44 (FND-HIRE-005) |
 | `0x004A5EF8..0x004A5EFB` | INT32 | `fn_004384C0`, `fn_00438DA5`, `fn_00439563`, 1 more | `fn_00402D70`, `fn_004384F4`, `fn_0045519D`, 4 more | `turn_limit`, save block 8 |
 | `0x004A5F00..0x004A5F05` | UINT8[6] | `fn_0040B9C0`, `fn_0040E0A0`, `fn_0040F72E`, 4 more | `fn_0040C4C5`, `fn_0040EE8A`, `fn_00413858`, 22 more | portraits, save block 4 |
-| `0x004A5F08..0x004A8887` | FMT-DATA-003[64], item * 0xA6 | none | `fn_00401000`, `fn_00402D70`, `fn_0040ABC0`, 34 more | `item_definitions`, read whole from DATA/Items (FND-DATA-007) |
+| `0x004A5F08..0x004A8887` | FMT-DATA-003[64], item * 0xA6 | none | `fn_00401000`, `fn_00402D70`, `fn_0040ABC0`, 34 more | `item_definitions`, read whole from DATA/ITEMS (FND-DATA-007) |
 | `0x004A8888..0x004AAE07` | FMT-STATE-008, sector * 0x96 | `fn_0046A115`, `fn_0046BA84`, `fn_0046DC10`, 1 more | `fn_0042E040`, `fn_0043087E`, `fn_00451F80`, 4 more | `combat_results`, save block 25 (FND-COMBAT-004) |
 | `0x004AAE08..0x004AB587` | FMT-STATE-006, player * 0x140 + n * 10 | `fn_0046A115`, `fn_0046BA84`, `fn_0046E766`, 2 more | `fn_0044F2FC`, `fn_0044FD6C`, `fn_0046981D`, 3 more | reports, save block 24 |
 | `0x004AB588..0x004AB58D` | UINT8[6] | `fn_0046DC10`, `fn_0046E766` | `fn_0046FA11` | `modifier_visibility`, save block 43 (FND-SETUP-011) |
@@ -102,7 +102,7 @@ functions appear only the first three by address are named.
 | `0x004AB620..0x004AB637` | INT32[6] | `fn_0040B9C0`, `fn_0046BA84`, `fn_00472775`, 1 more | `fn_0042CE61`, `fn_0046A7CB` | casualties, save block 33 |
 | `0x004AB638..0x004AB64F` | INT32[6] | `fn_0040B9C0`, `fn_0040E0A0`, `fn_0040F72E`, 4 more | `fn_00402D70`, `fn_0040A1A7`, `fn_0040EE8A`, 9 more | controller, save block 5 |
 | `0x004AB650..0x004AB667` | INT32[6] | `fn_0046DC10` | `fn_00472775` | reaction, save block 36 (FND-STATE-003) |
-| `0x004AB668..0x004ABBBB` | FMT-DATA-001[22], site * 0x3E | none | `fn_00402D70`, `fn_00410770`, `fn_004123CC`, 12 more | `site_definitions`, read whole from DATA/Sites (FND-DATA-007) |
+| `0x004AB668..0x004ABBBB` | FMT-DATA-001[22], site * 0x3E | none | `fn_00402D70`, `fn_00410770`, `fn_004123CC`, 12 more | `site_definitions`, read whole from DATA/SITES (FND-DATA-007) |
 | `0x004ABBC0..0x004ABBD1` | INT8[18] | `fn_0046BA84`, `fn_0046E766`, `fn_004716EB`, 1 more | `fn_00402D70`, `fn_004078D9`, `fn_00416C75`, 7 more | `hire_offers`, save block 10 |
 | `0x004ABBD4` | UINT8 | `fn_0046E766`, `fn_00476857` | `fn_0046981D`, `fn_0046A115`, `fn_0046A7CB`, 1 more | `match_over`: cleared by `fn_0046E766`, set by the end evaluator `fn_00476857`, sent over the network |
 | `0x004ABBD8..0x004ABBDD` | UINT8[6] | `fn_0046DC10`, `fn_0046E766` | none | the right-hands name-modifier flag: five extra unequipped gangs of definition 0 (FND-SETUP-004, FND-SETUP-015) |

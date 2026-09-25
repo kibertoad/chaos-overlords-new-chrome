@@ -4,7 +4,7 @@ title: A player named with the visibility modifier sees every opposing gang for 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-011]
+evidence: [FND-SETUP-015, FND-SETUP-011]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-001, RULE-DETECT-001]
@@ -18,8 +18,9 @@ overwhelming Detect, so every opposing gang is visible to that player.
 
 ## When it runs
 
-Once per new match, inside RULE-SETUP-004. The flag is then read by every run
-of RULE-DETECT-001.
+Once per new match in a local game, as part of the modifier scan in
+RULE-SETUP-004, which sets all six modifier flags of a player before the next
+player. The flag is then read by every run of RULE-DETECT-001.
 
 ## Parameters
 
@@ -32,20 +33,22 @@ None.
 ## Procedure
 
 ```text
-for each player in turn_order:
-    if name_matches(player, modifier_name_visibility):
-        modifier_visibility[player] = 1
+# part of the modifier scan of RULE-SETUP-004, in a local game only
+for player in 0..6:
+    modifier_visibility[player] = name_matches(player, modifier_name_visibility)
 ```
 
 ## Outputs
 
-No return value. Sets `modifier_visibility` of each matching player. RULE-DETECT-001
+No return value. Sets `modifier_visibility` of every player, 1 for a match
+and 0 otherwise. RULE-DETECT-001
 then starts that player's sector detection values at 1000 instead of -32000,
 so every opposing gang with Stealth of 1000 or less is visible. Makes no draws.
 
 ## Edge cases
 
-The flag is saved and loaded with the match, so it lasts after a reload.
+The flag is saved and loaded with the match, so it lasts after a reload. In a
+network game the scan does not run and the flag keeps whatever it held.
 
 ## What the sources say
 
@@ -57,6 +60,4 @@ None known.
 
 ## Open questions
 
-- The address of the string `modifier_name_visibility` is not recorded.
-- Where `modifier_visibility` is cleared for a player without the modifier
-  (at a fresh setup, as the other modifier flags are) is not recorded.
+- None.
