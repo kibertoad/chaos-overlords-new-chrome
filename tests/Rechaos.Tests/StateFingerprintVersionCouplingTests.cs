@@ -39,7 +39,7 @@ public sealed class StateFingerprintVersionCouplingTests
     public void EveryVersionGatingAStoredFingerprintIsPinnedToItsEncoding()
     {
         Assert.Equal(
-            (StateHash: 6, NativeSave: 31, Replay: 35, Session: 16),
+            (StateHash: 6, NativeSave: 31, Replay: 36, Session: 17),
             (StateHash: MatchStateHasher.FormatVersion,
                 NativeSave: NativeSaveSerializer.CurrentFormatVersion,
                 Replay: MatchReplaySerializer.CurrentFormatVersion,

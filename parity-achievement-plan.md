@@ -34,18 +34,6 @@ them together with a single session bump, or accept one bump per release.
 DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay so (the
 2026-09-26 decision in `docs/DECISIONS.md`); no step adds the original's path for them.
 
-## Step 5: Comlink and events
-
-Closes RULE-COMLINK-007 and the unchecked parts of RULE-EVENT-003, RULE-EVENT-004,
-RULE-EVENT-012, RULE-EVENT-013, RULE-EVENT-014 and FMT-STATE-006.
-
-- When a player finishes planning, drop the read messages at the front of the inbox.
-- Compare each report's recipients, type and arguments with the entries: the elimination report
-  to all six slots, Crackdown recipients by gang presence at the start of resolution, and the
-  control and failed-Equip reports. Fix what differs.
-
-Tooltips: the Comlink inbox's hover text says when read messages are dropped.
-
 ## Step 6: Objectives, endgame and awards
 
 Closes RULE-OBJECTIVE-004, RULE-OBJECTIVE-005, RULE-AWARDS-002, SCR-AWARDS-002 and

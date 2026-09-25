@@ -523,6 +523,8 @@ public sealed partial class MatchState
     }
     public TurnTransition FinishCommand(PlayerId player)
     {
+        if (Coordinator.Phase == TurnPhase.Command && Coordinator.ActivePlayer == player)
+            GetComlinkInbox(player).DropLeadingRead();
         var transition = Coordinator.FinishCommand(player);
         if (transition.Phase == TurnPhase.Execution
             && Setup.AiMentality != AiDifficulty.HomicidalManiac)
@@ -878,7 +880,8 @@ public sealed partial class MatchState
                 player.Id,
                 Players.Count(candidate => candidate.Status == PlayerStatus.Active));
             var gameEvent = AppendEliminationEvent(player.Id, details);
-            foreach (var recipient in Players.Where(candidate => candidate.Status == PlayerStatus.Active || candidate.Id == player.Id))
+            // RULE-EVENT-003: every slot is told, the eliminated player and earlier losers included.
+            foreach (var recipient in Players)
                 QueueNotification(recipient.Id, GameNotificationKind.Elimination,
                     relatedEventSequence: gameEvent.Sequence);
         }

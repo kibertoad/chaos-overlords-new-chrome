@@ -24,6 +24,40 @@ public sealed class ComlinkTests
         Assert.True(inbox.HasUnread);
     }
 
+    // RULE-COMLINK-007: ending planning drops the read messages at the front, up to the first
+    // unread one; a read message after it stays.
+    [Fact]
+    public void EndingPlanningDropsTheLeadingReadMessages()
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] players =
+        [
+            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(1), "TWO", PlayerController.Human)
+        ];
+        var match = OriginalMatchFactory.Create(data,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+        match.FinishUpkeep();
+        foreach (var text in new[] { "FIRST", "SECOND", "THIRD", "FOURTH" })
+            Assert.True(match.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], text).Accepted);
+        var inbox = match.ComlinkFor(new PlayerId(1));
+        match.MarkComlinkRead(new PlayerId(1), inbox.Messages[0].Sequence);
+        match.MarkComlinkRead(new PlayerId(1), inbox.Messages[1].Sequence);
+        match.MarkComlinkRead(new PlayerId(1), inbox.Messages[3].Sequence);
+
+        match.FinishCommand(new PlayerId(0));
+        Assert.Equal(4, inbox.Count);
+        match.FinishCommand(new PlayerId(1));
+
+        Assert.Equal(["THIRD", "FOURTH"], inbox.Messages.Select(message => message.Text));
+        Assert.True(inbox.IsRead(inbox.Messages[1].Sequence));
+        using var save = new MemoryStream();
+        Rechaos.Core.Persistence.NativeSaveSerializer.Save(save, match);
+        save.Position = 0;
+        var restored = Rechaos.Core.Persistence.NativeSaveSerializer.Load(save, data);
+        Assert.Equal(2, restored.ComlinkFor(new PlayerId(1)).Count);
+    }
+
     [Fact]
     public void InboxRejectsMessagesOutsideRecoveredRecordCapacity()
     {
