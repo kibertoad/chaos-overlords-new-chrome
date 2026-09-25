@@ -52,8 +52,9 @@ slot 0, and writes 0 to the 32-bit values at `0x00482128`, `0x00482160` and
 `0x00482140` (each `+ player * 4`). On every pass, before the history roll, it
 copies `0x00482128 + player * 4` (the hire role) into
 `0x00482160 + player * 4` (`0x0045904A`). The array at `0x00482140` is written
-with 0 in every case of the hire switch and read by no instruction; the save
-and load functions transfer it.
+next to each hire-role store of the hire switch, with 1 at `0x0045A43B`,
+`0x0045A9A7` and `0x0045A9D9` and with 0 elsewhere, and read by no
+instruction; the save and load functions transfer it.
 
 ## Interpretation
 

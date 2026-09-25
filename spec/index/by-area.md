@@ -43,7 +43,7 @@
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | Site definition records in DATA/SITES | supported |
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | supported |
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | supported |
-| [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 | unknown |
+| [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 | supported |
 | [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | unknown |
 | [FND-DATA-001](../findings/FND-DATA-001.md) | DATA/SITES is 22 records of 62 bytes, numbered 0 to 21, with a special-site word of 0 to 3 at 0x3C | recorded |
 | [FND-DATA-002](../findings/FND-DATA-002.md) | DATA/Gangs is 90 records of 156 bytes, numbered 0 to 89, with a name, a 90-byte description and 17 words | recorded |
@@ -533,7 +533,7 @@
 | [FND-AI-039](../findings/FND-AI-039.md) | The family-13 and family-14 handlers move to and hold the Big Man centre or the Eliminate headquarters | recorded |
 | [FND-AI-040](../findings/FND-AI-040.md) | The sector selector breaks ties with one draw and routes one step, x then y, under a six-gang limit | recorded |
 | [FND-AI-041](../findings/FND-AI-041.md) | The dispatcher resets a flagged planning record before it assigns a family, and its post-handler block is unreachable | recorded |
-| [FND-AI-042](../findings/FND-AI-042.md) | Byte +1 of a planning record is set for an empty roster slot and by the Greed Terminate branches, and bytes +11 and +15 are never used | recorded |
+| [FND-AI-042](../findings/FND-AI-042.md) | Byte +1 of a planning record is set for an empty roster slot and by the Greed Terminate branches, and byte +11 is never used | recorded |
 | [FND-AI-043](../findings/FND-AI-043.md) | Family 9 is seeded only for a network player the computer takes over; the planning pass's own seeding stores past the flag array | recorded |
 | [FND-AI-044](../findings/FND-AI-044.md) | The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order | recorded |
 | [FND-AI-045](../findings/FND-AI-045.md) | At the start of a match and after a load the computer players' site sums are cached per sector, and a new match also clears the AI flags and seeds the placement anchor | recorded |

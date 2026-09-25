@@ -56,9 +56,6 @@ order of priority, unless a group says otherwise.
 
 ## Shared in-memory structures
 
-- FMT-STATE-003 `definition`: FND-COMBAT-008 and FND-STATE-005 record the store of gang byte 1 at
-  `0x004743EE`. FMT-STATE-003 still has to cite it and drop its byte 0 open question (combat
-  agent). Clearing and the other bytes' writes are recorded in FND-STATE-005.
 
 ## Movement, Control, gangs, equipment and money
 
@@ -68,65 +65,18 @@ order of priority, unless a group says otherwise.
 
 ## Attack, combat, detection, Chaos and police
 
-- FMT-STATE-003, RULE-COMBAT-002, FND-COMBAT-004, FND-AI-010: record the
-  instruction in `0x00472775` that stores byte 0 of each combat record
-  (`0x004A11E8 + 10 * i`), and which byte of the gang record copy it loads
-  (offset `0x00` or `0x01`). That settles "definition" against "owner".
-- All findings in these areas: give the full address range of `0x00472775`,
-  `0x0043B290`, `0x0043D132`, `0x00451F80`, `0x0042E040`, `0x0043087E`,
-  `0x00430C23`, `0x0046FA11`, `0x00477748`, `0x00475E74`, `0x00475F70`.
-- FND-COMBAT-001, FND-CHAOS-001, FND-POLICE-001, FND-POLICE-002,
-  FND-COMBAT-004 (replacing decompiler line positions): instruction addresses
-  of the attack block and its action test, the police scan, the Chaos pass,
-  the sector pass (history expiry, trigger test, report calls, slot fill and
-  reset), the payout pass, the combat-record fill and the per-sector row fill,
-  the presence table build at the start of the resolver, and the stores into
-  `crackdown_history`.
-- FND-POLICE-001, RULE-POLICE-002: the address of the duration draw
-  (bounded wrapper with argument 3). The old text put it at `0x0047419B`, which
-  FND-POLICE-003 gives to the police detection draw.
-- FND-POLICE-003, RULE-POLICE-001: the comparison instruction after the call at
-  `0x0047419B`: less than or less than or equal.
-- FND-CHAOS-001, FMT-STATE-002 `income`: the load instruction and displacement
-  for the sector byte in the Chaos pool, and the same for the Control pass.
-- RULE-COMBAT-001: how the attack block computes the combat rating (which
-  statistics per weapon class, base or effective), and which `type` values of
-  `DATA/ITEMS` mean melee, blade and ranged.
-- RULE-ATTACK-001: the retaliation pool's operands (whether a band-0
-  attacker's Defense is reduced, any minimum damage), whose Stealth and Detect
-  the evasion roll uses, the Martial Arts test (`== 0` or `<= 0`), the order of
-  the draws instruction by instruction, what an evaded attack writes and
-  credits, and whether the target's activity or sector is checked.
-- RULE-ATTACK-001, RULE-COMBAT-002: where the phase damage accumulator and the
-  fighting-marker array live, and exactly which gangs the marker is set for
-  (attacker, target, evaded fights, police).
-- RULE-COMBAT-002, format request FMT-STATE-006: the layout of the four-byte
-  entry of the result rows at `0x004A8888`, when the police flags at
-  `+0x90` are written, whether records are cleared for gangs that did not
-  fight, and the order of the damage, record, row and death steps.
-- RULE-COMBAT-004: whether the presenter's "gangs whose target is the focal
-  gang" test also checks the action byte; whether the displayed-Force reset is
-  per focal list or once; what is subtracted for an evaded attack; the caller
-  of `0x0042E040` at planning entry and the Detailed Combat option test.
-- RULE-CHAOS-001, RULE-CHAOS-002: whether the history expiry runs for every
-  sector; whether a sector already under Crackdown pays Chaos; how the payout
-  finds a gang's sector and whether a gang that died in combat is paid; whether
-  the payout adds to `cash_earned`; the order of the type-1 report calls.
-- RULE-POLICE-002: which three values the neutralization clears, which turn
-  counter the history stores, and what the type-3 call does when the owner is
-  -1.
-- RULE-DETECT-001: whether the observer loop covers all six slots or only
-  active players, and whether an unseen gang's byte is written 0.
-- SCR-ATTACK-001: the picker's screen origin, which player each opponent cell
-  shows, which listed target each cell holds, the Confirm and Cancel controls,
-  the acting gang portrait, the target marker, and keyboard input in
-  `0x0043B290`.
-- SCR-COMBAT-001: the renderer `0x00453A8D` positions of the page text, the
-  sector tile (docs give local `(31,67,54,52)`) and code, the police art, and
-  the keys the handler pages with; what selecting a slot with the force
-  selector changes.
-- SCR-COMBAT-002: the x positions of the Force tracks, the portrait resource,
-  the Cancel cell and any key handling in `0x0042E040`/`0x00430C23`.
+- SCR-ATTACK-001, SCR-COMBAT-001, SCR-COMBAT-002: which resources surfaces 3
+  and 5 hold while the picker, Combat Results and Detailed Combat are open,
+  which gives the files of the portraits and equipment icons; the picker's
+  event 5 branch (`0x0043C4BC`), which tests the portrait and equipment
+  rectangles; the argument order of the colour helper behind the Combat
+  Results outlines (FND-ATTACK-003, FND-COMBAT-010, FND-COMBAT-012).
+- SCR-COMBAT-002: the Force tracks are drawn at panel-local y 116 and 123
+  (FND-COMBAT-010) and the capture of FND-UI-010 measured 114 and 121. A new
+  capture with its settings recorded settles it; the executable cannot.
+- RULE-COMBAT-004: the fight list's record area holds four entries
+  (FND-COMBAT-011). Check whether one sector can list more than four gangs
+  against one focal gang.
 
 ## Setup, city generation, objectives and awards
 
@@ -245,8 +195,6 @@ order of priority, unless a group says otherwise.
 - Placement anchor (RULE-AI-013; FND-AI-010): the element type at
   `0x0048E2F8`; the order of the keep tests; what the byte at `0x004A08C4`
   holds; what the hire resolver does with sector -1; where `seed_anchor` runs.
-- FMT-STATE-003 byte 0 (see notes.md): find the instruction that writes byte 0
-  of a combat record, to settle definition against owner.
 
 ## Screens, options, planning timer and sound
 
@@ -546,7 +494,8 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
 
 ## Found while integrating the spec
 
-- RULE-AI-016, RULE-AI-017, RULE-ATTACK-001, RULE-CONTROL-001, FND-AI-006: record the instructions
-  in `fn_00472775` that lower the attitude after an attack and after an owner change. The rules
-  place the calls after the opening damage and at the owner write by interpretation; whether an
-  evaded attack or a retaliation lowers the attitude too is not known.
+- RULE-AI-016, RULE-AI-017, RULE-CONTROL-001: FND-AI-047 records the instructions in
+  `fn_00472775` that lower the attitude after an attack (every Attack order, evaded ones included,
+  by the larger of the reaction and the opening damage; the retaliation writes no cell) and at a
+  Control takeover (twice the previous owner's reaction, only when there was an owner). The three
+  rules still have to cite it and match it (AI agent). RULE-ATTACK-001 already does.

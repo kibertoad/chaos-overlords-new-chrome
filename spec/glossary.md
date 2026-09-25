@@ -18,13 +18,20 @@ RULE-AI-011.
 
 The player slot whose turn it is at this computer, whose view the city,
 panels and reports show. Any other value the game keeps: a player slot, at
-`0x004ABC84` [FND-UI-036]. Its width is not recorded (unknown).
+`INT32` at `0x004ABC84` [FND-UI-036, FND-STATE-008].
 
 ## ai_started
 
 Whether a computer player's planning records have been reset for this match.
 Any other value the game keeps: one byte per player slot at `0x00482108`
 [FND-AI-003].
+
+## app_deactivated
+
+Whether the program has lost the focus and has not been activated again. Any
+other value the game keeps: a byte at `0x00487890`, set by the deactivation
+event and cleared by the activation event in the event step `fn_00462579`
+[FND-UI-020].
 
 ## armor_defense_upgrade
 
@@ -48,8 +55,9 @@ decrement at a Control takeover at `0x00475781` [FND-AI-047].
 ## aux_records
 
 A second per-gang record of the computer players. A list the game keeps, of
-14-byte records, element `player * 81 + roster_slot` (assumed), referenced at
-`0x0048C0BA` [FND-AI-015]. Fields the rules use: `focus`, the first 16-bit
+14-byte records, element `player * 81 + roster_slot`, at `0x0048C0B0`, with
+the two values the rules use at +0x0A and +0x0C [FND-AI-015, FND-AI-044,
+FND-STATE-007]. Fields the rules use: `focus`, the first 16-bit
 value, whose meaning depends on the family, and `coverage_sector`, the second
 16-bit value, the sector a family-6 gang heads for or covers [FND-AI-015,
 FND-AI-013].
@@ -77,7 +85,8 @@ RULE-AI-022.
 How many identical screen copies the startup benchmark managed in just over one
 second. A value from outside the game: an integer measured once at startup by
 `fn_00432954` [FND-UI-011]; it depends on the speed of the machine and sets the
-panel slide step. Its address is not recorded (unknown).
+panel slide step. Kept as a DWORD at `0x004981F8`, written once at
+`0x00461313` [FND-UI-023].
 
 ## block_leader_sector
 
@@ -119,6 +128,12 @@ raise it. Any other value the game keeps: `INT32LE[6]`, indexed by player
 slot, at `0x004AB620`, raised only at `0x00474889` and set to 0 at
 `0x00476045` [FND-GANG-003, FND-GANG-005].
 
+## cd_present
+
+`cd_present()` tells whether the CD check at start passes. A value from
+outside the game: the result of `fn_0046638E` [FND-PLATFORM-009]; what it
+checks is not recorded here (unknown).
+
 ## chaos_payout_phase
 
 The step of `resolution` that pays out the Chaos successes rolled in
@@ -147,8 +162,8 @@ function, defined by RULE-AI-013.
 
 Set when a computer player's gangs out-fight the visible defenders in more than
 three quarters of another player's sectors. Any other value the game keeps:
-the byte at +20 of a player-pair record, element `observer * 6 + other`; the
-records' address is not recorded (unknown) [FND-AI-018, FND-AI-032].
+the byte at +20 of a 24-byte player-pair record, element `observer * 6 +
+other`, at `0x0048F810` [FND-AI-018, FND-AI-032, FND-AI-044, FND-STATE-007].
 
 ## combat_focal
 
@@ -246,16 +261,16 @@ hold. It has no handlers; SCR-COMBAT-002 draws it [FND-COMBAT-005].
 ## comlink_alert_repeat
 
 The counter that times the repeats of the incoming-message alert. Any other
-value the game keeps: at `0x00487808` [FND-AUDIO-002]; its type is not recorded
-(unknown).
+value the game keeps: a 16-bit value at `0x00487808` [FND-AUDIO-002,
+FND-UI-023].
 
 ## comlink_blink_step
 
 The eight-step animation counter the event pump advances once per
 `presentation_tick`, from 0 to 7 and back to 0; on even values it blinks the
 Events and Comlink lights, and it times the alert repeat and the selected
-sector frame. Any other value the game keeps: at `0x00487804`
-[FND-AUDIO-012, FND-EVENT-006].
+sector frame. Any other value the game keeps: a DWORD at `0x00487804`
+[FND-AUDIO-012, FND-EVENT-006, FND-UI-023].
 
 ## comlink_count
 
@@ -420,12 +435,36 @@ FND-PLATFORM-003].
 `danger_near(player, idx)` is the computer players' equipment gate. A function,
 defined by RULE-AI-005.
 
+## desktop_depth
+
+The colour depth of the Windows display in bits per pixel. A value from
+outside the game: `GetDeviceCaps(BITSPIXEL)` read by the display setup when the
+game runs in a window [FND-GFX-004].
+
+## DialogShown
+
+An event: one of the executable's Windows dialog boxes is shown. It carries
+the dialog's resource number [FND-UI-022].
+
 ## difficulty_band
 
 The per-player band, 0, 1 or 2, that adjusts several dice pools during
 `resolution` according to the AI Mentality and whether the player is a
 computer. Any other value the game keeps: `INT32LE[6]`, indexed by player
 slot, at `0x004A2570` [FND-AI-007, FND-PLATFORM-003].
+
+## display_depth
+
+The colour depth in bits, 8 or 16, that the surfaces are created at, or 0
+when no depth could be set. Any other value the game keeps: a DWORD at
+`0x0048787C`, holding the depth asked for and then the depth the display setup
+returned [FND-PLATFORM-009, FND-GFX-004].
+
+## display_mode_set
+
+`display_mode_set(w, h, depth)` tells whether the display could be switched to
+that mode. A value from outside the game: the result of DirectDraw's
+`SetDisplayMode` in full screen [FND-GFX-004].
 
 ## dominance_points
 
@@ -448,8 +487,10 @@ returns the last target drawn. A function, defined by RULE-AI-004.
 
 The loaded general sound effects, one per slot. A list the game keeps: 48
 slots, of which 0 to 9 are used; slot 5 is loaded and emptied around each
-Detailed Combat attack sound, and an empty slot plays nothing. Its address is
-not recorded (unknown) [FND-AUDIO-002, FND-AUDIO-013]. Rules write
+Detailed Combat attack sound, and an empty slot plays nothing. The 48 records
+of `0x114` bytes start at `0x00494C28`; each holds a loaded byte, the file's
+path and the file loaded whole into memory [FND-AUDIO-002, FND-AUDIO-013,
+FND-AUDIO-006]. Rules write
 `effect_slots[slot]`.
 
 ## EffectPlayed
@@ -596,8 +637,9 @@ Combat is off [FND-SETUP-010].
 ## fn_0045519D
 
 The unidentified function of build BLD-GOG-EN-1.1 at `0x0045519D` that shows
-the Game Information panel at the start of a player's first planning in a new
-local game [FND-SETUP-010].
+the Game Information panel, from the Game Info tile and at the start of each
+local human's planning while `resumed_match` is set [FND-SETUP-010,
+FND-UI-024].
 
 ## fn_00468CFC
 
@@ -623,6 +665,13 @@ by the player. A function, defined by RULE-AI-013.
 
 `free_neighbours(player, center)` counts neutral cells without a Crackdown
 around an owned centre. A function, defined by RULE-AI-013.
+
+## full_screen_active
+
+Whether this run uses full screen. Any other value the game keeps: a byte at
+`0x00498354`, copied from `pref_full_screen` when the options are read at
+start and not changed afterwards; the Full Screen menu item changes only the
+preference [FND-PLATFORM-009, FND-GFX-004, FND-UI-020].
 
 ## g_004A08C4
 
@@ -785,12 +834,34 @@ The button the player used to leave the idle-gang warning: 1 for OK, 0 for
 Cancel. A value from outside the game: the player's input on SCR-OPTIONS-001
 [FND-OPTIONS-002].
 
+## image_set_present
+
+`image_set_present(depth)` tells whether the 8-bit or the 16-bit image set is
+installed. A value from outside the game: whether the probe image `PX00128`
+opens from `DATA/PX08` or `DATA/PX16` [FND-PLATFORM-009].
+
+## input_event
+
+The last input event the window produced. Any other value the game keeps: an
+FMT-STATE-009 record at `0x00498360` [FND-UI-020].
+
+## instance_running
+
+Whether another copy of the game is running. A value from outside the game:
+whether the mutex named after the window title already existed when the
+program created it [FND-PLATFORM-009].
+
 ## instant_phase
 
 The first step of `resolution`: the Bribe, Heal, Hide, Influence, Research and
 Snitch actions, carried out gang by gang in `turn_order` and roster slot
 order, followed by clamping every sector's base Tolerance to 1..40. It runs
 before `chaos_phase` [FND-TURN-001, FND-SNITCH-001, FND-CHAOS-001, FND-TOLERANCE-001].
+
+## IntroPlayed
+
+An event: the intro movies play before the title screen
+[FND-PLATFORM-009, FND-VIDEO-002].
 
 ## is_block_leader
 
@@ -845,12 +916,20 @@ Whether the left mouse button is held. A value from outside the game: taken
 from the Windows mouse messages the event pump receives; it changes whenever
 the player presses or releases the button [FND-UI-032].
 
+## loaded_game_kind
+
+Which kind of saved file the last load read: 0 none, 1 an `S40W` local game,
+2 an `N40W` network game, 3 an `M10W` file. Any other value the game keeps: a
+DWORD at `0x0048788C`, set by File, Open and by the window procedure for a file
+named on the command line, and cleared by the title loop after it acts on it
+[FND-PLATFORM-009, FND-UI-020, FND-SAVE-001].
+
 ## local_game
 
-Set when the game is a local game. Any other value the game keeps: the flag at
-`0x00482178` [FND-AUDIO-003]. The reading of this flag is an interpretation;
-its width is not recorded (unknown). FND-NET-004 reads the byte as the joining
-side of a network session, 0 in a local game.
+Despite its name, set on a computer that joined a network session through the
+File menu's Join command, and 0 in a game started with New Game. Any other
+value the game keeps: a byte at `0x00482178`, set only by the Join handler
+[FND-AUDIO-003, FND-AUDIO-006, FND-NET-004].
 
 ## local_tech_cap
 
@@ -967,9 +1046,9 @@ The step of `resolution` that moves gangs to their destinations. It runs after
 
 ## music_enabled
 
-Whether music plays. Any other value the game keeps: a flag cleared when
-`music_level` is set to 0 [FND-AUDIO-001]; its address is not recorded
-(unknown).
+Whether music plays. Any other value the game keeps: a byte at `0x00487838`,
+1 in the executable's data, cleared when `music_level` is set to 0 and set
+again when it is set to any other level [FND-AUDIO-001, FND-AUDIO-007].
 
 ## music_level
 
@@ -1017,9 +1096,9 @@ otherwise. A function, defined by RULE-SETUP-001.
 
 ## network_game
 
-Set when the game is a network game. Any other value the game keeps: the flag
-at `0x00487B58` [FND-AUDIO-003]. The reading of this flag is an
-interpretation; its width is not recorded (unknown).
+Set on the computer that hosts a network session, through Host or by resuming
+a saved network game, and 0 in a game started with New Game. Any other value
+the game keeps: a byte at `0x00487B58` [FND-AUDIO-003, FND-AUDIO-006].
 
 ## next_option
 
@@ -1047,6 +1126,11 @@ defined by RULE-AI-009.
 
 `on_objective(s)` tells whether sector `s` is an objective sector of scenario
 6 or 8. A function, defined by RULE-AI-031.
+
+## on_pointer_query
+
+`on_pointer_query()` answers Windows' request for the pointer shape. A
+function, defined by RULE-UI-007.
 
 ## overthrow_count
 
@@ -1110,7 +1194,8 @@ The planning time limit chosen on the setup screen: 0 none, 1 thirty seconds,
 ## planning_limit_ms
 
 The planning time limit in milliseconds, -1 for none. Any other value the game
-keeps [FND-TIMER-001]; its address is not recorded (unknown).
+keeps: an `INT32` at `0x0049069C`, 0 in the executable's data and set at each
+entry into a match [FND-TIMER-001, FND-TIMER-003].
 
 ## planning_phase
 
@@ -1137,7 +1222,7 @@ addressed), `weapon_cooldown` (`INT16`, +12) and `armor_cooldown` (`INT16`,
 ## planning_start_ms
 
 The value of `timer_ms` when the current player's planning began. Any other
-value the game keeps [FND-TIMER-001]; its address is not recorded (unknown).
+value the game keeps: a DWORD at `0x004906A0` [FND-TIMER-001, FND-TIMER-003].
 
 ## planning_time_expired
 
@@ -1210,9 +1295,10 @@ A function, defined by RULE-UI-001.
 
 ## pointer_shape
 
-The stock cursor the game last set, 0 to 4. Any other value the game keeps,
-remembered by the cursor helper `fn_00465BC8` [FND-UI-034]; its address is not
-recorded (unknown).
+The shape the cursor helper `fn_00465BC8` compares a request with. Any other
+value the game keeps: a DWORD at `0x00487B20`, 99 in the executable's data and
+never written, so it never equals a shape and every call sets the cursor
+[FND-UI-034, FND-UI-023].
 
 ## pointer_x
 
@@ -1297,6 +1383,11 @@ data, replaced at startup by the registry value `prefsObjective`, and set to
 the scenario chosen on the setup screen. Any other value the game keeps:
 `INT8` at `0x00487858` [FND-SETUP-009, FND-SETUP-012, FND-SETUP-013].
 
+## present
+
+`present(rect)` copies a changed rectangle of the drawing area to the window.
+A function, defined by RULE-GFX-002.
+
 ## presentation_tick
 
 The timer that paces presentation: combat animation phases, the Comlink blink
@@ -1305,8 +1396,9 @@ and the planning timer bar. A clock, defined by RULE-UI-008.
 ## presentation_tick_pending
 
 Set by each `presentation_tick` and cleared by the loop that consumes it. Any
-other value the game keeps: timer slot 0 [FND-UI-001]; whether it is a flag or
-a counter, and its address, are not recorded (unknown).
+other value the game keeps: the flag byte of timer slot 0 at `0x00494810`,
+set to 1 by the timer callback, so ticks a busy loop misses are lost
+[FND-UI-001, FND-UI-023].
 
 ## previous_action_count
 
@@ -1323,6 +1415,12 @@ other value the game keeps: `INT32LE[6]`, indexed by player slot, at
 
 `propose_site()` draws a site definition for the city generator, redrawing
 the two kinds Armageddon excludes. A function, defined by RULE-CITY-002.
+
+## quit_requested
+
+Whether the program should leave the title loop and exit. Any other value the
+game keeps: a byte at `0x00487828`, set by File, Exit, by closing the window
+and by the end of some network games [FND-PLATFORM-009].
 
 ## random_neighbour
 
@@ -1580,14 +1678,15 @@ RULE-AI-006.
 ## selected_card
 
 The local setup's selected player card, 0 to 5, the only card whose portrait
-and name can be changed. Any other value the game keeps: at `0x004854C4`
-[FND-SETUP-005]; its width is not recorded (unknown).
+and name can be changed. Any other value the game keeps: `INT32` at
+`0x004854C4` [FND-SETUP-005, FND-STATE-008].
 
 ## serial_number
 
 The number the game keeps as its serial number. Any other value the game
 keeps: a DWORD at `0x00487870`, initialized to 0 and read from the registry
-value `serialNum` [FND-OPTIONS-001].
+value `serialNum`; when it is 0 after the read, two draws build a new one that
+stays in memory for the session [FND-OPTIONS-001, FND-OPTIONS-003].
 
 ## set_pointer
 
@@ -1661,9 +1760,10 @@ Control on its own. A function, defined by RULE-AI-004.
 
 ## sound_output_available
 
-Whether the machine has a wave output device the game can play through. A
-value from outside the game: what the sound setup reports at startup
-[FND-AUDIO-003]; the detection call is not recorded (unknown).
+Read by the effect player as whether sound may play. Any other value the game
+keeps: the byte at `0x0048735C`, which silences every effect when set; it is 0
+in the executable's data and nothing writes it, so it never silences anything
+[FND-AUDIO-003, FND-AUDIO-006].
 
 ## stealth_sum
 
@@ -1674,6 +1774,19 @@ function, defined by RULE-AI-028.
 
 `strength_check(a, t)` is the computer players' test before an attack. A
 function, defined by RULE-AI-004.
+
+## surfaces_created
+
+`surfaces_created()` tells whether all seven memory surfaces got a device
+context at start. A value from outside the game: the result of `fn_004622D4`,
+which depends on Windows granting the bitmaps [FND-PLATFORM-009,
+FND-GFX-004].
+
+## system_menu_height
+
+The height of the menu bar that Windows reports. A value from outside the
+game: `iMenuHeight` of the non-client metrics, read by the display setup
+[FND-GFX-004].
 
 ## terminate_phase
 
@@ -1760,8 +1873,8 @@ owns. The first turn of a match skips it [FND-UPKEEP-001, FND-TURN-005].
 The player whose gangs the sector view shows and whose Overlord bar portrait
 carries the active-player marker. It is `active_player` on the city screen;
 the sector view sets it to the player whose portrait was pressed. Any other
-value the game keeps: at `0x00487B8C` [FND-UI-015, FND-UI-017, FND-UI-018];
-its width is not recorded (unknown).
+value the game keeps: `INT32` at `0x00487B8C` [FND-UI-015, FND-UI-017,
+FND-UI-018, FND-STATE-008].
 
 ## visible_opponents
 
@@ -1783,3 +1896,8 @@ sector `s`: 10, 1 or 0. A function, defined by RULE-AI-004.
 
 `weight_at(player, c)` gives the cached weight a neighbourhood scan reads at
 index `c`, 0 to 64. A function, defined by RULE-AI-005.
+
+## WindowAreaCopied
+
+An event: a rectangle of the off-screen drawing area is copied to the window.
+It carries the rectangle [FND-GFX-004].

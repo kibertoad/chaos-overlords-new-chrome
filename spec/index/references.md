@@ -990,6 +990,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| glossary: input_event | glossary |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | body, related |
 
 ## FMT-VIDEO-001
@@ -1549,6 +1550,8 @@ None.
 | [FND-AI-045](../findings/FND-AI-045.md) | body |
 | [FND-AI-050](../findings/FND-AI-050.md) | body |
 | [FND-STATE-003](../findings/FND-STATE-003.md) | body |
+| glossary: aux_records | glossary |
+| glossary: combat_advantage | glossary |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | evidence |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
@@ -1759,6 +1762,10 @@ None.
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | body |
+| glossary: effect_slots | glossary |
+| glossary: local_game | glossary |
+| glossary: network_game | glossary |
+| glossary: sound_output_available | glossary |
 
 ## FND-AUDIO-007
 
@@ -1769,6 +1776,7 @@ None.
 | [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-023](../findings/FND-UI-023.md) | body |
+| glossary: music_enabled | glossary |
 
 ## FND-AUDIO-010
 
@@ -2299,6 +2307,7 @@ None.
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, evidence |
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | body, evidence |
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | body, evidence |
+| [FMT-DATA-004](../formats/FMT-DATA-004.md) | evidence |
 
 ## FND-DATA-007
 
@@ -2313,7 +2322,9 @@ None.
 
 ## FND-DATA-008
 
-None.
+| Cited by | In |
+|---|---|
+| [FMT-DATA-005](../formats/FMT-DATA-005.md) | body, evidence |
 
 ## FND-DETECT-001
 
@@ -2856,6 +2867,13 @@ None.
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
+| glossary: desktop_depth | glossary |
+| glossary: display_depth | glossary |
+| glossary: display_mode_set | glossary |
+| glossary: full_screen_active | glossary |
+| glossary: surfaces_created | glossary |
+| glossary: system_menu_height | glossary |
+| glossary: WindowAreaCopied | glossary |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | evidence |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | evidence |
 
@@ -3261,7 +3279,9 @@ None.
 
 ## FND-OPTIONS-003
 
-None.
+| Cited by | In |
+|---|---|
+| glossary: serial_number | glossary |
 
 ## FND-PLATFORM-001
 
@@ -3347,7 +3367,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [FMT-DATA-004](../formats/FMT-DATA-004.md) | body, evidence |
+| [FMT-DATA-004](../formats/FMT-DATA-004.md) | evidence |
 | [FMT-GFX-002](../formats/FMT-GFX-002.md) | body |
 | [FMT-GFX-003](../formats/FMT-GFX-003.md) | body |
 | [FND-DATA-004](../findings/FND-DATA-004.md) | body |
@@ -3384,6 +3404,15 @@ None.
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
+| glossary: cd_present | glossary |
+| glossary: display_depth | glossary |
+| glossary: full_screen_active | glossary |
+| glossary: image_set_present | glossary |
+| glossary: instance_running | glossary |
+| glossary: IntroPlayed | glossary |
+| glossary: loaded_game_kind | glossary |
+| glossary: quit_requested | glossary |
+| glossary: surfaces_created | glossary |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | evidence |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | evidence |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | evidence |
@@ -3401,6 +3430,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FMT-DATA-004](../formats/FMT-DATA-004.md) | body, evidence |
 | [FND-DATA-008](../findings/FND-DATA-008.md) | body |
 | [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | body |
 
@@ -3615,6 +3645,7 @@ None.
 | [FND-STATE-006](../findings/FND-STATE-006.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| glossary: loaded_game_kind | glossary |
 | glossary: players_human | glossary |
 
 ## FND-SAVE-002
@@ -3842,6 +3873,8 @@ None.
 | glossary: preferred_scenario | glossary |
 | glossary: turn_limit | glossary |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | body, evidence |
+| [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | evidence |
+| [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | evidence |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | body, evidence |
 
 ## FND-SETUP-014
@@ -3887,6 +3920,7 @@ None.
 |---|---|
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | glossary: portrait | glossary |
+| [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | evidence |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | body, evidence |
 
 ## FND-SNITCH-001
@@ -3970,12 +4004,17 @@ None.
 |---|---|
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-009](../findings/FND-STATE-009.md) | body |
+| glossary: aux_records | glossary |
+| glossary: combat_advantage | glossary |
 
 ## FND-STATE-008
 
 | Cited by | In |
 |---|---|
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
+| glossary: active_player | glossary |
+| glossary: selected_card | glossary |
+| glossary: viewed_player | glossary |
 
 ## FND-STATE-009
 
@@ -4013,6 +4052,8 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-023](../findings/FND-UI-023.md) | body |
+| glossary: planning_limit_ms | glossary |
+| glossary: planning_start_ms | glossary |
 
 ## FND-TOLERANCE-001
 
@@ -4372,6 +4413,10 @@ None.
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | [FND-UI-021](../findings/FND-UI-021.md) | body |
+| glossary: app_deactivated | glossary |
+| glossary: full_screen_active | glossary |
+| glossary: input_event | glossary |
+| glossary: loaded_game_kind | glossary |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | evidence |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | evidence |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | evidence |
@@ -4398,6 +4443,7 @@ None.
 |---|---|
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| glossary: DialogShown | glossary |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | evidence |
 
 ## FND-UI-023
@@ -4407,10 +4453,17 @@ None.
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | body |
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
+| glossary: blit_benchmark_count | glossary |
+| glossary: comlink_alert_repeat | glossary |
+| glossary: comlink_blink_step | glossary |
+| glossary: pointer_shape | glossary |
+| glossary: presentation_tick_pending | glossary |
 
 ## FND-UI-024
 
-None.
+| Cited by | In |
+|---|---|
+| glossary: fn_0045519D | glossary |
 
 ## FND-UI-031
 
@@ -4550,6 +4603,7 @@ None.
 | [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-023](../findings/FND-UI-023.md) | body |
+| glossary: IntroPlayed | glossary |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | body, evidence |
 
 ## RULE-AI-001
@@ -5340,6 +5394,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| glossary: present | glossary |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | body, related |
 
 ## RULE-GIVE-001
@@ -5694,6 +5749,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | body |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, related |
 
 ## RULE-SITE-001
@@ -5894,6 +5950,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| glossary: on_pointer_query | glossary |
 | glossary: set_pointer | glossary |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | related |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, related |

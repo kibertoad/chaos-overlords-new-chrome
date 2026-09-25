@@ -4,7 +4,7 @@ title: A press on a setup player card selects it first, then works its portrait 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG]
+evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001]
@@ -39,6 +39,24 @@ When the left mouse button is released after a press inside one of the six
 ## Procedure
 
 ```text
+# Steps the portrait through 0 to 14, wrapping at both ends, until it reaches
+# one that no slot holds, the card's own slot included. An empty slot holds
+# 15, which is never a candidate.
+define step_portrait(slot, delta):
+    let face = portrait[slot]
+    let taken = true
+    while taken:
+        face = face + delta
+        if face < 0:
+            face = 14
+        if face > 14:
+            face = 0
+        taken = false
+        for q in 0..6:
+            if portrait[q] == face:
+                taken = true
+    portrait[slot] = face
+
 if dragged:
     if drop_card >= 0:
         let c = controller[card]
@@ -60,9 +78,11 @@ if controller[card] != 0:
     return
 if offset_y < 58:
     if offset_x < 16:
-        fn_00468D87(card)
+        # fn_00468D87: one step down, skipping portraits any slot holds
+        step_portrait(card, -1)
     else if offset_x > 48:
-        fn_00468CFC(card)
+        # fn_00468CFC: one step up, skipping portraits any slot holds
+        step_portrait(card, 1)
 else:
     # the name editor: dialog Chaos Overlords.exe#DIALOG/139, at most ten
     # characters; accepting an empty editor keeps the old name
@@ -79,7 +99,8 @@ slots, or changes one slot's `portrait` or name. Makes no draws.
 A release outside every card after a drag changes nothing. A drag onto an
 empty card moves the player there and leaves its old slot empty. A press in
 the middle of a selected card, between the two portrait bands and above the
-name band, does nothing.
+name band, does nothing. With six humans on six different portraits the
+arrows still find one of the nine free ones.
 
 ## What the sources say
 
@@ -94,9 +115,5 @@ None known.
 
 ## Open questions
 
-- `fn_00468D87` and `fn_00468CFC` step the card's portrait down and up; how
-  they treat the ends of the range and portraits other players hold is not
-  recorded.
 - `fn_0040F63D` is the name editor; its dialog's layout is not described.
 - What a press or a drag that starts on an empty card does is not recorded.
-- The address of `portrait` is not recorded.
