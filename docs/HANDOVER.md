@@ -109,10 +109,6 @@ used by the shared template. What the original does now lives only in
   FND-OBJECTIVE-003 settles the scenario numbering: Greed is 0 and Kill 'Em
   All 4, and it explains why FND-SETUP-009 and FND-SETUP-012 read 0 as Kill
   'Em All.
-- RULE-OBJECTIVE-005 is `partial`: the rebuild keeps the gameplay music over
-  the hot-seat elimination card, plays the computers on when every local human
-  is eliminated, and shows the awards where the original returns to the title
-  (see its PARITY row).
 - Copy the setup capture
   `artifacts/reference-captures/smoke/20260913-211908-368-checkpoint/frame-01.png`
   to `GAME_DIR/captures/a83f82a2aab84d9a1e0e9de626409149.png` once `GAME_DIR`

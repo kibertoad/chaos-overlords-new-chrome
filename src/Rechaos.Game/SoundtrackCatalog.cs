@@ -38,12 +38,17 @@ public static class OriginalSoundtrackPolicy
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
     };
 
-    public static OriginalSoundtrackMode ModeFor(ClientScreen screen) => screen switch
-    {
-        ClientScreen.Title or ClientScreen.Setup => OriginalSoundtrackMode.Title,
-        ClientScreen.Endgame => OriginalSoundtrackMode.Endgame,
-        _ => OriginalSoundtrackMode.Gameplay
-    };
+    /// <param name="eliminationMusicHeld">
+    /// Whether an elimination card left the endgame music on (RULE-OBJECTIVE-005): the card starts
+    /// it, and only a later local human in slot order asks for the gameplay music again.
+    /// </param>
+    public static OriginalSoundtrackMode ModeFor(ClientScreen screen, bool eliminationMusicHeld = false) =>
+        screen switch
+        {
+            ClientScreen.Title or ClientScreen.Setup => OriginalSoundtrackMode.Title,
+            ClientScreen.Endgame or ClientScreen.Elimination => OriginalSoundtrackMode.Endgame,
+            _ => eliminationMusicHeld ? OriginalSoundtrackMode.Endgame : OriginalSoundtrackMode.Gameplay
+        };
 
     public static float VolumeForLevel(int level)
     {

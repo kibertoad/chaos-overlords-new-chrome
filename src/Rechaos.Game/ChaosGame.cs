@@ -145,6 +145,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly Queue<PlayerId> _pendingHotSeatEliminations = [];
     private readonly HashSet<PlayerId> _presentedHotSeatEliminations = [];
     private PlayerId? _eliminationHandoffPlayer;
+    // RULE-OBJECTIVE-005: set after an elimination card with no local human playing after it in
+    // slot order, which leaves the endgame music on where the gameplay music would play.
+    private bool _eliminationMusicHeld;
     private int _eventCursor;
     private readonly HashSet<int> _eventViewedPages = [];
     private readonly LastTurnEventArchive _lastTurnEventArchive = new();
@@ -232,11 +235,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (_slidePanels) _panelSlideTransition.Begin(previous, current, _inputTime);
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
                 PlayGeneralSound(slot);
+            // RULE-AWARDS-002: the endgame opens on its Awards tab.
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
-            {
-                _showEndgameNotice = EndgameNoticePresentation.For(_state) is not null;
                 _showEndgameStats = false;
-            }
         };
         var userDataRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -526,9 +527,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     UpdateCity(keyboard);
                     break;
                 case ClientScreen.Endgame:
-                    if (!_showEndgameNotice && Pressed(keyboard, Keys.A)) _showEndgameStats = false;
-                    if (!_showEndgameNotice && Pressed(keyboard, Keys.S)) _showEndgameStats = true;
-                    if (Pressed(keyboard, Keys.Enter)) AdvanceEndgamePresentation();
+                    if (Pressed(keyboard, Keys.A)) _showEndgameStats = false;
+                    if (Pressed(keyboard, Keys.S)) _showEndgameStats = true;
+                    if (Pressed(keyboard, Keys.Enter)) LeaveEndgame();
                     break;
                 case ClientScreen.Handoff:
                     if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))

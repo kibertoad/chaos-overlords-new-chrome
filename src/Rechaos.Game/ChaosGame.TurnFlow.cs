@@ -64,7 +64,7 @@ public sealed partial class ChaosGame
         CompleteTurnAdvance(previousTurn);
 
         if (_state.Outcome is not null)
-            _screens.Show(ClientScreen.Endgame);
+            ShowMatchEnd();
         else if (ShowPendingHotSeatElimination())
         {
             _selectedGangIndex = 0;
@@ -166,7 +166,7 @@ public sealed partial class ChaosGame
             PlayTurnStartCue(previousTurn);
         }
         if (_state.Outcome is not null)
-            _screens.Show(ClientScreen.Endgame);
+            ShowMatchEnd();
         else if (transition.ActivePlayer is not null && transition.ActivePlayer != previousActivePlayer)
         {
             _selectedGangIndex = 0;
@@ -249,7 +249,7 @@ public sealed partial class ChaosGame
         CompleteTurnAdvance(startingTurn);
         if (_state.Outcome is not null)
         {
-            _screens.Show(ClientScreen.Endgame);
+            ShowMatchEnd();
         }
         else if (!ShowPendingHotSeatElimination()
                  && _state.Coordinator.ActivePlayer is { } nextPlayer

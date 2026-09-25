@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 84 |
+| `supported` | 79 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 137 |
+| `implemented` | 142 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 19 |
-| `partial` | 66 |
-| `complete` | 137 |
+| `partial` | 61 |
+| `complete` | 142 |
 
 ## DATA
 
@@ -397,9 +397,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-OBJECTIVE-001` | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-002` | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-003` | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported | complete | None | None | implemented | None |
-| `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | supported | partial | None | None | supported | The rebuild tests Big 40, Siege, Big Man and Armageddon for living players only where the original counts every slot, and gives Kill 'Em All and Eliminate tests of their own where the original has none (FND-OBJECTIVE-003). The timed test was not compared. The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
-| `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | partial | None | None | supported | The card and its place in slot order match. The rebuild keeps the gameplay music over the card, where the original starts the endgame music and only a later local human's request brings the gameplay music back. With two or more local humans all eliminated, the rebuild plays the computers on to the end and shows the awards where the original returns to the title without them, and it shows the Ready card before the last human's card. A lone local human's elimination ends the match at resolution, which skips the awards the original shows when the match would have ended that turn anyway. |
-| `SCR-OBJECTIVE-001` | Player Rankings panel with one vertical rail per player and portraits placed by score | supported | partial | None | None | supported | The rebuild places each portrait 28 pixels lower per standing where the original places it in proportion to the score's distance from the leader, over 140 pixels (FND-OBJECTIVE-005). |
+| `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | supported | complete | None | None | implemented | The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
+| `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | complete | None | None | implemented | Online the humans sit at different computers, so the match ends this way only when every human in it is out, and each client shows the results table. |
+| `SCR-OBJECTIVE-001` | Player Rankings panel with one vertical rail per player and portraits placed by score | supported | complete | None | None | implemented | None |
 | `SCR-OBJECTIVE-002` | Private elimination card shown to an eliminated local human over the city screen | supported | complete | None | `DEV-SETUP-002` | implemented | None |
 
 ## AWARDS
@@ -407,9 +407,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-AWARDS-001` | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | supported | complete | None | None | implemented | None |
-| `RULE-AWARDS-002` | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported | partial | None | None | supported | The rebuild shows its notice when one human played, for that human, where the original shows the splash of the lone active player, human or computer, on the Awards tab (FND-AWARDS-004). |
+| `RULE-AWARDS-002` | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported | complete | None | None | implemented | None |
 | `SCR-AWARDS-001` | Endgame screen listing the players by place with their awards or their statistics | supported | complete | None | `DEV-SETUP-002` | implemented | Row typography and timing are unconfirmed against captures of the original. |
-| `SCR-AWARDS-002` | Victory splash shown on the endgame's Awards tab when one player is left | supported | partial | None | None | supported | Shown under the rebuild's one-human test instead of the one-active-player test (FND-AWARDS-004); whether it takes the place of the Awards tab was not checked. |
+| `SCR-AWARDS-002` | Victory splash shown on the endgame's Awards tab when one player is left | supported | complete | None | None | implemented | None |
 
 ## TIMER
 
