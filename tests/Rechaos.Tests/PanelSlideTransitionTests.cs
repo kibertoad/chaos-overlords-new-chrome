@@ -105,6 +105,11 @@ public sealed class PanelSlideTransitionTests
         var slide = new PanelSlideTransition();
         var start = TimeSpan.FromSeconds(4);
         slide.Begin(ClientScreen.Commands, ClientScreen.Gang, start, compactGangPanel: true);
-        Assert.Equal(PanelSlideTransition.AlternateStartOffset, slide.Offset(ClientScreen.Gang, start));
+        // The first copy already shows one step of the 320-pixel travel.
+        var travel = PanelSlideTransition.AlternateStartOffset;
+        Assert.Equal(PanelSlideTransition.SlideInOffsets(travel,
+                PanelSlideTransition.SlideStep(travel, PanelSlideTransition.NominalBlitBenchmarkCount),
+                slidePanels: true)[0],
+            slide.Offset(ClientScreen.Gang, start));
     }
 }
