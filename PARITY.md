@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 51 |
+| `supported` | 49 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 170 |
+| `implemented` | 172 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 17 |
-| `partial` | 35 |
-| `complete` | 170 |
+| `partial` | 33 |
+| `complete` | 172 |
 
 ## DATA
 
@@ -426,14 +426,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-UI-001` | A push-button control acts only when released inside | supported | complete | None | None | implemented | None |
 | `RULE-UI-002` | Routing a press on the main console | supported | complete | None | None | implemented | None |
-| `RULE-UI-003` | Panels slide in from the right and out to the right | supported | partial | None | `DEV-UI-001` | supported | The slide-in follows the benchmark step; the slide-out is not animated (deviation). |
+| `RULE-UI-003` | Panels slide in from the right and out to the right | supported | partial | None | `DEV-UI-001` | supported | The slide-in follows the rule's step and copy sequence at a fixed benchmark of 84 copies a second, and only panels slide; the slide-out is not animated (deviation). The panel moves with the whole screen where the original reveals only its left columns up to x 448, and the machine is not measured. |
 | `RULE-UI-004` | Drawing numbers in fixed glyph cells | supported | complete | None | None | implemented | None |
-| `RULE-UI-005` | Lengths of the site progress and Force meters | supported | partial | None | None | supported | Detailed-sector meters are drawn; whether their lengths use the same integer arithmetic was not checked. |
-| `RULE-UI-006` | Choosing a sector's gang-status marker | supported | partial | None | None | supported | Status art is drawn for every active-gang sector; the frame precedence was not checked against the rule. |
+| `RULE-UI-005` | Lengths of the site progress and Force meters | supported | complete | None | None | implemented | Site meters truncate progress * 100 / Resistance (100 at Resistance 0) and Force meters are Force * 6 pixels, checked by SectorMeterLengthTests. |
+| `RULE-UI-006` | Choosing a sector's gang-status marker | supported | partial | None | None | supported | Frames, and the one saved cell that loses frame 8, follow the rule. Enemy visibility is computed live where the original uses the snapshot taken when planning starts. |
 | `RULE-UI-007` | The pointer shape | supported | partial | None | None | supported | The framework's standard pointer is used; the wait cursor during blocking work is not reproduced. |
 | `RULE-UI-008` | The presentation timer | supported | partial | None | None | supported | The rebuild uses its own fixed update rate; the 166 ms tick is not a separate clock. |
 | `RULE-UI-009` | The texts of the Game Information panel | supported | partial | None | `DEV-AI-003` | supported | Game Information appends the AI policy label after Mentality (deviation); the other fields follow the original. |
-| `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | partial | None | None | supported | Which gangs the roster and card lists include was not checked against the rule. |
+| `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | complete | None | None | implemented | The cards list the viewed player's visible gangs and Gangs in Sector the active player's gangs, both in roster slot order, checked by SectorOpponentGangsTests and GangInformationRosterTests. |
 | `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | Income for all and Support and Cash for the owner are shown. |
 | `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | `DEV-UI-002` | implemented | The rebuild also draws the pylons on the detailed-sector minimap (deviation). |
 | `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | missing | None | None | supported | Not yet compared with the rebuild. |
