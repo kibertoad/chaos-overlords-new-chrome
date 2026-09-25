@@ -115,6 +115,44 @@ public sealed class EventReviewProgressTests
         Assert.Equal(MatchLimits.LastTurnReportsPerPlayer - 1, projected[^1].Sequence);
     }
 
+    // RULE-EVENT-006, RULE-EVENT-005: each completed site records its own report, so two sites of
+    // one sector completed in one resolution give two pages. Every Control participant of the
+    // winner has a result, and the sector gives one report.
+    [Fact]
+    public void TwoSitesCompletedInOneSectorGiveTwoReportsAndControlGivesOne()
+    {
+        const int turn = 4;
+        const int sector = 5;
+        GameEvent Resolved(long sequence, int gang, GangAction action, CommandTarget target,
+            int previous, int result) =>
+            new(sequence, turn, TurnPhase.Execution, ExecutionPhase.Instant,
+                GameEventKind.CommandResolved, new PlayerId(0), new GangId(gang), action, target,
+                Resolution: new CommandResolutionDetails(
+                    CommandResolutionCode.Resolved, [], 1, previous, result));
+        GameEvent[] events =
+        [
+            Resolved(0, 10, GangAction.Influence, CommandTarget.Site(sector * 3), 2, 0),
+            Resolved(1, 11, GangAction.Influence, CommandTarget.Site(sector * 3 + 2), 3, 0),
+            Resolved(2, 12, GangAction.Influence, CommandTarget.Site(sector * 3 + 2), 0, 0),
+            Resolved(3, 10, GangAction.Control, CommandTarget.None, 1, 0),
+            Resolved(4, 11, GangAction.Control, CommandTarget.None, 1, 0)
+        ];
+        var reports = events.Select(gameEvent => new GameNotification(
+                gameEvent.Sequence, turn, TurnPhase.Execution, gameEvent.ExecutionPhase,
+                gameEvent.Action == GangAction.Control
+                    ? GameNotificationKind.Control
+                    : GameNotificationKind.Influence,
+                gameEvent.Gang, sector, gameEvent.Sequence))
+            .ToArray();
+
+        var projected = LastTurnEventProjection.Select(reports, events, completedTurn: turn);
+
+        Assert.Equal(new long[] { 0, 1, 3 }, projected.Select(report => report.Sequence));
+        Assert.Equal(new int?[] { sector * 3, sector * 3 + 2 },
+            projected.Take(2).Select(report => LastTurnEventPresentation.InfluenceSiteId(
+                report, events[report.RelatedEventSequence!.Value])));
+    }
+
     [Theory]
     [InlineData(GangAction.Bribe, CommandResolutionCode.TargetEvaded)]
     [InlineData(GangAction.Equip, CommandResolutionCode.ItemUnavailable)]

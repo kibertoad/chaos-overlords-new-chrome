@@ -220,6 +220,7 @@ public static partial class CommandResolver
         }
         foreach (var outcome in policeOutcomes.Where(outcome => outcome.Detected))
             AddDamage(incomingDamage, outcome.Target.Id, outcome.Successes);
+        RecordFirstCombatRecord(state, snapshots, outcomes, policeOutcomes);
 
         foreach (var (gangId, damage) in incomingDamage)
         {
@@ -297,6 +298,26 @@ public static partial class CommandResolver
         return new CombatPhaseResolution(results, policeResults);
     }
 
+    /// <summary>
+    /// RULE-COMBAT-002 writes byte 0 of the combat record of every gang that fought: an attacker,
+    /// an attack's target (evaded or not) or a gang the police found. Only the first record,
+    /// player 0's roster slot 0, is kept, because the computer players read its byte as the owner
+    /// of sector index 64 (RULE-AI-005, RULE-AI-013, FMT-STATE-003).
+    /// </summary>
+    private static void RecordFirstCombatRecord(
+        MatchState state,
+        IReadOnlyDictionary<GangId, CombatSnapshot> snapshots,
+        IReadOnlyList<CombatOutcome> outcomes,
+        IReadOnlyList<PoliceCombatOutcome> policeOutcomes)
+    {
+        if (state.FindPlayer(new PlayerId(0)) is not { Gangs.Count: > 0 } firstPlayer) return;
+        var gang = firstPlayer.Gangs[0].Id;
+        var fought = outcomes.Any(outcome => outcome.Attacker.Id == gang || outcome.Target.Id == gang)
+            || policeOutcomes.Any(outcome => outcome.Detected && outcome.Target.Id == gang);
+        if (fought)
+            state.AiPlanning.RecordFirstCombatRecordDefinition(snapshots[gang].Details.DefinitionId);
+    }
+
     private static PoliceCombatOutcome RollPoliceAttack(MatchState state, CombatSnapshot target)
     {
         var detectionChance = ManualRules.PoliceDetectionPercent(
@@ -365,7 +386,7 @@ public static partial class CommandResolver
             EffectiveStatisticsCalculator.ForGang(state, gang),
             gang.WeaponItemId is { } weapon ? state.Definitions.Items[weapon].Type : null,
             gang.WeaponItemId,
-            CombatantDetails.Of(gang));
+            CombatantDetails.Of(gang, GangSlot(state, gang.Owner, gang.Id)));
     }
 
     private sealed record CombatOutcome(

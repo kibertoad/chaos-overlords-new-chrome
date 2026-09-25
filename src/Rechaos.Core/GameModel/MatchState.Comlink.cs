@@ -20,6 +20,21 @@ public sealed partial class MatchState
     public bool MarkComlinkRead(PlayerId player, long sequence) =>
         GetComlinkInbox(player).MarkRead(sequence);
 
+    /// <summary>
+    /// RULE-COMLINK-004, FMT-STATE-005: the original keeps no messages in its save and empties
+    /// every inbox when a match is entered, so a loaded match starts with none (FND-COMLINK-006,
+    /// FND-SEARCH-005). A local load calls this. An online match never does: its clients rebuild
+    /// the state from the server on every resume, and Comlink cannot be opened online, so its
+    /// inboxes stay empty anyway.
+    /// </summary>
+    /// <returns>Whether any inbox held a message.</returns>
+    public bool EmptyComlinkInboxes()
+    {
+        var changed = false;
+        foreach (var inbox in _comlinkInboxes.Values) changed |= inbox.Clear();
+        return changed;
+    }
+
     private ComlinkSendResult ValidateComlinkMessage(
         PlayerId sender,
         IReadOnlyList<PlayerId> recipients,

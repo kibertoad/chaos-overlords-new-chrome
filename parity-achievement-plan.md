@@ -36,18 +36,10 @@ DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay
 
 ## Step 9: Remaining rule details
 
-- Fix the rule differences docs/STATE-MAPPING.md found, verifying each against the spec first:
-  - RULE-TURN-004, RULE-HEAL-001: a recurring Heal stays until the next turn start's Force test.
-  - RULE-UPKEEP-001: after a Control takeover the new owner is paid the old yield once.
-  - RULE-SITE-001, RULE-CHAOS-002: the headquarters' +2 Tolerance applies in a neutral sector.
-  - RULE-AI-005, RULE-AI-026: the computer's local tech cap ignores who owns the sector.
-  - RULE-POLICE-003, RULE-SETUP-005: the permanent crackdown value 100 never counts down.
-  - RULE-AI-005, RULE-AI-013: record 0's `definition` as the owner the computer reads at index 64.
-  - RULE-COMBAT-004: `force_start` of an attacker killed by a retaliation larger than its Force.
-  - RULE-COMLINK-004: every inbox is emptied when a match is entered.
-  - RULE-EVENT-005, RULE-EVENT-006: one Influence report per completed site.
-  - RULE-AI-010: reverting a surplus hunter keeps a `needs_family` flag set earlier in the pass.
-  - FMT-STATE-008: compare the gang entries with RULE-COMBAT-004.
+- The in-memory layouts, what docs/STATE-MAPPING.md still leaves open: the Give and Sell mask
+  order (FMT-STATE-001), the signed-byte wrap of `crackdown_turns` past 127 (FMT-STATE-002), the
+  Comlink text padding (FMT-STATE-005, RULE-COMLINK-006) and the Last Turn report arguments
+  (FMT-STATE-006).
 
 ## Step 10: Screens
 

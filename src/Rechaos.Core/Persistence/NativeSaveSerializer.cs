@@ -14,7 +14,7 @@ public static class NativeSaveSerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
-    public const int CurrentFormatVersion = 33;
+    public const int CurrentFormatVersion = 34;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -207,7 +207,8 @@ public static class NativeSaveSerializer
                 savedPlanning.NeedsFamily
                     ?? throw new InvalidDataException("Native save AI family flags are missing."),
                 savedPlanning.RaiderMode
-                    ?? throw new InvalidDataException("Native save AI raider flags are missing."))
+                    ?? throw new InvalidDataException("Native save AI raider flags are missing."),
+                savedPlanning.FirstCombatRecordDefinition)
             : throw new InvalidDataException("Native save AI planning state is missing.");
         var runtime = new MatchRuntimeRestore(
             document.Runtime.Turn,
@@ -304,7 +305,8 @@ public static class NativeSaveSerializer
                 state.AiPlanning.CaptureFormationSectors(),
                 state.AiPlanning.CaptureCoverageSectors(),
                 state.AiPlanning.CaptureNeedsFamily(),
-                state.AiPlanning.CaptureRaiderMode()),
+                state.AiPlanning.CaptureRaiderMode(),
+                checked((byte)state.AiPlanning.FirstCombatRecordDefinition)),
             state.Players.Select(player => new PlayerComlinkDocument(
                 player.Id.Value,
                 state.ComlinkFor(player.Id).NextSequence,
@@ -390,7 +392,8 @@ public static class NativeSaveSerializer
         sector.CrackdownHistory.ToArray(),
         Chaos: null,
         BaseTolerance: sector.BaseTolerance,
-        Support: sector.Support);
+        Support: sector.Support,
+        CashYield: sector.CashYield);
 
     private static MatchSectorState RestoreSector(SectorDocument sector) => new(
         sector.Id,
@@ -412,7 +415,10 @@ public static class NativeSaveSerializer
         sector.BaseTolerance
             ?? throw new InvalidDataException("Native save base Tolerance is missing."),
         sector.Support
-            ?? throw new InvalidDataException("Native save sector Support is missing."));
+            ?? throw new InvalidDataException("Native save sector Support is missing."),
+        // FMT-STATE-002 `cash_yield`. A save without it is filled in from the sites when the match
+        // is built, which gives the value of the last rebuild at every planning boundary.
+        sector.CashYield);
 
     /// <summary>
     /// Copies <paramref name="source"/> into memory and rewinds the copy, throwing
@@ -575,7 +581,8 @@ internal sealed record SectorDocument(
     IReadOnlyList<int>? CrackdownHistory = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Chaos = null,
     int? BaseTolerance = null,
-    int? Support = null);
+    int? Support = null,
+    int? CashYield = null);
 
 internal sealed record SiteDocument(int Slot, short DefinitionId, int Resistance, int? InfluencedBy);
 
@@ -618,7 +625,8 @@ internal sealed record AiPlanningDocument(
     IReadOnlyList<short>? FormationSectors = null,
     IReadOnlyList<short>? CoverageSectors = null,
     IReadOnlyList<bool>? NeedsFamily = null,
-    IReadOnlyList<bool>? RaiderMode = null);
+    IReadOnlyList<bool>? RaiderMode = null,
+    byte FirstCombatRecordDefinition = 0);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,

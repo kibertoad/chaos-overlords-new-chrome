@@ -438,8 +438,10 @@ The correction applies under the Original AI policy as well. Decided 2026-09-17.
   longer pay for is refused when it resolves (RULE-EQUIP-001), and an Influence in a sector the
   player does not control rolls with no owner test (RULE-INFLUENCE-001). In 21 computer-only
   matches of 26 turns those three kinds came to 478 orders, and no other planned action a human
-  could not order was seen. The gang's planning history is the same; its resolved action can
-  differ.
+  could not order was seen. A fourth kind follows from `local_tech_cap` reading the research
+  level of a sector whoever owns it (RULE-AI-026): a Research above the Tech limit the Research
+  list allows there, which the original resolves because RULE-RESEARCH-001 tests no Tech Level.
+  The gang's planning history is the same; its resolved action can differ.
 - Setting: None
 - Default: mandatory
 - Justification: A computer player's gang is held to the same legal orders as a human's, so it

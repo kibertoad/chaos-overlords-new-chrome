@@ -50,6 +50,9 @@ public sealed record CommandResolutionDetails(
 /// where the first hire its owner resolves reuses the slot and its id stops resolving through
 /// <see cref="MatchState.FindGang"/>. The event is then the only place left that knows who fought,
 /// so the combat reports read the retired gang from here rather than dropping the fight.
+/// <see cref="Force"/> is the <c>force_start</c> and <see cref="RosterSlot"/> the roster slot of
+/// the gang's combat record (FMT-STATE-003), which Detailed Combat reads (RULE-COMBAT-004); both
+/// are null in an event recorded before they were kept.
 /// </remarks>
 public sealed record CombatantDetails(
     PlayerId Owner,
@@ -57,7 +60,9 @@ public sealed record CombatantDetails(
     int SectorId,
     short? WeaponItemId,
     short? ArmorItemId,
-    short? MiscellaneousItemId)
+    short? MiscellaneousItemId,
+    int? Force = null,
+    int? RosterSlot = null)
 {
     public static CombatantDetails Of(MatchGangState gang)
     {
@@ -80,6 +85,10 @@ public sealed record CombatantDetails(
         gang.StoredStatistics = EffectiveStatisticsCalculator.Rebuilt(state, gang);
         return gang;
     }
+
+    /// <summary>The gang as it enters the combat phase, with its Force and roster slot.</summary>
+    public static CombatantDetails Of(MatchGangState gang, int rosterSlot) =>
+        Of(gang) with { Force = gang.Force, RosterSlot = rosterSlot };
 }
 
 public sealed record EconomyResolutionDetails(

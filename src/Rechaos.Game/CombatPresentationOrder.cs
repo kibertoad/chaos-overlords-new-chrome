@@ -16,7 +16,9 @@ public readonly record struct PresentedCombatEvent(GameEvent Event, bool HandsOf
 /// <remarks>
 /// The original walks only the viewer's gangs that fought, by sector and then by the slot each
 /// gang took in its sector's combat table. The resolver hands those slots out in roster order, so
-/// the roster order within a sector is the slot order. For each gang it plays the gang's own
+/// the roster order within a sector is the slot order: the slot the gang held when it fought, as
+/// the event records it, since a hire before the presentation can reuse the slot of a gang the
+/// fight wiped out (FMT-STATE-008). For each gang it plays the gang's own
 /// attack, then its target's attack on it when the two attacked each other, then every other
 /// attack on it in player and roster order (the event order), then the police.
 /// </remarks>
@@ -32,15 +34,22 @@ public static class CombatPresentationOrder
         ArgumentNullException.ThrowIfNull(phase);
 
         var focalSectors = new Dictionary<GangId, int>();
+        var recordedSlots = new Dictionary<GangId, int>();
         foreach (var gameEvent in phase)
-            foreach (var (gang, owner, sector) in Combatants(state, gameEvent))
-                if (owner == viewer) focalSectors.TryAdd(gang, sector);
+            foreach (var (gang, owner, sector, slot) in Combatants(state, gameEvent))
+                if (owner == viewer)
+                {
+                    focalSectors.TryAdd(gang, sector);
+                    if (slot is { } recorded) recordedSlots.TryAdd(gang, recorded);
+                }
 
         var roster = state.FindPlayer(viewer)?.Gangs ?? [];
-        // A gang the fight wiped out can have lost its roster slot to a hire in the same turn; it
-        // has no slot left to order by, so it follows the gangs that still hold theirs.
+        // An event recorded before the slot was kept leaves only the current roster to go by. A gang
+        // the fight wiped out can then have lost its slot to a hire in the same turn, so it follows
+        // the gangs that still hold theirs.
         int RosterSlot(GangId gang)
         {
+            if (recordedSlots.TryGetValue(gang, out var recorded)) return recorded;
             for (var index = 0; index < roster.Count; index++)
                 if (roster[index].Id == gang) return index;
             return int.MaxValue;
@@ -81,28 +90,31 @@ public static class CombatPresentationOrder
         return presented;
     }
 
-    /// <summary>The gangs <paramref name="gameEvent"/> puts in the fight, with owner and sector.</summary>
-    private static IEnumerable<(GangId Gang, PlayerId Owner, int Sector)> Combatants(
+    /// <summary>
+    /// The gangs <paramref name="gameEvent"/> puts in the fight, with owner, sector and the roster
+    /// slot the event recorded.
+    /// </summary>
+    private static IEnumerable<(GangId Gang, PlayerId Owner, int Sector, int? Slot)> Combatants(
         MatchState state,
         GameEvent gameEvent)
     {
         if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
         {
             if (gameEvent.Gang is { } target && gameEvent.PoliceAttack is { } police)
-                yield return (target, gameEvent.Player, police.SectorId);
+                yield return (target, gameEvent.Player, police.SectorId, police.Target?.RosterSlot);
             yield break;
         }
         if (!IsGangAttack(gameEvent) || gameEvent.Gang is not { } attacker) yield break;
         var resolution = gameEvent.Resolution;
         if (resolution?.Attacker is { } attackerDetails)
-            yield return (attacker, attackerDetails.Owner, attackerDetails.SectorId);
+            yield return (attacker, attackerDetails.Owner, attackerDetails.SectorId, attackerDetails.RosterSlot);
         else if (state.FindCombatant(gameEvent, attacker) is { } attackingGang)
-            yield return (attacker, attackingGang.Owner, attackingGang.SectorId);
+            yield return (attacker, attackingGang.Owner, attackingGang.SectorId, null);
         var defender = TargetGang(gameEvent);
         if (resolution?.Defender is { } defenderDetails)
-            yield return (defender, defenderDetails.Owner, defenderDetails.SectorId);
+            yield return (defender, defenderDetails.Owner, defenderDetails.SectorId, defenderDetails.RosterSlot);
         else if (state.FindCombatant(gameEvent, defender) is { } defendingGang)
-            yield return (defender, defendingGang.Owner, defendingGang.SectorId);
+            yield return (defender, defendingGang.Owner, defendingGang.SectorId, null);
     }
 
     private static bool IsGangAttack(GameEvent gameEvent) =>
