@@ -51,15 +51,14 @@ needs static reads or captures of the original:
 - SCR-EVENT-001: the captions come from `Chaos Overlords.exe#STRING/33` to `STRING/44`, and the
   rebuild has no loader for the executable's string resources; the extractor needs one, and the
   panel then draws them.
-- SCR-GANG-001's half-tone pattern (its PLACEHOLDER), SCR-GIVE-001's list background and dimming
-  pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's police portrait and
-  header strips.
 
 ## Step 12: Close the research plans
 
 - `static_validation_plan.md`: the remaining items, most of which need a run of the original
   (the Force track y of SCR-COMBAT-002, the BUG-AI-006 threshold, CreatePalette in 8-bit, the save
-  dialog's extension, the option value longer than four bytes).
+  dialog's extension, the option value longer than four bytes, the black pen a new memory
+  device context draws the pattern fills' edges with (FND-GFX-006), and what the areas of
+  `Px00300` that FND-COMBAT-014 reads show).
 - `manual_validation_plan.md`: its items become `EXP-` entries with experiment fixtures. A result
   that contradicts a rule reopens the matching step above.
 

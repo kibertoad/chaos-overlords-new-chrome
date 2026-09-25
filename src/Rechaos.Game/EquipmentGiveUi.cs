@@ -8,6 +8,14 @@ namespace Rechaos.Game;
 public static class EquipmentGiveLayout
 {
     public const int RecipientCount = 5;
+
+    /// <summary>
+    /// SCR-GIVE-001, FND-GIVE-003: the list builder sets the pattern from the grey 48,000, which
+    /// selects bitmap 146, and draws black through it over an ineligible card, starting the
+    /// pattern at the card's corner. It fills no background: the list shows the panel image
+    /// wherever no card is drawn.
+    /// </summary>
+    public static int IneligibleCardPattern => OriginalPatternMask.ForGrey(48000);
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
@@ -403,8 +411,8 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// A recipient card: the card art, the half-size portrait, the Force meter and the three
-    /// item icons, dimmed by a black pattern when the gang type's Tech Level is below the
-    /// selected items' (SCR-GIVE-001, FND-GIVE-002).
+    /// item icons, dimmed by black through bitmap 146 when the gang type's Tech Level is below
+    /// the selected items' (SCR-GIVE-001, FND-GIVE-002, FND-GIVE-003).
     /// </summary>
     private void DrawGiveRecipient(SpriteBatch batch, MatchState state, int slot, MatchGangState recipient)
     {
@@ -430,8 +438,13 @@ public sealed partial class ChaosGame
         if (!GiveRecipientEligible(slot))
         {
             var card = EquipmentGiveLayout.RecipientHit(slot);
-            _giveRecipientDimOverlay ??= LastTurnEventPresentation.CreatePatternOverlay(
-                GraphicsDevice, card.Width, card.Height);
+            if (_giveRecipientDimOverlay is null)
+            {
+                _giveRecipientDimOverlay = new Texture2D(GraphicsDevice, card.Width, card.Height);
+                _giveRecipientDimOverlay.SetData(OriginalPatternMask.ShadedRectangle(
+                    EquipmentGiveLayout.IneligibleCardPattern, card.Width, card.Height,
+                    Color.Black, Color.Black));
+            }
             batch.Draw(_giveRecipientDimOverlay, card, Color.White);
         }
     }

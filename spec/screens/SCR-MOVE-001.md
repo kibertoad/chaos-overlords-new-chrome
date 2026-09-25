@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-MOVE-002, FND-MOVE-004, FND-MOVE-005, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-MOVE-002, FND-MOVE-004, FND-MOVE-005, FND-MOVE-007, FND-UI-019, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-MOVE-001, RULE-UI-003]
@@ -25,7 +25,7 @@ related: [RULE-MOVE-001, RULE-UI-003]
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Neighborhood cell in column `c` and row `r`, `c` and `r` from 0 to 2 | `(236 + 54 * c, 150 + 52 * r, 54, 52)` | `c + 3 * r` is not 4, and the cell's entry in the nine-byte table at `0x004ABC40` is nonzero | Chooses the sector at offset -9, -8, -7, -1, +1, +7, +8 or +9 from the selected sector, in row-major order, as the destination; a double-click does the same | FND-MOVE-002, FND-MOVE-004 |
+| Neighborhood cell in column `c` and row `r`, `c` and `r` from 0 to 2 | `(236 + 54 * c, 150 + 52 * r, 54, 52)` | `c + 3 * r` is not 4, and the cell's entry in the nine-byte table at `0x004ABC40` is nonzero: the neighbour lies on the map and its owner byte is not -2, a value no instruction stores. A neighbour that already holds six of the player's gangs is enabled | Chooses the sector at offset -9, -8, -7, -1, +1, +7, +8 or +9 from the selected sector, in row-major order, as the destination; a double-click does the same | FND-MOVE-002, FND-MOVE-004, FND-MOVE-007 |
 | Center cell | `(290, 202, 54, 52)` | Never | None | FND-MOVE-002 |
 | Confirm face | `(137, 293, 49, 22)` | A valid destination is chosen | Stores the Move order, carried out later by RULE-MOVE-001, and closes the panel when the button is released inside; refused with slot 4 otherwise | FND-MOVE-002, FND-MOVE-004 |
 | Cancel face | `(137, 261, 49, 22)` | Always | Closes the panel without an order when the button is released inside | FND-MOVE-002, FND-MOVE-004 |
@@ -35,8 +35,8 @@ related: [RULE-MOVE-001, RULE-UI-003]
 
 | Key | Enabled when | Effect | Evidence |
 |---|---|---|---|
-| `Enter` or `Execute` (virtual key `0x2B`) | A valid destination is chosen | As the Confirm face; refused with slot 4 otherwise | FND-MOVE-004 |
-| `Escape` | Always | As the Cancel face | FND-MOVE-004 |
+| `Enter` or `Execute` (virtual key `0x2B`) | A valid destination is chosen | Draws the pressed confirm face for one tick with `fn_00418CCC` (FND-UI-019), then as the Confirm face; refused with slot 4 otherwise | FND-MOVE-004, FND-MOVE-007 |
+| `Escape` | Always | Draws the pressed Cancel face for one tick with `fn_00418CCC`, then as the Cancel face | FND-MOVE-004, FND-MOVE-007 |
 
 ## Other input
 
@@ -49,6 +49,7 @@ None.
 | Panel opening | General effect slot 0, as RULE-UI-003 gives | The panel slides in, with Slide Panels on | FND-OPTIONS-001 |
 | Panel closing | General effect slot 1, as RULE-UI-003 gives | The panel slides out, with Slide Panels on | FND-OPTIONS-001 |
 | Refused | General effect slot 4 | A press outside the panel, or a confirm with no destination | FND-MOVE-004 |
+| Key face pressed | General effect slot 3 | `Enter`, `Execute` or `Escape` draws a pressed face | FND-MOVE-007, FND-UI-019 |
 
 ## States
 
@@ -69,12 +70,9 @@ None known.
 
 ## Open questions
 
-- Which function fills the nine-byte table at `0x004ABC40` that disables cells.
 - The destination is the selected sector plus the offset (FND-MOVE-004); when
   the panel is opened from `fn_0041462F` rather than the gang's command box,
   whether the selected sector is always the gang's own has not been checked.
-- Whether the panel refuses a sector that already holds six of the player's
-  gangs, or leaves that to RULE-MOVE-002.
 - What the eight arrow cells look like has not been checked against the
   image (FND-MOVE-005).
 - Which of `DATA/PX08/PX05006` and `DATA/PX16/PX05006` is drawn depends on the

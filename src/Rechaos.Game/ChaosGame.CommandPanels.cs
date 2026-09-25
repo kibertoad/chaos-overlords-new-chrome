@@ -98,9 +98,10 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Escape presses Cancel on these panels instead of opening the game menu. The Equip, Give
-    /// and Sell handlers draw the Cancel face pressed for one tick before they close
-    /// (fn_00418CCC; FND-EQUIP-010, FND-GIVE-001, FND-SELL-001, RULE-TIMER-004).
+    /// Escape presses Cancel on these panels instead of opening the game menu. The Equip,
+    /// Influence, Move, Research, Give and Sell handlers draw the Cancel face pressed for one
+    /// tick before they close (fn_00418CCC; FND-EQUIP-010, FND-INFLUENCE-003, FND-MOVE-007,
+    /// FND-RESEARCH-005, FND-GIVE-001, FND-SELL-001, RULE-TIMER-004).
     /// </summary>
     private void CancelCommandPanelWithEscape()
     {
@@ -114,9 +115,10 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// Enter or Execute on a panel with the shared faces: a confirm the panel cannot take is
-    /// refused with slot 4 at once; otherwise the Equip, Influence, Give and Sell handlers press
-    /// the confirm face for one tick before the order is written (fn_00418CCC; FND-EQUIP-010,
-    /// FND-INFLUENCE-003, FND-GIVE-001, FND-SELL-001, RULE-TIMER-004).
+    /// refused with slot 4 at once; otherwise the Equip, Influence, Move, Research, Give and Sell
+    /// handlers press the confirm face for one tick before the order is written (fn_00418CCC;
+    /// FND-EQUIP-010, FND-INFLUENCE-003, FND-MOVE-007, FND-RESEARCH-005, FND-GIVE-001,
+    /// FND-SELL-001, RULE-TIMER-004).
     /// </summary>
     private void ConfirmCommandPanelByKey()
     {
@@ -137,14 +139,15 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// The panels whose findings record the press helper fn_00418CCC on their keys. The Move and
-    /// Research handlers are not among them, so their keys act at once.
+    /// The panels whose findings record the press helper fn_00418CCC on their keys: every
+    /// command panel with the shared Cancel and confirm faces.
     /// </summary>
     private bool PressesCommandPanelKeyFaces() => _screens.Current switch
     {
         ClientScreen.Give or ClientScreen.Sell => true,
         ClientScreen.Commands => _choosingCommandTarget && _commandTargetOptions.Count > 0
-            && _commandTargetOptions[0].Action is GangAction.Equip or GangAction.Influence,
+            && _commandTargetOptions[0].Action is GangAction.Equip or GangAction.Influence
+                or GangAction.Move or GangAction.Research,
         _ => false
     };
 

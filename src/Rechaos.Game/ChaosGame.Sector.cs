@@ -195,6 +195,9 @@ public sealed partial class ChaosGame
             if (_sitePortraits is not null)
                 batch.Draw(_sitePortraits, portrait,
                     OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
+            // FND-UI-037: the site flash lightens the image; the frame and meter go on top unlit.
+            if (_tickedPresentation.Area == portrait)
+                DrawFlashLightening(batch, TickedPresentationKind.SiteFlash);
             DrawBorder(batch, pixel, portrait,
                 controlOwner is { } influencedBy ? PlayerColors[influencedBy.Value] : Color.Gray, 1);
             var control = SectorDetailLayout.SiteControlBar(site.Slot);
@@ -650,7 +653,6 @@ public sealed partial class ChaosGame
             if (SectorDetailLayout.SectorAt(_cursor, column, row) is not { } sectorId)
             {
                 batch.Draw(pixel, destination, Color.Black);
-                DrawBorder(batch, pixel, destination, new Color(0, 110, 30), 1);
                 continue;
             }
             var sector = state.Sectors[sectorId];
@@ -664,6 +666,31 @@ public sealed partial class ChaosGame
                     state.Setup.Scenario, sectorId, sector.IsImportant))
                 batch.Draw(_uiKeyedSprites, destination,
                     OriginalSpriteLayout.ObjectiveSectorPylons, Color.White);
+        }
+
+        var playerId = ViewingPlayer(state);
+        // RULE-UI-006: the 3-by-3 display is copied from the prepared city map, so it shows the
+        // markers the full map draw left behind.
+        var markerFrames = GangStatusMarkerPresentation.MapFrames(
+            state, playerId, _gangSight.For(state, playerId));
+        for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
+            if (markerFrames[sectorId] >= 0
+                && SectorDetailLayout.Marker(_cursor, sectorId) is { } marker)
+                DrawGangStatusMarker(batch, marker, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]));
+
+        // FND-UI-037: the cell flash lightens the copied display, markers included, and the frame
+        // and edge labels are drawn over it unlit.
+        DrawFlashLightening(batch, TickedPresentationKind.SectorDisplayCellFlash);
+
+        for (var row = 0; row < SectorDetailLayout.Rows; row++)
+        for (var column = 0; column < SectorDetailLayout.Columns; column++)
+        {
+            var destination = SectorDetailLayout.Cell(column, row);
+            if (SectorDetailLayout.SectorAt(_cursor, column, row) is not { } sectorId)
+            {
+                DrawBorder(batch, pixel, destination, new Color(0, 110, 30), 1);
+                continue;
+            }
             DrawBorder(batch, pixel, destination,
                 column == 1 && row == 1 ? Color.White : new Color(0, 150, 45),
                 column == 1 && row == 1 ? 2 : 1);
@@ -676,16 +703,6 @@ public sealed partial class ChaosGame
                     new Point(destination.X + 1, destination.Center.Y),
                     (sectorId / 8 + 1).ToString(), top: false);
         }
-
-        var playerId = ViewingPlayer(state);
-        // RULE-UI-006: the 3-by-3 display is copied from the prepared city map, so it shows the
-        // markers the full map draw left behind.
-        var markerFrames = GangStatusMarkerPresentation.MapFrames(
-            state, playerId, _gangSight.For(state, playerId));
-        for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
-            if (markerFrames[sectorId] >= 0
-                && SectorDetailLayout.Marker(_cursor, sectorId) is { } marker)
-                DrawGangStatusMarker(batch, marker, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]));
     }
 
     private void DrawGangStatusMarker(SpriteBatch batch, Rectangle destination, Rectangle source)

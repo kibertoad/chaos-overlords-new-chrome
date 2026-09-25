@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-GANG-002, FND-GANG-004, FND-GANG-009, FND-GANG-010, FND-ATTACK-004, FND-GIVE-001, FND-RESEARCH-004, FND-SELL-001, FND-HIRE-008, FND-OPTIONS-001, FND-EXE-004]
+evidence: [FND-GANG-002, FND-GANG-004, FND-GANG-009, FND-GANG-010, FND-GANG-011, FND-GFX-006, FND-ATTACK-004, FND-GIVE-001, FND-RESEARCH-004, FND-SELL-001, FND-HIRE-008, FND-OPTIONS-001, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-004, SCR-ATTACK-001, SCR-EQUIP-001, SCR-RESEARCH-001, SCR-SELL-001, SCR-GIVE-001, SCR-GANG-002]
@@ -26,7 +26,7 @@ instead (FND-GANG-009, FND-HIRE-008).
 | Description | The font of `fn_00413FD5` | The `description` of the gang's definition, in three rows of 30 characters | Starting at `(228, 169)`, `(228, 178)` and `(228, 187)` | While the panel is open | FND-GANG-002, FND-GANG-010 |
 | Force and left column | The digits of `DATA/PX16/PX00129` | Force on row 216 (two question marks in the font of `fn_00413FD5` when `force` is 0), Combat and Defense on rows 243 and 252, and Chaos, Control, Heal, Influence and Research on rows 270, 279, 288, 297 and 306, each drawn by `number_cells` (RULE-UI-004) in two glyph cells | Fields starting at x = 300 | While the panel is open | FND-GANG-002, FND-GANG-004, FND-GANG-009, FND-GANG-010 |
 | Upkeep, Tech Level and right column | The digits of `DATA/PX16/PX00129` | The definition's `upkeep`, negated, on row 216, its `tech_level` on row 225, Stealth and Detect on rows 243 and 252, and Strength, Blade, Ranged, Fighting and Martial Arts on rows 270 to 306, each drawn by `number_cells` (RULE-UI-004) in two glyph cells | Fields starting at x = 396 | While the panel is open | FND-GANG-002, FND-GANG-004, FND-GANG-009, FND-GANG-010 |
-| Base values | The digits of `DATA/PX16/PX00129`, then black drawn through a pattern over them | The definition's own values of the fourteen statistics, dimmed | x 282 and x 378, on the rows of the effective values; the pattern covers `(282, 243)-(294, 261)`, `(378, 243)-(390, 261)`, `(282, 270)-(294, 315)` and `(378, 270)-(390, 315)` | While `pref_base_stats` is set | FND-GANG-009, FND-GANG-010 |
+| Base values | The digits of `DATA/PX16/PX00129`, then black drawn through bitmap 143 (rows `0x55` and `0xAA`), the pattern the grey 0x7FFF selects | The definition's own values of the fourteen statistics, with every other pixel black | x 282 and x 378, on the rows of the effective values; the pattern covers `(282, 243)-(294, 261)`, `(378, 243)-(390, 261)`, `(282, 270)-(294, 315)` and `(378, 270)-(390, 315)`, starting at each area's top-left corner, whose own pixel is black | While `pref_base_stats` is set | FND-GANG-009, FND-GANG-010, FND-GANG-011, FND-GFX-006 |
 
 ## Mouse input
 
@@ -70,7 +70,6 @@ None known.
 
 ## Open questions
 
-- The pattern that dims the base values has not been read (FND-GANG-010).
 - While open, the panel keeps the left 24 columns of the order panel it was
   opened from on screen at `(104, 124)` and redraws them on repaint
   (FND-GANG-010).

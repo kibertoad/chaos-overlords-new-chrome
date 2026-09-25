@@ -120,4 +120,21 @@ public sealed class EquipmentGiveUiTests
             new PlayerId(0), new GangId(0), new GangId(1), [(short)4, 4]);
         Assert.Null(deduplicated.TertiaryTarget);
     }
+
+    /// <summary>
+    /// SCR-GIVE-001, FND-GIVE-003: an ineligible card is covered with black through bitmap 146,
+    /// the pattern 48,000 selects, from the card's corner: a quarter of its pixels keep the card.
+    /// </summary>
+    [Fact]
+    public void IneligibleCardsAreDimmedThroughTheSparsePatternFromTheCardsCorner()
+    {
+        Assert.Equal(OriginalPatternMask.Sparse, EquipmentGiveLayout.IneligibleCardPattern);
+        var card = EquipmentGiveLayout.RecipientHit(0);
+        var pixels = OriginalPatternMask.ShadedRectangle(
+            EquipmentGiveLayout.IneligibleCardPattern, card.Width, card.Height, Color.Black, Color.Black);
+        Assert.Equal(Color.Transparent, pixels[0]);
+        Assert.Equal(Color.Black, pixels[1]);
+        Assert.Equal(Color.Transparent, pixels[card.Width + 2]);
+        Assert.Equal(Color.Black, pixels[card.Width]);
+    }
 }

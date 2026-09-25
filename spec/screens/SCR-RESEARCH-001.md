@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EQUIP-005, FND-RESEARCH-002, FND-RESEARCH-003, FND-RESEARCH-004, FND-EQUIP-009, FND-STATE-001, FND-AUDIO-011, FND-EXE-004, FND-PLATFORM-002]
+evidence: [FND-EQUIP-005, FND-RESEARCH-002, FND-RESEARCH-003, FND-RESEARCH-004, FND-RESEARCH-005, FND-UI-019, FND-EQUIP-009, FND-STATE-001, FND-AUDIO-011, FND-EXE-004, FND-PLATFORM-002]
 conflicting: []
 split_with: []
 related: [RULE-RESEARCH-001, RULE-SITE-001, SCR-GANG-001]
@@ -39,8 +39,8 @@ Rectangles are in the shared panel's own coordinates; the panel is at
 
 | Key | Enabled when | Effect | Evidence |
 |---|---|---|---|
-| Enter or Execute | The panel is open | With a row selected, as the confirmation control; otherwise plays the rejected sound | FND-RESEARCH-004 |
-| Escape | The panel is open | As the Cancel control | FND-RESEARCH-004 |
+| Enter or Execute | The panel is open | With a row selected, draws the pressed confirmation face for one tick with `fn_00418CCC` (FND-UI-019), then as the confirmation control; otherwise plays the rejected sound | FND-RESEARCH-004, FND-RESEARCH-005 |
+| Escape | The panel is open | Draws the pressed Cancel face for one tick with `fn_00418CCC`, then as the Cancel control | FND-RESEARCH-004, FND-RESEARCH-005 |
 
 ## Other input
 

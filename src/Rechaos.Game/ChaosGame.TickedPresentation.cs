@@ -53,13 +53,32 @@ public sealed partial class ChaosGame
             if (_uiSprites is not null) _batch.Draw(_uiSprites, area, source, Color.White);
             else _batch.Draw(_pixel, area, new Color(90, 90, 90));
             _batch.End();
-            return;
         }
-        // The findings record a lightened copy without its exact colours; an additive grey lifts
-        // every channel of the cell by the same amount.
-        _batch.Begin(blendState: BlendState.Additive, samplerState: SamplerState.PointClamp,
-            transformMatrix: VirtualInput.Transform(viewport));
-        _batch.Draw(_pixel, area, new Color(72, 72, 72));
-        _batch.End();
     }
+
+    /// <summary>
+    /// Draws the lightening of a running flash of <paramref name="kind"/> into the screen batch.
+    /// Each screen calls it after the image the flash copies and before the labels, frame and
+    /// meter, which FND-UI-037 draws over the lightened copy (RULE-TIMER-004).
+    /// </summary>
+    private void DrawFlashLightening(SpriteBatch batch, TickedPresentationKind kind)
+    {
+        if (_tickedPresentation.Source is not null || _tickedPresentation.Kind != kind
+            || !_tickedPresentation.Lit(_inputTime)) return;
+        // FND-UI-037: white through bitmap 143 from the lightened area's corner, every other pixel
+        // white, with the outline the scratch surface's black pen draws through the same pattern.
+        var lit = TickedPresentation.LitArea(kind, _tickedPresentation.Area);
+        var size = new Point(lit.Width, lit.Height);
+        if (!_flashOverlays.TryGetValue(size, out var overlay))
+        {
+            // The outline lies on the lightened area's own edges, so each size has its own fill.
+            overlay = new Texture2D(GraphicsDevice, lit.Width, lit.Height);
+            overlay.SetData(OriginalPatternMask.ShadedRectangle(
+                TickedPresentation.FlashPattern, lit.Width, lit.Height, Color.White, Color.Black));
+            _flashOverlays[size] = overlay;
+        }
+        batch.Draw(overlay, lit, Color.White);
+    }
+
+    private readonly Dictionary<Point, Texture2D> _flashOverlays = [];
 }

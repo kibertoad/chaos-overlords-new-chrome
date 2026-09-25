@@ -591,7 +591,6 @@ public sealed class UiNavigationTests
     [Fact]
     public void OriginalPortraitLayoutsCoverAllDefinitionSlots()
     {
-        Assert.Equal(new Rectangle(116, 0, 48, 64), OriginalSpriteLayout.PolicePatrolCar);
         Assert.Equal(new Rectangle(114, 299, 64, 64), OriginalSpriteLayout.HiredStamp);
         Assert.Equal(new Rectangle(178, 299, 64, 64), OriginalSpriteLayout.SnubbedStamp);
         Assert.Equal(new Rectangle(492, 67, 20, 20), OriginalSpriteLayout.AssignedGangStatus);
@@ -706,8 +705,24 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(327, 172, 64, 64), CombatPanelLayout.GangPortrait(true));
         Assert.Equal(new Rectangle(254, 254, 64, 64), CombatPanelLayout.Animation(false));
         Assert.Equal(new Rectangle(327, 254, 64, 64), CombatPanelLayout.Animation(true));
-        Assert.Equal(new Rectangle(262, 172, 48, 64), CombatPanelLayout.PolicePortrait(false));
-        Assert.Equal(new Rectangle(335, 172, 48, 64), CombatPanelLayout.PolicePortrait(true));
+        // FND-COMBAT-014: the header strips and the police areas of PX00300.
+        Assert.Equal(new Rectangle(205, 137, 18, 32), CombatPanelLayout.HeaderColor(false));
+        Assert.Equal(new Rectangle(328, 137, 18, 32), CombatPanelLayout.HeaderColor(true));
+        Assert.Equal(new Rectangle(223, 137, 32, 32), CombatPanelLayout.HeaderPortrait(false));
+        Assert.Equal(new Rectangle(346, 137, 32, 32), CombatPanelLayout.HeaderPortrait(true));
+        Assert.Equal(new Point(257, 138), CombatPanelLayout.HeaderName(false));
+        Assert.Equal(new Point(380, 138), CombatPanelLayout.HeaderName(true));
+        Assert.Equal(new Rectangle(257, 138, 60, 8), CombatPanelLayout.HeaderClear(false));
+        Assert.Equal(new Rectangle(326, 135, 116, 36), CombatPanelLayout.HeaderClear(true));
+        Assert.Equal(new Rectangle(326, 135, 116, 36), CombatPanelLayout.PoliceHeader);
+        Assert.Equal(new Rectangle(208, 0, 116, 36), CombatPanelLayout.PoliceHeaderSource);
+        Assert.Equal(new Rectangle(0, 0, 64, 64), CombatPanelLayout.PolicePortraitSource);
+        Assert.Equal(new Rectangle(64, 0, 48, 48), CombatPanelLayout.PoliceItemSource(0));
+        Assert.Equal(new Rectangle(112, 0, 48, 48), CombatPanelLayout.PoliceItemSource(1));
+        Assert.Equal(new Rectangle(160, 0, 48, 48), CombatPanelLayout.PoliceItemSource(2));
+        Assert.Equal(new Rectangle(393, 172, 48, 48), CombatPanelLayout.EquipmentItem(true, 0));
+        Assert.Equal(new Rectangle(393, 270, 48, 48), CombatPanelLayout.EquipmentItem(true, 2));
+        Assert.Equal(12, CombatAnimationRouting.DimmedFramesTick);
         Assert.Equal(new Rectangle(256, 240, 60, 3), CombatPanelLayout.ForceBar(false, 0));
         Assert.Equal(new Rectangle(256, 247, 60, 3), CombatPanelLayout.ForceBar(false, 1));
         Assert.Equal(new Rectangle(329, 240, 60, 3), CombatPanelLayout.ForceBar(true, 0));
