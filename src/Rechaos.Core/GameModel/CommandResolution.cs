@@ -156,7 +156,7 @@ public static partial class CommandResolver
         var outcomes = new List<CombatOutcome>(orderedCommands.Length);
         // Every Attack order rolls its own attack and retaliation, including two gangs that attack
         // each other: the original resolver has no branch that merges such a pair
-        // (RULE-COMBAT-002, FND-COMBAT-006).
+        // (RULE-ATTACK-001, FND-COMBAT-006).
         foreach (var queued in orderedCommands)
         {
             var attacker = snapshots[queued.Command.Gang];

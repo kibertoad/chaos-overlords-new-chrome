@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Regenerates the generated index blocks in docs/*.md, and checks that every relative link in
-// those documents, the root README, AGENTS.md and the rebuild's ledgers still resolves.
+// those documents, the root README, AGENTS.md, the rebuild's ledgers and spec/ still resolves.
 //
 // A block is delimited by two HTML comments:
 //
@@ -211,7 +211,13 @@ for (const path of documentPaths()) {
 const rootDocuments = ["README.md", "AGENTS.md", "PARITY.md", "DEVIATIONS.md", "static_validation_plan.md", "manual_validation_plan.md"]
   .map((name) => join(repoDir, name))
   .filter((path) => existsSync(path));
-const broken = brokenLinks([...documentPaths(), ...rootDocuments]);
+/** Every Markdown file under spec/, whose entries link to each other by relative path. */
+function specPaths(dir = join(repoDir, "spec")) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true }).sort((x, y) => x.name.localeCompare(y.name)).flatMap((entry) =>
+    entry.isDirectory() ? specPaths(join(dir, entry.name)) : entry.name.endsWith(".md") ? [join(dir, entry.name)] : []);
+}
+const broken = brokenLinks([...documentPaths(), ...rootDocuments, ...specPaths()]);
 for (const problem of broken) console.error(`broken link: ${problem}`);
 
 if (check && stale > 0) {

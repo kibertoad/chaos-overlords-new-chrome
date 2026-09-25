@@ -8,7 +8,8 @@
 //   node tools/check-spec.mjs --check    check, and fail when an index is stale
 //   node tools/check-spec.mjs --base <ref>
 //                                        also fail when an ID or area that exists at <ref>
-//                                        (default origin/main when it resolves) is gone
+//                                        is gone (default: where HEAD forked from
+//                                        origin/$GITHUB_BASE_REF or origin/main, when it resolves)
 //   node tools/check-spec.mjs --no-ksy   skip compiling the Kaitai definitions
 //   node tools/check-spec.mjs --glossary <file>
 //                                        also accept the terms of a draft glossary file
@@ -409,23 +410,8 @@ function checkResolves(file, ids, what) {
   for (const id of ids) if (!entries.has(id)) problem(file, `${what} cites ${id}, which does not exist`);
 }
 
-function evidenceFacts(e) {
-  // What the evidence of a claim covers for the first build.
-  const first = asList(e.meta.builds)[0];
-  let sources = 0;
-  let staticF = 0;
-  let dynamic = 0;
-  for (const id of asList(e.meta.evidence)) {
-    const ev = entries.get(id);
-    if (!ev) continue;
-    if (ev.kind === "SRC") sources++;
-    if (!["FND", "EXP"].includes(ev.kind)) continue;
-    if (!asList(ev.meta.builds).includes(first)) continue;
-    if (ev.kind === "EXP" || ev.meta.method === "dynamic") dynamic++;
-    else if (ev.meta.method === "static") staticF++;
-  }
-  return { sources, staticF, dynamic };
-}
+// What the evidence of a claim covers for the first build.
+const evidenceFacts = (e) => rowFacts(asList(e.meta.evidence), asList(e.meta.builds)[0]);
 
 function checkStatusCitations(file, status, facts, conflicting, label = "status") {
   if (status === "sourced" && facts.sources === 0) problem(file, `${label} sourced needs at least one source`);
@@ -744,8 +730,8 @@ for (const [id, e] of entries) {
   }
 }
 for (const [name, ids] of defined) {
-  const splits = new Set(ids.flatMap((x) => [x, ...asList(entries.get(x).meta.split_with)]));
-  if (ids.length > 1 && !ids.every((x) => splits.has(x) && asList(entries.get(ids[0]).meta.split_with).concat(ids[0]).includes(x))) problem(null, `${name} is defined by more than one rule: ${ids.join(", ")}`);
+  const splitGroup = asList(entries.get(ids[0]).meta.split_with).concat(ids[0]);
+  if (ids.length > 1 && !ids.every((x) => splitGroup.includes(x))) problem(null, `${name} is defined by more than one rule: ${ids.join(", ")}`);
   if (!glossary.has(name)) problem(join(specDir, "glossary.md"), `${name}, defined by ${ids[0]}, has no glossary entry`);
 }
 
@@ -1006,12 +992,24 @@ const parityRows = new Map();
 
 for (const [dev, d] of deviations) if (!d.dropped && !d.departs.some((x) => parityRows.has(x))) problem(join(repoDir, "DEVIATIONS.md"), `${dev} departs from no entry that has a parity row`);
 
+// The code, tests, tools and multiplayer workspace, walked and read once for the placeholder and
+// the implementation-reference checks. The cache is a property of the function because the
+// parity check calls it before a module-level variable declared here would be initialized.
+function codeFiles() {
+  if (codeFiles.cache) return codeFiles.cache;
+  const files = [];
+  for (const root of ["src", "tests", "tools", "multiplayer"]) walk(join(repoDir, root), (f) => {
+    if (/\.(cs|ts|mjs|js|ps1|fs|md|json)$/.test(f)) files.push({ root, file: f, text: readFileSync(f, "utf8") });
+  });
+  return (codeFiles.cache = files);
+}
+
 function collectPlaceholders() {
   const found = new Set();
-  for (const root of ["src", "tests", "tools"]) walk(join(repoDir, root), (f) => {
-    if (!/\.(cs|ts|mjs|js|ps1|fs)$/.test(f)) return;
-    for (const m of readFileSync(f, "utf8").matchAll(/PLACEHOLDER:\s*((?:FMT|RULE|SCR)-[A-Z0-9]+-\d+)/g)) found.add(m[1]);
-  });
+  for (const { root, file, text } of codeFiles()) {
+    if (root === "multiplayer" || !/\.(cs|ts|mjs|js|ps1|fs)$/.test(file)) continue;
+    for (const m of text.matchAll(/PLACEHOLDER:\s*((?:FMT|RULE|SCR)-[A-Z0-9]+-\d+)/g)) found.add(m[1]);
+  }
   return found;
 }
 
@@ -1027,12 +1025,12 @@ function walk(dir, fn) {
 
 // Implementation references: every spec and deviation ID in code, tests and the two ledgers resolves
 {
-  const scan = [];
-  for (const root of ["src", "tests", "tools", "multiplayer"]) walk(join(repoDir, root), (f) => { if (/\.(cs|ts|mjs|js|ps1|md|json)$/.test(f) && !f.includes("check-spec.mjs")) scan.push(f); });
-  scan.push(join(repoDir, "PARITY.md"), join(repoDir, "DEVIATIONS.md"));
-  for (const f of scan) {
-    if (!existsSync(f)) continue;
-    const text = readFileSync(f, "utf8");
+  const scan = codeFiles().filter(({ file }) => !file.endsWith(".fs") && !file.includes("check-spec.mjs"));
+  for (const name of ["PARITY.md", "DEVIATIONS.md"]) {
+    const file = join(repoDir, name);
+    if (existsSync(file)) scan.push({ file, text: readFileSync(file, "utf8") });
+  }
+  for (const { file: f, text } of scan) {
     for (const x of idsIn(text)) {
       if (["BLD", "SRC"].includes(kindOf(x)) && !entries.has(x)) continue; // aliases can collide with ordinary words
       if (!entries.has(x)) problem(f, `cites ${x}, which does not exist in the spec`);
@@ -1044,10 +1042,22 @@ function walk(dir, fn) {
 
 // IDs and areas that exist on the base branch must not disappear
 {
-  const base = baseArg ?? "origin/main";
+  // Without --base, compare with the point this branch left the base branch (the pull request's
+  // target in CI), not that branch's tip: an entry added on the base branch after this branch
+  // forked is not one this branch deleted.
+  const git = (...args) => execFileSync("git", ["-C", repoDir, ...args], { stdio: ["ignore", "pipe", "ignore"] }).toString();
+  let base = baseArg;
+  if (!base) {
+    const target = process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : "origin/main";
+    try {
+      base = git("merge-base", "HEAD", target).trim();
+    } catch {
+      base = null;
+    }
+  }
   let listing = null;
-  try {
-    listing = execFileSync("git", ["-C", repoDir, "ls-tree", "-r", "--name-only", base, "--", "spec"], { stdio: ["ignore", "pipe", "ignore"] }).toString();
+  if (base) try {
+    listing = git("ls-tree", "-r", "--name-only", base, "--", "spec");
   } catch {
     if (baseArg) problem(null, `cannot list spec/ at ${base}`);
   }
@@ -1057,9 +1067,9 @@ function walk(dir, fn) {
       if (m && !entries.has(m[1])) problem(null, `${m[1]} exists at ${base} and has been deleted or renamed`);
     }
     try {
-      const oldReadme = execFileSync("git", ["-C", repoDir, "show", `${base}:spec/README.md`], { stdio: ["ignore", "pipe", "ignore"] }).toString();
+      const oldReadme = git("show", `${base}:spec/README.md`);
       for (const m of oldReadme.matchAll(/^\| `([A-Z][A-Z0-9]*)` \|/gm)) if (!areas.includes(m[1])) problem(null, `area ${m[1]} exists at ${base} and has been removed or renamed`);
-      const oldDev = execFileSync("git", ["-C", repoDir, "show", `${base}:DEVIATIONS.md`], { stdio: ["ignore", "pipe", "ignore"] }).toString();
+      const oldDev = git("show", `${base}:DEVIATIONS.md`);
       for (const m of oldDev.matchAll(/^## (DEV-[A-Z0-9]+-\d+)$/gm)) if (!deviations.has(m[1])) problem(null, `${m[1]} exists at ${base} and has been removed`);
     } catch {}
   }
