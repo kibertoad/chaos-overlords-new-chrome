@@ -105,6 +105,9 @@ try {
     if (Get-Command -Name 'node' -CommandType Application -ErrorAction SilentlyContinue) {
         & node (Join-Path $PSScriptRoot 'update-doc-indexes.mjs') --check
         $documentationCheckFailed = $LASTEXITCODE -ne 0
+        # The spec, PARITY.md and DEVIATIONS.md against the documentation standard's checks.
+        & node (Join-Path $PSScriptRoot 'check-spec.mjs') --check
+        $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
     }
     elseif ($env:CI) {
         throw 'Node.js is required to check the generated documentation indexes.'
@@ -167,7 +170,7 @@ try {
     Invoke-CheckedDotnet -Arguments $testArguments
 
     if ($documentationCheckFailed) {
-        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs and fix any broken link.'
+        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs and node tools/check-spec.mjs, and fix what they report.'
     }
 }
 finally {

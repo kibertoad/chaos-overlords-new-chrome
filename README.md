@@ -36,8 +36,9 @@ primarily original-runtime corroboration, golden-screen and input comparison,
 release hardening, and optional online experience rather than missing basic
 match flow.
 This is not yet a claim of pixel-perfect or rule-perfect parity with the shipped
-1996 executable. The detailed evidence and next proof gate for each system are
-tracked in the [parity matrix](docs/PARITY-MATRIX.md).
+1996 executable. What the original does is written down in the [spec](spec/README.md),
+and how much of each spec entry the rebuild does, and which tests prove it, is
+tracked in the [parity matrix](PARITY.md).
 The technical documentation is cataloged and indexed in
 [docs/README.md](docs/README.md).
 
@@ -58,8 +59,8 @@ objective/police edges, and native visual/input/media comparisons remain open.
 Consequently, the implementation should be regarded as a broad, deterministic,
 evidence-led recreation with high-confidence static coverage in many areas,
 not as a rule-perfect replica. Intentional deviations and quality-of-life
-extensions are separately recorded in [DECISIONS.md](docs/DECISIONS.md) and
-the [parity matrix](docs/PARITY-MATRIX.md).
+extensions are recorded in the [deviation log](DEVIATIONS.md), and the product
+decisions behind them in [DECISIONS.md](docs/DECISIONS.md).
 
 ### Implemented
 
@@ -258,11 +259,11 @@ and indexes them by game subsystem. The most-used entry points:
 | If you want to… | Read |
 |---|---|
 | Build, run, and test from source | [Development guide](docs/DEVELOPMENT.md), [Validation procedure](docs/VALIDATION.md) |
-| Resume development at the current checkpoint | [Handover](docs/HANDOVER.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md) |
-| Know how faithful each system is | [Parity matrix](docs/PARITY-MATRIX.md), [Project decisions](docs/DECISIONS.md) |
+| Resume development at the current checkpoint | [Handover](docs/HANDOVER.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Static validation plan](static_validation_plan.md), [Manual validation plan](manual_validation_plan.md) |
+| Know how faithful each system is | [Parity matrix](PARITY.md), [Deviation log](DEVIATIONS.md), [Project decisions](docs/DECISIONS.md) |
 | Understand the code layout | [Architecture](docs/ARCHITECTURE.md) |
-| Look up a game rule or an executable finding | [Game rules](docs/GAME-RULES.md), [Original executable internals](docs/ORIGINAL-INTERNALS.md), [AI specification](docs/AI-SPEC.md) |
-| Work on the original file formats or assets | [Original file formats](docs/ORIGINAL-FILE-FORMATS.md), [Asset catalog](docs/ASSET-CATALOG.md), [UI atlas](docs/UI-ATLAS.md), [Audio and video](docs/AUDIO-VIDEO.md) |
+| Look up a game rule or an executable finding | [Spec](spec/README.md) and its [indexes](spec/index/by-area.md), [AI specification](docs/AI-SPEC.md) |
+| Work on the original file formats or assets | `FMT-*` and `SCR-*` entries in the [spec](spec/README.md), [Asset pack](docs/ASSET-PACK.md), [Asset catalog](docs/ASSET-CATALOG.md), [Audio and video](docs/AUDIO-VIDEO.md) |
 | Host or extend online play | [Multiplayer](docs/MULTIPLAYER.md), [Server operator manual](multiplayer/README.md) |
 | Cut a release | [Building and releasing installers](docs/RELEASING.md) |
 
@@ -293,7 +294,9 @@ its assets locally during installation.
 
 Copyright (C) 2026 kibertoad.
 
-The original code in this repository is licensed under the
-[GNU General Public License v3.0](LICENSE). The license does not cover or grant
-rights to the original *Chaos Overlords* assets, which are not distributed by
-this project.
+The original code in this repository is licensed under the [MIT License](LICENSE).
+The documentation of the original game in `spec/` is licensed under
+[Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/),
+and its machine-readable files under the MIT License; `spec/LICENSE` says which
+files each covers. Neither license covers or grants rights to the original
+*Chaos Overlords* assets, which are not distributed by this project.

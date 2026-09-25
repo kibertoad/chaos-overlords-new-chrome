@@ -6,7 +6,7 @@ namespace Rechaos.Core.Assets;
 /// <summary>
 /// Loads gameplay definitions decoded from the canonical GOG tables. The source
 /// hashes and field-by-field verification status are documented in
-/// docs/ORIGINAL-FILE-FORMATS.md. This payload is generated, not rebalanced.
+/// docs/ASSET-PACK.md. This payload is generated, not rebalanced.
 /// </summary>
 public static class BundledOriginalData
 {

@@ -11,7 +11,7 @@ public readonly record struct PresentedCombatEvent(GameEvent Event, bool HandsOf
 
 /// <summary>
 /// The order the original's Detailed Combat plays one combat phase for a viewer
-/// (BIN-COMBAT-PRESENT-001).
+/// (RULE-COMBAT-004).
 /// </summary>
 /// <remarks>
 /// The original walks only the viewer's gangs that fought, by sector and then by the slot each

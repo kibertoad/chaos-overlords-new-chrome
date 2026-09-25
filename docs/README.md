@@ -2,13 +2,17 @@
 
 Status: maintained index
 
-This directory holds the technical documentation of *Chaos Overlords: New
-Chrome*. This page is the entry point: it says what each document is for, which
-one to open for a given task, and where a given game subsystem is documented
-across the rule log, the executable research log, the parity matrix, and the
-design documents. Player-facing material (installation, controls, project
-status, acknowledgements) is in the repository [README](../README.md); agent
-and contributor working rules are in [AGENTS.md](../AGENTS.md).
+The documentation of *Chaos Overlords: New Chrome* is in three places. The
+[spec](../spec/README.md) describes the original game and nothing else, one entry
+per finding, rule, format, screen and bug, as version 1 of the
+[documentation standard](https://dinorefurb.com/documentation-standard/) defines
+it. The ledgers at the repository root describe the rebuild against the spec:
+[PARITY.md](../PARITY.md) says how much of each spec entry the rebuild does and
+which tests prove it, and [DEVIATIONS.md](../DEVIATIONS.md) lists every
+deliberate departure. This directory holds everything else: how the rebuild is
+designed, built, validated and released. Player-facing material is in the
+repository [README](../README.md); working rules for agents and contributors are
+in [AGENTS.md](../AGENTS.md).
 
 <!-- doc-index:begin toc depth=2 -->
 - [Start here](#start-here)
@@ -23,62 +27,61 @@ and contributor working rules are in [AGENTS.md](../AGENTS.md).
 
 | If you want to… | Open |
 |---|---|
-| Build, run, and test from source | [DEVELOPMENT.md](DEVELOPMENT.md), then [VALIDATION.md](VALIDATION.md) for the fast gate, the long-running tier, and fixture classes |
-| Resume development at the current checkpoint | [HANDOVER.md](HANDOVER.md) for repository state and the latest work by area, then [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) for the roadmap |
-| Know how faithful a system is and what proves it | [PARITY-MATRIX.md](PARITY-MATRIX.md); status values are defined in [the plan's completion conventions](IMPLEMENTATION-PLAN.md#8-completion-tracking-conventions) |
-| Check whether a deviation from the original is deliberate | [DECISIONS.md](DECISIONS.md) |
-| Look up an exact game rule | [GAME-RULES.md](GAME-RULES.md) by `RULE-*` ID, via its [rule index](GAME-RULES.md#rule-index) or the [topic index](#topic-index) below |
-| Look up what the original executable does | [ORIGINAL-INTERNALS.md](ORIGINAL-INTERNALS.md) by `BIN-*` ID, via its [finding index](ORIGINAL-INTERNALS.md#finding-index) or the [topic index](#topic-index) below; the findings themselves are in the [subsystem documents](ORIGINAL-INTERNALS.md#finding-documents) under [original-internals/](original-internals/) |
-| Understand how the computer players decide | [AI-SPEC.md](AI-SPEC.md), then the `BIN-AI-*` findings and the [per-family parity notes](PARITY-MATRIX.md#computer-player-row-details) |
+| Build, run, and test from source | [DEVELOPMENT.md](DEVELOPMENT.md), then [VALIDATION.md](VALIDATION.md) for the fast gate, the long-running tier and the fixture classes |
+| Resume development at the current checkpoint | [HANDOVER.md](HANDOVER.md), then [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) for the roadmap |
+| Look up what the original does | The [spec](../spec/README.md), through its indexes [by area](../spec/index/by-area.md), [by kind](../spec/index/by-kind.md) and [by status](../spec/index/by-status.md), or the [topic index](#topic-index) below |
+| Know how faithful a system is and what proves it | [PARITY.md](../PARITY.md) |
+| Check whether a difference from the original is deliberate | [DEVIATIONS.md](../DEVIATIONS.md), and [DECISIONS.md](DECISIONS.md) for the reasoning |
+| Find the spec entry an old `BIN-*` or `RULE-*` citation meant | [SPEC-ID-MAP.md](SPEC-ID-MAP.md) |
+| Pick up research work | [static_validation_plan.md](../static_validation_plan.md) for work in Ghidra and on the data files, [manual_validation_plan.md](../manual_validation_plan.md) for runs of the original that need a person |
+| Write a new spec entry | [SPEC-ENTRY-TEMPLATES.md](SPEC-ENTRY-TEMPLATES.md), and the rules in [AGENTS.md](../AGENTS.md#the-spec) |
+| Understand how the rebuild's computer players are built | [AI-SPEC.md](AI-SPEC.md); the original's planner is in the spec's `AI` area |
 | Find your way around the code | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| Work on original file formats or the asset pack | [ORIGINAL-FILE-FORMATS.md](ORIGINAL-FILE-FORMATS.md), [ASSET-CATALOG.md](ASSET-CATALOG.md), [UI-ATLAS.md](UI-ATLAS.md), [AUDIO-VIDEO.md](AUDIO-VIDEO.md) |
-| Set up or run clean-room binary analysis | [GHIDRA.md](GHIDRA.md) for the toolchain, [REFERENCE-CAPTURE.md](REFERENCE-CAPTURE.md) for runtime captures, [the static research protocol](VALIDATION.md#static-binary-research-protocol) for what a finding must record |
+| Work on the asset pack | [ASSET-PACK.md](ASSET-PACK.md), [ASSET-CATALOG.md](ASSET-CATALOG.md), [AUDIO-VIDEO.md](AUDIO-VIDEO.md) |
+| Set up binary analysis or capture the original running | [GHIDRA.md](GHIDRA.md), [REFERENCE-CAPTURE.md](REFERENCE-CAPTURE.md) |
 | Change saves, replays, or the canonical hash | [NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md) |
 | Host, operate, or extend online play | [MULTIPLAYER.md](MULTIPLAYER.md) for the design, [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) for the review items still open, [multiplayer/README.md](../multiplayer/README.md) for operating a server, [src/Rechaos.Multiplayer/README.md](../src/Rechaos.Multiplayer/README.md) for the game client; version rules are in [AGENTS.md](../AGENTS.md#multiplayer-protocol-version) |
-| Move turn resolution onto the server or port the core to TypeScript | [SERVER-AUTHORITATIVE-REPLAY.md](SERVER-AUTHORITATIVE-REPLAY.md) for the target architecture and the cross-engine conformance suite |
+| Move turn resolution onto the server or port the core to TypeScript | [SERVER-AUTHORITATIVE-REPLAY.md](SERVER-AUTHORITATIVE-REPLAY.md) |
 | Cut or sign a release | [RELEASING.md](RELEASING.md) |
 
 ## Document catalog
 
-Maintained research and design documents open with a `Status:` line saying
-how settled they are. Git history provides change dates.
+Documents in this directory open with a `Status:` line saying how settled they
+are. Git history provides change dates.
 
 ### Orientation, process, and status
 
 | Document | What it holds | Kind |
 |---|---|---|
-| [DEVELOPMENT.md](DEVELOPMENT.md) | Running from source, extractor commands (verify, catalog, regenerate bundled tables), the fast validation gate, project list | Guide |
-| [HANDOVER.md](HANDOVER.md) | Repository state, current format versions, the latest playable work grouped by area, the reference environment, and the next evidence batches | Living checkpoint |
-| [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) | Definition of complete, baseline, engineering principles and the manual-derived checklist, documentation requirements and evidence rules, workstreams A–N, milestones M0–M8, test matrix, status conventions, source hierarchy | Roadmap |
-| [PARITY-MATRIX.md](PARITY-MATRIX.md) | One row per original feature: requirement, recreation status, evidence and confidence, next parity gate; grouped by area, with per-family AI notes, current blockers, and binary evidence status | Status matrix |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Running from source, extractor commands, the fast validation gate, project list | Guide |
+| [HANDOVER.md](HANDOVER.md) | Repository state, current format versions, the latest playable work by area, open conformance work, and where the next agent starts | Living checkpoint |
+| [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) | Definition of complete, baseline, engineering principles, documentation and evidence rules, workstreams A–N, milestones M0–M8, test matrix, completion conventions, source hierarchy | Roadmap |
 | [DECISIONS.md](DECISIONS.md) | Dated product, compatibility, and scope decisions, newest first, with an index | Decision log |
-| [VALIDATION.md](VALIDATION.md) | The four validation layers, `Invoke-Validation.ps1` modes, canonical identities, the original-binary oracle and static research protocols, fixture classes, parity record fields, failure triage | Procedure |
-| [RELEASING.md](RELEASING.md) | `version.txt`, local package builds, the GitHub release workflow, Windows Authenticode and Linux OpenPGP signing, why macOS is unsigned, continuous integration | Procedure |
+| [VALIDATION.md](VALIDATION.md) | Validation layers, `Invoke-Validation.ps1` modes, canonical identities, experiments on the original, static research, spec checks, tests against the original, fixture classes, failure triage | Procedure |
+| [RELEASING.md](RELEASING.md) | `version.txt`, local package builds, the release workflow, signing, continuous integration | Procedure |
+| [SPEC-ENTRY-TEMPLATES.md](SPEC-ENTRY-TEMPLATES.md) | A blank entry of each spec kind | Template |
+| [SPEC-ID-MAP.md](SPEC-ID-MAP.md) | The spec entry that holds each finding and rule the documentation cited before the standard | Frozen map |
 
-### Recreation design and formats
-
-| Document | What it holds | Kind |
-|---|---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Dependency direction, the four projects and their responsibilities, command/event flow, the original turn model as implemented, state ownership, determinism and proprietary-content boundaries, online play, error and security model, known debt | Design |
-| [GAME-RULES.md](GAME-RULES.md) | `RULE-*` entries: manual statement, verified executable behavior, interpretation, confidence, and implementing types for hiring, instant commands, combat, equipment, movement and control, upkeep, timers, objectives, and awards | Rule log |
-| [AI-SPEC.md](AI-SPEC.md) | Original versus Advanced policy architecture, planner inputs and invariants, the current policy, and the parity work still required | Specification |
-| [NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md) | Recreation save container and limits, the current save document, the compatibility policy, and the replay format | Format specification |
-| [MULTIPLAYER.md](MULTIPLAYER.md) | What the coordination server is and is not, REST plus server-sent events transport, protocol and session versions, lobby, turn barrier and lifecycle, timers, bug-report intake, retention, security model and threat boundaries, the shared TypeScript/C# contract, client integration contract, limitations | Design |
-| [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) | What is still open from the robustness and efficiency review of online play: lobby polling cost, client backoff jitter, recovery-file downgrade safety, response parsing and allocation costs, and the tests that would pin the review's fixes | Review |
-| [SERVER-AUTHORITATIVE-REPLAY.md](SERVER-AUTHORITATIVE-REPLAY.md) | Design for server-side turn resolution: a TypeScript port of the deterministic core behind a `TurnResolver` port, server-derived match checkpoints replacing host-uploaded snapshots, per-seat desync verdicts, submission-time order refusal, the engine conformance vector corpus and differential fuzzer both engines run, and the phased rollout | Design (not implemented) |
-
-### Original-game research
+### Rebuild design and formats
 
 | Document | What it holds | Kind |
 |---|---|---|
-| [ORIGINAL-INTERNALS.md](ORIGINAL-INTERNALS.md) | Entry point to the executable research log: the finding format, the reference fingerprint, the index of every `BIN-*` finding by subsystem, the document each one lives in, and the remaining static-analysis queue | Research log index |
-| [original-internals/](original-internals/) | The `BIN-*` findings themselves — observation, interpretation, confidence, next validation — one document per subsystem; [the document list](ORIGINAL-INTERNALS.md#finding-documents) says which holds what | Research log |
-| [ORIGINAL-FILE-FORMATS.md](ORIGINAL-FILE-FORMATS.md) | Confidence scale, installation identity and bundled-data fidelity, gameplay tables, `PX16`/`PX08` graphics, audio, video, help, other files, historical save-game notes, open questions | Format research log |
-| [ASSET-CATALOG.md](ASSET-CATALOG.md) | Every extracted output with its source resource, media type, conversion, semantic role, screen owner, palette/transparency rule, and SHA-256; regenerated by `Rechaos.Extractor --catalog`, never edited by hand | Generated inventory |
-| [UI-ATLAS.md](UI-ATLAS.md) | Full-screen resources, composite sheets and panels, the `PX00143` and `PX00128` hit maps, legacy session setup screens, every rendering rule recovered so far, and the next mapping work | Presentation map |
-| [AUDIO-VIDEO.md](AUDIO-VIDEO.md) | Sound-effect slots and triggers, music programs, Smacker video metadata and the playback decision | Media map |
-| [GHIDRA.md](GHIDRA.md) | Pinned Ghidra and JDK installation, the reference executable and manual, the headless script workflow under `tools/ghidra/`, and evidence discipline | Tooling guide |
-| [REFERENCE-CAPTURE.md](REFERENCE-CAPTURE.md) | Operating the original executable and the window-capture helper for runtime evidence, and the evidence rules for captures | Procedure |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Dependency direction, the projects and their responsibilities, command and event flow, the turn model as implemented, state ownership, determinism and proprietary-content boundaries, online play, error and security model, known debt | Design |
+| [AI-SPEC.md](AI-SPEC.md) | The rebuild's Original and Advanced computer-player policies, planner inputs and invariants, and the parity work still required | Design |
+| [NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md) | The rebuild's save container and limits, the save document, the compatibility policy, and the replay format | Format specification |
+| [ASSET-PACK.md](ASSET-PACK.md) | The asset-pack fingerprint the extractor checks and the gameplay data bundled from the original tables | Reference |
+| [ASSET-CATALOG.md](ASSET-CATALOG.md) | Every extracted output with its source, conversion, role and hash; regenerated by `Rechaos.Extractor --catalog`, never edited by hand | Generated inventory |
+| [AUDIO-VIDEO.md](AUDIO-VIDEO.md) | How the rebuild plays sound effects, music and the Smacker movies | Media map |
+| [MULTIPLAYER.md](MULTIPLAYER.md) | The coordination server: transport, protocol and session versions, lobby, turn barrier, timers, bug-report intake, retention, security, the shared contract, client integration | Design |
+| [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) | What is still open from the review of online play | Review |
+| [SERVER-AUTHORITATIVE-REPLAY.md](SERVER-AUTHORITATIVE-REPLAY.md) | Design for server-side turn resolution and the engine conformance corpus | Design (not implemented) |
+
+### Research tooling
+
+| Document | What it holds | Kind |
+|---|---|---|
+| [GHIDRA.md](GHIDRA.md) | The pinned Ghidra and JDK installation, the reference executable and manual, the headless script workflow under `tools/ghidra/`, and evidence discipline | Tooling guide |
+| [REFERENCE-CAPTURE.md](REFERENCE-CAPTURE.md) | Operating the original executable and the window-capture helper, and the rules for captures | Procedure |
 
 ### Machine-readable
 
@@ -87,108 +90,86 @@ how settled they are. Git history provides change dates.
 | [schemas/reference-fixture.schema.json](schemas/reference-fixture.schema.json) | JSON Schema for sanitized reference fixtures described in [VALIDATION.md](VALIDATION.md#fixture-classes) |
 | [schemas/state-labels.example.json](schemas/state-labels.example.json) | Example state-label document for fixtures |
 
-### Documentation outside this directory
+### Outside this directory
 
 | Path | What it holds |
 |---|---|
-| [README.md](../README.md) | Player-facing overview: quick start, implemented and missing features, scope boundaries, quality-of-life additions, headless AI tournaments, controls, crash reports, acknowledgements, license |
-| [AGENTS.md](../AGENTS.md) | Working rules: push destination, validation scope, documentation upkeep, protocol and session version rules, orphan-process audit |
-| [multiplayer/README.md](../multiplayer/README.md) | Operator and contributor manual for the coordination server: layout, running self-hosted or on Cloudflare, generating the C# client, bug reports, publishing, development |
-| [multiplayer/packages/*/README.md](../multiplayer/packages) | One page per server package: `contracts` (wire schemas), `kernel` (domain logic and ports), `storage` (SQLite/Postgres adapters), `server` (the Hono app), `client` (TypeScript client), `conformance` (runtime-neutral suites), `bug-reports` (separate intake database) |
-| [multiplayer/runtimes/*/README.md](../multiplayer/runtimes) | The Node.js server and the Cloudflare Worker facades |
-| [src/Rechaos.Multiplayer/README.md](../src/Rechaos.Multiplayer/README.md) | The game's C# client for the coordination server and its layout |
+| [spec/](../spec/README.md) | The original game: builds, sources, findings, experiments, formats with their Kaitai definitions, rules, bugs, screens, the glossary, and the generated indexes |
+| [PARITY.md](../PARITY.md) | One row per rule, format and screen entry: how much of it the rebuild does, the tests that compare it with the original, and the deviations from it |
+| [DEVIATIONS.md](../DEVIATIONS.md) | Every deliberate departure from the spec, as `DEV-*` entries with their settings |
+| [static_validation_plan.md](../static_validation_plan.md) | Open questions that a reading of the executable or the data files can settle |
+| [manual_validation_plan.md](../manual_validation_plan.md) | Open questions that need a person to run the original |
+| [README.md](../README.md) | Player-facing overview, quick start, controls, acknowledgements, licence |
+| [AGENTS.md](../AGENTS.md) | Working rules: push destination, validation scope, documentation, fidelity, version rules, orphan-process audit |
+| [multiplayer/README.md](../multiplayer/README.md) | Operator and contributor manual for the coordination server |
+| [src/Rechaos.Multiplayer/README.md](../src/Rechaos.Multiplayer/README.md) | The game's C# client for the coordination server |
 
 ## Topic index
 
-Where each game subsystem is documented. Rules are the mechanics as the
-recreation applies them; findings are the clean-room facts about the original
-executable they rest on; the last column points at design, presentation,
-status, and decision material. Parity links open the matrix section that holds
-the subsystem's rows.
+Where each part of the game is documented. The spec column opens the area's
+list of entries; the rows of the parity matrix are grouped by the same areas.
 
-| Topic | Rules | Executable findings | Design, presentation, status |
-|---|---|---|---|
-| Randomness, seeding, and dice | — | [BIN-RNG-001](original-internals/randomness-and-turn-structure.md#bin-rng-001---original-process-seed), [BIN-RNG-002](original-internals/randomness-and-turn-structure.md#bin-rng-002---runtime-random-step), [BIN-RNG-003](original-internals/randomness-and-turn-structure.md#bin-rng-003---bounded-random-wrapper), [BIN-RNG-004](original-internals/randomness-and-turn-structure.md#bin-rng-004---ai-planning-callers), [BIN-RNG-005](original-internals/randomness-and-turn-structure.md#bin-rng-005---accepted-local-setup-through-initial-city) | [Determinism boundary](ARCHITECTURE.md#determinism-boundary); [parity: Determinism state](PARITY-MATRIX.md#turn-structure-and-match-state); [seed correlation blocker](PARITY-MATRIX.md#current-blockers-to-parity-claims) |
-| Turn structure and phase order | — | [BIN-TURN-PLAYER-ORDER-001](original-internals/randomness-and-turn-structure.md#bin-turn-player-order-001---fixed-ascending-planning-slots), [BIN-ENDTURN-001](original-internals/randomness-and-turn-structure.md#bin-endturn-001---elimination-cleanup-reports-and-objective-order), [BIN-INSTANT-001](original-internals/commands-and-economy.md#bin-instant-001---roster-order-actions-and-cumulative-influence), [BIN-REPEAT-001](original-internals/randomness-and-turn-structure.md#bin-repeat-001---turn-start-terminal-recurring-command-cleanup), [BIN-COMMAND-ASSIGN-001](original-internals/randomness-and-turn-structure.md#bin-command-assign-001---recurring-menus-and-replacement-writes), [BIN-HIDE-LIFECYCLE-001](original-internals/randomness-and-turn-structure.md#bin-hide-lifecycle-001---active-and-recurring-action-boundary) | [Original turn model](ARCHITECTURE.md#original-turn-model); [Target command/event flow](ARCHITECTURE.md#target-commandevent-flow); [parity: Turn phases, Execution phases, Command queue](PARITY-MATRIX.md#turn-structure-and-match-state) |
-| New-game setup and city generation | [RULE-SETUP-001](GAME-RULES.md#rule-setup-001--starting-resources-and-smgfundage) | [BIN-CITY-001](original-internals/new-game-setup.md#bin-city-001---density-derived-sector-income-and-tolerance), [BIN-CITY-002](original-internals/new-game-setup.md#bin-city-002---three-site-rejection-sampling), [BIN-CITY-003](original-internals/new-game-setup.md#bin-city-003---headquarters-and-right-hands), [BIN-SETUP-000](original-internals/new-game-setup.md#bin-setup-000---fresh-setup-defaults-to-kill-em-all), [BIN-SETUP-002](original-internals/new-game-setup.md#bin-setup-002---local-missing-slots-become-computer-players), [BIN-SETUP-005](original-internals/new-game-setup.md#bin-setup-005---exact-local-player-card-interaction-geometry), [BIN-RNG-005](original-internals/randomness-and-turn-structure.md#bin-rng-005---accepted-local-setup-through-initial-city) | [UI atlas: PX00143 hit map](UI-ATLAS.md#px00143-hit-map); [Legacy session setup screens](UI-ATLAS.md#legacy-session-setup-screens); [parity: City, Players, Starting state](PARITY-MATRIX.md#turn-structure-and-match-state); [workstream D](IMPLEMENTATION-PLAN.md#d-new-game-setup-and-city-generation) |
-| Exact-name modifiers | [RULE-SETUP-001](GAME-RULES.md#rule-setup-001--starting-resources-and-smgfundage) | [BIN-SETUP-001](original-internals/new-game-setup.md#bin-setup-001---smgfundage-starting-cash-override), [BIN-SETUP-003](original-internals/new-game-setup.md#bin-setup-003---smgislands-permanent-neutral-sector-crackdown), [BIN-SETUP-004](original-internals/new-game-setup.md#bin-setup-004---extra-gang-and-global-visibility-name-modifiers) | [README: online name projection refuses cheat names](../README.md#quality-of-life-additions) |
-| Hot-seat play and handoff | — | [BIN-HOTSEAT-002](original-internals/new-game-setup.md#bin-hotseat-002---private-handoff-ordering-and-terminal-player-path), [BIN-SETUP-002](original-internals/new-game-setup.md#bin-setup-002---local-missing-slots-become-computer-players) | [parity: Hot-seat](PARITY-MATRIX.md#multiple-players-and-networking); [handover: reports and handoff](HANDOVER.md#turn-reports-and-hot-seat-handoff); [workstream M](IMPLEMENTATION-PLAN.md#m-hot-seat-play) |
-| Hiring | [RULE-HIRE-001](GAME-RULES.md#rule-hire-001--offer-replacement-and-starting-force) | [BIN-HIRE-001](original-internals/commands-and-economy.md#bin-hire-001---initial-and-replacement-offers), [BIN-HIRE-002](original-internals/commands-and-economy.md#bin-hire-002---hire-capacity-uses-only-the-current-players-roster), [BIN-HIRE-COMPARISON-001](original-internals/commands-and-economy.md#bin-hire-comparison-001---fixed-width-signed-values-in-the-three-offer-panel), [BIN-AI-003A](original-internals/computer-players.md#bin-ai-003a---strategic-hire-offer-ranking), [BIN-AI-003B](original-internals/computer-players.md#bin-ai-003b---base-hire-role-schedule), [BIN-AI-003C](original-internals/computer-players.md#bin-ai-003c---ai-hire-destination-and-persistent-placement-anchor) | [parity: Hire pool](PARITY-MATRIX.md#commands-and-economy); [decision: AI hire slot/role indexing](DECISIONS.md#2026-09-17--correct-the-original-ai-hire-slotrole-indexing-defect) |
-| Movement | [RULE-MOVE-001](GAME-RULES.md#rule-move-001--adjacent-movement-and-friendly-capacity) | [BIN-MOVEMENT-001](original-internals/commands-and-economy.md#bin-movement-001---terminate-pass-before-roster-ordered-move), [BIN-MOVEMENT-002](original-internals/commands-and-economy.md#bin-movement-002---move-panel-neighborhood-target-mapping) | [parity: Movement](PARITY-MATRIX.md#commands-and-economy) |
-| Sector control | [RULE-CONTROL-001](GAME-RULES.md#rule-control-001--cooperative-sector-control-comparison) | [BIN-CONTROL-001](original-internals/commands-and-economy.md#bin-control-001---cross-player-winner-and-zero-margin-neutral-candidate) | [parity: Sector control](PARITY-MATRIX.md#commands-and-economy) |
-| Influence and sites | [RULE-INFLUENCE-001](GAME-RULES.md#rule-influence-001--cooperative-site-influence), [RULE-SITE-STATS-001](GAME-RULES.md#rule-site-stats-001--influenced-site-local-modifiers) | [BIN-INFLUENCE-001](original-internals/commands-and-economy.md#bin-influence-001---influence-picker-targets-and-detail-entry), [BIN-SITE-INFO-001](original-internals/interface-and-options.md#bin-site-info-001---px05002-alternate-site-information-panel), [BIN-EFFECTIVE-STATS-001](original-internals/commands-and-economy.md#bin-effective-stats-001---gang-equipment-and-controlled-site-aggregation) | [parity: Influence](PARITY-MATRIX.md#commands-and-economy); [SITES table](ORIGINAL-FILE-FORMATS.md#sites) |
-| Heal and Research | [RULE-HEAL-001](GAME-RULES.md#rule-heal-001--heal-dice-and-force-restoration), [RULE-RESEARCH-001](GAME-RULES.md#rule-research-001--research-dice-and-persistent-progress) | [BIN-RESEARCH-000](original-internals/commands-and-economy.md#bin-research-000---initial-progress-and-armageddon-completion), [BIN-RESEARCH-001](original-internals/commands-and-economy.md#bin-research-001---same-phase-completion-suppresses-later-rolls), [BIN-EQUIP-005](original-internals/commands-and-economy.md#bin-equip-005---equip-and-research-categorylist-targets) | [parity: Heal, Research](PARITY-MATRIX.md#commands-and-economy) |
-| Bribe, Snitch, and tolerance | [RULE-BRIBE-001](GAME-RULES.md#rule-bribe-001--bribe-tolerance-adjustment), [RULE-SNITCH-001](GAME-RULES.md#rule-snitch-001--snitch-tolerance-adjustment), [RULE-TOLERANCE-001](GAME-RULES.md#rule-tolerance-001--return-toward-normal-tolerance) | [BIN-BRIBE-001](original-internals/commands-and-economy.md#bin-bribe-001---shipped-three-dollar-cost-and-direct-tolerance-delta), [BIN-SNITCH-001](original-internals/commands-and-economy.md#bin-snitch-001---debt-independent-delta-and-post-instant-floor) | [parity: Bribe, Snitch/tolerance](PARITY-MATRIX.md#commands-and-economy) |
-| Chaos, police, and Crackdowns | [RULE-CHAOS-001](GAME-RULES.md#rule-chaos-001--cooperative-chaos-and-crackdown), [RULE-POLICE-001](GAME-RULES.md#rule-police-001--crackdown-detection-and-combat) | [BIN-CHAOS-001](original-internals/combat-and-police.md#bin-chaos-001---roster-order-rolls-and-grouped-uncontrolled-payout), [BIN-POLICE-001](original-internals/combat-and-police.md#bin-police-001---occurrence-window-neutralization-and-duration-order), [BIN-POLICE-002](original-internals/combat-and-police.md#bin-police-002---crackdown-report-recipients-and-ordering), [BIN-POLICE-COMBAT-001](original-internals/combat-and-police.md#bin-police-combat-001---exact-detection-and-damage-formulas) | [parity: Chaos](PARITY-MATRIX.md#commands-and-economy); [parity: Police](PARITY-MATRIX.md#combat-and-police) |
-| Combat, detection, and hiding | [RULE-ATTACK-001](GAME-RULES.md#rule-attack-001--simultaneous-attack-and-retaliation), [RULE-DETECT-001](GAME-RULES.md#rule-detect-001--cooperative-sector-visibility), [RULE-HIDE-001](GAME-RULES.md#rule-hide-001--enter-hidden-state) | [BIN-ATTACK-001](original-internals/combat-and-police.md#bin-attack-001---attack-picker-selector-and-target-hit-map), [BIN-COMBAT-ORDER-001](original-internals/combat-and-police.md#bin-combat-order-001---playerroster-attack-and-police-rolls), [BIN-COMBAT-STATS-001](original-internals/combat-and-police.md#bin-combat-stats-001---full-opening-damage-is-credited), [BIN-COMBAT-PRESENT-001](original-internals/combat-and-police.md#bin-combat-present-001---retaliation-lands-inside-the-attacks-clip), [BIN-DETECT-001](original-internals/combat-and-police.md#bin-detect-001---cooperative-sector-visibility-aggregation), [BIN-HIDE-LIFECYCLE-001](original-internals/randomness-and-turn-structure.md#bin-hide-lifecycle-001---active-and-recurring-action-boundary), [BIN-UI-001](original-internals/interface-and-options.md#bin-ui-001---combat-animation-cadence), [BIN-COMBAT-RESULTS-001](original-internals/combat-and-police.md#bin-combat-results-001---results-pager-selection-map-and-bottom-control) | [Resolution safety policy](GAME-RULES.md#resolution-safety-policy); [combat sounds](AUDIO-VIDEO.md#sound-effects); [parity: Combat](PARITY-MATRIX.md#combat-and-police); [parity: Combat animation](PARITY-MATRIX.md#help-and-media); [decision: opponent view scoped to detection](DECISIONS.md#2026-09-18--scope-the-sector-workspaces-opponent-gang-view-to-detection) |
-| Equipment, Give, Sell, Factory, and Terminate | [RULE-EQUIP-001](GAME-RULES.md#rule-equip-001--purchase-and-equip), [RULE-GIVE-001](GAME-RULES.md#rule-give-001--transfer-equipped-item), [RULE-SELL-001](GAME-RULES.md#rule-sell-001--half-price-sale), [RULE-TERMINATE-001](GAME-RULES.md#rule-terminate-001--remove-gang-and-equipment) | [BIN-EQUIP-001](original-internals/commands-and-economy.md#bin-equip-001---factory-price-division-and-rounding), [BIN-EQUIP-002](original-internals/commands-and-economy.md#bin-equip-002---fixed-transaction-scan-deferred-gifts-and-sell-overwrite), [BIN-EQUIP-003](original-internals/commands-and-economy.md#bin-equip-003---give-item-selection-hit-targets), [BIN-EQUIP-004](original-internals/commands-and-economy.md#bin-equip-004---sell-item-toggle-hit-targets), [BIN-EQUIP-005](original-internals/commands-and-economy.md#bin-equip-005---equip-and-research-categorylist-targets), [BIN-EQUIP-006](original-internals/commands-and-economy.md#bin-equip-006---cash-check-at-resolution-not-in-the-picker), [BIN-GANG-RETIRE-001](original-internals/commands-and-economy.md#bin-gang-retire-001---death-and-terminate-preserve-inactive-record-payload), [BIN-GANG-VALUES-001](original-internals/commands-and-economy.md#bin-gang-values-001---fixed-two-cell-gang-values-replace-template-padding), [BIN-GANG-DEFINITION-001](original-internals/commands-and-economy.md#bin-gang-definition-001---px05022-alternate-definition-panel), [BIN-ITEM-INFO-001](original-internals/interface-and-options.md#bin-item-info-001---px05001-alternate-item-information-panel), [BIN-NUMBER-HELPERS-001](original-internals/interface-and-options.md#bin-number-helpers-001---baseline-and-modifier-zero-glyphs) | [parity: Equipment](PARITY-MATRIX.md#commands-and-economy); [ITEMS table](ORIGINAL-FILE-FORMATS.md#items); [workstream G](IMPLEMENTATION-PLAN.md#g-items-equipment-and-research) |
-| Economy, upkeep, and finance | [RULE-UPKEEP-001](GAME-RULES.md#rule-upkeep-001--base-income-upkeep-and-debt) | [BIN-UPKEEP-001](original-internals/commands-and-economy.md#bin-upkeep-001---flat-sector-tax-and-influenced-site-cash-share-one-byte), [BIN-FINANCE-001](original-internals/commands-and-economy.md#bin-finance-001---alternate-financial-panel-destination-and-close-face), [BIN-UI-035](original-internals/interface-and-options.md#bin-ui-035---sector-income-and-owner-only-cash-rows) | [parity: Cash/upkeep](PARITY-MATRIX.md#commands-and-economy); [handover: resolution and economy](HANDOVER.md#turn-resolution-commands-and-economy) |
-| Objectives, elimination, ranking, and awards | [RULE-OBJECTIVE-001](GAME-RULES.md#rule-objective-001--end-of-turn-objective-evaluation), [RULE-AWARDS-001](GAME-RULES.md#rule-awards-001--endgame-performance-awards) | [BIN-ENDTURN-001](original-internals/randomness-and-turn-structure.md#bin-endturn-001---elimination-cleanup-reports-and-objective-order), [BIN-RANKING-001](original-internals/objectives-and-awards.md#bin-ranking-001---player-rail-portrait-positions), [BIN-AWARDS-001](original-internals/objectives-and-awards.md#bin-awards-001---thresholds-priority-ties-and-visible-slots), [BIN-UI-033](original-internals/interface-and-options.md#bin-ui-033---exact-siege-and-big-man-objective-sector-pylons), [BIN-AI-002](original-internals/computer-players.md#bin-ai-002---scenario-sensitive-family-selection) | [parity: Player elimination, Objectives, Endgame](PARITY-MATRIX.md#objectives-timers-and-endgame); [milestone M5](IMPLEMENTATION-PLAN.md#m5---objectives-and-full-hot-seat-game) |
-| Planning timer | [RULE-TIMER-001](GAME-RULES.md#rule-timer-001--optional-human-planning-limit) | [BIN-OPTIONS-001](original-internals/interface-and-options.md#bin-options-001---registry-keys-initialized-defaults-and-idle-gang-warning) | [parity: Timers](PARITY-MATRIX.md#objectives-timers-and-endgame); [online timer](MULTIPLAYER.md#timer) |
-| Computer players | — | [BIN-AI-001](original-internals/computer-players.md#bin-ai-001---per-gang-command-dispatcher-and-action-handlers), [BIN-AI-002](original-internals/computer-players.md#bin-ai-002---scenario-sensitive-family-selection), [BIN-AI-003](original-internals/computer-players.md#bin-ai-003---outer-ai-planning-pass-and-command-history), [BIN-AI-003A](original-internals/computer-players.md#bin-ai-003a---strategic-hire-offer-ranking), [BIN-AI-003B](original-internals/computer-players.md#bin-ai-003b---base-hire-role-schedule), [BIN-AI-003C](original-internals/computer-players.md#bin-ai-003c---ai-hire-destination-and-persistent-placement-anchor), [BIN-AI-004](original-internals/computer-players.md#bin-ai-004---global-ai-mentality-byte-and-first-consumers), [BIN-AI-005](original-internals/computer-players.md#bin-ai-005---shared-weighted-sector-selector), [BIN-AI-006](original-internals/computer-players.md#bin-ai-006---directional-attitude-and-hostility-matrix), [BIN-AI-007](original-internals/computer-players.md#bin-ai-007---per-player-difficulty-resolution-band), [BIN-RNG-004](original-internals/randomness-and-turn-structure.md#bin-rng-004---ai-planning-callers) | [AI-SPEC.md](AI-SPEC.md); [parity: AI](PARITY-MATRIX.md#computer-players); [per-family notes](PARITY-MATRIX.md#computer-player-row-details); [decision: no substituted AI commands](DECISIONS.md#2026-09-17--do-not-substitute-rejected-recovered-ai-commands); [README: headless tournaments](../README.md#headless-ai-tournaments); [milestone M6](IMPLEMENTATION-PLAN.md#m6---ai-parity) |
-| Last Turn Events, Comlink, and Search | — | [BIN-EVENT-001](original-internals/reports-and-comlink.md#bin-event-001---last-turn-report-table-types-and-lifetime), [BIN-EVENTS-002](original-internals/reports-and-comlink.md#bin-events-002---last-turn-events-pager-and-exit-control), [BIN-UI-016](original-internals/interface-and-options.md#bin-ui-016---last-turn-events-site-image-treatment), [BIN-COMLINK-001](original-internals/reports-and-comlink.md#bin-comlink-001---per-player-message-queue-capacity-and-overflow), [BIN-COMLINK-002](original-internals/reports-and-comlink.md#bin-comlink-002---view-navigation-and-hit-geometry), [BIN-COMLINK-003](original-internals/reports-and-comlink.md#bin-comlink-003---send-eligibility-controls-and-composition-cursor), [BIN-COMLINK-004](original-internals/reports-and-comlink.md#bin-comlink-004---view-record-fields-and-projection), [BIN-SEARCH-001](original-internals/reports-and-comlink.md#bin-search-001---per-player-site-filters-and-city-markers), [BIN-SEARCH-002](original-internals/reports-and-comlink.md#bin-search-002---exact-search-panel-controls-and-row-targets) | [parity: Notifications, Comlink](PARITY-MATRIX.md#turn-structure-and-match-state); [handover: reports](HANDOVER.md#turn-reports-and-hot-seat-handoff) |
-| Options, preferences, and the registry | — | [BIN-OPTIONS-001](original-internals/interface-and-options.md#bin-options-001---registry-keys-initialized-defaults-and-idle-gang-warning) | [parity: Options](PARITY-MATRIX.md#interface-input-and-options); [decision: registry persistence defects](DECISIONS.md#2026-09-17--correct-the-original-registry-persistence-defects); [decision: panel slide-out](DECISIONS.md#2026-09-23--do-not-animate-the-panel-slide-out); [handover: Options](HANDOVER.md#input-options-and-panel-motion) |
-| Screens, panels, hit geometry, and rendering | — | [BIN-API-001](original-internals/executable-and-platform.md#bin-api-001---rendering), [BIN-API-002](original-internals/executable-and-platform.md#bin-api-002---px-loading-palette-and-copy-modes), [BIN-UI-031](original-internals/interface-and-options.md#bin-ui-031---px00129-uses-role-specific-copy-modes), [BIN-UI-032](original-internals/interface-and-options.md#bin-ui-032---exact-main-console-hit-split-and-pressed-geometry), [BIN-UI-034](original-internals/interface-and-options.md#bin-ui-034---native-pointer-is-stock-arrowwait-not-an-atlas-sprite), [BIN-UI-036](original-internals/interface-and-options.md#bin-ui-036---detailed-sector-site-and-gang-meters), [BIN-SECTOR-GANGS-001](original-internals/interface-and-options.md#bin-sector-gangs-001---compact-all-gangs-sector-roster), [BIN-GAME-INFO-001](original-internals/interface-and-options.md#bin-game-info-001---alternate-panel-crop-and-field-origins), [BIN-UI-CREDITS-001](original-internals/interface-and-options.md#bin-ui-credits-001---blocking-publisherdeveloper-credits-presenter), [BIN-UI-TITLE-001](original-internals/interface-and-options.md#bin-ui-title-001---title-canvas-and-dormant-demo-promotion), [BIN-UI-MENU-001](original-internals/interface-and-options.md#bin-ui-menu-001---native-menu-resource-and-command-groups), [BIN-SETUP-006](original-internals/new-game-setup.md#bin-setup-006---legacy-session-lobby-resources-are-distinct-flows), [BIN-SETUP-007](original-internals/new-game-setup.md#bin-setup-007---legacy-transport-progress-sheets), [BIN-SETUP-008](original-internals/new-game-setup.md#bin-setup-008---legacy-transfer-spinner-animation) | [UI-ATLAS.md](UI-ATLAS.md); [architecture: Rechaos.Game](ARCHITECTURE.md#rechaosgame); [parity: City/Sector UI, Input, Pointer cursor](PARITY-MATRIX.md#interface-input-and-options); [handover: city and console](HANDOVER.md#city-sector-and-console-presentation); [handover: panels](HANDOVER.md#management-panels); [decision: bulk gang orders](DECISIONS.md#2026-09-19--order-a-ctrl-picked-selection-of-gangs-at-once), [decision: cash transaction order](DECISIONS.md#2026-09-24--resolve-cash-transactions-in-player-order); [workstream J](IMPLEMENTATION-PLAN.md#j-user-interface-and-input) |
-| Audio, music, and video | — | [BIN-API-006](original-internals/executable-and-platform.md#bin-api-006---audio-and-video), [BIN-MUSIC-001](original-internals/audio-and-video.md#bin-music-001---cd-track-programs-and-lifecycle), [BIN-SOUND-001](original-internals/audio-and-video.md#bin-sound-001---effect-slots-volume-and-setup-cues), [BIN-SOUND-002](original-internals/audio-and-video.md#bin-sound-002---turn-start-cue-and-effect-interruption) | [AUDIO-VIDEO.md](AUDIO-VIDEO.md); [Audio and music](ORIGINAL-FILE-FORMATS.md#audio-and-music); [Video](ORIGINAL-FILE-FORMATS.md#video); [parity: Audio, Music, Video](PARITY-MATRIX.md#help-and-media); [decision: Smacker decoding](DECISIONS.md#2026-09-13--decode-the-supported-smacker-subset-at-runtime); [decision: intro playback](DECISIONS.md#2026-09-13--stream-the-intro-once-then-keep-it-on-the-title-screen); [workstream K](IMPLEMENTATION-PLAN.md#k-audio-and-video) |
-| Help (WinHelp import and viewer) | — | [BIN-ASSET-002](original-internals/executable-and-platform.md#bin-asset-002---winhelp-context-maps), [BIN-ASSET-003](original-internals/executable-and-platform.md#bin-asset-003---winhelp-styled-text-and-internal-hotspots) | [Help](ORIGINAL-FILE-FORMATS.md#help); [parity: Help](PARITY-MATRIX.md#help-and-media); [handover: Help](HANDOVER.md#help-audio-and-video) |
-| Original file formats and the asset pack | — | [BIN-ASSET-001](original-internals/executable-and-platform.md#bin-asset-001---data-paths), [BIN-PE-001](original-internals/executable-and-platform.md#bin-pe-001---executable-format), [BIN-PE-002](original-internals/executable-and-platform.md#bin-pe-002---sections), [BIN-TOOL-001](original-internals/executable-and-platform.md#bin-tool-001---compilerruntime) | [ORIGINAL-FILE-FORMATS.md](ORIGINAL-FILE-FORMATS.md); [ASSET-CATALOG.md](ASSET-CATALOG.md); [architecture: Rechaos.Extractor](ARCHITECTURE.md#rechaosextractor); [Proprietary-content boundary](ARCHITECTURE.md#proprietary-content-boundary); [parity: source and output packs](PARITY-MATRIX.md#source-data-and-extraction); [extractor commands](DEVELOPMENT.md#run-from-source) |
-| Saves, replays, and canonical hashing | — | [BIN-API-003](original-internals/executable-and-platform.md#bin-api-003---files-and-persistence) | [NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md); [original saves (unsupported)](ORIGINAL-FILE-FORMATS.md#save-games-historical-reference-only-unsupported); [decision: save compatibility scope](DECISIONS.md#2026-09-10--save-compatibility-scope); [parity: Persistence](PARITY-MATRIX.md#persistence); [handover: persistence](HANDOVER.md#saves-replays-and-canonical-hashing) |
-| Online play | — | [BIN-API-004](original-internals/executable-and-platform.md#bin-api-004---legacy-networking) | [MULTIPLAYER.md](MULTIPLAYER.md); [multiplayer/README.md](../multiplayer/README.md); [Online play](ARCHITECTURE.md#online-play); [decision: networking scope](DECISIONS.md#2026-09-10--networking-scope); [parity: Legacy and Modern network](PARITY-MATRIX.md#multiple-players-and-networking); [protocol version rule](../AGENTS.md#multiplayer-protocol-version); [session version rule](../AGENTS.md#multiplayer-session-version); [handover: online play](HANDOVER.md#online-play-and-multiplayer) |
-| Bug reports and diagnostics | — | — | [multiplayer: bug-report intake](MULTIPLAYER.md#bug-reports-the-same-deployment-a-different-database); [decision: replayable journals](DECISIONS.md#2026-09-13--bug-reports-carry-a-replayable-journal-stored-apart-from-matches); [operator manual: bug reports](../multiplayer/README.md#bug-reports); [README: crash reports](../README.md#crash-reports); [handover: diagnostics](HANDOVER.md#extraction-asset-verification-and-diagnostics) |
-| Validation, fixtures, and evidence rules | — | — | [VALIDATION.md](VALIDATION.md); [4.2 Evidence rules](IMPLEMENTATION-PLAN.md#42-evidence-rules); [7. Cross-cutting test matrix](IMPLEMENTATION-PLAN.md#7-cross-cutting-test-matrix); [10. Source hierarchy](IMPLEMENTATION-PLAN.md#10-source-hierarchy); [Evidence discipline](GHIDRA.md#evidence-discipline); [capture evidence rules](REFERENCE-CAPTURE.md#evidence-rules); [Confidence scale](ORIGINAL-FILE-FORMATS.md#confidence-scale) |
-| Packaging, signing, and releases | — | — | [RELEASING.md](RELEASING.md); [workstream N](IMPLEMENTATION-PLAN.md#n-platform-packaging-and-quality); [README: quick start](../README.md#quick-start) |
+| Topic | Spec areas | Rebuild documents |
+|---|---|---|
+| Executable, platform and file locations | [EXE](../spec/index/by-area.md#exe), [PLATFORM](../spec/index/by-area.md#platform), [ASSET](../spec/index/by-area.md#asset) | [GHIDRA.md](GHIDRA.md) |
+| Gameplay tables and other data files | [DATA](../spec/index/by-area.md#data) | [ASSET-PACK.md](ASSET-PACK.md), [ASSET-CATALOG.md](ASSET-CATALOG.md) |
+| Images, sound, music and video | [GFX](../spec/index/by-area.md#gfx), [AUDIO](../spec/index/by-area.md#audio), [VIDEO](../spec/index/by-area.md#video) | [AUDIO-VIDEO.md](AUDIO-VIDEO.md) |
+| Help | [HELP](../spec/index/by-area.md#help) | |
+| Saves | [SAVE](../spec/index/by-area.md#save) | [NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md) |
+| Shared state, randomness and the order of a turn | [STATE](../spec/index/by-area.md#state), [RNG](../spec/index/by-area.md#rng), [TURN](../spec/index/by-area.md#turn) | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| New-game setup and the city | [SETUP](../spec/index/by-area.md#setup), [CITY](../spec/index/by-area.md#city) | |
+| Instant commands | [HIRE](../spec/index/by-area.md#hire), [HIDE](../spec/index/by-area.md#hide), [INFLUENCE](../spec/index/by-area.md#influence), [HEAL](../spec/index/by-area.md#heal), [RESEARCH](../spec/index/by-area.md#research), [BRIBE](../spec/index/by-area.md#bribe), [SNITCH](../spec/index/by-area.md#snitch) | |
+| Sectors, sites and tolerance | [TOLERANCE](../spec/index/by-area.md#tolerance), [SITE](../spec/index/by-area.md#site), [MOVE](../spec/index/by-area.md#move), [CONTROL](../spec/index/by-area.md#control) | |
+| Gangs, equipment and money | [GANG](../spec/index/by-area.md#gang), [EQUIP](../spec/index/by-area.md#equip), [GIVE](../spec/index/by-area.md#give), [SELL](../spec/index/by-area.md#sell), [TERMINATE](../spec/index/by-area.md#terminate), [UPKEEP](../spec/index/by-area.md#upkeep), [FINANCE](../spec/index/by-area.md#finance) | |
+| Combat, detection, Chaos and police | [ATTACK](../spec/index/by-area.md#attack), [COMBAT](../spec/index/by-area.md#combat), [DETECT](../spec/index/by-area.md#detect), [CHAOS](../spec/index/by-area.md#chaos), [POLICE](../spec/index/by-area.md#police) | |
+| Computer players | [AI](../spec/index/by-area.md#ai) | [AI-SPEC.md](AI-SPEC.md) |
+| Reports, messages and search | [EVENT](../spec/index/by-area.md#event), [COMLINK](../spec/index/by-area.md#comlink), [SEARCH](../spec/index/by-area.md#search) | |
+| Objectives, ranking and awards | [OBJECTIVE](../spec/index/by-area.md#objective), [AWARDS](../spec/index/by-area.md#awards), [TIMER](../spec/index/by-area.md#timer) | |
+| Screens, options and input | [UI](../spec/index/by-area.md#ui), [OPTIONS](../spec/index/by-area.md#options) | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Network play | [NET](../spec/index/by-area.md#net) | [MULTIPLAYER.md](MULTIPLAYER.md); the original's network play is not reproduced (DEV-NET-001) |
+| Validation and evidence | | [VALIDATION.md](VALIDATION.md), [GHIDRA.md](GHIDRA.md#evidence-discipline), [REFERENCE-CAPTURE.md](REFERENCE-CAPTURE.md#evidence-rules) |
+| Packaging and releases | | [RELEASING.md](RELEASING.md) |
 
 ## Identifiers and conventions
 
 | Convention | Meaning | Defined in |
 |---|---|---|
-| `BIN-<AREA>-<NNN>` | A clean-room finding about the original executable. IDs are stable and unique; a letter suffix (`BIN-AI-003A`) marks a finding split out of another. Never reuse or renumber an ID. | [Finding format](ORIGINAL-INTERNALS.md#finding-format) |
-| `RULE-<AREA>-<NNN>` | A game rule as the recreation applies it, with its evidence and implementing types. | [Rule format](GAME-RULES.md#rule-format) |
+| `KIND-AREA-NNN` | A spec entry: `FND` finding, `EXP` experiment, `FMT` format, `RULE` rule, `BUG` bug, `SCR` screen. Builds and sources use an alias (`BLD-GOG-EN-1.1`, `SRC-MANUAL-GOG`). IDs are never reused or renumbered. | [AGENTS.md](../AGENTS.md#the-spec) and the standard |
+| `DEV-AREA-NNN` | A deliberate departure of the rebuild from the spec. | [DEVIATIONS.md](../DEVIATIONS.md) |
+| `unknown` … `superseded` | The status of a spec claim; `recorded`, `reproduced` and `superseded` for findings and experiments. There is no other confidence scale. | [AGENTS.md](../AGENTS.md#the-spec) |
+| `implemented`, `validated` | Parity statuses beyond a spec status. | [PARITY.md](../PARITY.md) |
+| `PLACEHOLDER: <spec ID>` | A code comment marking a guessed value; its parity row cannot be `complete`. | [AGENTS.md](../AGENTS.md#the-rebuilds-ledgers) |
 | `YYYY-MM-DD — <title>` | A dated decision. New entries go at the top of the decision log. | [DECISIONS.md](DECISIONS.md) |
-| `Verified` / `High` / `Medium` / `Low` | Confidence attached to every finding, rule, and format observation. | [Confidence scale](ORIGINAL-FILE-FORMATS.md#confidence-scale); [4.2 Evidence rules](IMPLEMENTATION-PLAN.md#42-evidence-rules) |
-| `Unknown` … `Not applicable` | The seven parity status values. | [8. Completion tracking conventions](IMPLEMENTATION-PLAN.md#8-completion-tracking-conventions) |
-| `Manual` | Evidence label for a behavior inspected in the manual but not yet confirmed in the binary. | [PARITY-MATRIX.md](PARITY-MATRIX.md) |
-| `MANUAL-GOG-1`, `EXE-GOG-1.1` | Named evidence sources for rules. | [Evidence sources](GAME-RULES.md#evidence-sources) |
-| Source hierarchy | Which source wins when they disagree. | [10. Source hierarchy](IMPLEMENTATION-PLAN.md#10-source-hierarchy) |
-| `Status:` | Header line describing how settled a maintained document is. | This directory |
-| `<!-- doc-index:begin … -->` | A generated table of contents or index. Rebuild with `node tools/update-doc-indexes.mjs`; `--check` fails when a block is stale, and either mode fails when a relative link or `#anchor` between these documents no longer resolves. | [tools/update-doc-indexes.mjs](../tools/update-doc-indexes.mjs) |
+| `Status:` | Header line describing how settled a document in this directory is. | This directory |
+| `<!-- doc-index:begin … -->` | A generated table of contents or index. Rebuild with `node tools/update-doc-indexes.mjs`; `--check` fails when a block is stale, and either mode fails when a relative link or `#anchor` no longer resolves. | [tools/update-doc-indexes.mjs](../tools/update-doc-indexes.mjs) |
 
 ## Canonical identities
 
-The fingerprints that every address, offset, and hash in this directory is
-valid for. They are repeated here for lookup only; the linked document is the
-authority for each.
+The spec identifies files by xxh3-128: the executable, every data file and the
+manual are listed with their hashes in
+[BLD-GOG-EN-1.1](../spec/builds/BLD-GOG-EN-1.1.md) and the source entries in
+[spec/sources/](../spec/sources/). The rebuild's own checks use these SHA-256
+values:
 
 | Identity | SHA-256 | Authority |
 |---|---|---|
-| Reference executable `Chaos Overlords.exe` (version 1.1, 664,576 bytes) | `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89` | [ORIGINAL-INTERNALS.md](ORIGINAL-INTERNALS.md), [Evidence sources](GAME-RULES.md#evidence-sources) |
-| Full `DATA` + `HELP` + `MUSIC` source pack | `ad958a934a691318f31a27a87252f420dd89a0ad03759457d8feaf49914d29e3` | [Current canonical identities](VALIDATION.md#current-canonical-identities), [ASSET-CATALOG.md](ASSET-CATALOG.md) |
-| Original manual scan (`MANUAL-GOG-1`) | `bdb1072848df95111cd014faaa7297d016b7c6e55cd7f2658dda67a167a0089d` | [Evidence sources](GAME-RULES.md#evidence-sources) |
-| Bundled gameplay JSON `src/Rechaos.Core/GameData/original-data.json` | `e65f80e4d9a99ceeffbbc7fb335ef7f57b368ef87c1c56af23bcd759cd4e8b3a` | [Current canonical identities](VALIDATION.md#current-canonical-identities) |
-| Upstream `re-chaos` research executable (differs from the GOG build) | `0791e6209d573a79882675d1236737f5c9b369ea4af541a7dbd03cbadf4493d5` | [10. Source hierarchy](IMPLEMENTATION-PLAN.md#10-source-hierarchy) |
+| Reference executable `Chaos Overlords.exe` (version 1.1, 664,576 bytes) | `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89` | [GHIDRA.md](GHIDRA.md#reference-executable) |
+| Full `DATA` + `HELP` + `MUSIC` source pack | `ad958a934a691318f31a27a87252f420dd89a0ad03759457d8feaf49914d29e3` | [ASSET-PACK.md](ASSET-PACK.md), [VALIDATION.md](VALIDATION.md#current-canonical-identities) |
+| Bundled gameplay JSON `src/Rechaos.Core/GameData/original-data.json` | `e65f80e4d9a99ceeffbbc7fb335ef7f57b368ef87c1c56af23bcd759cd4e8b3a` | [ASSET-PACK.md](ASSET-PACK.md) |
 
 Current format versions (native save, replay, canonical hash, asset manifest,
 extracted help, client preferences) change more often than hashes; read them
 from [HANDOVER.md](HANDOVER.md#repository-state) and
-[NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md) rather than from here.
+[NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md).
 
 ## Maintaining this directory
 
-- **New evidence goes where its family lives**: an executable finding is a
-  new `### BIN-…` heading in the [original-internals/](original-internals/)
-  document for its subsystem; an intended mechanic is a
-  `### RULE-…` heading in GAME-RULES.md; a deliberate deviation is a dated entry
-  at the top of DECISIONS.md; a status change is a parity row. Then link them:
-  a rule cites its findings, a parity row cites both, and this page's topic
-  index gains the new IDs.
-- **Regenerate, do not hand-edit, generated blocks**: after changing headings
-  in a document with a `doc-index` block, run `node tools/update-doc-indexes.mjs`.
-  ASSET-CATALOG.md is rewritten by `dotnet run --project src/Rechaos.Extractor -- --catalog`
-  from a fully verified pack.
-- **Adding a document**: give it a `Status:` line, add it to
-  the catalog above and to the [documents-to-maintain table](IMPLEMENTATION-PLAN.md#41-documents-to-maintain)
-  when it carries parity evidence, and link it from the topic index.
-- **Keep evidence and claims apart**: what the executable does, what the manual
-  says, and what the recreation currently does are recorded in different
-  places on purpose; see [the evidence rules](IMPLEMENTATION-PLAN.md#42-evidence-rules)
-  and [the static research protocol](VALIDATION.md#static-binary-research-protocol).
+- New evidence about the original goes into the spec as a new entry, never into
+  this directory. A departure of the rebuild goes into DEVIATIONS.md, with its
+  reasoning as a dated entry in DECISIONS.md when it is a product decision.
+- Regenerate, do not hand-edit, generated blocks: run
+  `node tools/update-doc-indexes.mjs` after changing headings here, and
+  `node tools/check-spec.mjs` after changing the spec. ASSET-CATALOG.md is
+  rewritten by `dotnet run --project src/Rechaos.Extractor -- --catalog`.
+- A new document gets a `Status:` line, a row in the catalog above, and a row
+  in the topic index when it covers part of the game.

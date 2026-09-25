@@ -219,7 +219,7 @@ triage is a script or a console against the deployment rather than an endpoint a
 
 ## Publishing
 
-Every package here is published to npm under `@chaos-overlords/`, GPL-3.0-only, so the server can be
+Every package here is published to npm under `@chaos-overlords/` with the MIT License, so the server can be
 self-hosted (`npx @chaos-overlords/node-server`) and deployed from elsewhere — a Cloudflare
 deployment consumes `@chaos-overlords/worker` and the two migration lineages as ordinary
 dependencies rather than as a checkout of this repository.

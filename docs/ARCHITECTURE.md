@@ -215,8 +215,8 @@ loading, title/setup/hot-seat-handoff/city/sector/sector-gangs/gang/finance/rank
 keyboard and inverse-mapped mouse input, including edge-triggered right-click
 cancellation that delegates to each interaction's existing close/back operation,
 an ownership-composited city/sector renderer, and an atlas-backed renderer for the original
-`PX00129` pixel font. `UI-ATLAS.md` records the
-first full-screen resource and hit-region mappings.
+`PX00129` pixel font. The `SCR-*` entries in `spec/screens/` record the
+original's screen resources and hit regions.
 The client shell is a partial class split by responsibility. `ChaosGame.cs`
 retains the loop, shared client state, and top-level input/screen routing.
 `ChaosGame.Assets.cs`, `ChaosGame.Setup.cs`, and `ChaosGame.Persistence.cs`

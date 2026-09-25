@@ -13,7 +13,8 @@
 # the platform most players run.
 #
 # `Invoke-Validation.ps1` also checks the generated documentation indexes and the relative links
-# between documents (`tools/update-doc-indexes.mjs --check`) on both legs, with the runner's own
+# between documents (`tools/update-doc-indexes.mjs --check`), and the spec against the
+# documentation standard (`tools/check-spec.mjs --check`), on both legs, with the runner's own
 # Node.js. Windows checks out with CRLF, so that leg also covers the script's line-ending handling.
 # A stale index fails the leg only after the build and tests have run, so it never hides them.
 name: Fast gate
@@ -52,11 +53,39 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Full history, so `check-spec.mjs` can find where a pull request forked from its base
+          # branch and fail when it deletes a spec ID or area that exists there.
+          fetch-depth: 0
 
       - name: Set up .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.400
+
+      # No maintained action installs the Kaitai Struct compiler, so the pinned release is fetched
+      # and checked against its SHA-256 here. `KSC` makes `check-spec.mjs` compile every `.ksy`
+      # definition with it; without a compiler the script only warns, which is how a broken
+      # definition used to pass this gate. The release runs on the runner's preinstalled Java.
+      # kibertoad/refurbished-dinosaurs-toolkit#1 moves this step into a shared action.
+      - name: Install the Kaitai Struct compiler
+        shell: bash
+        env:
+          KSC_VERSION: "0.11"
+          KSC_SHA256: ff89389d9dc9e770d78a24af328763cb1f8e7b31ce7766c9edf10669a060f2a2
+        run: |
+          set -euo pipefail
+          tmp="$RUNNER_TEMP"
+          if [ "$RUNNER_OS" = Windows ]; then tmp="$(cygpath -u "$tmp")"; fi
+          zip="$tmp/kaitai-struct-compiler.zip"
+          curl -fsSL --retry 3 -o "$zip" \
+            "https://github.com/kaitai-io/kaitai_struct_compiler/releases/download/$KSC_VERSION/kaitai-struct-compiler-$KSC_VERSION.zip"
+          echo "$KSC_SHA256  $zip" | sha256sum --check --strict
+          unzip -q "$zip" -d "$tmp"
+          bin="$tmp/kaitai-struct-compiler-$KSC_VERSION/bin/kaitai-struct-compiler"
+          if [ "$RUNNER_OS" = Windows ]; then bin="$bin.bat"; fi
+          "$bin" --version
+          if [ "$RUNNER_OS" = Windows ]; then bin="$(cygpath -w "$bin")"; fi
+          echo "KSC=$bin" >> "$GITHUB_ENV"
 
       - name: Verify, build, and test
         shell: pwsh

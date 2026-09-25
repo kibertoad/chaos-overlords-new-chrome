@@ -203,12 +203,12 @@ internal static class HireResolver
         {
             var definition = state.Definitions.Gang(pending.GangDefinitionId);
             var cost = HireRules.InitialCost(definition);
-            // BIN-HIRE-002: the original scans only the hiring player's gang records here.
+            // RULE-HIRE-001: the original scans only the hiring player's gang records here.
             var hasSectorCapacity = player.Gangs
                 .Count(gang => gang.IsActive && gang.SectorId == pending.TargetSectorId)
                 < MatchLimits.FriendlyGangsPerSector;
             var canAfford = HireRules.CanAffordInitialCost(player.Cash, definition);
-            // BIN-HIRE-002: the resolver counts the hiring player's gang records in the
+            // RULE-HIRE-001: the resolver counts the hiring player's gang records in the
             // target sector first and only then looks at then-current cash. Neither test draws RNG,
             // so the order decides nothing but which failure notification the player is shown.
             if (!pending.InitialCostPaid && !hasSectorCapacity)

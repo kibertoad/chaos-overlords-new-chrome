@@ -6,9 +6,9 @@ This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
 
 Entries are ordered newest first. Each records the decision, the evidence or
-reasoning behind it, and what it rules in or out; a decision that changes a
-parity row is also reflected in [PARITY-MATRIX.md](PARITY-MATRIX.md) with the
-`Intentional deviation` status.
+reasoning behind it, and what it rules in or out. A decision that departs from
+the original is also recorded as an entry of [DEVIATIONS.md](../DEVIATIONS.md),
+which names the spec entries it departs from.
 
 ## Decision index
 
@@ -75,7 +75,7 @@ gang the player has already ordered to Move away or Terminate: both resolve in
 the Execution phase, before hires, so the room they leave is there when the
 hire is placed.
 
-**Original behavior.** `BIN-HIRE-001` establishes that the shipped drop handler
+**Original behavior.** `FND-HIRE-001` establishes that the shipped drop handler
 writes the destination without any capacity check, and the resolver only
 counts the gangs in the target sector at resolution, where six fail the hire.
 The recreation keeps that resolver check unchanged.
@@ -117,7 +117,7 @@ parentheses. Hovering the row explains each figure in its own section, breaks
 the delta down by component, and shows every queued Bribe and Equip, numbered in resolution
 order with its price: Instant Bribes first, then Equips in submission order.
 
-**Original behavior.** `BIN-EQUIP-002` and `BIN-EQUIP-006` establish that the
+**Original behavior.** `FND-EQUIP-002` and `FND-EQUIP-006` establish that the
 shipped resolver instead scans fixed gang roster slots. An earlier-slot Sell
 can fund a later-slot Equip regardless of which was queued first. The original
 picker neither hides unaffordable researched items nor checks cash when an
@@ -140,13 +140,13 @@ slide-out. A closing panel disappears in the frame it closes. This is the only
 panel-motion or audio behavior where the recreation deliberately departs from
 the original. Every other effect cue keeps its recovered trigger, order and
 interruption: one effect voice, and each new cue stops the one before it
-(`BIN-SOUND-002`). Slide Panels stays off by default, a separate modern choice
+(`FND-AUDIO-003`). Slide Panels stays off by default, a separate modern choice
 recorded in the Options parity row.
 
 **Reasoning.** The original's close helper `0x004196f5` plays slot 1 and then
 runs a blocking copy loop of about a quarter second before the next handler can
 open anything (see the interface-and-options panel slide evidence and
-`BIN-SOUND-001`). That delay adds no information and holds input on every panel
+`FND-AUDIO-002`). That delay adds no information and holds input on every panel
 change, including nested panel hops, and the entrance alone already shows where
 the panel came from.
 
@@ -312,7 +312,7 @@ reason, as [AGENTS.md](../AGENTS.md) requires when a state hash changes.
   evidence for recreation defaults, except for separately documented modern
   choices such as Slide Panels off. Preference writes are reliable and bounded;
   malformed data falls back per field. The obsolete `serialNum` side effect is
-  excluded from authoritative RNG, as documented in `BIN-RNG-001`.
+  excluded from authoritative RNG, as documented in `FND-RNG-001`.
 
 ## 2026-09-17 — Correct the original AI hire slot/role indexing defect
 

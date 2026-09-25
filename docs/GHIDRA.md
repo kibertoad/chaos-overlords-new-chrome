@@ -68,8 +68,8 @@ C:\GOG Games\chaos_overlords_manual\Chaos Overlords - Manual.pdf
 - Layout: 30 PDF pages containing 56 numbered scan pages
 
 The copy at `C:\GOG Games\Chaos Overlords\Chaos Overlords - Manual.pdf` has
-the same length and SHA-256 and is therefore byte-identical. Rule evidence
-should cite `MANUAL-GOG-1` in `GAME-RULES.md`; local absolute paths are setup
+the same length and SHA-256 and is therefore byte-identical. Spec entries cite it
+as SRC-MANUAL-GOG; local absolute paths are setup
 metadata, not runtime dependencies.
 
 ## Headless workflow
@@ -174,9 +174,9 @@ sites.
   observed constants, and an independent behavioral description.
 - Never copy decompiled implementation into production. Reimplement factual
   behavior independently using project naming and structure.
-- Store stable findings in the `original-internals/` document for their
-  subsystem, and rules in `GAME-RULES.md`.
-- Mark an interpretation Provisional until static evidence and a controlled
-  observation agree.
+- Record each reading as a static finding in `spec/findings/` and cite it from
+  the rules, formats and screens it supports (see `AGENTS.md`, The spec).
+- An entry resting on static findings alone is `supported`; it becomes
+  `established` only when a run of the original agrees.
 - Do not commit temporary Ghidra projects, proprietary resources, executable
   bytes, full disassemblies, or decompiler dumps.

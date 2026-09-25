@@ -58,7 +58,7 @@ public static class AudioRouting
 
     public static int OnlineTurnReadySound() => GeneralSoundSlot.IncomingMessageAlert;
 
-    /// <summary>The later-turn cue for a local turn advance (<c>BIN-SOUND-002</c>).</summary>
+    /// <summary>The later-turn cue for a local turn advance (<c>RULE-AUDIO-006</c>).</summary>
     /// <remarks>
     /// Only an advanced turn counter plays it, so the first turn stays silent as in the original,
     /// and an ended match goes straight to its endgame. Turns no local human remains to plan are
