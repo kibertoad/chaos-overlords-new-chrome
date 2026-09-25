@@ -104,8 +104,8 @@ internal static class OriginalAiHireRoleRules
     }
 
     /// <summary>
-    /// Applies the instruction-verified adjustment block shared verbatim by
-    /// Power, Kill 'Em All, and Big 40 before their final role switch.
+    /// Applies the adjustment block Power, Kill 'Em All and Big 40 share before their final role
+    /// switch. Only Power has the turns-remaining remaps (FND-AI-050).
     /// </summary>
     public static OriginalAiHireRoleSelection SelectPowerAdjusted(
         ScenarioId scenario,
@@ -118,8 +118,17 @@ internal static class OriginalAiHireRoleRules
         ArgumentOutOfRangeException.ThrowIfNegative(inputs.TurnsRemaining);
 
         var slot = turn % 10;
-        if (inputs.TurnsRemaining < 10 && slot == 4) slot = 1;
-        if (slot == 8 && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 1;
+        // FND-AI-050: only Power has the turns-remaining remaps; Kill 'Em All and Big 40 move
+        // slot 8 on cash alone.
+        if (scenario == ScenarioId.Power)
+        {
+            if (inputs.TurnsRemaining < 10 && slot == 4) slot = 1;
+            if (slot == 8 && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 1;
+        }
+        else if (slot == 8 && inputs.Cash < 100)
+        {
+            slot = 1;
+        }
 
         var changesSix = !inputs.HasVisibleHostileSector
             || inputs.HasFamily6CoveringFirstHostileSector
@@ -177,7 +186,8 @@ internal static class OriginalAiHireRoleRules
         var slot = turn % 10;
         var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
         if (slot is 3 or 6 or 8 && inputs.Family3Count >= durationFactor * 4f) slot = 0;
-        if (slot is 5 or 7 && inputs.Family6Or12Count >= durationFactor * 6f) slot = 0;
+        // FND-AI-050: the quota for slots 5 and 7 uses the float 10.0 at 0x00481030.
+        if (slot is 5 or 7 && inputs.Family6Or12Count >= durationFactor * 10f) slot = 0;
         if (slot == 9 && (inputs.Family2Count >= durationFactor * 2f
             || inputs.Cash < durationFactor * 100f)) slot = 0;
         if (slot == 1 && inputs.Family7Count >= durationFactor) slot = 0;

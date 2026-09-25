@@ -30,6 +30,7 @@ public sealed partial class MatchState
         AiPlanningPreparation.ApplyFamilyAssignments(this, player);
         AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
         AiTurnPlanner.PrepareRecoveredFamilyCommands(this, player);
+        AiPlanningPreparation.RefreshHireAnchor(this, player);
     }
 
     public AiTurnPlanner.HirePreparation PrepareAiHiring(PlayerId player)
@@ -38,9 +39,13 @@ public sealed partial class MatchState
             throw new InvalidOperationException("AI hiring preparation requires that player's active Command phase.");
         if (FindPlayer(player)?.Setup.Controller != PlayerController.Computer)
             throw new ArgumentException("AI hiring preparation requires a computer-controlled player.", nameof(player));
-        if (AiPlanningPreparation.SelectHireRole(this, player) is not { } selection)
-            return new AiTurnPlanner.HirePreparation(null);
-        AiPlanning.SetCurrentHireRole(player, selection.Role);
-        return AiTurnPlanner.PrepareHire(this, player, selection);
+        var preparation = new AiTurnPlanner.HirePreparation(null);
+        if (AiPlanningPreparation.SelectHireRole(this, player) is { } selection)
+        {
+            AiPlanning.SetCurrentHireRole(player, selection.Role);
+            preparation = AiTurnPlanner.PrepareHire(this, player, selection);
+        }
+        AiPlanningPreparation.RevertSurplusHunter(this, player);
+        return preparation;
     }
 }

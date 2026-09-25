@@ -82,6 +82,32 @@ internal static class AiPlanningPreparation
             state.Setup.Scenario, elapsedTurns, inputs);
     }
 
+    /// <summary>
+    /// RULE-AI-010, FND-AI-050: after the hire choice, whether or not the player may hire, a player
+    /// owning more than six sectors whose hunters (families 6 and 12) outnumber a quarter of them
+    /// sends the first hunter in slot order back to family 0. The Attack test that spares it reads
+    /// the planning record of the slot numbered by the sector count, whichever hunter is visited.
+    /// </summary>
+    public static void RevertSurplusHunter(MatchState state, PlayerId player)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var playerState = state.FindPlayer(player)
+            ?? throw new ArgumentOutOfRangeException(nameof(player));
+        var ownedSectorCount = state.Sectors.Count(sector => sector.Owner == player);
+        if (ownedSectorCount / 4 >= CountFamilies(state, player, playerState, 6, 12)
+            || ownedSectorCount <= 6)
+            return;
+        if (state.AiPlanning.PlannedAction(player, ownedSectorCount) == GangAction.Attack) return;
+        for (var gangSlot = 0; gangSlot < playerState.Gangs.Count; gangSlot++)
+        {
+            if (!playerState.Gangs[gangSlot].IsActive
+                || state.AiPlanning.Family(player, gangSlot) is not (6 or 12))
+                continue;
+            state.AiPlanning.SetFamily(player, gangSlot, 0);
+            return;
+        }
+    }
+
     private static int CountFamilies(
         MatchState state,
         PlayerId player,
@@ -91,10 +117,11 @@ internal static class AiPlanningPreparation
         .Count(entry => entry.gang.IsActive
             && families.Contains(state.AiPlanning.Family(player, entry.slot)));
 
-    public static int PrepareHirePlacementMode(
-        MatchState state,
-        PlayerId player,
-        int adjustedRole)
+    /// <summary>
+    /// RULE-AI-013: after every gang has been dispatched and before the gang limit, the placement
+    /// anchor is kept or replaced by the fixed scans.
+    /// </summary>
+    public static void RefreshHireAnchor(MatchState state, PlayerId player)
     {
         ArgumentNullException.ThrowIfNull(state);
         var playerState = state.FindPlayer(player)
@@ -123,21 +150,24 @@ internal static class AiPlanningPreparation
             .Count(entry => entry.gang.IsActive
                 && entry.gang.SectorId == sectorId
                 && state.AiPlanning.PreviousAction(player, entry.slot) == GangAction.Chaos);
-        var retainsAnchor = state.Setup.Scenario != ScenarioId.BigMan
-            && anchorSector is >= 0 and < MatchLimits.SectorCount
-            && owners[anchorSector] == player.Value
-            && activeGangCount(anchorSector) < MatchLimits.FriendlyGangsPerSector
-            && OriginalAiHireAnchorRules.CountAvailableNeutralNeighbors(
-                player, anchorSector, owners, availability) > 0;
-        if (!retainsAnchor)
-        {
-            anchorSector = OriginalAiHireAnchorRules.Select(
-                player, state.Setup.Scenario, anchorSector, owners, availability,
-                activeGangCount, priorChaosCount);
-            state.AiPlanning.SetSectorAnchor(
-                player, checked(anchorSector + AiPlanningState.SectorAnchorOffset));
-        }
+        if (OriginalAiHireAnchorRules.KeepsAnchor(
+                player, state.Setup.Scenario, anchorSector, owners, availability, activeGangCount))
+            return;
+        anchorSector = OriginalAiHireAnchorRules.Select(
+            player, state.Setup.Scenario, anchorSector, owners, availability,
+            activeGangCount, priorChaosCount);
+        state.AiPlanning.SetSectorAnchor(
+            player, checked(anchorSector + AiPlanningState.SectorAnchorOffset));
+    }
 
+    public static int PrepareHirePlacementMode(
+        MatchState state,
+        PlayerId player,
+        int adjustedRole)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var playerState = state.FindPlayer(player)
+            ?? throw new ArgumentOutOfRangeException(nameof(player));
         var firstHostileSector = FirstVisibleHostileSector(state, player)
             ?? OriginalAiHirePlacementRules.InactiveGangSector;
         var gangSlotZeroSector = playerState.Gangs.Count > 0 && playerState.Gangs[0].IsActive

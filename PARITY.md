@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 71 |
+| `supported` | 69 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 150 |
+| `implemented` | 152 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 19 |
-| `partial` | 53 |
-| `complete` | 150 |
+| `partial` | 51 |
+| `complete` | 152 |
 
 ## DATA
 
@@ -325,10 +325,10 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | complete | None | None | implemented | Mode 0 draws one of the eight neighbours with roll(8) and draws again off the map, with no capacity test. |
 | `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | supported | complete | None | None | implemented | None |
 | `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | None | None | implemented | None |
-| `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | partial | None | `DEV-AI-001` | supported | The rebuild deliberately compares the previous hire role with role 4 in the hunter guards (BUG-AI-001). The per-scenario slot adjustments and the hunter reversion of FND-AI-050 are not checked against the rebuild. |
+| `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | complete | None | `DEV-AI-001` | implemented | The hunter guards compare the previous hire role with role 4 (DEV-AI-001), where the original compares it with the schedule slot number (BUG-AI-001). |
 | `RULE-AI-011` | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported | complete | None | None | implemented | None |
 | `RULE-AI-012` | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported | complete | None | None | implemented | None |
-| `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | partial | None | None | supported | Placement is carried out in the Hire phase. The rebuild always replaces an anchor of 63, where the original keeps it for player 0 while sector 0, 6, 7 or 8 is free land (FND-AI-051). |
+| `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | complete | None | None | implemented | Placement is carried out in the Hire phase. An anchor of 164 (sector 100) arises only from a Right Hands slot that is inactive when the match is set up, which never happens, so the rebuild does not model the owner read the keep test would make for it. |
 | `RULE-AI-014` | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported | complete | None | None | implemented | None |
 | `RULE-AI-015` | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | supported | complete | None | None | implemented | None |
 | `RULE-AI-016` | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported | complete | None | None | implemented | None |
