@@ -355,7 +355,8 @@ public sealed partial class ChaosGame
                 _online.Service,
                 _online.Server.Value,
                 _onlineLobbyPresentation,
-                _introOnlyOnce));
+                _introOnlyOnce,
+                _preferredScenario));
 
     private void ToggleFullscreen()
     {

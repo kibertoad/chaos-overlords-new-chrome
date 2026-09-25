@@ -65,10 +65,4 @@ public static class GameInformationPresentation
         PlayerStatus.Eliminated => "ELIMINATED",
         _ => throw new ArgumentOutOfRangeException(nameof(status))
     };
-
-    public static bool OpensAtNewGame(MatchSetup setup)
-    {
-        ArgumentNullException.ThrowIfNull(setup);
-        return setup.Players.Count(player => player.Controller == PlayerController.Human) > 1;
-    }
 }

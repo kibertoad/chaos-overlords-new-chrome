@@ -31,9 +31,10 @@ public sealed partial class ChaosGame
         }
         PrepareCurrentHireOffers();
         _deferComlinkAlertUntilPlanningVisible = true;
-        if (_showGameInfoAtPlanningEntry)
+        // RULE-SETUP-008: after the Ready card, Game Information for each local human who plans in
+        // the round a loaded match resumed on, then combat results, Last Turn Events and the Comlink.
+        if (_resumedMatchTurn == _state.Coordinator.Turn && _resumedGameInfoShown.Add(playerId))
         {
-            _showGameInfoAtPlanningEntry = false;
             _continuePlanningEntryAfterGameInfo = true;
             _screens.Show(ClientScreen.GameInfo);
             return;
