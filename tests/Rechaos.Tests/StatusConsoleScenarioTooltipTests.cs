@@ -31,7 +31,7 @@ public sealed class StatusConsoleScenarioTooltipTests
             Assert.Equal("SCORE", lines[0]);
             Assert.Contains(PlayerRankingTooltip.Basis(scenario), lines[1]);
             Assert.DoesNotContain(lines, line => line.Contains("VICTORY"));
-            Assert.Equal(scenario is ScenarioId.KillEmAll or ScenarioId.Siege,
+            Assert.Equal(scenario is ScenarioId.KillEmAll or ScenarioId.Eliminate,
                 lines.Contains("SHARED BY EVERY SURVIVING OVERLORD."));
             Assert.True(lines.Max(line => line.Length) * OriginalFontLayout.CellWidth + 16
                 <= VirtualInput.Width - 16);

@@ -25,10 +25,10 @@ internal static class OriginalAiHirePlacementModeRules
 
         if (adjustedRole != 4) return persistentAnchor;
 
-        if (scenario == ScenarioId.Siege)
+        if (scenario == ScenarioId.Eliminate)
             return checked(gangSlotZeroSectorId + AiPlanningState.SectorAnchorOffset);
 
-        if (scenario is ScenarioId.Eliminate or ScenarioId.BigMan)
+        if (scenario is ScenarioId.Siege or ScenarioId.BigMan)
             return persistentAnchor;
 
         return checked(firstVisibleHostileSectorId + AiPlanningState.SectorAnchorOffset);

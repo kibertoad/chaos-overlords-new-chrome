@@ -39,7 +39,7 @@ internal static class OriginalAiFamilyFiveRules
         plannedAction == GangAction.Move
         && previousAction == GangAction.Move
         && olderAction == GangAction.Move
-            ? scenario == ScenarioId.Siege ? 11 : 2
+            ? scenario == ScenarioId.Eliminate ? 11 : 2
             : null;
 
     public static bool ShouldTerminateForGreed(
