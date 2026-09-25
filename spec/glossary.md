@@ -150,6 +150,50 @@ three quarters of another player's sectors. Any other value the game keeps:
 the byte at +20 of a player-pair record, element `observer * 6 + other`; the
 records' address is not recorded (unknown) [FND-AI-018, FND-AI-032].
 
+## combat_focal
+
+The viewer's gang whose fights Detailed Combat is showing, as its element
+number `player * 81 + roster_slot`. Any other value the game keeps: `INT16` at
+`0x004945A0` [FND-COMBAT-011].
+
+## combat_focal_bar
+
+The Force bar of `combat_focal` in the current clip. Any other value the game
+keeps: an `INT16[4]` rectangle (top, left, bottom, right) at `0x00494768`,
+top 247, bottom 250 and right end `256 + 6 * force_shown` [FND-COMBAT-011].
+
+## combat_focal_record
+
+A copy of the `combat_records` element of `combat_focal`. Any other value the
+game keeps: FMT-STATE-003 at `0x00494770` [FND-COMBAT-011].
+
+## combat_focal_target
+
+The Attack target of `combat_focal` from its `combat_results` entry, or -1.
+Any other value the game keeps: `INT16` at `0x004947C8` [FND-COMBAT-011].
+
+## combat_other
+
+The other gang of the current Detailed Combat clip, as its element number, or
+-2 for the police. Any other value the game keeps: `INT16` at `0x00494584`
+[FND-COMBAT-011].
+
+## combat_other_bar
+
+The Force bar of `combat_other` in the current clip. Any other value the game
+keeps: an `INT16[4]` rectangle at `0x004947F8`, top 247, bottom 250 and right
+end `329 + 6 * force_shown` [FND-COMBAT-011].
+
+## combat_other_record
+
+A copy of the `fight_list_records` element of `combat_other`. Any other value
+the game keeps: FMT-STATE-003 at `0x00494578` [FND-COMBAT-011].
+
+## combat_other_target
+
+The target of `combat_other` from `fight_list_targets`. Any other value the
+game keeps: `INT16` at `0x004945A4` [FND-COMBAT-011].
+
 ## combat_phase
 
 The step of `resolution` in which each attacking gang makes its attack and
@@ -157,6 +201,12 @@ takes any retaliation, and at whose end the damage from attacks and police is
 applied to Force. It runs after `chaos_phase` and before `transaction_phase`.
 `police_phase` runs inside it, after the attacks and before the damage is
 applied [FND-CHAOS-001, FND-COMBAT-001, FND-COMBAT-004, FND-GANG-003].
+
+## combat_presenting
+
+Set while Detailed Combat runs; cleared when the player ends it with Escape
+or the exit button, after which no further clip plays. Any other value the
+game keeps: `UINT8` at `0x00494760` [FND-COMBAT-011].
 
 ## combat_rating
 
@@ -182,7 +232,7 @@ entry is two `INT16LE` gang indices, `player * 81 + roster_slot`: the gang,
 or -1 for an empty entry, and the gang's Attack target, or -1 when its action
 was not Attack; only the first is cleared each phase. A gang is listed in its
 own player's row of its own sector. The police flag of a player is set when
-the police find one of its gangs there [FND-COMBAT-008]. The rows are
+the police find one of its gangs there [FND-COMBAT-008, FND-COMBAT-011]. The rows are
 written in `turn_order` and roster slot order [FND-COMBAT-004].
 
 ## CombatClip
@@ -465,6 +515,31 @@ RULE-EVENT-005.
 Set while some Last Turn report of the active player has not been shown; it
 lights the Events control. Any other value the game keeps: `UINT8` at
 `0x00487814` [FND-EVENT-005].
+
+## fight_list
+
+The gangs Detailed Combat shows against `combat_focal`, as element numbers:
+`combat_focal` first, then its target, then every gang whose
+`combat_results` entry in the sector targets it, then -2 for the police. A
+list the game keeps, `INT16[36]`, at `0x00494780`, reset to -1 before each
+build [FND-COMBAT-011].
+
+## fight_list_count
+
+The number of elements of `fight_list`. Any other value the game keeps:
+`INT32` at `0x00494710` [FND-COMBAT-011].
+
+## fight_list_records
+
+The combat record of each element of `fight_list`; the police element has a
+made-up record. A list the game keeps, of FMT-STATE-003, parallel to
+`fight_list`, at `0x004945A8` [FND-COMBAT-011].
+
+## fight_list_targets
+
+The target of each element of `fight_list`, as an element number or -1. A
+list the game keeps, of `INT16`, parallel to `fight_list`, at `0x00494718`
+[FND-COMBAT-011].
 
 ## fight_marks
 
@@ -1630,6 +1705,14 @@ function, defined by RULE-AI-006.
 The part of `turn_start` in which each player, in `turn_order`, pays the
 Upkeep of each active gang and collects `cash_yield` from each sector it
 owns. The first turn of a match skips it [FND-UPKEEP-001, FND-TURN-005].
+
+## viewed_player
+
+The player whose gangs the sector view shows and whose Overlord bar portrait
+carries the active-player marker. It is `active_player` on the city screen;
+the sector view sets it to the player whose portrait was pressed. Any other
+value the game keeps: at `0x00487B8C` [FND-UI-015, FND-UI-017, FND-UI-018];
+its width is not recorded (unknown).
 
 ## visible_opponents
 

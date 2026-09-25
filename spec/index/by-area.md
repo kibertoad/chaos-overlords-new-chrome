@@ -10,6 +10,7 @@
 | [FND-EXE-002](../findings/FND-EXE-002.md) | The executable has six sections, and .data has a large zero-initialized tail | recorded |
 | [FND-EXE-003](../findings/FND-EXE-003.md) | The executable was linked by Microsoft's linker 3.10 with a statically linked C runtime | recorded |
 | [FND-EXE-004](../findings/FND-EXE-004.md) | Game code occupies 0x00401000..0x0047862F as 464 functions, followed by import thunks and the C runtime | recorded |
+| [FND-EXE-005](../findings/FND-EXE-005.md) | The resource section holds five menus, one accelerator table, 27 dialogs, 104 strings, four bitmaps, eight icon groups and a version record, and the code loads each kind through one place | recorded |
 
 ## PLATFORM
 

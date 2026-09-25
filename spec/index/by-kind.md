@@ -211,7 +211,7 @@
 
 ## findings
 
-281 entries.
+282 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -340,6 +340,7 @@
 | [FND-EXE-002](../findings/FND-EXE-002.md) | The executable has six sections, and .data has a large zero-initialized tail | recorded |
 | [FND-EXE-003](../findings/FND-EXE-003.md) | The executable was linked by Microsoft's linker 3.10 with a statically linked C runtime | recorded |
 | [FND-EXE-004](../findings/FND-EXE-004.md) | Game code occupies 0x00401000..0x0047862F as 464 functions, followed by import thunks and the C runtime | recorded |
+| [FND-EXE-005](../findings/FND-EXE-005.md) | The resource section holds five menus, one accelerator table, 27 dialogs, 104 strings, four bitmaps, eight icon groups and a version record, and the code loads each kind through one place | recorded |
 | [FND-FINANCE-001](../findings/FND-FINANCE-001.md) | The Financial panel is drawn as the 320-pixel alternate panel with four-cell value fields and its own close control | recorded |
 | [FND-FINANCE-002](../findings/FND-FINANCE-002.md) | The Financial panel sums eight amounts from the queued orders, hires and owned sectors; the Sector variant opens PX05019 when a sector is passed and limits every sum to that sector | recorded |
 | [FND-GANG-001](../findings/FND-GANG-001.md) | Before planning, each active gang's fourteen statistics are rebuilt from its definition, its three items and its owned sector's completed sites | recorded |

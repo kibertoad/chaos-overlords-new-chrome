@@ -23,8 +23,8 @@ The game keeps 16 of these records for each player in the list
 message as the View panel shows it. The list is not one of the blocks a save
 file moves [FND-SAVE-001], so a saved match does not keep its messages. The
 outer match function empties every inbox when it starts, giving each record
-`occupied` 0 and `read` 1 [FND-COMLINK-006]; whether a load passes through it
-has not been recorded.
+`occupied` 0 and `read` 1 [FND-COMLINK-006]. Every load enters that function
+again, so a loaded match starts with every inbox empty [FND-SEARCH-005].
 
 | Offset | Size | Type | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|---|---|
