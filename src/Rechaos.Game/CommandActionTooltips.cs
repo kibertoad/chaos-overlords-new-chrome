@@ -29,9 +29,10 @@ public static class CommandActionTooltips
     public static IReadOnlyList<string> Lines(GangAction action) => [Name(action), .. Effect(action)];
 
     /// <summary>
-    /// Adds the selected gang's sector-specific, temporary Bribe/Snitch shift to the two
-    /// tolerance-changing actions. The normal value includes presently controlled sites,
-    /// so the difference represents the still-active order effects.
+    /// Adds the selected gang's sector figures to the two Tolerance-changing actions: the base
+    /// Tolerance and how far Bribes and Snitches have moved it from 17 minus Income, the sites'
+    /// part, and the Tolerance this turn's Chaos test compares with (RULE-TOLERANCE-001,
+    /// RULE-SITE-001).
     /// </summary>
     public static IReadOnlyList<string> Lines(GangAction action, MatchState state, MatchGangState? gang)
     {
@@ -40,17 +41,33 @@ public static class CommandActionTooltips
         if (action is not (GangAction.Bribe or GangAction.Snitch) || gang is null) return lines;
 
         var sector = state.Sectors[gang.SectorId];
-        var normal = ToleranceResolver.NormalTolerance(state, sector);
-        var shift = sector.Tolerance - normal;
+        var normal = ToleranceResolver.NormalBaseTolerance(sector);
+        var shift = sector.BaseTolerance - normal;
         var shiftText = shift == 0 ? "NONE" : shift > 0 ? $"+{shift}" : shift.ToString();
         return
         [
             .. lines,
             "",
             $"CURRENT BRIBE/SNITCH SHIFT: {shiftText}.",
-            $"CURRENT {sector.Tolerance}; NORMAL TOLERANCE {normal}."
+            $"BASE {sector.BaseTolerance}; NORMAL BASE {normal}.",
+            $"SITES {SignedValue(ToleranceResolver.SiteAdjustment(state, sector))}; " +
+            $"THIS TURN'S CHAOS TEST USES {sector.Tolerance}."
         ];
     }
+
+    // RULE-TOLERANCE-001, RULE-TOLERANCE-002, RULE-BRIBE-001, RULE-SNITCH-001, RULE-SITE-001.
+    private static readonly string[] ToleranceTiming =
+    [
+        "THE CHANGE FIRST COUNTS IN NEXT TURN'S CHAOS TEST: THIS",
+        "TURN'S TEST USES THE TOLERANCE SET BEFORE PLANNING.",
+        "EACH TURN'S ORDERS START BY MOVING BASE TOLERANCE",
+        "ONE POINT TOWARD 17 - SECTOR INCOME.",
+        "AFTER BRIBE, SNITCH AND THE OTHER INSTANT ORDERS,",
+        "BASE TOLERANCE IS KEPT WITHIN 1..40.",
+        "BEFORE PLANNING, TOLERANCE = BASE + COMPLETED SITES."
+    ];
+
+    private static string SignedValue(int value) => value > 0 ? $"+{value}" : value.ToString();
 
     private static string Name(GangAction action) => action switch
     {
@@ -73,8 +90,7 @@ public static class CommandActionTooltips
             "EACH SUCCESSFUL ORDER ADDS +3; GANGS CAN STACK IT.",
             "THE SAME GANG CAN BRIBE AGAIN ON LATER TURNS.",
             "",
-            "EVERY UPKEEP, TOLERANCE MOVES ONE POINT",
-            "BACK TOWARD ITS NORMAL VALUE."
+            .. ToleranceTiming
         ],
         GangAction.Chaos =>
         [
@@ -137,14 +153,13 @@ public static class CommandActionTooltips
         ],
         GangAction.Snitch =>
         [
-            $"TIPS OFF THE POLICE FOR FREE, CUTTING TOLERANCE BY" +
+            $"TIPS OFF THE POLICE FOR FREE, CUTTING BASE TOLERANCE BY" +
             $" {ManualRules.SnitchToleranceDecrease}.",
             "LOWER TOLERANCE MAKES A CRACKDOWN HERE MORE LIKELY.",
             "EACH SUCCESSFUL ORDER ADDS -3; GANGS CAN STACK IT.",
             "THE SAME GANG CAN SNITCH AGAIN ON LATER TURNS.",
             "",
-            "EVERY UPKEEP, TOLERANCE MOVES ONE POINT",
-            "BACK TOWARD ITS NORMAL VALUE."
+            .. ToleranceTiming
         ],
         GangAction.None =>
         [

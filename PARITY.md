@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 102 |
+| `supported` | 97 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 119 |
+| `implemented` | 124 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 20 |
-| `partial` | 83 |
-| `complete` | 119 |
+| `partial` | 78 |
+| `complete` | 124 |
 
 ## DATA
 
@@ -89,7 +89,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `FMT-STATE-001` | Gang record, one per player and roster slot | supported | partial | None | None | supported | The rebuild keeps each gang's fields as named state rather than this 32-byte layout, and marks an empty roster slot with Force 0 rather than sector 100. |
-| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | The rebuild keeps sector owner, Income, Tolerance, sites and site benefits as named state rather than this 36-byte layout; whether it keeps a base Tolerance apart from the shown one, the research level and the seen-gang bytes was not checked. |
+| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | The rebuild keeps sector owner, Income, the base Tolerance, the rebuilt Tolerance, sites and site benefits as named state rather than this 36-byte layout; the research level and the seen-gang bytes are not yet mapped (see the 2026-09-25 decision in docs/DECISIONS.md). |
 | `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | partial | None | None | supported | The rebuild derives combat presentation from combat events and clip forces rather than keeping these 10-byte records. |
 | `FMT-STATE-004` | Site slot in a sector record | supported | partial | None | None | supported | The rebuild keeps remaining Resistance per site plus an explicit influencer identity that the original does not store. |
 | `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | The rebuild keeps the Comlink inbox with the same occupied, read, turn, sender and text content, not this 166-byte layout. |
@@ -111,7 +111,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-TURN-001` | A turn is turn start, planning by each active player in slot order, then resolution | supported | complete | None | None | implemented | None |
 | `RULE-TURN-002` | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported | complete | None | None | implemented | None |
-| `RULE-TURN-003` | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported | partial | None | None | supported | The rebuild's clamp has no ceiling of 40 (RULE-TOLERANCE-002). |
+| `RULE-TURN-003` | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported | complete | None | None | implemented | None |
 | `RULE-TURN-004` | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported | complete | None | `DEV-TURN-001` | implemented | None |
 | `RULE-TURN-005` | Giving a gang an order replaces its whole previous order, one-off or recurring | supported | partial | None | `DEV-TURN-001` | supported | The rebuild rejects recurring Bribe and Snitch from any path, and it is not recorded whether its sector-wide order leaves Research out of the recurring choices. |
 | `RULE-TURN-006` | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | supported | complete | None | None | implemented | The rebuild marks retired gangs with Force 0 and cleared orders instead of sector 100, which changes no playable state. |
@@ -184,20 +184,20 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-BRIBE-001` | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported | partial | None | None | supported | The rebuild keeps one Tolerance per sector, so a Bribe already protects the sector in the same turn's Chaos test, and it does not wrap the byte. |
+| `RULE-BRIBE-001` | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported | complete | None | None | implemented | The Bribe changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. |
 
 ## SNITCH
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-SNITCH-001` | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported | partial | None | None | supported | The rebuild keeps one Tolerance per sector, so a Snitch already reaches the same turn's Chaos test, and it does not wrap the byte. |
+| `RULE-SNITCH-001` | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported | complete | None | None | implemented | The Snitch changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. |
 
 ## TOLERANCE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TOLERANCE-001` | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | supported | partial | None | None | supported | The rebuild moves its single combined Tolerance during Upkeep toward a normal value that includes the sites' Tolerance. |
-| `RULE-TOLERANCE-002` | After the instant phase every sector's base Tolerance is clamped to 1..40 | supported | partial | None | None | supported | The rebuild raises Tolerance below 1 to 1 and has no ceiling of 40. |
+| `RULE-TOLERANCE-001` | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | supported | complete | None | None | implemented | The base Tolerance moves at the start of the instant phase; the sites' part is added only by the rebuild before planning. |
+| `RULE-TOLERANCE-002` | After the instant phase every sector's base Tolerance is clamped to 1..40 | supported | complete | None | None | implemented | None |
 
 ## SITE
 

@@ -53,7 +53,6 @@ public sealed class ChaosResolutionTests
         var definition = match.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
         site.InfluencedBy = new PlayerId(0);
         site.Resistance = 0;
-        sector.Tolerance += definition.Tolerance;
         match.Players[0].Support = definition.Support;
 
         CrackdownResolver.Trigger(match, sector);
@@ -71,6 +70,7 @@ public sealed class ChaosResolutionTests
         Assert.Null(site.InfluencedBy);
         Assert.Equal(definition.Resistance, site.Resistance);
         Assert.Equal(0, match.Players[0].Support);
+        // RULE-SITE-001: the site's Tolerance leaves at the next rebuild before planning.
         Assert.Equal(20, sector.Tolerance);
         Assert.Equal([5, 5], sector.CrackdownHistory);
         Assert.Contains(match.NotificationsFor(new PlayerId(0)), notification =>
@@ -417,19 +417,34 @@ public sealed class ChaosResolutionTests
             notification => notification.Kind == GameNotificationKind.Crackdown);
     }
 
+    // RULE-TOLERANCE-002 clamps the base, and RULE-CHAOS-001 compares with the Tolerance rebuilt
+    // before planning, so a negative Tolerance cracks down although nobody ordered Chaos.
     [Fact]
-    public void InstantPhaseClampsNegativeToleranceBeforeCommandlessChaosCheck()
+    public void ANegativeToleranceCracksDownWithoutAnyChaos()
     {
         var match = CreateMatch(tolerance: -2);
         match.FinishUpkeep();
-        Assert.Equal(-1, match.Sectors[0].Tolerance);
+        Assert.Equal(-2, match.Sectors[0].Tolerance);
         match.FinishCommand(new PlayerId(0));
         match.FinishCommand(new PlayerId(1));
-        for (var index = 0; index < 3; index++) match.FinishExecutionPhase();
 
         match.FinishExecutionPhase();
 
-        Assert.Equal(1, match.Sectors[0].Tolerance);
+        Assert.Equal(1, match.Sectors[0].BaseTolerance);
+        Assert.Equal(-2, match.Sectors[0].Tolerance);
+        Assert.True(match.Sectors[0].CrackdownActive);
+    }
+
+    [Fact]
+    public void AToleranceOfZeroDoesNotCrackDownWithoutChaos()
+    {
+        var match = CreateMatch(tolerance: 0);
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+
+        match.FinishExecutionPhase();
+
         Assert.False(match.Sectors[0].CrackdownActive);
         Assert.All(match.Players, player => Assert.DoesNotContain(
             match.NotificationsFor(player.Id),

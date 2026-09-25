@@ -65,8 +65,27 @@ public sealed class CommandActionTooltipTests
 
         Assert.Contains(lines, line => line.Contains("GANGS CAN STACK IT"));
         Assert.Contains(lines, line => line.Contains("ON LATER TURNS"));
-        Assert.Contains("EVERY UPKEEP, TOLERANCE MOVES ONE POINT", lines);
-        Assert.Contains("BACK TOWARD ITS NORMAL VALUE.", lines);
+        // RULE-TOLERANCE-001, RULE-TOLERANCE-002
+        Assert.Contains("ONE POINT TOWARD 17 - SECTOR INCOME.", lines);
+        Assert.Contains("BASE TOLERANCE IS KEPT WITHIN 1..40.", lines);
+        Assert.Contains(lines, line => line.Contains("NEXT TURN'S CHAOS TEST"));
+    }
+
+    // RULE-SITE-001, RULE-TOLERANCE-001: the console shows the base and the sites' part apart.
+    [Fact]
+    public void TheConsoleToleranceHoverShowsTheBaseAndTheSitesApart()
+    {
+        var parts = new StatusConsoleTooltip.ToleranceParts(Base: 15, Sites: -2, NormalBase: 12);
+
+        var planned = StatusConsoleTooltip.Tolerance(
+            13, new ChaosRangeEstimate(new ChaosRange(0, 0), []), [], parts: parts);
+        var moved = StatusConsoleTooltip.Tolerance(
+            10, new ChaosRangeEstimate(new ChaosRange(0, 0), []), [], parts: parts);
+
+        Assert.Contains("TOLERANCE 13: BASE 15 + SITES -2.", planned);
+        Assert.Contains("BASE MOVES 1 PER TURN TOWARD 12", planned);
+        Assert.DoesNotContain("CHANGES SINCE PLANNING COUNT NEXT TURN.", planned);
+        Assert.Contains("CHANGES SINCE PLANNING COUNT NEXT TURN.", moved);
     }
 
     [Fact]
@@ -78,13 +97,14 @@ public sealed class CommandActionTooltipTests
             allowSparsePlayerIds: true));
         var gang = state.Players[0].Gangs[0];
         var sector = state.Sectors[gang.SectorId];
-        var normal = ToleranceResolver.NormalTolerance(state, sector);
-        sector.Tolerance = normal + 6;
+        var normal = ToleranceResolver.NormalBaseTolerance(sector);
+        sector.BaseTolerance = normal + 6;
 
         var lines = CommandActionTooltips.Lines(GangAction.Bribe, state, gang);
 
         Assert.Contains("CURRENT BRIBE/SNITCH SHIFT: +6.", lines);
-        Assert.Contains($"CURRENT {normal + 6}; NORMAL TOLERANCE {normal}.", lines);
+        Assert.Contains($"BASE {normal + 6}; NORMAL BASE {normal}.", lines);
+        Assert.Contains(lines, line => line.EndsWith($"THIS TURN'S CHAOS TEST USES {sector.Tolerance}."));
     }
 
     [Fact]

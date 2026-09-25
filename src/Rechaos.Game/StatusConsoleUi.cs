@@ -96,7 +96,8 @@ public static class StatusConsoleTooltip
         int? tolerance = null,
         ChaosRangeEstimate? chaosEstimate = null,
         IReadOnlyList<string>? chaosBreakdown = null,
-        bool enemyGangsPresent = false)
+        bool enemyGangsPresent = false,
+        ToleranceParts? toleranceParts = null)
     {
         if (scenario is { } mode && StatusConsoleLayout.Scenario.Contains(point))
             return ScenarioSetupTooltip.Lines(mode, duration);
@@ -122,7 +123,7 @@ public static class StatusConsoleTooltip
             ];
         if (StatusConsoleLayout.SectorEntry(2).Contains(point))
             return tolerance is { } value && chaosEstimate is { } estimate
-                ? Tolerance(value, estimate, chaosBreakdown ?? [], enemyGangsPresent)
+                ? Tolerance(value, estimate, chaosBreakdown ?? [], enemyGangsPresent, toleranceParts)
                 : ["TOLERANCE", "CHAOS ABOVE THIS VALUE TRIGGERS A POLICE CRACKDOWN."];
         if (StatusConsoleLayout.SectorEntry(3).Contains(point))
             return ["SUPPORT", "INFLUENCED-SITE SUPPORT ADDED AGAINST ENEMY CONTROL."];
@@ -138,7 +139,8 @@ public static class StatusConsoleTooltip
         int tolerance,
         ChaosRangeEstimate chaosEstimate,
         IReadOnlyList<string> chaosBreakdown,
-        bool enemyGangsPresent = false)
+        bool enemyGangsPresent = false,
+        ToleranceParts? parts = null)
     {
         List<string> lines =
         [
@@ -164,6 +166,18 @@ public static class StatusConsoleTooltip
             ? "YOUR RANGE CAN TRIGGER A CRACKDOWN."
             : "YOUR RANGE CANNOT TRIGGER A CRACKDOWN.");
         lines.Add("");
+        // RULE-SITE-001, RULE-TOLERANCE-001, RULE-TOLERANCE-002: the value is the base plus the
+        // completed sites, set before planning; the base moves while the orders resolve.
+        if (parts is { } toleranceParts)
+        {
+            lines.Add($"TOLERANCE {tolerance}: BASE {toleranceParts.Base} + SITES {toleranceParts.Sites}.");
+            lines.Add($"BASE MOVES 1 PER TURN TOWARD {toleranceParts.NormalBase}");
+            lines.Add("(17 - INCOME); BRIBE +3, SNITCH -3,");
+            lines.Add("THEN KEPT WITHIN 1..40.");
+            if (toleranceParts.Base + toleranceParts.Sites != tolerance)
+                lines.Add("CHANGES SINCE PLANNING COUNT NEXT TURN.");
+            lines.Add("");
+        }
         lines.Add("CHAOS RANGE BREAKDOWN:");
         lines.AddRange(chaosBreakdown);
         return lines;
@@ -174,6 +188,15 @@ public static class StatusConsoleTooltip
         ChaosRange chaosRange,
         bool enemyGangsPresent = false) =>
         Tolerance(tolerance, new ChaosRangeEstimate(chaosRange, []), [], enemyGangsPresent);
+
+    /// <summary>The two parts a sector's Tolerance is rebuilt from, and where the base returns to.</summary>
+    public readonly record struct ToleranceParts(int Base, int Sites, int NormalBase)
+    {
+        public static ToleranceParts Of(MatchState state, MatchSectorState sector) => new(
+            sector.BaseTolerance,
+            ToleranceResolver.SiteAdjustment(state, sector),
+            ToleranceResolver.NormalBaseTolerance(sector));
+    }
 
     public static Rectangle Bounds(Point point, IReadOnlyList<string> lines) =>
         HoverTooltipLayout.Bounds(point, lines);

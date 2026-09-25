@@ -330,7 +330,7 @@ public sealed partial class ChaosGame
             var lines = StatusConsoleTooltip.At(
                 statusHover, state.Setup.Scenario, state.Setup.Duration, sector.Tolerance,
                 chaosEstimate, StatusConsolePresentation.ChaosBreakdown(state, chaosEstimate),
-                enemyGangsPresent);
+                enemyGangsPresent, StatusConsoleTooltip.ToleranceParts.Of(state, sector));
             DrawHoverTooltip(batch, pixel, font, statusHover, lines,
                 StatusConsoleTooltip.QueuedChaosRangeRow,
                 StatusConsoleTooltip.QueuedChaosRangePrefix,

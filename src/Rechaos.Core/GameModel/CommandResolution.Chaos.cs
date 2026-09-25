@@ -29,7 +29,9 @@ public static partial class CommandResolver
         IReadOnlyList<QueuedCommand> commands)
     {
         var prepared = PreparedChaosResults(state, commands);
-        if (prepared.Count > 0 || commands.Count == 0) return prepared;
+        if (prepared.Count > 0) return prepared;
+        // RULE-CHAOS-001 tests every sector even when nobody ordered Chaos, so a sector whose
+        // Tolerance is below 0 cracks down with no Chaos at all.
         // The original resolver records a per-player/sector presence byte from the
         // opening gang roster, then reports each Crackdown only to those present.
         // This includes occupants who did not submit a Chaos command.
