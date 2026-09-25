@@ -53,12 +53,6 @@ needs static reads or captures of the original:
   pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's police portrait and
   header strips.
 
-## Step 11: Deviations for what the rebuild does not reproduce
-
-FMT-DATA-005 (DATA.Z) stays `unknown` while bytes of its header and file entries are not
-interpreted (FND-DATA-009 lists them); an InstallShield 3 extraction of the blocks would settle
-them and show whether they expand to the installed files.
-
 ## Step 12: Close the research plans
 
 - `static_validation_plan.md`: the remaining items, most of which need a run of the original

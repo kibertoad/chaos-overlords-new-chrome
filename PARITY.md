@@ -11,9 +11,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Status | Rows |
 |---|---|
-| `unknown` | 1 |
+| `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 20 |
+| `supported` | 21 |
 | `established` | 0 |
 | `disputed` | 0 |
 | `implemented` | 192 |
@@ -33,7 +33,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-DATA-002` | Gang definition records in DATA/Gangs | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
 | `FMT-DATA-003` | Item definition records in DATA/ITEMS | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
 | `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | complete | None | `DEV-UI-016` | implemented | The rebuild draws only the 16-bit image set, for which the original never loads this palette either (DEV-UI-016); the extractor copies the file unread. |
-| `FMT-DATA-005` | Compressed archive DATA/DATA.Z | unknown | missing | None | None | unknown | The game never reads the file (FND-DATA-008), and the rebuild copies it unread into its asset pack. FND-DATA-009 reads its tables, but header and entry bytes it does not interpret keep the entry unknown. |
+| `FMT-DATA-005` | Compressed archive DATA/DATA.Z | supported | missing | None | None | supported | The game never reads the file (FND-DATA-008), and the rebuild copies it unread into its asset pack. FND-DATA-009 and FND-DATA-010 read every byte and expand every block. |
 
 ## GFX
 

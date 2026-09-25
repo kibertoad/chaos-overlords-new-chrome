@@ -7,12 +7,13 @@ doc: |
   DATA/DATA.Z of Chaos Overlords: an InstallShield 3 archive left by the
   original installer. A 255-byte header, the compressed files back to back,
   then the directory entries and the file entries. The game never reads it.
-doc-ref: FMT-DATA-005, FND-DATA-005, FND-DATA-009
+doc-ref: FMT-DATA-005, FND-DATA-005, FND-DATA-009, FND-DATA-010
 seq:
   - id: signature
     contents: [0x13, 0x5d, 0x65, 0x8c]
   - id: unk_04
     size: 8
+    doc: 3A 01 02 00 00 00 00 00 in the only archive.
   - id: file_count
     type: u2
   - id: date
@@ -24,12 +25,26 @@ seq:
   - id: archive_size
     type: u4
     doc: Length of the whole file.
-  - id: unk_16
-    size: 19
+  - id: expanded_total
+    type: u4
+    doc: Sum of the file entries' expanded sizes.
+  - id: unk_1a
+    type: u1
+    doc: 0xFF in the only archive.
+  - id: unk_1b
+    size: 6
+    doc: Zero in the only archive.
+  - id: unk_21
+    type: u1
+    doc: 0xFF in the only archive.
+  - id: unk_22
+    size: 7
+    doc: Zero in the only archive.
   - id: dir_table_offset
     type: u4
-  - id: unk_2d
-    size: 4
+  - id: dir_table_size
+    type: u4
+    doc: Length of the directory entries.
   - id: dir_count
     type: u2
   - id: file_table_offset
@@ -38,6 +53,7 @@ seq:
     type: u2
   - id: unk_39
     size: 198
+    doc: Zero in the only archive.
 instances:
   directories:
     pos: dir_table_offset
@@ -62,12 +78,14 @@ types:
         type: str
         size: name_length
         encoding: ASCII
-      - id: padding
+      - id: unk_tail
         size: entry_size - 6 - name_length
+        doc: Five zero bytes in every entry.
   file_entry:
     seq:
       - id: unk_00
         type: u1
+        doc: Zero in every entry.
       - id: dir_index
         type: u2
       - id: expanded_size
@@ -90,11 +108,21 @@ types:
         type: u2
       - id: unk_19
         size: 4
+        doc: Zero in every entry.
       - id: name_length
         type: u1
       - id: name
         type: str
         size: name_length
         encoding: ASCII
-      - id: padding
+      - id: unk_tail
         size: entry_size - 0x1e - name_length
+        doc: |
+          Thirteen bytes, zero except the fourth, which is 0x01 in the
+          executable's entry.
+    instances:
+      block:
+        io: _root._io
+        pos: offset
+        size: compressed_size
+        doc: PKWARE DCL implode stream that expands to expanded_size bytes.
