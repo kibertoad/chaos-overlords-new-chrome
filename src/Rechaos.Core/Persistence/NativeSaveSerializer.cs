@@ -14,7 +14,7 @@ public static class NativeSaveSerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
-    public const int CurrentFormatVersion = 28;
+    public const int CurrentFormatVersion = 29;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -380,7 +380,8 @@ public static class NativeSaveSerializer
         sector.Income,
         sector.CrackdownTurnsRemaining,
         sector.CrackdownHistory.ToArray(),
-        Chaos: null);
+        Chaos: null,
+        BaseTolerance: sector.BaseTolerance);
 
     private static MatchSectorState RestoreSector(SectorDocument sector) => new(
         sector.Id,
@@ -398,7 +399,9 @@ public static class NativeSaveSerializer
         sector.CrackdownTurnsRemaining
             ?? throw new InvalidDataException("Native save crackdown duration is missing."),
         sector.CrackdownHistory
-            ?? throw new InvalidDataException("Native save crackdown history is missing."));
+            ?? throw new InvalidDataException("Native save crackdown history is missing."),
+        sector.BaseTolerance
+            ?? throw new InvalidDataException("Native save base Tolerance is missing."));
 
     /// <summary>
     /// Copies <paramref name="source"/> into memory and rewinds the copy, throwing
@@ -558,7 +561,8 @@ internal sealed record SectorDocument(
     int? Income = null,
     int? CrackdownTurnsRemaining = null,
     IReadOnlyList<int>? CrackdownHistory = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Chaos = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Chaos = null,
+    int? BaseTolerance = null);
 
 internal sealed record SiteDocument(int Slot, short DefinitionId, int Resistance, int? InfluencedBy);
 

@@ -28,37 +28,16 @@ Most gameplay steps change how a turn resolves, so they bump `MULTIPLAYER_SESSIO
 `MultiplayerSessionVersion.Current` together. A step that changes the state encoding also moves
 `MatchStateHasher.FormatVersion`, `NativeSaveSerializer.CurrentFormatVersion` and
 `MatchReplaySerializer.CurrentFormatVersion`, as `StateFingerprintVersionCouplingTests` requires.
-To retire live matches once instead of once per step, land steps 2 to 9 on one branch and release
+To retire live matches once instead of once per step, land the gameplay steps on one branch and release
 them together with a single session bump, or accept one bump per release.
 
 DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay so (the
 2026-09-26 decision in `docs/DECISIONS.md`); no step adds the original's path for them.
 
-## Step 2: Split Tolerance into base and site parts
-
-Closes RULE-TOLERANCE-001, RULE-TOLERANCE-002, RULE-TURN-003, RULE-BRIBE-001 and
-RULE-SNITCH-001, and settles the base Tolerance question of FMT-STATE-002.
-
-- Keep a base Tolerance per sector apart from the sites' Tolerance.
-- At the start of each resolution, move the base one point toward 17 minus the sector's base
-  Income. Remove the Upkeep drift toward a normal value that includes the sites.
-- After the instant phase, clamp every base Tolerance to 1..40.
-- Bribe adds 3 and Snitch subtracts 3 from the base, wrapping as the original's byte does.
-  Today the rebuild's single Tolerance lets a Bribe or Snitch reach the same turn's Chaos test;
-  after the split, the Chaos test sees the change only where the entries say it does.
-
-This changes the state encoding: bump all four versions listed above.
-
-Tooltips: Bribe and Snitch (`CommandActionTooltips`) currently say Tolerance drifts during
-Upkeep toward a normal value, and show the shift against that normal value. Rewrite them to state
-the drift at the start of resolution toward 17 minus base Income, the 1..40 clamp after the
-instant phase, and when the change first reaches a Chaos test. The Tolerance tooltip of the
-sector console (`StatusConsoleUi.Tolerance`) shows the base and the sites' part separately.
-
 ## Step 3: Police, Chaos and Control
 
-Closes RULE-POLICE-002, RULE-CHAOS-002 and RULE-CONTROL-001. Depends on step 2, because the
-Crackdown test reads the new Tolerance.
+Closes RULE-POLICE-002, RULE-CHAOS-002 and RULE-CONTROL-001. The Crackdown test reads the
+Tolerance rebuilt before planning, which the Tolerance split of 2026-09-25 introduced.
 
 - Police presence and its draw are added only on the third Crackdown within five turns, the one
   that neutralizes the sector (FND-POLICE-004). Neutralization clears only the three site

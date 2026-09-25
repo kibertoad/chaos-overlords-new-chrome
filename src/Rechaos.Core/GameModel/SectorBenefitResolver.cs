@@ -22,7 +22,6 @@ internal static class SectorBenefitResolver
                 var definition = state.Definitions.Site(site.DefinitionId);
                 site.InfluencedBy = owner;
                 player.Support = checked(player.Support + definition.Support);
-                sector.Tolerance = checked(sector.Tolerance + definition.Tolerance);
             }
         }
     }

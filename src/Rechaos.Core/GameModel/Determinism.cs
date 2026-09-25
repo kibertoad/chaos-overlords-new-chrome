@@ -112,7 +112,7 @@ public static class MatchStateHasher
     /// multiplayer session version — so the file is refused as an older format before its
     /// fingerprint is ever compared. <c>StateFingerprintVersionCouplingTests</c> holds the rule.
     /// </remarks>
-    internal const int FormatVersion = 3;
+    internal const int FormatVersion = 4;
 
     /// <summary>The number of lowercase hex characters a fingerprint has.</summary>
     public const int FingerprintLength = 2 * DigestBytes;
@@ -464,6 +464,7 @@ public static class MatchStateHasher
     private static void WriteSector(BinaryWriter writer, MatchSectorState sector)
     {
         writer.Write(sector.Id); WriteNullableInt(writer, sector.Owner?.Value); writer.Write(sector.Tolerance);
+        writer.Write(sector.BaseTolerance);
         writer.Write(sector.CrackdownActive); writer.Write(sector.IsImportant); writer.Write(sector.Sites.Count);
         // A sector orders its sites by slot when it is built, so the list is already in slot order.
         foreach (var site in sector.Sites)

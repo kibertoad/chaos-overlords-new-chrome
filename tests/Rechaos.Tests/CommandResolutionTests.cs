@@ -17,7 +17,11 @@ public sealed class CommandResolutionTests
 
         Assert.Equal(7, match.Players[0].Cash);
         Assert.Equal(3, match.Players[0].Statistics.CashSpent);
-        Assert.Equal(toleranceBefore + 3, match.Sectors[0].Tolerance);
+        // RULE-BRIBE-001: the base rises by 3; the Tolerance of this turn's Chaos test stays.
+        var bribe = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.Equal(bribe.PreviousValue + 3, bribe.ResultValue);
+        Assert.Equal(bribe.ResultValue, match.Sectors[0].BaseTolerance);
+        Assert.Equal(toleranceBefore, match.Sectors[0].Tolerance);
         Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
         Assert.Equal(GameEventKind.CommandResolved, match.Events[^1].Kind);
         Assert.Equal(CommandResolutionCode.Resolved, match.Events[^1].Resolution!.Code);
@@ -49,13 +53,13 @@ public sealed class CommandResolutionTests
     {
         var match = CreateMatch(cash: 3);
         QueueAndEnterExecution(match, GangAction.Bribe);
-        var toleranceBefore = match.Sectors[0].Tolerance;
 
         match.FinishExecutionPhase();
 
         Assert.Equal(0, match.Players[0].Cash);
         Assert.Equal(3, match.Players[0].Statistics.CashSpent);
-        Assert.Equal(toleranceBefore + 3, match.Sectors[0].Tolerance);
+        var bribe = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.Equal(bribe.PreviousValue + 3, match.Sectors[0].BaseTolerance);
         Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
     }
 
@@ -67,8 +71,9 @@ public sealed class CommandResolutionTests
 
         match.FinishExecutionPhase();
 
+        // RULE-SNITCH-001, RULE-TOLERANCE-002
         Assert.Equal(10, match.Players[0].Cash);
-        Assert.Equal(1, match.Sectors[0].Tolerance);
+        Assert.Equal(1, match.Sectors[0].BaseTolerance);
         Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
     }
 

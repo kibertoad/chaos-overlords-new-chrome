@@ -19,8 +19,7 @@ internal static class SectorControlResolver
         {
             var definition = state.Definitions.Site(site.DefinitionId);
             if (site.InfluencedBy == previousOwner) player.Support -= definition.Support;
-            if (site.InfluencedBy is not null)
-                sector.Tolerance = checked(sector.Tolerance - definition.Tolerance);
+            // The sector's Tolerance drops the site's part at the next rebuild (RULE-SITE-001).
             site.InfluencedBy = null;
             site.Resistance = definition.Resistance;
         }

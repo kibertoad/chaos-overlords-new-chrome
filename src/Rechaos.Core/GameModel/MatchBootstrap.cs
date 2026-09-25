@@ -133,5 +133,5 @@ public static class MatchBootstrap
             site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy)).ToArray(),
         sector.Owner, sector.Tolerance, sector.LegacyChaos, sector.CrackdownActive,
         isImportant ?? sector.IsImportant, sector.Income,
-        sector.CrackdownTurnsRemaining, sector.CrackdownHistory);
+        sector.CrackdownTurnsRemaining, sector.CrackdownHistory, sector.BaseTolerance);
 }
