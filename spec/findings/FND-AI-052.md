@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00403505..0x0040353A
+    address: 0x00403507..0x0040353A
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00403AE0..0x00403D0B
@@ -27,7 +27,7 @@ All three are cases of `0x00402D70`. The sector record is the 36-byte record
 at `0x004A08E8 + sector * 0x24` and the gang record the 32-byte record at
 `0x00498DA8 + player * 0xA20 + slot * 0x20`.
 
-Selector `0x21` (player argument unused, sector in the second argument) loads
+Selector `0x21` (`0x00403507`) takes the sector as its only argument and loads
 the signed byte +0x0F of the sector (`0x0040350D`). When it is nonzero it
 returns -2 (`0x0040351D`); otherwise it returns the signed owner byte +0
 (`0x0040352F`). It makes no other test.
