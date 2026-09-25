@@ -56,7 +56,7 @@ public sealed partial class ChaosGame
             return;
         }
         var rejectSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Reject, point);
-        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Portrait, point);
+        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.PortraitHit, point);
         if (rejectSlot >= 0)
         {
             BeginHireReject(rejectSlot, ClientScreen.City);
@@ -215,18 +215,11 @@ public sealed partial class ChaosGame
             }
         }
         DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
-        var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
-            .GroupBy(gang => gang.SectorId).ToArray();
-        var pendingHireSectors = player.PendingHires
-            .Select(pending => pending.TargetSectorId).ToHashSet();
-        foreach (var gangs in activeGangsBySector)
-            DrawGangStatusMarker(batch, gangs.Key,
-                GangStatusSource(state, player.Id, gangs.Key, gangs,
-                    pendingHireSectors.Contains(gangs.Key)));
-        var occupiedGangSectors = activeGangsBySector.Select(gangs => gangs.Key).ToHashSet();
-        foreach (var pendingSector in pendingHireSectors.Where(
-                     pendingSector => !occupiedGangSectors.Contains(pendingSector)))
-            DrawGangStatusMarker(batch, pendingSector, OriginalSpriteLayout.IncomingGangStatus);
+        // RULE-UI-006: the markers the map keeps after drawing every sector in number order.
+        var markerFrames = GangStatusMarkerPresentation.MapFrames(state, player.Id);
+        for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
+            if (markerFrames[sectorId] >= 0)
+                DrawGangStatusMarker(batch, sectorId, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]));
         if (_draggedHireDefinitionId is not null
             && CityMapLayout.TrySectorAt(_dragPoint, out var dropSector))
         {
@@ -279,11 +272,11 @@ public sealed partial class ChaosGame
             new Vector2(438, 354), Color.Gold, 1);
         if (state.Coordinator.ActivePlayer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
-            && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
+            && PresentationClock.BlinkLit(_inputTime))
             DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
         if (state.Coordinator.ActivePlayer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
-            && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
+            && PresentationClock.BlinkLit(_inputTime))
             DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
@@ -385,6 +378,62 @@ public sealed partial class ChaosGame
     {
         if (_uiKeyedSprites is not null)
             batch.Draw(_uiKeyedSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
+    }
+
+    /// <summary>
+    /// Copies one sector's cell of the drawn city map to <paramref name="topLeft"/>: its ground,
+    /// owner's art, objective pylons, site markers and the active player's gang marker, as
+    /// <see cref="DrawBoard"/> draws them (SCR-UI-005, FND-UI-014).
+    /// </summary>
+    private void DrawCitySectorCell(
+        SpriteBatch batch, Texture2D pixel, MatchState state, int sectorId, Point topLeft)
+    {
+        var cell = CityMapLayout.Destination(sectorId);
+        var offset = topLeft - cell.Location;
+        Rectangle Moved(Rectangle rectangle) =>
+            new(rectangle.X + offset.X, rectangle.Y + offset.Y, rectangle.Width, rectangle.Height);
+
+        var sector = state.Sectors[sectorId];
+        var neutralLayer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
+        if (neutralLayer is not null)
+            batch.Draw(neutralLayer, Moved(cell), CityMapLayout.Source(sectorId), Color.White);
+        var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
+        if (sector.Owner is not null && layer is not null)
+            batch.Draw(layer, Moved(CityMapLayout.OwnershipDestination(sectorId)),
+                CityMapLayout.OwnershipSource(sectorId), Color.White);
+        else if (neutralLayer is null)
+            batch.Draw(pixel, Moved(cell), sector.Owner is { } owner
+                ? PlayerColors[owner.Value] * .68f
+                : new Color(24, 37, 39));
+        if (_uiKeyedSprites is not null
+            && ObjectiveSectorMarkerPresentation.IsMarked(
+                state.Setup.Scenario, sectorId, sector.IsImportant))
+            batch.Draw(_uiKeyedSprites, Moved(cell),
+                OriginalSpriteLayout.ObjectiveSectorPylons, Color.White);
+
+        var player = state.Players[state.Coordinator.ActivePlayer?.Value ?? 0];
+        foreach (var marker in CitySiteMarkerProjection.Project(
+                     state, player.Id, _siteSearchSelections.For(player.Id)))
+        {
+            if (marker.SectorId != sectorId) continue;
+            var destination = Moved(CitySiteMarkerProjection.Destination(marker));
+            if (_siteMarkerSprites is not null)
+                batch.Draw(_siteMarkerSprites, destination,
+                    CitySiteMarkerProjection.Source(marker), Color.White);
+            else
+                DrawBorder(batch, pixel, destination,
+                    marker.Controlled ? Color.Lime : Color.Cyan, 1);
+        }
+
+        if (_uiKeyedSprites is null) return;
+        var gangs = player.Gangs.Where(gang => gang.IsActive && gang.SectorId == sectorId).ToArray();
+        var pendingHire = player.PendingHires.Any(pending => pending.TargetSectorId == sectorId);
+        if (gangs.Length > 0)
+            batch.Draw(_uiKeyedSprites, Moved(GangStatusMarkerLayout.Destination(sectorId)),
+                GangStatusSource(state, player.Id, sectorId, gangs, pendingHire), Color.White);
+        else if (pendingHire)
+            batch.Draw(_uiKeyedSprites, Moved(GangStatusMarkerLayout.Destination(sectorId)),
+                OriginalSpriteLayout.IncomingGangStatus, Color.White);
     }
 
     private static Rectangle GangStatusSource(

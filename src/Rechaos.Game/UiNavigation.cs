@@ -355,8 +355,9 @@ public static partial class OriginalSpriteLayout
 {
     public const int ActivePlayerMarkerFrameCount = 12;
     public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);
-    public static Rectangle HiredStamp => new(120, 300, 60, 60);
-    public static Rectangle SnubbedStamp => new(180, 300, 60, 60);
+    /// <summary>SCR-HIRE-002, FND-HIRE-008: the 64-by-64 hire and snub marks.</summary>
+    public static Rectangle HiredStamp => new(114, 299, 64, 64);
+    public static Rectangle SnubbedStamp => new(178, 299, 64, 64);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
     public static Rectangle SectorBackArrow => new(120, 211, 30, 47);
@@ -548,48 +549,6 @@ public static class CommandOverlayLayout
         : Actions;
 }
 
-public static class GangInformationLayout
-{
-    public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static int LeftValueLeft => SharedPanelLayout.X(172);
-    public static int RightValueLeft => SharedPanelLayout.X(268);
-
-    // PX05000/PX05022 reserve exactly two opaque glyph cells for each live value.
-    public static Rectangle ValueField(int left, int y) => new(
-        left, y,
-        2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
-
-    public static int ValueTextLeft(int left, string text) =>
-        left + (2 - text.Length) * OriginalFontLayout.CellWidth;
-
-    public static Rectangle Equipment(int slot)
-    {
-        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return SharedPanelLayout.At(290, 21 + slot * 64, 40, 40);
-    }
-
-    public static int? EquipmentSlotAt(Point point)
-    {
-        for (var slot = 0; slot < 3; slot++)
-            if (Equipment(slot).Contains(point)) return slot;
-        return null;
-    }
-
-    public static int StatisticY(int row) => row switch
-    {
-        0 => SharedPanelLayout.Y(119),
-        1 => SharedPanelLayout.Y(128),
-        2 => SharedPanelLayout.Y(146),
-        3 => SharedPanelLayout.Y(155),
-        4 => SharedPanelLayout.Y(164),
-        5 => SharedPanelLayout.Y(173),
-        6 => SharedPanelLayout.Y(182),
-        _ => throw new ArgumentOutOfRangeException(nameof(row))
-    };
-}
-
 public static class SiteInformationLayout
 {
     // Native handler 0x0044c476 uses the alternate PX05002 slide form.
@@ -765,70 +724,6 @@ public static class InfluenceCommandLayout
         2 => SharedPanelLayout.At(106, 127, 120, 64),
         _ => throw new ArgumentOutOfRangeException(nameof(slot))
     };
-}
-
-public static class AttackCommandLayout
-{
-    public const int VisibleTargets = 6;
-    public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle ActorPortrait => EquipmentCommandLayout.Portrait;
-    public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static Rectangle ActorForceBar => SharedPanelLayout.At(26, 103, 64, 3);
-
-    public static Rectangle ActorItem(int slot)
-    {
-        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return SharedPanelLayout.At(26 + slot * 22, 82, 20, 20);
-    }
-
-    public static Rectangle Opponent(int slot)
-    {
-        if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
-        return SharedPanelLayout.At(98, 16 + slot * 36, 32, 32);
-    }
-
-    public static Rectangle TargetCard(int targetSlot)
-    {
-        var portrait = TargetPortrait(targetSlot);
-        return new Rectangle(portrait.X, portrait.Y, 64, 90);
-    }
-
-    /// <summary>
-    /// Native Attack handler 0x0043b290 partitions one six-cell target region
-    /// for pointer selection; its regions are wider than the gang-card art.
-    /// </summary>
-    public static Rectangle TargetHit(int targetSlot)
-    {
-        if (targetSlot is < 0 or >= VisibleTargets)
-            throw new ArgumentOutOfRangeException(nameof(targetSlot));
-        var column = targetSlot % 3;
-        var row = targetSlot / 3;
-        var x = column switch { 0 => 135, 1 => 202, _ => 270 };
-        var width = column switch { 0 => 67, 1 => 68, _ => 67 };
-        return SharedPanelLayout.At(x, 16 + row * 89, width, row == 0 ? 89 : 88);
-    }
-
-    public static Rectangle TargetPortrait(int targetSlot)
-    {
-        if (targetSlot is < 0 or >= VisibleTargets)
-            throw new ArgumentOutOfRangeException(nameof(targetSlot));
-        return SharedPanelLayout.At(136 + targetSlot % 3 * 66,
-            16 + targetSlot / 3 * 90, 64, 64);
-    }
-
-    public static Rectangle TargetForceBar(int targetSlot)
-    {
-        var portrait = TargetPortrait(targetSlot);
-        return new Rectangle(portrait.X, portrait.Y + 87, 64, 3);
-    }
-
-    public static Rectangle TargetItem(int targetSlot, int itemSlot)
-    {
-        if (itemSlot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(itemSlot));
-        var portrait = TargetPortrait(targetSlot);
-        return new Rectangle(portrait.X + itemSlot * 22, portrait.Y + 66, 20, 20);
-    }
 }
 
 public static class AttackTargetRoster

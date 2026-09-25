@@ -12,7 +12,7 @@ namespace Rechaos.Game;
 public sealed class ComlinkCaretCadence
 {
     public const int EventsPerGlyphRow = 3;
-    public static readonly TimeSpan TimerEventInterval = TimeSpan.FromMilliseconds(1000 / 6);
+    public static readonly TimeSpan TimerEventInterval = PresentationClock.Period;
 
     private TimeSpan _nextTimerEvent;
     private int _eventsInGlyphRow;

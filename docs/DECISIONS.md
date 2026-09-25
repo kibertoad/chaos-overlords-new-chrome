@@ -61,9 +61,10 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   the correction when it brings Control in line with FND-CONTROL-003.
 - Interface additions stay `mandatory` with no setting to hide them: the cash row of the console
   (DEV-UI-006), the Tolerance warning (DEV-UI-007), the order targets (DEV-UI-008), the minimap
-  pylons (DEV-UI-002), the police-turn count (DEV-UI-014), the held-item boxes of the Equip panel
-  (DEV-EQUIP-002), the opponent strip (DEV-UI-013), the research progress (DEV-RESEARCH-001) and
-  the title screen's version label (DEV-UI-012). Each shows only what the player already knows or
+  pylons (DEV-UI-002), the police-turn count (DEV-UI-014), the opponent strip (DEV-UI-013), the
+  research progress (DEV-RESEARCH-001) and the title screen's version label (DEV-UI-012). The
+  held-item boxes of the Equip panel were listed here as DEV-EQUIP-002 until FND-EQUIP-010 showed
+  that the original draws them too, and that deviation is dropped. Each shows only what the player already knows or
   could work out, removes no control and changes no rule, so each is a quality-of-life improvement
   with no downside. Each entry's Justification says what it saves the player. Screen tests allow
   for them by ID.

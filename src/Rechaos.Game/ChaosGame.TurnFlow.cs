@@ -51,7 +51,10 @@ public sealed partial class ChaosGame
             return;
         }
 
-        var advance = GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
+        PlanningAdvance advance;
+        // The original shows the hourglass while it resolves a turn (RULE-UI-007).
+        using (_pointer.Busy())
+            advance = GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
         QueueHotSeatEliminations(advance);
         _diagnostics?.Write("planning.finished", new Dictionary<string, string?>
         {
@@ -174,6 +177,13 @@ public sealed partial class ChaosGame
             || _eliminationHandoffPlayer is not null) return;
         var acted = false;
         var startingTurn = _state.Coordinator.Turn;
+        // A computer's planning and the resolution it ends in run below in this one update, under
+        // the hourglass the original shows while it resolves a turn (RULE-UI-007).
+        using var busy = _state.Coordinator.Phase == TurnPhase.Command
+            && _state.Coordinator.ActivePlayer is { } firstPlayer
+            && _state.FindPlayer(firstPlayer)!.Setup.Controller == PlayerController.Computer
+                ? _pointer.Busy()
+                : null;
         while (_state.Coordinator.ActivePlayer is { } playerId)
         {
             var player = _state.FindPlayer(playerId)!;

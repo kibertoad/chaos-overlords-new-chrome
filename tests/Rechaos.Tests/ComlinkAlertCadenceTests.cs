@@ -6,15 +6,17 @@ namespace Rechaos.Tests;
 public sealed class ComlinkAlertCadenceTests
 {
     [Fact]
-    public void UnreadAlertStartsImmediatelyAndRepeatsEveryFourSeconds()
+    public void UnreadAlertStartsImmediatelyAndRepeatsEveryTwentyFourPresentationTicks()
     {
+        // SCR-UI-003, RULE-UI-008: 24 ticks of the 166 ms clock, 3984 ms.
         var cadence = new ComlinkAlertCadence();
 
+        Assert.Equal(TimeSpan.FromMilliseconds(3984), ComlinkAlertCadence.RepeatInterval);
         Assert.True(cadence.Advance(hasUnread: true, presentationActive: true, TimeSpan.Zero));
-        Assert.False(cadence.Advance(true, true, TimeSpan.FromSeconds(3.999)));
-        Assert.True(cadence.Advance(true, true, TimeSpan.FromSeconds(4)));
-        Assert.False(cadence.Advance(true, true, TimeSpan.FromSeconds(7.999)));
-        Assert.True(cadence.Advance(true, true, TimeSpan.FromSeconds(8)));
+        Assert.False(cadence.Advance(true, true, TimeSpan.FromMilliseconds(3983)));
+        Assert.True(cadence.Advance(true, true, TimeSpan.FromMilliseconds(3984)));
+        Assert.False(cadence.Advance(true, true, TimeSpan.FromMilliseconds(7967)));
+        Assert.True(cadence.Advance(true, true, TimeSpan.FromMilliseconds(7968)));
     }
 
     [Fact]

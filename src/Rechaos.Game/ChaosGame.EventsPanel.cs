@@ -581,11 +581,15 @@ public static class LastTurnEventPresentation
     public static bool NativeDitherKeepsPixel(int x, int y)
         => OriginalPatternMask.PreservesDestination(OriginalPatternMask.Sparse, x, y);
 
-    public static Texture2D CreateEventSiteDitherOverlay(GraphicsDevice graphicsDevice)
+    public static Texture2D CreateEventSiteDitherOverlay(GraphicsDevice graphicsDevice) =>
+        CreatePatternOverlay(graphicsDevice,
+            LastTurnEventsLayout.Artwork.Width, LastTurnEventsLayout.Artwork.Height);
+
+    /// <summary>Black drawn through the sparse pattern over a <paramref name="width"/> by
+    /// <paramref name="height"/> area.</summary>
+    public static Texture2D CreatePatternOverlay(GraphicsDevice graphicsDevice, int width, int height)
     {
         ArgumentNullException.ThrowIfNull(graphicsDevice);
-        var width = LastTurnEventsLayout.Artwork.Width;
-        var height = LastTurnEventsLayout.Artwork.Height;
         var pixels = new Color[width * height];
         for (var y = 0; y < height; y++)
         for (var x = 0; x < width; x++)
@@ -601,7 +605,10 @@ public static class LastTurnEventPresentation
 public static class ItemRotationPresentation
 {
     public const int FrameCount = 15;
-    private static readonly TimeSpan FrameDuration = TimeSpan.FromMilliseconds(80);
+
+    // One frame per tick of the presentation clock (RULE-UI-008, SCR-UI-006, SCR-EVENT-001), so a
+    // full turn of fifteen frames takes 2.5 seconds.
+    private static readonly TimeSpan FrameDuration = PresentationClock.Period;
 
     public static Rectangle Frame(TimeSpan elapsed)
     {

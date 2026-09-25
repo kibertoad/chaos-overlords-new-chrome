@@ -171,6 +171,10 @@ public sealed class CombatAnimationTests
         Assert.Equal(new CombatClipForces(10, 0, 10, 10), firstForces);
         Assert.Equal((0, 0), (secondForces.DefenderBefore, secondForces.DefenderAfter));
         Assert.Equal(0, secondForces.DefenderDamage);
+        // RULE-COMBAT-002: the phase's 18 damage is capped at 10 for force_final.
+        var timeline = CombatForceTimeline.For(state, events, first);
+        Assert.Equal(10, timeline.PhaseStartForce(target.Id));
+        Assert.Equal(0, timeline.PhaseFinalForce(target.Id));
     }
 
     [Fact]
@@ -196,6 +200,11 @@ public sealed class CombatAnimationTests
             timeline.Forces(1, new GangId(10), new GangId(20)));
         Assert.Equal(new CombatClipForces(5, 3, null, null),
             timeline.Forces(2, null, new GangId(20)));
+        // The force_start and force_final of each gang's combat record (RULE-COMBAT-002).
+        Assert.Equal((10, 4), (timeline.PhaseStartForce(new GangId(10)),
+            timeline.PhaseFinalForce(new GangId(10))));
+        Assert.Equal((10, 3), (timeline.PhaseStartForce(new GangId(20)),
+            timeline.PhaseFinalForce(new GangId(20))));
     }
 
     [Fact]
@@ -209,6 +218,8 @@ public sealed class CombatAnimationTests
             RetaliationRolls: [6], Damage: 3, RetaliationDamage: 2)), Attacker));
 
         Assert.Equal(new CombatClipForces(10, 7, 10, 8), clip.Forces);
+        // SCR-COMBAT-002: the upper tracks keep each gang's force_start.
+        Assert.Equal((10, 10), (clip.AttackerStart, clip.DefenderStart));
     }
 
     [Fact]
@@ -230,6 +241,8 @@ public sealed class CombatAnimationTests
         var policeClip = Assert.Single(
             CombatAnimationRouting.ForEvent(state, police, Defender, timeline));
         Assert.Equal(new CombatClipForces(5, 3, null, null), policeClip.Forces);
+        Assert.Equal(10, policeClip.DefenderStart);
+        Assert.Null(policeClip.AttackerStart);
     }
 
     [Fact]

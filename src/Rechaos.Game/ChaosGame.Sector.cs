@@ -67,17 +67,25 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Points the workspace at an overlord's gangs. The viewer's own portrait — and any opponent
-    /// whose gangs stay hidden — restores the viewer's own roster.
+    /// Points the workspace at an overlord's gangs. RULE-UI-010: a portrait switches the cards
+    /// only when the viewer can see a gang of that overlord in the sector, and the viewer's own
+    /// portrait then restores the viewer's roster. The portrait of an overlord with no such gang
+    /// leaves the cards as they are.
     /// </summary>
     private void SelectSectorGangCardOwner(MatchState state, PlayerId viewer, PlayerId owner)
     {
         _message = string.Empty;
-        _sectorGangCardOwner =
-            SectorOpponentGangs.Detectable(state, viewer, owner, _cursor) ? owner : null;
+        if (owner == viewer)
+        {
+            if (SectorOpponentGangs.InSector(state, viewer, viewer, _cursor).Count > 0)
+                _sectorGangCardOwner = null;
+            return;
+        }
+        if (!SectorOpponentGangs.Detectable(state, viewer, owner, _cursor)) return;
+        _sectorGangCardOwner = owner;
         // Borrowing an opponent's cards puts the player's own gangs out of sight, and a pick
         // nobody can see is a pick nobody meant to keep.
-        if (_sectorGangCardOwner is not null) _gangSelection.Clear();
+        _gangSelection.Clear();
     }
 
     private void HandleSectorClick(Point point)
@@ -101,7 +109,7 @@ public sealed partial class ChaosGame
         }
         if (BeginCityConsolePress(point, ClientScreen.Sector)) return;
         var rejectSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Reject, point);
-        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Portrait, point);
+        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.PortraitHit, point);
         if (rejectSlot >= 0)
         {
             BeginHireReject(rejectSlot, ClientScreen.Sector);
@@ -657,21 +665,13 @@ public sealed partial class ChaosGame
         }
 
         var playerId = ViewingPlayer(state);
-        var player = state.FindPlayer(playerId)!;
-        var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
-            .GroupBy(gang => gang.SectorId).ToArray();
-        var pendingHireSectors = player.PendingHires
-            .Select(pending => pending.TargetSectorId).ToHashSet();
-        foreach (var gangs in activeGangsBySector)
-            if (SectorDetailLayout.Marker(_cursor, gangs.Key) is { } gangMarker)
-                DrawGangStatusMarker(batch, gangMarker,
-                    GangStatusSource(state, playerId, gangs.Key, gangs,
-                        pendingHireSectors.Contains(gangs.Key)));
-        var occupiedGangSectors = activeGangsBySector.Select(gangs => gangs.Key).ToHashSet();
-        foreach (var pendingSector in pendingHireSectors.Where(
-                     pendingSector => !occupiedGangSectors.Contains(pendingSector)))
-            if (SectorDetailLayout.Marker(_cursor, pendingSector) is { } hireMarker)
-                DrawGangStatusMarker(batch, hireMarker, OriginalSpriteLayout.IncomingGangStatus);
+        // RULE-UI-006: the 3-by-3 display is copied from the prepared city map, so it shows the
+        // markers the full map draw left behind.
+        var markerFrames = GangStatusMarkerPresentation.MapFrames(state, playerId);
+        for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
+            if (markerFrames[sectorId] >= 0
+                && SectorDetailLayout.Marker(_cursor, sectorId) is { } marker)
+                DrawGangStatusMarker(batch, marker, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]));
     }
 
     private void DrawGangStatusMarker(SpriteBatch batch, Rectangle destination, Rectangle source)

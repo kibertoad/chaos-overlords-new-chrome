@@ -66,6 +66,83 @@ public sealed class AttackTargetRosterTests
         Assert.Equal(CommandValidationCode.TargetUndetected, validation.Code);
     }
 
+    [Fact]
+    public void PickerListsTheOtherFivePlayersInSlotOrder()
+    {
+        // SCR-ATTACK-001, FND-ATTACK-003.
+        Assert.Equal([0, 1, 3, 4, 5], AttackPicker.Opponents(new PlayerId(2)).Select(player => player.Value));
+        Assert.Equal([1, 2, 3, 4, 5], AttackPicker.Opponents(new PlayerId(0)).Select(player => player.Value));
+    }
+
+    [Fact]
+    public void PickerOpensOnTheFirstEnabledOpponentWithNoTarget()
+    {
+        // SCR-ATTACK-001, FND-ATTACK-003: no target is chosen unless the gang already attacks.
+        var state = CreateMatch();
+        var actor = state.FindGang(new GangId(10))!;
+        var options = AttackOptions(state, actor);
+
+        var selection = AttackPicker.Initial(state, options, actor);
+
+        Assert.Equal(new PlayerId(1), selection.Opponent);
+        Assert.Null(selection.Target);
+        Assert.False(selection.CanConfirm);
+        Assert.True(AttackPicker.IsOpponentEnabled(state, options, new PlayerId(2)));
+        Assert.False(AttackPicker.IsOpponentEnabled(state, options, new PlayerId(3)));
+        Assert.Equal([20, 21], AttackPicker.TargetCells(state, options, new PlayerId(1))
+            .Select(index => options[index].Target.Id));
+        Assert.Empty(AttackPicker.TargetCells(state, options, null));
+    }
+
+    [Fact]
+    public void PickerOpensOnTheCurrentAttackTarget()
+    {
+        // SCR-ATTACK-001, FND-ATTACK-003: an existing Attack order chooses its player and target.
+        var state = CreateMatch();
+        var actor = state.FindGang(new GangId(10))!;
+        var options = AttackOptions(state, actor);
+        actor.QueuedCommand = new QueuedCommand(1, options.Single(option => option.Target.Id == 30));
+
+        var selection = AttackPicker.Initial(state, options, actor);
+
+        Assert.Equal(new PlayerId(2), selection.Opponent);
+        Assert.Equal(30, options[selection.Target!.Value].Target.Id);
+        Assert.True(selection.CanConfirm);
+    }
+
+    [Fact]
+    public void PickerKeepsTheCurrentAttackPlayerWhenItsTargetIsNotListed()
+    {
+        // SCR-ATTACK-001, FND-ATTACK-003: the player is chosen when enabled, the target only when
+        // the chosen player's cells list it.
+        var state = CreateMatch();
+        var actor = state.FindGang(new GangId(10))!;
+        actor.QueuedCommand = new QueuedCommand(1, new GameCommand(actor.Owner, actor.Id,
+            GangAction.Attack, CommandTarget.Gang(new GangId(21))));
+        state.FindGang(new GangId(21))!.SectorId = 1;
+        var options = AttackOptions(state, actor);
+
+        var selection = AttackPicker.Initial(state, options, actor);
+
+        Assert.Equal(new PlayerId(1), selection.Opponent);
+        Assert.Null(selection.Target);
+    }
+
+    [Fact]
+    public void PickerWithNoEnabledOpponentChoosesNothing()
+    {
+        // SCR-ATTACK-001: the No opponent state.
+        var state = CreateMatch(detectable: false);
+        var actor = state.FindGang(new GangId(10))!;
+
+        Assert.Equal(AttackPickerSelection.None, AttackPicker.Initial(state, AttackOptions(state, actor), actor));
+    }
+
+    private static IReadOnlyList<GameCommand> AttackOptions(MatchState state, MatchGangState actor) =>
+        AttackTargetRoster.Order(state, new[] { 20, 21, 30 }
+            .Select(id => new GameCommand(actor.Owner, actor.Id, GangAction.Attack,
+                CommandTarget.Gang(new GangId(id)))));
+
     private static MatchState CreateMatch(bool detectable = true)
     {
         var data = BundledOriginalData.Load();

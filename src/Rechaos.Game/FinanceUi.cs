@@ -20,6 +20,9 @@ public static class FinanceLayout
     public static Rectangle Portrait => new(154, 141, 64, 64);
     public static Rectangle Ok => new(161, 293, 49, 22);
 
+    /// <summary>SCR-FINANCE-001, FND-FINANCE-002: the Sector variant's sector code, buffer (396,216).</summary>
+    public static Point SectorName => new(180, 196);
+
     public static int ValueY(int row) => row switch
     {
         0 => SharedPanelLayout.Y(27),

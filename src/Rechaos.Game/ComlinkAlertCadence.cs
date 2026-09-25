@@ -5,7 +5,12 @@ namespace Rechaos.Game;
 /// </summary>
 public sealed class ComlinkAlertCadence
 {
-    public static readonly TimeSpan RepeatInterval = TimeSpan.FromSeconds(4);
+    /// <summary>
+    /// Twenty-four ticks of the presentation clock (RULE-UI-008, SCR-UI-003), 3984 ms.
+    /// </summary>
+    public const int RepeatTicks = 24;
+
+    public static readonly TimeSpan RepeatInterval = PresentationClock.Period * RepeatTicks;
 
     private TimeSpan? _nextAlert;
 
