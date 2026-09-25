@@ -169,6 +169,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private ComlinkSendButton? _pressedComlinkSendButton;
     private readonly ComlinkAlertCadence _comlinkAlertCadence = new();
     private readonly BackgroundRedrawCadence _backgroundRedrawCadence = new();
+    private readonly PresentationPointer _pointer = new(shape =>
+        Mouse.SetCursor(shape == PointerShape.Hourglass ? MouseCursor.Wait : MouseCursor.Arrow));
     private string _comlinkStatus = string.Empty;
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
@@ -743,13 +745,30 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         switch (_screens.Current)
         {
             case ClientScreen.Title:
-                if (TitleNewGame.Contains(point)) OpenNewGameSetup();
-                else if (TitleLoadGame.Contains(point)) OpenSaveBrowser(saving: false, fromTitle: true);
-                else if (TitleOnline.Contains(point)) OpenOnline();
-                else if (TitleOptions.Contains(point)) OpenOptions();
-                else if (TitleHelp.Contains(point)) OpenHelp();
-                else if (TitleIntro.Contains(point)) ReplayIntroMovies();
-                else if (TitleQuit.Contains(point)) Exit();
+                switch (TitleActionAt(point))
+                {
+                    case TitleAction.LoadGame:
+                        OpenSaveBrowser(saving: false, fromTitle: true);
+                        break;
+                    case TitleAction.Online:
+                        OpenOnline();
+                        break;
+                    case TitleAction.Options:
+                        OpenOptions();
+                        break;
+                    case TitleAction.Help:
+                        OpenHelp();
+                        break;
+                    case TitleAction.Intro:
+                        ReplayIntroMovies();
+                        break;
+                    case TitleAction.Quit:
+                        Exit();
+                        break;
+                    default:
+                        OpenNewGameSetup();
+                        break;
+                }
                 break;
             case ClientScreen.Options:
                 HandleOptionsClick(point);

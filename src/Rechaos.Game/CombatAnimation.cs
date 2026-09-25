@@ -29,7 +29,7 @@ public static class CombatAnimationRouting
 {
     public const int FrameCount = 8;
     public const int FrameSize = 64;
-    public const int FrameMilliseconds = 166;
+    public const int FrameMilliseconds = PresentationClock.PeriodMilliseconds;
     public const int FirstAnimationTick = 3;
     public const int LastAnimationTick = 10;
     public const int PreDamageTick = 12;

@@ -272,11 +272,11 @@ public sealed partial class ChaosGame
             new Vector2(438, 354), Color.Gold, 1);
         if (state.Coordinator.ActivePlayer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
-            && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
+            && PresentationClock.BlinkLit(_inputTime))
             DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
         if (state.Coordinator.ActivePlayer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
-            && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
+            && PresentationClock.BlinkLit(_inputTime))
             DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
