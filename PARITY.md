@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 60 |
+| `supported` | 55 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 161 |
+| `implemented` | 166 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 19 |
-| `partial` | 42 |
-| `complete` | 161 |
+| `partial` | 37 |
+| `complete` | 166 |
 
 ## DATA
 
@@ -56,7 +56,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AUDIO-003` | Applying the music and effects levels | supported | complete | None | None | implemented | The 0 to 10 level conversion and the level-5 music default are implemented. |
 | `RULE-AUDIO-004` | Loading the general sound effects | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-005` | Playing a sound effect, which cuts off the one playing | supported | complete | None | None | implemented | One effect voice, each new cue stopping the one before it. |
-| `RULE-AUDIO-006` | The turn-start sound | supported | partial | None | None | supported | The original plays the cue only in network games of its own protocol, on the host and on joined computers; whether the rebuild plays it in other games, or with effects off (BUG-AUDIO-001), was not checked. |
+| `RULE-AUDIO-006` | The turn-start sound | supported | complete | None | None | implemented | Only online matches, the rebuild's network games, play the cue, from the second turn on; local games are silent. The cue skips the effects-enabled test (BUG-AUDIO-001) and plays at the effects volume, which is 0 at level 0 (RULE-AUDIO-003). |
 | `RULE-AUDIO-007` | The Comlink alert plays slot 6 through the effects gate | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | None | None | implemented | The repeat is paced by the rebuild's presentation clock at four seconds. |
 | `RULE-AUDIO-009` | The sound of an attack in Detailed Combat | supported | complete | None | None | implemented | None |
@@ -89,7 +89,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `FMT-STATE-001` | Gang record, one per player and roster slot | supported | partial | None | None | supported | The rebuild keeps each gang's fields as named state rather than this 32-byte layout, and marks an empty roster slot with Force 0 rather than sector 100. |
-| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | The rebuild keeps sector owner, Income, the base Tolerance, the rebuilt Tolerance, the rebuilt Support, sites and site benefits as named state rather than this 36-byte layout; the research level and the seen-gang bytes are not yet mapped (see the 2026-09-25 decision in docs/DECISIONS.md). |
+| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | The rebuild keeps sector owner, Income, the base Tolerance, the rebuilt Tolerance, the rebuilt Support, sites and site benefits as named state rather than this 36-byte layout; the research level and the seen-gang bytes are not yet mapped (see the 2026-09-26 decision in docs/DECISIONS.md). |
 | `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | partial | None | None | supported | The rebuild derives combat presentation from combat events and clip forces rather than keeping these 10-byte records. |
 | `FMT-STATE-004` | Site slot in a sector record | supported | partial | None | None | supported | The rebuild keeps remaining Resistance per site plus an explicit influencer identity that the original does not store. |
 | `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | The rebuild keeps the Comlink inbox with the same occupied, read, turn, sender and text content, not this 166-byte layout. |
@@ -102,7 +102,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-RNG-001` | The generator, its step, and its seed at process start | supported | partial | None | `DEV-RNG-001` | supported | The rebuild seeds from the low 16 bits of a process-uptime clock when the game object is created, not timeGetTime at process start, and takes an explicit full-width seed for replays, tests and online matches. |
+| `RULE-RNG-001` | The generator, its step, and its seed at process start | supported | complete | None | `DEV-RNG-001` | implemented | The rebuild seeds the run from the low 16 bits of a process-uptime clock when the game object is created, and takes an explicit full-width seed for replays, tests and online matches (DEV-RNG-001). Each later New Game and each load draws on from where the run's sequence stands, as the original never reseeds. |
 | `RULE-RNG-002` | roll(n) gives a whole number from 1 to n from three draws | supported | complete | None | None | implemented | None |
 
 ## TURN
@@ -113,7 +113,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-TURN-002` | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported | complete | None | None | implemented | None |
 | `RULE-TURN-003` | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported | complete | None | None | implemented | None |
 | `RULE-TURN-004` | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported | complete | None | `DEV-TURN-001` | implemented | None |
-| `RULE-TURN-005` | Giving a gang an order replaces its whole previous order, one-off or recurring | supported | partial | None | `DEV-TURN-001` | supported | The rebuild rejects recurring Bribe and Snitch from any path, and it is not recorded whether its sector-wide order leaves Research out of the recurring choices. |
+| `RULE-TURN-005` | Giving a gang an order replaces its whole previous order, one-off or recurring | supported | complete | None | `DEV-TURN-001`, `DEV-UI-003` | implemented | The sector screen draws the original's group order strip over the top two cards; its menus leave Research out of the recurring one, and it reaches hiding gangs. Each gang is validated on its own (DEV-UI-003), and recurring Bribe and Snitch are refused from any source (DEV-TURN-001). |
 | `RULE-TURN-006` | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | supported | complete | None | None | implemented | The rebuild marks retired gangs with Force 0 and cleared orders instead of sector 100, which changes no playable state. |
 
 ## SETUP
@@ -224,7 +224,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | The fields are kept as 32-bit values; the INT8 wrap of a total outside -128 to 127 is not reproduced, and no shipped combination reaches it. |
-| `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | partial | None | None | supported | Force 0 and cleared orders stand in for the sector byte 100. |
+| `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | complete | None | None | implemented | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-26 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. |
 | `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | partial | None | None | supported | Field columns and rows follow the original; which statistic sits on which row is not recorded. |
 | `SCR-GANG-002` | Gang information panel for a hired gang | supported | partial | None | `DEV-GANG-001` | supported | Value columns follow the original; the rows, equipment and portrait positions are not recorded, and the rebuild adds breakdown tooltips. |
 
@@ -256,7 +256,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TERMINATE-001` | Terminate pass retires every gang ordered to Terminate, before any Move | supported | partial | None | None | supported | The rebuild also sets Force to 0 and clears orders and Hidden (see deviations). |
+| `RULE-TERMINATE-001` | Terminate pass retires every gang ordered to Terminate, before any Move | supported | complete | None | None | implemented | Terminate retires the gang through the same step as RULE-GANG-002, before any Move, with no casualty and no Last Turn report. Force 0, the cleared orders and Hidden are the representation of the inactive slot (2026-09-26 decision). |
 
 ## UPKEEP
 
@@ -441,7 +441,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-012`, `DEV-VIDEO-003` | supported | The title screen shows the build version and an intro button the original lacks. |
 | `SCR-UI-002` | Credits screen | supported | partial | None | None | supported | Whether the credits sequence matches the original presenter's order and timing was not checked. |
 | `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006` | supported | Console routes and pressed art match; tooltips and projected cashflow are added. |
-| `SCR-UI-004` | Detailed sector screen | supported | partial | None | `DEV-UI-002`, `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-013`, `DEV-UI-014` | supported | Adds tooltips, target highlights, ctrl-picking and minimap pylons. |
+| `SCR-UI-004` | Detailed sector screen | supported | partial | None | `DEV-UI-002`, `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-013`, `DEV-UI-014` | supported | Draws the group order strip. Adds tooltips, target highlights, ctrl-picking and minimap pylons. |
 | `SCR-UI-005` | Gangs in Sector panel | supported | partial | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | supported | Whether the compact all-gangs roster matches the original rows was not checked. |
 | `SCR-UI-006` | Item Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-009`, `DEV-UI-010` | implemented | Item Information uses PX05001 with the 15-frame rotation; it can also be opened from Gang Information. |
 | `SCR-UI-007` | Site Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | None |

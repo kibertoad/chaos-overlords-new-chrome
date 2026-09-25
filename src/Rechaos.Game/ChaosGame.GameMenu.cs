@@ -367,6 +367,7 @@ public sealed partial class ChaosGame
             LeaveOnlineMatch();
             return;
         }
+        KeepRunRandomState();
         _state = null;
         _actions = null;
         _message = string.Empty;

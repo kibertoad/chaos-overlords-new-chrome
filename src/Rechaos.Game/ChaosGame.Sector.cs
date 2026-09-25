@@ -48,6 +48,16 @@ public sealed partial class ChaosGame
     /// The gangs the Sector workspace lists. A borrowed opponent roster falls back to the viewer's
     /// own gangs once the opponent no longer keeps a detectable gang in the selected sector.
     /// </summary>
+    /// <summary>
+    /// SCR-UI-004, FND-UI-018: the group order strip is drawn when the cards show at least two
+    /// gangs of the player whose turn it is, during planning.
+    /// </summary>
+    private bool ShowsGroupOrderStrip(MatchState state, PlayerId viewer) =>
+        state.Coordinator.Phase == TurnPhase.Command
+        && state.Coordinator.ActivePlayer == viewer
+        && SectorCardGangs(state, viewer) is { Count: >= 2 } cards
+        && cards[0].Owner == viewer;
+
     private IReadOnlyList<MatchGangState> SectorCardGangs(MatchState state, PlayerId viewer)
     {
         if (_sectorGangCardOwner is { } owner && owner != viewer
@@ -117,6 +127,13 @@ public sealed partial class ChaosGame
                 OpenSiteDetails(_cursor, siteSlot, ClientScreen.Sector);
             return;
         }
+        if (SectorDetailLayout.GroupOrderStrip.Contains(point))
+        {
+            if (ShowsGroupOrderStrip(_state, playerId))
+                OpenGroupCommands(_state, playerId,
+                    SectorDetailLayout.GroupOrderIsRecurring(point));
+            return;
+        }
         var visible = SectorCardGangs(_state, playerId)
             .Take(SectorGangCardLayout.VisibleCards).ToArray();
         var index = HitTest.IndexAt(visible.Length, SectorGangCardLayout.Frame, point);
@@ -180,12 +197,26 @@ public sealed partial class ChaosGame
         if (visibleGangs.Count > SectorGangCardLayout.VisibleCards)
             font.Draw(batch, $"+{visibleGangs.Count - SectorGangCardLayout.VisibleCards}",
                 new Vector2(397, 123), Color.White, 1);
+        if (_uiSprites is not null && ShowsGroupOrderStrip(state, viewer))
+            batch.Draw(_uiSprites, SectorDetailLayout.GroupOrderStrip,
+                OriginalSpriteLayout.GroupOrderStrip, Color.White);
         DrawQueuedCommandTargetHighlight(batch, pixel, viewer, visibleGangs);
         DrawGangMoveDrag(batch, pixel, state);
         DrawSectorHireDrag(batch, pixel, state);
         // The Sector workspace covers the left side of right-edge tooltips drawn by
         // DrawBoard, so composite the tooltip again after the workspace is complete.
         DrawStatusConsoleTooltip(batch, pixel, font);
+        // RULE-TURN-005: what the group order strip does, as FND-TURN-009 records it.
+        if (_hoverPoint is { } stripHover && ShowsGroupOrderStrip(state, viewer)
+            && SectorDetailLayout.GroupOrderStrip.Contains(stripHover))
+            DrawHoverTooltip(batch, pixel, font, stripHover,
+            [
+                "GROUP ORDER",
+                "GIVES ONE ORDER TO EVERY GANG YOU HAVE HERE, HIDING OR NOT.",
+                "LEFT HALF: FOR THIS TURN. RIGHT HALF: RECURRING,",
+                "WITHOUT RESEARCH. HEAL SKIPS GANGS AT FORCE 10.",
+                "THE ORDER REPLACES EACH GANG'S PREVIOUS ONE."
+            ]);
         if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }
 

@@ -361,6 +361,9 @@ public static partial class OriginalSpriteLayout
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
     public static Rectangle SectorBackArrow => new(120, 211, 30, 47);
 
+    /// <summary>SCR-UI-004, FND-UI-018: the group order strip.</summary>
+    public static Rectangle GroupOrderStrip => new(190, 425, 152, 16);
+
     public static Rectangle ActivePlayerMarker(int frame)
     {
         if (frame is < 0 or >= ActivePlayerMarkerFrameCount)
@@ -404,6 +407,12 @@ public static class GangStatusMarkerLayout
 
 public static partial class SectorDetailLayout
 {
+    /// <summary>SCR-UI-004, FND-UI-015: the group order strip, one-off on the left.</summary>
+    public static Rectangle GroupOrderStrip => new(253, 61, 152, 16);
+
+    /// <summary>FND-UI-015: a press beyond x 367 opens the recurring menu.</summary>
+    public static bool GroupOrderIsRecurring(Point point) => point.X > 367;
+
     public const int Left = 61;
     public const int Top = 48;
     public const int Columns = 3;
