@@ -47,7 +47,7 @@ DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay
   - RULE-COMLINK-004: every inbox is emptied when a match is entered.
   - RULE-EVENT-005, RULE-EVENT-006: one Influence report per completed site.
   - RULE-AI-010: reverting a surplus hunter keeps a `needs_family` flag set earlier in the pass.
-  - FMT-STATE-008 and FMT-STATE-009: compare the unchecked fields.
+  - FMT-STATE-008: compare the gang entries with RULE-COMBAT-004.
 
 ## Step 10: Screens
 

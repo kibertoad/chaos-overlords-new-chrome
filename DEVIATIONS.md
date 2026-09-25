@@ -687,6 +687,86 @@ Decided 2026-09-18.
 
 Whether the original shows the count is not recorded.
 
+## DEV-UI-015
+
+- Departs from: RULE-UI-013
+- Reason: A second copy of the rebuild starts and runs beside the first, and a file named on the
+  command line is not opened. The original refuses a second copy, bringing the running one to the
+  front, and opens a save named on its command line.
+- Setting: None
+- Default: mandatory
+- Justification: A second copy is how one computer holds two seats of an online match. Nothing
+  associates saves with the program, and the save browser reaches every save (DEV-UI-011), so the
+  command line has nothing to open.
+- Dropped: no
+
+## DEV-UI-016
+
+- Departs from: RULE-UI-013, RULE-UI-014, SCR-UI-009, FMT-DATA-004
+- Reason: Only the 16-bit image set is drawn, and there is no Thousands of Colors option. The
+  original draws the same set at any display deeper than 8 bits, and loads the 256-colour palette
+  of `DATA/CLT00002` and the 8-bit set only on an 8-bit display, so the rebuild never reads either.
+- Setting: None
+- Default: mandatory
+- Justification: The original defaults to the 16-bit set. The 8-bit set holds the same pictures
+  reduced for 256-colour displays, which no current display is, so a setting would switch to a
+  poorer copy of the same pictures.
+- Dropped: no
+
+## DEV-UI-017
+
+- Departs from: RULE-UI-014
+- Reason: Closing the window ends the program after the rolling autosave is written. The original
+  treats a close as File, Exit and offers to save during a game.
+- Setting: None
+- Default: mandatory
+- Justification: The rolling autosave keeps the match as it stood at the start of the turn, and
+  orders given since then can be saved from the Escape menu before closing. The rebuild's saves go
+  to named slots, so the original's save dialog has no counterpart to offer.
+- Dropped: no
+
+## DEV-UI-018
+
+- Departs from: RULE-UI-014, FMT-STATE-009
+- Reason: Keyboard and mouse state is read once per frame, 60 times a second, and each screen acts
+  on what changed since the last frame. There is no event queue, accelerator table or menu command
+  event; the options are on the Options screen. A double-click is two presses on the same target
+  within 500 ms. Online text fields take characters from the platform keyboard layout.
+- Setting: None
+- Default: mandatory
+- Justification: It changes how commands are reached and leaves what they do alone. Every option
+  and command the original's event step handles stays reachable.
+- Dropped: no
+
+## DEV-GFX-001
+
+- Departs from: RULE-GFX-002, RULE-UI-014
+- Reason: The 640-by-460 drawing area is drawn into a resizable window, scaled by the largest
+  whole multiple up to 2 that fits, and letterboxed. Full screen is a borderless window at the
+  desktop's mode in 32-bit colour, with no menu bar above the area, and it stays open when it
+  loses focus. The original sizes a window under the Windows menu bar, or switches the display to
+  640 by 480 at 8 or 16 bits and minimizes itself when it loses focus.
+- Setting: None
+- Default: mandatory
+- Justification: Every pixel of the drawing area is the original's, repeated at a whole multiple.
+  At one to one the area is a small patch on a current display, and many current drivers no longer
+  offer 640 by 480 at 8 or 16 bits, so a mode-switch setting would offer a mode the display may
+  refuse. No rule depends on the window.
+- Dropped: no
+
+## DEV-TIMER-001
+
+- Departs from: RULE-TIMER-004, RULE-UI-008, RULE-UI-003
+- Reason: The panel slide takes its step from a fixed benchmark of 84 copies a second where the
+  original measures the machine for one second at startup. Presentation ticks are counted from the
+  game clock, so a tick that falls during a long frame is counted rather than lost.
+- Setting: None
+- Default: mandatory
+- Justification: The original's slide speed depends on the machine it runs on, which AGENTS.md
+  lets the rebuild fix; 84 copies a second gives the original's 16-pixel step. A tick is lost in
+  the original only when the machine stalls, and no rule reads the ticks.
+- Dropped: no
+
 ## DEV-OPTIONS-001
 
 - Departs from: RULE-OPTIONS-001, RULE-OPTIONS-002, BUG-OPTIONS-001, BUG-OPTIONS-002

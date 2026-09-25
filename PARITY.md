@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 49 |
+| `supported` | 42 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 172 |
+| `implemented` | 179 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
-| `missing` | 17 |
-| `partial` | 33 |
-| `complete` | 172 |
+| `missing` | 11 |
+| `partial` | 32 |
+| `complete` | 179 |
 
 ## DATA
 
@@ -32,7 +32,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-DATA-001` | Site definition records in DATA/SITES | supported | complete | None | None | implemented | None |
 | `FMT-DATA-002` | Gang definition records in DATA/Gangs | supported | complete | None | None | implemented | None |
 | `FMT-DATA-003` | Item definition records in DATA/ITEMS | supported | complete | None | None | implemented | None |
-| `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | missing | None | None | supported | The rebuild copies CLT00002 unread into its asset pack. |
+| `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | complete | None | `DEV-UI-016` | implemented | The rebuild draws only the 16-bit image set, for which the original never loads this palette either (DEV-UI-016); the extractor copies the file unread. |
 | `FMT-DATA-005` | Compressed archive DATA/DATA.Z | unknown | missing | None | None | unknown | The rebuild copies DATA.Z unread into its asset pack. |
 
 ## GFX
@@ -43,7 +43,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-GFX-002` | 8-bit image files in DATA/PX08 | supported | complete | None | None | implemented | None |
 | `FMT-GFX-003` | Palette entry in a PX08 image file | supported | complete | None | None | implemented | None |
 | `RULE-GFX-001` | Decoding the RLE8 pixel data of a PX08 image | supported | complete | None | None | implemented | None |
-| `RULE-GFX-002` | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported | missing | None | None | supported | Not yet compared with the rebuild. |
+| `RULE-GFX-002` | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported | complete | None | `DEV-GFX-001` | implemented | The drawing area is the original's 640 by 460, scaled into a window or a borderless full screen (DEV-GFX-001). |
 
 ## AUDIO
 
@@ -96,7 +96,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record). Two sites completed in one sector in one resolution give one Influence report where the original gives two. |
 | `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-007-computer-player-planning-record). `needs_family` differs when RULE-AI-010 reverts a surplus hunter after a Greed Terminate of the same pass set the flag. |
 | `FMT-STATE-008` | Combat result row of one sector | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-008-combat-result-row-of-one-sector). The gang entries were not checked against RULE-COMBAT-004. |
-| `FMT-STATE-009` | Input event record | supported | missing | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-009-input-event-record); only RULE-UI-014 reads it, and its fields were not compared. |
+| `FMT-STATE-009` | Input event record | supported | complete | None | `DEV-UI-018` | implemented | The rebuild polls input once per frame and keeps no event record (DEV-UI-018); only RULE-UI-014 reads the record ([docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-009-input-event-record)). |
 
 ## RNG
 
@@ -418,7 +418,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-TIMER-001` | Planning time limit chosen for a match | supported | complete | None | None | implemented | None |
 | `RULE-TIMER-002` | A human planning turn ends when its time limit passes | supported | complete | None | None | implemented | On expiry the rebuild submits the finish-planning operation without the idle-gang warning. |
 | `RULE-TIMER-003` | The planning clock bar and its warning sounds | supported | complete | None | None | implemented | Checks run every sixth fixed update rather than every sixth presentation tick; the two rates were not compared. |
-| `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | missing | None | None | supported | Not yet compared with the rebuild. |
+| `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | partial | None | `DEV-TIMER-001` | supported | No wait depends on the machine (DEV-TIMER-001). The one-tick waits of the pressed key faces and the cell and site flashes are missing, as those features are. |
 
 ## UI
 
@@ -426,19 +426,19 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-UI-001` | A push-button control acts only when released inside | supported | complete | None | None | implemented | None |
 | `RULE-UI-002` | Routing a press on the main console | supported | complete | None | None | implemented | None |
-| `RULE-UI-003` | Panels slide in from the right and out to the right | supported | partial | None | `DEV-UI-001` | supported | The slide-in follows the rule's step and copy sequence at a fixed benchmark of 84 copies a second, and only panels slide; the slide-out is not animated (deviation). The panel moves with the whole screen where the original reveals only its left columns up to x 448, and the machine is not measured. |
+| `RULE-UI-003` | Panels slide in from the right and out to the right | supported | partial | None | `DEV-TIMER-001`, `DEV-UI-001` | supported | The slide-in follows the rule's step and copy sequence at a fixed benchmark of 84 copies a second, and only panels slide; the slide-out is not animated (deviation). The panel moves with the whole screen where the original reveals only its left columns up to x 448, and the machine is not measured. |
 | `RULE-UI-004` | Drawing numbers in fixed glyph cells | supported | complete | None | None | implemented | None |
 | `RULE-UI-005` | Lengths of the site progress and Force meters | supported | complete | None | None | implemented | Site meters truncate progress * 100 / Resistance (100 at Resistance 0) and Force meters are Force * 6 pixels, checked by SectorMeterLengthTests. |
 | `RULE-UI-006` | Choosing a sector's gang-status marker | supported | partial | None | None | supported | Frames, and the one saved cell that loses frame 8, follow the rule. Enemy visibility is computed live where the original uses the snapshot taken when planning starts. |
-| `RULE-UI-007` | The pointer shape | supported | partial | None | None | supported | The framework's standard pointer is used; the wait cursor during blocking work is not reproduced. |
-| `RULE-UI-008` | The presentation timer | supported | partial | None | None | supported | The rebuild uses its own fixed update rate; the 166 ms tick is not a separate clock. |
+| `RULE-UI-007` | The pointer shape | supported | complete | None | None | implemented | The stock arrow shows at all times, and the hourglass while a city is set up, a game is loaded or a turn is resolved. |
+| `RULE-UI-008` | The presentation timer | supported | complete | None | `DEV-TIMER-001` | implemented | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). |
 | `RULE-UI-009` | The texts of the Game Information panel | supported | partial | None | `DEV-AI-003` | supported | Game Information appends the AI policy label after Mentality (deviation); the other fields follow the original. |
 | `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | complete | None | None | implemented | The cards list the viewed player's visible gangs and Gangs in Sector the active player's gangs, both in roster slot order, checked by SectorOpponentGangsTests and GangInformationRosterTests. |
 | `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | Income for all and Support and Cash for the owner are shown. |
 | `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | `DEV-UI-002` | implemented | The rebuild also draws the pylons on the detailed-sector minimap (deviation). |
-| `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | missing | None | None | supported | Not yet compared with the rebuild. |
-| `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | missing | None | None | supported | Not yet compared with the rebuild. |
-| `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-012`, `DEV-VIDEO-003` | supported | The title screen shows the build version and an intro button the original lacks. |
+| `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | complete | None | `DEV-UI-015`, `DEV-UI-016` | implemented | The title loop starts a new game on a press outside the rebuild's buttons, and the options are read at start and saved at exit. The single-instance check, the command-line file and the image-set choice are deviations. |
+| `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | complete | None | `DEV-GFX-001`, `DEV-UI-016`, `DEV-UI-017`, `DEV-UI-018` | implemented | Input is polled once per frame (DEV-UI-018), and the US shift table and upper-case letters are kept for setup names and Comlink text. |
+| `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-004`, `DEV-UI-012` | supported | The title screen shows the build version and an intro button the original lacks. |
 | `SCR-UI-002` | Credits screen | supported | partial | None | None | supported | Whether the credits sequence matches the original presenter's order and timing was not checked. |
 | `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006` | supported | Console routes and pressed art match; tooltips and projected cashflow are added. |
 | `SCR-UI-004` | Detailed sector screen | supported | partial | None | `DEV-UI-002`, `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-013`, `DEV-UI-014` | supported | Draws the group order strip. Adds tooltips, target highlights, ctrl-picking and minimap pylons. |
@@ -446,7 +446,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `SCR-UI-006` | Item Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-009`, `DEV-UI-010` | implemented | Item Information uses PX05001 with the 15-frame rotation; it can also be opened from Gang Information. |
 | `SCR-UI-007` | Site Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | None |
 | `SCR-UI-008` | Game Information panel | supported | partial | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | supported | Appends the AI policy label. |
-| `SCR-UI-009` | Application menu bar | supported | missing | None | `DEV-HELP-001`, `DEV-OPTIONS-003`, `DEV-UI-011` | supported | The rebuild has no Windows menu bar; its commands live in the Escape menu, Options and shortcuts. |
+| `SCR-UI-009` | Application menu bar | supported | missing | None | `DEV-HELP-001`, `DEV-OPTIONS-003`, `DEV-UI-011`, `DEV-UI-016` | supported | The rebuild has no Windows menu bar; its commands live in the Escape menu, Options and shortcuts. |
 
 ## OPTIONS
 
