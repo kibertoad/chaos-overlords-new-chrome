@@ -156,7 +156,7 @@ public static partial class CommandResolver
         var outcomes = new List<CombatOutcome>(orderedCommands.Length);
         // Every Attack order rolls its own attack and retaliation, including two gangs that attack
         // each other: the original resolver has no branch that merges such a pair
-        // (BIN-COMBAT-PRESENT-001).
+        // (RULE-COMBAT-002, FND-COMBAT-006).
         foreach (var queued in orderedCommands)
         {
             var attacker = snapshots[queued.Command.Gang];
@@ -422,7 +422,7 @@ public static partial class CommandResolver
     /// destination and everyone else where they stand. Re-testing per move measured the sector
     /// mid-phase instead, so a move into a sector a later-slotted gang was about to leave failed
     /// with <see cref="CommandResolutionCode.DestinationFull"/> purely because of roster order, and a
-    /// move rewritten back to its own full sector failed where RULE-MOVE-001 asks for a successful
+    /// move rewritten back to its own full sector failed where RULE-MOVE-001 and RULE-MOVE-002 ask for a successful
     /// no-op.
     /// </remarks>
     private static CommandResolutionResult ResolveMove(MatchState state, GameCommand command)

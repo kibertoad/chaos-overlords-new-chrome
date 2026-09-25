@@ -29,7 +29,7 @@ public readonly record struct CombatClipForces(
 /// attack's clip lands its damage on the defender and the retaliation on the attacker together.
 /// It also starts every bar at the phase-start force and moves it only by the clips it plays, so a
 /// presentation timeline leaves out the hits of fights the viewer is not shown
-/// (BIN-COMBAT-PRESENT-001).
+/// (RULE-COMBAT-004).
 /// </remarks>
 public sealed class CombatForceTimeline
 {

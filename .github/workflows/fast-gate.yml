@@ -13,7 +13,8 @@
 # the platform most players run.
 #
 # `Invoke-Validation.ps1` also checks the generated documentation indexes and the relative links
-# between documents (`tools/update-doc-indexes.mjs --check`) on both legs, with the runner's own
+# between documents (`tools/update-doc-indexes.mjs --check`), and the spec against the
+# documentation standard (`tools/check-spec.mjs --check`), on both legs, with the runner's own
 # Node.js. Windows checks out with CRLF, so that leg also covers the script's line-ending handling.
 # A stale index fails the leg only after the build and tests have run, so it never hides them.
 name: Fast gate

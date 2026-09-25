@@ -18,7 +18,7 @@ public sealed record CombatAnimationClip(
 {
     /// <summary>
     /// The tick the clip ends on: the final-result tick when it hands off to the reply of a gang it
-    /// attacked, which the original plays without holding the result (BIN-COMBAT-PRESENT-001).
+    /// attacked, which the original plays without holding the result (SCR-COMBAT-002).
     /// </summary>
     public int CompletionTick => HandsOff
         ? CombatAnimationRouting.FinalResultTick
@@ -47,7 +47,7 @@ public static class CombatAnimationRouting
     /// <c>PX070xx</c>/<c>PX071xx</c> pair; an attack on it, by a gang or the police, plays the
     /// mirrored <c>PX072xx</c>/<c>PX073xx</c> pair with the attacker on the right. Retaliation has
     /// no clip of its own: the attack's clip takes it off the attacker's force
-    /// (BIN-COMBAT-PRESENT-001). <paramref name="timeline"/> is the event's combat phase, shared by
+    /// (SCR-COMBAT-002). <paramref name="timeline"/> is the event's combat phase, shared by
     /// every event of that phase so a turn's clips replay it once.
     /// </remarks>
     public static IReadOnlyList<CombatAnimationClip> ForEvent(

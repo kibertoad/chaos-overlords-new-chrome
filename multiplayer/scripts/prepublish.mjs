@@ -2,7 +2,7 @@
 // Runs from each publishable package's `prepublishOnly`, with the package directory as the cwd.
 //
 // Two jobs, both of which are easier to get wrong than to check. It drops the workspace's licence
-// texts into the package — the packages are GPL-3.0-only and npm ships one tarball per package, so
+// texts into the package — the packages carry the MIT License and npm ships one tarball per package, so
 // each tarball has to carry them itself. And it asserts that everything the manifest promises in
 // `files` is actually on disk, because a publish that silently ships an empty `dist` is only
 // discovered by whoever installs it.

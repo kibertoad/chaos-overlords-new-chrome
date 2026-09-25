@@ -13,7 +13,7 @@
     "lobby",
     "turns"
   ],
-  "license": "GPL-3.0-only",
+  "license": "MIT",
   "author": "kibertoad",
   "homepage": "https://github.com/kibertoad/chaos-overlords-new-chrome/tree/main/multiplayer/packages/kernel#readme",
   "repository": {

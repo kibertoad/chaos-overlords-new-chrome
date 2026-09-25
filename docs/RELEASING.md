@@ -93,7 +93,7 @@ The Windows installer scans GOG and Windows uninstall records plus common GOG
 paths, accepts a manually selected source, and imports the required assets. Its
 silent options are `/ORIGINAL="C:\path\to\Chaos Overlords"` and `/NOIMPORT=1`.
 Every portable package and installed application includes the filled-in project
-`NOTICE` and canonical GPLv3 `LICENSE`; the Windows Setup wizard displays both
+`NOTICE` and the MIT `LICENSE`; the Windows Setup wizard displays both
 before installation.
 
 ## GitHub release workflow

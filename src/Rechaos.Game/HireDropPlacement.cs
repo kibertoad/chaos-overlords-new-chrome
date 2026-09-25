@@ -4,7 +4,7 @@ namespace Rechaos.Game;
 
 /// <summary>
 /// Client-side screening of a hire offer dropped on a sector. The rules defer the sector
-/// capacity check to resolution (docs/original-internals/commands-and-economy.md BIN-HIRE-001),
+/// capacity check to resolution (RULE-HIRE-001; the early refusal is DEV-HIRE-001),
 /// so a drop onto a sector that already holds a full complement of friendly gangs would be
 /// reserved as a hire that can only fail. The drop is refused up front instead, measured the
 /// same way a Move into that sector is, except that a gang the player has already ordered to

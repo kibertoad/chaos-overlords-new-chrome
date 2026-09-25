@@ -6,23 +6,29 @@ Status: maintained canonical procedure
 - [Validation layers](#validation-layers)
 - [Local automated checks](#local-automated-checks)
 - [Current canonical identities](#current-canonical-identities)
-- [Original-binary oracle protocol](#original-binary-oracle-protocol)
-- [Static binary research protocol](#static-binary-research-protocol)
+- [Experiments on the original](#experiments-on-the-original)
+- [Static binary research](#static-binary-research)
+- [Spec checks](#spec-checks)
+- [Tests against the original](#tests-against-the-original)
 - [Fixture classes](#fixture-classes)
-- [Required parity record fields](#required-parity-record-fields)
 - [Failure triage](#failure-triage)
 <!-- doc-index:end -->
 
 ## Validation layers
 
-Accuracy is established separately at four layers:
+Accuracy is established separately at four layers, and a pass at one layer does
+not imply a pass at the next:
 
-1. **Source identity** - original input files match known cryptographic hashes.
-2. **Decode fidelity** - bytes are consumed at exact offsets into exact values.
-3. **Behavioral parity** - controlled inputs produce matching state transitions.
-4. **Presentation parity** - the same state produces equivalent screens/media.
+1. **Source identity** - original input files match the hashes in their build
+   entry, `spec/builds/BLD-GOG-EN-1.1.md`.
+2. **Decode fidelity** - the decoders read every byte of every file a format
+   entry lists into the value its Kaitai definition gives.
+3. **Behavioral parity** - the same starting state and inputs produce the state
+   changes and events an experiment fixture recorded in the original.
+4. **Presentation parity** - the same state produces the screen a capture of the
+   original shows, pixel for pixel, and starts the same sounds on the same tick.
 
-A pass at one layer does not imply a pass at the next.
+`PARITY.md` records which rows have tests at these levels.
 
 ## Local automated checks
 
@@ -261,66 +267,77 @@ original source resources; 214 entries are decoded PX08 derivatives retained
 alongside their original inputs, and one entry is the local modern help
 document decoded from the two original WinHelp resources.
 
-## Original-binary oracle protocol
+## Experiments on the original
+
+An experiment is a controlled run of the original, recorded as an `EXP-` entry
+in `spec/experiments/` with a JSON fixture next to it, in the form the
+[documentation standard](https://dinorefurb.com/documentation-standard/#experiments)
+sets out. It starts from a saved state, usually a save patch, changes one
+input, and records what follows. It is repeated from the same state with the
+random number generator's state varied between runs, and anything random gets
+enough repetitions for a recorded distribution: a formula inferred from one roll
+is a guess. Run the original offline. The experiments still to run are listed in
+[manual_validation_plan.md](../manual_validation_plan.md).
 
 For a manually operated Windows session, use
 [`Capture-OriginalWindow.ps1`](../tools/Capture-OriginalWindow.ps1) and follow
 the raw-burst evidence rules in [REFERENCE-CAPTURE.md](REFERENCE-CAPTURE.md).
-The helper deliberately captures the visible desktop client area because the
-legacy DirectDraw window may not produce reliable window-only captures on
-modern systems.
+The helper captures the visible desktop client area because the legacy
+DirectDraw window may not produce reliable window-only captures on modern
+systems. A capture that a test compares with the rebuild pixel for pixel has to
+be taken at the screen entry's `resolution` (640x480), with no scaling,
+filtering or aspect correction, and in the colours the game set in its palette.
+The finding or experiment that cites a capture says which tool took it and with
+what settings, and gives its xxh3. Captures, saves and recordings that hold any
+of the game's content are never committed.
 
-Run the original only offline in a controlled Windows environment. Record:
+## Static binary research
 
-- executable/data hashes and OS compatibility settings;
-- experiment ID and the rule/finding under test;
-- complete new-game options and visible initial state;
-- pre-action save and screenshot;
-- exactly one intentional input variable;
-- all visible results, notification order, animations and sounds;
-- post-action save and screenshot;
-- repeat count and observed result distribution;
-- analyst conclusion, contradictions and confidence change.
+`tools/ghidra/` holds bounded, clean-room Ghidra scripts for navigating the
+owned executable, and [GHIDRA.md](GHIDRA.md) documents the headless workflow.
+Fingerprint the executable before analysis, work from facts (constants, data
+references, branches, state offsets and call relationships), keep neutral names
+until behaviour confirms a meaning, and write each result up as a finding in
+`spec/findings/` with its addresses, tool version and a way to find the place
+again. Decompiler line numbers are never locations. Decompiler output, raw
+analysis databases and executable material stay outside the repository. The
+static work still open is listed in
+[static_validation_plan.md](../static_validation_plan.md).
 
-Never infer a formula from one stochastic sample. Hold every possible variable
-constant, repeat, and use save-state differences to identify the fields that
-changed. For ordering/RNG research, start repeated branches from the identical
-pre-action save.
+## Spec checks
 
-## Static binary research protocol
+`node tools/check-spec.mjs` runs the documentation standard's
+[checks](https://dinorefurb.com/documentation-standard/#checks) over `spec/`,
+`PARITY.md` and `DEVIATIONS.md`, and writes the indexes in `spec/index/`. The
+fast gate runs it with `--check`. It compiles the Kaitai definitions when
+`kaitai-struct-compiler` (or the path in `KSC`) is on the path and warns when
+it is not. Until the patch tool is published with the standard's spec package,
+an experiment that uses a save patch also gives each write as a byte offset and
+a value in its Setup section.
 
-- Fingerprint the exact executable before analysis.
-- Work from facts: constants, data references, branches, state offsets and call
-  relationships. Do not copy decompiled implementation code.
-- Assign neutral names until behavior confirms semantics.
-- Link each recovered fact to executable hash, address/range, tool version and a
-  reproducible navigation description.
-- Correlate static findings with controlled state/save experiments.
-- Record unresolved branches and alternate interpretations.
-- Keep raw analysis databases and executable material outside the repository.
+## Tests against the original
 
-Static analysis should prioritize the phase dispatcher, RNG, save/load, city
-generation, action resolver, scoring/victory, AI, and resource lookup. Legacy
-network message boundaries are deliberately outside the recreation scope.
+`PARITY.md` lists, for each row, only the tests that compare the rebuild with
+evidence from the original: decoding every file a format entry lists, replaying
+an experiment fixture, or matching a capture. Decoder tests on synthetic files
+and tests that compare the rebuild with an earlier version of itself are still
+required but are left out of that column. Manual play never counts, and listed
+tests run with every deviation that has a setting switched off.
 
 ## Fixture classes
 
 - **Format fixture:** synthetic non-copyrighted bytes testing parser boundaries.
 - **Definition fixture:** checked-in mechanical values with pinned provenance.
-- **State fixture:** sanitized structured pre/post state from an experiment.
-- **Command fixture:** initial state, input commands, expected events and hashes.
-- **Distribution fixture:** repeated stochastic result counts and tolerance.
+- **Experiment fixture:** the JSON file of an `EXP-` entry: starting state,
+  inputs, expected events by glossary name, expected end state, and for random
+  outcomes the recorded distribution and its statistical test.
+- **Command fixture:** initial state, input commands, expected events and hashes
+  of the rebuild itself.
 - **Visual fixture:** extracted locally and never committed; comparison metadata
   and masks may be committed.
-- **Save fixture:** only when redistribution status is clear; otherwise generated
-  locally from documented steps.
-
-## Required parity record fields
-
-Every `PARITY-MATRIX.md` row must identify original behavior, implementation,
-evidence/finding ID, confidence, automated test, and status. A behavior cannot be
-`Parity verified` when its evidence is manual-only or its implementation contains
-placeholder formulas.
+- **Save patch:** writes to a base save, committed under
+  `spec/experiments/saves/`; the base save itself stays with the maintainer's
+  captures.
 
 ## Failure triage
 

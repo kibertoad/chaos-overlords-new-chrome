@@ -397,7 +397,7 @@ explicit M6 gap rather than an unmeasured claim.
    model now preserves three fixed slots, same-slot tombstones, mutually
    exclusive actions, and next-planning-entry refill. Exact hire destination
    selection and its persisted anchor are statically recovered in
-   `BIN-AI-003C`, covered by pure kernels, and wired into live planning. The
+   `FND-AI-010`, covered by pure kernels, and wired into live planning. The
    encoded anchors are authoritative and persisted.
    Selector `0x8f` is verified as the previous hire role, exposing a shipped
    slot-versus-role indexing error in five family-6 scheduling guards. Each guard
@@ -428,7 +428,7 @@ explicit M6 gap rather than an unmeasured claim.
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
    (Heal), plus action bytes 3 (Chaos), 10 (Move), and 13 (Snitch), are now
-   bounded in `original-internals/computer-players.md`. Mode 6 is now live as a
+   bounded in the `FND-AI-*` findings in `spec/findings/`. Mode 6 is now live as a
    family-2 Move route toward the unique scenario leader (or all tied leaders),
    with an additional two-point preference for hostile human owners when humans
    participate. The exact scenario scorer and competition-standing bytes are

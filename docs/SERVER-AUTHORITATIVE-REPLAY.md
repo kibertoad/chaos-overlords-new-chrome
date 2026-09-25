@@ -657,7 +657,7 @@ statements are required before the resolver goes live, each recorded in the pari
   each, and every `OriginalAi*Rules` table has been hashed into a `hash`-style vector of its own so a
   transcription error in a constant is caught without a match reaching the branch that reads it.
 - Every `ExecutionPhase` and every `TurnPhase` transition has `resolution` vectors covering the
-  rules the corresponding `RULE-*` entries in [GAME-RULES.md](GAME-RULES.md) describe, listed by ID
+  rules the corresponding `RULE-*` entries in [the spec](../spec/README.md) describe, listed by ID
   in the vector's `notes`.
 
 Line coverage on the TypeScript engine, measured under the corpus, is the cheap proxy to watch
@@ -682,8 +682,8 @@ reach.
   `resolved` step; the limitations list loses the three entries about desync recovery by count.
 - **VALIDATION.md**: the conformance corpus becomes a fifth fixture class, "Conformance vector",
   and the fast gate description gains the corpus; the failure triage list is reused as is.
-- **PARITY-MATRIX.md**: one row per vector kind under a new "Engine conformance" group, with the
-  three coverage statements above as its gates.
+- **PARITY.md**: no change. The vectors compare the engine with its own recorded output, and the
+  matrix's Tests column lists only tests that compare the rebuild with evidence from the original.
 
 ## Risks
 
