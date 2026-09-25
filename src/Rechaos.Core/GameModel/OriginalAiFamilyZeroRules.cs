@@ -6,7 +6,7 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiFamilyZeroRules
 {
-    public const int AttackAttemptsAfterHideOrEquip = 5;
+    public const int AttackAttemptsAfterChaosOrEquip = 5;
     public const int HealForceLimit = 8;
 
     public static bool ShouldHeal(int force, int effectiveHeal) =>

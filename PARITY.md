@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 69 |
+| `supported` | 67 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 152 |
+| `implemented` | 154 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 19 |
-| `partial` | 51 |
-| `complete` | 152 |
+| `partial` | 49 |
+| `complete` | 154 |
 
 ## DATA
 
@@ -334,11 +334,11 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-016` | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported | complete | None | None | implemented | None |
 | `RULE-AI-017` | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | supported | complete | None | None | implemented | None |
 | `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported | complete | None | None | implemented | None |
-| `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild counts previous Hide where the original counts previous Chaos and writes Chaos (FND-AI-046), and groups the previous actions differently from the jump table (FND-AI-048). |
+| `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-020` | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The branch after Attack, Hide or Move, the fall-through of the crime gate to the Goon test, the neutral-owner read of owner_is_human and the needs_family write with the Greed Terminate (FND-AI-057) are not checked in the rebuild. |
 | `RULE-AI-021` | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The owner query in the owned-sector test and the owner_is_human late gate (FND-AI-058) are not checked in the rebuild. |
 | `RULE-AI-022` | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
-| `RULE-AI-023` | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild counts previous Hide where the original counts previous Chaos and writes Chaos, and groups the previous actions differently from the jump table (FND-AI-049). No match writes family 4, so the handler matters only for a loaded planning record. |
+| `RULE-AI-023` | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | No match writes family 4, so the handler matters only for a loaded planning record. |
 | `RULE-AI-024` | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-025` | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The end marker 100 of the guard target list, which sends the gang toward a random sector when every weight-10 sector is covered (FND-AI-059), is not checked in the rebuild. |
 | `RULE-AI-026` | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |

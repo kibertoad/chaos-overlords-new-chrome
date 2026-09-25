@@ -8,7 +8,7 @@ namespace Rechaos.Tests;
 public sealed class AiFamilyFourTurnPlannerTests
 {
     [Fact]
-    public void PreviousNoneUsesHealThenHideBoundary()
+    public void PreviousNoneUsesHealThenChaosBoundary()
     {
         var lowForce = CreateMatch(force: 7);
         var healthy = CreateMatch(force: 8);
@@ -22,7 +22,7 @@ public sealed class AiFamilyFourTurnPlannerTests
 
         Assert.Equal(GangAction.Heal,
             Assert.Single(AiTurnPlanner.Plan(lowForce, new PlayerId(0))).Action);
-        Assert.Equal(GangAction.Hide,
+        Assert.Equal(GangAction.Chaos,
             Assert.Single(AiTurnPlanner.Plan(healthy, new PlayerId(0))).Action);
     }
 
@@ -66,13 +66,13 @@ public sealed class AiFamilyFourTurnPlannerTests
     }
 
     [Fact]
-    public void PreviousHideRetriesFiveFailedDrawsThenAttacks()
+    public void PreviousChaosRetriesFiveFailedDrawsThenAttacks()
     {
         var match = CreateMatch(
             targetSector: 0, force: 8, targetForce: 10, weakAttacker: true);
         var player = new PlayerId(0);
         BeginFamilyFourTurn(match);
-        SetPreviousAction(match, GangAction.Hide);
+        SetPreviousAction(match, GangAction.Chaos);
         match.FinishUpkeep();
         var randomBefore = match.Random.ConsumptionCount;
 
@@ -85,12 +85,12 @@ public sealed class AiFamilyFourTurnPlannerTests
     }
 
     [Fact]
-    public void PreviousHideUsesNearbyDangerEquipmentOpportunity()
+    public void PreviousChaosUsesNearbyDangerEquipmentOpportunity()
     {
         var match = CreateMatch(equipmentOpportunity: true);
         var player = new PlayerId(0);
         BeginFamilyFourTurn(match);
-        SetPreviousAction(match, GangAction.Hide);
+        SetPreviousAction(match, GangAction.Chaos);
         var expected = Assert.IsType<OriginalAiEquipmentRules.Upgrade>(
             OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                 match, match.Players[0], match.Players[0].Gangs[0], 0));
@@ -116,7 +116,7 @@ public sealed class AiFamilyFourTurnPlannerTests
         recorder.PrepareAiPlanning(player);
 
         Assert.Equal(4, match.AiPlanning.Family(player, 0));
-        Assert.Equal(GangAction.Hide,
+        Assert.Equal(GangAction.Chaos,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
