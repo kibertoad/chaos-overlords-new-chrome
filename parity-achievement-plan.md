@@ -34,17 +34,6 @@ them together with a single session bump, or accept one bump per release.
 DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay so (the
 2026-09-26 decision in `docs/DECISIONS.md`); no step adds the original's path for them.
 
-## Step 8: Computer players
-
-Closes RULE-AI-001, RULE-AI-002, RULE-AI-005, RULE-AI-006, RULE-AI-010, RULE-AI-013 and
-RULE-AI-019 to RULE-AI-031. Comes after steps 2 to 7 because the handlers read the rules those
-steps change.
-
-Both AI policies are affected; DEV-AI-003's Advanced AI keeps the original planner's commands.
-
-Tooltips: the Game Information panel's AI policy label and any hover text that describes how
-computer players choose orders.
-
 ## Step 9: Remaining rule details
 
 - RULE-TURN-005: record whether the sector-wide order leaves Research out of the recurring

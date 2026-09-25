@@ -31,6 +31,9 @@ public sealed partial class MatchState
             CancelQueuedCommand(gang);
 
         SetController(playerId, PlayerController.Computer);
+        // RULE-AI-001, RULE-AI-027: the computer that takes over a seat plans every gang as a
+        // raider.
+        AiPlanning.SetRaiderMode(playerId, true);
         return true;
     }
 
@@ -41,6 +44,7 @@ public sealed partial class MatchState
         if (player.Setup.Controller == PlayerController.Human) return false;
         RequireCleanCommandBoundary();
         SetController(playerId, PlayerController.Human);
+        AiPlanning.SetRaiderMode(playerId, false);
         return true;
     }
 
