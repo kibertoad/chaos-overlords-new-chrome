@@ -3,7 +3,8 @@ using Rechaos.Core.Assets;
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Equipment-choice rules recovered from selectors 0x61, 0x64, 0x6c, 0x74, and 0x75.
+/// Equipment-choice rules recovered from selectors 0x61, 0x64, 0x6c, 0x74 and 0x75 (FND-AI-055).
+/// Family 10's Stealth armor choice (selector 0x72) is in OriginalAiFamilyTenRules.
 /// </summary>
 internal static class OriginalAiEquipmentRules
 {
@@ -110,7 +111,8 @@ internal static class OriginalAiEquipmentRules
             && armor is { } armorId)
             return new Upgrade(checked((short)armorId), EquipmentSlot.Armor);
 
-        var miscellaneous = SelectMiscellaneousChaosUpgrade(state, player, gang);
+        // FND-AI-055: families 13 and 14 compare Control (selector 0x75).
+        var miscellaneous = SelectMiscellaneousControlUpgrade(state, player, gang);
         return miscellaneous is { } miscellaneousId
             && state.Definitions.Items[miscellaneousId].Cost <= player.Cash
                 ? new Upgrade(checked((short)miscellaneousId), EquipmentSlot.Miscellaneous)
@@ -236,12 +238,14 @@ internal static class OriginalAiEquipmentRules
             : selected;
     }
 
-    public static int? SelectMiscellaneousChaosUpgrade(
+    /// <summary>Selector 0x75: the miscellaneous item with the most Control (FND-AI-055).</summary>
+    public static int? SelectMiscellaneousControlUpgrade(
         MatchState state,
         MatchPlayerState player,
         MatchGangState gang) =>
-        SelectMiscellaneousUpgrade(state, player, gang, item => item.Stats.Chaos);
+        SelectMiscellaneousUpgrade(state, player, gang, item => item.Stats.Control);
 
+    /// <summary>Selector 0x74: the miscellaneous item with the most Detect (FND-AI-055).</summary>
     public static int? SelectMiscellaneousDetectUpgrade(
         MatchState state,
         MatchPlayerState player,

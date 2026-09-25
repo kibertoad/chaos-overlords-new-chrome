@@ -18,7 +18,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
         var facts = new Facts(source: 27, player: new PlayerId(mode == 4 ? 1 : 0));
         facts.Owners[28] = owner;
         if (soloControl) facts.SoloControl.Add(28);
-        facts.PlayerOrder = [4, 1, 0, 2, 3, 5];
+        facts.Standings = [4, 1, 0, 2, 3, 5];
 
         Assert.Equal(28, facts.Select(mode, family: 2));
     }
@@ -282,6 +282,22 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.False(OriginalAiSectorSelectionRules.LiteralPlayerOrderAccepts(0, -1, values));
         Assert.True(OriginalAiSectorSelectionRules.LiteralPlayerOrderAccepts(5, 4, values));
         Assert.True(OriginalAiSectorSelectionRules.LiteralPlayerOrderAccepts(2, 5, values));
+    }
+
+    // RULE-AI-006, FND-AI-056: mode 4 searches the standings bytes with the owner query, so a
+    // sector under police presence (-2) passes only for the player whose slot number comes first,
+    // and a rival's sector under police does not end the search at its radius.
+    [Fact]
+    public void ModeFourUsesStandingsAndOwnerQuery()
+    {
+        var facts = new Facts(source: 27);
+        facts.Standings = [1, 0, 2, 3, 4, 5];
+        facts.Owners[28] = 1;
+        facts.Disabled[28] = true;
+        facts.Owners[25] = 1;
+
+        Assert.Equal(26, facts.Select(mode: 4, family: 2));
+        Assert.Equal(0, facts.Random.ConsumptionCount);
     }
 
     [Fact]
@@ -570,7 +586,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
                 Random,
                 hasHumanPlayers,
                 formationSectorId,
-                scenarioStandings: mode == 6 ? Standings : null,
+                scenarioStandings: mode is 4 or 6 ? Standings : null,
                 unfinishedSiteScore: SiteScores.ElementAt,
                 hasPriorInfluence: PriorInfluence.Contains,
                 completedSiteScore: SiteScores.ElementAt);

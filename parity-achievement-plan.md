@@ -40,13 +40,9 @@ Closes RULE-AI-001, RULE-AI-002, RULE-AI-005, RULE-AI-006, RULE-AI-010, RULE-AI-
 RULE-AI-019 to RULE-AI-031. Comes after steps 2 to 7 because the handlers read the rules those
 steps change.
 
-- Upgrades follow FND-AI-055: the weapon choice starts from the equipped weapon, family 10's
-  armor is chosen by Stealth, families 11 and 12 compare Detect and families 13 and 14 compare
-  Control.
 - Families 1, 2, 6, 11, 13 and 14: the details each row lists (family 1's `needs_family`
   write with the Greed Terminate, the owner queries, the end marker 100 of the guard list, the
   five contested draws and the unset Support threshold of FND-AI-062 and BUG-AI-006).
-- Sector selector mode 4 (FND-AI-056) against the rebuild's version.
 
 Both AI policies are affected; DEV-AI-003's Advanced AI keeps the original planner's commands.
 
