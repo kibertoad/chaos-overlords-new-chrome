@@ -470,7 +470,7 @@ public sealed class UiNavigationTests
         });
         Assert.Contains("ORIGINAL HOST-LOBBY ART",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.ColorDepth.Center)));
-        Assert.Contains("IMMEDIATELY",
+        Assert.Contains("SLIDES PANELS IN FROM THE RIGHT",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.SlidePanels.Center)));
         Assert.Contains("NATIVE STRETCH AND ORDERED DITHER",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.EventSiteImages.Center)));
@@ -516,10 +516,12 @@ public sealed class UiNavigationTests
 
         slide.Begin(ClientScreen.Gang, start);
 
-        Assert.Equal(PanelSlideTransition.StartOffset, slide.Offset(ClientScreen.Gang, start));
-        Assert.Equal(172,
-            slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration / 2));
-        Assert.Equal(0, slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration));
+        // RULE-UI-003: the first copy already shows one 16-pixel step of the panel.
+        Assert.Equal(PanelSlideTransition.StartOffset - 16, slide.Offset(ClientScreen.Gang, start));
+        Assert.Equal(PanelSlideTransition.StartOffset - 16 * 11, slide.Offset(ClientScreen.Gang,
+            start + TimeSpan.FromTicks(10 * TimeSpan.TicksPerSecond / 84 + 1)));
+        Assert.Equal(0, slide.Offset(ClientScreen.Gang,
+            start + PanelSlideTransition.DurationFor(PanelSlideTransition.StartOffset)));
         Assert.Equal(0, slide.Offset(ClientScreen.City, start));
         slide.Begin(ClientScreen.City, start);
         Assert.Equal(0, slide.Offset(ClientScreen.City, start));
@@ -529,7 +531,8 @@ public sealed class UiNavigationTests
     public void PanelSlideOnlyRunsForForwardDetailTransitions()
     {
         Assert.True(PanelSlideTransition.ShouldAnimate(ClientScreen.Sector, ClientScreen.Gang));
-        Assert.True(PanelSlideTransition.ShouldAnimate(ClientScreen.City, ClientScreen.Sector));
+        // RULE-UI-003: the detailed sector screen is drawn in place and is no sliding panel.
+        Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.City, ClientScreen.Sector));
         Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.Gang, ClientScreen.Sector));
         Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.Site, ClientScreen.Sector));
         Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.City, ClientScreen.Commands));
@@ -540,7 +543,7 @@ public sealed class UiNavigationTests
         slide.Begin(ClientScreen.Gang, ClientScreen.Sector, start);
         Assert.Equal(0, slide.Offset(ClientScreen.Sector, start));
         slide.Begin(ClientScreen.Sector, ClientScreen.Gang, start);
-        Assert.Equal(PanelSlideTransition.StartOffset,
+        Assert.Equal(PanelSlideTransition.StartOffset - 16,
             slide.Offset(ClientScreen.Gang, start));
     }
 

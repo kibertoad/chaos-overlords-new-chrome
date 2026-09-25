@@ -8,7 +8,7 @@ namespace Rechaos.Tests;
 public sealed class GangInformationRosterTests
 {
     [Fact]
-    public void SectorRosterKeepsOnlyActiveLocalEntriesInStableIdOrder()
+    public void SectorRosterKeepsOnlyActiveLocalEntriesInRosterSlotOrder()
     {
         var player = new PlayerId(0);
         MatchGangState[] gangs =
@@ -19,7 +19,8 @@ public sealed class GangInformationRosterTests
             new(new GangId(5), player, 3, 11, 0)
         ];
 
-        Assert.Equal([3, 8], GangInformationRoster.ForSector(gangs, 11)
+        // RULE-UI-010 sector_roster_slots: roster slot order, whatever the gang ids.
+        Assert.Equal([8, 3], GangInformationRoster.ForSector(gangs, 11)
             .Select(gang => gang.Id.Value));
         Assert.Empty(GangInformationRoster.ForSector(gangs, 12));
         Assert.Throws<ArgumentOutOfRangeException>(

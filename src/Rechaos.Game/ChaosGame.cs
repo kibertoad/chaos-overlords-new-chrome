@@ -682,12 +682,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     break;
             }
         }
+        // RULE-UI-003: the original handles no message while a panel slides in, and takes a click
+        // made during the slide from the queue once the panel is in place. The pointer is
+        // therefore read against the panel's final place, whatever the drawn offset.
         var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
-        if (pointerMapped && _slidePanels && !_gameMenuOpen)
-        {
-            var offset = _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime);
-            virtualPoint = new Point(virtualPoint.X - offset, virtualPoint.Y);
-        }
         UpdateHoverPoint(pointerMapped ? virtualPoint : null);
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)

@@ -9,14 +9,14 @@ namespace Rechaos.Tests;
 public sealed class SectorOpponentGangsTests
 {
     [Fact]
-    public void OpponentRosterIsListedInCardOrderForTheSelectedSector()
+    public void OpponentRosterIsListedInRosterSlotOrderForTheSelectedSector()
     {
         var state = CreateMatch();
         var viewer = new PlayerId(0);
         var opponent = new PlayerId(1);
 
         Assert.True(SectorOpponentGangs.Detectable(state, viewer, opponent, sectorId: 0));
-        Assert.Equal([20, 21],
+        Assert.Equal([21, 20],
             SectorOpponentGangs.InSector(state, viewer, opponent, sectorId: 0)
                 .Select(gang => gang.Id.Value));
         // Gang 22 shares the opponent's roster but sits in the next sector along.
@@ -58,7 +58,7 @@ public sealed class SectorOpponentGangsTests
         var owner = new PlayerId(1);
 
         Assert.False(SectorOpponentGangs.Detectable(state, owner, owner, sectorId: 0));
-        Assert.Equal([20, 21],
+        Assert.Equal([21, 20],
             SectorOpponentGangs.InSector(state, owner, owner, sectorId: 0)
                 .Select(gang => gang.Id.Value));
     }

@@ -215,18 +215,11 @@ public sealed partial class ChaosGame
             }
         }
         DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
-        var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
-            .GroupBy(gang => gang.SectorId).ToArray();
-        var pendingHireSectors = player.PendingHires
-            .Select(pending => pending.TargetSectorId).ToHashSet();
-        foreach (var gangs in activeGangsBySector)
-            DrawGangStatusMarker(batch, gangs.Key,
-                GangStatusSource(state, player.Id, gangs.Key, gangs,
-                    pendingHireSectors.Contains(gangs.Key)));
-        var occupiedGangSectors = activeGangsBySector.Select(gangs => gangs.Key).ToHashSet();
-        foreach (var pendingSector in pendingHireSectors.Where(
-                     pendingSector => !occupiedGangSectors.Contains(pendingSector)))
-            DrawGangStatusMarker(batch, pendingSector, OriginalSpriteLayout.IncomingGangStatus);
+        // RULE-UI-006: the markers the map keeps after drawing every sector in number order.
+        var markerFrames = GangStatusMarkerPresentation.MapFrames(state, player.Id);
+        for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
+            if (markerFrames[sectorId] >= 0)
+                DrawGangStatusMarker(batch, sectorId, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]));
         if (_draggedHireDefinitionId is not null
             && CityMapLayout.TrySectorAt(_dragPoint, out var dropSector))
         {
