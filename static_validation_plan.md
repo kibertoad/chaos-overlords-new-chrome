@@ -604,7 +604,10 @@ Gaps more reading of `Chaos Overlords.exe` or the data files could close.
 The groups above close questions about entries that already exist. The groups from here on list
 the parts of the executable that no entry describes yet, found by comparing a function inventory
 of the build with every address the spec cites. The inventory was taken on 2026-09-25 from a
-Ghidra 12.1.3 project with default auto-analysis:
+Ghidra 12.1.3 project with default auto-analysis. FND-EXE-004 records the layout and every game
+function's range; `tools/ghidra/ReportFunctionInventory.java` and
+`node tools/spec-coverage.mjs --inventory <file>` reproduce the counts (see `docs/GHIDRA.md`), and
+`spec/index/functions.md` lists the entries that cite each function:
 
 - Ghidra finds 694 functions. Game code runs from `0x00401000` to `0x0047862F`: 464 functions,
   480,397 bytes. The import thunks (Smacker, DirectDraw, WinSock, TAPI, common dialogs) start at
@@ -625,23 +628,6 @@ Ghidra 12.1.3 project with default auto-analysis:
 - The resource section holds 5 menus, 27 dialogs, 7 string-table blocks, 1 accelerator table,
   4 bitmaps, 11 icons in 8 groups and a version record. The spec cites menu 101, dialog `0x8B`
   and a few string IDs.
-
-## Coverage tooling
-
-- Add a bounded inventory script to `tools/ghidra/` that writes, for every function, its entry,
-  end, size, caller count, callee entries and imported API names, and no instruction text. Its
-  output stays outside the repository like every other script's.
-- Add a coverage mode to `tools/check-spec.mjs` (or a separate script) that reads a local
-  inventory file and reports the game functions and `.data` regions no entry cites, and the large
-  functions cited only by findings about other subjects. The numbers in the section above were
-  measured this way and are not reproducible without it.
-- Record the program's layout as an EXE finding: the section extents, the game code range, the
-  thunk range, the start of the runtime (`0x004787E0`; Ghidra's function ID names `_memcpy`,
-  `_strlen`, `_rand`, `__ftol` and others) and the 464-function count. That gives "every function
-  of the game" a fixed denominator and puts the runtime out of scope explicitly.
-- Once most functions are described, have `check-spec.mjs` generate an index in `spec/index/`
-  from the locations of findings: every game function range, its neutral name and the entries
-  that describe it.
 
 ## Program shell: startup, window, input and shutdown
 

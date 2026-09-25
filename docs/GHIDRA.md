@@ -168,6 +168,23 @@ limits. Use it to rule a known helper in or out of a narrow transitive call
 chain; it is not a substitute for control-flow inspection of the relevant call
 sites.
 
+`ReportFunctionInventory.java` takes one output path outside the repository and
+writes one tab-separated row per function: entry, last byte, body size, caller
+count, callee entries, imported API names, and the initialized-data addresses
+the function reads and writes. It writes no instruction text. Its output feeds
+the coverage report:
+
+```powershell
+node tools/spec-coverage.mjs --inventory "$env:TEMPechaos-inventory.tsv"
+```
+
+The report counts the game functions (the table of FND-EXE-004) that no spec
+entry cites, separates those that belong to network play, lists the large
+functions only one or two entries cite, and lists the most used `.data`
+addresses no entry cites. Without `--inventory`, `tools/spec-coverage.mjs`
+only rewrites the function index `spec/index/functions.md`; `--check` fails
+when that index is stale.
+
 ## Evidence discipline
 
 - Record executable hash, Ghidra version, virtual address, call relationship,

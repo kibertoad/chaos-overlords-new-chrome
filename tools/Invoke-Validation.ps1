@@ -108,6 +108,9 @@ try {
         # The spec, PARITY.md and DEVIATIONS.md against the documentation standard's checks.
         & node (Join-Path $PSScriptRoot 'check-spec.mjs') --check
         $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
+        # The function index spec/index/functions.md, generated from FND-EXE-004 and the entries' citations.
+        & node (Join-Path $PSScriptRoot 'spec-coverage.mjs') --check
+        $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
     }
     elseif ($env:CI) {
         throw 'Node.js is required to check the generated documentation indexes.'
@@ -170,7 +173,7 @@ try {
     Invoke-CheckedDotnet -Arguments $testArguments
 
     if ($documentationCheckFailed) {
-        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs and node tools/check-spec.mjs, and fix what they report.'
+        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs, node tools/check-spec.mjs and node tools/spec-coverage.mjs, and fix what they report.'
     }
 }
 finally {
