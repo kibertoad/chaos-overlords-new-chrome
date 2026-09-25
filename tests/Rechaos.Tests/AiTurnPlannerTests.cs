@@ -824,7 +824,7 @@ public sealed class AiTurnPlannerTests
         match.Sectors[1].Owner = playerId;
         match.Players[0].AddGang(new MatchGangState(
             new GangId(30), playerId, observerDefinition, sectorId: 1, force: 5));
-        match.AiStrategy.RecordCombat(new PlayerId(1), playerId, damage: 1);
+        match.AiStrategy.RecordCombat(new PlayerId(1), playerId, openingDamage: 1);
         match.FinishUpkeep();
 
         var preparation = AiTurnPlanner.PrepareHire(

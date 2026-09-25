@@ -151,9 +151,9 @@ public sealed class UiNavigationTests
         Assert.StartsWith("FORCE", InformationEffectTooltips.GangAt(new Point(220, 216))[0]);
         Assert.StartsWith("RESISTANCE", InformationEffectTooltips.SiteAt(new Point(300, 169))[0]);
         Assert.StartsWith("COST", InformationEffectTooltips.ItemAt(new Point(220, 216))[0]);
-        Assert.Contains("ATTACK DICE", InformationEffectTooltips.Describe(
+        Assert.Contains("ADDED TO COMBAT", InformationEffectTooltips.Describe(
             InformationEffect.Blade, "SCOPE")[1]);
-        Assert.Contains("ATTACK DICE", InformationEffectTooltips.Describe(
+        Assert.Contains("ADDED TO COMBAT", InformationEffectTooltips.Describe(
             InformationEffect.Range, "SCOPE")[1]);
         Assert.Contains("INFLUENCE ACTION", InformationEffectTooltips.Describe(
             InformationEffect.Influence, "SCOPE")[1]);
@@ -954,7 +954,7 @@ public sealed class UiNavigationTests
         Assert.Equal(394, HireComparisonLayout.StatRight(2));
         Assert.Equal(310, HireComparisonLayout.StatY(15));
         Assert.Equal(new Rectangle(382, 172, 12, 7), HireComparisonLayout.ValueCell(2, 0));
-        Assert.Contains("ATTACK DICE", InformationEffectTooltips.HireAt(
+        Assert.Contains("ADDED TO COMBAT", InformationEffectTooltips.HireAt(
             new Point(244, HireComparisonLayout.StatY(12)))[1]);
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.Portrait(3));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatRight(-1));

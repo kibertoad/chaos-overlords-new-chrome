@@ -508,10 +508,14 @@ public sealed partial class NativeSaveSerializerTests
     {
         var match = CreateMatch();
         var player = match.Players[1];
+        // A gang joining after the match is built carries its values, as a hire does (RULE-GANG-001).
+        var statistics = EffectiveStatistics.From(match.Definitions.Gang(4).Stats);
         foreach (var index in Enumerable.Range(0, MatchLimits.FriendlyGangsPerSector))
-            player.AddGang(new MatchGangState(new GangId(30 + index), player.Id, 4, 62, 5));
+            player.AddGang(new MatchGangState(new GangId(30 + index), player.Id, 4, 62, 5,
+                statistics: statistics));
         foreach (var index in Enumerable.Range(0, 3))
-            player.AddGang(new MatchGangState(new GangId(40 + index), player.Id, 4, 62, 0));
+            player.AddGang(new MatchGangState(new GangId(40 + index), player.Id, 4, 62, 0,
+                statistics: statistics));
 
         var restored = RoundTrip(match);
 

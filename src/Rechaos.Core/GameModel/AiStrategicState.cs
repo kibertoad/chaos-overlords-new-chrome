@@ -130,10 +130,14 @@ public sealed class AiStrategicState
             && advantagedSectors * 100 / ownedSectors.Length > 75;
     }
 
-    internal void RecordCombat(PlayerId attacker, PlayerId defender, int damage)
+    /// <summary>
+    /// RULE-AI-016: lowers the defender's attitude toward the attacker by the larger of its reaction
+    /// and the opening damage, which is -1 for an evaded attack.
+    /// </summary>
+    internal void RecordCombat(PlayerId attacker, PlayerId defender, int openingDamage)
     {
-        if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));
-        Decrease(defender, attacker, Math.Max(Reaction(defender), damage));
+        if (openingDamage < -1) throw new ArgumentOutOfRangeException(nameof(openingDamage));
+        Decrease(defender, attacker, Math.Max(Reaction(defender), openingDamage));
     }
 
     internal void RecordControl(PlayerId previousOwner, PlayerId newOwner) =>

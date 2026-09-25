@@ -67,25 +67,8 @@ public static partial class CommandResolver
         // RULE-TOLERANCE-001: resolution opens by moving every base Tolerance one point back.
         ToleranceResolver.StepTowardNormal(state);
         var ordered = InRosterOrder(state, commands);
-        var statistics = ordered
-            .Select(queued => queued.Command.Gang)
-            .Distinct()
-            .ToDictionary(gangId => gangId,
-                gangId => EffectiveStatisticsCalculator.ForGang(state, state.FindGang(gangId)!));
         var results = new List<CommandResolutionResult>(ordered.Length);
-        foreach (var queued in ordered)
-        {
-            results.Add(queued.Command.Action switch
-            {
-                GangAction.Heal => ResolveHeal(
-                    state, queued.Command, statistics[queued.Command.Gang]),
-                GangAction.Influence => ResolveInfluence(
-                    state, queued.Command, statistics[queued.Command.Gang]),
-                GangAction.Research => ResolveResearch(
-                    state, queued.Command, statistics[queued.Command.Gang]),
-                _ => Resolve(state, queued)
-            });
-        }
+        foreach (var queued in ordered) results.Add(Resolve(state, queued));
         ToleranceResolver.ClampAfterInstant(state);
         return results;
     }
@@ -181,9 +164,10 @@ public static partial class CommandResolver
                 }
             }
 
+            // RULE-COMBAT-001: the stored Combat already holds the weapon skills.
             var attackDice = ManualRules.AttackDiceCount(
                 attacker.Force,
-                ManualRules.CombatRating(attacker.Statistics, attacker.WeaponType),
+                attacker.Statistics.Combat,
                 OriginalResolutionRules.AdjustDefense(
                     OriginalResolutionRules.Band(state, target.Owner),
                     target.Statistics.Defense));
@@ -195,13 +179,13 @@ public static partial class CommandResolver
             var attackDamage = OriginalResolutionRules.MainAttackDamage(
                 attackDice, attackSuccesses);
             var suppressesRetaliation = target.Hidden
-                || ManualRules.SuppressesRetaliation(attacker.Statistics, attacker.WeaponType)
-                && !ManualRules.SuppressesRetaliation(target.Statistics, target.WeaponType);
+                || ManualRules.SuppressesRetaliation(
+                    attacker.Statistics, attacker.WeaponType, target.Statistics, target.WeaponType);
             var retaliationDice = suppressesRetaliation
                 ? 0
                 : ManualRules.AttackDiceCount(
                     target.Force,
-                    ManualRules.CombatRating(target.Statistics, target.WeaponType),
+                    target.Statistics.Combat,
                     attacker.Statistics.Defense);
             var retaliationRolls = DiceRoller.RollD6(state.Random, retaliationDice);
             var retaliationSuccesses = OriginalResolutionRules.CountSuccesses(
@@ -223,11 +207,14 @@ public static partial class CommandResolver
             .Select(snapshot => RollPoliceAttack(state, snapshot))
             .ToArray();
 
+        // RULE-AI-016: every Attack order lowers the target player's attitude, an evaded one by the
+        // reaction alone, since its opening damage is -1 [FND-AI-047].
+        foreach (var outcome in outcomes)
+            state.AiStrategy.RecordCombat(outcome.Attacker.Owner, outcome.Target.Owner,
+                outcome.Code == CommandResolutionCode.Resolved ? outcome.Damage : -1);
         var incomingDamage = new Dictionary<GangId, int>();
         foreach (var outcome in outcomes.Where(outcome => outcome.Code == CommandResolutionCode.Resolved))
         {
-            state.AiStrategy.RecordCombat(
-                outcome.Attacker.Owner, outcome.Target.Owner, outcome.Damage);
             AddDamage(incomingDamage, outcome.Target.Id, outcome.Damage);
             AddDamage(incomingDamage, outcome.Attacker.Id, outcome.RetaliationDamage);
         }
@@ -692,13 +679,10 @@ public static partial class CommandResolver
             rolls, OriginalResolutionRules.SuccessThreshold(band, action)));
     }
 
-    private static CommandResolutionResult ResolveHeal(
-        MatchState state,
-        GameCommand command,
-        EffectiveStatistics? phaseStatistics = null)
+    private static CommandResolutionResult ResolveHeal(MatchState state, GameCommand command)
     {
         var gang = state.FindGang(command.Gang)!;
-        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var (rolls, successes) = RollAction(
             state, band, GangAction.Heal, ManualRules.HealDiceCount(statistics.Heal));
@@ -718,10 +702,7 @@ public static partial class CommandResolver
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before ? 1 : 0, 1));
     }
 
-    private static CommandResolutionResult ResolveInfluence(
-        MatchState state,
-        GameCommand command,
-        EffectiveStatistics? phaseStatistics = null)
+    private static CommandResolutionResult ResolveInfluence(MatchState state, GameCommand command)
     {
         var site = state.FindSite(command.Target.Id)!;
         var before = site.Resistance;
@@ -731,7 +712,7 @@ public static partial class CommandResolver
                 GameNotificationKind.Influence);
 
         var gang = state.FindGang(command.Gang)!;
-        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var pool = OriginalResolutionRules.ActionPool(
             band, GangAction.Influence,
@@ -756,10 +737,7 @@ public static partial class CommandResolver
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after));
     }
 
-    private static CommandResolutionResult ResolveResearch(
-        MatchState state,
-        GameCommand command,
-        EffectiveStatistics? phaseStatistics = null)
+    private static CommandResolutionResult ResolveResearch(MatchState state, GameCommand command)
     {
         var gang = state.FindGang(command.Gang)!;
         var player = state.FindPlayer(command.Player)!;
@@ -772,7 +750,7 @@ public static partial class CommandResolver
                 GameNotificationKind.Research);
         }
 
-        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var pool = OriginalResolutionRules.ActionPool(
             band, GangAction.Research,

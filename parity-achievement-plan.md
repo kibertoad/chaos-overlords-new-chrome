@@ -34,22 +34,6 @@ them together with a single session bump, or accept one bump per release.
 DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay so (the
 2026-09-26 decision in `docs/DECISIONS.md`); no step adds the original's path for them.
 
-## Step 4: Attack and the Combat statistic
-
-Closes RULE-ATTACK-001, RULE-AI-016, RULE-COMBAT-001 and RULE-GANG-001.
-
-- An evaded attack still lowers the target player's attitude toward the attacker by the reaction
-  (FND-AI-047).
-- The attacker's Martial Arts test is `== 0`, not `> 0` (FND-COMBAT-008).
-- Store the weapon skills in Combat when a gang's statistics are rebuilt, not when an attack is
-  computed (FND-GANG-007), so every reader of the stored Combat sees the same value.
-
-Stored Combat changes the state encoding: bump all four versions.
-
-Tooltips: Attack (retaliation and the Martial Arts case), the Combat, Strength, Blade, Range,
-Fighting and Martial Arts statistics, and the Combat line of the statistic breakdown, which must
-show the weapon skills as part of the stored value.
-
 ## Step 5: Comlink and events
 
 Closes RULE-COMLINK-007 and the unchecked parts of RULE-EVENT-003, RULE-EVENT-004,
