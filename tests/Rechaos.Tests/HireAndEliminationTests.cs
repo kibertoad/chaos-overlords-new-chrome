@@ -499,8 +499,9 @@ public sealed class HireAndEliminationTests
         var gameEvent = Assert.Single(match.Events, item => item.Kind == GameEventKind.PlayerEliminated);
         Assert.Equal(new PlayerId(1), gameEvent.Elimination!.EliminatedPlayer);
         Assert.Equal(1, gameEvent.Elimination.RemainingPlayers);
-        Assert.Contains(match.NotificationsFor(new PlayerId(0)), item => item.Kind == GameNotificationKind.Elimination);
-        Assert.Contains(match.NotificationsFor(new PlayerId(1)), item => item.Kind == GameNotificationKind.Elimination);
+        // RULE-EVENT-003: every slot is told, whether or not it is still playing.
+        Assert.All(match.Players, player => Assert.Contains(match.NotificationsFor(player.Id),
+            item => item.Kind == GameNotificationKind.Elimination));
         Assert.Equal(2, match.Coordinator.Turn);
         Assert.Equal(TurnPhase.Upkeep, match.Coordinator.Phase);
     }

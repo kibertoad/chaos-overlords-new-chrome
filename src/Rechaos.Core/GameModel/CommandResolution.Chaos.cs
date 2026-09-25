@@ -45,7 +45,9 @@ public static partial class CommandResolver
         // Tolerance is below 0 cracks down with no Chaos at all.
         // The original resolver records a per-player/sector presence byte from the
         // opening gang roster, then reports each Crackdown only to those present.
-        // This includes occupants who did not submit a Chaos command.
+        // This includes occupants who did not submit a Chaos command. No instant action moves or
+        // removes a gang, so the roster at the end of the instant phase is the one resolution
+        // began with (RULE-EVENT-004).
         var crackdownObservers = state.Sectors.ToDictionary(
             sector => sector.Id,
             sector => state.Players
