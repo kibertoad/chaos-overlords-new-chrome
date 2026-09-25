@@ -4,7 +4,7 @@ title: The texts of the Game Information panel
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-003, FND-TURN-003, FND-SETUP-002, SRC-MANUAL-GOG]
+evidence: [FND-UI-003, FND-UI-024, FND-TURN-003, FND-SETUP-002, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: []
@@ -28,20 +28,21 @@ None.
 ## Inputs
 
 `scenario`, `turn_limit`, `mentality`, `planning_limit_choice`,
-`player_active`, `controller`.
+`player_active`, `players_human`.
 
 ## Procedure
 
 ```text
-define game_info_scenario_text(scenario_name):
-    # scenario_name is the scenario's name string; its resource is not recorded
+define game_info_scenario_text():
+    let scenario_name = resource("Chaos Overlords.exe", "STRING", scenario + 1)
     if scenario >= 0 and scenario <= 3:
         let lengths: INT32[4] = [26, 52, 104, 208]
-        let index = 0
+        # a length outside the four leaves the name in the suffix buffer
+        let suffix = scenario_name
         for k in 0..4:
             if turn_limit == lengths[k]:
-                index = k
-        return sprintf("%s (%s)", scenario_name, resource("Chaos Overlords.exe", "STRING", 0x36 + index))
+                suffix = resource("Chaos Overlords.exe", "STRING", 0x36 + k)
+        return sprintf("%s (%s)", scenario_name, suffix)
     return scenario_name
 
 define game_info_mentality_text():
@@ -53,7 +54,7 @@ define game_info_limit_text():
 define player_status_text(slot):
     if player_active[slot] == 0:
         return resource("Chaos Overlords.exe", "STRING", 0x3C)
-    if controller[slot] == 1:
+    if players_human[slot] == 0:
         return resource("Chaos Overlords.exe", "STRING", 0x3B)
     return resource("Chaos Overlords.exe", "STRING", 0x3A)
 ```
@@ -69,7 +70,13 @@ labels.
 ## Edge cases
 
 - An eliminated player is labelled eliminated whether it was a human or a
-  computer.
+  computer; the test reads `player_active`.
+- A network human has `players_human` set and is labelled human. A player
+  handed to the computer during a network game is labelled computer from then
+  on.
+- A timed scenario whose `turn_limit` is none of the four lengths shows its name
+  twice, the second time in the parentheses. Scenarios 4 and above show the
+  name alone.
 - Every one of the six slots has a row, since every slot not configured at setup
   becomes a computer player (FND-SETUP-002).
 
@@ -87,9 +94,4 @@ None known.
 
 ## Open questions
 
-- The string resources of the scenario names.
-- Whether the eliminated test reads `player_active` or a separate eliminated
-  byte.
-- Whether a network human (`controller` 3) is labelled human, as written.
-- `turn_limit` has no recorded address; the index found when it holds none of
-  the four lengths is not known.
+None.

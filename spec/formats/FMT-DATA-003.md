@@ -1,7 +1,7 @@
 ---
 id: FMT-DATA-003
 title: Item definition records in DATA/ITEMS
-status: sourced
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 files: ["DATA/ITEMS"]
@@ -9,7 +9,7 @@ byte_order: little
 size: 166
 text: false
 definition: fmt_data_003.ksy
-evidence: [FND-DATA-006, FND-DATA-007, FND-COMBAT-010, FND-GANG-007, FND-DATA-003, FND-ASSET-001, FND-RESEARCH-002, FND-GANG-001, FND-EQUIP-001, FND-EQUIP-002, FND-AUDIO-002, FND-AUDIO-013, SRC-RECHAOS-3561D41]
+evidence: [FND-DATA-006, FND-DATA-007, FND-COMBAT-010, FND-GANG-007, FND-DATA-003, FND-ASSET-001, FND-RESEARCH-002, FND-GANG-001, FND-EQUIP-001, FND-EQUIP-002, FND-AUDIO-002, FND-AUDIO-013, SRC-RECHAOS-3561D41, FND-EVENT-005, FND-UI-013, FND-UI-004, FND-EQUIP-007, FND-EQUIP-008, FND-SELL-001, FND-RESEARCH-003]
 conflicting: []
 split_with: []
 related: []
@@ -25,13 +25,13 @@ table (FND-RESEARCH-002). Every number is a signed 16-bit little-endian integer.
 
 | Offset | Size | Type | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|---|---|
-| `0x00` | 30 | `char[30]` | `name` | The item's name. ASCII text, then one NUL byte, then spaces to the end of the field; 30 spaces in a blank record. Read it as a C string. | sourced | FND-DATA-003, SRC-RECHAOS-3561D41 |
+| `0x00` | 30 | `char[30]` | `name` | The item's name. ASCII text, then one NUL byte, then spaces to the end of the field; 30 spaces in a blank record. Read it as a C string. | supported | FND-EVENT-005, FND-RESEARCH-003, FND-UI-013, FND-DATA-003, SRC-RECHAOS-3561D41 |
 | `0x1E` | 2 | `INT16LE` | `id` | The item's number, equal to the record's index in records 0 to 52, and 0 in the blank records. | supported | FND-DATA-003 |
-| `0x20` | 90 | `char[90]` | `description` | The item's description. ASCII text padded with spaces to the end of the field, with no NUL byte. | sourced | FND-DATA-003, SRC-RECHAOS-3561D41 |
+| `0x20` | 90 | `char[90]` | `description` | The item's description, drawn as three rows of 30 characters on the item panel. ASCII text padded with spaces to the end of the field, with no NUL byte. | supported | FND-UI-013, FND-UI-004, FND-DATA-003, SRC-RECHAOS-3561D41 |
 | `0x7A` | 2 | `INT16LE` | `type` | The item's category, one of the values below. The statistics rebuild reads it for the weapon to choose the skills added to Combat. | supported | FND-DATA-003, FND-GANG-007, SRC-RECHAOS-3561D41 |
 | `0x7C` | 2 | `INT16LE` | `research_difficulty` | Research needed to complete the item. A new game copies its low byte into each player's research progress for the item; 0 means researched from the start. | supported | FND-DATA-003, FND-RESEARCH-002 |
-| `0x7E` | 2 | `INT16LE` | `cost` | Purchase price in dollars, 0 to 45. | sourced | FND-EQUIP-001, FND-EQUIP-002, SRC-RECHAOS-3561D41 |
-| `0x80` | 2 | `INT16LE` | `tech_level` | Tech Level of the item, 0 to 10. | sourced | FND-DATA-003, SRC-RECHAOS-3561D41 |
+| `0x7E` | 2 | `INT16LE` | `cost` | Purchase price in dollars, 0 to 45. Equip charges it (less a third in a discount sector); the Sell panel shows half of it, rounded toward zero. | supported | FND-EQUIP-007, FND-EQUIP-008, FND-SELL-001, FND-EQUIP-001, FND-EQUIP-002, SRC-RECHAOS-3561D41 |
+| `0x80` | 2 | `INT16LE` | `tech_level` | Tech Level of the item, 0 to 10. The Equip and Research lists show an item only when this is at most the limit they are given. | supported | FND-EQUIP-008, FND-RESEARCH-003, FND-DATA-003, SRC-RECHAOS-3561D41 |
 | `0x82` | 2 | `INT16LE` | `combat` | Modifier to the Combat of the gang that carries the item. | supported | FND-GANG-001, FND-GANG-007, SRC-RECHAOS-3561D41 |
 | `0x84` | 2 | `INT16LE` | `defense` | Modifier to Defense, applied the same way as `combat`. | supported | FND-GANG-001, FND-GANG-007, SRC-RECHAOS-3561D41 |
 | `0x86` | 2 | `INT16LE` | `stealth` | Modifier to Stealth, applied the same way as `combat`. | supported | FND-GANG-001, FND-GANG-007, SRC-RECHAOS-3561D41 |
@@ -61,8 +61,8 @@ table (FND-RESEARCH-002). Every number is a signed 16-bit little-endian integer.
 | 0 | `ITEM_TYPE_MELEE` | A melee weapon; as the weapon, adds Strength to Combat. | supported | FND-DATA-003, FND-GANG-007, SRC-RECHAOS-3561D41 |
 | 1 | `ITEM_TYPE_BLADE` | A bladed weapon; as the weapon, adds Strength and Blade to Combat. | supported | FND-DATA-003, FND-GANG-007, SRC-RECHAOS-3561D41 |
 | 2 | `ITEM_TYPE_RANGED` | A ranged weapon; as the weapon, adds Ranged to Combat. | supported | FND-DATA-003, FND-GANG-007, SRC-RECHAOS-3561D41 |
-| 3 | `ITEM_TYPE_ARMOR` | Armor. | sourced | FND-DATA-003, SRC-RECHAOS-3561D41 |
-| 4 | `ITEM_TYPE_MISC` | A miscellaneous item. | sourced | FND-DATA-003, SRC-RECHAOS-3561D41 |
+| 3 | `ITEM_TYPE_ARMOR` | Armor: Equip stores it in the gang's armor slot. | supported | FND-EQUIP-007, FND-DATA-003, SRC-RECHAOS-3561D41 |
+| 4 | `ITEM_TYPE_MISC` | A miscellaneous item: Equip stores it in the gang's miscellaneous slot. | supported | FND-EQUIP-007, FND-DATA-003, SRC-RECHAOS-3561D41 |
 | 99 | `ITEM_TYPE_UNDEFINED` | A blank record that holds no item. | supported | FND-DATA-003, FND-RESEARCH-002 |
 
 ## Differences between builds
@@ -80,14 +80,5 @@ file into `0x004A5F08` and reads the fields at these offsets (FND-DATA-007).
 
 ## Open questions
 
-- The executable reads `cost` in 19 functions and `tech_level` in four
-  (FND-DATA-007), but what those reads do has not been followed, so the two
-  rows rest on the source's names and on the value ranges.
-  The statistics rebuild reads the fourteen modifiers and `type`
-  [FND-GANG-007], and Detailed Combat reads `attack_animation`,
-  `hit_animation` and `sound` [FND-COMBAT-010].
 - The source numbers the file as 160 records; the file holds 64
   (SRC-RECHAOS-3561D41, Known errors).
-- Which equipment slot each `type` fills (weapon for 0 to 2, armor for 3,
-  miscellaneous for 4) follows from the names and has not been traced in the
-  Equip resolver.

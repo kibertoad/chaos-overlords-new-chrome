@@ -110,7 +110,8 @@ on a 32-bit difference, so `timeGetTime` wrapping during a turn does not break
 it: the difference stays correct across the wrap.
 
 The pump redraws the bar on every sixth tick of the 6 Hz presentation timer, so
-about once a second, while the main console is up. The countdown is not reset
+about once a second, except while one of the functions that clear the byte at
+`0x00487830` for their duration runs. The countdown is not reset
 when planning starts, so the first redraw after the one at the start falls
 anywhere from one to six ticks later. The warning sounds follow the redraws, so
 there are about nine short ticks in the last ten seconds and one longer sound in

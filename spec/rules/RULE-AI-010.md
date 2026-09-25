@@ -4,10 +4,10 @@ title: A computer player picks a hire role from its scenario's turn schedule, th
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-050, FND-AI-003, FND-AI-009, FND-AI-013, FND-AI-014, FND-AI-017, FND-AI-008, FND-AI-011, FND-AI-042, FND-AI-044, FND-EXE-004]
+evidence: [FND-AI-050, FND-AI-003, FND-AI-009, FND-AI-013, FND-AI-014, FND-AI-017, FND-AI-008, FND-AI-011, FND-AI-042, FND-AI-044, FND-EXE-004, FND-OBJECTIVE-003]
 conflicting: []
 split_with: []
-related: [RULE-AI-001, RULE-AI-008, RULE-AI-009, RULE-AI-011, RULE-AI-012, RULE-AI-004, BUG-AI-001, FMT-STATE-001]
+related: [RULE-AI-001, RULE-AI-008, RULE-AI-009, RULE-AI-011, RULE-AI-012, RULE-AI-004, RULE-OBJECTIVE-002, FMT-STATE-001]
 ---
 
 ## Summary
@@ -73,7 +73,7 @@ let roles = [
 # the slot the hunter test forces in each scenario; -1 where there is none
 let hunter_slots = [5, 6, 2, 10, 6, 6, -1, -1, -1, 5]
 
-define count(player, a, b):
+define family_count(player, a, b):
     # active gangs of the player whose family is a or b
     let n = 0
     for slot in 0..81:
@@ -89,7 +89,7 @@ define first_hostile(player):
             return s
     return 100
 
-define covered(player, s):
+define hunter_covered(player, s):
     for slot in 0..81:
         let idx = player * 81 + slot
         if gangs[idx].sector != GANG_INACTIVE and planning_records[idx].family == 6
@@ -97,9 +97,9 @@ define covered(player, s):
             return true
     return false
 
-define hunter(player, k, F, G, missing, redirect):
+define hunter_test(player, k, F, G, missing, redirect):
     let h = first_hostile(player)
-    if h == 100 or covered(player, h) or missing or previous_hire_role[player] == G:
+    if h == 100 or hunter_covered(player, h) or missing or previous_hire_role[player] == G:
         if k == F:
             return redirect
         return k
@@ -109,12 +109,12 @@ define schedule_slot(player):
     let f = turn_limit / 52.0
     let r = turns_remaining()
     let c = cash[player]
-    let c2 = count(player, 2, 2)
-    let c3 = count(player, 3, 3)
-    let c5 = count(player, 5, 5)
-    let c7 = count(player, 7, 7)
-    let c6 = count(player, 6, 12)
-    let c04 = count(player, 0, 4)
+    let c2 = family_count(player, 2, 2)
+    let c3 = family_count(player, 3, 3)
+    let c5 = family_count(player, 5, 5)
+    let c7 = family_count(player, 7, 7)
+    let c6 = family_count(player, 6, 12)
+    let c04 = family_count(player, 0, 4)
     let k = elapsed_turns % 10
     if scenario == 3:
         k = elapsed_turns % 11
@@ -128,7 +128,7 @@ define schedule_slot(player):
             red = 1
         else if c3 == 0:
             red = 3
-        k = hunter(player, k, 5, 5, c3 < 1 or c7 < 1, red)
+        k = hunter_test(player, k, 5, 5, c3 < 1 or c7 < 1, red)
         if (k == 3 or k == 6 or k == 8) and c3 >= f * 4.0:
             k = 0
         if k == 5 and c6 >= f * 2.0:
@@ -151,7 +151,7 @@ define schedule_slot(player):
             red = 4
         else if c5 == 0:
             red = 9
-        k = hunter(player, k, 6, 6, c5 < 1 or c7 < 1, red)
+        k = hunter_test(player, k, 6, 6, c5 < 1 or c7 < 1, red)
         if k == 8 and c2 >= f * 4.0:
             k = 0
         if k == 6 and c6 >= f * 4.0:
@@ -172,7 +172,7 @@ define schedule_slot(player):
             red = 1
         else if c5 == 0:
             red = 4
-        k = hunter(player, k, 2, 2, c5 < 1 or c7 < 1, red)
+        k = hunter_test(player, k, 2, 2, c5 < 1 or c7 < 1, red)
         if (k == 4 or k == 6 or k == 8) and c5 >= f * 6.0:
             k = 0
         if k == 5 and c2 >= f * 2.0:
@@ -195,7 +195,7 @@ define schedule_slot(player):
             red = 2
         else if c5 == 0:
             red = 3
-        k = hunter(player, k, 10, 10, c3 < 1 or c7 < 1, red)
+        k = hunter_test(player, k, 10, 10, c3 < 1 or c7 < 1, red)
         if (k == 3 or k == 6) and c5 >= f * 3.0:
             k = 0
         if (k == 2 or k == 8) and c3 >= f * 3.0:
@@ -235,7 +235,7 @@ define schedule_slot(player):
         let red = 3
         if c3 == 0:
             red = 9
-        k = hunter(player, k, 5, 5, c3 < 1, red)
+        k = hunter_test(player, k, 5, 5, c3 < 1, red)
         if k == 3 and c2 >= f * 4.0:
             k = 0
         if k == 5 and c6 >= f * 4.0:
@@ -266,7 +266,7 @@ if hire_allowed(player):
         hire_destination(player, place, offer)
 # every scenario, whether or not the player may hire
 let n = owned_sector_count(player)
-if n / 4 < count(player, 6, 12) and n > 6:
+if n / 4 < family_count(player, 6, 12) and n > 6:
     for slot in 0..81:
         let idx = player * 81 + slot
         let fam = planning_records[idx].family
@@ -302,8 +302,8 @@ and a turn whose own slot is the hunter slot takes the redirect.
 
 A final slot equal to the hunter slot always comes from the forcing branch,
 since the later adjustments set the slot only to 0 or 3, so `first_hostile`
-gives a sector there. Siege's slots 5 and 7 place the new gang with the Right
-Hands. Scenarios 0 and 7 test the offer's cost against cash again after the
+gives a sector there. In Eliminate (scenario 7) slots 5 and 7 place the new gang
+with the Right Hands. Scenarios 0 and 7 test the offer's cost against cash again after the
 ranking; the ranking has already made that test (RULE-AI-008), so it changes
 nothing.
 
@@ -325,5 +325,3 @@ None known.
 
 - When the ranking fails and `offer_to_snub` returns -1 (every value 5000 or
   more), nothing is snubbed here; that is assumed.
-- The scenario numbering of 6 (Eliminate) and 7 (Siege) follows FND-AI-002 and
-  is contested by FND-UI-033 and FND-TURN-003.

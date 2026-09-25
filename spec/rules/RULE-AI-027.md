@@ -7,7 +7,7 @@ superseded_by: []
 evidence: [FND-AI-036, FND-AI-038, FND-AI-033, FND-AI-028, FND-AI-043, FND-EXE-004]
 conflicting: []
 split_with: []
-related: [RULE-AI-001, BUG-AI-005, RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
+related: [RULE-AI-001, RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
 ---
 
 ## Summary

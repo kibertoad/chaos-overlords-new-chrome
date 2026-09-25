@@ -4,7 +4,7 @@ title: Family-11 computer gangs equip, heal, attack the first visible definition
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-024, FND-AI-021, FND-AI-015, FND-AI-027, FND-AI-028]
+evidence: [FND-AI-024, FND-AI-021, FND-AI-015, FND-AI-027, FND-AI-028, FND-EXE-004, FND-OBJECTIVE-003]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002]
@@ -12,7 +12,7 @@ related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002]
 
 ## Summary
 
-Family 11 is the Siege formation. A family-11 gang buys a better weapon, armor
+Family 11 is the Eliminate formation (scenario 7). A family-11 gang buys a better weapon, armor
 or Chaos item and heals when hurt. In land its player owns it moves on through
 sector selector mode 10. In other land it attacks the first gang there with
 gang definition 0 that it can see; otherwise the family-11 gangs move in blocks

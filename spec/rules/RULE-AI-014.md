@@ -4,7 +4,7 @@ title: A new match starts every attitude at 0, or at Homicidal Maniac at -10 tow
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-006, FND-AI-004]
+evidence: [FND-AI-006, FND-AI-004, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-SETUP-004]

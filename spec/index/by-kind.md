@@ -28,9 +28,9 @@
 |---|---|---|
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | Sound effect files DATA/SNDnnnnn | supported |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported |
-| [FMT-DATA-001](../formats/FMT-DATA-001.md) | Site definition records in DATA/SITES | sourced |
-| [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | sourced |
-| [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | sourced |
+| [FMT-DATA-001](../formats/FMT-DATA-001.md) | Site definition records in DATA/SITES | supported |
+| [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | supported |
+| [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | supported |
 | [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 | supported |
 | [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | unknown |
 | [FMT-GFX-001](../formats/FMT-GFX-001.md) | 16-bit image files in DATA/PX16 | supported |
@@ -87,7 +87,7 @@
 | [RULE-AI-028](../rules/RULE-AI-028.md) | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported |
 | [RULE-AI-030](../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported |
-| [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Eliminate objectives, fight for them on alternate turns and hold them | supported |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | supported |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported |
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | Starting a music program | supported |
@@ -219,7 +219,7 @@
 
 ## findings
 
-300 entries.
+301 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -275,6 +275,7 @@
 | [FND-AI-050](../findings/FND-AI-050.md) | Each scenario's hire block adjusts the schedule slot by late-turn remaps, a forced hunter slot with a previous-role guard, family quotas and a minimum of family 0 or 4 | recorded |
 | [FND-AI-051](../findings/FND-AI-051.md) | The placement anchor is a 32-bit value tested for free land, then occupancy, then Big Man, and a failed anchor of 63 blocks hiring for player 0 | recorded |
 | [FND-AI-052](../findings/FND-AI-052.md) | The owner query returns -2 under police presence, and the solo Control test compares Force plus Control with Income, Support and the visible foreign gangs | recorded |
+| [FND-AI-053](../findings/FND-AI-053.md) | The difficulty band table is set from controller 1 only, saved, and read at nine places in the resolver | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |

@@ -4,7 +4,7 @@ title: The pointer shape
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-034, FND-UI-020, FND-UI-023]
+evidence: [FND-UI-034, FND-UI-020, FND-UI-023, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -59,6 +59,10 @@ cursor ID unless `shape` equals `pointer_shape` while `force` is 0 and
 dispatched, the hourglass stays only while the pointer is still or no message
 is dispatched.
 
+Every call in the game's code passes `force` 1; only `on_pointer_query` passes
+0 (FND-UI-023). The music selector also shows the hourglass while it sends the
+play command (RULE-AUDIO-001).
+
 ## What the sources say
 
 None of the sources describes the pointer.
@@ -69,6 +73,4 @@ None known.
 
 ## Open questions
 
-- Which calls pass `force`; the calls around setup, loading and resolution are
-  known to. It makes no difference while `pointer_shape` is never written.
 - How long the hourglass is actually visible needs a run of the original.

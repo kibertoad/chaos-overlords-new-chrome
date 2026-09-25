@@ -16,16 +16,6 @@ order of priority, unless a group says otherwise.
 
 ## Executable, platform and file formats
 
-- FMT-DATA-001..003 stay `sourced` only through a few rows: follow what the
-  readers of item `cost` (`0x7E`, 19 functions) and `tech_level` (`0x80`, four
-  functions) do with them, whether gang and item names and item descriptions
-  are drawn from the table (the gang records are passed by address from
-  `fn_00449E80`, `fn_0044FD6C` and `fn_00455B6B`), and whether sector byte
-  `0x0E`, which site `special` 3 sets, is the discount the Equip resolver
-  tests (FND-DATA-007, FND-STATE-001).
-- FND-PLATFORM-013: which Telephony call each of the 21 TAPI callers makes,
-  and which setting makes `fn_00424AE5` use `getservbyname` for the service
-  name at `0x00492F90` in place of port 4269.
 - Needs a run of the original, not the executable alone: what the extra top
   row of `PX06008` shows (FND-GFX-005); whether `IDirectDraw::CreatePalette`
   with flags 8 fails in full-screen 8-bit play (FND-PLATFORM-011); which

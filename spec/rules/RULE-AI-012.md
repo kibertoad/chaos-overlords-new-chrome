@@ -4,7 +4,7 @@ title: The AI hire destination helper writes an encoded sector directly, and has
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-016, FND-AI-017]
+evidence: [FND-AI-016, FND-AI-017, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]

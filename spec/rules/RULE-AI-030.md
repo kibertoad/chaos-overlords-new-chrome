@@ -4,7 +4,7 @@ title: Family-12 computer gangs equip and heal when unopposed, wander at random,
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-038, FND-AI-033, FND-AI-027, FND-AI-040]
+evidence: [FND-AI-038, FND-AI-033, FND-AI-027, FND-AI-040, FND-EXE-004, FND-OBJECTIVE-003]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -12,7 +12,7 @@ related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FM
 
 ## Summary
 
-Family 12 is a Siege skirmisher. With no other gang in sight a family-12 gang
+Family 12 is an Eliminate skirmisher (scenario 7). With no other gang in sight a family-12 gang
 buys a weapon, armor or a Chaos item, heals when hurt, and otherwise takes one
 step toward a sector drawn at random from the whole map. With a gang in sight
 it attacks after up to five draws. In Greed, during the last three turns, it

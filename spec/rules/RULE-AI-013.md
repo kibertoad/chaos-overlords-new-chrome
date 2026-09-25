@@ -168,5 +168,7 @@ None known.
 
 ## Open questions
 
+- `g_004A08C4` is not identified: no instruction refers to it and it holds 0
+  (FND-AI-051).
 - In Big Man the first list the scan tests is empty (a radius-zero list); it is
   left out of the procedure.

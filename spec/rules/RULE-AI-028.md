@@ -4,7 +4,7 @@ title: Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-037, FND-AI-019, FND-AI-026, FND-AI-028]
+evidence: [FND-AI-037, FND-AI-046, FND-AI-019, FND-AI-026, FND-AI-028, FND-EXE-004, FND-OBJECTIVE-003]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -12,7 +12,7 @@ related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002, F
 
 ## Summary
 
-Family 10 is a Siege defender. A family-10 gang buys armor with a better
+Family 10 is a defender of Eliminate (scenario 7). A family-10 gang buys armor with a better
 Defense when it can afford it, fills an empty miscellaneous slot with item 44
 once that item is researched, and heals when it sees nobody. Otherwise it moves
 toward sectors whose finished sites give more Stealth, and in the end raises

@@ -13,17 +13,11 @@
 
 ## sourced
 
-3 entries.
-
-| ID | Title |
-|---|---|
-| [FMT-DATA-001](../formats/FMT-DATA-001.md) | Site definition records in DATA/SITES |
-| [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs |
-| [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS |
+0 entries.
 
 ## supported
 
-232 entries.
+235 entries.
 
 | ID | Title |
 |---|---|
@@ -43,6 +37,9 @@
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | Sound effect files DATA/SNDnnnnn |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | Ogg pages of the music tracks MUSIC/TrackNN.ogg |
+| [FMT-DATA-001](../formats/FMT-DATA-001.md) | Site definition records in DATA/SITES |
+| [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs |
+| [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS |
 | [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 |
 | [FMT-GFX-001](../formats/FMT-GFX-001.md) | 16-bit image files in DATA/PX16 |
 | [FMT-GFX-002](../formats/FMT-GFX-002.md) | 8-bit image files in DATA/PX08 |
@@ -91,7 +88,7 @@
 | [RULE-AI-028](../rules/RULE-AI-028.md) | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader |
 | [RULE-AI-030](../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed |
-| [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Eliminate objectives, fight for them on alternate turns and hold them |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector |
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | Starting a music program |
@@ -279,7 +276,7 @@
 
 ## recorded
 
-298 entries.
+299 entries.
 
 | ID | Title |
 |---|---|
@@ -333,6 +330,7 @@
 | [FND-AI-050](../findings/FND-AI-050.md) | Each scenario's hire block adjusts the schedule slot by late-turn remaps, a forced hunter slot with a previous-role guard, family quotas and a minimum of family 0 or 4 |
 | [FND-AI-051](../findings/FND-AI-051.md) | The placement anchor is a 32-bit value tested for free land, then occupancy, then Big Man, and a failed anchor of 63 blocks hiring for player 0 |
 | [FND-AI-052](../findings/FND-AI-052.md) | The owner query returns -2 under police presence, and the solo Control test compares Force plus Control with Income, Support and the visible foreign gangs |
+| [FND-AI-053](../findings/FND-AI-053.md) | The difficulty band table is set from controller 1 only, saved, and read at nine places in the resolver |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |
@@ -615,9 +613,8 @@ Entries whose Open questions section says more than None known.
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them | supported |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | Sound effect files DATA/SNDnnnnn | supported |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported |
-| [FMT-DATA-001](../formats/FMT-DATA-001.md) | Site definition records in DATA/SITES | sourced |
-| [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | sourced |
-| [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | sourced |
+| [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | supported |
+| [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | supported |
 | [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 | supported |
 | [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | unknown |
 | [FMT-GFX-001](../formats/FMT-GFX-001.md) | 16-bit image files in DATA/PX16 | supported |
@@ -648,7 +645,6 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | supported |
-| [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported |
@@ -660,7 +656,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-028](../rules/RULE-AI-028.md) | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported |
 | [RULE-AI-030](../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported |
-| [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Eliminate objectives, fight for them on alternate turns and hold them | supported |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | supported |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported |
 | [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | Music repeats its program when it ends and pauses while the window is inactive | supported |
@@ -745,9 +741,6 @@ Entries whose Open questions section says more than None known.
 | [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | supported |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker | supported |
 | [RULE-UI-007](../rules/RULE-UI-007.md) | The pointer shape | supported |
-| [RULE-UI-008](../rules/RULE-UI-008.md) | The presentation timer | supported |
-| [RULE-UI-009](../rules/RULE-UI-009.md) | The texts of the Game Information panel | supported |
-| [RULE-UI-010](../rules/RULE-UI-010.md) | Which gangs the detailed sector cards and Gangs in Sector list | supported |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | The sector values on the main console | supported |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |

@@ -4,7 +4,7 @@ title: Which gangs the detailed sector cards and Gangs in Sector list
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-036, FND-UI-015, FND-UI-018, FND-UI-002, SRC-MANUAL-GOG]
+evidence: [FND-UI-036, FND-UI-015, FND-UI-018, FND-UI-002, FND-UI-024, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -63,9 +63,14 @@ x `258 + 32*n`.
 
 ## Edge cases
 
-- A sector holds at most six of a player's gangs, so at most six cards or
-  columns are drawn. The card loop has no bound of its own; a seventh card
-  would be stored over the selected sector number [FND-UI-018].
+- A sector holds at most six of a player's gangs (RULE-HIRE-001), so at most
+  six cards or columns are drawn. Neither loop has a bound of its own: a
+  seventh card would be stored over the selected sector number [FND-UI-018],
+  and a seventh Gangs in Sector column would be drawn from x 440, past the
+  panel's right edge [FND-UI-024].
+- Gangs in Sector is called with the active player and tests only the sector,
+  not `visible_to`; it opens only when the player's own `gangs_seen` byte for
+  the sector is set.
 - The `visible_to` test of the cards is always true for the owner's own gangs.
 - Only the active player's own cards take orders; another player's cards open
   the gang and item information panels [FND-UI-015].
@@ -83,5 +88,4 @@ None known.
 
 ## Open questions
 
-- Whose roster Gangs in Sector scans; the active player's is assumed.
-- What the Gangs in Sector list does if more than six gangs match.
+None.

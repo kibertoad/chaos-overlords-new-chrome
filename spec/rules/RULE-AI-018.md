@@ -4,7 +4,7 @@ title: A new match gives computer players difficulty band 0 at Goon, 1 at Crimin
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-007, FND-AI-004]
+evidence: [FND-AI-007, FND-AI-053, FND-AI-004, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -46,7 +46,7 @@ for p in 0..6:
 
 Sets all six entries of `difficulty_band`. Makes no draw. The band is then
 read during `resolution` by the Heal, Influence, Research, Chaos, hidden-target,
-attack and retaliation rolls, whose rules own those reads (FND-AI-007): band 0
+attack and retaliation rolls, whose rules own those reads (FND-AI-007, FND-AI-053): band 0
 removes a fifth of some pools or needs higher dice, band 2 needs lower dice,
 and a band-2 owner's sector counts only three quarters of the Chaos successes
 toward a Crackdown.
@@ -54,7 +54,9 @@ toward a Crackdown.
 ## Edge cases
 
 A player slot that is empty (controller -1) stays in band 1. A network human
-(controller 3) stays in band 1.
+(controller 3) stays in band 1. The bands are saved, so a loaded match keeps
+the bands it started with, and a computer player that takes over a dropped
+network player keeps that player's band 1.
 
 ## What the sources say
 
@@ -68,6 +70,4 @@ None known.
 
 ## Open questions
 
-- Which controller values count as computer players is taken to be controller
-  1 only; FND-AI-007 says "computer-controlled".
-- The instruction addresses of the nine reads in the resolver are not recorded.
+None.

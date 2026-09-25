@@ -4,7 +4,7 @@ title: Family-6 computer gangs hunt sectors with visible hostile human gangs and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-029, FND-AI-013, FND-AI-015, FND-AI-033, FND-AI-028]
+evidence: [FND-AI-029, FND-AI-013, FND-AI-015, FND-AI-033, FND-AI-028, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]

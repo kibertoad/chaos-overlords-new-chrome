@@ -4,7 +4,7 @@ title: Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-020, FND-AI-021, FND-AI-004, FND-AI-028]
+evidence: [FND-AI-020, FND-AI-021, FND-AI-004, FND-AI-028, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002]

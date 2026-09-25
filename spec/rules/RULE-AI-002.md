@@ -4,7 +4,7 @@ title: The per-gang AI dispatcher sets the gang's family from scenario and hire 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-001, FND-AI-002, FND-AI-015, FND-AI-041, FND-AI-042, FND-AI-044, FND-EXE-004]
+evidence: [FND-AI-001, FND-AI-002, FND-AI-015, FND-AI-041, FND-AI-042, FND-AI-044, FND-EXE-004, FND-OBJECTIVE-003]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031]
@@ -120,7 +120,7 @@ hire choice writes a new one.
 
 After the handler, the dispatcher runs a further block only when a per-slot
 value that is 0 in every match makes a Force test pass; it therefore never
-runs, and the Move through sector selector mode 9 for Siege's Right Hands and
+runs, and the Move through sector selector mode 9 for the Right Hands in Eliminate (scenario 7) and
 the Attack or Hide it holds are never ordered there (FND-AI-041).
 
 ## What the sources say
@@ -133,5 +133,6 @@ None known.
 
 ## Open questions
 
-- The scenario numbering of rows 6 (Eliminate) and 7 (Siege) is contested by
-  FND-UI-033 and FND-TURN-003.
+None. The scenario values are 0 Greed, 1 Power, 2 Acceptance, 3 Dominance,
+4 Kill 'Em All, 5 Big 40, 6 Siege, 7 Eliminate, 8 Big Man and 9 Armageddon
+(FND-OBJECTIVE-003).

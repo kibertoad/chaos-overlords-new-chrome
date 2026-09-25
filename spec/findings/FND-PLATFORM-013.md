@@ -65,17 +65,42 @@ WinSock. The thunks at `0x004786A2..0x00478708` are called only from:
 
 Every socket is address family 2 (`AF_INET`) and type 1 (`SOCK_STREAM`).
 `WSAAsyncSelect` posts message `0x401` to the window at `0x00498570`
-(`0x00422662`). `fn_00424AE5` fills the port either with 4269 (`0x10AD`,
-`0x00424D4D`) or with the port `getservbyname` returns for a service name
-held at `0x00492F90` and the protocol `tcp` (`0x00424D94`), and shows a
-message box when that lookup fails.
+(`0x00422662`). `fn_00424AE5`, called by the listening and the connecting
+function, takes this host's first address from `gethostname` and
+`gethostbyname` when its third argument is nonzero; otherwise it writes this
+host's addresses as text at `0x00493270` and shows dialog 20002
+(`0x00424CE2`). It
+then stores 4269 (`0x10AD`) at `0x00424D4D` and sets its port selector to 1
+at `0x00424D53`, just before the switch on that selector at
+`0x00424DE2..0x00424E09`; every path to the switch passes these two stores.
+Case 1 converts 4269 with `htons`. Case 2, which would take the port
+`getservbyname` returns for the name at `0x00492F90` and the protocol `tcp`
+(`0x00424D94`) and shows a message box when the lookup fails, and case 0,
+which returns 0, are never reached.
 
-Telephony. The thunks at `0x0047870E..0x004787A4` are called from
-`fn_0041BE20`, `fn_0041C014`, `fn_0041C0E0`, `fn_0041C36E`, `fn_0041C735`,
-`fn_0041CA2F`, `fn_0041D51B`, `fn_0041DB3B`, `fn_0041DBB8`, `fn_0041DC72`,
-`fn_0041DD24`, `fn_0041DDD2`, `fn_0041DEB7`, `fn_0041E0AD`, `fn_0041E37B`,
-`fn_0041E3F8`, `fn_0041E8DF`, `fn_0041EB5F`, `fn_0041ED08`, `fn_0041F567` and
-`fn_0041F808`.
+Telephony. The thunks at `0x0047870E..0x004787A4` jump through the
+`TAPI32.dll` import slots, and each is called only from these functions:
+
+| Function | Telephony calls |
+|---|---|
+| `fn_0041BE20` | `lineInitialize` |
+| `fn_0041C014` | `lineShutdown` |
+| `fn_0041C0E0` | `lineClose`, `lineDeallocateCall`, `lineDrop` |
+| `fn_0041C36E`, `fn_0041C735` | `lineSetDevConfig`, `lineSetStatusMessages`, `lineOpen` |
+| `fn_0041CA2F` | `lineDial`, `lineMakeCall` |
+| `fn_0041D51B` | `lineGetID`, `lineAnswer`, `lineAccept` |
+| `fn_0041DB3B`, `fn_0041E37B` | `lineNegotiateAPIVersion` |
+| `fn_0041DBB8` | `lineGetDevCaps` |
+| `fn_0041DC72` | `lineGetAddressStatus` |
+| `fn_0041DD24` | `lineGetCallStatus` |
+| `fn_0041DDD2` | `lineTranslateAddress` |
+| `fn_0041DEB7` | `lineGetAddressCaps` |
+| `fn_0041E0AD`, `fn_0041F808` | `lineTranslateDialog` |
+| `fn_0041E3F8` | `lineClose`, `lineOpen`, `lineGetID` |
+| `fn_0041E8DF` | `lineGetIcon` |
+| `fn_0041EB5F` | `lineGetCountry` |
+| `fn_0041ED08` | `lineSetCurrentLocation`, `lineGetTranslateCaps` |
+| `fn_0041F567` | `lineConfigDialogEdit`, `lineGetDevConfig` |
 
 Serial port. `fn_00424E55` opens a COM port with `CreateFileA` for overlapped
 I/O, and `fn_00424FB4` opens the ports and calls `CommConfigDialogA`.
@@ -88,17 +113,15 @@ I/O, and `fn_00424FB4` opens the ports and calls `CommConfigDialogA`.
 
 The WinSock mode is TCP/IP only: no socket of the IPX family (6) or of
 datagram type is created. One side listens and accepts, the others connect, by
-default on port 4269, and socket events arrive as window messages. The modem
+always on port 4269, and socket events arrive as window messages. The modem
 mode is the Telephony code in `0x0041BE20..0x0041F808`, and the serial
 mode is the code at the start of the executable and at
 `0x00424E55..0x00424FB4`.
 
 ## Alternatives
 
-Which service name `0x00492F90` holds when the `getservbyname` branch runs,
-and which setting chooses between that branch and the fixed port, were not
-followed. The TAPI thunks were matched to callers only; which Telephony call
-each function makes is not listed here.
+What each Telephony function does beyond the calls it makes, for example
+which device or address it opens, was not followed.
 
 ## How to reproduce
 

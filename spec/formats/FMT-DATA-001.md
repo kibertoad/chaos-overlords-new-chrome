@@ -1,7 +1,7 @@
 ---
 id: FMT-DATA-001
 title: Site definition records in DATA/SITES
-status: sourced
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 files: ["DATA/SITES"]
@@ -9,7 +9,7 @@ byte_order: little
 size: 62
 text: false
 definition: fmt_data_001.ksy
-evidence: [FND-DATA-001, FND-DATA-006, FND-DATA-007, FND-STATE-001, FND-ASSET-001, FND-GANG-001, FND-CITY-002, FND-EXE-004, SRC-RECHAOS-3561D41]
+evidence: [FND-DATA-001, FND-DATA-006, FND-DATA-007, FND-STATE-001, FND-ASSET-001, FND-GANG-001, FND-CITY-002, FND-EXE-004, SRC-RECHAOS-3561D41, FND-EVENT-005, FND-RESEARCH-003, FND-EQUIP-007, FND-EQUIP-001]
 conflicting: []
 split_with: []
 related: []
@@ -24,7 +24,7 @@ opens the file as `data\Sites` (FND-ASSET-001). Every number is a signed
 
 | Offset | Size | Type | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|---|---|
-| `0x00` | 20 | `char[20]` | `name` | The site's name. ASCII text, then one NUL byte, then spaces to the end of the field. Read it as a C string. | sourced | FND-DATA-001, SRC-RECHAOS-3561D41 |
+| `0x00` | 20 | `char[20]` | `name` | The site's name. ASCII text, then one NUL byte, then spaces to the end of the field. Read it as a C string. | supported | FND-EVENT-005, FND-DATA-001, SRC-RECHAOS-3561D41 |
 | `0x14` | 2 | `INT16LE` | `id` | The site's number, equal to the record's index, 0 to 21. The site information panel uses it as the row, 64 pixels each, of the site's picture. | supported | FND-DATA-001, FND-DATA-007 |
 | `0x16` | 2 | `INT16LE` | `resistance` | Resistance: the Influence progress needed before the site counts as influenced. | supported | FND-DATA-007, FND-STATE-001, FND-GANG-001, SRC-RECHAOS-3561D41 |
 | `0x18` | 2 | `INT16LE` | `support` | Support the site adds to its sector once influenced. | supported | FND-DATA-007, FND-STATE-001, SRC-RECHAOS-3561D41 |
@@ -54,10 +54,10 @@ opens the file as `data\Sites` (FND-ASSET-001). Every number is a signed
 
 | Value | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|
-| 0 | `SITE_SPECIAL_NONE` | No special effect. | sourced | FND-DATA-001, SRC-RECHAOS-3561D41 |
-| 1 | `SITE_SPECIAL_RESEARCH_TECH_8` | Research effect that the source ties to Tech Level 8. | sourced | FND-DATA-001, SRC-RECHAOS-3561D41 |
-| 2 | `SITE_SPECIAL_RESEARCH_TECH_10` | Research effect that the source ties to Tech Level 10. | sourced | FND-DATA-001, SRC-RECHAOS-3561D41 |
-| 3 | `SITE_SPECIAL_DISCOUNT` | Lowers the price of equipment bought in the sector. | sourced | FND-DATA-001, SRC-RECHAOS-3561D41 |
+| 0 | `SITE_SPECIAL_NONE` | No special effect: the refresh acts only on values 1 to 3. | supported | FND-STATE-001, FND-DATA-001, SRC-RECHAOS-3561D41 |
+| 1 | `SITE_SPECIAL_RESEARCH_TECH_8` | Raises the sector's research level (sector byte `0x0D`) to at least 1 once the site is influenced. Research by a gang in a sector its player owns is then capped at Tech Level 8 in place of 5. | supported | FND-STATE-001, FND-RESEARCH-003, FND-DATA-001, SRC-RECHAOS-3561D41 |
+| 2 | `SITE_SPECIAL_RESEARCH_TECH_10` | Raises the sector's research level to 2 once the site is influenced. Research by a gang in a sector its player owns is then not capped below the gang's own Tech Level. | supported | FND-STATE-001, FND-RESEARCH-003, FND-DATA-001, SRC-RECHAOS-3561D41 |
+| 3 | `SITE_SPECIAL_DISCOUNT` | Sets the sector's discount byte (`0x0E`) once the site is influenced. Equip by a gang standing in that sector, when its player owns it, pays the Cost less a third of it, rounded down. | supported | FND-STATE-001, FND-EQUIP-007, FND-EQUIP-001, FND-DATA-001, SRC-RECHAOS-3561D41 |
 
 ## Differences between builds
 
@@ -77,9 +77,4 @@ sector's research and discount bytes (FND-STATE-001).
 
 ## Open questions
 
-- The effects of `SITE_SPECIAL_RESEARCH_TECH_8` and
-  `SITE_SPECIAL_RESEARCH_TECH_10` are not pinned: the source's README gives
-  value 1 to one research site and value 2 to the other, while its C header
-  swaps the two sites' names. Neither says exactly what the effect does.
-- Value 3 of `special` sets sector byte `0x0E` (FND-STATE-001); that this is
-  the discount the Equip resolver tests (FND-EQUIP-001) has not been traced.
+None.

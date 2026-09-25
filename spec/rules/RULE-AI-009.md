@@ -4,7 +4,7 @@ title: A computer player that hires nothing snubs one offer, the first in Greed 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-011]
+evidence: [FND-AI-011, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []

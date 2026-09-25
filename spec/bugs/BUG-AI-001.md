@@ -7,7 +7,7 @@ superseded_by: []
 impact: rules
 intent: unintended
 player_reliance: unknown
-evidence: [FND-AI-050, FND-AI-014, FND-AI-009, FND-AI-002]
+evidence: [FND-AI-050, FND-AI-014, FND-AI-009, FND-AI-002, FND-OBJECTIVE-003]
 conflicting: []
 split_with: []
 related: [RULE-AI-010, RULE-AI-002]
@@ -23,7 +23,7 @@ from a family-6 hire after an unrelated hire instead.
 
 A computer player reaches the family-6 slot of its scenario's hire schedule in
 Power, Kill 'Em All, Big 40 (slot 6), Greed, Armageddon (slot 5), Acceptance
-(slot 2) or Dominance (slot 10), numbering the scenarios as FND-AI-002 does.
+(slot 2) or Dominance (slot 10), numbering the scenarios as FND-OBJECTIVE-003 does.
 
 ## Mechanism
 
@@ -66,5 +66,3 @@ None known.
 - The alternative reading, that the guards compare with the slot on purpose to
   avoid some other role after a family-6 hire, is not excluded; no reading
   makes the Dominance comparison with 10 meaningful.
-- The scenario numbering behind the scenario names is contested (see
-  RULE-AI-002).

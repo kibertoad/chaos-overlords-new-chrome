@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-031
-title: Family-13 and family-14 computer gangs move to the Big Man or Eliminate objectives, fight for them on alternate turns and hold them
+title: Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-039, FND-AI-027, FND-AI-033, FND-AI-013]
+evidence: [FND-AI-039, FND-AI-027, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-AI-022, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -13,7 +13,7 @@ related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-AI-022, RULE-RNG-002, FMT-
 ## Summary
 
 Families 13 and 14 play for the objective sectors: the four centre sectors in
-scenario 8 and the six headquarters sectors in scenario 6. A gang off an
+scenario 8 (Big Man) and the six headquarters sectors in scenario 6 (Siege). A gang off an
 objective moves toward one. On an objective its player does not own, it fights
 the owner's visible gangs on turns when the number of turns remaining is even
 and otherwise takes the sector by Control. On an owned objective it heals,
@@ -153,5 +153,3 @@ None known.
 - Whose Force the "Force 5 or more" test reads is not stated; the procedure
   reads the acting gang's.
 - The Support-site scan is taken to be `best_site` of RULE-AI-022.
-- The scenario numbers 6 (Eliminate) and 8 (Big Man) follow FND-AI-005; other
-  findings number the scenarios differently (see RULE-AI-002).

@@ -19,8 +19,9 @@ and in the last second a longer sound. With no time limit no bar is drawn.
 
 ## When it runs
 
-In the event pump, on each `presentation_tick` it takes while the main console
-is up, and once when a timed human player's planning starts.
+In the event pump, on each `presentation_tick` it takes, except while a screen
+function that clears the byte `g_00487830` for its duration runs, and once when
+a timed human player's planning starts.
 
 ## Parameters
 

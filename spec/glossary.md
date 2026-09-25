@@ -601,6 +601,11 @@ Set while some Last Turn report of the active player has not been shown; it
 makes the Events control's light blink. Any other value the game keeps:
 `UINT8` at `0x00487814` [FND-EVENT-005, FND-EVENT-006].
 
+## family_count
+
+`family_count(player, a, b)` counts a computer player's active gangs whose
+family is `a` or `b`. A function, defined by RULE-AI-010.
+
 ## fight_list
 
 The gangs Detailed Combat shows against `combat_focal`, as element numbers:
@@ -645,6 +650,12 @@ for a gang on an objective. A function, defined by RULE-AI-031.
 
 A function, defined by RULE-FINANCE-001: the eight amounts of the Financial
 panel and its gang count, for the whole city or one sector [FND-FINANCE-002].
+
+## first_hostile
+
+`first_hostile(player)` gives the first sector, in ascending order, whose
+`sector_weight` for the player is 10, or 100. A function, defined by
+RULE-AI-010.
 
 ## first_visible_definition_zero
 
@@ -720,7 +731,7 @@ A function, defined by RULE-UI-009.
 
 ## game_info_scenario_text
 
-`game_info_scenario_text(scenario_name)` gives the scenario text Game
+`game_info_scenario_text()` gives the scenario text Game
 Information shows, with the game length after it for the four scenarios that
 have one. A function, defined by RULE-UI-009.
 
@@ -856,6 +867,17 @@ FND-UI-033].
 ## human_count
 
 `human_count()` counts the human players. A function, defined by RULE-AI-006.
+
+## hunter_covered
+
+`hunter_covered(player, s)` tells whether an active family-6 gang of the
+player has `s` as its `coverage_sector`. A function, defined by RULE-AI-010.
+
+## hunter_test
+
+`hunter_test(player, k, F, G, missing, redirect)` gives the schedule slot
+after a scenario's forced family-6 slot is applied. A function, defined by
+RULE-AI-010.
 
 ## idle_warning_choice
 
@@ -1244,6 +1266,12 @@ owns. A function, defined by RULE-OBJECTIVE-002.
 
 `owner_at(c)` gives the owner a neighbourhood scan reads at index `c`, 0 to 64.
 A function, defined by RULE-AI-005.
+
+## owner_query
+
+`owner_query(s)` gives the owner the computer players' handlers read for a
+sector: -2 under police presence, otherwise the owner byte. A function,
+defined by RULE-AI-004.
 
 ## PanelSlideDrawn
 
@@ -1711,6 +1739,12 @@ keeps: `UINT8[6]`, indexed by player slot, at `0x004ABC08` [FND-AI-005,
 FND-AI-009]. Selector `0x2D` of the computer players searches these bytes for
 player slot numbers, as if the table listed players in ranking order
 [FND-STATE-004].
+
+## schedule_slot
+
+`schedule_slot(player)` gives the hire schedule slot a computer player uses
+this turn after its scenario's adjustments. A function, defined by
+RULE-AI-010.
 
 ## ScreenFilledBlack
 

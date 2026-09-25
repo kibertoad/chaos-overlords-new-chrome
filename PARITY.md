@@ -13,25 +13,25 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 95 |
+| `supported` | 96 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 126 |
+| `implemented` | 125 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 20 |
-| `partial` | 76 |
-| `complete` | 126 |
+| `partial` | 77 |
+| `complete` | 125 |
 
 ## DATA
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-DATA-001` | Site definition records in DATA/SITES | sourced | complete | None | None | implemented | None |
-| `FMT-DATA-002` | Gang definition records in DATA/Gangs | sourced | complete | None | None | implemented | None |
-| `FMT-DATA-003` | Item definition records in DATA/ITEMS | sourced | complete | None | None | implemented | None |
+| `FMT-DATA-001` | Site definition records in DATA/SITES | supported | complete | None | None | implemented | None |
+| `FMT-DATA-002` | Gang definition records in DATA/Gangs | supported | complete | None | None | implemented | None |
+| `FMT-DATA-003` | Item definition records in DATA/ITEMS | supported | complete | None | None | implemented | None |
 | `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | missing | None | None | supported | The rebuild copies CLT00002 unread into its asset pack. |
 | `FMT-DATA-005` | Compressed archive DATA/DATA.Z | unknown | missing | None | None | unknown | The rebuild copies DATA.Z unread into its asset pack. |
 
@@ -316,10 +316,10 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | complete | None | `DEV-AI-003` | implemented | The rebuild submits commands in roster slot order and keeps the history rollover; the family-9 seeding condition is unknown in both. |
+| `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | partial | None | `DEV-AI-003` | supported | The rebuild submits commands in roster slot order and keeps the history rollover, but applies the family table at every pass without needs_family (FND-AI-042); the takeover's raider_mode is not checked. |
 | `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild applies the family table to every active gang at every pass, without the needs_family gate, the record reset, the family 99 of a blank cell or the Big Man first-turn hire role (FND-AI-041). |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | None |
-| `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | None |
+| `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | Whether the rebuild reproduces the out-of-row attitude reads of hostile_owner for a neutral sector or one under police presence (FND-AI-048) is not checked. |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | The Tech ceiling of the first weapon pass (local_tech_cap) is not described by the findings, so its match is not established. |
 | `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported | partial | None | None | supported | Mode 4 is not written out in the findings and the rebuild's version of it is not backed by evidence. |
 | `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | partial | None | None | supported | FND-MOVE-003 settles mode 0 as the neighbour draw; whether the rebuild's reading matches it has not been checked. |
@@ -346,7 +346,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-028` | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-029` | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | The armor, miscellaneous and Heal tests of family 11 are not recorded, so the rebuild's versions are not backed by evidence. |
 | `RULE-AI-030` | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | The empty human-only pool case is not recorded. |
-| `RULE-AI-031` | Family-13 and family-14 computer gangs move to the Big Man or Eliminate objectives, fight for them on alternate turns and hold them | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
+| `RULE-AI-031` | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 
 ## EVENT
 
