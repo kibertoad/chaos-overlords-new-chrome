@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 67 |
+| `supported` | 65 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 154 |
+| `implemented` | 156 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 19 |
-| `partial` | 49 |
-| `complete` | 154 |
+| `partial` | 47 |
+| `complete` | 156 |
 
 ## DATA
 
@@ -320,8 +320,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | None |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | hostile_owner reads the attitude cell of owner_query, with the out-of-row reads of FND-AI-048 for a neutral sector and one under police presence. |
-| `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | partial | None | None | supported | FND-AI-055 changes the reading: the weapon choice starts from the equipped weapon, family 10's armor is chosen by Stealth, and the miscellaneous upgrades compare Detect (families 11 and 12) or Control (13 and 14). The rebuild chooses family 12's item by Chaos; the other choices are not checked against it. |
-| `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported | partial | None | None | supported | Mode 4 is now written out (FND-AI-056); no call reaches it, and the rebuild's version is not checked against it. |
+| `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | None |
+| `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported | complete | None | None | implemented | No call reaches mode 4; the rebuild scores it from the standings bytes and the owner query as FND-AI-056 reads them. |
 | `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | complete | None | None | implemented | Mode 0 draws one of the eight neighbours with roll(8) and draws again off the map, with no capacity test. |
 | `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | supported | complete | None | None | implemented | None |
 | `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | None | None | implemented | None |

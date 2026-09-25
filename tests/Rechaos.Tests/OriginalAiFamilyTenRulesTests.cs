@@ -6,16 +6,29 @@ namespace Rechaos.Tests;
 
 public sealed class OriginalAiFamilyTenRulesTests
 {
+    // RULE-AI-005, FND-AI-055: selector 0x72 keeps the first researched armor within the gang's
+    // Tech Level with the most Stealth, starting from item 1.
     [Fact]
-    public void ArmorSelectorUsesStrictDefenseMaximumWithinRawTech()
+    public void ArmorSelectorUsesStrictStealthMaximumWithinRawTech()
     {
         var data = BundledOriginalData.Load();
-        var match = CreateMatch(data, researchedItems: [26, 29]);
+        short[] armor = data.Items
+            .Select((item, index) => (item, index))
+            .Where(entry => entry.item.Type == 3)
+            .Select(entry => checked((short)entry.index))
+            .ToArray();
+        var match = CreateMatch(data, researchedItems: armor);
         var player = match.Players[0];
         var gang = player.Gangs[0];
+        var tech = data.Gang(gang.DefinitionId).TechLevel;
+        var eligible = armor.Where(id => data.Items[id].TechLevel <= tech).ToArray();
+        var bestStealth = eligible.Max(id => data.Items[id].Stats.Stealth);
+        var expected = eligible.First(id => data.Items[id].Stats.Stealth == bestStealth);
 
-        Assert.Equal(26,
-            OriginalAiFamilyTenRules.SelectArmorUpgrade(match, player, gang));
+        var selected = OriginalAiFamilyTenRules.SelectArmorUpgrade(match, player, gang);
+
+        Assert.Equal(expected, selected);
+        Assert.True(bestStealth > data.Items[1].Stats.Stealth);
     }
 
     [Fact]
@@ -24,7 +37,7 @@ public sealed class OriginalAiFamilyTenRulesTests
         var data = BundledOriginalData.Load();
         var match = CreateMatch(data,
             researchedItems: Enumerable.Range(24, 10).Select(value => (short)value),
-            armorItemId: 33);
+            armorItemId: 28);
 
         Assert.Null(OriginalAiFamilyTenRules.SelectArmorUpgrade(
             match, match.Players[0], match.Players[0].Gangs[0]));

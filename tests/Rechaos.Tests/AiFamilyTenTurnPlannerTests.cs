@@ -23,7 +23,8 @@ public sealed class AiFamilyTenTurnPlannerTests
 
         Assert.Equal(10, match.AiPlanning.Family(player, 0));
         Assert.Equal(GangAction.Equip, command.Action);
-        Assert.Equal(CommandTarget.Item(33), command.Target);
+        // RULE-AI-005, FND-AI-055: family 10 chooses armor by Stealth.
+        Assert.Equal(CommandTarget.Item(28), command.Target);
         Assert.Equal(OriginalAiFamilyTenRules.ArmorCooldown,
             match.AiPlanning.ArmorCooldown(player, 0));
 
@@ -32,7 +33,7 @@ public sealed class AiFamilyTenTurnPlannerTests
         recorder.FinishCommand(new PlayerId(1));
         while (match.Coordinator.Phase == TurnPhase.Execution)
             recorder.FinishExecutionPhase();
-        Assert.Equal((short)33, match.Players[0].Gangs[0].ArmorItemId);
+        Assert.Equal((short)28, match.Players[0].Gangs[0].ArmorItemId);
 
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);

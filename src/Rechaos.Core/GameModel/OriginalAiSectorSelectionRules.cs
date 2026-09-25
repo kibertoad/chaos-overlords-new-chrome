@@ -10,6 +10,7 @@ namespace Rechaos.Core.GameModel;
 internal static class OriginalAiSectorSelectionRules
 {
     private const int NeutralOwner = -1;
+    private const int PolicePresenceOwner = -2;
     private const int MinimumRawOwner = -3;
     private const int MaximumDestinationGangCount =
         MatchLimits.FriendlyGangsPerSector - 1;
@@ -59,8 +60,13 @@ internal static class OriginalAiSectorSelectionRules
                     if (y is < 0 or >= MatchLimits.BoardWidth) continue;
                     var sectorId = y * MatchLimits.BoardWidth + x;
                     var owner = sectorOwners[sectorId];
+                    // RULE-AI-006, FND-AI-056: mode 4 passes the owner query, which gives -2 under
+                    // police presence, to the standings search.
+                    var scoredOwner = mode == 4 && sectorDisabled[sectorId]
+                        ? PolicePresenceOwner
+                        : owner;
                     var added = BaseScore(
-                        mode, sectorId, player.Value, owner,
+                        mode, sectorId, player.Value, scoredOwner,
                         sectorGangCounts, canSoloControl, hasPriorChaos,
                         isHostileOwner, isHumanOwner, playerOrderValues,
                         hasHumanPlayers, formationSectorId, scenarioStandings, unfinishedSiteScore,
@@ -185,7 +191,7 @@ internal static class OriginalAiSectorSelectionRules
             1 => owner == NeutralOwner && canSoloControl(sectorId) ? 1 : 0,
             2 => owner == player ? 1 : 0,
             3 => owner != player && owner > NeutralOwner ? 1 : 0,
-            4 => LiteralPlayerOrderAccepts(player, owner, playerOrderValues) ? 1 : 0,
+            4 => LiteralPlayerOrderAccepts(player, owner, scenarioStandings!) ? 1 : 0,
             5 when owner == NeutralOwner && canSoloControl(sectorId) => 5,
             5 when owner == player && !hasPriorChaos(sectorId) => 2,
             5 when owner != player && owner > NeutralOwner => 1,
@@ -333,7 +339,7 @@ internal static class OriginalAiSectorSelectionRules
                 nameof(playerOrderValues));
         if (mode is 6 or 10 && hasHumanPlayers is null)
             throw new ArgumentNullException(nameof(hasHumanPlayers));
-        if (mode == 6 && scenarioStandings is null)
+        if (mode is 4 or 6 && scenarioStandings is null)
             throw new ArgumentNullException(nameof(scenarioStandings));
         if (scenarioStandings is not null
             && (scenarioStandings.Count != MatchLimits.PlayerCount

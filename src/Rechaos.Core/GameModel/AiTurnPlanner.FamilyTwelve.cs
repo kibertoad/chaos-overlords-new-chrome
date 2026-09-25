@@ -53,7 +53,8 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        if (OriginalAiEquipmentRules.SelectMiscellaneousChaosUpgrade(
+        // FND-AI-055: family 12 compares Detect (selector 0x74).
+        if (OriginalAiEquipmentRules.SelectMiscellaneousDetectUpgrade(
                 state, player, gang) is { } miscellaneousId
             && state.Definitions.Items[miscellaneousId].Cost <= player.Cash)
         {
