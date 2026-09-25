@@ -175,7 +175,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly PresentationPointer _pointer = new(shape =>
         Mouse.SetCursor(shape == PointerShape.Hourglass ? MouseCursor.Wait : MouseCursor.Arrow));
     private string _comlinkStatus = string.Empty;
-    private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
     private IReadOnlyList<GangId> _sectorGangRoster = [];
     private int _sectorGangCursor;
@@ -528,6 +527,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     OpenCredits();
                 else if (Pressed(keyboard, Keys.F1)) OpenHelp();
                 else if (Pressed(keyboard, Keys.O)) OpenOptions();
+                else if (Pressed(keyboard, Keys.Escape) && CommandPanelOpen)
+                    CancelCommandPanelWithEscape();
                 else if (Pressed(keyboard, Keys.Escape))
                 {
                     // SCR-ATTACK-001, FND-ATTACK-003: Escape is the Attack picker's Cancel.
@@ -596,7 +597,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
                         if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
                     }
-                    if (Pressed(keyboard, Keys.Enter)) ActivateCommandSelection();
+                    if (Pressed(keyboard, Keys.Enter)
+                        || (CommandPanelOpen && Pressed(keyboard, Keys.Execute)))
+                        ActivateCommandSelection();
                     if (Pressed(keyboard, Keys.Back))
                         AcceptAndInvoke(BackFromCommands);
                     break;
@@ -667,7 +670,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.D3)) ToggleGiveSelection(2);
                     if (Pressed(keyboard, Keys.Up)) MoveGiveCursor(-1);
                     if (Pressed(keyboard, Keys.Down)) MoveGiveCursor(1);
-                    if (Pressed(keyboard, Keys.Enter)) QueueSelectedGive();
+                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute))
+                        QueueSelectedGive();
                     if (Pressed(keyboard, Keys.Back))
                         AcceptAndInvoke(CloseGiveEquipment);
                     break;
@@ -681,7 +685,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.D1)) ToggleSellSelection(0);
                     if (Pressed(keyboard, Keys.D2)) ToggleSellSelection(1);
                     if (Pressed(keyboard, Keys.D3)) ToggleSellSelection(2);
-                    if (Pressed(keyboard, Keys.Enter)) QueueSelectedSale();
+                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute))
+                        QueueSelectedSale();
                     if (Pressed(keyboard, Keys.Back))
                         AcceptAndInvoke(CloseSellEquipment);
                     break;

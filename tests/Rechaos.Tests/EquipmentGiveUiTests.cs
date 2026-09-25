@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
@@ -10,16 +11,87 @@ public sealed class EquipmentGiveUiTests
     [Fact]
     public void LayoutMatchesOriginalEquipmentToGivePanel()
     {
+        // SCR-GIVE-001 drawn elements and mouse input.
         Assert.Equal(new Rectangle(104, 124, 344, 209), EquipmentGiveLayout.Panel);
         Assert.Equal(new Rectangle(130, 141, 64, 64), EquipmentGiveLayout.Portrait);
-        Assert.Equal(new Rectangle(208, 140, 50, 51), EquipmentGiveLayout.Item(0));
-        Assert.Equal(new Rectangle(208, 268, 50, 51), EquipmentGiveLayout.Item(2));
-        Assert.Equal(new Rectangle(313, 140, 32, 32), EquipmentGiveLayout.RecipientHit(0));
-        Assert.Equal(new Rectangle(313, 284, 32, 32), EquipmentGiveLayout.RecipientHit(4));
-        Assert.Equal(EquipmentCommandLayout.Cancel, EquipmentGiveLayout.Cancel);
-        Assert.Equal(EquipmentCommandLayout.Ok, EquipmentGiveLayout.Ok);
-        Assert.Throws<ArgumentOutOfRangeException>(() => EquipmentGiveLayout.Item(3));
+        Assert.Equal(new Rectangle(209, 141, 48, 48), EquipmentGiveLayout.ItemPicture(0));
+        Assert.Equal(new Rectangle(209, 269, 48, 48), EquipmentGiveLayout.ItemPicture(2));
+        Assert.Equal(new Rectangle(206, 138, 54, 54), EquipmentGiveLayout.ItemFrame(0));
+        Assert.Equal(new Rectangle(206, 266, 54, 54), EquipmentGiveLayout.ItemFrame(2));
+        Assert.Equal(new Rectangle(414, 13, 54, 54), EquipmentGiveLayout.ItemFrameSource);
+        Assert.Equal(new Rectangle(137, 261, 49, 22), EquipmentGiveLayout.Cancel);
+        Assert.Equal(new Rectangle(137, 293, 49, 22), EquipmentGiveLayout.Ok);
+        Assert.Throws<ArgumentOutOfRangeException>(() => EquipmentGiveLayout.ItemPicture(3));
+    }
+
+    [Fact]
+    public void RecipientCardsFollowTheOriginalList()
+    {
+        // SCR-GIVE-001, FND-GIVE-001, FND-GIVE-002: the card is also the selection target.
+        Assert.Equal(new Rectangle(312, 139, 97, 34), EquipmentGiveLayout.RecipientHit(0));
+        Assert.Equal(new Rectangle(312, 283, 97, 34), EquipmentGiveLayout.RecipientHit(4));
+        Assert.Equal(new Rectangle(0, 560, 97, 34), EquipmentGiveLayout.RecipientCardSource);
+        Assert.Equal(new Rectangle(313, 140, 32, 32), EquipmentGiveLayout.RecipientPortrait(0));
+        Assert.Equal(new Rectangle(313, 284, 32, 32), EquipmentGiveLayout.RecipientPortrait(4));
+        Assert.Equal(new Rectangle(347, 179, 42, 3), EquipmentGiveLayout.RecipientForce(1, 7));
+        Assert.Equal(new Rectangle(354, 0, 42, 3), EquipmentGiveLayout.RecipientForceSource(7));
+        Assert.Equal(new Rectangle(346, 150, 20, 20), EquipmentGiveLayout.RecipientItem(0, 0));
+        Assert.Equal(new Rectangle(367, 186, 20, 20), EquipmentGiveLayout.RecipientItem(1, 1));
+        Assert.Equal(new Rectangle(388, 294, 20, 20), EquipmentGiveLayout.RecipientItem(4, 2));
+        Assert.Equal(new Rectangle(274, 140, 32, 32), EquipmentGiveLayout.RecipientMarker(0));
+        Assert.Equal(new Rectangle(274, 284, 32, 32), EquipmentGiveLayout.RecipientMarker(4));
+        Assert.Equal(new Rectangle(128, 448, 32, 32), EquipmentGiveLayout.RecipientMarkerSource);
         Assert.Throws<ArgumentOutOfRangeException>(() => EquipmentGiveLayout.RecipientHit(5));
+    }
+
+    [Fact]
+    public void RecipientsAreTheOtherLocalGangsInRosterOrderUpToFive()
+    {
+        var player = new PlayerId(0);
+        var giver = new MatchGangState(new GangId(4), player, 0, 11, 6);
+        MatchGangState[] gangs =
+        [
+            new(new GangId(9), player, 1, 11, 6),
+            giver,
+            new(new GangId(2), player, 1, 11, 6),
+            new(new GangId(3), player, 1, 12, 6),
+            new(new GangId(5), player, 1, 11, 6),
+            new(new GangId(6), player, 1, 11, 6),
+            new(new GangId(7), player, 1, 11, 6),
+            new(new GangId(8), player, 1, 11, 6)
+        ];
+
+        Assert.Equal([2, 5, 6, 7, 8],
+            EquipmentGiveSelection.Recipients(gangs, giver).Select(gang => gang.Value));
+    }
+
+    [Fact]
+    public void RecipientTechLevelMustReachTheHighestSelectedItem()
+    {
+        // FND-GIVE-001: the requirement starts from 0 and equal values qualify.
+        var items = BundledOriginalData.Load().Items;
+        var low = items.OrderBy(item => item.TechLevel).First();
+        var high = items.OrderByDescending(item => item.TechLevel).First();
+
+        Assert.Equal(0, EquipmentGiveSelection.RequiredTechLevel([]));
+        Assert.Equal(high.TechLevel, EquipmentGiveSelection.RequiredTechLevel([low, high]));
+        Assert.True(EquipmentGiveSelection.CanReceive(high.TechLevel, high.TechLevel));
+        Assert.False(EquipmentGiveSelection.CanReceive(high.TechLevel - 1, high.TechLevel));
+    }
+
+    [Fact]
+    public void ExistingGiveOrderRestoresItsItemsAndRecipient()
+    {
+        var queued = EquipmentGiveSelection.CreateCommand(
+            new PlayerId(0), new GangId(1), new GangId(7), [(short)40, (short)12]);
+
+        var (items, recipient) = EquipmentGiveSelection.OpeningSelection(queued, [12, null, 40]);
+        Assert.Equal([true, false, true], items);
+        Assert.Equal(new GangId(7), recipient);
+
+        var nothing = EquipmentGiveSelection.OpeningSelection(null, [12, null, 40]);
+        Assert.Equal([false, false, false], nothing.Items);
+        Assert.Null(nothing.Recipient);
     }
 
     [Fact]

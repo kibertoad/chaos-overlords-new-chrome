@@ -70,7 +70,8 @@ public sealed partial class ChaosGame
     {
         // Opened from a command overlay, the panel describes the gang being ordered and
         // must hand the overlay back that same gang.
-        if (_gangDetailsReturnScreen == ClientScreen.Commands) return;
+        if (_gangDetailsReturnScreen is ClientScreen.Commands or ClientScreen.Give or ClientScreen.Sell)
+            return;
         if (_gangDetailsSectorFilter is not { } sectorId
             || _state?.Coordinator.ActivePlayer is not { } playerId)
         {
@@ -138,6 +139,10 @@ public sealed partial class ChaosGame
     {
         if (_gangDetailsReturnScreen == ClientScreen.Commands)
             DrawCommands(batch, pixel, font, state);
+        else if (_gangDetailsReturnScreen == ClientScreen.Give)
+            DrawGiveEquipment(batch, pixel, font, state);
+        else if (_gangDetailsReturnScreen == ClientScreen.Sell)
+            DrawSellEquipment(batch, pixel, font, state);
         else
             DrawMapBackdrop(batch, pixel, font, state, _gangDetailsReturnScreen);
     }

@@ -117,7 +117,10 @@ public sealed partial class ChaosGame
                 if (indices.Count > 0)
                 {
                     var position = indices.IndexOf(_commandTargetCursor);
-                    _commandTargetCursor = indices[Mod(position + delta, indices.Count)];
+                    _commandTargetCursor = position < 0
+                        ? indices[delta > 0 ? 0 : indices.Count - 1]
+                        : indices[Mod(position + delta, indices.Count)];
+                    _commandPanelFace = CommandPanelFaces.AfterChange(true);
                 }
             }
             else if (_commandTargetOptions.Count > 0)
@@ -179,62 +182,7 @@ public sealed partial class ChaosGame
             }
             if (IsEquipmentCommandPicker())
             {
-                if (EquipmentCommandLayout.Cancel.Contains(point))
-                {
-                    AcceptInput();
-                    BackFromCommands();
-                    return;
-                }
-                if (EquipmentCommandLayout.Ok.Contains(point))
-                {
-                    ActivateCommandSelection();
-                    return;
-                }
-                for (var category = 0; category < EquipmentCommandLayout.CategoryCount; category++)
-                {
-                    if (!EquipmentCommandLayout.CategoryHit(category).Contains(point)) continue;
-                    SelectEquipmentCategory(category);
-                    return;
-                }
-                if (_state is null) return;
-                if (EquipmentCommandLayout.Portrait.Contains(point))
-                {
-                    // One target only, so every portrait click registers the same index.
-                    if (_equipmentPortraitClicks.Register(0, _inputTime)
-                        && _state.FindGang(_commandTargetOptions[0].Gang) is { } actor)
-                        OpenGangDetails(actor, ClientScreen.Commands);
-                    return;
-                }
-                var indices = EquipmentCommandIndices(_state);
-                var position = indices.IndexOf(_commandTargetCursor);
-                var itemFirst = EquipmentCommandLayout.FirstVisibleItem(indices.Count, position);
-                var itemVisible = Math.Min(
-                    EquipmentCommandLayout.VisibleItemCount, indices.Count - itemFirst);
-                var itemRow = EquipmentCommandLayout.ItemRowAt(point);
-                if (itemRow >= itemVisible) itemRow = -1;
-                if (_commandTargetOptions[0].Action == GangAction.Research)
-                {
-                    // SCR-RESEARCH-001: a press selects from panel y 26 and a double-click opens
-                    // from panel y 19, each over its own rectangle.
-                    if (itemRow >= 0) _commandTargetCursor = indices[itemFirst + itemRow];
-                    var detailRow = EquipmentCommandLayout.ResearchItemDetailRowAt(point);
-                    if (detailRow >= 0 && detailRow < itemVisible)
-                    {
-                        var detailItem = _commandTargetOptions[indices[itemFirst + detailRow]].Target.Id;
-                        if (_equipmentItemClicks.Register(detailItem, _inputTime))
-                            OpenItemDetails((short)detailItem);
-                    }
-                    else if (itemRow < 0 && !EquipmentCommandLayout.Panel.Contains(point))
-                        BackFromCommands();
-                    return;
-                }
-                if (itemRow >= 0)
-                {
-                    _commandTargetCursor = indices[itemFirst + itemRow];
-                    var itemId = _commandTargetOptions[_commandTargetCursor].Target.Id;
-                    if (_equipmentItemClicks.Register(itemId, _inputTime)) OpenItemDetails((short)itemId);
-                }
-                else if (!EquipmentCommandLayout.Panel.Contains(point)) BackFromCommands();
+                HandleEquipmentCommandClick(point);
                 return;
             }
             var first = Math.Max(0, _commandTargetCursor - 6);
@@ -258,7 +206,9 @@ public sealed partial class ChaosGame
         else if (!CommandOverlayLayout.Panel.Contains(point)) BackFromCommands();
     }
 
-    private void ActivateCommandSelection()
+    private void ActivateCommandSelection() => ActivateCommandSelection(pointerButton: false);
+
+    private void ActivateCommandSelection(bool pointerButton)
     {
         if (_actions is null) return;
         if (_choosingCommandTarget)
@@ -268,14 +218,10 @@ public sealed partial class ChaosGame
                 ConfirmAttack();
                 return;
             }
-            if (IsEquipmentCommandPicker() && (_state is null
-                || !EquipmentCommandLayout.CanConfirm(
-                    _commandTargetCursor, EquipmentCommandIndices(_state))))
-            {
-                RejectInput("NO ITEMS IN THIS CATEGORY");
-            }
-            else if (_commandTargetOptions.Count > 0)
-                SubmitCommand(_commandTargetOptions[_commandTargetCursor]);
+            if (!CanConfirmCommandTarget())
+                RejectInput(IsMovementCommandPicker() ? "NO DESTINATION CHOSEN" : "NO ITEM CHOSEN");
+            else
+                SubmitCommand(_commandTargetOptions[_commandTargetCursor], pointerButton);
             return;
         }
 
@@ -309,8 +255,11 @@ public sealed partial class ChaosGame
             _commandTargetCursor = 0;
             _equipmentCategory = 0;
             _choosingCommandTarget = true;
-            if (action is GangAction.Equip or GangAction.Research)
-                SelectEquipmentCategory(0);
+            _commandPanelFace = CommandPanelFaceState.NotDrawn;
+            _pressedCommandPanelButton = null;
+            if (action == GangAction.Equip) OpenEquipmentPurchasePanel();
+            else if (action == GangAction.Research) SelectEquipmentCategory(0);
+            else if (action == GangAction.Move) OpenMovementPanel();
             if (action == GangAction.Attack) OpenAttackPicker();
             return;
         }
@@ -535,45 +484,71 @@ public sealed partial class ChaosGame
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, EquipmentCommandLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actor.DefinitionId), Color.White);
-        if (action == GangAction.Equip) DrawEquipmentCommandHeldItems(batch, pixel, actor);
+        if (action == GangAction.Equip) DrawEquipmentCommandHeldItems(batch, actor);
 
         var indices = EquipmentCommandIndices(state);
         var position = indices.IndexOf(_commandTargetCursor);
-        var first = EquipmentCommandLayout.FirstVisibleItem(indices.Count, position);
+        var first = EquipmentCommandLayout.FirstVisibleItem(indices.Count, Math.Max(0, position));
         foreach (var entry in indices.Skip(first).Take(EquipmentCommandLayout.VisibleItemCount)
                      .Select((index, row) => (index, row)))
         {
             var command = _commandTargetOptions[entry.index];
             var item = state.Definitions.Items[command.Target.Id];
             var rectangle = EquipmentCommandLayout.ItemRow(entry.row);
-            if (entry.index == _commandTargetCursor)
-                batch.Draw(pixel, rectangle, new Color(55, 65, 25));
-            font.Draw(batch, item.Name, new Vector2(rectangle.X + 2, rectangle.Y + 1), Color.Lime, 1);
-            var value = action == GangAction.Equip
-                ? SpecialSiteRules.EquipmentCost(state, actor, item).ToString()
-                : EquipmentCommandLayout.ResearchProgress(item.ResearchDifficulty,
-                    state.FindPlayer(actor.Owner)!.RemainingResearch(state.Definitions, item.Id));
-            font.Draw(batch, value, new Vector2(rectangle.Right - value.Length * 6 - 2, rectangle.Y + 1),
+            font.Draw(batch, item.Name, EquipmentCommandLayout.ItemNameOrigin(entry.row).ToVector2(),
                 Color.Lime, 1);
+            if (action == GangAction.Equip)
+            {
+                // SCR-EQUIP-001: the Factory-adjusted price in two number cells from x 420.
+                var price = SpecialSiteRules.EquipmentCost(state, actor, item).ToString();
+                font.Draw(batch, price,
+                    new Vector2(EquipmentCommandLayout.PriceLeft(price), rectangle.Y + 1), Color.Lime, 1);
+            }
+            else
+            {
+                var value = EquipmentCommandLayout.ResearchProgress(item.ResearchDifficulty,
+                    state.FindPlayer(actor.Owner)!.RemainingResearch(state.Definitions, item.Id));
+                font.Draw(batch, value,
+                    new Vector2(rectangle.Right - value.Length * 6 - 2, rectangle.Y + 1), Color.Lime, 1);
+            }
+            if (entry.index == _commandTargetCursor)
+                DrawEquipmentChosenRow(batch, pixel, entry.row, item.Name);
         }
-        DrawBorder(batch, pixel, EquipmentCommandLayout.Category(_equipmentCategory), Color.White, 2);
-        DrawButton(batch, pixel, font, EquipmentCommandLayout.Ok, "OK",
-            EquipmentCommandLayout.CanConfirm(_commandTargetCursor, indices));
+        if (_uiKeyedSprites is not null)
+            batch.Draw(_uiKeyedSprites, EquipmentCommandLayout.Category(_equipmentCategory),
+                EquipmentCommandLayout.CategoryFrameSource, Color.White);
+        DrawCommandPanelFaces(batch);
     }
 
-    private void DrawEquipmentCommandHeldItems(SpriteBatch batch, Texture2D pixel, MatchGangState gang)
+    /// <summary>
+    /// The chosen row mark of <c>fn_0043EFE5</c>: the row's 30-character text in the second
+    /// font row of PX00129 inside a one-pixel (0,255,0) frame, covering the price
+    /// (SCR-EQUIP-001, FND-EQUIP-010).
+    /// </summary>
+    private void DrawEquipmentChosenRow(SpriteBatch batch, Texture2D pixel, int row, string name)
     {
-        var itemIds = EquippedItems(gang);
-        if (itemIds.All(itemId => itemId is null)) return;
-        for (var slot = 0; slot < itemIds.Length; slot++)
+        var strip = EquipmentCommandLayout.ItemRow(row);
+        if (_uiSprites is not null)
         {
-            var destination = EquipmentCommandLayout.EquippedItem(slot);
-            batch.Draw(pixel, destination, Color.Black);
-            DrawBorder(batch, pixel, destination, Color.LightGray, 1);
-            if (_itemPortraits is not null && itemIds[slot] is { } itemId)
-                batch.Draw(_itemPortraits, destination,
-                    OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
+            var origin = EquipmentCommandLayout.ItemNameOrigin(row);
+            var text = EquipmentCommandLayout.ChosenRowText(name);
+            for (var index = 0; index < text.Length; index++)
+                batch.Draw(_uiSprites,
+                    new Rectangle(origin.X + index * OriginalFontLayout.CellWidth, origin.Y,
+                        OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight),
+                    EquipmentCommandLayout.ChosenRowGlyphSource(text[index]), Color.White);
         }
+        DrawBorder(batch, pixel, strip, EquipmentCommandLayout.ChosenRowFrame, 1);
+    }
+
+    private void DrawEquipmentCommandHeldItems(SpriteBatch batch, MatchGangState gang)
+    {
+        if (_itemPortraits is null) return;
+        var itemIds = EquippedItems(gang);
+        for (var slot = 0; slot < itemIds.Length; slot++)
+            if (itemIds[slot] is { } itemId)
+                batch.Draw(_itemPortraits, EquipmentCommandLayout.EquippedItem(slot),
+                    OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
     }
 
     private List<int> EquipmentCommandIndices(MatchState state) => Enumerable.Range(0, _commandTargetOptions.Count)
@@ -586,6 +561,13 @@ public sealed partial class ChaosGame
         if (category is < 0 or >= EquipmentCommandLayout.CategoryCount)
             throw new ArgumentOutOfRangeException(nameof(category));
         _equipmentCategory = category;
+        if (_commandTargetOptions.Count > 0 && _commandTargetOptions[0].Action == GangAction.Equip)
+        {
+            // SCR-EQUIP-001: a category clears the chosen item and draws the face disabled.
+            _commandTargetCursor = -1;
+            _commandPanelFace = CommandPanelFaceState.Disabled;
+            return;
+        }
         if (_state is null) return;
         var indices = EquipmentCommandIndices(_state);
         if (indices.Count > 0) _commandTargetCursor = indices[0];

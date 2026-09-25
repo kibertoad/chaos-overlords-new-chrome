@@ -72,7 +72,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(207, 139, 52, 52), EquipmentGiveLayout.ItemHit(0));
         Assert.Equal(new Rectangle(207, 203, 52, 52), EquipmentGiveLayout.ItemHit(1));
         Assert.Equal(new Rectangle(207, 267, 52, 52), EquipmentGiveLayout.ItemHit(2));
-        Assert.Equal(new Rectangle(208, 140, 50, 51), EquipmentGiveLayout.Item(0));
+        Assert.Equal(new Rectangle(209, 141, 48, 48), EquipmentGiveLayout.ItemPicture(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => EquipmentGiveLayout.ItemHit(3));
     }
 
@@ -674,8 +674,9 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(256, 70, 158, 22), CommandOverlayLayout.ActionRow(0));
         Assert.Equal(new Rectangle(104, 124, 344, 209), EquipmentCommandLayout.Panel);
         Assert.Equal(new Rectangle(251, 149, 181, 9), EquipmentCommandLayout.ItemRow(0));
-        Assert.Equal(new Rectangle(207, 140, 34, 34), EquipmentCommandLayout.Category(0));
-        Assert.Equal(new Rectangle(207, 248, 34, 34), EquipmentCommandLayout.Category(3));
+        // SCR-EQUIP-001: the frame lies one pixel outside category cell n.
+        Assert.Equal(new Rectangle(207, 139, 34, 34), EquipmentCommandLayout.Category(0));
+        Assert.Equal(new Rectangle(207, 247, 34, 34), EquipmentCommandLayout.Category(3));
         Assert.Equal(0, EquipmentCommandLayout.CategoryForItemType(0));
         Assert.Equal(0, EquipmentCommandLayout.CategoryForItemType(1));
         Assert.Equal(1, EquipmentCommandLayout.CategoryForItemType(2));

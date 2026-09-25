@@ -71,6 +71,13 @@ public sealed partial class ChaosGame
             return;
         }
 
+        if (_pressedCommandPanelButton is not null)
+        {
+            if (pointerMapped) CompleteCommandPanelButton(point);
+            else CancelCommandPanelButton();
+            return;
+        }
+
         if (_pressedHireRejectSlot is not null)
         {
             if (pointerMapped) CompleteHireReject(point);

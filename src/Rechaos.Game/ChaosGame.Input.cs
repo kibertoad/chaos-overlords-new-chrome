@@ -67,6 +67,12 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
+        if (_pressedCommandPanelButton is not null)
+        {
+            CancelCommandPanelButton();
+            _message = string.Empty;
+            return;
+        }
         if (_pressedHireRejectSlot is not null)
         {
             CancelHireReject();
