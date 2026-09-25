@@ -13,11 +13,6 @@ deviation with no setting is `mandatory`, and its Justification also says why th
 behaviour is not worth a setting. The validation suite runs with every setting switched off, and a
 test that reaches a mandatory deviation cites its ID and allows for it.
 
-A few entries have no setting and no case for being mandatory, because the rebuild takes away an
-outcome the original allows or changes a quirk players may rely on. Each says so in a paragraph
-starting "Needs a setting", `tools/check-spec.mjs` reports it until the setting exists, and they
-are the open conformance work listed in [docs/HANDOVER.md](docs/HANDOVER.md).
-
 Dated product decisions behind many of these entries, with their full reasoning, are in
 [docs/DECISIONS.md](docs/DECISIONS.md).
 
@@ -157,11 +152,13 @@ The reasoning is in `docs/MULTIPLAYER.md`.
   The original fails a hire when its cost is greater than cash, which refuses that hire.
 - Setting: None
 - Default: mandatory
+- Justification: A hire that costs nothing takes nothing from cash, so refusing it because cash is
+  already negative protects nothing and only keeps a player in debt from rebuilding. It adds an
+  option and removes none.
 - Dropped: no
 
-Needs a setting, if the static reading of the original's comparison is confirmed; the check is
-in `static_validation_plan.md`. If the original lets the hire through as well, this entry is
-dropped.
+Whether the original refuses the hire rests on a static reading; the check is in
+`static_validation_plan.md`. If the original lets the hire through as well, this entry is dropped.
 
 ## DEV-RESEARCH-001
 
@@ -180,10 +177,15 @@ dropped.
   not, the original accepts the order and RULE-MOVE-002 sends the gang back at resolution.
 - Setting: None
 - Default: mandatory
+- Justification: The player learns at once that the gang cannot enter, where the original accepts
+  the order and then sends the gang back at resolution with its turn spent. A gang the player could
+  have given a useful order instead is no longer wasted on a Move that cannot happen.
 - Dropped: no
 
-Needs a setting, unless the original's panel is found to refuse the order as well
-(`manual_validation_plan.md`).
+Whether the original's panel refuses the order too is in `manual_validation_plan.md`. The rebuild
+counts only the gangs already in the destination, so moving one gang out and another in to a full
+sector takes two turns where the original allows one; counting gangs ordered out of the
+destination, as DEV-HIRE-001 does, would remove that difference.
 
 ## DEV-CONTROL-001
 
@@ -193,9 +195,13 @@ Needs a setting, unless the original's panel is found to refuse the order as wel
   sector when its defence sum is negative.
 - Setting: None
 - Default: mandatory
+- Justification: A sector goes only to a player who ordered Control of it, as the manual describes
+  the rule. In the original, a player with no order there is handed the sector when negative Support
+  drags its sum below zero, and ties with a real challenger who would otherwise win. No player
+  source relies on it, and a player who wants the sector can still order Control.
 - Dropped: no
 
-Needs a setting. The fix changes which player owns the sector.
+The fix changes which player owns the sector when the case arises.
 
 ## DEV-CONTROL-002
 
@@ -323,10 +329,14 @@ known yet; the static check is in `static_validation_plan.md`.
   anything. Schedule tables, quotas, ranking and draws are unchanged.
 - Setting: None
 - Default: mandatory
+- Justification: The guard is written to stop a computer player hiring a second hunter straight
+  after the first, and compares with a slot number that never matches, so in Dominance it never
+  fires and elsewhere it fires after unrelated hires. Correcting the comparison makes the computer
+  players follow their own schedule; no player strategy that depends on the original comparison is
+  recorded.
 - Dropped: no
 
-Needs a setting, which would start off since whether players rely on the original comparison is
-not known. The correction applies under the Original AI policy as well. Decided 2026-09-17.
+The correction applies under the Original AI policy as well. Decided 2026-09-17.
 
 ## DEV-AI-002
 
@@ -338,9 +348,14 @@ not known. The correction applies under the Original AI policy as well. Decided 
   every step. The gang's planning history is the same; its resolved action can differ.
 - Setting: None
 - Default: mandatory
+- Justification: A computer player's gang is held to the same legal orders as a human's, so it
+  cannot carry out an action no player could order. In the usual case, a Move to the gang's own
+  sector, the gang stays where it is either way, and its planning history, which later turns read,
+  is kept.
 - Dropped: no
 
-Needs a setting. The resolved action changes the match. Decided 2026-09-17.
+The resolved action can differ from the original's, which changes the match when it does. Decided
+2026-09-17.
 
 ## DEV-AI-003
 

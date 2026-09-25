@@ -97,14 +97,12 @@ used by the shared template. What the original does now lives only in
 - A deviation's Default is `off`, `on` or `mandatory`, and one that is
   `mandatory`, or `on` without fixing an unintended bug nobody relies on,
   carries a Justification that the rebuild's behaviour is strictly better.
-  Five have no setting and no such case, because the rebuild takes away an
-  outcome the original allows, changes a quirk players may rely on, or waits on
-  evidence: DEV-HIRE-003, DEV-MOVE-001, DEV-CONTROL-001, DEV-AI-001 and
-  DEV-AI-002. Each says so in a paragraph starting "Needs a setting", and
-  `check-spec.mjs` reports all five until each gets a setting, a Justification
-  the maintainer accepts, or is dropped. DEV-HIRE-003 is dropped if the
-  original lets the hire through as well; DEV-MOVE-001 would qualify if it
-  counted gangs ordered out of the destination, as DEV-HIRE-001 does.
+  Every entry now has one. The weakest are DEV-MOVE-001 (a swap into a full
+  sector takes two turns; counting gangs ordered out of the destination, as
+  DEV-HIRE-001 does, would remove that), DEV-CONTROL-001 and DEV-AI-001
+  (player reliance on the original is unknown rather than ruled out) and
+  DEV-AI-002 (the resolved action can differ). DEV-HIRE-003 is dropped if the
+  original lets the hire through as well.
 - RULE-AI-007, RULE-AI-019 and RULE-AI-023 are `disputed`; the static plan
   says what settles each. The scenario numbering (which value is Kill 'Em All,
   Greed and Eliminate) conflicts between FND-SETUP-009, FND-SETUP-012 and
