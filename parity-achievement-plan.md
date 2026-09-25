@@ -51,32 +51,26 @@ DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay
 
 ## Step 10: Screens
 
-Closes the partial and missing screen rows. The comparisons use the findings #181 recorded.
+The screens and interface rules were compared with the findings #181 recorded. What is left:
 
-- SCR-RESEARCH-001: the list's press region starts at panel y 26.
-- SCR-HIRE-002: portraits one pixel right and two pixels down; the hire and snub marks cropped
-  from the recorded rectangles.
-- SCR-ATTACK-001 (FND-ATTACK-003, FND-ATTACK-004), SCR-COMBAT-001 (FND-COMBAT-012) and
-  SCR-COMBAT-002 (FND-COMBAT-010): panel origin, control faces, keys, portraits and tracks.
-- SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-MOVE-001, SCR-FINANCE-001, SCR-GANG-001,
-  SCR-GANG-002, SCR-UI-002 and SCR-UI-005: pin the controls, fonts, keys and rows each row lists.
-- RULE-UI-003, RULE-UI-005, RULE-UI-006, RULE-UI-007, RULE-UI-008 and RULE-UI-010: the slide-out,
-  meter arithmetic, marker precedence, wait cursor, the 166 ms tick and the gang lists.
-- RULE-GFX-002, RULE-TIMER-004, RULE-UI-013 and RULE-UI-014: compare the display, presentation
-  waits, program shell and input loop with the rebuild, then mark or fix.
-
-Where a screen already carries a deviation for added information (tooltips, highlights,
-breakdowns), the row becomes `complete` once everything outside that deviation matches.
+- RULE-UI-003: clip the sliding panel at x 448 so only its left columns show, as the original's
+  copies do.
+- RULE-UI-006: take enemy visibility for the gang-status markers from the snapshot made when
+  planning starts.
+- RULE-TIMER-004: the pressed key faces (fn_00418CCC) and the cell and site flashes (FND-UI-017,
+  FND-UI-018), with their one-tick waits.
+- Static reads the screens wait on: SCR-GANG-001's half-tone pattern (its PLACEHOLDER), SCR-GIVE-001's
+  list background and dimming pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's
+  police portrait and header strips.
+- Two copies of the rebuild (DEV-UI-015) share the rolling autosave file, and the autosave
+  assumes only its own process writes it; give each process its own guard.
 
 ## Step 11: Deviations for what the rebuild does not reproduce
 
 These rows stay `missing` until a deviation covers them:
 
 - SCR-NET-001 to SCR-NET-005: the legacy network screens.
-- SCR-UI-009: the Windows menu bar, whose commands live in the Escape menu, Options and
-  shortcuts.
 - FMT-SAVE-002: the short save file. FMT-SAVE-001 already cites DEV-SAVE-001 and DEV-NET-001.
-- FMT-DATA-004: either read CLT00002 or record why the rebuild does without it.
 - RULE-AUDIO-010 and RULE-HELP-001 already cite DEV-AUDIO-001 and DEV-HELP-001; mark them
   `complete` once the rest of each rule matches.
 

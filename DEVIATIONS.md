@@ -338,7 +338,7 @@ Kept mandatory on 2026-09-26, after a proposal to put it behind a setting that s
   while the player chooses, so a better item is not thrown away by accident. They show the gang's
   own items, which the gang information panel already shows, and the double-click only opens that
   panel and comes back. Every original control works as before and no rule changes.
-- Dropped: no
+- Dropped: 2026-09-25, the original draws the held items and opens the gang panel on a portrait double-click (FND-EQUIP-010).
 
 ## DEV-GIVE-001
 
@@ -627,9 +627,11 @@ it.
 ## DEV-UI-010
 
 - Departs from: SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-OPTIONS-001, SCR-GANG-001,
-  SCR-GANG-002, SCR-FINANCE-001
+  SCR-GANG-002, SCR-FINANCE-001, SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-MOVE-001
 - Reason: Panels accept keyboard navigation, and Escape, Backspace and the right mouse button
-  cancel them; the arrow keys cycle gangs on the gang information panel.
+  cancel them; the arrow keys cycle gangs on the gang information panel, pick a cell on
+  the Move panel and a row on the Equip panel, and the keys 1 to 3 toggle items on the Give and
+  Sell panels.
   The original's panels take Enter and Execute and, on the idle-gang warning, Escape.
 - Setting: None
 - Default: mandatory

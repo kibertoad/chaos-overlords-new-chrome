@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 36 |
+| `supported` | 34 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 185 |
+| `implemented` | 187 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 10 |
-| `partial` | 27 |
-| `complete` | 185 |
+| `partial` | 25 |
+| `complete` | 187 |
 
 ## DATA
 
@@ -211,7 +211,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported | complete | None | `DEV-MOVE-001` | implemented | None |
 | `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002`, `DEV-MOVE-002` | implemented | The fallback for a mover already sent back draws a random neighbour (RULE-AI-007); after 256 of them DEV-MOVE-002 applies. |
-| `SCR-MOVE-001` | Move panel | supported | partial | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | supported | Panel resource and neighborhood cells are the original's; the controls, keys and destination marker are not pinned by findings. |
+| `SCR-MOVE-001` | Move panel | supported | partial | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | supported | The map crop, off-city bands, arrow, faces and keys follow the original. The table that disables cells is not read, so the rebuild enables the cells it can legally order (DEV-MOVE-001). |
 
 ## CONTROL
 
@@ -236,21 +236,21 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EQUIP-002` | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported | complete | None | `DEV-EQUIP-001` | implemented | Players resolve by slot. Equip and Sell resolve in the order the player gave them, where the original scans roster slots (DEV-EQUIP-001). Give keeps the roster order: the rebuild empties every giver's slots before the pass and delivers after all players' scans, and no Equip or Sell reads a giver's or recipient's slot in between, so the result is the same as delivering after each player's scan. |
 | `RULE-EQUIP-003` | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported | complete | None | None | implemented | None |
 | `RULE-EQUIP-004` | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported | complete | None | None | implemented | None |
-| `SCR-EQUIP-001` | Equip panel | supported | partial | None | `DEV-EQUIP-002` | supported | Category cells and list area follow the original; the controls, fonts and keys are not pinned, and the rebuild adds a held-items row. |
+| `SCR-EQUIP-001` | Equip panel | supported | complete | None | `None` | implemented | Category cells, held item icons, list columns, row mark, frame, faces and keys follow the original, and the portrait double-click opens the compact gang panel. The rebuild's extra keys are DEV-UI-010. |
 
 ## GIVE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-GIVE-001` | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | supported | complete | None | None | implemented | None |
-| `SCR-GIVE-001` | Give panel | supported | partial | None | `DEV-GIVE-001` | supported | Item cells, recipients and keys follow the original; the Cancel control and markers are not pinned, and the rebuild adds Up/Down cycling. |
+| `SCR-GIVE-001` | Give panel | supported | partial | None | `DEV-GIVE-001` | supported | The recipient cards, eligibility, marks, faces and keys follow the original. The list's background colour and the dimming pattern are not recorded, so a sparse mask stands in. |
 
 ## SELL
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-SELL-001` | Sell removes every selected item but pays half the Cost of only the last selected slot | supported | complete | None | `DEV-EQUIP-001` | implemented | Keeps BUG-SELL-001: a multi-item Sell pays only the last selected slot, so no deviation covers it. |
-| `SCR-SELL-001` | Sell panel | supported | partial | None | None | supported | Row targets follow the original; the OK and Cancel controls and the drawn prices are not pinned. |
+| `SCR-SELL-001` | Sell panel | supported | complete | None | None | implemented | Pictures, names, half prices, highlight, faces and keys follow the original; the rebuild's extra keys are DEV-UI-010. |
 
 ## TERMINATE
 
@@ -438,7 +438,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | `DEV-UI-002` | implemented | The rebuild also draws the pylons on the detailed-sector minimap (deviation). |
 | `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | complete | None | `DEV-UI-015`, `DEV-UI-016` | implemented | The title loop starts a new game on a press outside the rebuild's buttons, and the options are read at start and saved at exit. The single-instance check, the command-line file and the image-set choice are deviations. |
 | `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | complete | None | `DEV-GFX-001`, `DEV-UI-016`, `DEV-UI-017`, `DEV-UI-018` | implemented | Input is polled once per frame (DEV-UI-018), and the US shift table and upper-case letters are kept for setup names and Comlink text. |
-| `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-004`, `DEV-UI-012` | supported | The title screen shows the build version and an intro button the original lacks. |
+| `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-012`, `DEV-VIDEO-003` | supported | The title screen shows the build version and an intro button the original lacks. |
 | `SCR-UI-002` | Credits screen | supported | complete | None | `DEV-UI-019` | implemented | Shift+F1 stands in for Help, About (DEV-UI-019); the credits image covers the screen until any key or click. Whether the music keeps playing is not recorded, and the rebuild keeps it playing. |
 | `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006` | supported | Console routes and pressed art match; tooltips and projected cashflow are added. |
 | `SCR-UI-004` | Detailed sector screen | supported | partial | None | `DEV-UI-002`, `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-013`, `DEV-UI-014` | supported | Draws the group order strip. Adds tooltips, target highlights, ctrl-picking and minimap pylons. |
