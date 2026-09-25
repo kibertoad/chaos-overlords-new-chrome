@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 17 |
+| `supported` | 18 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 196 |
+| `implemented` | 195 |
 | `validated` | 9 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 1 |
-| `partial` | 16 |
-| `complete` | 205 |
+| `partial` | 17 |
+| `complete` | 204 |
 
 ## DATA
 
@@ -366,7 +366,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EVENT-012` | Taking control of a sector is reported to the new owner | supported | complete | None | None | implemented | The report is the rebuild's Control notification; a winner without a Control order (BUG-CONTROL-001) gets one with no event. |
 | `RULE-EVENT-013` | Losing control of a sector is reported to the previous owner | supported | complete | None | None | implemented | The report is the rebuild's Control lost notification, sent on a takeover by Control and on a third Crackdown. |
 | `RULE-EVENT-014` | An Equip that fails for lack of cash is reported to its player | supported | complete | None | None | implemented | The report is the rebuild's failed Equip result, which names the gang and its sector; like the original it does not name the item. |
-| `SCR-EVENT-001` | Last Turn Events panel | supported | complete | None | `DEV-EVENT-001`, `DEV-EVENT-002` | implemented | Positions of the status line, illustration and footer come from the rebuild's own measurements, not from findings. |
+| `SCR-EVENT-001` | Last Turn Events panel | supported | partial | None | `DEV-EVENT-001`, `DEV-EVENT-002` | supported | Every element sits at the position SCR-EVENT-001 records, with its pressed faces and act-on-release input. The captions are the rebuild's own text, because the rebuild does not load the executable's STRING/33 to STRING/44. |
 
 ## COMLINK
 

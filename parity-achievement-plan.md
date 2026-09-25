@@ -48,9 +48,9 @@ needs static reads or captures of the original:
 - RULE-TIMER-004: how much lighter a flash copy is and the order of the city-cell copies
   (FND-UI-017); the pressed faces of Influence's Escape, Move and Research, which no finding
   records.
-- SCR-EVENT-001: the rebuild draws the footer from its own measurements, with the subject at
-  x 305 and the caption at x 239 where the entry gives 298 and 226, and the illustration and
-  researched item a few pixels above the entry's positions.
+- SCR-EVENT-001: the captions come from `Chaos Overlords.exe#STRING/33` to `STRING/44`, and the
+  rebuild has no loader for the executable's string resources; the extractor needs one, and the
+  panel then draws them.
 - SCR-GANG-001's half-tone pattern (its PLACEHOLDER), SCR-GIVE-001's list background and dimming
   pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's police portrait and
   header strips.
