@@ -263,7 +263,9 @@ public sealed partial class ChaosGame
             selectedSectorChaos.Range.CanTriggerCrackdown(selectedSector.Tolerance)
                 ? Color.OrangeRed
                 : Color.Lime);
-        DrawPanelValue(font, batch, SectorSupport(state, player.Id, selectedSector),
+        // FMT-STATE-002: the Support row shows the sector's completed-site Support, set before
+        // planning, which the Control pass reads (RULE-CONTROL-001).
+        DrawPanelValue(font, batch, selectedSector.Support,
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(3));
         batch.Draw(pixel, StatusConsoleLayout.CashLabel, Color.Black);
         font.Draw(batch, "CASH",
@@ -448,7 +450,4 @@ public sealed partial class ChaosGame
         return $"{2050 + week / 52}.{week % 52 + 1:00}";
     }
 
-    private static int SectorSupport(MatchState state, PlayerId player, MatchSectorState sector) =>
-        sector.Sites.Where(site => site.InfluencedBy == player)
-            .Sum(site => state.Definitions.Site(site.DefinitionId).Support);
 }

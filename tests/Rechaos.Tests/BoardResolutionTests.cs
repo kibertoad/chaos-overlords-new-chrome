@@ -351,6 +351,44 @@ public sealed class BoardResolutionTests
             match.LastPhaseResolutions.Count(result => result.Event!.Resolution!.Successes == 1));
     }
 
+    // RULE-CONTROL-001: the owner's defense joins its own pool, so an owner whose margin equals the
+    // challenger's is drawn with it, and the draw lists the players in slot order [FND-CONTROL-003].
+    [Fact]
+    public void AnOwnerWithTheSameMarginAsTheChallengerIsDrawnWithIt()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 7)],
+            [Gang(20, 1, 0, 5)], owner: new PlayerId(1));
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Control(0, 10)).Accepted);
+        foreach (var player in match.Players) match.FinishCommand(player.Id);
+        EnterControlFromExecution(match);
+        var expectedRoll = new DeterministicRandom(
+            match.Random.State, match.Random.ConsumptionCount).NextInclusive(2);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(new PlayerId(expectedRoll - 1), match.Sectors[0].Owner);
+        var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.Equal(2, resolution.ChanceSides);
+        Assert.Equal(expectedRoll == 1, match.NotificationsFor(new PlayerId(1)).Any(
+            notification => notification.Kind == GameNotificationKind.ControlLost));
+    }
+
+    // FMT-STATE-002: the sector's Support is the completed sites' Support, set before planning.
+    [Fact]
+    public void TheSectorSupportIsRebuiltFromCompletedSitesBeforePlanning()
+    {
+        var match = CreateMatch([], [], owner: new PlayerId(1), influencedBy: new PlayerId(1));
+
+        match.FinishUpkeep();
+
+        Assert.Equal(match.Definitions.Site(0).Support, match.Sectors[0].Support);
+        Assert.Equal(0, match.Sectors[1].Support);
+    }
+
+    // DEV-CONTROL-001: only the players with an order, and the owner, compete, so a player with no
+    // order is never handed the sector when Income plus Support is negative (BUG-CONTROL-001).
     [Fact]
     public void NegativeDefenseCannotAwardControlToPlayerWithoutCommand()
     {

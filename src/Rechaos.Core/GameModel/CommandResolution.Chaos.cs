@@ -13,11 +13,22 @@ public static partial class CommandResolver
         var results = PreparedChaosResults(state, commands);
         if (results.Count == 0 && commands.Count > 0)
             results = PrepareChaosPhase(state, commands);
+        // RULE-CHAOS-002: each player's surviving gangs' successes in a sector are added up and
+        // halved once outside the player's own sectors, with ownership read now. A gang killed in
+        // this turn's Combat is not paid [FND-CHAOS-002]; a sector that cracked down this turn
+        // recorded its gangs' successes as 0.
+        var totals = new SortedDictionary<(int Sector, int Player), int>();
         foreach (var result in results)
         {
-            var payout = result.Event!.Resolution!.CashDelta;
+            if (state.FindGang(result.Command.Gang) is not { IsActive: true } gang) continue;
+            var key = (gang.SectorId, result.Command.Player.Value);
+            totals[key] = totals.GetValueOrDefault(key) + result.Event!.Resolution!.PreviousValue.GetValueOrDefault();
+        }
+        foreach (var ((sectorId, playerValue), successes) in totals)
+        {
+            var player = state.FindPlayer(new PlayerId(playerValue))!;
+            var payout = ManualRules.ChaosIncome(successes, state.Sectors[sectorId].Owner == player.Id);
             if (payout == 0) continue;
-            var player = state.FindPlayer(result.Command.Player)!;
             player.Cash = checked(player.Cash + payout);
             player.Statistics.CashEarned += payout;
         }
@@ -88,15 +99,21 @@ public static partial class CommandResolver
         var groupByCommand = groups.SelectMany(group => group.Participants.Select(
                 participant => (participant.Sequence, Group: group)))
             .ToDictionary(value => value.Sequence, value => value.Group);
+        // CashDelta records what the group is paid if every participant survives Combat; the
+        // payout at the Chaos boundary pays only the survivors (RULE-CHAOS-002). Only a Crackdown
+        // this turn stops the pay: police presence from earlier turns does not [FND-CHAOS-002].
         var payouts = new Dictionary<(PlayerId Player, int SectorId), int>();
         foreach (var group in groups)
         {
             var player = state.FindPlayer(group.Participants[0].Command.Player)!;
-            var payout = group.Sector.CrackdownActive
+            var payout = triggered.ContainsKey(group.Sector.Id)
                 ? 0
                 : ManualRules.ChaosIncome(group.Successes, group.Sector.Owner == player.Id);
             payouts[(player.Id, group.Sector.Id)] = payout;
         }
+        var ownSuccesses = rolled.ToDictionary(
+            value => value.Queued.Sequence,
+            value => triggered.ContainsKey(value.Sector.Id) ? 0 : value.Successes);
 
         var results = new List<CommandResolutionResult>(ordered.Length);
         var firstEventBySector = new Dictionary<int, long>();
@@ -108,7 +125,7 @@ public static partial class CommandResolver
             var result = Complete(state, participant.Command, GameEventKind.CommandResolved,
                 new CommandResolutionDetails(
                     CommandResolutionCode.Resolved, group.Rolls, group.Successes,
-                    0, sectorSuccesses[group.Sector.Id],
+                    ownSuccesses[participant.Sequence], sectorSuccesses[group.Sector.Id],
                     CashDelta: paidGroups.Add(key) ? payouts[key] : 0,
                     AttackValue: group.DiceCount, DefenseValue: group.Sector.Tolerance),
                 GameNotificationKind.Chaos,
@@ -140,11 +157,10 @@ public static partial class CommandResolver
     /// Combat runs between the roll and the payout, and a Chaos participant killed there has its
     /// queue entry retired by <see cref="EliminateGang"/>. The recorded events are therefore the
     /// authoritative participant list: the queue can hold fewer gangs than rolled, never more. The
-    /// dead gang's event stays in the pass because the group payout is written as
-    /// <see cref="CommandResolutionDetails.CashDelta"/> on the first participant of each
-    /// (player, sector) group; dropping it would take the surviving participants' income with it.
-    /// Event order is the roll order (player, then roster slot), so the pass is unchanged for a
-    /// turn where nobody died.
+    /// dead gang's event stays in the pass, and the payout skips it because the gang is no longer
+    /// active (RULE-CHAOS-002). Each event records the gang's own successes as
+    /// <see cref="CommandResolutionDetails.PreviousValue"/>, 0 in a sector that cracked down.
+    /// Event order is the roll order (player, then roster slot).
     /// </remarks>
     private static IReadOnlyList<CommandResolutionResult> PreparedChaosResults(
         MatchState state,

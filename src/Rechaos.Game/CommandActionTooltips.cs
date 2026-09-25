@@ -92,15 +92,22 @@ public static class CommandActionTooltips
             "",
             .. ToleranceTiming
         ],
+        // RULE-CHAOS-001, RULE-CHAOS-002
         GangAction.Chaos =>
         [
             "ROLLS ONE STANDARD D6 FOR EACH POINT OF FORCE, CHAOS, AND INCOME.",
-            "THE CHAOS RAISED ALSO PUSHES THE SECTOR TOWARD A CRACKDOWN."
+            "THE CHAOS RAISED ALSO PUSHES THE SECTOR TOWARD A CRACKDOWN.",
+            "PAYS $1 PER SUCCESS IN YOUR SECTORS AND HALF ELSEWHERE,",
+            "UNLESS THE SECTOR CRACKS DOWN THIS TURN.",
+            "A GANG KILLED IN THIS TURN'S COMBAT IS NOT PAID."
         ],
+        // RULE-CONTROL-001
         GangAction.Control =>
         [
             "CLAIMS THIS SECTOR WITH FORCE PLUS CONTROL.",
-            "DEFENDERS, SITE SUPPORT, AND SECTOR INCOME OPPOSE THE CLAIM.",
+            "IT MUST BEAT INCOME PLUS SUPPORT PLUS THE FORCE AND CONTROL",
+            "OF THE OWNER'S GANGS HERE THAT ARE NOT HIDING.",
+            "A TIE IS DRAWN AT RANDOM. POLICE HERE STOP THE CLAIM.",
             "IT IS ILLEGAL DURING A CRACKDOWN OR IN A SECTOR YOU OWN."
         ],
         GangAction.Equip =>

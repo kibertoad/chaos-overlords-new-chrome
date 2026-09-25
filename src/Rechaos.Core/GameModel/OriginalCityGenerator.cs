@@ -103,7 +103,8 @@ public static class OriginalCityGenerator
                 sector.Id, sites, tolerance: sector.Tolerance, chaos: sector.LegacyChaos,
                 crackdownActive: sector.CrackdownActive, isImportant: sector.IsImportant,
                 income: sector.Income, crackdownTurnsRemaining: sector.CrackdownTurnsRemaining,
-                crackdownHistory: sector.CrackdownHistory, baseTolerance: sector.BaseTolerance);
+                crackdownHistory: sector.CrackdownHistory, baseTolerance: sector.BaseTolerance,
+                support: sector.Support);
         }
         return assigned;
     }

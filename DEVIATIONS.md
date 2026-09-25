@@ -261,9 +261,11 @@ destination, as DEV-HIRE-001 does, would remove that difference.
 ## DEV-CONTROL-001
 
 - Departs from: RULE-CONTROL-001, BUG-CONTROL-001
-- Reason: Only players who ordered Control in the sector compete for it, with the original's
-  arithmetic and tie draw among them. In the original a player with no Control order can take a
-  sector when its defence sum is negative.
+- Reason: Only the players who ordered Control in the sector, and its owner, enter the
+  comparison, with the original's arithmetic and tie draw among them. The original compares every
+  player, so a player with no Control order there has the margin -(Income + Support) and is handed
+  the sector, or drawn with the real challenger, when that sum is negative. The shipped site table
+  has sites with negative Support, so the case can arise.
 - Setting: None
 - Default: mandatory
 - Justification: The original's behaviour is a bug (BUG-CONTROL-001). The pass gives every player
@@ -283,9 +285,9 @@ The fix changes which player owns the sector when the case arises. Decided as ma
 ## DEV-CONTROL-002
 
 - Departs from: RULE-CONTROL-001
-- Reason: When a Crackdown made by this turn's Chaos is in force as the Control pass runs, the
-  original leaves the sector out of Control without a word. The rebuild records a failed Control
-  result for it. The owner does not change in either case.
+- Reason: When police are present in a sector as the Control pass runs, the original leaves the
+  sector out of Control without a word. The rebuild records a failed Control result for each
+  gang ordered to Control it. The owner does not change in either case.
 - Setting: None
 - Default: mandatory
 - Justification: It adds a report of what happened. The owner of the sector is the same in both.

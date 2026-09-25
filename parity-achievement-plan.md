@@ -34,24 +34,6 @@ them together with a single session bump, or accept one bump per release.
 DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay so (the
 2026-09-26 decision in `docs/DECISIONS.md`); no step adds the original's path for them.
 
-## Step 3: Police, Chaos and Control
-
-Closes RULE-POLICE-002, RULE-CHAOS-002 and RULE-CONTROL-001. The Crackdown test reads the
-Tolerance rebuilt before planning, which the Tolerance split of 2026-09-25 introduced.
-
-- Police presence and its draw are added only on the third Crackdown within five turns, the one
-  that neutralizes the sector (FND-POLICE-004). Neutralization clears only the three site
-  progress bytes, not Support, Tolerance modifiers or resistance (FND-CHAOS-002).
-- Chaos pays in a sector under police presence unless that sector cracked down this turn
-  (FND-CHAOS-002). Check whether gangs killed in this turn's combat are skipped, and match it.
-- Control settles only contested sectors without police, and adds the owner's defense to the
-  owner's own pool (FND-CONTROL-003). Only players with a Control order compete, as the
-  mandatory DEV-CONTROL-001 requires, and DEV-CONTROL-002 stays mandatory.
-
-Tooltips: Chaos (when it pays and when a Crackdown follows), Control (which sectors are settled,
-how the owner's defense is pooled, the tie rule), and the Control statistic in
-`InformationEffectTooltips`, which says it adds to sector defense.
-
 ## Step 4: Attack and the Combat statistic
 
 Closes RULE-ATTACK-001, RULE-AI-016, RULE-COMBAT-001 and RULE-GANG-001.
