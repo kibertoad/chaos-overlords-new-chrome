@@ -69,9 +69,10 @@ public sealed class AiFamilyElevenTurnPlannerTests
             .OrderByDescending(gang => gang.Stats.Detect)
             .ThenByDescending(gang => gang.Stats.Combat)
             .First();
+        // RULE-AI-029, FND-AI-024: only a gang with definition 0 is attacked.
         var match = CreateMatch(data, definition.Id, force: 10,
             ownsSector: false, rivalInSector: true,
-            researchedItems: new HashSet<short>(), cash: 20);
+            researchedItems: new HashSet<short>(), cash: 20, rivalDefinitionId: 0);
         var player = new PlayerId(0);
         BeginFamilyElevenTurn(match, player);
         var recorder = new MatchReplayRecorder(match);
@@ -98,6 +99,55 @@ public sealed class AiFamilyElevenTurnPlannerTests
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
         Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
+    }
+
+    // RULE-AI-029, FND-AI-024: a visible gang of any other definition is passed over, and the
+    // leader Move stores its destination as the focus.
+    [Fact]
+    public void VisibleGangOfAnotherDefinitionIsPassedOver()
+    {
+        var data = BundledOriginalData.Load();
+        var definition = data.Gangs
+            .OrderByDescending(gang => gang.Stats.Detect)
+            .ThenByDescending(gang => gang.Stats.Combat)
+            .First();
+        var match = CreateMatch(data, definition.Id, force: 10,
+            ownsSector: false, rivalInSector: true,
+            researchedItems: new HashSet<short>(), cash: 20);
+        var player = new PlayerId(0);
+        BeginFamilyElevenTurn(match, player);
+        match.FinishUpkeep();
+
+        match.PrepareAiPlanning(player);
+
+        Assert.True(match.CanPlayerDetectGang(player, new GangId(20)));
+        Assert.Equal(GangAction.Move, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(match.AiPlanning.PlannedTarget(player, 0).First,
+            match.AiPlanning.FormationSector(player, 0));
+    }
+
+    // RULE-AI-029, FND-AI-061: under police presence the owner query is -2, so a gang in its own
+    // sector attacks.
+    [Fact]
+    public void PolicePresenceInItsOwnSectorSendsTheGangToTheAttack()
+    {
+        var data = BundledOriginalData.Load();
+        var definition = data.Gangs
+            .OrderByDescending(gang => gang.Stats.Detect)
+            .ThenByDescending(gang => gang.Stats.Combat)
+            .First();
+        var match = CreateMatch(data, definition.Id, force: 10,
+            ownsSector: true, rivalInSector: true,
+            researchedItems: new HashSet<short>(), cash: 20, rivalDefinitionId: 0);
+        var player = new PlayerId(0);
+        BeginFamilyElevenTurn(match, player);
+        match.FinishUpkeep();
+        match.Sectors[0].CrackdownActive = true;
+
+        match.PrepareAiPlanning(player);
+
+        Assert.Equal(GangAction.Attack, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(0, match.AiPlanning.FormationSector(player, 0));
     }
 
     [Fact]
@@ -147,7 +197,8 @@ public sealed class AiFamilyElevenTurnPlannerTests
         bool rivalInSector,
         IReadOnlySet<short> researchedItems,
         int cash,
-        int cpuGangCount = 1)
+        int cpuGangCount = 1,
+        short rivalDefinitionId = 2)
     {
         MatchPlayerSetup[] setups =
         [
@@ -163,7 +214,7 @@ public sealed class AiFamilyElevenTurnPlannerTests
                     .ToArray(),
                 researchedItems: researchedItems),
             new(setups[1], 20,
-                [new MatchGangState(new GangId(20), setups[1].Id, 2,
+                [new MatchGangState(new GangId(20), setups[1].Id, rivalDefinitionId,
                     rivalInSector ? 0 : 1, 10)])
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
