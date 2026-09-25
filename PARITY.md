@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 34 |
+| `supported` | 25 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 187 |
+| `implemented` | 196 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
-| `missing` | 10 |
+| `missing` | 1 |
 | `partial` | 25 |
-| `complete` | 187 |
+| `complete` | 196 |
 
 ## DATA
 
@@ -33,7 +33,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-DATA-002` | Gang definition records in DATA/Gangs | supported | complete | None | None | implemented | None |
 | `FMT-DATA-003` | Item definition records in DATA/ITEMS | supported | complete | None | None | implemented | None |
 | `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | complete | None | `DEV-UI-016` | implemented | The rebuild draws only the 16-bit image set, for which the original never loads this palette either (DEV-UI-016); the extractor copies the file unread. |
-| `FMT-DATA-005` | Compressed archive DATA/DATA.Z | unknown | missing | None | None | unknown | The rebuild copies DATA.Z unread into its asset pack. |
+| `FMT-DATA-005` | Compressed archive DATA/DATA.Z | unknown | missing | None | None | unknown | The game never reads the file (FND-DATA-008), and the rebuild copies it unread into its asset pack. FND-DATA-009 reads its tables, but header and entry bytes it does not interpret keep the entry unknown. |
 
 ## GFX
 
@@ -60,7 +60,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AUDIO-007` | The Comlink alert plays slot 6 through the effects gate | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | None | None | implemented | The repeat is paced by the rebuild's presentation clock at four seconds. |
 | `RULE-AUDIO-009` | The sound of an attack in Detailed Combat | supported | complete | None | None | implemented | None |
-| `RULE-AUDIO-010` | The startup drive check always passes and the game never looks for its disc | supported | missing | None | `DEV-AUDIO-001` | supported | The rebuild plays the music files and never checks a drive (deviation). |
+| `RULE-AUDIO-010` | The startup drive check always passes and the game never looks for its disc | supported | complete | None | `DEV-AUDIO-001` | implemented | The rebuild plays the music files and never checks a drive or looks for the disc (DEV-AUDIO-001); nothing else in the rule reaches a game result. |
 
 ## VIDEO
 
@@ -75,14 +75,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `FMT-HELP-001` | WinHelp container HELP/Chaos.hlp | supported | complete | None | `DEV-HELP-001`, `DEV-HELP-002` | implemented | None |
 | `FMT-HELP-002` | Help contents file HELP/CHAOS.CNT | supported | complete | None | None | implemented | None |
-| `RULE-HELP-001` | Help Topics does nothing, and no key opens the help file | supported | missing | None | `DEV-HELP-001` | supported | The rebuild opens its own help viewer where the original does nothing (deviation). |
+| `RULE-HELP-001` | Help Topics does nothing, and no key opens the help file | supported | complete | None | `DEV-HELP-001` | implemented | F1 and the Escape menu open the rebuild's own help viewer on the player's help file, where the original's Help Topics does nothing (DEV-HELP-001). |
 
 ## SAVE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-SAVE-001` | Full save file | supported | missing | None | `DEV-NET-001`, `DEV-SAVE-001` | supported | Reading or writing original saves is a declared non-goal; the rebuild has its own save format. |
-| `FMT-SAVE-002` | Short M10W save file | supported | missing | None | `DEV-SAVE-001` | supported | Reading or writing original saves is a declared non-goal. |
+| `FMT-SAVE-001` | Full save file | supported | complete | None | `DEV-NET-001`, `DEV-SAVE-001` | implemented | The rebuild neither reads nor writes this file; its own save format holds the same match (DEV-SAVE-001), and the network form has no counterpart (DEV-NET-001). |
+| `FMT-SAVE-002` | Short M10W save file | supported | complete | None | `DEV-SAVE-001` | implemented | The rebuild neither reads nor writes this file; its own save format holds the same match (DEV-SAVE-001). |
 
 ## STATE
 
@@ -461,8 +461,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `SCR-NET-001` | Legacy network host lobby that edits up to four seats and waits for the participants | supported | missing | None | `DEV-NET-001` | supported | Legacy network screens are deliberately not reproduced. |
-| `SCR-NET-002` | Legacy network client session editor with four seats | supported | missing | None | `DEV-NET-001` | supported | Legacy network screens are deliberately not reproduced. |
-| `SCR-NET-003` | Legacy network screen that waits for every participant to be ready | supported | missing | None | `DEV-NET-001` | supported | Legacy network screens are deliberately not reproduced. |
-| `SCR-NET-004` | Legacy network transfer progress frame with a status line and a spinner | supported | missing | None | `DEV-NET-001` | supported | Legacy network screens are deliberately not reproduced. |
-| `SCR-NET-005` | Legacy network turn synchronization frame with one progress row per seat and a spinner | supported | missing | None | `DEV-NET-001` | supported | Legacy network screens are deliberately not reproduced. |
+| `SCR-NET-001` | Legacy network host lobby that edits up to four seats and waits for the participants | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-002` | Legacy network client session editor with four seats | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-003` | Legacy network screen that waits for every participant to be ready | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-004` | Legacy network transfer progress frame with a status line and a spinner | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-005` | Legacy network turn synchronization frame with one progress row per seat and a spinner | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |

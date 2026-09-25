@@ -67,15 +67,9 @@ The screens and interface rules were compared with the findings #181 recorded. W
 
 ## Step 11: Deviations for what the rebuild does not reproduce
 
-These rows stay `missing` until a deviation covers them:
-
-- SCR-NET-001 to SCR-NET-005: the legacy network screens.
-- FMT-SAVE-002: the short save file. FMT-SAVE-001 already cites DEV-SAVE-001 and DEV-NET-001.
-- RULE-AUDIO-010 and RULE-HELP-001 already cite DEV-AUDIO-001 and DEV-HELP-001; mark them
-  `complete` once the rest of each rule matches.
-
-FMT-DATA-005 (DATA.Z) is `unknown` in the spec and cannot be `complete`; it needs static work
-first.
+FMT-DATA-005 (DATA.Z) stays `unknown` while bytes of its header and file entries are not
+interpreted (FND-DATA-009 lists them); an InstallShield 3 extraction of the blocks would settle
+them and show whether they expand to the installed files.
 
 ## Step 12: Close the research plans
 
