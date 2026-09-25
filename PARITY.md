@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 75 |
+| `supported` | 71 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 146 |
+| `implemented` | 150 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 19 |
-| `partial` | 57 |
-| `complete` | 146 |
+| `partial` | 53 |
+| `complete` | 150 |
 
 ## DATA
 
@@ -316,8 +316,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | partial | None | `DEV-AI-003` | supported | The rebuild submits commands in roster slot order and keeps the history rollover, but applies the family table at every pass without needs_family (FND-AI-042); the takeover's raider_mode is not checked. |
-| `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild applies the family table to every active gang at every pass, without the needs_family gate, the record reset, the family 99 of a blank cell or the Big Man first-turn hire role (FND-AI-041). |
+| `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | partial | None | `DEV-AI-003` | supported | The rebuild submits commands in roster slot order, keeps the history rollover and the needs_family flags of FND-AI-042: the first pass resets the records and flags slot 0, a slot without an active gang is flagged, and the Greed Terminate flags its record. The takeover's raider_mode is not checked. |
+| `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | None |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | hostile_owner reads the attitude cell of owner_query, with the out-of-row reads of FND-AI-048 for a neutral sector and one under police presence. |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | partial | None | None | supported | FND-AI-055 changes the reading: the weapon choice starts from the equipped weapon, family 10's armor is chosen by Stealth, and the miscellaneous upgrades compare Detect (families 11 and 12) or Control (13 and 14). The rebuild chooses family 12's item by Chaos; the other choices are not checked against it. |
@@ -336,16 +336,16 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported | complete | None | None | implemented | None |
 | `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild counts previous Hide where the original counts previous Chaos and writes Chaos (FND-AI-046), and groups the previous actions differently from the jump table (FND-AI-048). |
 | `RULE-AI-020` | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The branch after Attack, Hide or Move, the fall-through of the crime gate to the Goon test, the neutral-owner read of owner_is_human and the needs_family write with the Greed Terminate (FND-AI-057) are not checked in the rebuild. |
-| `RULE-AI-021` | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The owner query in the owned-sector test, the owner_is_human late gate and the needs_family write with the Greed Terminate (FND-AI-058) are not checked in the rebuild. |
-| `RULE-AI-022` | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The needs_family write with the Greed Terminate (FND-AI-042) is not checked in the rebuild. |
+| `RULE-AI-021` | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The owner query in the owned-sector test and the owner_is_human late gate (FND-AI-058) are not checked in the rebuild. |
+| `RULE-AI-022` | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-023` | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild counts previous Hide where the original counts previous Chaos and writes Chaos, and groups the previous actions differently from the jump table (FND-AI-049). No match writes family 4, so the handler matters only for a loaded planning record. |
 | `RULE-AI-024` | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
-| `RULE-AI-025` | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The end marker 100 of the guard target list, which sends the gang toward a random sector when every weight-10 sector is covered, and the needs_family write with the Greed Terminate (FND-AI-059) are not checked in the rebuild. |
-| `RULE-AI-026` | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The needs_family write with the Greed Terminate (FND-AI-042) is not checked in the rebuild. |
+| `RULE-AI-025` | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The end marker 100 of the guard target list, which sends the gang toward a random sector when every weight-10 sector is covered (FND-AI-059), is not checked in the rebuild. |
+| `RULE-AI-026` | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-027` | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-028` | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-029` | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The previous-action test on the miscellaneous Equip and the Heal, the owner query in the owned-sector test and the focus writes (FND-AI-061) are not checked in the rebuild. |
-| `RULE-AI-030` | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The needs_family write with the Greed Terminate (FND-AI-042) is not checked in the rebuild. |
+| `RULE-AI-030` | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-031` | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The five contested draws, the missing write after a failed attack with the Heal test failing, the hostile-owner pool test and the unset Support threshold (FND-AI-062, BUG-AI-006) are not checked in the rebuild. |
 
 ## EVENT

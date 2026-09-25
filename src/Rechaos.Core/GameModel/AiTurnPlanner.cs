@@ -144,8 +144,13 @@ public static partial class AiTurnPlanner
             return;
         }
 
+        // The families as they stand when this gang plans: earlier gangs have been dispatched,
+        // later ones not yet (RULE-AI-002).
         var leaderSlot = OriginalAiFamilyElevenRules.FormationLeaderSlot(
-            snapshot.FamilySlots, gangSlot);
+            Enumerable.Range(0, AiPlanningState.GangSlotsPerPlayer)
+                .Select(slot => state.AiPlanning.Family(playerId, slot))
+                .ToArray(),
+            gangSlot);
         var isLeader = leaderSlot == gangSlot;
         PrepareFamilyElevenMove(
             state, playerId, gang, gangSlot, isLeader ? 10 : 16,

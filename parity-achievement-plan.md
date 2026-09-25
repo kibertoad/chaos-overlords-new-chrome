@@ -40,8 +40,6 @@ Closes RULE-AI-001, RULE-AI-002, RULE-AI-005, RULE-AI-006, RULE-AI-010, RULE-AI-
 RULE-AI-019 to RULE-AI-031. Comes after steps 2 to 7 because the handlers read the rules those
 steps change.
 
-- Dispatcher: the `needs_family` gate, the record reset, family 99 for a blank table cell and the
-  Big Man first-turn hire role (FND-AI-041, FND-AI-042).
 - Hire placement keeps anchor 63 for player 0 while sector 0, 6, 7 or 8 is free land
   (FND-AI-051); check the per-scenario slot adjustments and the hunter reversion (FND-AI-050).
 - Families 0 and 4 count previous Chaos where the rebuild counts Hide, and group the previous
@@ -49,7 +47,7 @@ steps change.
 - Upgrades follow FND-AI-055: the weapon choice starts from the equipped weapon, family 10's
   armor is chosen by Stealth, families 11 and 12 compare Detect and families 13 and 14 compare
   Control.
-- Families 1, 2, 3, 6, 7, 11, 12, 13 and 14: the details each row lists (the `needs_family`
+- Families 1, 2, 6, 11, 13 and 14: the details each row lists (family 1's `needs_family`
   write with the Greed Terminate, the owner queries, the end marker 100 of the guard list, the
   five contested draws and the unset Support threshold of FND-AI-062 and BUG-AI-006).
 - Sector selector mode 4 (FND-AI-056) against the rebuild's version.

@@ -89,14 +89,19 @@ public static partial class AiTurnPlanner
             playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
-    /// <summary>Replaces the planned action with Terminate in the last turns of a Greed match.</summary>
+    /// <summary>
+    /// Replaces the planned action with Terminate in the last turns of a Greed match, and flags the
+    /// record for a family at its next dispatch (FND-AI-042).
+    /// </summary>
     private static void TerminateForGreed(MatchState state, PlayerId playerId, int gangSlot)
     {
         var turnsRemaining = Math.Max(0,
             ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
-        if (OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
+        if (!OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
                 state.Setup.Scenario, turnsRemaining))
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
+            return;
+        state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
+        state.AiPlanning.SetNeedsFamily(playerId, gangSlot);
     }
 
     private static void SetRecoveredAttackAction(

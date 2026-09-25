@@ -12,8 +12,7 @@ public static partial class AiTurnPlanner
         IReadOnlyList<int> SectorOwners,
         IReadOnlyList<bool> SectorDisabled,
         IReadOnlyList<int> SectorGangCounts,
-        IReadOnlyList<int> PlayerOrder,
-        IReadOnlyList<int> FamilySlots)
+        IReadOnlyList<int> PlayerOrder)
     {
         public static FamilyPlanningSnapshot Capture(
             MatchState state,
@@ -24,10 +23,7 @@ public static partial class AiTurnPlanner
                 .Select(sectorId => player.Gangs.Count(gang =>
                     gang.IsActive && gang.SectorId == sectorId))
                 .ToArray(),
-            Enumerable.Range(0, MatchLimits.PlayerCount).ToArray(),
-            Enumerable.Range(0, AiPlanningState.GangSlotsPerPlayer)
-                .Select(slot => state.AiPlanning.Family(player.Id, slot))
-                .ToArray());
+            Enumerable.Range(0, MatchLimits.PlayerCount).ToArray());
     }
 
     internal static void PrepareRecoveredFamilyCommands(
@@ -42,6 +38,9 @@ public static partial class AiTurnPlanner
         foreach (var entry in player.Gangs.Select((gang, slot) => (gang, slot)))
         {
             if (!entry.gang.IsActive) continue;
+            // RULE-AI-002: the family is settled just before the gang's own handler, so an earlier
+            // gang's handler sees a later new gang's record as it stood.
+            AiPlanningPreparation.AssignFamilyIfNeeded(state, playerId, entry.slot);
             var family = state.AiPlanning.Family(playerId, entry.slot);
             switch (family)
             {

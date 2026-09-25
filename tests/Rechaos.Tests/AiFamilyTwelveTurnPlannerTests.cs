@@ -248,6 +248,8 @@ public sealed class AiFamilyTwelveTurnPlannerTests
 
         Assert.Equal(GangAction.Terminate,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
+        // RULE-AI-001: the Greed Terminate flags the record for a family at the next dispatch.
+        Assert.True(match.AiPlanning.NeedsFamily(player, 0));
     }
 
     private static void BeginFamilyTwelveTurn(MatchState match, PlayerId player)

@@ -10,20 +10,36 @@ internal static class AiPlanningPreparation
         var firstPlanningPass = state.AiPlanning.BeginPlanning(player);
         if (!firstPlanningPass)
             state.AiPlanning.RollActiveGangActions(player, gangs);
+        state.AiPlanning.FlagInactiveSlots(player, gangs);
         state.AiPlanning.RefreshEquipmentCooldowns(player, gangs);
-        state.AiPlanning.CleanupDuplicatePreviousActions(player, gangs);
+        // RULE-AI-003: a gang flagged for a family loses both auxiliary values.
         for (var gangSlot = 0; gangSlot < gangs.Count; gangSlot++)
         {
-            if (!gangs[gangSlot].IsActive) continue;
-            var selection = OriginalAiFamilyRules.Select(
-                state.Setup.Scenario,
-                state.AiPlanning.CurrentHireRole(player),
-                state.AiPlanning.Family(player, gangSlot));
-            state.AiPlanning.SetFamily(player, gangSlot, selection.Family);
-            if (selection.CopiesProjectedGangValue)
-                state.AiPlanning.SetCoverageSector(
-                    player, gangSlot, gangs[gangSlot].SectorId);
+            if (!gangs[gangSlot].IsActive || !state.AiPlanning.NeedsFamily(player, gangSlot)) continue;
+            state.AiPlanning.SetFocusValue(player, gangSlot, AiPlanningState.InactiveFocusValue);
+            state.AiPlanning.SetCoverageSector(player, gangSlot, AiPlanningState.InactiveCoverageSector);
         }
+        state.AiPlanning.CleanupDuplicatePreviousActions(player, gangs);
+    }
+
+    /// <summary>
+    /// RULE-AI-002: a gang flagged for a family has its record wiped and takes the family its
+    /// player's hire role stands for in this scenario; every other gang keeps its family. In Big
+    /// Man the first turn forces hire role 1.
+    /// </summary>
+    public static void AssignFamilyIfNeeded(MatchState state, PlayerId player, int gangSlot)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (!state.AiPlanning.NeedsFamily(player, gangSlot)) return;
+        state.AiPlanning.ResetForNewFamily(player, gangSlot);
+        if (state.Setup.Scenario == ScenarioId.BigMan && state.Coordinator.Turn == 1)
+            state.AiPlanning.SetCurrentHireRole(player, 1);
+        var role = state.AiPlanning.CurrentHireRole(player);
+        if (OriginalAiFamilyRules.FamilyFor(state.Setup.Scenario, role) is not { } family) return;
+        state.AiPlanning.SetFamily(player, gangSlot, family);
+        if (role == 4)
+            state.AiPlanning.SetCoverageSector(
+                player, gangSlot, state.FindPlayer(player)!.Gangs[gangSlot].SectorId);
     }
 
     public static OriginalAiHireRoleSelection? SelectHireRole(MatchState state, PlayerId player)

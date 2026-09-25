@@ -105,6 +105,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
         var match = CreateOpponentMatch(data, attacker.Id, seed);
         var player = new PlayerId(0);
         BeginFamilyThreeTurn(match, player);
+        match.AiPlanning.SetFamily(player, 0, 3);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Move);
         var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
@@ -170,6 +171,8 @@ public sealed class AiFamilyThreeTurnPlannerTests
         Assert.Equal(GangAction.Terminate, command.Action);
         Assert.Equal(GangAction.Terminate,
             match.AiPlanning.PlannedAction(player, 0));
+        // RULE-AI-001: the Greed Terminate flags the record for a family at the next dispatch.
+        Assert.True(match.AiPlanning.NeedsFamily(player, 0));
     }
 
     [Fact]
