@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 23 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 198 |
-| `validated` | 0 |
+| `implemented` | 189 |
+| `validated` | 9 |
 
 | Code | Rows |
 |---|---|
@@ -29,9 +29,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-DATA-001` | Site definition records in DATA/SITES | supported | complete | None | None | implemented | None |
-| `FMT-DATA-002` | Gang definition records in DATA/Gangs | supported | complete | None | None | implemented | None |
-| `FMT-DATA-003` | Item definition records in DATA/ITEMS | supported | complete | None | None | implemented | None |
+| `FMT-DATA-001` | Site definition records in DATA/SITES | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
+| `FMT-DATA-002` | Gang definition records in DATA/Gangs | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
+| `FMT-DATA-003` | Item definition records in DATA/ITEMS | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
 | `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | complete | None | `DEV-UI-016` | implemented | The rebuild draws only the 16-bit image set, for which the original never loads this palette either (DEV-UI-016); the extractor copies the file unread. |
 | `FMT-DATA-005` | Compressed archive DATA/DATA.Z | unknown | missing | None | None | unknown | The game never reads the file (FND-DATA-008), and the rebuild copies it unread into its asset pack. FND-DATA-009 reads its tables, but header and entry bytes it does not interpret keep the entry unknown. |
 
@@ -39,9 +39,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-GFX-001` | 16-bit image files in DATA/PX16 | supported | complete | None | None | implemented | The rebuild supplies the missing header fields itself; the widths it uses for PX00202, PX00203 and PX06008 should be checked against the 311 and 241 the files give. |
-| `FMT-GFX-002` | 8-bit image files in DATA/PX08 | supported | complete | None | None | implemented | None |
-| `FMT-GFX-003` | Palette entry in a PX08 image file | supported | complete | None | None | implemented | None |
+| `FMT-GFX-001` | 16-bit image files in DATA/PX16 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | The rebuild supplies the missing header fields itself. PX00202 and PX00203 are 311 wide as FND-GFX-005 records; PX06008 is decoded as 242 by 157 where the file is 241 wide and the executable reads 242 by 158, which the test allows for. |
+| `FMT-GFX-002` | 8-bit image files in DATA/PX08 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
+| `FMT-GFX-003` | Palette entry in a PX08 image file | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
 | `RULE-GFX-001` | Decoding the RLE8 pixel data of a PX08 image | supported | complete | None | None | implemented | None |
 | `RULE-GFX-002` | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported | complete | None | `DEV-GFX-001` | implemented | The drawing area is the original's 640 by 460, scaled into a window or a borderless full screen (DEV-GFX-001). |
 
@@ -66,15 +66,15 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-VIDEO-001` | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported | complete | None | `DEV-VIDEO-001` | implemented | The rebuild decodes only the subset the two shipped movies use. |
-| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | supported | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; with Intro only once on, its default, they play until one showing is recorded (DEV-VIDEO-003); switched off, they play at every start. The movie sound follows the Sound Effects level; the level-to-volume curve was not compared. |
+| `FMT-VIDEO-001` | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported | complete | tests/Rechaos.Tests/OriginalMovieFileTests.cs | `DEV-VIDEO-001` | validated | The rebuild decodes only the subset the two shipped movies use. |
+| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | supported | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; with Intro only once off, its default, the movies play at every start; switching it on gives DEV-VIDEO-003. The movie sound follows the Sound Effects level; the level-to-volume curve was not compared. |
 
 ## HELP
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-HELP-001` | WinHelp container HELP/Chaos.hlp | supported | complete | None | `DEV-HELP-001`, `DEV-HELP-002` | implemented | None |
-| `FMT-HELP-002` | Help contents file HELP/CHAOS.CNT | supported | complete | None | None | implemented | None |
+| `FMT-HELP-001` | WinHelp container HELP/Chaos.hlp | supported | complete | tests/Rechaos.Tests/OriginalHelpFileTests.cs | `DEV-HELP-001`, `DEV-HELP-002` | validated | None |
+| `FMT-HELP-002` | Help contents file HELP/CHAOS.CNT | supported | complete | tests/Rechaos.Tests/OriginalHelpFileTests.cs | None | validated | None |
 | `RULE-HELP-001` | Help Topics does nothing, and no key opens the help file | supported | complete | None | `DEV-HELP-001` | implemented | F1 and the Escape menu open the rebuild's own help viewer on the player's help file, where the original's Help Topics does nothing (DEV-HELP-001). |
 
 ## SAVE
