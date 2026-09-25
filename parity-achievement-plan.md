@@ -40,8 +40,6 @@ Closes RULE-AI-001, RULE-AI-002, RULE-AI-005, RULE-AI-006, RULE-AI-010, RULE-AI-
 RULE-AI-019 to RULE-AI-031. Comes after steps 2 to 7 because the handlers read the rules those
 steps change.
 
-- Hire placement keeps anchor 63 for player 0 while sector 0, 6, 7 or 8 is free land
-  (FND-AI-051); check the per-scenario slot adjustments and the hunter reversion (FND-AI-050).
 - Families 0 and 4 count previous Chaos where the rebuild counts Hide, and group the previous
   actions as the jump table does (FND-AI-046, FND-AI-048, FND-AI-049).
 - Upgrades follow FND-AI-055: the weapon choice starts from the equipped weapon, family 10's
