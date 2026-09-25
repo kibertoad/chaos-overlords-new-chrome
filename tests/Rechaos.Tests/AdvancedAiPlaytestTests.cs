@@ -39,7 +39,8 @@ public sealed class AdvancedAiPlaytestTests
         Assert.True(advanced.IdleGangTurns < original.IdleGangTurns);
         // The ported dispatcher (RULE-AI-002) leaves few idle turns to recover, so the territory
         // gain is within noise of the original; the sample may lose at most 1% of it.
-        AssertTerritoryImproves(original, advanced, minimumControlledRetentionPercent: 99);
+        AssertTerritoryImproves(original, advanced,
+            minimumDefendedRetentionPercent: 99, minimumControlledRetentionPercent: 99);
     }
 
     private static (CampaignMetrics Original, CampaignMetrics Advanced) Compare(

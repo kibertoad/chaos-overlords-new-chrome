@@ -61,8 +61,9 @@ public sealed class AiFamilySixTurnPlannerTests
 
     private static void BeginFamilySixTurn(MatchState match, PlayerId player)
     {
+        // RULE-AI-002: slot 0 is flagged on the first pass, so the dispatcher gives it hire role
+        // 4's family and covers its sector.
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 6);
         match.AiPlanning.SetCurrentHireRole(player, 4);
     }
 
