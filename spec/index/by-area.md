@@ -499,6 +499,7 @@
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list | supported |
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 | supported |
 | [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
+| [BUG-AI-006](../bugs/BUG-AI-006.md) | An objective gang with nothing else to do picks its Influence site against a threshold the planner never sets | supported |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers | recorded |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs | recorded |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role | recorded |
@@ -555,6 +556,12 @@
 | [FND-AI-054](../findings/FND-AI-054.md) | Selector 0x62 caps the gang definition's Tech Level at 5, 8 or 10 by the research level of the gang's sector, whoever owns it | recorded |
 | [FND-AI-055](../findings/FND-AI-055.md) | The equipment selectors start from the equipped item, compare Combat, Defense, Stealth, Detect or Control, and the Research list is Tech capped | recorded |
 | [FND-AI-056](../findings/FND-AI-056.md) | Mode 4 of the sector selector scores a sector 1 when selector 0x2D accepts the owner query's value for the planning player | recorded |
+| [FND-AI-057](../findings/FND-AI-057.md) | The family-1 handler's switch has a fourth branch for Attack, Hide and Move, and its crime gate falls through to the Goon test | recorded |
+| [FND-AI-058](../findings/FND-AI-058.md) | The family-2 handler tests the hostile pool's own count, reads the owner query, and runs its late Control gates after every branch | recorded |
+| [FND-AI-059](../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself | recorded |
+| [FND-AI-060](../findings/FND-AI-060.md) | The family-7 handler's Attack test reads the attitude toward the drawn gang's player | recorded |
+| [FND-AI-061](../findings/FND-AI-061.md) | The family-11 handler's miscellaneous Equip and Heal also need a previous action other than Attack, and most branches keep the current sector as focus | recorded |
+| [FND-AI-062](../findings/FND-AI-062.md) | Families 13 and 14 make up to five draws on a contested objective, can write nothing after a failed attack, and compare Support with an unset value | recorded |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |

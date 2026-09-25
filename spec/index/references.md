@@ -13,6 +13,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | builds |
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | builds |
 | [BUG-AI-005](../bugs/BUG-AI-005.md) | builds |
+| [BUG-AI-006](../bugs/BUG-AI-006.md) | builds |
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | builds |
 | [BUG-AWARDS-001](../bugs/BUG-AWARDS-001.md) | builds |
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | builds |
@@ -103,6 +104,12 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AI-054](../findings/FND-AI-054.md) | builds, locations |
 | [FND-AI-055](../findings/FND-AI-055.md) | builds, locations |
 | [FND-AI-056](../findings/FND-AI-056.md) | builds, locations |
+| [FND-AI-057](../findings/FND-AI-057.md) | builds, locations |
+| [FND-AI-058](../findings/FND-AI-058.md) | builds, locations |
+| [FND-AI-059](../findings/FND-AI-059.md) | builds, locations |
+| [FND-AI-060](../findings/FND-AI-060.md) | builds, locations |
+| [FND-AI-061](../findings/FND-AI-061.md) | builds, locations |
+| [FND-AI-062](../findings/FND-AI-062.md) | builds, locations |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | builds, locations |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | builds, locations |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | builds, locations |
@@ -603,6 +610,12 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 |---|---|
 | [FND-AI-043](../findings/FND-AI-043.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | body |
+
+## BUG-AI-006
+
+| Cited by | In |
+|---|---|
+| [FND-AI-062](../findings/FND-AI-062.md) | body |
 
 ## BUG-AUDIO-001
 
@@ -1320,7 +1333,8 @@ None.
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | evidence |
 | [FND-AI-004](../findings/FND-AI-004.md) | body |
 | [FND-AI-021](../findings/FND-AI-021.md) | body |
-| [RULE-AI-020](../rules/RULE-AI-020.md) | body, evidence |
+| [FND-AI-057](../findings/FND-AI-057.md) | body |
+| [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
 
 ## FND-AI-021
 
@@ -1331,6 +1345,7 @@ None.
 | [FND-AI-019](../findings/FND-AI-019.md) | body |
 | [FND-AI-020](../findings/FND-AI-020.md) | body |
 | [FND-AI-033](../findings/FND-AI-033.md) | body |
+| [FND-AI-057](../findings/FND-AI-057.md) | body |
 | glossary: planning_records | glossary |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
@@ -1354,6 +1369,7 @@ None.
 |---|---|
 | [FND-AI-015](../findings/FND-AI-015.md) | body |
 | [FND-AI-021](../findings/FND-AI-021.md) | body |
+| [FND-AI-061](../findings/FND-AI-061.md) | body |
 | glossary: local_tech_cap | glossary |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | body, evidence |
@@ -1416,6 +1432,7 @@ None.
 |---|---|
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | evidence |
 | [FND-AI-015](../findings/FND-AI-015.md) | body |
+| [FND-AI-059](../findings/FND-AI-059.md) | body |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
 
 ## FND-AI-030
@@ -1440,6 +1457,7 @@ None.
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | evidence |
 | [FND-AI-015](../findings/FND-AI-015.md) | body |
 | [FND-AI-018](../findings/FND-AI-018.md) | body |
+| [FND-AI-058](../findings/FND-AI-058.md) | body |
 | glossary: combat_advantage | glossary |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | body, evidence |
 
@@ -1514,6 +1532,7 @@ None.
 |---|---|
 | [FND-AI-002](../findings/FND-AI-002.md) | body |
 | [FND-AI-013](../findings/FND-AI-013.md) | body |
+| [FND-AI-062](../findings/FND-AI-062.md) | body |
 | glossary: sector_weight | glossary |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | evidence |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
@@ -1554,12 +1573,19 @@ None.
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | body, evidence |
 | [FND-AI-041](../findings/FND-AI-041.md) | body |
 | [FND-AI-044](../findings/FND-AI-044.md) | body |
+| [FND-AI-057](../findings/FND-AI-057.md) | body |
 | [FND-STATE-003](../findings/FND-STATE-003.md) | body |
 | glossary: ai_started | glossary |
 | glossary: planning_records | glossary |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | evidence |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | evidence |
+| [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
+| [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
+| [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
+| [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
+| [RULE-AI-030](../rules/RULE-AI-030.md) | evidence |
 
 ## FND-AI-043
 
@@ -1703,6 +1729,42 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
+
+## FND-AI-057
+
+| Cited by | In |
+|---|---|
+| [FND-AI-058](../findings/FND-AI-058.md) | body |
+| [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
+| [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
+
+## FND-AI-058
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
+
+## FND-AI-059
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
+
+## FND-AI-060
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
+
+## FND-AI-061
+
+None.
+
+## FND-AI-062
+
+| Cited by | In |
+|---|---|
+| [BUG-AI-006](../bugs/BUG-AI-006.md) | evidence |
 
 ## FND-ASSET-001
 
@@ -5032,6 +5094,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-005](../bugs/BUG-AI-005.md) | body, related |
+| [FND-AI-062](../findings/FND-AI-062.md) | body |
 | glossary: reset_planning | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | body |
@@ -5141,6 +5204,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-AI-059](../findings/FND-AI-059.md) | body |
 | glossary: block_leader_sector | glossary |
 | glossary: human_count | glossary |
 | glossary: is_block_leader | glossary |
@@ -5277,6 +5341,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-AI-058](../findings/FND-AI-058.md) | body |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 
 ## RULE-AI-022
@@ -5306,6 +5371,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-AI-059](../findings/FND-AI-059.md) | body |
 | glossary: covered_by | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 
@@ -5337,6 +5403,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-AI-061](../findings/FND-AI-061.md) | body |
 | glossary: first_visible_definition_zero | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 
@@ -5350,6 +5417,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [BUG-AI-006](../bugs/BUG-AI-006.md) | related |
 | glossary: fight_or_hold | glossary |
 | glossary: on_objective | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |

@@ -4,7 +4,7 @@ title: Family-6 computer gangs hunt sectors with visible hostile human gangs and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-029, FND-AI-013, FND-AI-015, FND-AI-033, FND-AI-028, FND-EXE-004]
+evidence: [FND-AI-029, FND-AI-013, FND-AI-015, FND-AI-033, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-059]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -101,6 +101,7 @@ else:
         aux_records[idx].focus = s
 if scenario == 0 and turns_remaining() < 4:
     plan(idx, ACTION_TERMINATE, 0, 0)
+    r.needs_family = 1
 ```
 
 ## Outputs

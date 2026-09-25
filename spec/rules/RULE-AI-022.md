@@ -4,7 +4,7 @@ title: Family-3 computer gangs influence the best Cash site in owned land, take 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-033, FND-AI-034, FND-AI-021, FND-AI-026, FND-AI-028, FND-EXE-004]
+evidence: [FND-AI-033, FND-AI-034, FND-AI-021, FND-AI-026, FND-AI-028, FND-EXE-004, FND-AI-042]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -132,6 +132,7 @@ define site_builder(player, slot, kind):
             r.family = 2
     if scenario == 0 and turns_remaining() < 4:
         plan(idx, ACTION_TERMINATE, 0, 0)
+        r.needs_family = 1
     return
 
 site_builder(player, slot, 0)

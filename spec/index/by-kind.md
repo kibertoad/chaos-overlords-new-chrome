@@ -219,7 +219,7 @@
 
 ## findings
 
-309 entries.
+315 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -279,6 +279,12 @@
 | [FND-AI-054](../findings/FND-AI-054.md) | Selector 0x62 caps the gang definition's Tech Level at 5, 8 or 10 by the research level of the gang's sector, whoever owns it | recorded |
 | [FND-AI-055](../findings/FND-AI-055.md) | The equipment selectors start from the equipped item, compare Combat, Defense, Stealth, Detect or Control, and the Research list is Tech capped | recorded |
 | [FND-AI-056](../findings/FND-AI-056.md) | Mode 4 of the sector selector scores a sector 1 when selector 0x2D accepts the owner query's value for the planning player | recorded |
+| [FND-AI-057](../findings/FND-AI-057.md) | The family-1 handler's switch has a fourth branch for Attack, Hide and Move, and its crime gate falls through to the Goon test | recorded |
+| [FND-AI-058](../findings/FND-AI-058.md) | The family-2 handler tests the hostile pool's own count, reads the owner query, and runs its late Control gates after every branch | recorded |
+| [FND-AI-059](../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself | recorded |
+| [FND-AI-060](../findings/FND-AI-060.md) | The family-7 handler's Attack test reads the attitude toward the drawn gang's player | recorded |
+| [FND-AI-061](../findings/FND-AI-061.md) | The family-11 handler's miscellaneous Equip and Heal also need a previous action other than Attack, and most branches keep the current sector as focus | recorded |
+| [FND-AI-062](../findings/FND-AI-062.md) | Families 13 and 14 make up to five draws on a contested objective, can write nothing after a failed attack, and compare Support with an unset value | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -539,7 +545,7 @@
 
 ## bugs
 
-15 entries.
+16 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -548,6 +554,7 @@
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list | supported |
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 | supported |
 | [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
+| [BUG-AI-006](../bugs/BUG-AI-006.md) | An objective gang with nothing else to do picks its Influence site against a threshold the planner never sets | supported |
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | The turn-start sound plays even with sound effects turned off | supported |
 | [BUG-AWARDS-001](../bugs/BUG-AWARDS-001.md) | The endgame screen shows at most three awards per player though a player can earn five | supported |
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | Bribe costs 3 instead of the manual's 5 | supported |
