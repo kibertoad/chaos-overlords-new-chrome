@@ -215,7 +215,11 @@ The reasoning is in `docs/MULTIPLAYER.md`.
 - Reason: The Research panel shows the research accumulated so far beside each item's total.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information to the panel and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. The original shows only
+  each item's total, so a player choosing what to fund cannot tell how close an item is to
+  completion without writing it down turn by turn. The figure is the progress the game already
+  keeps, it is shown only to the player who owns it, and it removes no control and changes no
+  rule, so a player loses nothing by seeing it.
 - Dropped: no
 
 ## DEV-MOVE-001
@@ -323,8 +327,11 @@ Kept mandatory on 2026-09-26, after a proposal to put it behind a setting that s
   the same selection.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a display of the items the gang holds and a shortcut, and takes nothing
-  away.
+- Justification: A quality-of-life improvement that is strictly better. In the original a player
+  buying an item cannot see what the gang already carries in that slot, although buying replaces
+  and destroys it, so a purchase can throw away a better item unseen. The boxes show the gang's
+  own items, which the gang information panel already shows, and the double-click only opens that
+  panel and comes back. Every original control works as before and no rule changes.
 - Dropped: no
 
 ## DEV-GIVE-001
@@ -511,7 +518,10 @@ it.
   the city map.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information to the minimap and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. The Siege and Big Man
+  sectors are already marked on the city map, so the minimap tells the player nothing new; it
+  saves leaving the sector view to find out whether a neighbour is an objective. It is drawn only
+  from what the city map shows, removes no control and changes no rule.
 - Dropped: no
 
 ## DEV-UI-003
@@ -557,8 +567,11 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   over the whole cycle, with a breakdown on hover.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a projection the player could work out from the Finance panel, and changes
-  nothing else.
+- Justification: A quality-of-life improvement that is strictly better. Every figure is one the
+  player could work out from the Finance panel and the orders already queued, and the original makes
+  the player do that sum by hand before each purchase. Showing it at a glance helps the player avoid
+  Equips that fail for lack of cash, and it is the display that makes the order of purchases
+  (DEV-EQUIP-001) readable. It removes no control and changes no rule.
 - Dropped: no
 
 ## DEV-UI-007
@@ -568,8 +581,11 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   the value turns orange when that range can set off a Crackdown.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information the player could work out from the queued orders, and changes
-  nothing else.
+- Justification: A quality-of-life improvement that is strictly better. A Crackdown follows from
+  Tolerance and the Chaos the player queued, both known to the player, but the original leaves the
+  player to work out the range by hand, and a miscalculation sets off a Crackdown the player did not
+  intend. The warning only states that result in advance, removes no control and changes no rule;
+  the player can still order the Chaos.
 - Dropped: no
 
 ## DEV-UI-008
@@ -579,8 +595,10 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   Influence or Attack highlights its target on the board.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information about orders the player has already given, and changes nothing
-  else.
+- Justification: A quality-of-life improvement that is strictly better. In the original a queued
+  order's target is not drawn on the board, so checking a turn's plan means recalling or reopening
+  each gang's order. The pickers and highlights show only orders the player has given and targets
+  the player may choose, remove no control and change no rule.
 - Dropped: no
 
 ## DEV-UI-009
@@ -620,7 +638,11 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 - Reason: The title screen shows the build version and a Report Bug control.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a version label and a way to report a bug, and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. A bug report is useful only
+  when it names the build it came from, and the original gives the player no way to report a
+  problem from inside the game. The label and the control sit on the title screen, before any
+  match, so they touch no rule and nothing a match starts from, and every original control works
+  as before.
 - Dropped: no
 
 ## DEV-UI-013
@@ -631,8 +653,10 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   lists only the viewer's own gangs.
 - Setting: None
 - Default: mandatory
-- Justification: Only gangs the player has detected are shown, so what the player can know is
-  unchanged; it saves looking them up elsewhere.
+- Justification: A quality-of-life improvement that is strictly better. Only gangs the player has
+  already detected are shown, so what the player can know is unchanged; the original makes the
+  player leave the sector view to look them up before ordering an Attack or a Move. It removes no
+  control and changes no rule.
 - Dropped: no
 
 Decided 2026-09-18.
@@ -643,7 +667,10 @@ Decided 2026-09-18.
 - Reason: The detailed-sector screen shows how many police turns remain in the sector.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. Control does not settle a
+  sector while police are there (RULE-CONTROL-001), so how long they stay decides when a Control
+  order there can succeed; without the count the player has to track the turns by hand. The count
+  is the value the game already keeps for the sector. It removes no control and changes no rule.
 - Dropped: no
 
 Whether the original shows the count is not recorded.
