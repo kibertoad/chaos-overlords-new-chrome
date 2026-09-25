@@ -4,7 +4,7 @@ title: Taking control of a sector is reported to the new owner
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, SRC-MANUAL-GOG]
+evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]
@@ -22,6 +22,7 @@ As the handler of `ControlGainedReport`, at once, during `resolution`.
 
 - `player`: the player who took the sector.
 - `sector`: the sector taken.
+- `previous`: the sector's owner before, or -1 when it had none.
 
 ## Inputs
 
@@ -30,7 +31,7 @@ None.
 ## Procedure
 
 ```text
-call RULE-EVENT-002(player, 2)
+call RULE-EVENT-002(player, 2, sector, previous, 0)
 ```
 
 ## Outputs
@@ -51,5 +52,4 @@ None known.
 
 ## Open questions
 
-- The arguments the report carries are not recorded; the event's own arguments are not shown to be among them.
-- RULE-CONTROL-001 is the only rule known to emit this event; whether any other ownership change records a type-2 report is not recorded.
+None known. The resolver's only type-2 call is in the Control pass, so no other ownership change records one [FND-EVENT-004].

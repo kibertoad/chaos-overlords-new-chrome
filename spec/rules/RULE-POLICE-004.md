@@ -4,7 +4,7 @@ title: Crackdown reports go to the players who had a gang in the sector when res
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-POLICE-002]
+evidence: [FND-CHAOS-002, FND-EXE-004, FND-POLICE-002]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -20,7 +20,9 @@ owner who loses a sector to a third Crackdown is told separately
 
 ## When it runs
 
-At the start of `resolution`, before `instant_phase` [FND-POLICE-002].
+At the start of `resolution`, before `instant_phase`, in the resolver
+`fn_00472775` at `0x0047281C..0x004728E1` (range in FND-EXE-004)
+[FND-POLICE-002, FND-CHAOS-002].
 
 ## Parameters
 
@@ -64,5 +66,5 @@ None known.
 
 ## Open questions
 
-- The memory order of the table's elements (sector-major, as written, or
-  player-major) is not recorded; it does not change the result.
+None known. The table is a local byte array of the resolver, indexed
+`sector * 6 + player` [FND-CHAOS-002].

@@ -9,7 +9,7 @@ byte_order: little
 size: null
 text: false
 definition: fmt_audio_001.ksy
-evidence: [FND-AUDIO-004, FND-ASSET-001, FND-AUDIO-003]
+evidence: [FND-AUDIO-004, FND-ASSET-001, FND-AUDIO-003, FND-DATA-006, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -55,7 +55,7 @@ All 28 sound files of BLD-GOG-EN-1.1 (`DATA/SND00200` to `DATA/SND00204`,
 `DATA/Snd00205` to `DATA/Snd00208`, `DATA/SND00500` to `DATA/SND00517`,
 `DATA/Snd00518`) were read with a script (FND-AUDIO-004). Every field holds the
 value in the table and each file ends exactly after `samples` and `pad`. The
-Kaitai definition has not been compiled or run against the files.
+Kaitai definition compiles and parses all 28 files (FND-DATA-006).
 
 ## Open questions
 

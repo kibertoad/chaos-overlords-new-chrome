@@ -4,7 +4,7 @@ title: At turn start, recurring actions that can no longer apply are cleared and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-004, FND-HIDE-001, FND-TURN-002, FND-RESEARCH-001, FND-PLATFORM-003, FND-COMBAT-004, SRC-MANUAL-GOG]
+evidence: [FND-TURN-004, FND-TURN-006, FND-TURN-009, FND-HIDE-001, FND-TURN-002, FND-RESEARCH-001, FND-PLATFORM-003, FND-COMBAT-004, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -21,7 +21,9 @@ Dead gangs lose their recurring orders.
 
 ## When it runs
 
-First in `turn_start`, before Upkeep (RULE-TURN-001).
+First in `turn_start`, before Upkeep, from the second pass of the turn loop on
+(RULE-TURN-001). The first pass, of a new match or of a loaded one, skips it
+(FND-TURN-006).
 
 ## Parameters
 
@@ -89,6 +91,13 @@ clears the action either way.
 `repeat_target` is copied into `target` even when the recurring action has been
 cleared.
 
+`repeat_target` is the site slot, 0 to 2, of a recurring Influence and the item
+record number of a recurring Research: the pickers write those values and the
+tests read them the same way (FND-TURN-006, FND-TURN-009).
+
+This rule never touches `crackdown_turns`; the only countdown of police
+presence is RULE-POLICE-003, at the end of `resolution` (FND-TURN-006).
+
 ## What the sources say
 
 SRC-MANUAL-GOG, numbered page 28, says a continuous command is given with the
@@ -101,11 +110,4 @@ None known.
 
 ## Open questions
 
-- How `repeat_target` selects the site of a recurring Influence and the item of
-  a recurring Research has not been recorded; the procedure assumes the site
-  slot and the item record number.
-- The address of the list the procedure calls `site_definitions` is not
-  recorded.
-- The recurring cleanup and the Crackdown-duration update that FND-TURN-004
-  places after it in the outer turn function have not been reconciled with the
-  decrement at the end of resolution (FND-POLICE-001).
+- No run of the original has confirmed when a recurring order is dropped.

@@ -68,7 +68,9 @@ Which of the resolution's player and gang loops holds the combat and takeover
 decrements, and which player's reaction the combat decrement uses (the
 defender's owner is assumed), is not given with instruction addresses. The name
 the game uses for the reaction value is unknown. The address of the reaction
-values is not recorded.
+values is not recorded. FND-AI-047 later gives the instruction addresses of
+the recovery and of both decrements and the address of the reaction values,
+and settles that the combat decrement uses the target player's reaction.
 
 ## How to reproduce
 

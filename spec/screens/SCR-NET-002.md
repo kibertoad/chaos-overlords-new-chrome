@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-SETUP-006, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010]
+evidence: [FND-NET-003, FND-SETUP-006, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, FND-NET-001, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001, SCR-NET-001]
@@ -23,10 +23,10 @@ related: [SCR-SETUP-001, SCR-NET-001]
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
 | Seat cell, seat `n` (`n` 0 to 3) | `(251 + 83 * (n % 2), 124 + 74 * (n / 2), 64, 68)` | Always | Selects the seat; its portrait and name bands work as on SCR-SETUP-001 but change the network session's seat | FND-SETUP-006, FND-SETUP-005 |
-| Action 1 | Recorded as `(284, 225, 24, 92)` | Always | Not recorded | FND-SETUP-006 |
-| Action 2 | Recorded as `(284, 322, 24, 92)` | Always | Not recorded | FND-SETUP-006 |
-| Action 3 | Recorded as `(345, 224, 45, 92)` | Always | Not recorded | FND-SETUP-006 |
-| Action 4 | Recorded as `(345, 322, 45, 92)` | Always | Not recorded | FND-SETUP-006 |
+| Add | `(225, 284, 92, 24)` | Always | Asks the host for a seat | FND-NET-003 |
+| Remove | `(322, 284, 92, 24)` | Always | Gives the last seat back; refused below two | FND-NET-003 |
+| Ready | `(224, 345, 92, 45)` | Always | Marks this computer ready and sends the seat names | FND-NET-003 |
+| Cancel | `(322, 345, 92, 45)` | Always | Sends a leave message and closes the connection | FND-NET-003 |
 
 ## Keyboard input
 
@@ -61,10 +61,12 @@ None known.
 
 ## Open questions
 
-- The order of the four numbers in each action rectangle is not settled (see
-  SCR-NET-001), and which action does what is not recorded.
 - The seat cell step of 83 by 74 pixels is taken from the four recorded
   origins.
 - How the three connection modes are offered and chosen is not recorded.
+- The host handles a joining computer's portrait steps as packet types 3 and 4
+  and keeps the seats, portraits and names; the joining side receives them as
+  packet types 0, 2 and 15 (FND-NET-001). Which control on this screen sends
+  each packet has not been traced.
 - The background image is 640 by 460 pixels; where it sits on the 640x480
   screen is not recorded. In 256-colour mode the game uses `DATA/PX08/PX00145`.

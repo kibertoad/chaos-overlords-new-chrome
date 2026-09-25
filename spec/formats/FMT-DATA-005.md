@@ -9,7 +9,7 @@ byte_order: little
 size: 7676546
 text: false
 definition: null
-evidence: [FND-DATA-005]
+evidence: [FND-DATA-005, FND-DATA-008]
 conflicting: []
 split_with: []
 related: []
@@ -34,12 +34,13 @@ None known.
 ## Coverage
 
 `DATA/DATA.Z` of BLD-GOG-EN-1.1 was read with a script (FND-DATA-005): the
-first eight bytes and the byte entropy of the whole file. No definition exists
-yet.
+first eight bytes and the byte entropy of the whole file. No code path in the
+executable can open it (FND-DATA-008), so the game never reads it. No
+definition exists.
 
 ## Open questions
 
-- The executable does not name this file (FND-DATA-005), so it is probably a
-  leftover of the original installer and not game data. Extracting it with an
-  InstallShield 3 tool would confirm the format and list its contents.
+- The file is a leftover of the original installer and not game data
+  (FND-DATA-008). Extracting it with an InstallShield 3 tool would confirm the
+  format and list its contents.
 - The archive header after the signature has not been described.

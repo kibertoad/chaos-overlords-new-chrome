@@ -1,10 +1,10 @@
 ---
 id: RULE-TURN-003
-title: The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then raises every Tolerance below 1 to 1
+title: The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-001, FND-SNITCH-001, FND-GANG-001, SRC-MANUAL-GOG]
+evidence: [FND-TURN-001, FND-TURN-008, FND-SNITCH-001, FND-GANG-001, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-BRIBE-001, RULE-HEAL-001, RULE-HIDE-001, RULE-INFLUENCE-001, RULE-RESEARCH-001, RULE-SNITCH-001, RULE-TOLERANCE-002, FMT-STATE-001]
@@ -15,8 +15,8 @@ related: [RULE-BRIBE-001, RULE-HEAL-001, RULE-HIDE-001, RULE-INFLUENCE-001, RULE
 The instant actions are carried out one gang at a time: the first player's
 gangs in roster order, then the second player's, and so on. Each action takes
 effect before the next gang acts, so two gangs influencing the same site add to
-it one after the other. After all of them, any sector whose Tolerance has
-fallen below 1 is set to 1.
+it one after the other. After all of them, every sector's base Tolerance is
+clamped to 1..40.
 
 ## When it runs
 
@@ -36,6 +36,8 @@ None.
 for each player in turn_order:
     for slot in 0..81:
         let gang = gangs[player * 81 + slot]
+        if gang.sector == GANG_INACTIVE:
+            continue
         if gang.action == ACTION_BRIBE:
             call RULE-BRIBE-001(player, gang)
         else if gang.action == ACTION_HEAL:
@@ -55,9 +57,12 @@ call RULE-TOLERANCE-002()
 
 No return value. Runs the instant action of each gang in player slot and
 roster slot order, with the draws each of those rules makes, and then runs
-RULE-TOLERANCE-002, which sets every sector's `tolerance` below 1 to 1.
+RULE-TOLERANCE-002, which clamps every sector's `base_tolerance` to 1..40.
 
 ## Edge cases
+
+An inactive record (`sector` 100) is skipped before its `action` is looked at
+(FND-TURN-008).
 
 A gang's action takes effect at once. An Influence gang that reaches a site
 after an earlier gang has completed it makes no roll (FND-TURN-001).
@@ -66,8 +71,8 @@ The gangs' effective statistics are those rebuilt at the start of the turn. A
 site completed during this phase adds nothing to any gang until the next turn
 start (FND-GANG-001).
 
-The Tolerance floor is applied once, after every gang has acted, so a sector can
-sit below 1 between two instant actions, and Snitch's reduction is never
+The Tolerance clamp is applied once, after every gang has acted, so a sector can
+sit below 1 or above 40 between two instant actions, and Snitch's reduction is never
 limited on its own (FND-SNITCH-001).
 
 ## What the sources say
@@ -83,7 +88,4 @@ None known.
 
 ## Open questions
 
-- Whether the scan skips inactive gang records before looking at `action` has
-  not been recorded. The turn-start cleanup leaves an inactive gang with no
-  action (RULE-TURN-004), so the answer matters only for a gang that became
-  inactive during planning, which no known path does.
+- None beyond the step rules' own questions.

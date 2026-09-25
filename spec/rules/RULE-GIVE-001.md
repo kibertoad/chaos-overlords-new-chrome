@@ -4,7 +4,7 @@ title: Give empties the giver's selected slots and holds the items for delivery 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-002, FND-EQUIP-003, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-002, FND-EQUIP-003, FND-EQUIP-007, FND-EQUIP-008, FND-GIVE-001, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-002, FMT-STATE-001]
@@ -24,6 +24,7 @@ RULE-EQUIP-002 at the gang's place in the player and roster slot order.
 
 ## Parameters
 
+- `player`: the player slot that owns the giver.
 - `gang`: the giving gang, of FMT-STATE-001.
 - `pending_weapon`: the player's pending weapon deliveries, one per roster slot.
 - `pending_armor`: the pending armor deliveries.
@@ -31,14 +32,16 @@ RULE-EQUIP-002 at the gang's place in the player and roster slot order.
 
 ## Inputs
 
-The giver's `weapon`, `armor` and `misc`, its recipient (`target`) and its
-item selection (`target_2`).
+The giver's `weapon`, `armor` and `misc`, its item selection (`target`) and
+its recipient's roster slot (`target_2`), and the recipient's `sector`.
 
 ## Procedure
 
 ```text
-let recipient = gang.target
-let mask = gang.target_2
+let recipient = gang.target_2
+let mask = gang.target
+if gangs[player * 81 + recipient].sector == GANG_INACTIVE:
+    return
 if (mask & 1) != 0:
     pending_weapon[recipient] = gang.weapon
     gang.weapon = -1
@@ -64,6 +67,14 @@ draw.
 - The delivered item replaces what the recipient holds in that slot, including
   an item it bought this turn; the replaced item is lost.
 - Two gangs can swap items by giving to each other in the same turn.
+- A Give to a gang that died in this turn's combat is not carried out: the
+  giver keeps its items [FND-EQUIP-007].
+- The resolver checks neither Tech Level nor sector. The panel offers only
+  another of the player's gangs in the giver's sector whose definition Tech
+  Level is at least the highest Tech Level of the selected items
+  [FND-EQUIP-008, FND-GIVE-001]. Selecting a higher-level item in the panel
+  drops a recipient already chosen that no longer qualifies [FND-GIVE-001].
+- A selected slot that holds no item gives -1, which the delivery skips.
 
 ## What the sources say
 
@@ -79,11 +90,4 @@ None known.
 
 ## Open questions
 
-- Which fields hold the recipient and the item selection, and which bit stands
-  for which slot, are not recorded. The procedure uses `target` for the
-  recipient's roster slot and bits 1, 2 and 4 of `target_2` in the weapon,
-  armor, miscellaneous order the Sell mask uses.
-- That an emptied slot is set to -1 is taken from the meaning of -1 in the gang
-  record; FND-EQUIP-002 says the giver's item bytes are cleared.
-- Whether the resolver checks the recipient's Tech Level, sector or activity is
-  not recorded; the panel offers only eligible recipients (FND-EQUIP-003).
+None known.

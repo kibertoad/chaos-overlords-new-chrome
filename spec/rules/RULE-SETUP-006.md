@@ -4,7 +4,7 @@ title: A player named with either extra-gang modifier starts with five more Forc
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-004, FND-CITY-003]
+evidence: [FND-SETUP-015, FND-SETUP-004, FND-CITY-003]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-001, FMT-STATE-001]
@@ -16,12 +16,12 @@ A player whose name is exactly one of two modifier names held in the
 executable starts with five more gangs beside the Right Hands, all at full
 Force in the headquarters sector: five more Right Hands with no equipment, or
 five gangs of definition 59 carrying a fixed weapon, armor and miscellaneous
-item.
+item. It applies only in a local game.
 
 ## When it runs
 
-Once per new match, inside RULE-SETUP-004, after RULE-CITY-004 has created the
-Right Hands.
+Once per new match in a local game, inside RULE-SETUP-004, after RULE-CITY-004
+has created the Right Hands and the modifier scan has set the flags.
 
 ## Parameters
 
@@ -29,15 +29,15 @@ None.
 
 ## Inputs
 
-`player_names`, `modifier_name_right_hands`, `modifier_name_elite`, the Right
-Hands in roster slot 0 of each player.
+`modifier_right_hands`, `modifier_elite`, the Right Hands in roster slot 0 of
+each player.
 
 ## Procedure
 
 ```text
-for each player in turn_order:
-    let right_hands = name_matches(player, modifier_name_right_hands)
-    let elite = name_matches(player, modifier_name_elite)
+for player in 0..6:
+    let right_hands = modifier_right_hands[player]
+    let elite = modifier_elite[player]
     if right_hands or elite:
         let hq = gangs[player * 81].sector
         for slot in 1..6:
@@ -77,8 +77,6 @@ None known.
 
 ## Open questions
 
-- The addresses of the strings `modifier_name_right_hands` and
-  `modifier_name_elite` are not recorded.
 - The bytes the finding does not name (the action bytes, `visible_to`, the
   effective statistics) are taken to be written as for the Right Hands; the
   effective statistics are rebuilt before the first planning anyway.

@@ -4,7 +4,7 @@ title: The transaction pass carries out Equip, Give and Sell by player and roste
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-002, FND-EQUIP-006, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-002, FND-EQUIP-006, FND-EQUIP-007, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-001, RULE-GIVE-001, RULE-SELL-001, FMT-STATE-001]
@@ -43,13 +43,12 @@ for each player in turn_order:
         append(pending_misc, -1)
     for slot in 0..81:
         let gang = gangs[player * 81 + slot]
-        # the active test is assumed; see Open questions
         if gang.sector == GANG_INACTIVE:
             continue
         if gang.action == ACTION_EQUIP:
             call RULE-EQUIP-001(player, gang)
         else if gang.action == ACTION_GIVE:
-            call RULE-GIVE-001(gang, pending_weapon, pending_armor, pending_misc)
+            call RULE-GIVE-001(player, gang, pending_weapon, pending_armor, pending_misc)
         else if gang.action == ACTION_SELL:
             call RULE-SELL-001(player, gang)
     for slot in 0..81:
@@ -82,6 +81,12 @@ no random draw.
   already been emptied.
 - Two gangs can swap items in the same slot by giving to each other: both
   givers' slots are emptied first and both deliveries follow.
+- A gang that died in this turn's combat carries out no transaction
+  [FND-EQUIP-007], so the items of its Give or Sell stay in its inactive
+  record, and the cash of its Equip is not spent.
+- The delivery does not test the recipient's activity; RULE-GIVE-001 has
+  already refused a Give to a recipient that is not active, and nothing in
+  the pass can make one inactive afterwards [FND-EQUIP-007].
 
 ## What the sources say
 
@@ -96,7 +101,4 @@ None known.
 
 ## Open questions
 
-- FND-EQUIP-002 does not record whether the scan skips inactive records. The
-  procedure assumes it does, which fits the manual's note that the items of a
-  killed transacting gang are lost.
-- Whether a delivery tests that the recipient is still active is not recorded.
+None known.

@@ -40,6 +40,27 @@ public sealed class AiStrategicStateTests
         }
     }
 
+    // RULE-AI-004 hostile_owner, FND-AI-048: an owner query of -1 or -2 reads the previous
+    // observer's row, and observer 0 reads bytes that are never negative.
+    [Fact]
+    public void HostileOwnerQueryReadsOutOfRowCellsLikeTheOriginal()
+    {
+        var attitudes = new int[36];
+        attitudes[0 * 6 + 5] = -3;
+        attitudes[0 * 6 + 4] = -3;
+        attitudes[1 * 6 + 1] = -3;
+        var strategy = AiStrategicState.Restore([3, 3, 3, 3, 3, 3], attitudes);
+
+        Assert.True(strategy.IsHostileToOwnerQuery(new PlayerId(1), -1));
+        Assert.True(strategy.IsHostileToOwnerQuery(new PlayerId(1), -2));
+        Assert.True(strategy.IsHostileToOwnerQuery(new PlayerId(1), 1));
+        Assert.False(strategy.IsHostileToOwnerQuery(new PlayerId(2), -1));
+        Assert.False(strategy.IsHostileToOwnerQuery(new PlayerId(0), -1));
+        Assert.False(strategy.IsHostileToOwnerQuery(new PlayerId(0), -2));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            strategy.IsHostileToOwnerQuery(new PlayerId(1), -3));
+    }
+
     [Fact]
     public void CombatAndControlReactionsAreDirectionalAndClampAtMinusTen()
     {

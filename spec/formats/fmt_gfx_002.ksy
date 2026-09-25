@@ -71,12 +71,11 @@ seq:
     doc-ref: FMT-GFX-003
   - id: rle8_data
     size: image_size
-    process: rule_gfx_001
     if: compression == compression::bmp_compression_rle8
     doc: |
-      RLE8 pixel data, decoded by RULE-GFX-001 into height rows of width pixel
-      values, bottom row first. Width and height come from FMT-GFX-001's
-      Coverage table.
+      RLE8 pixel data, kept as the stored bytes. RULE-GFX-001 decodes them
+      into height rows of width pixel values, bottom row first. Width and
+      height come from FMT-GFX-001's Coverage table.
     doc-ref: RULE-GFX-001, FND-GFX-002
   - id: raw_pixels
     size: image_size

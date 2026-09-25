@@ -4,7 +4,7 @@ title: The city shows a marker for each site the viewer controls and for each ot
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SEARCH-003, FND-SEARCH-001, FND-UI-036, FND-GANG-001]
+evidence: [FND-SEARCH-003, FND-SEARCH-001, FND-SEARCH-004, FND-UI-036, FND-GANG-001, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -34,7 +34,7 @@ None.
 ```text
 define site_controlled(s, slot) -> UINT8:
     let site = sectors[s].sites[slot]
-    return sectors[s].owner == active_player and site.progress == site_definitions[site.definition].resistance
+    return site.progress >= site_definitions[site.definition].resistance and sectors[s].owner == active_player
 
 for s in 0..64:
     let ordinal = 0
@@ -75,9 +75,8 @@ None known.
 
 ## Open questions
 
-- The test the renderer uses for "controlled by the active player" is not
-  recorded. `site_controlled` writes it as a completed site in a sector the
-  active player owns, following the glossary's `site` entry; the renderer's
-  own test is still to be read.
-- The order in which the sectors are visited is not recorded; it does not
-  change what is drawn.
+None known. The renderer's test is `progress` not below the definition's
+Resistance in a sector the viewer owns, and it visits sectors 0 to 63 and
+slots 0 to 2 in ascending order [FND-SEARCH-004]. Influence never raises
+`progress` above the Resistance, so the test agrees with the glossary's
+`site` entry.

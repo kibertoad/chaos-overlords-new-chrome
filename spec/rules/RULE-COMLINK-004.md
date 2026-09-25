@@ -4,7 +4,7 @@ title: Comlink View opens at the oldest unread message and refuses an empty inbo
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-002, SRC-MANUAL-GOG]
+evidence: [FND-COMLINK-002, FND-COMLINK-006, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [SCR-COMLINK-001, FMT-STATE-005]
@@ -51,9 +51,12 @@ empty inbox leaves it closed and plays the rejected-input sound
 
 ## Edge cases
 
-When no message is unread, the cursor keeps its old value, which
-RULE-COMLINK-001 keeps pointing at the same message when older ones are
-dropped.
+- When no message is unread, the cursor keeps its old value, which
+  RULE-COMLINK-001 keeps pointing at the same message when older ones are
+  dropped.
+- Between planning visits RULE-COMLINK-007 removes the read messages at the
+  front and sets the cursor to 0, so in a later turn View opens at the first
+  message kept.
 
 ## What the sources say
 

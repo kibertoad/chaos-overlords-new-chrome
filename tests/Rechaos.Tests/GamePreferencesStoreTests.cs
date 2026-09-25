@@ -31,6 +31,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(GamePreferences.DefaultCustomMultiplayerServer,
             preferences.CustomMultiplayerServer);
         Assert.Equal(OnlineLobbyPresentation.Modern, preferences.LobbyPresentation);
+        Assert.Equal(OriginalOptionsPolicy.IntroOnlyOnceByDefault, preferences.IntroOnlyOnce);
     }
 
     [Fact]
@@ -40,7 +41,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
             GamePreferences.CurrentFormatVersion, 8, 3, false,
             PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true,
             AiPolicyMode.Advanced, OnlineServiceMode.Custom, "https://games.example.test",
-            OnlineLobbyPresentation.Classic);
+            OnlineLobbyPresentation.Classic, IntroOnlyOnce: true);
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -188,6 +189,26 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(OnlineServiceMode.Custom, preferences.OnlineService);
         Assert.Equal("https://games.example.test", preferences.CustomMultiplayerServer);
         Assert.Equal(OnlineLobbyPresentation.Modern, preferences.LobbyPresentation);
+    }
+
+    [Fact]
+    public void VersionElevenPreferencesMigrateWithTheIntroAtEveryStart()
+    {
+        File.WriteAllText(Path(), """
+            {"FormatVersion":11,"MusicVolumeLevel":8,"SoundEffectVolumeLevel":3,
+             "WarnIfIdleGangs":false,"PlanningTimeLimit":2,
+             "ShowBaseStatistics":true,"DetailedCombat":false,"SlidePanels":true,
+             "Fullscreen":true,"SmoothEventSiteImages":true,"IntroMoviesSeen":true,
+             "DefaultAiPolicy":1,"OnlineService":1,
+             "CustomMultiplayerServer":"https://games.example.test","LobbyPresentation":1}
+            """);
+
+        var preferences = GamePreferencesStore.LoadOrDefault(Path());
+
+        Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
+        Assert.Equal(OnlineLobbyPresentation.Classic, preferences.LobbyPresentation);
+        Assert.True(preferences.IntroMoviesSeen);
+        Assert.False(preferences.IntroOnlyOnce);
     }
 
     [Theory]

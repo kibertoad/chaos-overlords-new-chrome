@@ -7,7 +7,7 @@ superseded_by: []
 impact: presentation
 intent: unclear
 player_reliance: unknown
-evidence: [FND-AUDIO-003, FND-AUDIO-002]
+evidence: [FND-AUDIO-003, FND-AUDIO-002, FND-AUDIO-006, FND-AUDIO-007, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-006, RULE-AUDIO-005]
@@ -20,8 +20,9 @@ turn-start sound still plays at each new turn.
 
 ## Trigger conditions
 
-Sound effects set to level 0, in a local game or a network game of the
-original's protocol, at any turn start after the first.
+Sound effects set to level 0, in a network game of the original's protocol,
+on the hosting computer or a computer that joined, at any turn start after the
+first. A game started with New Game never plays the sound (RULE-AUDIO-006).
 
 ## Mechanism
 
@@ -47,8 +48,9 @@ None known.
 
 ## Open questions
 
-- Whether the auxiliary volume set for effects also covers this sound; at level
-  0 the volume may not be changed (RULE-AUDIO-003), so the sound may play at the
-  last nonzero level.
+- Whether the auxiliary volume the game sets for effects reaches `PlaySoundA`
+  output at all: at level 0 it is set to 0, but on the device the setup finds by
+  a technology value no Windows device reports, which is usually device 0
+  (FND-AUDIO-007).
 - Whether the direct call was meant to make the cue play regardless of the
   setting.

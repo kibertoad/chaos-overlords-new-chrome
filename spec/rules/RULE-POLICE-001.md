@@ -4,10 +4,10 @@ title: In a Crackdown sector the police may find each gang and attack it with 25
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMBAT-001, FND-POLICE-001, FND-POLICE-003, FND-RNG-003, SRC-MANUAL-GOG]
+evidence: [FND-COMBAT-001, FND-COMBAT-008, FND-EXE-004, FND-POLICE-001, FND-POLICE-003, FND-RNG-003, FND-STATE-005, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
-related: [RULE-RNG-002, RULE-HIDE-001, FMT-STATE-001, FMT-STATE-002, FMT-STATE-003]
+related: [RULE-RNG-002, RULE-HIDE-001, FMT-STATE-001, FMT-STATE-002, FMT-STATE-003, FMT-STATE-008]
 ---
 
 ## Summary
@@ -20,7 +20,9 @@ dice, each die of 5 or 6 one point of damage.
 ## When it runs
 
 As `police_phase`, called by RULE-COMBAT-002 after every gang attack and
-before the damage is applied [FND-COMBAT-001].
+before the damage is applied, in the resolver `fn_00472775` at
+`0x004740B7..0x00474250` (range in FND-EXE-004) [FND-COMBAT-001,
+FND-COMBAT-008].
 
 ## Parameters
 
@@ -39,12 +41,14 @@ for each player in turn_order:
     for slot in 0..81:
         let i = player * 81 + slot
         let gang = gangs[i]
+        combat_records[i].police_damage = -1
         if gang.sector != GANG_INACTIVE and sectors[gang.sector].crackdown_turns > 0:
             let hide_penalty = 0
             if is_hidden(gang):
                 hide_penalty = 20
             let chance = 115 - 5 * gang.stealth - hide_penalty
             if roll(100) <= chance:
+                fight_marks[i] = 1
                 let pool = 25 - gang.defense
                 let successes = 0
                 for d in 0..pool:
@@ -52,12 +56,16 @@ for each player in turn_order:
                         successes = successes + 1
                 phase_damage[i] = phase_damage[i] + successes
                 combat_records[i].police_damage = successes
+                combat_results[gang.sector].police_hit[player] = 1
 ```
 
 ## Outputs
 
-No return value. Adds each found gang's police damage to its `phase_damage`
-and writes it to its record's `police_damage`. Draws from `rng`: three for the
+No return value. Sets `police_damage` of all 486 combat records to -1, then,
+for each found gang, adds the police damage to its `phase_damage`, writes it
+to `police_damage`, marks the gang in `fight_marks` and sets its player's
+police flag in its sector's row of `combat_results` [FND-COMBAT-008,
+FND-STATE-005]. Draws from `rng`: three for the
 detection roll of every active gang in a sector with police, then three per
 die for each gang found, gang by gang in `turn_order` and roster order.
 
@@ -72,6 +80,9 @@ die for each gang found, gang by gang in `turn_order` and roster order.
   counts as found.
 - Police damage does not count toward Damage Inflicted, and the police take no
   retaliation.
+- A found gang counts as having fought even when its pool is empty or it takes
+  no damage, so it gets a combat record and a row entry (RULE-COMBAT-002).
+- The difficulty band of the gang's player is not read [FND-COMBAT-008].
 
 ## What the sources say
 
@@ -91,8 +102,5 @@ None known.
 
 ## Open questions
 
-- Whether the detection roll must be at most the chance, as written, or
-  strictly less; FND-POLICE-003 records the comparison but not its direction.
-- Whether the difficulty band of the gang's player changes the police pass;
-  FND-AI-007 lists no band read there.
-- When the per-player police flag of `combat_results` is set.
+None known. The comparison is `<=`: the jump at `0x004741A3` skips the gang
+only when the chance is less than the draw [FND-COMBAT-008].

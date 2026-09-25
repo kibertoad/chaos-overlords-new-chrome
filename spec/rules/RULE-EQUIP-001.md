@@ -4,7 +4,7 @@ title: Equip pays the item's price from the cash the player has at that point, a
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-001, FND-EQUIP-002, FND-EQUIP-006, FND-EVENT-001, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-001, FND-EQUIP-002, FND-EQUIP-006, FND-EQUIP-007, FND-EQUIP-008, FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-003, RULE-EVENT-014, FMT-STATE-001, FMT-DATA-003]
@@ -38,17 +38,17 @@ item (`target`).
 let item = gang.target
 let price = item_price(player, gang.sector, item)
 if cash[player] < price:
-    emit EquipCashShort(player, item)
+    emit EquipCashShort(player, gang.sector, gang.definition)
     return
 cash[player] = cash[player] - price
 cash_spent[player] = cash_spent[player] + price
 let kind = item_definitions[item].type
-if kind == ITEM_TYPE_ARMOR:
+if kind == ITEM_TYPE_MELEE or kind == ITEM_TYPE_BLADE or kind == ITEM_TYPE_RANGED:
+    gang.weapon = item
+else if kind == ITEM_TYPE_ARMOR:
     gang.armor = item
 else if kind == ITEM_TYPE_MISC:
     gang.misc = item
-else:
-    gang.weapon = item
 ```
 
 ## Outputs
@@ -70,6 +70,14 @@ report. Makes no random draw.
 - The replaced item is not sold or returned.
 - A gift delivered to this gang later in the same pass replaces what it bought
   here (RULE-EQUIP-002).
+- The price is taken with the Factory test of the sector the gang stands in at
+  this point (RULE-EQUIP-003) [FND-EQUIP-007].
+- Neither the gang's Tech Level nor the player's research is checked again;
+  the list offered only items that passed them (RULE-EQUIP-004)
+  [FND-EQUIP-007].
+- An item whose type is none of the five weapon, armor and miscellaneous types
+  is paid for and put in no slot. The list never offers one, since its
+  category cannot match [FND-EQUIP-007, FND-EQUIP-008].
 
 ## What the sources say
 
@@ -87,14 +95,4 @@ None known.
 
 ## Open questions
 
-- Which field holds the queued item is not recorded; the procedure uses
-  `target`.
-- The slot for each item `type` (melee, blade and ranged weapons in the weapon
-  slot) is taken from the item table's types; FND-EQUIP-002 records only that
-  the weapon, armor or miscellaneous byte is replaced, not how the slot is
-  chosen.
-- FND-EVENT-001 shows that an Equip cash failure records a type-6 report with
-  the argument 2, but not the report's other arguments; the event's `item`
-  argument is not shown to be among them.
-- Whether the resolver checks Tech Level or research again is not recorded; the
-  list offers only items that pass them (RULE-EQUIP-004).
+None known.

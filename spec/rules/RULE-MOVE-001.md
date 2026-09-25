@@ -4,7 +4,7 @@ title: Move pass carries out every Move, player by player, after normalizing eac
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-MOVE-001, FND-MOVE-002, FND-CONTROL-002, SRC-MANUAL-GOG]
+evidence: [FND-MOVE-001, FND-MOVE-002, FND-MOVE-003, FND-CONTROL-002, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-MOVE-002, RULE-TERMINATE-001, FMT-STATE-001]
@@ -57,7 +57,10 @@ made here, and no random draw except those RULE-MOVE-002 makes.
   destination set another way, such as by RULE-MOVE-002's fallback or a
   computer player's order, is carried out as it is.
 - A gang whose record is inactive (sector 100), such as one that died in this
-  turn's combat, keeps its order but does not move.
+  turn's combat, keeps its order but does not move [FND-MOVE-003].
+- The destination is the `target` byte, written by the Move panel
+  [FND-MOVE-003].
+- A Move records no Last Turn report [FND-MOVE-003].
 
 ## What the sources say
 
@@ -73,9 +76,4 @@ None known.
 
 ## Open questions
 
-- Which field holds a Move's destination is not recorded; the procedure uses
-  `target`.
-- Whether the pass tests that the gang is active is assumed from the rest of the
-  resolver; FND-MOVE-001 describes it as copying every remaining action-10
-  destination.
-- Whether a Move produces a Last Turn report or any other event is not recorded.
+None known.

@@ -9,7 +9,7 @@ byte_order: little
 size: 16
 text: false
 definition: fmt_save_002.ksy
-evidence: [FND-SAVE-001]
+evidence: [FND-SAVE-001, FND-DATA-006, FND-SAVE-002, FND-PLATFORM-009]
 conflicting: []
 split_with: []
 related: []
@@ -19,12 +19,14 @@ related: []
 
 The load function accepts a third marker, `M10W`, followed by one 12-byte
 block and nothing else, and returns 3 for it (FND-SAVE-001). No closing marker
-follows. The game ships no save files, so `files` is empty.
+follows. Nothing in the executable writes this form: the save writes only
+`S40W` or `N40W` (FND-SAVE-002). On the result 3 `WinMain` calls routines
+that do nothing and ends the program (FND-PLATFORM-009). The game ships no save files, so `files` is empty.
 
 | Offset | Size | Type | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|---|---|
 | `0x00` | 4 | `UINT32LE` | `magic` | The marker. | supported | FND-SAVE-001 |
-| `0x04` | 12 | `BYTE[12]` | `payload` | A 12-byte block. The global it is read into has no other reference in the code, so its meaning is unknown. | supported | FND-SAVE-001 |
+| `0x04` | 12 | `BYTE[12]` | `payload` | A 12-byte block read into `0x00498330`, which no other instruction references, so its meaning is unknown. | supported | FND-SAVE-001 |
 | `0x10` | | | | Total size 16 | | |
 
 ## Enumerations and flags
@@ -42,9 +44,10 @@ None known.
 ## Coverage
 
 No file of this form was examined; the layout was read from the load function
-of BLD-GOG-EN-1.1 (FND-SAVE-001). The Kaitai definition has not been compiled.
+of BLD-GOG-EN-1.1 (FND-SAVE-001). The Kaitai definition compiles; no file of this form exists to run it against
+(FND-DATA-006).
 
 ## Open questions
 
-- What writes an `M10W` file, if anything does, and what the caller of the
-  load does with the result 3.
+- What the 12 bytes were meant to hold. The form looks like an unfinished
+  feature (FND-SAVE-002).

@@ -18,15 +18,19 @@ Dated product decisions behind many of these entries, with their full reasoning,
 
 ## DEV-HELP-001
 
-- Departs from: FMT-HELP-001, SCR-UI-009
-- Reason: The rebuild shows the help topics in its own viewer, opened with F1 or from the menu,
-  in place of the Windows help program. It reads the player's own help file and approximates the
-  help program's typography.
+- Departs from: FMT-HELP-001, SCR-UI-009, RULE-HELP-001
+- Reason: The rebuild shows the help topics in its own viewer, opened with F1 or from the menu.
+  In the original, Help Topics does nothing and no key opens help: the call that would start the
+  Windows help program on the help file is never reached (RULE-HELP-001). The viewer reads the
+  player's own help file and approximates the help program's typography.
 - Setting: None
 - Default: mandatory
-- Justification: The help program the original starts is no longer part of Windows, so the
-  original's behaviour cannot be had on a current system. The topics, links and popups are the
-  player's own file.
+- Justification: The original ships a complete help file and a Help Topics item wired to nothing,
+  which is logic that plainly does not do what it was written to do. Opening the help adds
+  information and changes nothing the player can do or any rule's result. The help program the
+  original would have started is no longer part of Windows, so a viewer of the rebuild's own is
+  the only way to show the file, and a setting that brings back an inert menu item gives the
+  player nothing.
 - Dropped: no
 
 ## DEV-HELP-002
@@ -43,10 +47,11 @@ Dated product decisions behind many of these entries, with their full reasoning,
 
 ## DEV-VIDEO-001
 
-- Departs from: FMT-VIDEO-001
+- Departs from: FMT-VIDEO-001, RULE-VIDEO-001
 - Reason: The rebuild decodes the two shipped movies with its own decoder for the subset of the
-  format they use. A file that is malformed or uses anything outside that subset is skipped and
-  play goes on to the title screen.
+  format they use, where the original calls the Smacker library. A file that is malformed or uses
+  anything outside that subset is skipped and play goes on to the next movie or the title screen,
+  as a file the original's library fails to open is skipped.
 - Setting: None
 - Default: mandatory
 - Justification: It changes only what happens where the original would fail to play the file, so
@@ -54,6 +59,50 @@ Dated product decisions behind many of these entries, with their full reasoning,
 - Dropped: no
 
 Decided 2026-09-13.
+
+## DEV-VIDEO-002
+
+- Departs from: RULE-VIDEO-001
+- Reason: A press of Escape, Enter or Space, or of either mouse button, ends the movie playing,
+  and the press is consumed. The original ends a movie only when the left button is held down at
+  one of its 100 ms input ticks and ignores the keyboard. While the window is inactive the rebuild
+  holds the movie where it is; the original plays on.
+- Setting: None
+- Default: mandatory
+- Justification: This is an interface change that removes friction: a click the original could
+  miss between two ticks always takes effect, and the usual keys work. It changes no rule and
+  nothing a match starts from, since the movies end before the title screen either way. A setting
+  to bring back the missed clicks would give a player nothing.
+- Dropped: no
+
+## DEV-VIDEO-003
+
+- Departs from: RULE-VIDEO-001
+- Reason: With Intro only once switched on, the rebuild plays the two movies unattended only until
+  it has recorded a showing: its preferences file keeps `IntroMoviesSeen`, set once the queue
+  drains after at least one movie opened, and every later start goes straight to the title screen.
+  The title screen gains an INTRO button that plays the movies again on request. The original plays
+  both movies at every start that does not load a saved game.
+- Setting: Intro only once
+- Default: off
+- Dropped: no
+
+Showing the movies once is a convenience some players will want, but a player who expects the
+intro at every start, as the original gives it, is not better served, so the original's behaviour
+is the default.
+
+## DEV-AUDIO-001
+
+- Departs from: RULE-AUDIO-010
+- Reason: The rebuild does not run the original's startup drive check or its unused search of the
+  CD drives. It plays the music tracks from the files of the GOG release (`MUSIC/TrackNN.ogg`) and
+  never looks for a drive or a disc.
+- Setting: None
+- Default: mandatory
+- Justification: The check always passes and the search is never called, so neither changes any
+  game state. Its only effect in the original, the prefix of the movie paths, is replaced by the
+  rebuild's own asset paths. A setting would have nothing to switch.
+- Dropped: no
 
 ## DEV-SAVE-001
 
@@ -149,16 +198,16 @@ The reasoning is in `docs/MULTIPLAYER.md`.
 
 - Departs from: RULE-HIRE-001
 - Reason: The rebuild lets a hire whose cost is 0 through while the player's cash is negative.
-  The original fails a hire when its cost is greater than cash, which refuses that hire.
+  The original was read as failing a hire when its cost is greater than cash, which would refuse
+  that hire. The Dropped item corrects that reading.
 - Setting: None
 - Default: mandatory
 - Justification: A hire that costs nothing takes nothing from cash, so refusing it because cash is
   already negative protects nothing and only keeps a player in debt from rebuilding. It adds an
   option and removes none.
-- Dropped: no
-
-Whether the original refuses the hire rests on a static reading; the check is in
-`static_validation_plan.md`. If the original lets the hire through as well, this entry is dropped.
+- Dropped: 2026-09-25, the original also lets a zero-cost hire through while cash is negative: it
+  skips the cash test when the cost is 0 (FND-HIRE-006, RULE-HIRE-001). The earlier reading
+  missed the zero-cost branch in front of the cash test.
 
 ## DEV-RESEARCH-001
 
@@ -186,6 +235,21 @@ Whether the original's panel refuses the order too is in `manual_validation_plan
 counts only the gangs already in the destination, so moving one gang out and another in to a full
 sector takes two turns where the original allows one; counting gangs ordered out of the
 destination, as DEV-HIRE-001 does, would remove that difference.
+
+## DEV-MOVE-002
+
+- Departs from: RULE-MOVE-002
+- Reason: The rebuild's Move repair counts the times it gives a mover sent back to its own
+  sector a random neighbour. After 256 of them in one player's repair, it sends that mover to the
+  lowest-numbered sector the player's projected count leaves room in, which need not be a
+  neighbour. The original's loop has no bound, and some order sets keep it running for ever
+  (FND-MOVE-006).
+- Setting: None
+- Default: mandatory
+- Justification: In the original those orders hang the game in the Move phase, which the Fidelity
+  rules allow to be fixed. Below the bound the rebuild follows the original's loop, and a setting
+  that brings back the hang gives the player nothing.
+- Dropped: no
 
 ## DEV-CONTROL-001
 
@@ -263,16 +327,16 @@ The fix changes which player owns the sector when the case arises.
 ## DEV-FINANCE-001
 
 - Departs from: SCR-FINANCE-001, RULE-FINANCE-001
-- Reason: The Finance projection lists sector tax, site Cash and gang Upkeep as separate
-  components where the original draws its eight rows.
+- Reason: The Equipment row credits a Sell order with half the Cost of the one item the resolver
+  pays for (RULE-SELL-001, BUG-SELL-001). The original adds half the Cost of every item the order
+  selects (FND-FINANCE-002). The other seven rows follow FND-FINANCE-002.
 - Setting: None
 - Default: mandatory
-- Justification: The amounts are the ones the rules compute, and no order depends on how the
-  projection is broken down. Listing each component shows the player where the money comes from.
+- Justification: The panel is a forecast of next turn's cash, and on a multi-item Sell the
+  original's forecast names cash the resolver never pays. Showing the amount that will arrive adds
+  information and changes no order or result. A setting would only bring back a figure known to be
+  wrong.
 - Dropped: no
-
-Which of the original's rows holds which amount is not recorded, so how far the two differ is not
-known yet; the static check is in `static_validation_plan.md`.
 
 ## DEV-ATTACK-001
 

@@ -4,7 +4,7 @@ title: The Comlink alert repeats every 24 presentation ticks
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-012, FND-UI-001]
+evidence: [FND-AUDIO-012, FND-UI-001, FND-EVENT-006, FND-UI-023, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005, RULE-AUDIO-007, RULE-UI-008, RULE-SETUP-008, RULE-COMLINK-001]
@@ -58,8 +58,5 @@ None known.
 
 ## Open questions
 
-- Whether `comlink_blink_step` wraps at 8 as written or counts on and is tested
-  modulo 8; the effect on the sound is the same.
 - On which screens the pump runs this; the city and sector screens are certain,
   others are not recorded.
-- `comlink_blink_step` has no recorded address.

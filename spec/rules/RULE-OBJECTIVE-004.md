@@ -1,10 +1,10 @@
 ---
 id: RULE-OBJECTIVE-004
 title: Each scenario's own end condition, and the Dominance weights
-status: sourced
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-003, FND-UI-033, SRC-MANUAL-GOG]
+evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-006, FND-TURN-003, FND-UI-033, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-002]
@@ -12,16 +12,17 @@ related: [RULE-OBJECTIVE-002]
 
 ## Summary
 
-The timed scenarios (Greed, Power, Acceptance, Dominance) end when the chosen
-time limit runs out. Big 40 ends when a player holds 40 sectors, Big Man when a
-player has 40 points, Siege when one player holds all six headquarters
-sectors, and Armageddon when a player holds all 64 sectors. Kill 'Em All and
-Eliminate end only when one player is left.
+The timed scenarios (Greed, Power, Acceptance, Dominance) end with the
+resolution of the turn numbered `turn_limit`. Big 40 ends when a player holds
+40 sectors, Big Man when a player has 40 points, Siege when one player holds
+all six headquarters sectors, and Armageddon when a player holds all 64
+sectors. Kill 'Em All and Eliminate have no test of their own and end only
+when one player is left (RULE-OBJECTIVE-001).
 
 ## When it runs
 
 Called by RULE-OBJECTIVE-001 at the end of every turn, after the scores are
-rebuilt and when more than one player is still active.
+rebuilt, whatever the number of active players.
 
 ## Parameters
 
@@ -29,75 +30,101 @@ None.
 
 ## Inputs
 
-`scenario`, `scenario_score`, `player_active`, `turn_limit`, `elapsed_turns`,
-each sector's `owner`, `hq_sectors`, `cash`.
+`scenario`, `scenario_score`, `turn_limit`, `elapsed_turns`, each sector's
+`owner`, `hq_sectors`; for `dominance_points`, `cash`, each sector's `sites`
+and the site definitions.
 
 ## Procedure
 
 ```text
+# Used by RULE-OBJECTIVE-002 for Dominance. The weights are set only for the
+# four time limits; the executable leaves them undefined for any other value.
 define dominance_points(player) -> INT32:
-    let support_weight = 10
-    let sector_weight = 30
-    if turn_limit == 52:
-        support_weight = 30
+    let cash_weight = 1
+    let sector_weight = 0
+    let support_weight = 0
+    if turn_limit == 26:
+        sector_weight = 30
+        support_weight = 10
+    else if turn_limit == 52:
         sector_weight = 100
+        support_weight = 30
     else if turn_limit == 104:
-        support_weight = 75
         sector_weight = 250
+        support_weight = 75
     else if turn_limit == 208:
-        support_weight = 300
         sector_weight = 1000
-    let support = 0
-    let held = 0
+        support_weight = 300
+    let points = cash[player] * cash_weight
     for s in 0..64:
         if sectors[s].owner == player:
-            support = support + sectors[s].support
-            held = held + 1
-    return cash[player] + support * support_weight + held * sector_weight
+            points = points + sector_weight
+            for k in 0..3:
+                let site = sectors[s].sites[k]
+                let d = site_definitions[site.definition]
+                if d.resistance == site.progress:
+                    points = points + d.support * support_weight
+    return points
 
 if scenario == scenario_greed or scenario == scenario_power or scenario == scenario_acceptance or scenario == scenario_dominance:
-    return elapsed_turns + 1 >= turn_limit
-for each player in turn_order:
-    if player_active[player]:
-        if scenario == 8 and scenario_score[player] >= 40:
-            # Big Man
+    return elapsed_turns == turn_limit - 1
+if scenario == scenario_big_40:
+    # every slot, active or not
+    for player in 0..6:
+        let held = 0
+        for s in 0..64:
+            if sectors[s].owner == player:
+                held = held + 1
+        if held >= 40:
             return true
-        if scenario == scenario_big_40 and scenario_score[player] >= 40:
+    return false
+if scenario == 6:
+    # Siege
+    for player in 0..6:
+        let held = 0
+        for k in 0..6:
+            if sectors[hq_sectors[k]].owner == player:
+                held = held + 1
+        if held == 6:
             return true
-        if scenario == 9 and scenario_score[player] >= 64:
-            # Armageddon
+    return false
+if scenario == 8:
+    # Big Man
+    for player in 0..6:
+        if scenario_score[player] >= 40:
             return true
-        if scenario == 6:
-            # Siege
-            let held = 0
-            for k in 0..6:
-                if sectors[hq_sectors[k]].owner == player:
-                    held = held + 1
-            if held == 6:
-                return true
+    return false
+if scenario == 9:
+    # Armageddon
+    for player in 0..6:
+        if scenario_score[player] == 64:
+            return true
+    return false
+# Kill 'Em All (4) and Eliminate (7)
 return false
 ```
 
 ## Outputs
 
-Returns `true` when the scenario's own condition is met, as an `INT32`. Changes
-no state and makes no draws.
+Returns `true` when the scenario's own condition is met. Changes no state and
+makes no draws.
 
 ## Edge cases
 
-Two players can reach a threshold in the same turn; the manual says the winner
-of a timed scenario is the player with the highest score, and gives no rule
-for a tie.
+`elapsed_turns` still holds the number of turns resolved before this one, so
+a timed match ends with the resolution of turn `turn_limit`, counted from 1.
+The test is an equality: a counter already past `turn_limit - 1` never ends a
+timed match. Two players can reach a threshold in the same turn; the rule
+only reports that the match is over.
 
 ## What the sources say
 
 SRC-MANUAL-GOG, page 12, gives the time limits of the timed scenarios as 6
 months (26 turns) to 4 years (208 turns); page 13 gives the Dominance weights
-used in `dominance_points` for 6 months, 1 year, 2 years and 4 years; page 14
-gives the objectives of Kill 'Em All, Big 40, Eliminate, Siege, Big Man (40
-points) and Armageddon (all 64 sectors). FND-TURN-003 confirms from the
-executable that Big Man ends at a score of 40 or more. FND-UI-033 confirms
-that the Siege landmarks are the six headquarters sectors.
+for 6 months, 1 year, 2 years and 4 years, which are the executable's; page
+14 gives the objectives of Kill 'Em All, Big 40, Eliminate, Siege, Big Man (40
+points) and Armageddon (all 64 sectors). FND-OBJECTIVE-003 reads every test
+and weight from the executable.
 
 ## Differences between builds
 
@@ -105,13 +132,6 @@ None known.
 
 ## Open questions
 
-- Only the Big Man threshold is recorded from the executable. The Big 40,
-  Siege and Armageddon conditions, the time-limit test and its exact turn
-  count, and the Dominance weights come from the manual.
-- The values of `scenario` for the timed scenarios and Big 40 are not
-  recorded (`scenario_greed`, `scenario_power`, `scenario_acceptance`,
-  `scenario_dominance`, `scenario_big_40`).
-- Where the game keeps `turn_limit`, and whether `elapsed_turns` counts the
-  turn just resolved at this point, are not recorded.
-- Whether the executable's Dominance numerator uses the manual's weights is
-  not recorded.
+- None. A loaded or network-restored match carries `scenario`, `turn_limit`
+  and `elapsed_turns` unchanged (FND-OBJECTIVE-006), so it can pass the
+  timed test only where the match that was saved could.

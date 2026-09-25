@@ -31,10 +31,10 @@ types:
         encoding: ASCII
         doc: The gang's description, padded with spaces, with no NUL byte.
         doc-ref: FND-DATA-002
-      - id: force
+      - id: hire_cost
         type: s2
-        doc: The gang's Force as defined for hiring.
-        doc-ref: FND-AI-008
+        doc: The price of hiring the gang; 0 skips the cash test.
+        doc-ref: FND-HIRE-006, FND-AI-008
       - id: upkeep
         type: s2
         doc: Upkeep paid each turn for the gang.

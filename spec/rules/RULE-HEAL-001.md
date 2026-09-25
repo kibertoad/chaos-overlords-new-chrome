@@ -4,7 +4,7 @@ title: Heal rolls four dice plus the gang's Heal and adds each success to Force,
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, SRC-MANUAL-GOG]
+evidence: [FND-HEAL-001, FND-TURN-007, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001]
@@ -49,13 +49,16 @@ gang.force = min(gang.force + successes, 10)
 No return value. Raises the gang's `force` by its successes, to at most 10.
 Makes one `roll(6)`, three draws from `rng`, for each die of the pool of
 `heal + 4`, even when the gang is already at Force 10, and none for a pool of
-0 or less.
+0 or less. Records no report, and marks the gang for the network update
+(FND-HEAL-001).
 
 ## Edge cases
 
 - Band 0 and band 1 succeed on 5 or 6; band 2 on 4 to 6. No band loses dice.
 - A negative effective Heal of -4 or less gives a pool of 0 or less, which
   rolls nothing.
+- A gang already at Force 10 still rolls and uses its draws; the cap then
+  keeps it at 10 (FND-HEAL-001).
 - A recurring Heal order is cleared at `turn_start` once the gang is at Force
   10 (FND-TURN-004), so a gang at full Force normally has no Heal order to
   carry out.
@@ -73,9 +76,4 @@ None known.
 
 ## Open questions
 
-- Whether the Heal case tests Force before rolling, and so skips the draws for
-  a gang already at 10, is not recorded.
-- The instruction addresses of the Heal case in `0x00472775` are not
-  recorded.
-- Whether Heal records any report is not recorded; FND-EVENT-001 lists no
-  Heal report type.
+None known.

@@ -7,7 +7,7 @@ superseded_by: []
 impact: rules
 intent: unintended
 player_reliance: unknown
-evidence: [FND-AI-014, FND-AI-009, FND-AI-002]
+evidence: [FND-AI-050, FND-AI-014, FND-AI-009, FND-AI-002, FND-OBJECTIVE-003]
 conflicting: []
 split_with: []
 related: [RULE-AI-010, RULE-AI-002]
@@ -23,18 +23,25 @@ from a family-6 hire after an unrelated hire instead.
 
 A computer player reaches the family-6 slot of its scenario's hire schedule in
 Power, Kill 'Em All, Big 40 (slot 6), Greed, Armageddon (slot 5), Acceptance
-(slot 2) or Dominance (slot 10), numbering the scenarios as FND-AI-002 does.
+(slot 2) or Dominance (slot 10), numbering the scenarios as FND-OBJECTIVE-003 does.
 
 ## Mechanism
 
 Each of those schedule slots writes hire role 4, which the family table of
-RULE-AI-002 maps to family 6. The guard on the slot compares
-`previous_hire_role[player]` (the role of the previous hire, 0 to 6) with a
-constant equal to the slot number: 6 in Power, Kill 'Em All and Big 40, 5 in
-Greed and Armageddon, 2 in Acceptance and 10 in Dominance. The role is never
-10, so the Dominance guard never fires. In the other scenarios the guard fires
-after a hire of role 6, 5 or 2, which is not a family-6 hire, and never after a
-role-4 hire.
+RULE-AI-002 maps to family 6. When a hostile human gang is visible in a sector
+no hunter covers, the hunter test of RULE-AI-010 forces the slot on any turn,
+unless its guard fires. The guard compares `previous_hire_role[player]` (the
+role of the previous hire, 0 to 6) with a constant equal to the slot number: 6
+in Power, Kill 'Em All and Big 40, 5 in Greed and Armageddon, 2 in Acceptance
+and 10 in Dominance.
+
+Greed writes only the roles 1, 2, 3, 4 and 6, and Dominance the roles 1 to 6,
+so their guards never fire. In Power, Kill 'Em All and Big 40 the guard fires
+after a role-6 hire, in Acceptance after a role-2 hire and in Armageddon after
+a role-5 hire, none of which is a family-6 hire, and no guard fires after a
+role-4 hire. When a guard fires, the slot is not forced that turn, and if the
+turn's own slot is the hunter slot it is redirected to another family's slot,
+so the player hires no hunter that turn.
 
 ## Frequency
 
@@ -56,10 +63,6 @@ None known.
 
 ## Open questions
 
-- What the guard does when it fires (skip the slot, or take another slot) is
-  not recorded in the findings (FND-AI-009).
 - The alternative reading, that the guards compare with the slot on purpose to
   avoid some other role after a family-6 hire, is not excluded; no reading
   makes the Dominance comparison with 10 meaningful.
-- The scenario numbering behind the scenario names is contested (see
-  RULE-AI-002).

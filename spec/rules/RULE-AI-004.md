@@ -4,7 +4,7 @@ title: Queries the computer players' handlers share
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039]
+evidence: [FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, RULE-RNG-002]
@@ -28,11 +28,11 @@ None.
 
 ## Inputs
 
-`controller`, `attitude`, `gangs` (each gang's `player`, `sector`, `force`,
-`combat`, `defense`, `control`, `heal` and `visible_to`), `sectors` (each
-sector's `owner`, `income`, `support`, `crackdown_turns` and `sites`),
-`site_definitions`, `planning_records`, `turn_limit`, `elapsed_turns`, and
-`rng_state` through `roll`.
+`controller`, `casualties`, `attitude`, `gangs` (each gang's `player`,
+`sector`, `force`, `combat`, `defense`, `control`, `heal` and `visible_to`),
+`sectors` (each sector's `owner`, `income`, `support`, `crackdown_turns` and
+`sites`), `site_definitions`, `planning_records`, `turn_limit`,
+`elapsed_turns`, and `rng_state` through `roll`.
 
 ## Procedure
 
@@ -78,10 +78,10 @@ define crackdown_in_force(s):
 # Whether the gang idx could take sector s by Control on its own
 define solo_control_ok(player, idx, s):
     let sec = sectors[s]
-    if sec.owner == player:
-        return false
-    # a disabled sector is also rejected; see Open questions
+    # owner values -2 and -3 are rejected too; no rule writes them
     if sec.crackdown_turns != 0:
+        return false
+    if sec.owner == player:
         return false
     let g = gangs[idx]
     let defence = sec.income + sec.support
@@ -130,14 +130,38 @@ define visible_opponents(player, s, kind):
                 append(pool, p * 81 + slot)
     return pool
 
-# Whether sector s is owned by another player the player is hostile to
+# The owner the handlers read: -2 under police presence, else the owner byte
+define owner_query(s):
+    if sectors[s].crackdown_turns != 0:
+        return -2
+    return sectors[s].owner
+
+# Whether the player's attitude toward the owner query's value is negative.
+# The value is used as a column without a range test: for -1 or -2 the read
+# falls before the player's row
 define hostile_owner(player, s):
-    let o = sectors[s].owner
-    return o >= 0 and o != player and attitude[player * 6 + o] < 0
+    let i = player * 6 + owner_query(s)
+    if i < 0:
+        # player 0 reads bytes of modifier_visibility, which are never negative
+        return false
+    return attitude[i] < 0
 
 # Whether sector s is owned by a human player the player is hostile to
 define hostile_human_owner(player, s):
-    return hostile_owner(player, s) and is_human(sectors[s].owner)
+    let o = sectors[s].owner
+    return o >= 0 and hostile_owner(player, s) and is_human(o)
+
+# Whether the owner byte of sector s names a human (selector 0x35). The byte
+# is used as an index without a range test: for a neutral sector (-1) the read
+# falls on the last entry of casualties, player 5's count
+define owner_is_human(s):
+    let o = sectors[s].owner
+    let v = 0
+    if o >= 0:
+        v = controller[o]
+    else:
+        v = casualties[5]
+    return v == 0 or v == 3
 
 # One target draw from the pool of kind; the strength test uses the gang with
 # the same ordinal in the full pool. Returns the drawn target when the test
@@ -197,6 +221,13 @@ pool, `roll(0)` gives 1 and the draw reads the first element of an empty list;
 what the original reads there is not recorded. `previous_action_count` never
 counts an inactive gang, whose sector is 100.
 
+`hostile_owner` makes no test of the owner. For the player's own sector it
+reads the player's attitude toward itself. For a neutral sector or one under
+police presence it reads, for players 1 to 5, the previous player's attitude
+toward player 5 or player 4, and for player 0 a value that is never negative.
+`solo_control_ok` counts every visible gang of another player in the sector,
+the owner's and any third player's.
+
 ## What the sources say
 
 SRC-MANUAL-GOG does not describe these queries.
@@ -207,11 +238,6 @@ None known.
 
 ## Open questions
 
-- `solo_control_ok` also rejects a "disabled" sector (the state-query function
-  returns owner -2 for one); what makes a sector disabled is not recorded. The
-  "unavailable" test is taken to be the Crackdown byte at sector record +15.
-- `solo_control_ok` reads the sector's Income; the `income` row of
-  FMT-STATE-002 is disputed.
 - `crackdown_in_force` is taken to test for a nonzero Crackdown byte; a positive
   test is also possible.
 - Whether `visible_weight` stops at the first visible gang or looks on for one

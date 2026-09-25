@@ -4,7 +4,7 @@ title: A player named with the island modifier puts every neutral sector under a
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-003, FND-SETUP-001]
+evidence: [FND-SETUP-015, FND-SETUP-003, FND-SETUP-001]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-001, FMT-STATE-002]
@@ -14,12 +14,13 @@ related: [RULE-SETUP-001, FMT-STATE-002]
 
 If any player's name is exactly the executable's island modifier name, every
 sector no player owns at the start of the match is under a permanent
-Crackdown. The six headquarters sectors are not.
+Crackdown. The six headquarters sectors are not. It applies only in a local
+game.
 
 ## When it runs
 
-Once per new match, inside RULE-SETUP-004, after the headquarters have owners
-and the Right Hands exist.
+Once per new match in a local game, inside RULE-SETUP-004, after the
+modifier scan has set `modifier_islands`.
 
 ## Parameters
 
@@ -27,13 +28,13 @@ None.
 
 ## Inputs
 
-`player_names`, `modifier_name_islands`, each sector's `owner`.
+`modifier_islands`, each sector's `owner`.
 
 ## Procedure
 
 ```text
-for each player in turn_order:
-    if name_matches(player, modifier_name_islands):
+for player in 0..6:
+    if modifier_islands[player]:
         for s in 0..64:
             if sectors[s].owner == SECTOR_NEUTRAL:
                 sectors[s].crackdown_turns = CRACKDOWN_PERMANENT
@@ -42,7 +43,7 @@ for each player in turn_order:
 ## Outputs
 
 No return value. Sets `crackdown_turns` to 100 in every neutral sector when
-some player's name matches. Makes no draws.
+some player's `modifier_islands` is set. Makes no draws.
 
 ## Edge cases
 
@@ -60,6 +61,4 @@ None known.
 
 ## Open questions
 
-- The address of the string `modifier_name_islands` is not recorded.
-- Whether the flag is kept per player or as a single byte is not stated
-  exactly; per player is the reading used.
+- None.

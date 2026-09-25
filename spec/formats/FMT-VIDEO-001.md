@@ -9,7 +9,7 @@ byte_order: little
 size: null
 text: false
 definition: fmt_video_001.ksy
-evidence: [FND-VIDEO-001, FND-PLATFORM-006, FND-ASSET-001]
+evidence: [FND-VIDEO-001, FND-PLATFORM-006, FND-ASSET-001, FND-DATA-006]
 conflicting: []
 split_with: []
 related: []
@@ -66,7 +66,7 @@ Both files of BLD-GOG-EN-1.1 were read with a script (FND-VIDEO-001): the
 header, the two tables, the trees and the frame blocks add up exactly to each
 file's size, and every value in the table was read from the files. The
 contents of `trees` and of the frame blocks were not decoded. The Kaitai
-definition has not been compiled or run against the files.
+definition compiles and parses both files (FND-DATA-006).
 
 ## Open questions
 

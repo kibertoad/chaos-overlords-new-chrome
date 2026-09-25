@@ -4,7 +4,7 @@ title: The endgame awards go to every player tied at the extreme of each statist
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, SRC-MANUAL-GOG]
+evidence: [FND-AWARDS-004, FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: []
@@ -54,6 +54,12 @@ define award_least(stat: INT32[6], start, category):
             append(player_awards[p], category)
     return
 
+# Each player's list starts empty. The executable sets the first three of
+# the five entries to -1 and leaves the fourth and fifth as an earlier match
+# left them; the endgame draws only the first three.
+for p in 0..6:
+    player_awards[p] = []
+
 # Categories in the builder's order: 0 Fist, 1 Skull, 2 Big Fat Chicken,
 # 3 Dollar Sign, 4 Safe
 award_most(overthrow_count, 5, 0)
@@ -93,6 +99,4 @@ None known.
 
 ## Open questions
 
-- Where `player_awards` is kept and the codes it stores for each category are
-  not recorded; the category numbers here are the builder's order.
-- Whether the table is cleared before the builder runs is not recorded.
+- None.

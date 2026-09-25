@@ -9,7 +9,7 @@ byte_order: null
 size: null
 text: true
 definition: null
-evidence: [FND-HELP-004, FND-HELP-001]
+evidence: [FND-HELP-004, FND-HELP-001, FND-HELP-005]
 conflicting: []
 split_with: []
 related: []
@@ -19,8 +19,9 @@ related: []
 
 The contents file is ASCII text of 75 lines, each ended by CR LF, the last
 included. No byte is above `0x7F` and no line holds a tab (FND-HELP-004). The
-Windows help viewer reads it when it opens `Chaos.hlp` (FMT-HELP-001); the
-executable never opens it. Each line is one of the kinds below, told apart by
+Windows help viewer reads it when `Chaos.hlp` (FMT-HELP-001) is opened in it.
+The executable never opens either file: its one call that would start the
+viewer is never reached (FND-HELP-005, RULE-HELP-001). Each line is one of the kinds below, told apart by
 its start.
 
 | Key | Type | Name | Meaning | Status | Evidence |

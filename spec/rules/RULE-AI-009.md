@@ -4,7 +4,7 @@ title: A computer player that hires nothing snubs one offer, the first in Greed 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-011]
+evidence: [FND-AI-011, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -27,7 +27,7 @@ None.
 
 ## Inputs
 
-`hire_offers`, `gang_definitions` (`force`, `upkeep`, `stealth`, `combat`,
+`hire_offers`, `gang_definitions` (`hire_cost`, `upkeep`, `stealth`, `combat`,
 `defense`, `control`, `heal`, `influence`, `research`, `strength`, `blade`,
 `range`, `fighting`, `martial_arts`, `tech_level`) and `scenario`.
 
@@ -45,7 +45,7 @@ define offer_to_snub(player):
         let sum = max(d.combat, 0) + max(d.defense, 0) + max(d.control, 0) + max(d.heal, 0)
         sum = sum + max(d.influence, 0) + max(d.research, 0) + max(d.strength, 0) + max(d.blade, 0)
         sum = sum + max(d.range, 0) + max(d.fighting, 0) + max(d.martial_arts, 0) + max(d.tech_level, 0)
-        let value = d.stealth * 20 * sum / (d.force + d.upkeep + 1)
+        let value = d.stealth * 20 * sum / (d.hire_cost + d.upkeep + 1)
         if value < best:
             best = value
             choice = k
@@ -79,6 +79,6 @@ None known.
   whether any offer is snubbed are not recorded.
 - The address the snub value `0xFE` is written to is not recorded; it is taken
   to be the offer's element of `hire_orders`.
-- Whether `force + upkeep + 1` can be 0 (a divide by zero) depends on the
+- Whether `hire_cost + upkeep + 1` can be 0 (a divide by zero) depends on the
   shipped gang values, which are content; the original's behaviour then is not
   recorded.

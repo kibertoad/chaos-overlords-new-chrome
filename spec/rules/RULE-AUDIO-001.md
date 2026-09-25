@@ -4,7 +4,7 @@ title: Starting a music program
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-001, FND-PLATFORM-006]
+evidence: [FND-AUDIO-001, FND-AUDIO-007, FND-PLATFORM-006, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -23,14 +23,14 @@ With mode 0 when the title screen is first entered and whenever the local game,
 network game or load paths return to it; with mode 2 when the outer game and
 turn function is entered and when a player's endgame screen returns to a later
 human player; with mode 1 when either endgame and awards presentation starts;
-and with the current `music_mode` when RULE-AUDIO-002 sees that playback has
-ended. It does not run when the player moves between the title and setup, opens
+and with the current `music_mode` when RULE-AUDIO-002 finds the device not
+playing. It does not run when the player moves between the title and setup, opens
 the Options menu or Help, or opens and closes panels during a game.
 
 ## Parameters
 
 - `mode` (`INT32`): 0 for the title program, 1 for the endgame program, 2 for the
-  game program.
+  game program, or -1 to keep the stored program.
 
 ## Inputs
 
@@ -42,10 +42,14 @@ the Options menu or Help, or opens and closes panels during a game.
 let first_track: INT32[3] = [2, 9, 3]
 let last_track: INT32[3] = [2, 9, 8]
 if mode != music_mode:
+    # faded out over 32 steps of 17 ms when the CD device has a volume control
     emit MusicStopped()
-music_mode = mode
+    if mode != -1:
+        music_mode = mode
 if music_enabled != 0:
-    emit MusicPlayRequested(first_track[mode], last_track[mode])
+    if music_mode >= 0 and music_mode <= 2:
+        # the pointer shows the hourglass while the command is sent
+        emit MusicPlayRequested(first_track[music_mode], last_track[music_mode])
 ```
 
 ## Outputs
@@ -53,14 +57,21 @@ if music_enabled != 0:
 No return value. Sets `music_mode`. Emits `MusicStopped` when the mode changes,
 then `MusicPlayRequested` with the program's first and last CD track when music
 is enabled. The original asks MCI for the length of the last track and then
-plays from the first track to the end of the last with a notification when
-playback ends.
+plays, in track, minute, second and frame positions, from the start of the first
+track to the end of the last, asking for a notification that nothing uses
+(FND-AUDIO-007).
 
 ## Edge cases
 
-Starting the program that is already selected does not stop the music first; it
-asks MCI to play the program again from its first track. This is how a program
-repeats after its last track.
+- Starting the program that is already selected does not stop the music first;
+  it asks MCI to play the program again from its first track. This is how a
+  program repeats after its last track, and a program already playing restarts
+  from its first track when a caller starts it again.
+- `music_mode` is -1 in the executable's data, so until the first program is
+  started nothing plays. A mode of -1, while a program is stored, fades the music
+  out and starts the stored program again from its first track.
+- Without a disc or a CD audio device the commands fail silently
+  (RULE-AUDIO-010).
 
 ## What the sources say
 
@@ -73,6 +84,4 @@ None known.
 
 ## Open questions
 
-- What a negative mode does. No caller passes one.
-- Whether starting a program that is already playing, other than after it ends,
-  restarts it audibly.
+None.

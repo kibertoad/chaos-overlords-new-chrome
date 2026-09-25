@@ -4,7 +4,7 @@ title: Hires and snubs are carried out player by player and offer slot by offer 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-001, FND-HIRE-002, FND-HIRE-005, FND-EQUIP-006, FND-EVENT-001, FND-TURN-005, SRC-MANUAL-GOG]
+evidence: [FND-HIRE-001, FND-HIRE-002, FND-HIRE-005, FND-HIRE-006, FND-EQUIP-006, FND-EVENT-001, FND-TURN-005, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-DATA-002]
@@ -15,7 +15,8 @@ related: [RULE-RNG-002, FMT-STATE-001, FMT-DATA-002]
 At the end of the turn each player's hire or snub order is carried out. A
 snubbed offer is removed. A hire fails if the player already has six gangs in
 the sector, cannot pay, or has no free roster place; otherwise the new gang
-appears in the sector with Force 5 to 9 and the player pays its hire cost.
+appears in the sector with Force 5 to 9 and the player pays its hire cost. A gang whose hire cost is 0 is hired
+whatever the player's cash.
 Either way the offer's slot stays empty until the player's next planning phase.
 
 ## When it runs
@@ -30,8 +31,8 @@ None.
 
 `turn_order`, `hire_offers`, `hire_orders`, `gangs` (the `sector` of each of
 the player's records), `cash`, `cash_spent`, `hire_force_modifier`, the
-`force` of each entry of `gang_definitions`, which is the hire price,, and the state of `rng`
-through `roll`.
+`hire_cost` and statistics of each entry of `gang_definitions`, and the state
+of `rng` through `roll`.
 
 ## Procedure
 
@@ -54,8 +55,9 @@ for each player in turn_order:
                 hire_orders[i] = -1
                 continue
             let chosen = hire_offers[i]
-            let cost = gang_definitions[chosen].force
-            if cost > cash[player]:
+            let def = gang_definitions[chosen]
+            let cost = def.hire_cost
+            if cost != 0 and cost > cash[player]:
                 emit HireCashShort(player, chosen)
                 hire_orders[i] = -1
                 continue
@@ -75,8 +77,32 @@ for each player in turn_order:
             recruit.player = player
             recruit.definition = chosen
             recruit.sector = order
+            for p in 0..6:
+                recruit.visible_to[p] = 0
+            recruit.visible_to[player] = 1
             recruit.force = force
-            # The other fields the original writes into the new record are not recorded.
+            recruit.weapon = -1
+            recruit.armor = -1
+            recruit.misc = -1
+            recruit.combat = INT8(def.combat)
+            recruit.defense = INT8(def.defense)
+            recruit.stealth = INT8(def.stealth)
+            recruit.detect = INT8(def.detect)
+            recruit.action = 0
+            recruit.target = 0
+            recruit.target_2 = 0
+            recruit.repeat_action = 0
+            recruit.repeat_target = 0
+            recruit.chaos = INT8(def.chaos)
+            recruit.control = INT8(def.control)
+            recruit.heal = INT8(def.heal)
+            recruit.influence = INT8(def.influence)
+            recruit.research = INT8(def.research)
+            recruit.strength = INT8(def.strength)
+            recruit.blade = INT8(def.blade)
+            recruit.ranged = INT8(def.range)
+            recruit.fighting = INT8(def.fighting)
+            recruit.martial_arts = INT8(def.martial_arts)
             gangs[player * 81 + free] = recruit
             cash_spent[player] = cash_spent[player] + cost
             cash[player] = cash[player] - cost
@@ -88,7 +114,8 @@ for each player in turn_order:
 
 No return value. For each snub, negates the offer and clears the order. For
 each successful hire, writes a new gang record into the first free roster
-slot, adds the hire cost to `cash_spent` and subtracts it from `cash`,
+slot, marks that gang for the network update (FND-HIRE-006), adds the hire
+cost to `cash_spent` and subtracts it from `cash`,
 negates the offer and clears the order. For each failed hire, clears the order
 and emits `HireSectorFull`, `HireCashShort` or `HireRosterFull`, leaving the
 offer in place. Makes three draws from `rng` (one `roll(5)`) for each hire that
@@ -98,6 +125,14 @@ set; a hire that then finds no free slot has still made them.
 ## Edge cases
 
 - A hire with exactly as much cash as its cost succeeds.
+- A definition whose hire cost is 0 skips the cash test, so it is hired even
+  by a player in debt. The shipped `DATA/Gangs` has one such definition
+  among the offered numbers 1 to 89 (FND-HIRE-006).
+- The search stops at roster slot 79, so slot 80 is never filled by a hire
+  and a player holds at most 80 hired gangs.
+- The new gang starts with its definition's statistics, without items or
+  site bonuses; its effective statistics are rebuilt at the next
+  `turn_start` (RULE-GANG-001).
 - The sector count covers only the hiring player's gangs; other players'
   gangs in the sector do not count (FND-HIRE-002).
 - A failed hire keeps its offer, which stays positive and so is not refilled.
@@ -122,19 +157,6 @@ None known.
 
 ## Open questions
 
-- The hire price is taken to be `force` at `0x7A` of FMT-DATA-002, the field
-  the computer players compare with cash (FND-AI-008). FND-HIRE-001 does not
-  give the displacement the hire block reads.
-- Which fields of the new gang record the original sets besides `player`,
-  `definition`, `sector` and `force` (equipment, action and recurring
-  action, `visible_to`, the effective statistics) is not recorded.
-- Whether the free-slot search covers roster slots 0 to 79 or 1 to 80 is not
-  written down; this rule assumes 0 to 79.
-- The operand order of the cash comparison at `0x00475A0E` is inferred from
-  the `JG` failure branch: `cost > cash` fails. What happens to a zero-cost
-  hire when cash is negative follows from that reading and is unconfirmed.
 - The failure reports are RULE-EVENT-009, RULE-EVENT-010 and RULE-EVENT-011.
   FND-EVENT-001 lists no report for a snub or a successful hire.
-- Where in the successful path the offer is negated relative to the cash
-  updates is not recorded; nothing between them reads it.
 - `hire_phase` coming after `control_phase` is not shown.

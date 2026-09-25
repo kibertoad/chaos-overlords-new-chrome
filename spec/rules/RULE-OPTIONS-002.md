@@ -4,7 +4,7 @@ title: Saving the options to the registry, which always fails
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OPTIONS-001]
+evidence: [FND-OPTIONS-001, FND-OPTIONS-003, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -17,9 +17,11 @@ for reading only, so nothing is saved.
 
 ## When it runs
 
-From three places in the application flow, at `0x00460EF9`, `0x00460F40` and
-`0x0046224A` in BLD-GOG-EN-1.1. What the player does to reach them is not
-recorded.
+From three places in the title function. Two run when startup gives up because
+the images for the chosen colour depth, 8-bit or 16-bit, are missing: the game
+shows a message, turns full screen on (and, for 8-bit, Thousands of Colors),
+tries the save and stops. The third runs when the player exits from the title
+screen, before the music fades out.
 
 ## Parameters
 
@@ -58,5 +60,4 @@ None known.
 
 ## Open questions
 
-- Which player actions reach the three callers (exit, a menu command, the end of
-  setup).
+None.

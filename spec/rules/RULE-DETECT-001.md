@@ -4,7 +4,7 @@ title: A player sees an enemy gang when its Stealth is at most the player's dete
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-DETECT-001, FND-SETUP-011, SRC-MANUAL-GOG]
+evidence: [FND-DETECT-001, FND-DETECT-002, FND-EXE-004, FND-SETUP-011, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -21,7 +21,8 @@ sees its own gangs.
 ## When it runs
 
 At each planning entry in `planning_phase`, from both the computer and the
-human planning paths, before the player gives orders [FND-DETECT-001].
+human planning paths, before the player gives orders, as `fn_0046FA11`
+(range in FND-EXE-004) [FND-DETECT-001, FND-DETECT-002].
 
 ## Parameters
 
@@ -73,7 +74,8 @@ for observer in 0..6:
 ## Outputs
 
 No return value. Rewrites `visible_to` of every active gang for every
-observer. Makes no draws.
+observer, 0 or 1, and leaves the bytes of inactive gangs as they were. Makes
+no draws.
 
 ## Edge cases
 
@@ -87,6 +89,10 @@ observer. Makes no draws.
 - When two gangs share the best Detect, the first in roster order is the base.
   The total is the same either way.
 - Hide is not read, so hiding does not change who sees a gang.
+- All six observer slots are rebuilt, including slots of players who are out
+  of the match or never joined [FND-DETECT-002].
+- An inactive gang's `visible_to` bytes keep what they held when the gang
+  died, left or was hired over [FND-DETECT-002].
 
 ## What the sources say
 
@@ -104,10 +110,4 @@ None known.
 
 ## Open questions
 
-- Whether the visibility pass loops over all six observer slots, as written, or only
-  over players still in the match, and whether it writes `visible_to` of
-  inactive gangs.
-- Whether a gang not seen gets 0 written, as written, or keeps its old value;
-  the finding says gangs are marked visible "exactly when" the test holds.
-- Whether the observer loop is `turn_order` or a separate count of the slots
-  (the result does not depend on it).
+None known.

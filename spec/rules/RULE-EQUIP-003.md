@@ -4,7 +4,7 @@ title: An item's price is its Cost, less a third of it rounded down when the buy
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-001, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-FINANCE-002, FND-STATE-001, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, FMT-DATA-003]
@@ -54,8 +54,16 @@ Returns the price, an `INT32`. Changes no state and makes no random draw.
   give 7 for a Cost of 11.
 - Another player's completed Factory in the sector gives no discount, and
   neither does a Factory completed during this turn's `instant_phase`, since
-  the sector's Factory flag is set only when the sector records are rebuilt
-  before planning (FND-GANG-001, RULE-SITE-001).
+  the sector's Factory flag, set by a completed site whose `special` is 3, is
+  written only when the sector records are rebuilt
+  before planning (FND-GANG-001, FND-STATE-001, RULE-SITE-001).
+- The transaction pass, the Equip list and the City Financial panel all pass
+  the buying gang's current sector and the gang's player, and compute the
+  same `Cost - Cost / 3` [FND-EQUIP-007, FND-EQUIP-008, FND-FINANCE-002]. The
+  Sector Financial panel passes the panel's sector, which is the sector the
+  counted gangs stand in.
+- A gang ordered to Move is priced with the sector it stands in when the
+  transaction pass runs, before the Move.
 
 ## What the sources say
 
@@ -69,8 +77,4 @@ None known.
 
 ## Open questions
 
-- That the sector is the buying gang's current one is taken from the manual;
-  FND-EQUIP-001 does not name the sector index the resolver uses.
-- The Equip list and the Financial panel are expected to use the same
-  function; the reads at `0x0043F36D` and in the Financial panel have not been
-  tied to them by a finding.
+None known.

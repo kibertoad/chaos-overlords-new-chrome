@@ -4,7 +4,7 @@ title: A push-button control acts only when released inside
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-032, FND-AUDIO-010]
+evidence: [FND-UI-032, FND-AUDIO-010, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005]

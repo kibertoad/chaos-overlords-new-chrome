@@ -4,7 +4,7 @@ title: Begin turns every empty setup slot into a computer player with an unused 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-002, FND-RNG-005, SRC-HELP-GOG, SRC-MANUAL-GOG]
+evidence: [FND-SETUP-013, FND-SETUP-017, FND-SETUP-002, FND-RNG-005, SRC-HELP-GOG, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, RULE-SETUP-001]
@@ -66,7 +66,10 @@ match.
 With six local humans no slot is empty and no draw is made. A portrait taken
 by any slot, human or computer, is rejected. Since at most five slots can be
 empty and there are 15 portraits, a free portrait always exists, but the
-number of draws is unbounded in principle.
+number of draws is unbounded in principle. An empty slot's `portrait` is 15
+during the scan, so it rejects nothing. Begin saves the humans' roster for
+the next setup before this rule fills the empty slots (RULE-SETUP-010), so the
+computer players are not saved.
 
 ## What the sources say
 
@@ -82,9 +85,5 @@ None known.
 
 ## Open questions
 
-- What an empty slot's `portrait` holds during the scan (the empty-slot image,
-  15, is the likely value) is not recorded; a value from 0 to 14 there would
-  change which portraits are rejected.
-- The address of `portrait` is not recorded.
 - Whether a name shorter than 10 characters is padded, and with what, is not
   recorded.

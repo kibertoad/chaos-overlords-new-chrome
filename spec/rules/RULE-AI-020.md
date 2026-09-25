@@ -4,7 +4,7 @@ title: Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-020, FND-AI-021, FND-AI-004, FND-AI-028]
+evidence: [FND-AI-020, FND-AI-021, FND-AI-004, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-057]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002]
@@ -17,8 +17,11 @@ unless police are in its sector. After Control, Equip or Snitch it first
 upgrades its equipment when enemies are near; otherwise, with at least 50 cash,
 it commits a crime in a sector owned by someone else: Chaos where Tolerance is
 3 or less, Snitch where it is higher. Whether it does so against humans or
-computers depends on the Mentality. When nothing applies it wanders through
-sector selector mode 5.
+computers depends on the Mentality. After Attack, Hide or Move it attacks a
+weaker gang when a hostile human's gang is in sight, and otherwise heals, takes
+the sector, snitches or moves on. When nothing applies it wanders through
+sector selector mode 5. In the last three turns of a Greed match every gang
+terminates.
 
 ## When it runs
 
@@ -31,9 +34,9 @@ From RULE-AI-002, for a gang whose family is 1.
 ## Inputs
 
 The gang's record in `gangs` and in `planning_records` (`previous_action`,
-`older_action`, `weapon_cooldown`, `armor_cooldown`), `sectors` (`owner`,
-`tolerance`), `cash`, `mentality`, `controller`, `item_definitions` (`cost`),
-and what the functions it calls read.
+`older_action`, `weapon_cooldown`, `armor_cooldown`), `aux_records`, `sectors`
+(`owner`, `tolerance`), `sector_weight`, `cash`, `mentality`, `scenario`,
+`item_definitions` (`cost`), and what the functions it calls read.
 
 ## Procedure
 
@@ -74,27 +77,64 @@ else if prev == ACTION_CONTROL or prev == ACTION_EQUIP or prev == ACTION_SNITCH:
             r.armor_cooldown = item_definitions[a].cost * 3
             equipped = true
     if not equipped:
-        let o = sectors[s].owner
+        let q = owner_query(s)
         let crime = false
-        if o >= 0 and is_human(o):
-            crime = cash[player] >= 50 and mentality >= 1
-        else:
-            crime = o != player and o > 0 and cash[player] >= 50 and mentality == 0
+        if owner_is_human(s) and cash[player] >= 50 and mentality >= 1:
+            crime = true
+        else if q != player and q > 0 and cash[player] >= 50 and mentality == 0:
+            crime = true
         if crime and sectors[s].tolerance <= 3:
             plan(idx, ACTION_CHAOS, 0, 0)
         else if crime:
             plan(idx, ACTION_SNITCH, 0, 0)
         else:
             plan(idx, ACTION_MOVE, select_sector(player, 5, idx), 0)
-# the other previous actions: see Open questions
+else if prev == ACTION_ATTACK or prev == ACTION_HIDE or prev == ACTION_MOVE:
+    let w = sector_weight[player * 64 + s]
+    let fallback = false
+    if w == 10:
+        let kind = 0
+        if hostile_owner(player, s):
+            kind = 1
+        let t = draw_once(player, idx, kind)
+        if t != -1:
+            plan(idx, ACTION_ATTACK, t / 81, t % 81)
+            aux_records[idx].focus = s
+        else:
+            fallback = true
+    else if owner_query(s) == player:
+        plan(idx, ACTION_MOVE, select_sector(player, 5, idx), 0)
+    else:
+        fallback = true
+    if fallback:
+        let hostile_gate = hostile_owner(player, s) and mentality >= 1
+        let snitch_ok = owner_is_human(s) and (hostile_gate or mentality == 2)
+        if g.force < 9 and g.heal >= -3:
+            plan(idx, ACTION_HEAL, 0, 0)
+        else if solo_control_ok(player, idx, s):
+            plan(idx, ACTION_CONTROL, 0, 0)
+        else if snitch_ok and cash[player] > 50:
+            plan(idx, ACTION_SNITCH, 0, 0)
+        else:
+            plan(idx, ACTION_MOVE, select_sector(player, 5, idx), 0)
+# previous Bribe, Give, Influence, Research, Sell and Terminate: no write
+# every action written above except Attack clears the first auxiliary value
+if r.planned_action != ACTION_NONE and r.planned_action != ACTION_ATTACK:
+    aux_records[idx].focus = -1
+if scenario == 0 and turns_remaining() < 4:
+    plan(idx, ACTION_TERMINATE, 0, 0)
+    r.needs_family = 1
 ```
 
 ## Outputs
 
 No return value. Writes the gang's planned action and targets through `plan`
 (Move targets the sector `select_sector` returns; Equip targets the item). An
-Equip sets the matching cooldown to three times the item's cost. Draws from
-`rng` only inside `select_sector`.
+Equip sets the matching cooldown to three times the item's cost. An Attack
+stores the current sector in the first auxiliary value, and every other action
+the handler writes stores -1. The scenario-0 Terminate also sets
+`needs_family`. Draws from `rng` only inside `select_sector` and
+`draw_once`.
 
 ## Edge cases
 
@@ -102,8 +142,13 @@ No recorded family-1 branch heals a gang at Force 9. After None or Chaos the
 Heal gate is Force below 8, and after Heal it is Force below 9. A computer
 player's gang never commits a crime in a sector of player 0 at Goon, because
 the owner test is "greater than 0" (BUG-AI-004). Cash of exactly 50 passes the
-crime gate. In a neutral sector the crime gate fails (the owner is -1), so the
-gang moves.
+crime gate. A human owner that fails the first crime test still gets the Goon
+test, so at Goon a gang commits crimes in the sectors of humans in slots 1 to 5.
+Under police presence the owner query is -2 and the Goon test fails. A neutral
+sector counts as human-owned when player 5 has 0 or 3 casualties
+(`owner_is_human`), so at Mentality 1 or 2 a gang can commit a crime or snitch
+in a neutral sector. After Attack, Hide or Move, Snitch needs cash strictly
+above 50.
 
 ## What the sources say
 
@@ -116,16 +161,6 @@ None known.
 
 ## Open questions
 
-- The branches for previous actions Attack, Bribe, Give, Hide, Influence,
-  Move, Research, Sell and Terminate are not recorded; the procedure writes
-  nothing for them, so the planned action stays None.
-- A branch that keeps Snitch only while cash is strictly above 50, and
-  otherwise writes Move, is recorded without the previous action that leads to
-  it (FND-AI-020).
-- A pair of Mentality gates includes an exact-Crime-Lord (Mentality 2) test
-  whose branch is not recorded.
-- How selector `0x35` treats a neutral owner (-1) is not recorded; the
-  procedure treats a neutral sector as not human-owned.
 - Whether the weapon choice is taken when its cooldown blocks it, so that
   armor is not tried, is not recorded; the procedure tries armor when the
   weapon is missing or its cooldown has not run out.

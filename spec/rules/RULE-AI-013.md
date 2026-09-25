@@ -4,7 +4,7 @@ title: A computer player keeps one hire placement sector and replaces it by fixe
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-010, FND-AI-019, FND-AI-040]
+evidence: [FND-AI-010, FND-AI-051, FND-AI-045, FND-AI-019, FND-AI-040, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, FMT-STATE-001, FMT-STATE-002, FMT-STATE-003]
@@ -22,8 +22,10 @@ most central owned sector with room.
 ## When it runs
 
 `refresh_anchor` runs in RULE-AI-001, after every gang has been dispatched and
-before the hire choice. `seed_anchor` runs once per player when a new match is
-set up, after the headquarters are placed.
+before the gang limit and the hire choice. `seed_anchor` runs once per player
+when a new match is set up, after the headquarters are placed, in the set-up
+step that also resets the computer players' flags (FND-AI-045); a loaded match
+keeps the saved anchor.
 
 ## Parameters
 
@@ -49,20 +51,21 @@ define crackdown_at(c):
 define free_neighbours(player, center):
     let o = 0
     if center == -1:
-        # the owner read lands before the sector list; see Open questions
+        # the owner read lands before the sector list, on a byte that holds 0
         o = g_004A08C4
     else:
         o = owner_at(center)
     if o != player:
         return 0
     let n = 0
+    # signed remainder: -1 for a centre of -1, which excludes no column
     let cx = center % 8
     for dy in -1..2:
         for dx in -1..2:
             let c = center + dy * 8 + dx
             if c < 0 or c >= 65:
                 continue
-            if cx + dx < 0 or cx + dx > 7:
+            if (cx == 0 and dx == -1) or (cx == 7 and dx == 1):
                 continue
             if owner_at(c) == SECTOR_NEUTRAL and crackdown_at(c) == 0:
                 n = n + 1
@@ -124,7 +127,9 @@ define seed_anchor(player):
 
 define refresh_anchor(player):
     let center = placement_anchor[player] - 0x40
-    if scenario != 8 and free_neighbours(player, center) > 0 and sector_gang_count[player * 64 + center] <= 5:
+    # tested in this order, stopping at the first failure; for centre -1 the
+    # count read is the element before the player's row (see Edge cases)
+    if free_neighbours(player, center) > 0 and sector_gang_count[player * 64 + center] <= 5 and scenario != 8:
         return
     placement_anchor[player] = choose_anchor(player, placement_anchor[player]) + 0x40
     return
@@ -138,9 +143,17 @@ found. Makes no draw.
 
 ## Edge cases
 
-When every pass fails, the anchor becomes 63, which decodes to -1. At the next
-refresh `free_neighbours` reads the owner byte before the sector list for it
-(BUG-AI-002), and a hire placed there goes to sector -1. In Big Man the anchor
+When every pass fails, the anchor becomes 63, which decodes to -1, and a hire
+placed at the anchor is dropped: `hire_destination` stores no order for sector
+-1. At the next refresh `free_neighbours` reads the owner byte before the
+sector list for it (BUG-AI-002), which holds 0. For players 1 to 5 the anchor
+fails the test and the scan runs again. For player 0 the scan counts the free
+neutral sectors among 0, 6, 7 and 8, and the occupancy read, which falls just
+before `sector_gang_count`, gives 0; so while one of those sectors is free
+land, player 0 keeps anchor 63 outside Big Man and hires nothing at its anchor.
+For a player from 1 to 5 the occupancy read of centre -1 would be element 63 of
+the previous player's row, but it is not reached, since the owner test has
+already failed. In Big Man the anchor
 is always replaced, and a failed scan keeps the old anchor, including 63 and
 164 (sector 100), even when that sector is full. The neighbourhood scans also
 read index 64, which lies past the last sector (BUG-AI-002).
@@ -155,19 +168,7 @@ None known.
 
 ## Open questions
 
-- `g_004A08C4` stands for the byte 36 bytes before the sector list, the owner
-  byte of the sector at index -1. What the original keeps there is not
-  recorded.
-- The order of the three keep tests (scenario, free neighbours, occupancy) and
-  whether they stop at the first failure are not recorded; the occupancy test
-  for centre -1 would read the element before the player's row of
-  `sector_gang_count`.
+- `g_004A08C4` is not identified: no instruction refers to it and it holds 0
+  (FND-AI-051).
 - In Big Man the first list the scan tests is empty (a radius-zero list); it is
   left out of the procedure.
-- Where `seed_anchor` runs within new-match set-up is not recorded; it needs
-  the Right Hands' sector, so it runs after the headquarters are placed.
-- The occupancy counts are taken from `sector_gang_count`; the findings speak
-  of "occupancy below six" without naming the array.
-- An anchor of 164 (sector 100) in Big Man is kept because the scan returns the
-  incoming anchor minus 64; what `free_neighbours` would read for it is not
-  reached, since Big Man skips the keep test.

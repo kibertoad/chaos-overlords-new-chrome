@@ -4,7 +4,7 @@ title: Family-2 computer gangs equip, heal, attack visible hostile gangs and tak
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-032, FND-AI-033, FND-AI-018, FND-AI-015, FND-AI-028]
+evidence: [FND-AI-032, FND-AI-033, FND-AI-018, FND-AI-015, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-058, FND-AI-057]
 conflicting: []
 split_with: []
 related: [RULE-AI-003, RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -62,7 +62,7 @@ if not done and g.force < 8 and g.heal >= -3 and w < 5:
     plan(idx, ACTION_HEAL, 0, 0)
     aux_records[idx].focus = -1
     done = true
-if not done and sectors[s].owner == player:
+if not done and owner_query(s) == player:
     plan(idx, ACTION_MOVE, select_sector(player, 6, idx), 0)
     aux_records[idx].focus = -1
     done = true
@@ -80,16 +80,20 @@ if not done:
     else:
         plan(idx, ACTION_CONTROL, 0, 0)
     aux_records[idx].focus = -1
-# two late gates that can replace the action chosen above
-let o = sectors[s].owner
-if hostile_owner(player, s) and count(visible_opponents(player, s, 3)) == 0 and combat_advantage[player * 6 + o] == 1:
-    plan(idx, ACTION_CONTROL, 0, 0)
-    aux_records[idx].focus = -1
-else if hostile_human_owner(player, s) and count(visible_opponents(player, s, 1)) == 0 and prev != ACTION_CONTROL:
+# two late gates that can replace any action chosen above; a cooldown stays
+let q = owner_query(s)
+let gate_1 = false
+if hostile_owner(player, s) and count(visible_opponents(player, s, 1)) == 0:
+    gate_1 = owner_is_human(s) and prev != ACTION_CONTROL
+let gate_2 = false
+if hostile_owner(player, s) and count(visible_opponents(player, s, 3)) == 0:
+    gate_2 = combat_advantage[player * 6 + q] != 0
+if gate_1 or gate_2:
     plan(idx, ACTION_CONTROL, 0, 0)
     aux_records[idx].focus = -1
 if scenario == 0 and turns_remaining() < 4:
     plan(idx, ACTION_TERMINATE, 0, 0)
+    r.needs_family = 1
 ```
 
 ## Outputs
@@ -107,7 +111,12 @@ fail, and the strength test can be made on a different gang from the one
 attacked (BUG-AI-003). A gang whose previous action was Attack never equips. In
 a sector the player owns, the late gates never fire, because both need an
 owner the player is hostile to. The Greed override replaces every other choice,
-including an Equip whose cooldown has already been set.
+including an Equip whose cooldown has already been set. The late gates also
+replace an Equip or a Heal and leave the cooldown in place. Under police
+presence the owner query is -2, so a gang in its own sector skips the mode-6
+Move and goes on to the attack step. The attack step needs at least one
+visible gang of a player the player is hostile to, even at weight 10, where
+the draw then takes the human pool (FND-AI-058).
 
 ## What the sources say
 
@@ -119,12 +128,6 @@ None known.
 
 ## Open questions
 
-- Whether the attack step requires a visible hostile gang through selector
-  `0xAB` or through the size of the pool is not recorded; the procedure tests
-  the pool of hostile players' gangs.
-- Whether the late gates also replace an Equip or a Heal, and whether an
-  earlier cooldown write is undone, is not recorded; the procedure replaces
-  whatever was chosen and keeps the cooldown.
 - The late gate reads `combat_advantage` at `0x0042085D`; that it is the value
   RULE-AI-003 sets is taken from FND-AI-018.
 - Whether the Heal gate reads the same weight as the attack step (the cached

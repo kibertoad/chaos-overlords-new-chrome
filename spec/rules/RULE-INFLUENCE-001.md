@@ -4,7 +4,7 @@ title: Each Influence gang rolls on its own and adds its successes to the site's
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-001, FND-AI-007, FND-GANG-001, FND-INFLUENCE-001, FND-CONTROL-001, FND-EVENT-001, SRC-MANUAL-GOG]
+evidence: [FND-TURN-001, FND-TURN-007, FND-STATE-002, FND-TURN-009, FND-AI-007, FND-GANG-001, FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003, FND-CONTROL-001, FND-EVENT-001, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -97,12 +97,9 @@ None known.
 
 ## Open questions
 
-- That `target` holds the site slot for Influence is assumed; FMT-STATE-001
-  does not yet pin what `target` holds for each action.
-- The instruction addresses of the Influence case in `0x00472775` are not
-  recorded, and the comparison guarding the roll is written as `!=` from the
-  picker's test; a `<` there would behave the same while progress never
-  exceeds the Resistance.
 - The report itself is RULE-EVENT-006, the handler of `SiteCooperationAchieved`.
-- The picker's own rule for which sites can be chosen is in SCR-INFLUENCE-001;
-  whether the resolver checks that the player owns the sector is not recorded.
+- The picker's own rule for which sites can be chosen is in SCR-INFLUENCE-001.
+  The resolver's case does not check that the player owns the sector
+  (FND-TURN-007); what stops an Influence order in a sector the player does not
+  own is the `turn_start` clearing of recurring orders and the command menus,
+  which are not described here.

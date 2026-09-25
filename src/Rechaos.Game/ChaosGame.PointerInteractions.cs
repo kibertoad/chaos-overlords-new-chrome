@@ -13,6 +13,13 @@ public sealed partial class ChaosGame
             return;
         }
 
+        if (_pressedSetupPanelControl is not null)
+        {
+            if (pointerMapped) CompleteSetupPanelControl(point);
+            else _pressedSetupPanelControl = null;
+            return;
+        }
+
         if (_pressedCityConsoleControl is not null)
         {
             if (pointerMapped) CompleteCityConsolePress(point);

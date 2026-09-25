@@ -406,17 +406,53 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Equal(3, facts.Random.ConsumptionCount);
     }
 
+    // RULE-AI-007, FND-MOVE-003: one roll(8) over the offsets -9, -8, -7, -1, 1, 7, 8 and 9, with
+    // no capacity test.
     [Fact]
-    public void ModeZeroUsesAllSectorTieAndOneStepCapacityRouting()
+    public void ModeZeroDrawsOneOfTheEightNeighboursWithoutACapacityTest()
     {
         const int source = 20;
         const int seed = 41;
+        int[] offsets = [-9, -8, -7, -1, 1, 7, 8, 9];
         var facts = new Facts(source, seed: seed);
-        var expected = ZeroMaximumStep(
-            source, facts.GangCounts, new DeterministicRandom(seed));
+        Array.Fill(facts.GangCounts, MatchLimits.FriendlyGangsPerSector);
+        var expected = source + offsets[new DeterministicRandom(seed).NextInclusive(8) - 1];
 
         Assert.Equal(expected, facts.Select(mode: 0, family: AiPlanningState.UnusedFamily));
         Assert.Equal(3, facts.Random.ConsumptionCount);
+    }
+
+    // RULE-AI-007: a pick that leaves the city or wraps a row costs a roll and is drawn again.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(7)]
+    [InlineData(56)]
+    [InlineData(63)]
+    [InlineData(24)]
+    [InlineData(31)]
+    public void RandomNeighbourRedrawsPicksOffTheMap(int source)
+    {
+        int[] offsets = [-9, -8, -7, -1, 1, 7, 8, 9];
+        for (var seed = 0; seed < 64; seed++)
+        {
+            var mirror = new DeterministicRandom(seed);
+            var expected = -1;
+            var draws = 0;
+            while (expected < 0)
+            {
+                draws++;
+                var candidate = source + offsets[mirror.NextInclusive(8) - 1];
+                if (candidate is >= 0 and < 64 && Math.Abs(candidate % 8 - source % 8) <= 1)
+                    expected = candidate;
+            }
+            var random = new DeterministicRandom(seed);
+
+            var neighbour = OriginalAiSectorSelectionRules.RandomNeighbour(source, random);
+
+            Assert.Equal(expected, neighbour);
+            Assert.NotEqual(source, neighbour);
+            Assert.Equal(3 * draws, random.ConsumptionCount);
+        }
     }
 
     [Fact]

@@ -4,7 +4,7 @@ title: Family-7 computer gangs sit where sites add the most Research, influence 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028]
+evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -42,6 +42,7 @@ The gang's record in `gangs` (`sector`, `force`, `heal`) and in
 ```text
 # The signed sum of the Research modifiers of the sites in sector c
 define research_score(c):
+    # read from a sum cached when the match starts or is loaded
     let n = 0
     for k in 0..3:
         n = n + site_definitions[sectors[c].sites[k].definition].research
@@ -53,7 +54,7 @@ define research_first(player, idx, want):
     if want == -1:
         let list = [44, 41, 42, 43, 46, 50, 49, 52]
         for each item in list:
-            if research_remaining[item * 6 + player] > 0:
+            if item_definitions[item].tech_level <= local_tech_cap[idx] and research_remaining[item * 6 + player] > 0:
                 return item
         return -1
     for item in 1..64:
@@ -142,6 +143,7 @@ if not done:
         aux_records[idx].focus = -1
 if scenario == 0 and turns_remaining() < 4:
     plan(idx, ACTION_TERMINATE, 0, 0)
+    r.needs_family = 1
 ```
 
 ## Outputs
@@ -166,6 +168,12 @@ never researched through the type scans. A previous action whose target byte
 was cleared reads as item 0 in the research continuation only when the
 previous action was Research, which is never cleared.
 
+`research_score` reads a sum the game caches for every sector when a match
+starts or is loaded, not at each planning pass. It adds the Research of the
+definitions in all three site slots without testing a site's progress or an
+empty slot, and the cache is the same for every player. A change to a
+sector's sites during a match is not seen until the match is loaded again.
+
 ## What the sources say
 
 SRC-MANUAL-GOG does not describe the computer players' strategies.
@@ -178,11 +186,6 @@ None known.
 
 - The item `type` numbers (0 melee, 1 blade, 2 ranged, 3 armor, 4
   miscellaneous) are assumptions shared with RULE-AI-005.
-- Whether the fixed list is also filtered by the Tech cap is not recorded; the
-  procedure only tests the research value.
-- Whether the strength-tested draw uses the owner test of the drawn gang or of
-  the gang the comparison used is not recorded; the procedure tests the drawn
-  gang's player.
 - A previous Research of an item of type 4 that is not on the fixed list, or of
   melee, next asks for ranged, as FND-AI-035 states for "every other type".
 - The focus value is written as the current sector and then overwritten by the

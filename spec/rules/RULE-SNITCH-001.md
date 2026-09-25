@@ -1,19 +1,21 @@
 ---
 id: RULE-SNITCH-001
-title: Snitch lowers the gang's sector Tolerance by 3, free and whatever the player's cash
+title: Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SNITCH-001, FND-TURN-001, SRC-MANUAL-GOG]
+evidence: [FND-SNITCH-001, FND-TOLERANCE-001, FND-TURN-007, FND-TURN-001, FND-STATE-001, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
-related: [FMT-STATE-001, FMT-STATE-002, RULE-TOLERANCE-002]
+related: [FMT-STATE-001, FMT-STATE-002, RULE-TOLERANCE-001, RULE-TOLERANCE-002]
 ---
 
 ## Summary
 
-A snitching gang tips off the police and lowers its sector's Tolerance by 3.
-It costs nothing and works even when its player is in debt.
+A snitching gang tips off the police and lowers its sector's base Tolerance
+by 3. It costs nothing and works even when its player is in debt. The lowered
+base reaches the Tolerance that the Chaos test reads only when the sector
+record is rebuilt before the next planning phase.
 
 ## When it runs
 
@@ -27,25 +29,33 @@ that gang's place in the phase's player and roster order.
 
 ## Inputs
 
-The gang's `sector` and that sector's `tolerance`.
+The gang's `sector` and that sector's `base_tolerance`.
 
 ## Procedure
 
 ```text
-sectors[gang.sector].tolerance = sectors[gang.sector].tolerance - 3
-# The case also marks the sector as changed; that mark is not identified.
+let s = sectors[gang.sector]
+s.base_tolerance = s.base_tolerance - 3
 ```
 
 ## Outputs
 
-No return value. Subtracts 3 from the sector's `tolerance` and marks the
-sector as changed. Makes no random draw and reads no cash.
+No return value. Subtracts 3 from the sector's `base_tolerance` and marks the
+sector for the network update (FND-TOLERANCE-001). Makes no random draw and
+reads no cash.
 
 ## Edge cases
 
-- No floor applies here: Tolerance can drop below 0 during the phase. After
-  the whole phase, RULE-TOLERANCE-002 raises every Tolerance below 1 to 1.
+- No floor applies here: the base Tolerance can drop below 0 during the phase.
+  After the whole phase, RULE-TOLERANCE-002 raises every base Tolerance below
+  1 to 1.
 - Several Snitches in one sector in one turn each subtract 3.
+- The subtraction is made in 32 bits and stored as a signed byte. Starting
+  from at least 1, the byte wraps only on the forty-fourth Snitch in one sector
+  in one turn.
+- The Chaos test of the same turn compares with `tolerance`, which was rebuilt
+  before planning; a Snitch first raises the chance of a Crackdown in the next
+  turn's Chaos test.
 
 ## What the sources say
 
@@ -61,10 +71,5 @@ None known.
 
 ## Open questions
 
-- What the "changed" mark is and what reads it are not recorded.
-- The instruction addresses of the Snitch case in `0x00472775` are not
-  recorded.
-- That `tolerance` at offset `0x05` of FMT-STATE-002 is the byte the Snitch
-  case writes is assumed.
 - Whether the planning screens refuse a Snitch order from a player in debt, as
   the manual says, is not recorded.

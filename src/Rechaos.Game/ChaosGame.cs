@@ -29,21 +29,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Color GangDragDestinationOutline =
         Color.FromNonPremultiplied(150, 255, 165, 210);
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
-    private static readonly Rectangle[] SetupScenarios =
-    [
-        new(80, 102, 108, 31), new(192, 102, 108, 31),
-        new(80, 137, 108, 31), new(192, 137, 108, 31),
-        new(80, 171, 108, 31), new(192, 171, 108, 31),
-        new(80, 206, 108, 31), new(192, 206, 108, 31),
-        new(80, 241, 108, 30), new(192, 241, 108, 30)
-    ];
-    private static readonly Rectangle[] SetupDurations =
-    [new(80, 282, 50, 24), new(136, 282, 50, 24), new(192, 282, 50, 24), new(248, 282, 52, 24)];
-    private static readonly Rectangle[] SetupAiMentalities =
-    [
-        new(80, 330, 108, 27), new(80, 359, 108, 27),
-        new(80, 388, 108, 27), new(80, 417, 108, 27)
-    ];
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
@@ -191,6 +176,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int? _draggedHireSlot;
     private int? _draggedSetupPlayerSlot;
     private SetupPushButton? _pressedSetupButton;
+    private SetupPanelControl? _pressedSetupPanelControl;
     private CityConsoleControl? _pressedCityConsoleControl;
     private CityConsoleAction? _pressedCityConsoleAction;
     private ClientScreen _pressedCityConsoleReturnScreen;
@@ -274,6 +260,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _fullscreen = preferences.Fullscreen;
         _smoothEventSiteImages = preferences.SmoothEventSiteImages;
         _introMoviesSeen = preferences.IntroMoviesSeen;
+        _introOnlyOnce = preferences.IntroOnlyOnce;
         _defaultAiPolicy = preferences.DefaultAiPolicy;
         _online.Service = preferences.OnlineService;
         _online.Server.Set(preferences.CustomMultiplayerServer);
@@ -763,11 +750,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleLobbyClick(point);
                 break;
             case ClientScreen.Setup:
-                var scenario = Array.FindIndex(SetupScenarios, rectangle => rectangle.Contains(point));
-                var duration = Array.FindIndex(SetupDurations, rectangle => rectangle.Contains(point));
-                var planningTimeLimit = Array.FindIndex(
-                    PlanningTimerLayout.SetupChoices.ToArray(),
-                    rectangle => rectangle.Contains(point));
+                var timed = ScenarioCatalog.Get(_selectedScenario).IsTimed;
+                var panelControl = SetupPanelLayout.HitTest(point, timed);
+                var durationRefused = !timed && SetupPanelLayout.DurationArea.Contains(point);
                 var setupButton = SetupButtonLayout.HitTest(point);
                 var playerName = (_configuringOnlineLobby ? [] : _localSetupRoster.HumanSlots)
                     .FirstOrDefault(index => PlayerPortraitLayout.NameHit(index).Contains(point), -1);
@@ -778,18 +763,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     FinishSetupNameEdit(cancel: false);
                 if (setupButton is { } button)
                     BeginSetupButton(button);
-                else if (scenario >= 0)
-                    SelectSetupScenarioButton(scenario);
-                else if (duration >= 0)
-                    SelectSetupDurationButton(duration);
-                else if (planningTimeLimit >= 0)
-                    SelectPlanningTimeLimit((PlanningTimeLimit)planningTimeLimit);
+                else if (panelControl is { } control)
+                    BeginSetupPanelControl(control);
+                else if (durationRefused)
+                    RejectInput(ObjectiveDurationWarning);
                 else if (setupPlayer >= 0) BeginSetupPlayerDrag(setupPlayer, point);
-                else
-                {
-                    var mentality = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(point));
-                    if (mentality >= 0) SelectDifficulty((AiDifficulty)mentality);
-                }
                 break;
             case ClientScreen.City:
                 HandleCityClick(point);

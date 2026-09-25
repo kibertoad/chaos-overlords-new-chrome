@@ -9,7 +9,7 @@ byte_order: little
 size: null
 text: false
 definition: fmt_gfx_001.ksy
-evidence: [FND-GFX-001, FND-GFX-003, FND-PLATFORM-002, FND-PLATFORM-008, FND-ASSET-001]
+evidence: [FND-GFX-001, FND-GFX-003, FND-GFX-005, FND-DATA-006, FND-PLATFORM-002, FND-PLATFORM-008, FND-ASSET-001]
 conflicting: []
 split_with: []
 related: []
@@ -82,17 +82,16 @@ and heights, taken from the `PX08` files of the same names, fit their
 | `PX10000` to `PX10006` | 432 x 416 |
 
 `PX00131` has no `PX08` file; its 588,800 pixel bytes are the size of the
-other 640 x 460 images, and that size is assumed for it. The Kaitai definition has not been compiled or run
-against the files.
+other 640 x 460 images, and the executable passes 640 x 460 for it. The
+executable passes these sizes for every image, except that it reads every
+`PX06` image, `PX06008` included, as 242 x 158 (FND-GFX-005). The Kaitai
+definition compiles and parses all 215 files (FND-DATA-006).
 
 ## Open questions
 
-- The widths and heights the executable passes for each image have not been
-  collected (FND-GFX-003). If it passes 312 for `PX00202` and `PX00203`, or 242
-  for `PX06008`, it reads the row padding as a last column.
-- The rows are taken to run bottom row first because the same loader handles
-  the `PX08` files, whose RLE8 data can only be stored that way; whether the
-  executable ever passes a negative height has not been checked.
+- `PX06008` is read one column and one row larger than its data: the last
+  column is the row padding and the top row comes from memory past the end of
+  the pixel block (FND-GFX-005). What that row shows has not been observed.
 - RGB555 rests on bit 15 being clear in every pixel and on a comparison with
   the `PX08` images (FND-GFX-001), not on a read of how the executable treats
   the channels.

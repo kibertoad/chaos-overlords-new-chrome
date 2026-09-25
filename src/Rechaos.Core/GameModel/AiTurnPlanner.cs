@@ -310,8 +310,7 @@ public static partial class AiTurnPlanner
             return new PreparedObjectiveChoice(GangAction.Control, AiActionTarget.None);
 
         var owner = state.Sectors[gang.SectorId].Owner;
-        var targetPool = owner is { } sectorOwner
-            && state.AiStrategy.IsHostile(playerId, sectorOwner)
+        var targetPool = IsHostileOwner(state, playerId, gang.SectorId)
             && visibleWeight == 10
                 ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
                         .Setup.Controller == PlayerController.Human)

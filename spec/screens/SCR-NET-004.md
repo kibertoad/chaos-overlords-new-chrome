@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-SETUP-007, FND-SETUP-008]
+evidence: [FND-NET-003, FND-SETUP-007, FND-SETUP-008]
 conflicting: []
 split_with: []
 related: []
@@ -16,9 +16,9 @@ related: []
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Progress frame | `DATA/PX16/PX00137` | None | `(210, 60, 220, 72)` | Always | FND-SETUP-007 |
-| Progress bar | `DATA/PX16/PX00129`, the green strip from `(354, 0)`, 3 pixels high | The transfer's progress, as the width of the copied segment | From `(298, 105)` | Always | FND-SETUP-007 |
+| Progress bar | `DATA/PX16/PX00129`, the green strip from `(354, 0)`, 3 pixels high | The transfer's progress, one pixel per unit: four times the number of 25 blocks received so far, and 100 at the end | `(298, 105, progress, 3)` | Always | FND-SETUP-007, FND-NET-003 |
 | Status text | Not recorded | One of the status text pairs for modes 0 to 4 and 10 to 13 | Not recorded | Always | FND-SETUP-007 |
-| Spinner | `DATA/PX16/PX00138`, the 48-by-48 cell of the current frame | None | `(224, 72, 48, 48)` | Always | FND-SETUP-008 |
+| Spinner | `DATA/PX16/PX00138`, cell `(48 * frame, 0, 48, 48)` | None | `(224, 72, 48, 48)` | Always | FND-SETUP-008, FND-NET-003 |
 
 ## Mouse input
 
@@ -45,7 +45,8 @@ None known.
 ## Timing
 
 The spinner shows frames 0 to 14 in turn, one per timed update, and returns
-to frame 0 after frame 14 [FND-SETUP-008]. The update period is not recorded.
+to frame 0 after frame 14 [FND-SETUP-008]. It advances on each raised timer-0
+flag, every 166 ms, about six frames a second [FND-NET-003].
 
 ## Differences between builds
 
@@ -53,10 +54,6 @@ None known.
 
 ## Open questions
 
-- How the progress value maps to a bar width, and the full bar width, are not
-  recorded.
-- Spinner cell `n` is taken to be `(48 * n, 0, 48, 48)` of the 720-by-48
-  sheet.
 - The status texts, their positions, and whether the transfer can be
   cancelled from this frame are not recorded.
 - Where the 640-by-460 drawing surface sits on the 640x480 screen is not

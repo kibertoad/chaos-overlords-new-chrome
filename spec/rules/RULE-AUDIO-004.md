@@ -4,7 +4,7 @@ title: Loading the general sound effects
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-002]
+evidence: [FND-AUDIO-002, FND-AUDIO-006, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [FMT-AUDIO-001]
@@ -57,7 +57,12 @@ names differ in case only). The roles of the slots are:
 
 ## Edge cases
 
-None known.
+- Each file is read whole into memory. A file that is missing or cannot be
+  opened, or whose memory cannot be allocated, leaves its slot empty; the game
+  shows no message and the slot plays nothing (RULE-AUDIO-005).
+- The paths start with the install path from the App Paths key of the registry
+  when it can be read, so without it they are relative to the current
+  directory (FND-AUDIO-006).
 
 ## What the sources say
 
@@ -69,5 +74,4 @@ None known.
 
 ## Open questions
 
-- What the loader does when a file is missing or cannot be read.
-- `effect_slots` has no recorded address.
+None.

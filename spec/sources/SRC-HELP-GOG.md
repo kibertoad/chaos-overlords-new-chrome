@@ -11,7 +11,9 @@ licence: All rights reserved by the publisher; only short quotations are used.
 
 ## Use
 
-The help text the game opens from its menus. It restates the manual's
+The help text shipped with the game. Its Help Topics menu item was meant to
+open it, but the game never starts the help viewer (FND-HELP-005), so a player
+reads it only by opening the file by hand. It restates the manual's
 description of the commands and panels, and occasionally adds detail the manual
 leaves out. Its container format is described in the spec's format entries;
 this entry covers only what its text says about the game.

@@ -4,7 +4,7 @@ title: A Hire refused because the player has the most gangs allowed is reported 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001]
+evidence: [FND-EVENT-001, FND-EVENT-004]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]
@@ -30,7 +30,7 @@ None.
 ## Procedure
 
 ```text
-call RULE-EVENT-002(player, 8)
+call RULE-EVENT-002(player, 8, definition, 0, 0)
 ```
 
 ## Outputs
@@ -51,4 +51,4 @@ None known.
 
 ## Open questions
 
-- The arguments the report carries are not recorded; the event's own arguments are not shown to be among them.
+None known.

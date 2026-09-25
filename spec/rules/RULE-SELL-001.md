@@ -4,7 +4,7 @@ title: Sell removes every selected item but pays half the Cost of only the last 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-002, FND-EQUIP-004, FND-EQUIP-006, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-002, FND-EQUIP-004, FND-EQUIP-006, FND-EQUIP-007, FND-EQUIP-008, FND-SELL-001, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-DATA-003]
@@ -35,6 +35,8 @@ RULE-EQUIP-002 at the gang's place in the player and roster slot order.
 
 ```text
 let mask = gang.target
+# the original starts from a stale scratch value (see Edge cases); every
+# order the panel builds sets a bit, so a branch below overwrites it
 let value = 0
 if (mask & 1) != 0:
     value = item_definitions[gang.weapon].cost / 2
@@ -61,10 +63,16 @@ No return value. Empties every selected slot, then adds one value to
   miscellaneous item if selected, else the armor, else the weapon
   (BUG-SELL-001).
 - The value is half the listed Cost, whatever the gang paid; a Factory
-  discount does not lower it.
+  discount does not lower it. The Sell panel draws the same value, `cost / 2`,
+  on each row [FND-SELL-001].
 - `/` truncates, so an odd Cost is rounded down.
 - The cash is available to Equips by later roster slots of the same player in
   the same pass (RULE-EQUIP-002).
+- No branch tests that the slot holds an item. The panel lets only a carried
+  item be selected and refuses an empty selection [FND-EQUIP-008, FND-SELL-001]. An order
+  with no bit set would pay the stale scratch value: the price the last Equip
+  of the pass computed, or 485 when there was none; a selected empty slot
+  would pay half of the 16-bit word at `0x004A5EE0` [FND-EQUIP-007].
 
 ## What the sources say
 
@@ -79,10 +87,5 @@ None known.
 
 ## Open questions
 
-- Which field holds the selection and which bit stands for which slot are not
-  recorded. The procedure uses bits 1, 2 and 4 of `target` in the recorded
-  order weapon, armor, miscellaneous.
-- The starting value of `value` is not recorded; the panel refuses an empty
-  selection (FND-EQUIP-004), so it is always overwritten.
-- Whether the resolver tests that a selected slot holds an item is not
-  recorded; the panel lets only a filled slot be selected.
+- Whether the computer players can write a Sell order with an empty mask or
+  an empty selected slot is not recorded.

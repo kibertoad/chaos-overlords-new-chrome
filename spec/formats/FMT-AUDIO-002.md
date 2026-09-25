@@ -9,7 +9,7 @@ byte_order: little
 size: null
 text: false
 definition: fmt_audio_002.ksy
-evidence: [FND-AUDIO-005]
+evidence: [FND-AUDIO-005, FND-DATA-006]
 conflicting: []
 split_with: []
 related: []
@@ -39,7 +39,7 @@ requests by playing `MUSIC/TrackNN.ogg` with the same track number.
 | `0x06` | 8 | `INT64LE` | `granule_position` | Sample position at the end of the last packet completed on the page. | supported | FND-AUDIO-005 |
 | `0x0E` | 4 | `UINT32LE` | `serial` | Stream serial number, the same on every page of a file. | supported | FND-AUDIO-005 |
 | `0x12` | 4 | `UINT32LE` | `sequence` | Page number within the stream, from 0. | supported | FND-AUDIO-005 |
-| `0x16` | 4 | `UINT32LE` | `checksum` | CRC-32 of the page as RFC 3533 defines it. | supported | FND-AUDIO-005 |
+| `0x16` | 4 | `UINT32LE` | `checksum` | CRC-32 of the page as RFC 3533 defines it; it matches on every shipped page. | supported | FND-AUDIO-005, FND-DATA-006 |
 | `0x1A` | 1 | `UINT8` | `segment_count` | Number of entries in `segment_table`. | supported | FND-AUDIO-005 |
 | `0x1B` | `segment_count` | `UINT8[segment_count]` | `segment_table` | Length of each segment of the page body. | supported | FND-AUDIO-005 |
 | | `body_size` | `BYTE[body_size]` | `body` | Packet data, where `body_size` is the sum of the `segment_table` entries. The first page's body is the Vorbis identification header. | supported | FND-AUDIO-005 |
@@ -59,8 +59,8 @@ with the Ogg files (BLD-GOG-EN-1.1, Compared with other builds).
 All eight files `MUSIC/Track02.ogg` to `MUSIC/Track09.ogg` of BLD-GOG-EN-1.1
 were walked page by page with a script (FND-AUDIO-005): every page starts with
 `OggS`, pages cover each file exactly, and each file has one serial number.
-The checksums were not verified. The Kaitai definition has not been compiled
-or run against the files.
+The Kaitai definition compiles and parses all eight files, and the CRC-32 of
+every one of the 10,618 pages equals its `checksum` (FND-DATA-006).
 
 ## Open questions
 

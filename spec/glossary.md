@@ -9,6 +9,12 @@ order of a list, the order of handlers or of a queue, what an outside value is
 read from) is followed by the IDs of its findings or experiments in brackets,
 or by `(unknown)`.
 
+## active_gang_count
+
+The number of living gangs a computer player had when its planning pass
+looked over the board. Any other value the game keeps: `INT32LE[6]`, one per
+player slot, at `0x0048E2E0` [FND-AI-044, FND-STATE-007].
+
 ## active_gangs
 
 `active_gangs(player)` counts a player's active gangs. A function, defined by
@@ -18,18 +24,27 @@ RULE-AI-011.
 
 The player slot whose turn it is at this computer, whose view the city,
 panels and reports show. Any other value the game keeps: a player slot, at
-`0x004ABC84` [FND-UI-036]. Its width is not recorded (unknown).
+`INT32` at `0x004ABC84` [FND-UI-036, FND-STATE-008].
 
 ## ai_started
 
 Whether a computer player's planning records have been reset for this match.
-Any other value the game keeps: one byte per player slot at `0x00482108`
-[FND-AI-003].
+Any other value the game keeps: one byte per player slot at `0x00482108`,
+cleared when a new match starts and set by the first planning pass or by the
+takeover of a dropped network player [FND-AI-003, FND-AI-042, FND-AI-043,
+FND-AI-045].
 
-## armor_defense_upgrade
+## app_deactivated
 
-`armor_defense_upgrade(player, idx)` gives the armor with the greatest Defense
-improvement, or -1. A function, defined by RULE-AI-005.
+Whether the program has lost the focus and has not been activated again. Any
+other value the game keeps: a byte at `0x00487890`, set by the deactivation
+event and cleared by the activation event in the event step `fn_00462579`
+[FND-UI-020].
+
+## armor_stealth_upgrade
+
+`armor_stealth_upgrade(player, idx)` gives the armor with the greatest Stealth
+above the equipped armor's, or -1. A function, defined by RULE-AI-005.
 
 ## armor_upgrade
 
@@ -41,13 +56,16 @@ A function, defined by RULE-AI-005.
 How each player regards each other player, from -10 to +10; a negative value
 makes the observer treat the other player as hostile. Any other value the game
 keeps: `INT32LE[36]` at `0x004AB590`, element `observer * 6 + other`
-[FND-AI-006].
+[FND-AI-006]. The resolver `fn_00472775` writes it in three places: the
+recovery at `0x0047280B`, the decrement after an attack at `0x00473F7D` and the
+decrement at a Control takeover at `0x00475781` [FND-AI-047].
 
 ## aux_records
 
 A second per-gang record of the computer players. A list the game keeps, of
-14-byte records, element `player * 81 + roster_slot` (assumed), referenced at
-`0x0048C0BA` [FND-AI-015]. Fields the rules use: `focus`, the first 16-bit
+14-byte records, element `player * 81 + roster_slot`, at `0x0048C0B0`, with
+the two values the rules use at +0x0A and +0x0C [FND-AI-015, FND-AI-044,
+FND-STATE-007]. Fields the rules use: `focus`, the first 16-bit
 value, whose meaning depends on the family, and `coverage_sector`, the second
 16-bit value, the sector a family-6 gang heads for or covers [FND-AI-015,
 FND-AI-013].
@@ -75,7 +93,8 @@ RULE-AI-022.
 How many identical screen copies the startup benchmark managed in just over one
 second. A value from outside the game: an integer measured once at startup by
 `fn_00432954` [FND-UI-011]; it depends on the speed of the machine and sets the
-panel slide step. Its address is not recorded (unknown).
+panel slide step. Kept as a DWORD at `0x004981F8`, written once at
+`0x00461313` [FND-UI-023].
 
 ## block_leader_sector
 
@@ -110,9 +129,18 @@ FND-PLATFORM-003].
 ## casualties
 
 The number of each player's gangs that have died from damage, shown on the
-endgame Stats panel as Casualties. Any other value the game keeps: a count
-indexed by player slot [FND-GANG-003]; its type and address have not been
-recorded (unknown).
+endgame Stats panel as Casualties. It is raised by one for each gang whose
+Force falls below 1 when the combat damage is applied, whether the damage came
+from attacks or from the police; Terminate and the Eliminate clean-up do not
+raise it. Any other value the game keeps: `INT32LE[6]`, indexed by player
+slot, at `0x004AB620`, raised only at `0x00474889` and set to 0 at
+`0x00476045` [FND-GANG-003, FND-GANG-005].
+
+## cd_present
+
+`cd_present()` tells whether the CD check at start passes. A value from
+outside the game: the result of `fn_0046638E` [FND-PLATFORM-009]; what it
+checks is not recorded here (unknown).
 
 ## chaos_payout_phase
 
@@ -142,8 +170,53 @@ function, defined by RULE-AI-013.
 
 Set when a computer player's gangs out-fight the visible defenders in more than
 three quarters of another player's sectors. Any other value the game keeps:
-the byte at +20 of a player-pair record, element `observer * 6 + other`; the
-records' address is not recorded (unknown) [FND-AI-018, FND-AI-032].
+the byte at +20 of a 24-byte player-pair record, element `observer * 6 +
+other`, at `0x0048F810`, so the flag of the first pair is at `0x0048F824`
+[FND-AI-018, FND-AI-032, FND-AI-044, FND-STATE-007, FND-STATE-011].
+
+## combat_focal
+
+The viewer's gang whose fights Detailed Combat is showing, as its element
+number `player * 81 + roster_slot`. Any other value the game keeps: `INT16` at
+`0x004945A0` [FND-COMBAT-011].
+
+## combat_focal_bar
+
+The Force bar of `combat_focal` in the current clip. Any other value the game
+keeps: an `INT16[4]` rectangle (top, left, bottom, right) at `0x00494768`,
+top 247, bottom 250 and right end `256 + 6 * force_shown` [FND-COMBAT-011].
+
+## combat_focal_record
+
+A copy of the `combat_records` element of `combat_focal`. Any other value the
+game keeps: FMT-STATE-003 at `0x00494770` [FND-COMBAT-011].
+
+## combat_focal_target
+
+The Attack target of `combat_focal` from its `combat_results` entry, or -1.
+Any other value the game keeps: `INT16` at `0x004947C8` [FND-COMBAT-011].
+
+## combat_other
+
+The other gang of the current Detailed Combat clip, as its element number, or
+-2 for the police. Any other value the game keeps: `INT16` at `0x00494584`
+[FND-COMBAT-011].
+
+## combat_other_bar
+
+The Force bar of `combat_other` in the current clip. Any other value the game
+keeps: an `INT16[4]` rectangle at `0x004947F8`, top 247, bottom 250 and right
+end `329 + 6 * force_shown` [FND-COMBAT-011].
+
+## combat_other_record
+
+A copy of the `fight_list_records` element of `combat_other`. Any other value
+the game keeps: FMT-STATE-003 at `0x00494578` [FND-COMBAT-011].
+
+## combat_other_target
+
+The target of `combat_other` from `fight_list_targets`. Any other value the
+game keeps: `INT16` at `0x004945A4` [FND-COMBAT-011].
 
 ## combat_phase
 
@@ -153,9 +226,16 @@ applied to Force. It runs after `chaos_phase` and before `transaction_phase`.
 `police_phase` runs inside it, after the attacks and before the damage is
 applied [FND-CHAOS-001, FND-COMBAT-001, FND-COMBAT-004, FND-GANG-003].
 
+## combat_presenting
+
+Set while Detailed Combat runs; cleared when the player ends it with Escape
+or the exit button, after which no further clip plays. Any other value the
+game keeps: `UINT8` at `0x00494760` [FND-COMBAT-011].
+
 ## combat_rating
 
-A gang's Combat plus the skills that match its weapon. A function, defined by
+`combat_rating(g)` gives the skills that match gang `g`'s weapon, which the
+statistics rebuild adds to its stored Combat. A function, defined by
 RULE-COMBAT-001.
 
 ## combat_records
@@ -169,10 +249,14 @@ at `0x004A11E8` [FND-COMBAT-004, FND-AI-010, FND-PLATFORM-003].
 
 For each sector, which gangs of each player fought there in the last combat
 phase, and whether the police attacked each player there. A list the game
-keeps, of the combat result row (a FMT-STATE entry requested from the
-core-state task: six players' rows of six four-byte entries, then six police
-flag bytes, 150 bytes in all), 64 elements in ascending sector order, at
-`0x004A8888 + sector * 0x96` [FND-AUDIO-002, FND-COMBAT-004]. The rows are
+keeps, of the combat result row (six players' rows of six four-byte entries,
+then six police flag bytes, 150 bytes in all), 64 elements in ascending sector
+order, at `0x004A8888 + sector * 0x96` [FND-AUDIO-002, FND-COMBAT-004]. An
+entry is two `INT16LE` gang indices, `player * 81 + roster_slot`: the gang,
+or -1 for an empty entry, and the gang's Attack target, or -1 when its action
+was not Attack; only the first is cleared each phase. A gang is listed in its
+own player's row of its own sector. The police flag of a player is set when
+the police find one of its gangs there [FND-COMBAT-008, FND-COMBAT-011]. The rows are
 written in `turn_order` and roster slot order [FND-COMBAT-004].
 
 ## CombatClip
@@ -186,15 +270,16 @@ hold. It has no handlers; SCR-COMBAT-002 draws it [FND-COMBAT-005].
 ## comlink_alert_repeat
 
 The counter that times the repeats of the incoming-message alert. Any other
-value the game keeps: at `0x00487808` [FND-AUDIO-002]; its type is not recorded
-(unknown).
+value the game keeps: a 16-bit value at `0x00487808` [FND-AUDIO-002,
+FND-UI-023].
 
 ## comlink_blink_step
 
 The eight-step animation counter the event pump advances once per
-`presentation_tick`; it blinks the Comlink button and times the alert repeat.
-Any other value the game keeps [FND-AUDIO-012], at an address not recorded
-(unknown).
+`presentation_tick`, from 0 to 7 and back to 0; on even values it blinks the
+Events and Comlink lights, and it times the alert repeat and the selected
+sector frame. Any other value the game keeps: a DWORD at `0x00487804`
+[FND-AUDIO-012, FND-EVENT-006, FND-UI-023].
 
 ## comlink_count
 
@@ -212,27 +297,27 @@ message Comlink View shows. Any other value the game keeps: `INT32LE[6]`, at
 
 The message being composed in the Comlink Send panel, in the layout of a
 stored message. A structure the game keeps: FMT-STATE-005, one global buffer
-that the Send panel edits and the recorder copies [FND-COMLINK-001]. Its
-address is not recorded (unknown).
+that the Send panel edits and the recorder copies [FND-COMLINK-001], at
+`0x00498120` [FND-COMLINK-006].
 
 ## comlink_draft_column
 
 The column, 0 to 39, of the text cursor in `comlink_draft`. Any other value
-the game keeps: an integer [FND-COMLINK-005], at an address not recorded
-(unknown).
+the game keeps: an integer [FND-COMLINK-005], a local of the Send handler with
+no fixed address, 0 each time the panel opens [FND-COMLINK-007].
 
 ## comlink_draft_row
 
 The row, 0 to 3, of the text cursor in `comlink_draft`. Any other value the
-game keeps: an integer [FND-COMLINK-005], at an address not recorded
-(unknown).
+game keeps: an integer [FND-COMLINK-005], a local of the Send handler with no
+fixed address, 0 each time the panel opens [FND-COMLINK-007].
 
 ## comlink_eligible
 
 For each player slot, whether the Send panel lets the active player pick that
 player as a recipient. Any other value the game keeps: `UINT8[6]`, rebuilt
-each time the Send panel opens [FND-COMLINK-003], at an address not recorded
-(unknown).
+each time the Send panel opens [FND-COMLINK-003], a local of the Send handler
+with no fixed address [FND-COMLINK-007].
 
 ## comlink_messages
 
@@ -240,6 +325,8 @@ The messages in each player's Comlink inbox. A list the game keeps, of
 FMT-STATE-005, 16 elements per player at `0x0049CA90 + player * 0xA60`, kept
 in the order they arrived, oldest first. When all 16 are in use, a new message
 drops the oldest and the rest move down [FND-COMLINK-001, FND-COMLINK-004].
+Emptied when the match loop starts, and cut at the front of its read messages
+when its player finishes planning (RULE-COMLINK-007) [FND-COMLINK-006].
 
 ## comlink_pending
 
@@ -250,8 +337,21 @@ incoming-message alert repeat. Any other value the game keeps: `UINT8` at
 ## comlink_selected
 
 For each player slot, whether the player is picked as a recipient in the Send
-panel; shown as a green card. Any other value the game keeps: `UINT8[6]`
-[FND-COMLINK-003], at an address not recorded (unknown).
+panel; shown as a green card frame. Any other value the game keeps:
+`UINT8[6]` [FND-COMLINK-003] at `0x00498114`, set to 0 each time the Send
+panel opens [FND-COMLINK-007].
+
+## comlink_view_open
+
+Set while the active player's Comlink View panel is open. Any other value the
+game keeps: `UINT8` at `0x004877CC` [FND-COMLINK-009].
+
+## comlink_view_refresh
+
+Set by the Comlink recorder when it stores a message for the active player
+while `comlink_view_open` is set; the View panel clears it and redraws the
+message on show with the new count. Any other value the game keeps: `UINT8` at
+`0x004877D0` [FND-COMLINK-009].
 
 ## ComlinkAlert
 
@@ -264,6 +364,12 @@ arguments. Its handler is RULE-AUDIO-007, run at once, which plays
 The communication type the player last chose for network play. Any other value
 the game keeps: a DWORD at `0x00487884`, initialized to 0 and read from the
 registry value `commType` [FND-OPTIONS-001].
+
+## completed_site_support
+
+`completed_site_support(player)` gives the sum of the Support of every site in
+the player's sectors whose progress equals its definition's Resistance. A
+function, defined by RULE-OBJECTIVE-002.
 
 ## control_phase
 
@@ -279,8 +385,9 @@ and has no handlers [FND-UI-032, FND-AUDIO-010].
 
 ## ControlGainedReport
 
-An event: a player's Control order has taken a sector. It carries `player`
-and `sector`, in that order. RULE-CONTROL-001 emits it. Its handler is
+An event: a player's Control order has taken a sector. It carries `player`,
+`sector` and `previous`, the sector's owner before or -1, in that order
+[FND-EVENT-004]. RULE-CONTROL-001 emits it. Its handler is
 RULE-EVENT-012, run at once [FND-EVENT-001].
 
 ## controller
@@ -289,15 +396,18 @@ Who plays each player slot. Any other value the game keeps: `INT32LE[6]`,
 indexed by player slot, at `0x004AB638` [FND-SETUP-002, FND-PLATFORM-003].
 The values are -1 for an empty setup slot, 0 for a human at this computer, 1
 for a computer player and 3 for a human playing over the network
-[FND-SETUP-002, FND-AI-004, FND-TURN-005].
+[FND-SETUP-002, FND-AI-004, FND-TURN-005]. A local human who is eliminated
+becomes -2 at the start of the next round and -1 once the elimination card
+has been shown, so a retired player is an empty slot [FND-OBJECTIVE-004].
 
 ## ControlLostReport
 
 An event: a player has lost a sector, to a third Crackdown within five turns
 (RULE-POLICE-002) or to another player's Control (RULE-CONTROL-001). It
-carries `player` and `sector`, in that order. Its handler is RULE-EVENT-013,
-which records a type-3 Last Turn report, run at once [FND-POLICE-002,
-FND-EVENT-001].
+carries `player`, `sector` and `taker`, in that order: `taker` is the player
+whose Control took the sector, or 0 for a Crackdown [FND-EVENT-004]. Its
+handler is RULE-EVENT-013, which records a type-3 Last Turn report, run at
+once [FND-POLICE-002, FND-EVENT-001].
 
 ## covered_by
 
@@ -314,7 +424,8 @@ FND-EVENT-001].
 The turns of the last two Crackdown occurrences in each sector. A list the
 game keeps, one element per sector in ascending sector order, each element
 `INT16LE[2]` holding a turn number or -100 for an empty slot, at
-`0x004ABCC0 + sector * 4` [FND-POLICE-001, FND-PLATFORM-003].
+`0x004ABCC0 + sector * 4` [FND-POLICE-001, FND-PLATFORM-003]. The turn stored
+and the window test both use `elapsed_turns` [FND-CHAOS-002].
 
 ## crackdown_in_force
 
@@ -339,12 +450,36 @@ FND-PLATFORM-003].
 `danger_near(player, idx)` is the computer players' equipment gate. A function,
 defined by RULE-AI-005.
 
+## desktop_depth
+
+The colour depth of the Windows display in bits per pixel. A value from
+outside the game: `GetDeviceCaps(BITSPIXEL)` read by the display setup when the
+game runs in a window [FND-GFX-004].
+
+## DialogShown
+
+An event: one of the executable's Windows dialog boxes is shown. It carries
+the dialog's resource number [FND-UI-022].
+
 ## difficulty_band
 
 The per-player band, 0, 1 or 2, that adjusts several dice pools during
 `resolution` according to the AI Mentality and whether the player is a
 computer. Any other value the game keeps: `INT32LE[6]`, indexed by player
 slot, at `0x004A2570` [FND-AI-007, FND-PLATFORM-003].
+
+## display_depth
+
+The colour depth in bits, 8 or 16, that the surfaces are created at, or 0
+when no depth could be set. Any other value the game keeps: a DWORD at
+`0x0048787C`, holding the depth asked for and then the depth the display setup
+returned [FND-PLATFORM-009, FND-GFX-004].
+
+## display_mode_set
+
+`display_mode_set(w, h, depth)` tells whether the display could be switched to
+that mode. A value from outside the game: the result of DirectDraw's
+`SetDisplayMode` in full screen [FND-GFX-004].
 
 ## dominance_points
 
@@ -363,12 +498,21 @@ RULE-AI-004.
 `draw_target(player, idx, kind, tries)` makes up to `tries` target draws and
 returns the last target drawn. A function, defined by RULE-AI-004.
 
+## drive_type
+
+`drive_type(letter)` gives the answer of the Windows drive-type query for the
+string made of the character `letter` and a backslash, 3 for a fixed drive. A
+value from outside the game: `GetDriveTypeA`, called by the startup drive check
+[FND-PLATFORM-012].
+
 ## effect_slots
 
 The loaded general sound effects, one per slot. A list the game keeps: 48
 slots, of which 0 to 9 are used; slot 5 is loaded and emptied around each
-Detailed Combat attack sound, and an empty slot plays nothing. Its address is
-not recorded (unknown) [FND-AUDIO-002, FND-AUDIO-013]. Rules write
+Detailed Combat attack sound, and an empty slot plays nothing. The 48 records
+of `0x114` bytes start at `0x00494C28`; each holds a loaded byte, the file's
+path and the file loaded whole into memory [FND-AUDIO-002, FND-AUDIO-013,
+FND-AUDIO-006]. Rules write
 `effect_slots[slot]`.
 
 ## EffectPlayed
@@ -387,6 +531,14 @@ The Sound Effects volume the Options dialog shows, 0 to 10. Any other value
 the game keeps: a DWORD at `0x00487864`, initialized to 6 and read from the
 registry value `prefsVolumeSFX` [FND-OPTIONS-001, FND-AUDIO-002].
 
+## effects_suppressed
+
+Whether every sound effect is silenced. Any other value the game keeps: the
+byte at `0x0048735C`, which the effect player tests before `PlaySoundA`; it is
+0 in the executable's data and nothing writes it, so it never silences anything
+[FND-AUDIO-003, FND-AUDIO-006]. Earlier versions of the spec called it
+`sound_output_available` and read it as the presence of a wave output device.
+
 ## EffectsVolumeSet
 
 An event: the wave output volume is set. It carries the volume as the
@@ -395,7 +547,10 @@ two-channel DWORD the level gives, and has no handlers [FND-AUDIO-002].
 ## elapsed_turns
 
 The number of turns completed, counted from 0. Any other value the game keeps:
-`INT32LE` at `0x0049CA68` [FND-AI-009, FND-PLATFORM-003].
+`INT32LE` at `0x0049CA68` [FND-AI-009, FND-PLATFORM-003]. A new match sets it
+to 0; it goes up by 1 after each `resolution`, before the next `turn_start`,
+so it is 0 throughout the first turn. The Crackdown window and history read
+it [FND-TURN-006].
 
 ## endgame_rows
 
@@ -406,41 +561,108 @@ ends [FND-AI-005, FND-AWARDS-003]; where it is kept is not recorded (unknown).
 ## EquipCashShort
 
 An event: an Equip failed because its player could not pay. It carries
-`player` and `item`, in that order. RULE-EQUIP-001 emits it. Its handler is
+`player`, `sector` and `definition`, in that order: the gang's sector and its
+`definition` byte, which the Last Turn report stores in place of the item
+[FND-EVENT-004]. RULE-EQUIP-001 emits it. Its handler is
 RULE-EVENT-014, run at once [FND-EVENT-001].
+
+## events_page
+
+The index of the report the Last Turn Events panel shows, which is also the
+index of its record in `last_turn_reports`. Any other value the game keeps: an
+integer at `0x004948EC`, set to 0 at the start of each human planning visit
+and changed only by the panel's Previous and Next [FND-EVENT-005].
+
+## events_page_drawn
+
+`events_page_drawn()` marks the Last Turn report on show as seen and updates
+`events_unviewed`. A function, defined by RULE-EVENT-005.
+
+## events_planning_start
+
+`events_planning_start()` resets `events_page` and opens the Last Turn Events
+panel when the active player has a report. A function, defined by
+RULE-EVENT-005.
+
+## events_seen
+
+For each of the active player's 32 Last Turn records, whether the panel has
+shown it since the planning visit began; unoccupied records start as seen.
+Any other value the game keeps: `UINT8[32]` at `0x00494870` [FND-EVENT-005].
+
+## events_show
+
+`events_show()` opens the Last Turn Events panel when the active player has at
+least one report and returns 1, or returns 0. A function, defined by
+RULE-EVENT-005.
+
+## events_unviewed
+
+Set while some Last Turn report of the active player has not been shown; it
+makes the Events control's light blink. Any other value the game keeps:
+`UINT8` at `0x00487814` [FND-EVENT-005, FND-EVENT-006].
+
+## family_count
+
+`family_count(player, a, b)` counts a computer player's active gangs whose
+family is `a` or `b`. A function, defined by RULE-AI-010.
+
+## fight_list
+
+The gangs Detailed Combat shows against `combat_focal`, as element numbers:
+`combat_focal` first, then its target, then every gang whose
+`combat_results` entry in the sector targets it, then -2 for the police. A
+list the game keeps, `INT16[36]`, at `0x00494780`, reset to -1 before each
+build [FND-COMBAT-011].
+
+## fight_list_count
+
+The number of elements of `fight_list`. Any other value the game keeps:
+`INT32` at `0x00494710` [FND-COMBAT-011].
+
+## fight_list_records
+
+The combat record of each element of `fight_list`; the police element has a
+made-up record. A list the game keeps, of FMT-STATE-003, parallel to
+`fight_list`, at `0x004945A8` [FND-COMBAT-011].
+
+## fight_list_targets
+
+The target of each element of `fight_list`, as an element number or -1. A
+list the game keeps, of `INT16`, parallel to `fight_list`, at `0x00494718`
+[FND-COMBAT-011].
 
 ## fight_marks
 
 Whether each gang took part in a gang fight in the current combat phase. Any
 other value the game keeps: one value per gang, element
 `player * 81 + roster_slot`, written by the attack block and never read as a
-condition for an attack [FND-COMBAT-006]; its type and address are not
-recorded (unknown).
+condition for an attack [FND-COMBAT-006]: a local byte of the resolver, set
+for every attacker, every attack's target and every gang the police find, and
+copied at the record fill into the `UINT8[486]` at `0x00498BC0`
+[FND-COMBAT-008].
 
-## fight_or_hold
+## fight_or_heal
 
-`fight_or_hold(player, idx, kind, tries)` writes an Attack, Heal or Control
-for a gang on an objective. A function, defined by RULE-AI-031.
+`fight_or_heal(player, idx, kind)` writes an Attack or a Heal, or nothing, for
+a gang on an objective. A function, defined by RULE-AI-031.
 
-## finance_equipment
+## finance_rows
 
-A function, defined by RULE-FINANCE-001: the projected cost of a player's
-queued Equips, for the whole city or one sector.
+A function, defined by RULE-FINANCE-001: the eight amounts of the Financial
+panel and its gang count, for the whole city or one sector [FND-FINANCE-002].
 
-## finance_sector_tax
+## first_affordable
 
-A function, defined by RULE-FINANCE-001: the projected Sector Tax, 1 for each
-sector the player owns, for the whole city or one sector.
+`first_affordable(player, idx, k)` gives the first item of type `k` a computer
+gang may buy under its local Tech ceiling, or 0. A function, defined by
+RULE-AI-005.
 
-## finance_site_protection
+## first_hostile
 
-A function, defined by RULE-FINANCE-001: the projected Cash of the completed
-sites in the player's sectors, for the whole city or one sector.
-
-## finance_upkeep
-
-A function, defined by RULE-FINANCE-001: the projected Upkeep of a player's
-active gangs, for the whole city or one sector.
+`first_hostile(player)` gives the first sector, in ascending order, whose
+`sector_weight` for the player is 10, or 100. A function, defined by
+RULE-AI-010.
 
 ## first_visible_definition_zero
 
@@ -462,8 +684,9 @@ Combat is off [FND-SETUP-010].
 ## fn_0045519D
 
 The unidentified function of build BLD-GOG-EN-1.1 at `0x0045519D` that shows
-the Game Information panel at the start of a player's first planning in a new
-local game [FND-SETUP-010].
+the Game Information panel, from the Game Info tile and at the start of each
+local human's planning while `resumed_match` is set [FND-SETUP-010,
+FND-UI-024].
 
 ## fn_00468CFC
 
@@ -490,11 +713,20 @@ by the player. A function, defined by RULE-AI-013.
 `free_neighbours(player, center)` counts neutral cells without a Crackdown
 around an owned centre. A function, defined by RULE-AI-013.
 
+## full_screen_active
+
+Whether this run uses full screen. Any other value the game keeps: a byte at
+`0x00498354`, copied from `pref_full_screen` when the options are read at
+start and not changed afterwards; the Full Screen menu item changes only the
+preference. Before `WinMain` runs, the static initializer `fn_00460CA0` copies
+the preference's image value 1 into it [FND-PLATFORM-009, FND-GFX-004,
+FND-UI-020, FND-UI-028].
+
 ## g_004A08C4
 
 The unidentified byte of build BLD-GOG-EN-1.1 at `0x004A08C4`, 36 bytes before
 the sector list, which the placement-anchor scan reads as the owner of sector
--1 [FND-AI-010].
+-1. No instruction refers to it and it holds 0 [FND-AI-010, FND-AI-051].
 
 ## game_info_limit_text
 
@@ -508,7 +740,7 @@ A function, defined by RULE-UI-009.
 
 ## game_info_scenario_text
 
-`game_info_scenario_text(scenario_name)` gives the scenario text Game
+`game_info_scenario_text()` gives the scenario text Game
 Information shows, with the game length after it for the four scenarios that
 have one. A function, defined by RULE-UI-009.
 
@@ -527,8 +759,8 @@ equipment and completed sites added.
 ## gang_definitions
 
 The gang types, read from `DATA/Gangs`. A list the game keeps, of
-FMT-DATA-002, 90 elements in file order, indexed by a gang's `definition`;
-where the game keeps it has not been recorded (unknown).
+FMT-DATA-002, 90 elements in file order, indexed by a gang's `definition`,
+at `0x004A2800` [FND-HIRE-006].
 
 ## gangs
 
@@ -573,7 +805,8 @@ at `0x004A5EF0`; nonzero when set. Set at new-game setup and kept in the save
 ## hire_limit
 
 `hire_limit(player)` is the gang count below which a computer player tries to
-hire. A function, defined by RULE-AI-011.
+hire. A function, defined by RULE-AI-011. Each planning pass stores its result
+in `INT32LE[6]` at `0x00482110`, save block 16 [FND-STATE-003].
 
 ## hire_offers
 
@@ -594,9 +827,10 @@ the game keeps: `INT8[18]`, element `player * 3 + offer slot`, at
 ## hire_phase
 
 The step of `resolution` that carries out hires and snubs, player by player
-and offer slot by offer slot. It runs after `chaos_payout_phase`
-[FND-EQUIP-006]. Whether it runs after `control_phase` is not shown
-(unknown).
+and offer slot by offer slot. It runs after `control_phase` and before
+`turn_end`: the Control loop's exit jumps to its first instruction
+(`0x00475862`), and its own exit to the presence countdown (`0x00475E16`)
+[FND-EQUIP-006, FND-TURN-008].
 
 ## hire_role
 
@@ -643,18 +877,62 @@ FND-UI-033].
 
 `human_count()` counts the human players. A function, defined by RULE-AI-006.
 
+## hunter_covered
+
+`hunter_covered(player, s)` tells whether an active family-6 gang of the
+player has `s` as its `coverage_sector`. A function, defined by RULE-AI-010.
+
+## hunter_test
+
+`hunter_test(player, k, F, G, missing, redirect)` gives the schedule slot
+after a scenario's forced family-6 slot is applied. A function, defined by
+RULE-AI-010.
+
 ## idle_warning_choice
 
 The button the player used to leave the idle-gang warning: 1 for OK, 0 for
 Cancel. A value from outside the game: the player's input on SCR-OPTIONS-001
 [FND-OPTIONS-002].
 
+## image_set_present
+
+`image_set_present(depth)` tells whether the 8-bit or the 16-bit image set is
+installed. A value from outside the game: whether the probe image `PX00128`
+opens from `DATA/PX08` or `DATA/PX16` [FND-PLATFORM-009].
+
+## input_event
+
+The last input event the window produced. Any other value the game keeps: an
+FMT-STATE-009 record at `0x00498360` [FND-UI-020].
+
+## instance_running
+
+Whether another copy of the game is running. A value from outside the game:
+whether the mutex named after the window title already existed when the
+program created it [FND-PLATFORM-009].
+
 ## instant_phase
 
 The first step of `resolution`: the Bribe, Heal, Hide, Influence, Research and
 Snitch actions, carried out gang by gang in `turn_order` and roster slot
-order, followed by raising every sector's Tolerance below 1 to 1. It runs
-before `chaos_phase` [FND-TURN-001, FND-SNITCH-001, FND-CHAOS-001].
+order, followed by clamping every sector's base Tolerance to 1..40. It runs
+before `chaos_phase` [FND-TURN-001, FND-SNITCH-001, FND-CHAOS-001, FND-TOLERANCE-001].
+
+## intro_tick
+
+The timer that paces the intro's input test, ten times a second. A clock,
+defined by RULE-VIDEO-001.
+
+## intro_tick_pending
+
+Set by each `intro_tick` and cleared by the intro when it reads it. Any other
+value the game keeps: the flag byte of timer slot 1 at `0x00494811`
+[FND-UI-023, FND-VIDEO-002].
+
+## IntroPlayed
+
+An event: the intro movies play before the title screen
+[FND-PLATFORM-009, FND-VIDEO-002].
 
 ## is_block_leader
 
@@ -691,8 +969,8 @@ by a gang in a given sector, with the Factory discount.
 ## last_turn_report_count
 
 How many reports each player has in `last_turn_reports`. Any other value the
-game keeps: one count per player slot, starting at `0x004ABCA8`
-[FND-EVENT-001]; its width and stride are not recorded (unknown). Rules write
+game keeps: `INT32LE[6]` at `0x004ABCA8 + player * 4` [FND-EVENT-001,
+FND-EVENT-004]. Rules write
 `last_turn_report_count[player]`.
 
 ## last_turn_reports
@@ -700,34 +978,44 @@ game keeps: one count per player slot, starting at `0x004ABCA8`
 The reports of the last resolution, shown in the Last Turn Events panel. A
 list the game keeps, 32 records of 10 bytes per player: element
 `player * 32 + index`, at `0x004AAE08 + player * 0x140 + index * 10`, each
-player's records in the order they were recorded [FND-EVENT-001]. Its element
-format is not written yet (the Last Turn report record; requested as the next
-free STATE format). A record holds `occupied` (one byte), `report_type` (two
-bytes) and three two-byte arguments, at offsets not yet recorded (unknown).
+player's records in the order they were recorded [FND-EVENT-001]. Its
+elements are FMT-STATE-006 [FND-EVENT-004].
 
 ## left_button_down
 
 Whether the left mouse button is held. A value from outside the game: taken
 from the Windows mouse messages the event pump receives; it changes whenever
-the player presses or releases the button [FND-UI-032].
+the player presses or releases the button [FND-UI-032]. The window procedure
+keeps it in the byte `0x004985A4` [FND-UI-020].
+
+## loaded_game_kind
+
+Which kind of saved file the last load read: 0 none, 1 an `S40W` local game,
+2 an `N40W` network game, 3 an `M10W` file. Any other value the game keeps: a
+DWORD at `0x0048788C`, set by File, Open and by the window procedure for a file
+named on the command line, and cleared by the title loop after it acts on it
+[FND-PLATFORM-009, FND-UI-020, FND-SAVE-001].
 
 ## local_game
 
-Set when the game is a local game. Any other value the game keeps: the flag at
-`0x00482178` [FND-AUDIO-003]. The reading of this flag is an interpretation;
-its width is not recorded (unknown).
+Despite its name, set on a computer that joined a network session through the
+File menu's Join command, and 0 in a game started with New Game. Any other
+value the game keeps: a byte at `0x00482178`, set only by the Join handler
+[FND-AUDIO-003, FND-AUDIO-006, FND-NET-004].
 
 ## local_tech_cap
 
-The Tech ceiling the weapon choice applies to a gang's first pass over the
-weapon classes, computed from the gang and the sites near it (selector
-`0x62`). Any other value the game computes, element `player * 81 +
-roster_slot`; how it is computed is not recorded (unknown) [FND-AI-024].
+The Tech ceiling a computer gang's item choices apply (selector `0x62`): the
+`tech_level` of the gang's definition, lowered to 5, 8 or 10 when the
+`research_level` of the gang's sector is 0, 1 or 2, whoever owns the sector.
+Any other value the game computes, element `player * 81 + roster_slot`
+[FND-AI-024, FND-AI-054].
 
 ## match_over
 
 Set when the end-of-turn evaluation finds the match finished. Any other value
-the game keeps [FND-AI-005]; its type and address are not recorded (unknown).
+the game keeps: `UINT8` at `0x004ABBD4`, cleared when a match starts
+[FND-AI-005, FND-OBJECTIVE-003, FND-OBJECTIVE-004].
 
 ## mentality
 
@@ -735,10 +1023,17 @@ The AI Mentality chosen at setup, which sets how the computer players play.
 Any other value the game keeps: `INT8` at `0x00487850`, 0 for Goon, 1 for
 Criminal, 2 for Crime Lord and 3 for Homicidal Maniac [FND-AI-004].
 
-## misc_chaos_upgrade
+## misc_control_upgrade
 
-`misc_chaos_upgrade(player, idx)` gives the miscellaneous item with the
-greatest Chaos improvement, or -1. A function, defined by RULE-AI-005.
+`misc_control_upgrade(player, idx)` gives the miscellaneous item with the
+greatest Control above the equipped one's, or -1. A function, defined by
+RULE-AI-005.
+
+## misc_detect_upgrade
+
+`misc_detect_upgrade(player, idx)` gives the miscellaneous item with the
+greatest Detect above the equipped one's, or -1. A function, defined by
+RULE-AI-005.
 
 ## mode_score
 
@@ -751,35 +1046,72 @@ sector `c` in a mode. A function, defined by RULE-AI-006.
 modifier is drawn with, a zero drawn as the dim zero. A function, defined by
 RULE-UI-004.
 
+## modifier_cash
+
+Whether a player's name matched `modifier_name_cash`, which gives the player $1,500 at the start. Any
+other value the game keeps: `UINT8[6]`, indexed by player slot, at `0x0049CA70`.
+The new-match scan writes it for every slot in a local game and leaves it
+alone in a network game [FND-SETUP-015].
+
+## modifier_elite
+
+Whether a player's name matched `modifier_name_elite`, which gives the player five extra equipped gangs. Any
+other value the game keeps: `UINT8[6]`, indexed by player slot, at `0x004A2788`.
+The new-match scan writes it for every slot in a local game and leaves it
+alone in a network game [FND-SETUP-015].
+
+## modifier_islands
+
+Whether a player's name matched `modifier_name_islands`, which puts every neutral sector under a permanent Crackdown. Any
+other value the game keeps: `UINT8[6]`, indexed by player slot, at `0x004ABC10`.
+The new-match scan writes it for every slot in a local game and leaves it
+alone in a network game [FND-SETUP-015].
+
 ## modifier_name_cash
 
 The fixed upper-case string in the executable that a player's name must equal
-to start with $1,500. A string the game keeps [FND-SETUP-001]; its address is
-not recorded (unknown).
+to start with $1,500. A string the game keeps, at `0x00487BD8`; a match sets
+the flag at `0x0049CA70 + player` [FND-SETUP-001, FND-SETUP-015].
 
 ## modifier_name_elite
 
 The fixed upper-case string in the executable that a player's name must equal
-to start with five extra equipped gangs. A string the game keeps
-[FND-SETUP-004]; its address is not recorded (unknown).
+to start with five extra equipped gangs. A string the game keeps, at
+`0x00487BC0`; a match sets the flag at `0x004A2788 + player` [FND-SETUP-004,
+FND-SETUP-015].
+
+## modifier_name_hire_force
+
+The fixed upper-case string in the executable that a player's name must equal
+to set `hire_force_modifier`. A string the game keeps, at `0x00487BB4`
+[FND-HIRE-005, FND-SETUP-015].
 
 ## modifier_name_islands
 
 The fixed upper-case string in the executable that a player's name must equal
-to give every unowned sector a permanent Crackdown. A string the game keeps
-[FND-SETUP-003]; its address is not recorded (unknown).
+to give every unowned sector a permanent Crackdown. A string the game keeps,
+at `0x00487BCC`; a match sets the flag at `0x004ABC10 + player`
+[FND-SETUP-003, FND-SETUP-015].
 
 ## modifier_name_right_hands
 
 The fixed upper-case string in the executable that a player's name must equal
-to start with five extra unequipped gangs. A string the game keeps
-[FND-SETUP-004]; its address is not recorded (unknown).
+to start with five extra unequipped gangs. A string the game keeps, at
+`0x00487B9C`; a match sets the flag at `0x004ABBD8 + player` [FND-SETUP-004,
+FND-SETUP-015].
 
 ## modifier_name_visibility
 
 The fixed upper-case string in the executable that a player's name must equal
-to see every opposing gang. A string the game keeps [FND-SETUP-011]; its
-address is not recorded (unknown).
+to see every opposing gang. A string the game keeps, at `0x00487BA8`
+[FND-SETUP-011, FND-SETUP-015].
+
+## modifier_right_hands
+
+Whether a player's name matched `modifier_name_right_hands`, which gives the player five extra unequipped gangs. Any
+other value the game keeps: `UINT8[6]`, indexed by player slot, at `0x004ABBD8`.
+The new-match scan writes it for every slot in a local game and leaves it
+alone in a network game [FND-SETUP-015].
 
 ## modifier_visibility
 
@@ -792,11 +1124,51 @@ by player slot, at `0x004AB588` [FND-SETUP-011, FND-DETECT-001].
 The step of `resolution` that moves gangs to their destinations. It runs after
 `terminate_phase` and before `control_phase` [FND-MOVE-001, FND-CHAOS-001].
 
+## movie_frame_count
+
+`movie_frame_count()` gives the number of frames of the movie playing, from its
+file header. A value from outside the game: read by the Smacker library
+[FND-VIDEO-001, FND-VIDEO-002].
+
+## movie_frame_due
+
+`movie_frame_due()` gives 1 when the Smacker library says the next frame of the
+movie playing is due. A value from outside the game: the library's wait test
+[FND-VIDEO-002].
+
+## movie_open
+
+`movie_open(name)` opens a movie file through the Smacker library with all its
+sound tracks and gives 1 when it opened. A value from outside the game
+[FND-VIDEO-002].
+
+## movie_path_prefix
+
+The drive prefix put in front of the movie paths. Any other value the game
+keeps: the counted string at `0x00498760`, written by the startup drive check
+[FND-PLATFORM-012].
+
+## movie_set_volume
+
+`movie_set_volume(level)` sets the volume of every sound track of the movie
+playing to `level * 256` at the centre pan. An effect on the Smacker library
+[FND-VIDEO-002].
+
+## MovieAreaCleared
+
+Emitted when the intro fills the movie rectangle `(80,102)-(560,358)` with
+black. An event, defined by RULE-VIDEO-001.
+
+## MovieFrameShown
+
+Emitted when a movie frame is drawn at `(80,102)`. An event, defined by
+RULE-VIDEO-001.
+
 ## music_enabled
 
-Whether music plays. Any other value the game keeps: a flag cleared when
-`music_level` is set to 0 [FND-AUDIO-001]; its address is not recorded
-(unknown).
+Whether music plays. Any other value the game keeps: a byte at `0x00487838`,
+1 in the executable's data, cleared when `music_level` is set to 0 and set
+again when it is set to any other level [FND-AUDIO-001, FND-AUDIO-007].
 
 ## music_level
 
@@ -809,6 +1181,12 @@ value `prefsVolumeCD` [FND-OPTIONS-001, FND-AUDIO-001].
 Which music program plays: 0 the title program, 1 the endgame program, 2 the
 game program. Any other value the game keeps: a DWORD at `0x00487878`
 [FND-AUDIO-001].
+
+## music_playing
+
+Whether the CD audio device reports that it is playing. A value from outside
+the game: the MCI status query for the mode, true only when the query succeeds
+and the mode is play [FND-AUDIO-007].
 
 ## MusicPaused
 
@@ -844,21 +1222,22 @@ otherwise. A function, defined by RULE-SETUP-001.
 
 ## network_game
 
-Set when the game is a network game. Any other value the game keeps: the flag
-at `0x00487B58` [FND-AUDIO-003]. The reading of this flag is an
-interpretation; its width is not recorded (unknown).
-
-## new_local_game
-
-Set while a new local game has not yet shown its first player the Game
-Information panel. Any other value the game keeps [FND-SETUP-010]; its type
-and address are not recorded (unknown).
+Set on the computer that hosts a network session, through Host or by resuming
+a saved network game, and 0 in a game started with New Game. Any other value
+the game keeps: a byte at `0x00487B58` [FND-AUDIO-003, FND-AUDIO-006].
 
 ## next_option
 
 `next_option(index, buffer)` gives what the registry loader stores for its
 `index`th value: the registry value when the query succeeds, the unchanged
 shared buffer otherwise. A function, defined by RULE-OPTIONS-001.
+
+## no_match_in_play
+
+Set while no match is in play: from startup until a match starts, and again
+once the end evaluation has finished a match, including the last planning
+passes of the end sequence. Any other value the game keeps: the byte at
+`0x004ABC9C` [FND-STATE-010].
 
 ## number_cells
 
@@ -871,6 +1250,12 @@ The objective last chosen on the setup screen. Any other value the game keeps:
 a DWORD at `0x00487858`, initialized to 0 and read from the registry value
 `prefsObjective` [FND-OPTIONS-001].
 
+## objective_site
+
+`objective_site(s, best)` gives the slot of the unfinished site of sector `s`
+with the greatest Support above `best`, or -1. A function, defined by
+RULE-AI-031.
+
 ## offer_to_snub
 
 `offer_to_snub(player)` chooses the hire offer a computer player snubs. A function,
@@ -881,11 +1266,26 @@ defined by RULE-AI-009.
 `on_objective(s)` tells whether sector `s` is an objective sector of scenario
 6 or 8. A function, defined by RULE-AI-031.
 
+## on_pointer_query
+
+`on_pointer_query()` answers Windows' request for the pointer shape. A
+function, defined by RULE-UI-007.
+
 ## overthrow_count
 
 The number of sectors each player has taken from another player, used by the
-endgame awards. Any other value the game keeps: `INT32LE[6]`, indexed by
-player slot, at `0x004A27A8` [FND-AWARDS-001, FND-PLATFORM-003].
+endgame awards. The Control pass raises the winner's entry by one when it
+takes a sector that had an owner, at `0x00475753`; taking a neutral sector does
+not count. Any other value the game keeps: `INT32LE[6]`, indexed by player
+slot, at `0x004A27A8` [FND-AWARDS-001, FND-PLATFORM-003, FND-CONTROL-003].
+
+## opening_damage
+
+The damage each gang's own attack did in the current combat phase, or -1 when
+the target evaded, copied into `damage_dealt` of the gang's combat record. Any
+other value the game keeps: a local 32-bit value per gang of the resolver,
+element `player * 81 + roster_slot`, set only for gangs whose action is Attack
+[FND-COMBAT-008].
 
 ## owned_sector_count
 
@@ -896,6 +1296,18 @@ owns. A function, defined by RULE-OBJECTIVE-002.
 
 `owner_at(c)` gives the owner a neighbourhood scan reads at index `c`, 0 to 64.
 A function, defined by RULE-AI-005.
+
+## owner_is_human
+
+`owner_is_human(s)` tells whether the owner byte of sector `s` names a human
+player; for a neutral sector it reads player 5's `casualties`. A function,
+defined by RULE-AI-004.
+
+## owner_query
+
+`owner_query(s)` gives the owner the computer players' handlers read for a
+sector: -2 under police presence, otherwise the owner byte. A function,
+defined by RULE-AI-004.
 
 ## PanelSlideDrawn
 
@@ -908,14 +1320,15 @@ panel's horizontal offset from its resting place, and has no handlers
 The damage each gang has taken so far in the current combat phase, from
 attacks, retaliations and the police, applied to Force at the end of the phase.
 Any other value the game keeps: one integer per gang, element
-`player * 81 + roster_slot` [FND-COMBAT-003]; its type and address are not
-recorded (unknown).
+`player * 81 + roster_slot` [FND-COMBAT-003]: a local 32-bit value of the
+resolver, cleared at the start of `resolution` and capped at 10 before it is
+applied [FND-COMBAT-008].
 
 ## placement_anchor
 
 The sector a computer player places its new gangs in, stored as the sector
-plus `0x40`. Any other value the game keeps: one per player slot at
-`0x0048E2F8`; its element type is not recorded [FND-AI-010].
+plus `0x40`. Any other value the game keeps: `INT32LE[6]`, one per player
+slot, at `0x0048E2F8` [FND-AI-010, FND-AI-051].
 
 ## plan
 
@@ -932,38 +1345,46 @@ The planning time limit chosen on the setup screen: 0 none, 1 thirty seconds,
 ## planning_limit_ms
 
 The planning time limit in milliseconds, -1 for none. Any other value the game
-keeps [FND-TIMER-001]; its address is not recorded (unknown).
+keeps: an `INT32` at `0x0049069C`, 0 in the executable's data and set at each
+entry into a match [FND-TIMER-001, FND-TIMER-003].
 
 ## planning_phase
 
 The part of a turn in which each player gives orders. Players plan one after
 another in `turn_order`: a computer player's slot runs the computer planner, a
 human's slot the human handler, and an eliminated slot is skipped
-[FND-TURN-005]. Each planning entry first refills vacant `hire_offers`
-[FND-HIRE-001] and rebuilds visibility [FND-DETECT-001]. It runs after
-`turn_start` and before `resolution` [FND-TURN-005].
+[FND-TURN-005]. Visibility is rebuilt once, before the first player plans
+[FND-DETECT-001, FND-TURN-006], and each planning entry refills vacant
+`hire_offers` [FND-HIRE-001]. It runs after `turn_start` and before
+`resolution` [FND-TURN-005].
 
 ## planning_records
 
 The computer players' per-gang planning state. A list the game keeps, one
 16-byte record per player and roster slot, element `player * 81 +
-roster_slot`, at `0x0048A250` [FND-AI-019, FND-AI-001]; its layout is
-requested as a new format (see format-requests.md). Fields the rules use:
-`family` (+0), `unk_01` (+1), `older_action`, `older_target`, `older_target_2`
-(+2..+5), `previous_action`, `previous_target`, `previous_target_2` (+5..+8),
-`planned_action`, `planned_target`, `planned_target_2` (+8..+11), `unk_0B`
-(+11), `weapon_cooldown` (`INT16`, +12) and `armor_cooldown` (`INT16`, +14)
-[FND-AI-019, FND-AI-021].
+roster_slot`, at `0x0048A250` [FND-AI-019, FND-AI-001]; its element format is
+FMT-STATE-007. Fields: `family` (+0), `needs_family` (+1), `older_action`,
+`older_target`, `older_target_2` (+2..+4), `previous_action`,
+`previous_target`, `previous_target_2` (+5..+7), `planned_action`,
+`planned_target`, `planned_target_2` (+8..+10), `unk_0B` (+11, never
+addressed), `weapon_cooldown` (`INT16`, +12) and `armor_cooldown` (`INT16`,
++14) [FND-AI-019, FND-AI-021, FND-STATE-006, FND-AI-042].
 
 ## planning_start_ms
 
 The value of `timer_ms` when the current player's planning began. Any other
-value the game keeps [FND-TIMER-001]; its address is not recorded (unknown).
+value the game keeps: a DWORD at `0x004906A0` [FND-TIMER-001, FND-TIMER-003].
 
 ## planning_time_expired
 
 `planning_time_expired()` tells whether the current player's planning time has
 run out. A function, defined by RULE-TIMER-002.
+
+## planning_timed
+
+Set while a human player plans under a time limit. Any other value the game
+keeps: the byte at `0x00490698`, set when planning starts with a limit other
+than -1 and cleared when planning ends [FND-TIMER-003].
 
 ## planning_timer_start
 
@@ -974,6 +1395,11 @@ function, defined by RULE-TIMER-002.
 
 `play_effect(slot)` plays an effect slot when sound effects are on. A
 function, defined by RULE-AUDIO-005.
+
+## play_movie
+
+`play_movie(name)` plays one intro movie. A function, defined by
+RULE-VIDEO-001.
 
 ## play_sound
 
@@ -989,35 +1415,41 @@ value is an array of its own indexed by the slot, such as `cash`,
 
 ## player_active
 
-Whether a player is still in the match. Any other value the game keeps: one
-byte per player slot [FND-TURN-003], at an address not yet recorded
-(unknown). It is cleared only near the end of `resolution`, for a player who
-owns no sector and has no gang [FND-TURN-003].
+Whether a player is still in the match. Any other value the game keeps:
+`UINT8[6]`, indexed by player slot, at `0x004ABBE0` [FND-TURN-003,
+FND-OBJECTIVE-003, FND-STATE-004]. It is set for all six slots when a new
+match starts and saved with the match [FND-STATE-004]. It is cleared only near
+the end of `resolution`, for a player who owns no sector and has no gang
+[FND-TURN-003, FND-STATE-004].
 
 ## player_awards
 
 The endgame awards each player has earned, as category numbers in the order
 they were given: 0 Fist, 1 Skull, 2 Big Fat Chicken, 3 Dollar Sign, 4 Safe.
-A table the game keeps, up to five entries per player slot [FND-AWARDS-001];
-its address and the codes it stores are not recorded (unknown).
+A table the game keeps: `INT32LE[5]` per player slot at `0x00494500 + 20 *
+slot`, storing the category numbers above; only the first three entries are
+cleared, to -1, before the awards are given [FND-AWARDS-001, FND-AWARDS-004].
 
 ## player_names
 
 The players' names. Any other value the game keeps: six 12-byte records at
-`0x004A2588 + player * 12`, with the name's characters starting at each
-record's second byte [FND-UI-003, FND-PLATFORM-003].
+`0x004A2588 + player * 12` [FND-UI-003, FND-PLATFORM-003]. Byte 0 holds the
+name's length, 1 to 10; the characters follow from byte 1, each from `0x20`
+(space) to `0x5A` (`Z`), with a NUL after the last [FND-STATE-004].
 
-## player_retired
-
-Set for a local human slot once its elimination card has been shown. Any
-other value the game keeps: one flag per player slot [FND-OBJECTIVE-002]; its
-type and address are not recorded (unknown).
 
 ## player_status_text
 
 `player_status_text(slot)` gives the status Game Information shows for a
 player slot. A function, defined by RULE-UI-009.
 
+## players_human
+
+For each player slot, whether a human plays it. Any other value the game
+keeps: `UINT8[6]` at `0x004ABC58`, set at setup to 1 where `controller` is 0
+or 3 and to 0 otherwise, and set to 0 when a network player's slot is handed
+to the computer [FND-COMLINK-007]. A save file keeps it as block 39
+[FND-SAVE-001].
 ## pointer_in_rect
 
 `pointer_in_rect(x, y, w, h)` tells whether the pointer is inside a rectangle.
@@ -1025,21 +1457,24 @@ A function, defined by RULE-UI-001.
 
 ## pointer_shape
 
-The stock cursor the game last set, 0 to 4. Any other value the game keeps,
-remembered by the cursor helper `fn_00465BC8` [FND-UI-034]; its address is not
-recorded (unknown).
+The shape the cursor helper `fn_00465BC8` compares a request with. Any other
+value the game keeps: a DWORD at `0x00487B20`, 99 in the executable's data and
+never written, so it never equals a shape and every call sets the cursor
+[FND-UI-034, FND-UI-023].
 
 ## pointer_x
 
 The pointer's horizontal position on the 640-by-480 screen. A value from
 outside the game: taken from the Windows mouse messages; it changes whenever
-the mouse moves [FND-UI-032].
+the mouse moves [FND-UI-032]. The window procedure keeps the client point, x in
+the low 16 bits, at `0x0049859C` [FND-UI-020].
 
 ## pointer_y
 
 The pointer's vertical position on the 640-by-480 screen. A value from outside
 the game: taken from the Windows mouse messages; it changes whenever the mouse
-moves [FND-UI-032].
+moves [FND-UI-032]. The window procedure keeps the client point, y in the high
+16 bits, at `0x0049859C` [FND-UI-020].
 
 ## PointerShapeSet
 
@@ -1056,9 +1491,11 @@ FND-GANG-003].
 ## portrait
 
 The Overlord portrait a player slot shows, 0 to 14, which also chooses the
-player's default name. Any other value the game keeps: one per player slot
-[FND-SETUP-002, FND-SETUP-005]; its type and address are not recorded
-(unknown).
+player's default name; 15 is an empty slot's image. Any other value the game
+keeps: `UINT8[6]`, indexed by player slot, at `0x004A5F00` [FND-SETUP-002,
+FND-SETUP-005, FND-SETUP-013]. The setup screens edit a copy at `0x00490678`,
+which the setup reset fills with 0 for slot 0 and 15 for the others
+[FND-SETUP-017].
 
 ## pref_base_stats
 
@@ -1105,9 +1542,15 @@ no handlers [FND-OPTIONS-001].
 
 ## preferred_scenario
 
-The scenario a fresh local setup starts on, 0 unless a stored preference
-replaces it. Any other value the game keeps: `INT8` at `0x00487858`
-[FND-SETUP-009, FND-SETUP-012].
+The scenario a fresh local setup starts on: 0 (Greed) in the executable's
+data, replaced at startup by the registry value `prefsObjective`, and set to
+the scenario chosen on the setup screen. Any other value the game keeps:
+`INT8` at `0x00487858` [FND-SETUP-009, FND-SETUP-012, FND-SETUP-013].
+
+## present
+
+`present(rect)` copies a changed rectangle of the drawing area to the window.
+A function, defined by RULE-GFX-002.
 
 ## presentation_tick
 
@@ -1117,8 +1560,9 @@ and the planning timer bar. A clock, defined by RULE-UI-008.
 ## presentation_tick_pending
 
 Set by each `presentation_tick` and cleared by the loop that consumes it. Any
-other value the game keeps: timer slot 0 [FND-UI-001]; whether it is a flag or
-a counter, and its address, are not recorded (unknown).
+other value the game keeps: the flag byte of timer slot 0 at `0x00494810`,
+set to 1 by the timer callback, so ticks a busy loop misses are lost
+[FND-UI-001, FND-UI-023].
 
 ## previous_action_count
 
@@ -1136,6 +1580,19 @@ other value the game keeps: `INT32LE[6]`, indexed by player slot, at
 `propose_site()` draws a site definition for the city generator, redrawing
 the two kinds Armageddon excludes. A function, defined by RULE-CITY-002.
 
+## quit_requested
+
+Whether the program should leave the title loop and exit. Any other value the
+game keeps: a byte at `0x00487828`, set by File, Exit, by closing the window
+and by the end of some network games [FND-PLATFORM-009].
+
+## raider_mode
+
+Set for a computer player that took over a network player whose connection
+was lost; every active gang of that player is then planned as family 9. Any
+other value the game keeps: one byte per player slot at `0x00482158`, cleared
+when a new match starts and kept in saves [FND-AI-043, FND-AI-045].
+
 ## random_neighbour
 
 `random_neighbour(player, idx)` is sector selector mode 0. A function, defined
@@ -1150,8 +1607,9 @@ function, defined by RULE-AI-008.
 
 A player's reaction value, drawn at new-game setup and not written again,
 which scales how the computer players respond to attacks. Any other value the
-game keeps: one per player slot [FND-AI-006, FND-RNG-005]; its type and address
-are not recorded (unknown).
+game keeps: `INT32LE[6]`, indexed by player slot, at `0x004AB650`; the setup
+draw stores 3 to 6 there, and save block 36 copies it [FND-AI-006,
+FND-RNG-005, FND-RNG-006, FND-STATE-003].
 
 ## refresh_anchor
 
@@ -1164,6 +1622,12 @@ The DWORD a registry value holds. A value from outside the game: read with
 `RegQueryValueExA` from `HKLM\SOFTWARE\Stick Man Games\Chaos Overlords\1.0`,
 once at startup; `registry_dword[index]` is the value the loader queries
 `index`th [FND-OPTIONS-001].
+
+## registry_key_opened
+
+Whether the options key `HKLM\SOFTWARE\Stick Man Games\Chaos Overlords\1.0`
+opened for reading at startup. A value from outside the game: the result of
+`RegOpenKeyExA` [FND-OPTIONS-003].
 
 ## registry_present
 
@@ -1180,9 +1644,9 @@ RULE-AI-026.
 ## research_remaining
 
 How much research each player still needs for each item; 0 means the item is
-researched. Any other value the game keeps: `UINT8[384]`, element
-`item * 6 + player`, at `0x004A2608` [FND-RESEARCH-001, FND-RESEARCH-002,
-FND-PLATFORM-003].
+researched. Any other value the game keeps: `INT8[384]`, element
+`item * 6 + player`, at `0x004A2608`; every read loads it signed
+[FND-RESEARCH-001, FND-RESEARCH-002, FND-PLATFORM-003, FND-STATE-004].
 
 ## research_score
 
@@ -1207,9 +1671,27 @@ The part of a turn that carries out every player's orders, after
 `chaos_phase`, `combat_phase` (with `police_phase` inside it),
 `transaction_phase`, `chaos_payout_phase`, `terminate_phase`, `move_phase`,
 `control_phase`, `hire_phase` and `turn_end` [FND-CHAOS-001,
-FND-COMBAT-001, FND-MOVE-001, FND-EQUIP-006, FND-TURN-003]. That `hire_phase`
-comes after `control_phase` is not shown (unknown). Just before resolution
+FND-COMBAT-001, FND-MOVE-001, FND-EQUIP-006, FND-TURN-003, FND-TURN-008].
+Before `instant_phase` it clears each player's report count and notes where
+each player has gangs, player by player, and then moves each sector's
+Tolerance one step toward normal [FND-TURN-008]. Just before resolution
 starts, the previous turn's Last Turn reports are cleared [FND-EVENT-001].
+
+## resumed_match
+
+Set when a saved or network match has been loaded, until the end of the first
+round's walk over the slots; while it is set each local human's planning
+opens with the Game Information panel. Any other value the game keeps:
+`UINT8` at `0x00487B98`, 0 in the executable's data [FND-SETUP-015,
+FND-OBJECTIVE-004].
+
+## retaliation_damage
+
+The retaliation damage each attacking gang took in the current combat phase,
+copied into `retaliation_taken` of its combat record. Any other value the game
+keeps: a local 32-bit value per gang of the resolver, element
+`player * 81 + roster_slot`, set to 0 and then written only for gangs whose
+action is Attack [FND-COMBAT-008].
 
 ## rng
 
@@ -1238,41 +1720,46 @@ and makes three draws from `rng`. A function, defined by RULE-RNG-002.
 
 A gang's position, 0 to 80, among its player's 81 elements of `gangs`. It
 does not change while the gang lives. Slot 0 holds the player's Right Hands
-[FND-TURN-003]. A hire copies the new gang into a free slot of the hiring
-player [FND-TURN-005]; the hire search covers 80 slots [FND-HIRE-001].
+[FND-TURN-003]. A hire copies the new gang into the first free slot of the
+hiring player from 0 to 79, so slot 0 is reused once the Right Hands are dead
+[FND-TURN-005, FND-HIRE-001, FND-TURN-008]. Slot 80 never holds a gang: the
+command bar uses it as scratch space while a sector-wide order is chosen
+[FND-TURN-009].
 
 ## scenario
 
 The objective of the match. Any other value the game keeps: `INT32LE` at
-`0x004ABBE8` [FND-RESEARCH-002, FND-SETUP-009, FND-PLATFORM-003]. 6 is Siege,
-7 Eliminate, 8 Big Man and 9 Armageddon [FND-UI-033, FND-TURN-003,
-FND-RESEARCH-002].
+`0x004ABBE8` [FND-RESEARCH-002, FND-SETUP-009, FND-PLATFORM-003]. 0 is Greed,
+1 Power, 2 Acceptance, 3 Dominance, 4 Kill 'Em All, 5 Big 40, 6 Siege,
+7 Eliminate, 8 Big Man and 9 Armageddon [FND-OBJECTIVE-003, FND-UI-033,
+FND-TURN-003, FND-RESEARCH-002]. Saves and the network session transfer copy
+the value unchanged [FND-OBJECTIVE-006].
 
 ## scenario_acceptance
 
 The value of `scenario` for Acceptance, the timed scenario scored by Support.
-A constant [SRC-MANUAL-GOG]; its number is not recorded (unknown).
+A constant, 2 [FND-OBJECTIVE-003, SRC-MANUAL-GOG].
 
 ## scenario_big_40
 
 The value of `scenario` for Big 40, won by the first player to own 40
-sectors. A constant [SRC-MANUAL-GOG]; its number is not recorded (unknown).
+sectors. A constant, 5 [FND-OBJECTIVE-003, SRC-MANUAL-GOG].
 
 ## scenario_dominance
 
 The value of `scenario` for Dominance, the timed scenario scored by cash,
-Support and sectors together. A constant [SRC-MANUAL-GOG]; its number is not
-recorded (unknown).
+Support and sectors together. A constant, 3 [FND-OBJECTIVE-003,
+SRC-MANUAL-GOG].
 
 ## scenario_greed
 
 The value of `scenario` for Greed, the timed scenario scored by cash. A
-constant [SRC-MANUAL-GOG]; its number is not recorded (unknown).
+constant, 0 [FND-OBJECTIVE-003, SRC-MANUAL-GOG].
 
 ## scenario_power
 
 The value of `scenario` for Power, the timed scenario scored by sectors
-owned. A constant [SRC-MANUAL-GOG]; its number is not recorded (unknown).
+owned. A constant, 1 [FND-OBJECTIVE-003, SRC-MANUAL-GOG].
 
 ## scenario_score
 
@@ -1285,7 +1772,20 @@ slot, at `0x004A2790` [FND-AI-005, FND-TURN-003, FND-PLATFORM-003].
 For each active player, the number of players with a strictly greater
 `scenario_score`; 0xFF for an inactive player. Any other value the game
 keeps: `UINT8[6]`, indexed by player slot, at `0x004ABC08` [FND-AI-005,
-FND-AI-009].
+FND-AI-009]. Selector `0x2D` of the computer players searches these bytes for
+player slot numbers, as if the table listed players in ranking order
+[FND-STATE-004].
+
+## schedule_slot
+
+`schedule_slot(player)` gives the hire schedule slot a computer player uses
+this turn after its scenario's adjustments. A function, defined by
+RULE-AI-010.
+
+## ScreenFilledBlack
+
+Emitted when the intro fills `(0,0)-(640,460)` with black. An event, defined by
+RULE-VIDEO-001.
 
 ## search_filters
 
@@ -1293,6 +1793,8 @@ The Search panel's site selection: for each player and each of the 22 site
 definitions, whether the city shows the uncontrolled sites of that definition.
 Any other value the game keeps: `UINT8[132]`, element
 `player * 22 + definition`, at `0x004A24E8` [FND-SEARCH-001, FND-SEARCH-003].
+Each element is 0 or 1; the table is emptied when the match loop starts and is
+not saved [FND-SEARCH-004, FND-COMLINK-006].
 
 ## search_set_all
 
@@ -1329,8 +1831,9 @@ sector`, from `0x00489950` [FND-AI-040, FND-AI-018].
 
 Which players had a gang in each sector when the current resolution began.
 Any other value the game keeps: `UINT8[384]`, element `sector * 6 + player`,
-kept as a local of the whole-turn resolver with no fixed address; the memory
-order of the elements is not recorded [FND-POLICE-002].
+kept as a local of the whole-turn resolver with no fixed address, element
+`sector * 6 + player` at byte offset `sector * 6 + player` of the local
+[FND-POLICE-002, FND-EVENT-004].
 
 ## sector_roster_slots
 
@@ -1340,9 +1843,9 @@ panel lists. A function, defined by RULE-UI-010.
 ## sector_weight
 
 A computer player's cached `visible_weight` of each sector, rebuilt at each
-planning pass. Any other value the game keeps: element `player * 64 +
-sector`; its type and address are not recorded (unknown) [FND-AI-039,
-FND-AI-013].
+planning pass. Any other value the game keeps: the 16-bit value at +2 of the
+14-byte per-sector record at `0x0048E310 + player * 0x380 + sector * 14`, not
+saved [FND-AI-039, FND-AI-013, FND-AI-044].
 
 ## sectors
 
@@ -1364,14 +1867,15 @@ RULE-AI-006.
 ## selected_card
 
 The local setup's selected player card, 0 to 5, the only card whose portrait
-and name can be changed. Any other value the game keeps: at `0x004854C4`
-[FND-SETUP-005]; its width is not recorded (unknown).
+and name can be changed. Any other value the game keeps: `INT32` at
+`0x004854C4` [FND-SETUP-005, FND-STATE-008].
 
 ## serial_number
 
 The number the game keeps as its serial number. Any other value the game
 keeps: a DWORD at `0x00487870`, initialized to 0 and read from the registry
-value `serialNum` [FND-OPTIONS-001].
+value `serialNum`; when it is 0 after the read, two draws build a new one that
+stays in memory for the session [FND-OPTIONS-001, FND-OPTIONS-003].
 
 ## set_pointer
 
@@ -1400,8 +1904,11 @@ function, defined by RULE-SEARCH-002.
 
 The site types, read from `DATA/SITES`. A list the game keeps, of
 FMT-DATA-001, in file order, indexed by a site slot's `definition`. The
-Tolerance field of its entries is reached at `0x004AB684` [FND-TURN-001]; the
-base address of the list has not been recorded.
+list is at `0x004AB668`, 22 entries of 62 bytes read whole from `data\Sites`,
+so the `resistance` field of entry `d` is at `0x004AB67E + d × 0x3E` and the
+`tolerance` field at `0x004AB684 + d × 0x3E` [FND-TURN-001, FND-TURN-006]. The
+six 16-bit skill modifiers (Research, Strength, Blade, Range, Fighting,
+Martial Arts) are at `0x004AB698` to `0x004AB6A2` `+ d × 0x3E` [FND-STATE-011].
 
 ## site_meter_length
 
@@ -1442,21 +1949,45 @@ function, defined by RULE-UI-003.
 `solo_control_ok(player, idx, s)` tells whether a gang could take sector `s` by
 Control on its own. A function, defined by RULE-AI-004.
 
-## sound_output_available
+## standings_test
 
-Whether the machine has a wave output device the game can play through. A
-value from outside the game: what the sound setup reports at startup
-[FND-AUDIO-003]; the detection call is not recorded (unknown).
+`standings_test(p, q)` is selector `0x2D`: it searches `scenario_standing` for
+the values `p` and `q` as if the bytes listed player slots in ranking order. A
+function, defined by RULE-AI-006.
+
+## startup_drive_check
+
+`startup_drive_check()` runs the drive check at startup and always gives 1. A
+function, defined by RULE-AUDIO-010.
 
 ## stealth_sum
 
 `stealth_sum(c)` sums the positive Stealth of sector `c`'s finished sites. A
 function, defined by RULE-AI-028.
 
+## step_portrait
+
+`step_portrait(slot, delta)` moves a setup slot's `portrait` by `delta`
+through 0 to 14, wrapping at both ends, until no slot holds it. A function,
+defined by RULE-SETUP-009.
+
 ## strength_check
 
 `strength_check(a, t)` is the computer players' test before an attack. A
 function, defined by RULE-AI-004.
+
+## surfaces_created
+
+`surfaces_created()` tells whether all seven memory surfaces got a device
+context at start. A value from outside the game: the result of `fn_004622D4`,
+which depends on Windows granting the bitmaps [FND-PLATFORM-009,
+FND-GFX-004].
+
+## system_menu_height
+
+The height of the menu bar that Windows reports. A value from outside the
+game: `iMenuHeight` of the non-client metrics, read by the display setup
+[FND-GFX-004].
 
 ## terminate_phase
 
@@ -1475,8 +2006,8 @@ every check (RULE-TIMER-002, RULE-TIMER-003).
 ## timer_redraw_countdown
 
 Counts presentation ticks down to the next redraw of the planning timer bar,
-reloaded with 6. Any other value the game keeps: a DWORD at `0x00487898`
-[FND-TIMER-001].
+reloaded with 6. Any other value the game keeps: a DWORD at `0x00487898`, 6 in
+the executable's data [FND-TIMER-001, FND-TIMER-003].
 
 ## TimerBarDrawn
 
@@ -1492,15 +2023,16 @@ before `chaos_payout_phase` [FND-CHAOS-001, FND-EQUIP-002].
 ## turn_end
 
 The last step of `resolution`. Police presence counts down in every sector
-[FND-POLICE-001]; eliminated players are found and reported, and then the end
-of the match is evaluated [FND-TURN-003]. Whether the countdown comes before
-the elimination check is not shown (unknown).
+(the decrement at `0x00475E74`) [FND-POLICE-001]; then eliminated players are
+found (the call of `fn_00476F3B` at `0x00475ECD`) and reported, and then the
+end of the match is evaluated (the call of `fn_00476857` at `0x00475F61`)
+[FND-TURN-003, FND-TURN-008].
 
 ## turn_limit
 
-The match length of a timed scenario in turns: 26, 52, 104 or 208. Any other
-value the game keeps [SRC-MANUAL-GOG, FND-AI-005]; its type and address are
-not recorded (unknown).
+The match length of a timed scenario in turns: 26, 52, 104 or 208, and 52
+when the setup screen opens. Any other value the game keeps: `INT32LE` at
+`0x004A5EF8` [SRC-MANUAL-GOG, FND-AI-005, FND-OBJECTIVE-003, FND-SETUP-013].
 
 ## turn_order
 
@@ -1515,8 +2047,9 @@ FND-TURN-001, FND-COMBAT-001].
 The work the game does at the start of every turn, before `planning_phase`,
 in this order. It clears recurring actions that can no longer apply and
 copies each gang's `repeat_action` and `repeat_target` into `action` and
-`target` [FND-TURN-004, FND-HIDE-001]. It runs `upkeep_phase`, except in the
-first turn [FND-UPKEEP-001]. It rebuilds every sector record from its
+`target` [FND-TURN-004, FND-HIDE-001], and runs `upkeep_phase`
+[FND-UPKEEP-001]; the first pass of the turn loop, after a new game or a load,
+skips both [FND-TURN-006]. It rebuilds every sector record from its
 completed sites [FND-UPKEEP-001, FND-UI-035], and then every active gang's
 effective statistics [FND-GANG-001].
 
@@ -1535,6 +2068,14 @@ function, defined by RULE-AI-006.
 The part of `turn_start` in which each player, in `turn_order`, pays the
 Upkeep of each active gang and collects `cash_yield` from each sector it
 owns. The first turn of a match skips it [FND-UPKEEP-001, FND-TURN-005].
+
+## viewed_player
+
+The player whose gangs the sector view shows and whose Overlord bar portrait
+carries the active-player marker. It is `active_player` on the city screen;
+the sector view sets it to the player whose portrait was pressed. Any other
+value the game keeps: `INT32` at `0x00487B8C` [FND-UI-015, FND-UI-017,
+FND-UI-018, FND-STATE-008].
 
 ## visible_opponents
 
@@ -1556,3 +2097,14 @@ sector `s`: 10, 1 or 0. A function, defined by RULE-AI-004.
 
 `weight_at(player, c)` gives the cached weight a neighbourhood scan reads at
 index `c`, 0 to 64. A function, defined by RULE-AI-005.
+
+## window_inactive
+
+Set while the game's window is inactive. Any other value the game keeps: the
+byte at `0x00487890`, set by the pump on deactivation and cleared on activation
+[FND-AUDIO-007].
+
+## WindowAreaCopied
+
+An event: a rectangle of the off-screen drawing area is copied to the window.
+It carries the rectangle [FND-GFX-004].

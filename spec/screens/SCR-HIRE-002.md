@@ -5,24 +5,32 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-HIRE-004, FND-HIRE-001, SRC-MANUAL-GOG]
+evidence: [FND-HIRE-004, FND-HIRE-001, FND-HIRE-007, FND-HIRE-008, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
-related: [RULE-HIRE-003, RULE-HIRE-002]
+related: [RULE-HIRE-003, RULE-HIRE-002, SCR-GANG-002]
 ---
 
 ## Drawn elements
 
+Rectangles are `(x, y, width, height)` in screen coordinates; `s` is the offer
+slot, 0 to 2.
+
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| Offer portrait, one per offer slot | `DATA/PX16/PX03000` | The portrait of the gang definition in the player's entry of `hire_offers` for that slot (RULE-HIRE-002) | Not recorded | During the player's `planning_phase` | SRC-MANUAL-GOG |
+| Offer portrait, one per offer slot | `DATA/PX16/PX03000` | The portrait of the gang definition in the player's entry of `hire_offers` for that slot (RULE-HIRE-002), picked by the definition's portrait number, ten to a row of the sheet | `(440 + 66s, 373, 64, 64)` | During the player's `planning_phase` | FND-HIRE-007, FND-HIRE-008 |
+| Offer price | Digit glyphs of `DATA/PX16/PX00129` | The definition's `hire_cost`, two cells wide | Left edge x `450 + 66s`, top y 440 | During the player's `planning_phase` | FND-HIRE-007 |
+| Hire mark | `DATA/PX16/PX00129`, the 64-by-64 image at `(114, 299)` | None | Over the portrait, transparent | The slot's order is a sector | FND-HIRE-008 |
+| Snub mark | `DATA/PX16/PX00129`, the 64-by-64 image at `(178, 299)` | None | Over the portrait, transparent | The slot's order is -2 | FND-HIRE-008 |
+| Dragged portrait | `DATA/PX16/PX03000` | The dragged offer's portrait, 40 by 40 | Under the pointer, which is held to x 20 to 620 and y 20 to 440 | While an offer is dragged | FND-HIRE-008 |
 
 ## Mouse input
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Offer portrait, dragged and dropped on a sector | Not recorded | During the player's `planning_phase` | Orders that offer hired into the sector and clears the other two slots' orders (RULE-HIRE-003) | FND-HIRE-004 |
-| Reject control under an offer | Not recorded | During the player's `planning_phase` | Toggles that offer between no order and a snub, or cancels its hire (RULE-HIRE-003) | FND-HIRE-004 |
+| Offer portrait, pressed and dragged | Slot 0 when x is 440 to 504, slot 1 above 504 to 570, slot 2 above 570 to 636, y 373 to 436 | During the player's `planning_phase` | Dragging starts once the pointer moves more than 2 pixels from the press point; releasing first ends with no change. A drop inside `(2, 42, 432, 416)` names a sector: in the city map the cell under the pointer, 54 by 52 pixels, eight to a row; in the sector view one of the 3-by-3 cells of `(64, 60, 162, 156)`, the shown sector for a point elsewhere in the map area. The drop is accepted when the player owns the sector or has a living gang there; it then orders the offer hired into that sector and clears the other two slots' orders (RULE-HIRE-003). Any other drop changes nothing | FND-HIRE-008 |
+| Offer portrait, double-clicked | As above | During the player's `planning_phase` | Opens the gang information panel (SCR-GANG-002) on a Force 0 gang of the offered definition with no equipment | FND-HIRE-008 |
+| Reject control under an offer | `(472 + 66s, 437, 32, 13)` | During the player's `planning_phase` | Toggles that offer between no order and a snub, or cancels its hire, and clears the other two slots' orders (RULE-HIRE-003) | FND-HIRE-008 |
 
 ## Keyboard input
 
@@ -54,17 +62,9 @@ None known.
 
 ## Open questions
 
-- Positions and rectangles are not recorded in a finding. Unconfirmed leads
-  from captures of the original: three 66-pixel cells starting at
-  `(438, 370)` with 64-by-64 portraits at x 439, 505 and 571, a Reject target
-  of `(472 + 66 * slot, 437, 32, 13)`, a stamp from `DATA/PX16/PX00129` at
-  `(120, 300, 60, 60)` over an offer ordered to hire and a red cross from
-  `(180, 300, 60, 60)` over a snubbed one, and each offer's hire cost in the
-  left half of its cell's footer.
-- Which sectors accept the drop is not recorded; the manual (page 17) says a
-  sector the player controls or one holding one of the player's gangs.
-- Whether a double-click on an offer opens the gang definition panel
-  (`DATA/PX16/PX05022`, FND-GANG-002) and from which handler is not recorded.
+- In the sector view a cell of the 3-by-3 grid whose neighbour does not exist
+  ends the drop; the table that says which cells exist is the sector view's
+  (FND-HIRE-008).
 - Whether any sound plays on a drop or on Reject is not recorded.
 - Whether this belongs in the main console's screen entry of the UI area is
   for that entry to decide; the offers are described here because their input

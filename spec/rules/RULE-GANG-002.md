@@ -4,7 +4,7 @@ title: A gang that dies or is terminated has only its sector byte set to inactiv
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GANG-003, FND-MOVE-001]
+evidence: [FND-GANG-003, FND-GANG-005, FND-MOVE-001, FND-MOVE-003]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -43,8 +43,10 @@ if died:
 ## Outputs
 
 No return value. Sets `sector` to 100 (`GANG_INACTIVE`). For a death, adds one
-to `casualties[player]`. Leaves `weapon`, `armor`, `misc`, `force`, `action`
-and every other field as they were.
+to `casualties[player]`. Leaves `weapon`, `armor`, `misc`, `action` and every
+other field as they were. A dead gang's `force` keeps the value the damage
+step stored, 0 or below [FND-GANG-005]; a terminated gang's `force` is
+unchanged.
 
 ## Edge cases
 
@@ -54,6 +56,10 @@ and every other field as they were.
   disappear then.
 - The Eliminate scenario's clean-up also retires gangs by writing only the
   sector byte, without counting a casualty (FND-GANG-003).
+- Deaths from police damage count as casualties like deaths from attacks: both
+  reach the same damage step and the same increment [FND-GANG-005].
+- A Terminate never counts as a casualty and records no report
+  [FND-MOVE-003].
 
 ## What the sources say
 
@@ -68,6 +74,5 @@ None known.
 
 ## Open questions
 
-- Where `casualties` is kept and its type are not recorded.
 - The combat rule that decides the death calls this rule; the damage step
   belongs to the combat rules.

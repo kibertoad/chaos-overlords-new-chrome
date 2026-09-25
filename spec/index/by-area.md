@@ -9,6 +9,8 @@
 | [FND-EXE-001](../findings/FND-EXE-001.md) | The executable is a stripped 32-bit PE for the Windows GUI subsystem with image base 0x00400000 | recorded |
 | [FND-EXE-002](../findings/FND-EXE-002.md) | The executable has six sections, and .data has a large zero-initialized tail | recorded |
 | [FND-EXE-003](../findings/FND-EXE-003.md) | The executable was linked by Microsoft's linker 3.10 with a statically linked C runtime | recorded |
+| [FND-EXE-004](../findings/FND-EXE-004.md) | Game code occupies 0x00401000..0x0047862F as 464 functions, followed by import thunks and the C runtime | recorded |
+| [FND-EXE-005](../findings/FND-EXE-005.md) | The resource section holds five menus, one accelerator table, 27 dialogs, 104 strings, four bitmaps, eight icon groups and a version record, and the code loads each kind through one place | recorded |
 
 ## PLATFORM
 
@@ -22,6 +24,11 @@
 | [FND-PLATFORM-006](../findings/FND-PLATFORM-006.md) | Sound, CD music, timers and Smacker video come from WINMM and smackw32.dll | recorded |
 | [FND-PLATFORM-007](../findings/FND-PLATFORM-007.md) | The palette loader fills entries 10 to 245 of a 256-entry palette from a CLT file | recorded |
 | [FND-PLATFORM-008](../findings/FND-PLATFORM-008.md) | Image copies are opaque except for a pattern mask and an exact-white colour key used by two images | recorded |
+| [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | The program entry allows one instance, picks the image set, sets up the display, sound and menus, runs the title loop, and undoes it all on the way out | recorded |
+| [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | Data files are named by the App Paths install directory and length-prefixed names, and four file slots open them with no message on failure | recorded |
+| [FND-PLATFORM-011](../findings/FND-PLATFORM-011.md) | At 8 bits the palette comes from data/CLT00002, read as red, green, blue, and PX08 pictures are mapped to it through their own colour tables | recorded |
+| [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | The startup disc check looks for a fixed drive from the string ".\" and always passes, and the CD track search has no callers | recorded |
+| [FND-PLATFORM-013](../findings/FND-PLATFORM-013.md) | The ordinal imports of WSOCK32 and smackw32 by name, and the functions that call the WinSock, Telephony and serial port imports | recorded |
 
 ## ASSET
 
@@ -33,16 +40,19 @@
 
 | ID | Title | Status |
 |---|---|---|
-| [FMT-DATA-001](../formats/FMT-DATA-001.md) | Site definition records in DATA/SITES | sourced |
-| [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | sourced |
-| [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | sourced |
-| [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 | unknown |
+| [FMT-DATA-001](../formats/FMT-DATA-001.md) | Site definition records in DATA/SITES | supported |
+| [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | supported |
+| [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | supported |
+| [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 | supported |
 | [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | unknown |
 | [FND-DATA-001](../findings/FND-DATA-001.md) | DATA/SITES is 22 records of 62 bytes, numbered 0 to 21, with a special-site word of 0 to 3 at 0x3C | recorded |
 | [FND-DATA-002](../findings/FND-DATA-002.md) | DATA/Gangs is 90 records of 156 bytes, numbered 0 to 89, with a name, a 90-byte description and 17 words | recorded |
 | [FND-DATA-003](../findings/FND-DATA-003.md) | DATA/ITEMS is 64 records of 166 bytes, 53 items numbered 0 to 52 and 11 blank records of type 99 | recorded |
 | [FND-DATA-004](../findings/FND-DATA-004.md) | DATA/CLT00002 is 236 four-byte entries whose fourth byte is always 4 | recorded |
 | [FND-DATA-005](../findings/FND-DATA-005.md) | DATA/DATA.Z starts with the bytes 13 5D 65 8C and is not named by the executable | recorded |
+| [FND-DATA-006](../findings/FND-DATA-006.md) | The Kaitai definitions of the shipped file formats parse every shipped file to its last byte with the documented field values | recorded |
+| [FND-DATA-007](../findings/FND-DATA-007.md) | Each match start reads DATA/Gangs, DATA/ITEMS and DATA/SITES whole into fixed tables, and the code reads their fields at the offsets the format entries give | recorded |
+| [FND-DATA-008](../findings/FND-DATA-008.md) | No code path in the executable can open DATA/DATA.Z | recorded |
 
 ## GFX
 
@@ -54,7 +64,10 @@
 | [FND-GFX-001](../findings/FND-GFX-001.md) | Every PX16 file is a 16-bit BMP whose width and height are 0 and whose plane count is 255 | recorded |
 | [FND-GFX-002](../findings/FND-GFX-002.md) | Every PX08 file is an 8-bit BMP with a 256-colour palette, RLE8 in 207 files and uncompressed in 7 | recorded |
 | [FND-GFX-003](../findings/FND-GFX-003.md) | The PX08 line geometry gives every image's width and height, and the PX16 rows are padded to four bytes | recorded |
+| [FND-GFX-004](../findings/FND-GFX-004.md) | The display layer draws with GDI into twelve surface slots, copies the 640-by-460 backing surface to the window's client origin, and uses DirectDraw only to take the screen in full screen | recorded |
+| [FND-GFX-005](../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 | recorded |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image | supported |
+| [RULE-GFX-002](../rules/RULE-GFX-002.md) | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported |
 
 ## AUDIO
 
@@ -68,6 +81,8 @@
 | [FND-AUDIO-003](../findings/FND-AUDIO-003.md) | The turn-start sound plays at every turn start after the first, and every effect interrupts the one playing | recorded |
 | [FND-AUDIO-004](../findings/FND-AUDIO-004.md) | The 28 sound files are two-chunk RIFF WAVE files of 8-bit mono PCM at 22,050 Hz | recorded |
 | [FND-AUDIO-005](../findings/FND-AUDIO-005.md) | The eight music tracks are Ogg files of one Vorbis stream each, stereo at 44,100 Hz | recorded |
+| [FND-AUDIO-006](../findings/FND-AUDIO-006.md) | The effect slots are 48 records of 276 bytes holding a path and a loaded copy, one play channel serves every effect, and the turn-start flags belong to network sessions | recorded |
+| [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | CD music opens a shareable cdaudio device in TMSF format, a timer poll restarts a stopped program, and the MCI notification changes nothing | recorded |
 | [FND-AUDIO-010](../findings/FND-AUDIO-010.md) | Slot 2 is the sound of pressing a push-button control, and setup plays slots 3 and 4 for accepted and refused choices | recorded |
 | [FND-AUDIO-011](../findings/FND-AUDIO-011.md) | Panels play slot 3 for an accepted choice and slot 4 for a refused one, and the pagers stop at both ends | recorded |
 | [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read | recorded |
@@ -81,6 +96,7 @@
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | The Comlink alert plays slot 6 through the effects gate | supported |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks | supported |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | supported |
+| [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
 
 ## VIDEO
 
@@ -88,6 +104,8 @@
 |---|---|---|
 | [FMT-VIDEO-001](../formats/FMT-VIDEO-001.md) | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
+| [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | The intro plays MVLOGOS then MVINTRO at (80,102) through smackw32, each ended by the left button at a 10 Hz tick, at the effects volume | recorded |
+| [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | The intro plays the logos movie and then the intro movie, each ended by the left button | supported |
 
 ## HELP
 
@@ -99,25 +117,44 @@
 | [FND-HELP-002](../findings/FND-HELP-002.md) | The help text uses nine fonts and 93 internal hotspots, 67 jumps and 26 popups, all resolved through the context tree | recorded |
 | [FND-HELP-003](../findings/FND-HELP-003.md) | Chaos.hlp is a WinHelp 3.1 container with an eleven-file directory at 0xE42 | recorded |
 | [FND-HELP-004](../findings/FND-HELP-004.md) | CHAOS.CNT is a 75-line text contents file with 14 headings and 59 topic entries | recorded |
+| [FND-HELP-005](../findings/FND-HELP-005.md) | The only call that opens the help file has no callers, so Help Topics does nothing in this build | recorded |
+| [RULE-HELP-001](../rules/RULE-HELP-001.md) | Help Topics does nothing, and no key opens the help file | supported |
 
 ## SAVE
 
 | ID | Title | Status |
 |---|---|---|
 | [BUG-SAVE-001](../bugs/BUG-SAVE-001.md) | Loading a truncated save overwrites part of the game state and keeps the rest | supported |
-| [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | Full save file | sourced |
+| [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | Full save file | supported |
 | [FMT-SAVE-002](../formats/FMT-SAVE-002.md) | Short M10W save file | supported |
 | [FND-SAVE-001](../findings/FND-SAVE-001.md) | A save is a marker, 44 global blocks in a fixed order, an optional network block and the marker again | recorded |
+| [FND-SAVE-002](../findings/FND-SAVE-002.md) | Save and Open use the common dialogs on file slot 3, the save dialog truncates the chosen file before anything is written, and nothing writes an M10W file | recorded |
+| [FND-SAVE-003](../findings/FND-SAVE-003.md) | Save blocks 3, 4, 27 and 39 hold the selected sector, the portrait, the city map picture number and the local-human flags, and the preference bytes are the Mentality, time limit and objective | recorded |
 
 ## STATE
 
 | ID | Title | Status |
 |---|---|---|
-| [FMT-STATE-001](../formats/FMT-STATE-001.md) | Gang record, one per player and roster slot | sourced |
-| [FMT-STATE-002](../formats/FMT-STATE-002.md) | Sector record, one per city sector | sourced |
+| [FMT-STATE-001](../formats/FMT-STATE-001.md) | Gang record, one per player and roster slot | supported |
+| [FMT-STATE-002](../formats/FMT-STATE-002.md) | Sector record, one per city sector | supported |
 | [FMT-STATE-003](../formats/FMT-STATE-003.md) | Per-gang combat record of the last resolution | supported |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | Site slot in a sector record | supported |
 | [FMT-STATE-005](../formats/FMT-STATE-005.md) | Comlink message record | supported |
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | Last Turn report record | supported |
+| [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | supported |
+| [FMT-STATE-008](../formats/FMT-STATE-008.md) | Combat result row of one sector | supported |
+| [FMT-STATE-009](../formats/FMT-STATE-009.md) | Input event record | supported |
+| [FND-STATE-001](../findings/FND-STATE-001.md) | City generation stores Income and Tolerance in sector bytes 1 and 2, and the refresh before planning rebuilds bytes 3 to 6, 0x0D, 0x0E and 0x16 to 0x23 from them and the completed sites | recorded |
+| [FND-STATE-002](../findings/FND-STATE-002.md) | The gang record holds the player at byte 0, the definition at byte 1 and Force at byte 3, its statistics follow the definition's order, and each picker's target bytes are read back by the resolver | recorded |
+| [FND-STATE-003](../findings/FND-STATE-003.md) | Save blocks 16, 17, 18, 21, 36 and 37 hold the AI hire limit, an always-zero per-gang table, the takeover flag, an unused hire flag, the reactions and a Homicidal Maniac flag | recorded |
+| [FND-STATE-004](../findings/FND-STATE-004.md) | Per-player tables - the active flags at 0x004ABBE0, the length-prefixed names at 0x004A2588, signed research counters at 0x004A2608, and the standings bytes that AI selector 0x2D searches as if they were a player list | recorded |
+| [FND-STATE-005](../findings/FND-STATE-005.md) | Each resolution sets byte 9 of all 486 combat records to -1 and rewrites bytes 0 to 8 only for gangs that took part in a fight | recorded |
+| [FND-STATE-006](../findings/FND-STATE-006.md) | In the computer players' 16-byte planning record, byte 1 is a flag only selector 0x48 reads, byte 11 is never referenced, and byte 15 is the high byte of the 16-bit field at 14 | recorded |
+| [FND-STATE-007](../findings/FND-STATE-007.md) | Map of the match and computer-player state in .data, with each region's element, writers, readers and identity | recorded |
+| [FND-STATE-008](../findings/FND-STATE-008.md) | Map of the interface, platform and network globals in .data, with each region's element, writers, readers and identity | recorded |
+| [FND-STATE-009](../findings/FND-STATE-009.md) | Game code reads nine .rdata constants, all but one in the computer players' planning pass; two initialized .data tables of sines and cosines are used only by uncalled helpers | recorded |
+| [FND-STATE-010](../findings/FND-STATE-010.md) | The byte at 0x004ABC9C is set while no match is in play, from startup and again once a match has ended | recorded |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | The most used .data addresses the data map left unnamed are fields of known records, the modem and socket handles, and a per-connection flag array | recorded |
 
 ## RNG
 
@@ -128,6 +165,7 @@
 | [FND-RNG-003](../findings/FND-RNG-003.md) | The bounded wrapper makes three raw draws and returns a value from 1 to n | recorded |
 | [FND-RNG-004](../findings/FND-RNG-004.md) | The computer players' 46 bounded draws come from their dispatcher, two shared helpers and twelve family handlers | recorded |
 | [FND-RNG-005](../findings/FND-RNG-005.md) | From an accepted local Begin to the first city, the draws are portraits, reactions, city and headquarters, in that order | recorded |
+| [FND-RNG-006](../findings/FND-RNG-006.md) | The 61 bounded draws, call by call, all made on the main thread; no pointer to rand or to any function that reaches it is stored | recorded |
 | [RULE-RNG-001](../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start | supported |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws | supported |
 
@@ -140,9 +178,13 @@
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
 | [FND-TURN-004](../findings/FND-TURN-004.md) | At turn start, four recurring actions are cleared when they can no longer apply, and every inactive gang's recurring action is cleared | recorded |
 | [FND-TURN-005](../findings/FND-TURN-005.md) | Players plan one after another in ascending slot order, and all resolution follows the planning loop | recorded |
+| [FND-TURN-006](../findings/FND-TURN-006.md) | The outer turn loop skips both the recurring cleanup and Upkeep on its first pass, rebuilds visibility once before planning, and counts elapsed_turns after resolution | recorded |
+| [FND-TURN-007](../findings/FND-TURN-007.md) | The instant-phase switch has six cases at fixed instruction ranges, and the Influence and Research cases take their target from the gang's target byte | recorded |
+| [FND-TURN-008](../findings/FND-TURN-008.md) | The resolver's blocks run in address order, from the prologue snapshots to the end evaluator | recorded |
+| [FND-TURN-009](../findings/FND-TURN-009.md) | How the order handlers write targets, and roster slot 80 as the sector-wide order's scratch record | recorded |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | A turn is turn start, planning by each active player in slot order, then resolution | supported |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported |
-| [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then raises every Tolerance below 1 to 1 | supported |
+| [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | Giving a gang an order replaces its whole previous order, one-off or recurring | supported |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | supported |
@@ -163,16 +205,21 @@
 | [FND-SETUP-010](../findings/FND-SETUP-010.md) | With more than one local human, each human's planning starts behind a Ready card, then Game Information, combat results and Last Turn Events | recorded |
 | [FND-SETUP-011](../findings/FND-SETUP-011.md) | One exact player name gives that player a detection baseline that sees every opposing gang in every sector | recorded |
 | [FND-SETUP-012](../findings/FND-SETUP-012.md) | The running original opens its full local setup with Kill 'Em All selected when no scenario preference is stored | recorded |
+| [FND-SETUP-013](../findings/FND-SETUP-013.md) | The left half of the full local setup screen has fixed rectangles for ten scenario buttons, four time limits, four mentalities and four turn times, and the preference loader keeps a stale value for a missing registry entry | recorded |
+| [FND-SETUP-014](../findings/FND-SETUP-014.md) | The local setup renderer draws the portrait strip and a 76-by-68 card for each human slot, and restores the background for computer and empty slots | recorded |
+| [FND-SETUP-015](../findings/FND-SETUP-015.md) | The fresh-match initializer draws a reaction for every slot, then builds the city, then scans each name against six modifier strings in one pass, in local games only | recorded |
+| [FND-SETUP-016](../findings/FND-SETUP-016.md) | The handoff card is drawn at 266,130 with the next player's colour, name and portrait, and only its Ready button or a menu command closes it | recorded |
+| [FND-SETUP-017](../findings/FND-SETUP-017.md) | The setup reset gives every slot the name string 61 plus its number, one human in slot 0 with portrait 0, and portrait 15 to the empty slots | recorded |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported |
-| [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Kill 'Em All when nothing is stored | established |
+| [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | supported |
-| [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | A new match draws the computer players' reactions, then generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported |
+| [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported |
 | [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | supported |
 | [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | supported |
 | [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | A player named with the visibility modifier sees every opposing gang for the whole match | supported |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported |
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported |
-| [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | Local setup starts with one human, and Add and Remove change the number of local humans from one to six | sourced |
+| [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | Full local game setup screen with scenario, settings and six player cards | supported |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | Hot-seat handoff card that waits for the next local player to press Ready | supported |
 
@@ -197,6 +244,10 @@
 | [FND-HIRE-003](../findings/FND-HIRE-003.md) | The Hire comparison panel draws each value two cells wide and signed, and never compares the three offers | recorded |
 | [FND-HIRE-004](../findings/FND-HIRE-004.md) | The human hire handler keeps at most one hire or snub order per player and toggles Reject | recorded |
 | [FND-HIRE-005](../findings/FND-HIRE-005.md) | A per-player name modifier set at setup makes every hire by that player start at Force 10 without a draw | recorded |
+| [FND-HIRE-006](../findings/FND-HIRE-006.md) | A hire skips the cash test for a zero-cost gang, fills slots 0 to 79 only, and writes a complete record with no equipment, no orders and the definition's statistics | recorded |
+| [FND-HIRE-007](../findings/FND-HIRE-007.md) | The offer refill rejects a draw only when it equals a slot's current value or the gang just removed, and the same function draws the three offers on the console | recorded |
+| [FND-HIRE-008](../findings/FND-HIRE-008.md) | The console hire handler takes a drop only on a sector the player owns or has a gang in, opens the live-gang panel on a double-click, and 0x004078B8 is the computer players' snub | recorded |
+| [FND-HIRE-009](../findings/FND-HIRE-009.md) | The Hire comparison panel loads resource 5016, draws three 32-by-32 portraits and sixteen value rows per offer, and closes on its one control or Enter | recorded |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | supported |
 | [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | Vacant hire offers are refilled in place at the player's planning entry | supported |
 | [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported |
@@ -209,6 +260,7 @@
 | ID | Title | Status |
 |---|---|---|
 | [FND-HIDE-001](../findings/FND-HIDE-001.md) | A gang is hidden exactly while its active action is Hide, with no separate hidden flag | recorded |
+| [FND-HIDE-002](../findings/FND-HIDE-002.md) | Four places in the resolver read whether a gang hides, and the Hide case itself only counts | recorded |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player | supported |
 
 ## INFLUENCE
@@ -216,6 +268,8 @@
 | ID | Title | Status |
 |---|---|---|
 | [FND-INFLUENCE-001](../findings/FND-INFLUENCE-001.md) | The Influence picker selects an unfinished site through three fixed rectangles and opens its details on double-click | recorded |
+| [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | The Influence picker draws each site slot as a PX02000 picture with a keyed PX00129 frame, dims completed sites, and shows the chosen slot from a prepared highlighted copy | recorded |
+| [FND-INFLUENCE-003](../findings/FND-INFLUENCE-003.md) | The Influence picker sits at screen (104,124), confirms with a control or Enter only when a site is chosen, cancels with a control or Escape, and preselects a pending Influence order | recorded |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported |
 | [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | Influence picker for choosing one of the sector's three sites | supported |
 
@@ -223,6 +277,7 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [FND-HEAL-001](../findings/FND-HEAL-001.md) | The Heal case rolls Heal plus 4 dice without testing Force first, caps Force at 10 and records no report | recorded |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | supported |
 
 ## RESEARCH
@@ -231,6 +286,8 @@
 |---|---|---|
 | [FND-RESEARCH-001](../findings/FND-RESEARCH-001.md) | Research rolls only while the item still needs research, and an earlier gang's completion stops later rolls in the same phase | recorded |
 | [FND-RESEARCH-002](../findings/FND-RESEARCH-002.md) | New-game setup copies each item's research difficulty to every player, or zero for every item in Armageddon | recorded |
+| [FND-RESEARCH-003](../findings/FND-RESEARCH-003.md) | The Research list builder lists unresearched items of the chosen category up to the gang type's Tech Level, capped by the sector's research-site level, with each item's remaining research | recorded |
+| [FND-RESEARCH-004](../findings/FND-RESEARCH-004.md) | The Research panel selects a row on a press, opens Item Information on a double-clicked row and the gang definition on a double-clicked portrait, and shares the command-panel controls | recorded |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported |
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | supported |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | Research panel with item categories and a fixed sixteen-row item list | supported |
@@ -239,23 +296,24 @@
 
 | ID | Title | Status |
 |---|---|---|
-| [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | Bribe costs 3 instead of the manual's 5 and has no Tolerance cap | supported |
+| [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | Bribe costs 3 instead of the manual's 5 | supported |
 | [FND-BRIBE-001](../findings/FND-BRIBE-001.md) | Bribe needs and costs 3 cash and adds 3 to the sector's Tolerance with no cap | recorded |
-| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector Tolerance by 3 | supported |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported |
 
 ## SNITCH
 
 | ID | Title | Status |
 |---|---|---|
 | [FND-SNITCH-001](../findings/FND-SNITCH-001.md) | Snitch subtracts 3 from Tolerance with no cash test, and after the instant phase every Tolerance below 1 becomes 1 | recorded |
-| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector Tolerance by 3, free and whatever the player's cash | supported |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported |
 
 ## TOLERANCE
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | A sector's Tolerance moves one point per turn back toward its normal value | sourced |
-| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's Tolerance below 1 is raised to 1 | supported |
+| [FND-TOLERANCE-001](../findings/FND-TOLERANCE-001.md) | Bribe, Snitch and a one-point drift change the base Tolerance at sector offset 0x02, which is clamped to 1..40 after the instant phase, while the Chaos test reads offset 0x05 | recorded |
+| [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | supported |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 | supported |
 
 ## SITE
 
@@ -269,6 +327,10 @@
 |---|---|---|
 | [FND-MOVE-001](../findings/FND-MOVE-001.md) | The Terminate pass runs before the Move pass, and Move destinations are normalized per player to at most six gangs a sector | recorded |
 | [FND-MOVE-002](../findings/FND-MOVE-002.md) | The Move panel maps a 162-by-156 area into a three-by-three grid of neighboring sectors | recorded |
+| [FND-MOVE-003](../findings/FND-MOVE-003.md) | The Terminate and Move passes skip inactive gangs, the destination is target, and selector mode 0 draws one of the eight neighbours, which the Move repair stores as the new destination | recorded |
+| [FND-MOVE-004](../findings/FND-MOVE-004.md) | The Move panel handler shows the city around the gang, blacks out cells beyond the edge, and stores the chosen sector in the target byte | recorded |
+| [FND-MOVE-005](../findings/FND-MOVE-005.md) | The Move panel marks the chosen neighbour with one of eight 32-by-32 keyed arrows from PX00129 placed around the centre cell | recorded |
+| [FND-MOVE-006](../findings/FND-MOVE-006.md) | The Move repair loop has no bound, and some order sets keep it running for ever | recorded |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported |
 | [SCR-MOVE-001](../screens/SCR-MOVE-001.md) | Move panel | supported |
@@ -277,10 +339,11 @@
 
 | ID | Title | Status |
 |---|---|---|
-| [BUG-CONTROL-001](../bugs/BUG-CONTROL-001.md) | A player who gave no Control order can be given a sector whose defense is negative | supported |
+| [BUG-CONTROL-001](../bugs/BUG-CONTROL-001.md) | A player who gave no Control order can be given a contested sector whose Income plus Support is negative | supported |
 | [FND-CONTROL-001](../findings/FND-CONTROL-001.md) | The Control pass pools strength per player, settles sectors in ascending order and keeps a neutral candidate ahead of zero-margin ties | recorded |
 | [FND-CONTROL-002](../findings/FND-CONTROL-002.md) | Inside the whole-turn resolver only Crackdown neutralization and a Control win write a sector's owner | recorded |
-| [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles sectors in ascending order, with a neutral candidate at a zero margin | supported |
+| [FND-CONTROL-003](../findings/FND-CONTROL-003.md) | Control settles only sectors with a Control order and no police, adds the defenders, Income and Support to the owner's pool, and subtracts Income and Support from every pool | recorded |
+| [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported |
 
 ## GANG
 
@@ -290,9 +353,15 @@
 | [FND-GANG-002](../findings/FND-GANG-002.md) | The gang definition panel is the 320-pixel alternate panel PX05022 with its own field origins | recorded |
 | [FND-GANG-003](../findings/FND-GANG-003.md) | Death and Terminate write only the gang record's sector byte, leaving its items and other fields in place | recorded |
 | [FND-GANG-004](../findings/FND-GANG-004.md) | Gang panels draw each number in a fixed field of two glyph cells that replaces the template's placeholder | recorded |
-| [RULE-GANG-001](../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites' | supported |
+| [FND-GANG-005](../findings/FND-GANG-005.md) | Combat deaths are counted in a per-player INT32 array at 0x004AB620, raised by one instruction in the damage loop that attack and police damage share | recorded |
+| [FND-GANG-006](../findings/FND-GANG-006.md) | The gang information panel handler takes a whole gang record, lays out effective and base statistics in two columns, and closes on one face | recorded |
+| [FND-GANG-007](../findings/FND-GANG-007.md) | The statistics rebuild pairs the fourteen fields of the gang, item and site records in one order, adds the weapon's combat skills to Combat, and runs for every active gang at the top of each turn, including a gang hired in the turn before | recorded |
+| [FND-GANG-008](../findings/FND-GANG-008.md) | The Hire input handler opens the gang information panel PX05000 for an offer with a record whose Force is 0, so the panel shows two question marks for Force | recorded |
+| [FND-GANG-009](../findings/FND-GANG-009.md) | The compact gang information panel 0x00455B6B is opened only from the Attack, Equip, Research, Sell and Give panels, with a copy of a live gang record | recorded |
+| [FND-GANG-010](../findings/FND-GANG-010.md) | The compact gang panel places each value field in its 320-pixel frame, closes only on its face, Enter or Execute, and covers the base values with a black pattern | recorded |
+| [RULE-GANG-001](../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | supported |
-| [SCR-GANG-001](../screens/SCR-GANG-001.md) | Gang definition panel for a hire offer | supported |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported |
 | [SCR-GANG-002](../screens/SCR-GANG-002.md) | Gang information panel for a hired gang | supported |
 
 ## EQUIP
@@ -305,6 +374,10 @@
 | [FND-EQUIP-004](../findings/FND-EQUIP-004.md) | The Sell panel's item rows are 190-by-52 targets on a 64-pixel pitch that toggle only a filled slot | recorded |
 | [FND-EQUIP-005](../findings/FND-EQUIP-005.md) | The Equip panel has four 32-by-32 category cells and a sixteen-row item list on a 9-pixel pitch | recorded |
 | [FND-EQUIP-006](../findings/FND-EQUIP-006.md) | Equip checks cash at its place in the transaction pass, not in the picker, and equal cash is enough | recorded |
+| [FND-EQUIP-007](../findings/FND-EQUIP-007.md) | The transaction pass skips inactive gangs, reads the Equip item, the Give mask and the Sell mask from target and the Give recipient from target_2, and tests only the Give recipient's sector | recorded |
+| [FND-EQUIP-008](../findings/FND-EQUIP-008.md) | The Equip, Give and Sell panels store the item, the item mask and the recipient in target and target_2, and the Equip list and the Give recipients are filtered by the gang definition's Tech Level | recorded |
+| [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | The Equip and Research panels frame the chosen category cell with a 34-by-34 keyed cell of PX00129 and open on category 0 or the category of the pending order | recorded |
+| [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | The Equip panel handler's faces, keys and double-clicks, and the chosen row redrawn in the second font of PX00129 inside a green frame | recorded |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | supported |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported |
@@ -315,6 +388,8 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [FND-GIVE-001](../findings/FND-GIVE-001.md) | The Give panel handler lists the giver's sector mates, accepts a recipient only when its Tech Level covers every selected item, and stores the order in the target bytes | recorded |
+| [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art | recorded |
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | supported |
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | Give panel | supported |
 
@@ -323,6 +398,8 @@
 | ID | Title | Status |
 |---|---|---|
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them | supported |
+| [FND-SELL-001](../findings/FND-SELL-001.md) | The Sell panel handler shows each carried item at half its cost and stores the chosen items as a three-bit mask in the target byte | recorded |
+| [FND-SELL-002](../findings/FND-SELL-002.md) | The Sell panel marks each selected row with a 192-by-54 keyed overlay from PX00129 and restores the panel's own pixels for the others | recorded |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | supported |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | Sell panel | supported |
 
@@ -337,6 +414,7 @@
 | ID | Title | Status |
 |---|---|---|
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
+| [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | supported |
 
 ## FINANCE
@@ -344,7 +422,8 @@
 | ID | Title | Status |
 |---|---|---|
 | [FND-FINANCE-001](../findings/FND-FINANCE-001.md) | The Financial panel is drawn as the 320-pixel alternate panel with four-cell value fields and its own close control | recorded |
-| [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | The Financial panel projects next turn's cash flow for the whole city or one sector | sourced |
+| [FND-FINANCE-002](../findings/FND-FINANCE-002.md) | The Financial panel sums eight amounts from the queued orders, hires and owned sectors; the Sector variant opens PX05019 when a sector is passed and limits every sum to that sector | recorded |
+| [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | The Financial panel projects next turn's cash flow for the whole city or one sector | supported |
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | Financial panel, City and Sector | supported |
 
 ## ATTACK
@@ -352,6 +431,9 @@
 | ID | Title | Status |
 |---|---|---|
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
+| [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
+| [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, plus or its lower face and cancels with Escape or its upper face | recorded |
+| [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | A double-click in the Attack picker opens Item Information for an equipment icon and the gang information panel for a portrait, of the acting gang or of a listed target | recorded |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | supported |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | Attack picker (Target Acquisition) | supported |
@@ -367,7 +449,14 @@
 | [FND-COMBAT-004](../findings/FND-COMBAT-004.md) | The resolver keeps a 10-byte combat record per gang, and a retaliation is written into the attacker's record | recorded |
 | [FND-COMBAT-005](../findings/FND-COMBAT-005.md) | Detailed Combat plays one clip per attack, for the viewer's gangs in sector order, and shows a retaliation inside the attack's clip | recorded |
 | [FND-COMBAT-006](../findings/FND-COMBAT-006.md) | Nothing between order entry and resolution merges two gangs that attack each other | recorded |
-| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's combat rating adds the skills that match its weapon to its Combat | sourced |
+| [FND-COMBAT-007](../findings/FND-COMBAT-007.md) | The Combat Results page renderer draws one sector's page, the viewer's results and those of one opponent picked from five portrait buttons | recorded |
+| [FND-COMBAT-008](../findings/FND-COMBAT-008.md) | The combat phase of the resolver, instruction by instruction - attack and retaliation, police scan, a damage cap of 10, the record and row fill, then damage and deaths | recorded |
+| [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | Detailed Combat draws two Force tracks per gang, the starting and the shown Force, and Combat Results frames the chosen opponent's portrait | recorded |
+| [FND-COMBAT-010](../findings/FND-COMBAT-010.md) | Detailed Combat resets every listed gang's shown Force once, builds each focal list from the result rows, subtracts nothing for an evaded attack, and stops on Escape or the exit face | recorded |
+| [FND-COMBAT-011](../findings/FND-COMBAT-011.md) | Detailed Combat builds each focal gang's fight list from the combat result entries, resets displayed Force once for every listed gang, and keeps its state in two blocks of globals | recorded |
+| [FND-COMBAT-012](../findings/FND-COMBAT-012.md) | Combat Results pages with the left and right arrow keys, closes on Enter or plus but not Escape, and the force selector makes one of the viewer's gangs the focus whose target and attackers are framed | recorded |
+| [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | Surfaces 3 and 5 hold PX03000 and PX02000 with PX04999 whenever a combat panel is open, the outline colours are red, green and blue in that order, and the Detailed Combat fight list has room for 36 elements | recorded |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported |
@@ -379,6 +468,7 @@
 | ID | Title | Status |
 |---|---|---|
 | [FND-DETECT-001](../findings/FND-DETECT-001.md) | The visibility rebuild takes each sector's best Detect and adds a helper bonus from every other friendly gang there | recorded |
+| [FND-DETECT-002](../findings/FND-DETECT-002.md) | The visibility rebuild runs for all six observer slots, writes 0 before 1 for every active opposing gang, and leaves inactive records alone | recorded |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | supported |
 
 ## CHAOS
@@ -386,6 +476,7 @@
 | ID | Title | Status |
 |---|---|---|
 | [FND-CHAOS-001](../findings/FND-CHAOS-001.md) | Chaos is rolled gang by gang in roster order before Combat and paid after Transactions, halved once per player and sector outside the owner's sectors | recorded |
+| [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | The Chaos rolls read sector offset 0x04, the Crackdown test sums each player's successes with a band-2 owner's cut by a quarter, and the payout skips gangs that died in combat and also raises cash_earned | recorded |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported |
 
@@ -396,8 +487,9 @@
 | [FND-POLICE-001](../findings/FND-POLICE-001.md) | Each sector keeps its last two Crackdown turns; a third within five turns neutralizes the sector, and each Crackdown adds 3 to 5 police turns | recorded |
 | [FND-POLICE-002](../findings/FND-POLICE-002.md) | A Crackdown report goes to every player who had a gang in the sector when resolution began, and a control-loss report to the displaced owner | recorded |
 | [FND-POLICE-003](../findings/FND-POLICE-003.md) | The police detect a gang on a roll of 1 to 100 against 115 minus 5 Stealth, less 20 for Hide, and attack with 25 minus Defense dice at 5 or better | recorded |
+| [FND-POLICE-004](../findings/FND-POLICE-004.md) | Police presence is added only by the third Crackdown in the window, the one that neutralizes the sector | recorded |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | supported |
-| [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, a third within five turns neutralizes the sector, and it adds 3 to 5 turns of police | supported |
+| [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | supported |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent | supported |
 | [RULE-POLICE-004](../rules/RULE-POLICE-004.md) | Crackdown reports go to the players who had a gang in the sector when resolution began | supported |
 
@@ -409,6 +501,8 @@
 | [BUG-AI-002](../bugs/BUG-AI-002.md) | The computer players' neighbourhood scans read one element past the last sector, and a failed placement anchor reads before the first | supported |
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list | supported |
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 | supported |
+| [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
+| [BUG-AI-006](../bugs/BUG-AI-006.md) | An objective gang with nothing else to do picks its Influence site against a threshold the planner never sets | supported |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers | recorded |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs | recorded |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role | recorded |
@@ -438,8 +532,8 @@
 | [FND-AI-027](../findings/FND-AI-027.md) | Sector selector modes 10 to 16 and encoded modes, and the filters applied after scoring | recorded |
 | [FND-AI-028](../findings/FND-AI-028.md) | The 48 direct calls of the shared sector selector, by mode and caller | recorded |
 | [FND-AI-029](../findings/FND-AI-029.md) | The family-6 handler hunts hostile human sectors and attacks there with up to six target draws | recorded |
-| [FND-AI-030](../findings/FND-AI-030.md) | The family-0 handler is a general state machine over the previous action | recorded |
-| [FND-AI-031](../findings/FND-AI-031.md) | The family-4 handler hides, probes and moves through mode 2 | recorded |
+| [FND-AI-030](../findings/FND-AI-030.md) | The family-0 handler is a general state machine over the previous action | superseded |
+| [FND-AI-031](../findings/FND-AI-031.md) | The family-4 handler hides, probes and moves through mode 2 | superseded |
 | [FND-AI-032](../findings/FND-AI-032.md) | The family-2 handler equips, heals, attacks visible hostiles and takes weak or hostile sectors | recorded |
 | [FND-AI-033](../findings/FND-AI-033.md) | The family-3 handler influences Cash sites, and AI target draws compare a gang from a different list | recorded |
 | [FND-AI-034](../findings/FND-AI-034.md) | The family-5 handler has the family-3 shape with Support sites and mode 7 | recorded |
@@ -449,13 +543,35 @@
 | [FND-AI-038](../findings/FND-AI-038.md) | The family-12 handler equips and heals when unopposed and wanders at random, and attacks when opposed | recorded |
 | [FND-AI-039](../findings/FND-AI-039.md) | The family-13 and family-14 handlers move to and hold the Big Man centre or the Eliminate headquarters | recorded |
 | [FND-AI-040](../findings/FND-AI-040.md) | The sector selector breaks ties with one draw and routes one step, x then y, under a six-gang limit | recorded |
+| [FND-AI-041](../findings/FND-AI-041.md) | The dispatcher resets a flagged planning record before it assigns a family, and its post-handler block is unreachable | recorded |
+| [FND-AI-042](../findings/FND-AI-042.md) | Byte +1 of a planning record is set for an empty roster slot and by the Greed Terminate branches, and byte +11 is never used | recorded |
+| [FND-AI-043](../findings/FND-AI-043.md) | Family 9 is seeded only for a network player the computer takes over; the planning pass's own seeding stores past the flag array | recorded |
+| [FND-AI-044](../findings/FND-AI-044.md) | The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order | recorded |
+| [FND-AI-045](../findings/FND-AI-045.md) | At the start of a match and after a load the computer players' site sums are cached per sector, and a new match also clears the AI flags and seeds the placement anchor | recorded |
+| [FND-AI-046](../findings/FND-AI-046.md) | Selector 0x5B always counts gangs whose previous action is Chaos, and the branches that test it write Chaos at a low count | recorded |
+| [FND-AI-047](../findings/FND-AI-047.md) | The resolver lowers the target's attitude toward its attacker after every attack, evaded or not, and the loser's toward the winner of a Control takeover | recorded |
+| [FND-AI-048](../findings/FND-AI-048.md) | The family-0 handler, read from its jump table, groups previous Chaos with Equip and Hide with Heal and Move, and chooses the human pool by the sector owner's attitude | recorded |
+| [FND-AI-049](../findings/FND-AI-049.md) | The family-4 handler, read from its jump table, groups previous Chaos with Equip and Hide with Attack and Move, and chooses the human pool by the sector owner's attitude | recorded |
+| [FND-AI-050](../findings/FND-AI-050.md) | Each scenario's hire block adjusts the schedule slot by late-turn remaps, a forced hunter slot with a previous-role guard, family quotas and a minimum of family 0 or 4 | recorded |
+| [FND-AI-051](../findings/FND-AI-051.md) | The placement anchor is a 32-bit value tested for free land, then occupancy, then Big Man, and a failed anchor of 63 blocks hiring for player 0 | recorded |
+| [FND-AI-052](../findings/FND-AI-052.md) | The owner query returns -2 under police presence, and the solo Control test compares Force plus Control with Income, Support and the visible foreign gangs | recorded |
+| [FND-AI-053](../findings/FND-AI-053.md) | The difficulty band table is set from controller 1 only, saved, and read at nine places in the resolver | recorded |
+| [FND-AI-054](../findings/FND-AI-054.md) | Selector 0x62 caps the gang definition's Tech Level at 5, 8 or 10 by the research level of the gang's sector, whoever owns it | recorded |
+| [FND-AI-055](../findings/FND-AI-055.md) | The equipment selectors start from the equipped item, compare Combat, Defense, Stealth, Detect or Control, and the Research list is Tech capped | recorded |
+| [FND-AI-056](../findings/FND-AI-056.md) | Mode 4 of the sector selector scores a sector 1 when selector 0x2D accepts the owner query's value for the planning player | recorded |
+| [FND-AI-057](../findings/FND-AI-057.md) | The family-1 handler's switch has a fourth branch for Attack, Hide and Move, and its crime gate falls through to the Goon test | recorded |
+| [FND-AI-058](../findings/FND-AI-058.md) | The family-2 handler tests the hostile pool's own count, reads the owner query, and runs its late Control gates after every branch | recorded |
+| [FND-AI-059](../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself | recorded |
+| [FND-AI-060](../findings/FND-AI-060.md) | The family-7 handler's Attack test reads the attitude toward the drawn gang's player | recorded |
+| [FND-AI-061](../findings/FND-AI-061.md) | The family-11 handler's miscellaneous Equip and Heal also need a previous action other than Attack, and most branches keep the current sector as focus | recorded |
+| [FND-AI-062](../findings/FND-AI-062.md) | Families 13 and 14 make up to five draws on a contested objective, can write nothing after a failed attack, and compare Support with an unset value | recorded |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | Queries the computer players' handlers share | supported |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported |
-| [RULE-AI-007](../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector | disputed |
+| [RULE-AI-007](../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector | supported |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | supported |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported |
@@ -464,14 +580,14 @@
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | supported |
-| [RULE-AI-016](../rules/RULE-AI-016.md) | An attack lowers the defender's attitude toward the attacker by the larger of its reaction and the damage | supported |
-| [RULE-AI-017](../rules/RULE-AI-017.md) | A sector changing owner lowers the previous owner's attitude toward the new owner by twice its reaction | supported |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported |
+| [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | supported |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported |
-| [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, hide, probe weak enemies or wander, by previous action, and turn aggressive after two moves | disputed |
+| [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs hide in owned land, probe weak enemies and move through sector selector mode 2 | disputed |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported |
@@ -479,7 +595,7 @@
 | [RULE-AI-028](../rules/RULE-AI-028.md) | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported |
 | [RULE-AI-030](../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported |
-| [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Eliminate objectives, fight for them on alternate turns and hold them | supported |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported |
 
 ## EVENT
 
@@ -488,6 +604,9 @@
 | [FND-EVENT-001](../findings/FND-EVENT-001.md) | The Last Turn reports are a keep-first table of 32 ten-byte records per player, cleared before each resolution and filled only by the resolver | recorded |
 | [FND-EVENT-002](../findings/FND-EVENT-002.md) | The Last Turn Events handler tests only Previous, Next and one exit control, and has no Delete branch | recorded |
 | [FND-EVENT-003](../findings/FND-EVENT-003.md) | Last Turn reports other than Influence and Research load the illustration numbered 6000 plus the report type | recorded |
+| [FND-EVENT-004](../findings/FND-EVENT-004.md) | A Last Turn report record holds an occupied byte at +0, a padding byte at +1 and four 16-bit fields from +2, and the resolver's twelve recorder calls pass fixed arguments | recorded |
+| [FND-EVENT-005](../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item | recorded |
+| [FND-EVENT-006](../findings/FND-EVENT-006.md) | The event pump blinks the Events, Comlink and Done lights together, lit for two timer-0 ticks and dark for two | recorded |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | supported |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution | supported |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | supported |
@@ -513,12 +632,17 @@
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
 | [FND-COMLINK-004](../findings/FND-COMLINK-004.md) | Comlink View marks the shown message read and draws it from a self-contained 166-byte record | recorded |
 | [FND-COMLINK-005](../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer | recorded |
+| [FND-COMLINK-006](../findings/FND-COMLINK-006.md) | Comlink messages are stored only on the recipient's computer, cleared when the match loop starts, and read messages at the front of an inbox are dropped when its player finishes planning | recorded |
+| [FND-COMLINK-007](../findings/FND-COMLINK-007.md) | Comlink Send tests player_active and players_human, starts from a blank draft, wraps the cursor between rows, and View draws a 64-by-64 portrait; the positions of both panels' fields | recorded |
+| [FND-COMLINK-008](../findings/FND-COMLINK-008.md) | The Send panel builds a message in a 166-byte buffer, with 160 characters from space to Z filled with spaces and no terminator, a signed turn, and a last byte nothing writes | recorded |
+| [FND-COMLINK-009](../findings/FND-COMLINK-009.md) | A message recorded for the active player while the View panel is open makes the panel redraw the shown message with the new count | recorded |
 | [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | supported |
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | supported |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | supported |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox | supported |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn | supported |
 | [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | supported |
+| [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | supported |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | Comlink View panel | supported |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | Comlink Send panel | supported |
 
@@ -529,6 +653,8 @@
 | [FND-SEARCH-001](../findings/FND-SEARCH-001.md) | Each player has 22 Search filter bytes, one per site definition, cleared when a new game starts | recorded |
 | [FND-SEARCH-002](../findings/FND-SEARCH-002.md) | The Search panel's ALL, NONE and Done controls and its 22 row targets | recorded |
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | The city draws a marker for each site the viewer controls and for each other site whose definition the viewer's Search filter selects | recorded |
+| [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | Search rows show the controlled-site icon and the site name, a press flips a row between 0 and 1, the filter is not saved, and the city counts a site as controlled when its progress reaches its Resistance in a sector the viewer owns | recorded |
+| [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry | recorded |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | supported |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | supported |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | Search panel | supported |
@@ -540,12 +666,16 @@
 | [BUG-OBJECTIVE-001](../bugs/BUG-OBJECTIVE-001.md) | An active player with a score below -32000 is ranked below the eliminated players | supported |
 | [FND-OBJECTIVE-001](../findings/FND-OBJECTIVE-001.md) | The Player Rankings panel draws a portrait on a fixed rail per player, at a height set by the standing, and none for an eliminated player | recorded |
 | [FND-OBJECTIVE-002](../findings/FND-OBJECTIVE-002.md) | A local human who has been eliminated sees a private elimination card, in slot order, before the slot is retired | recorded |
+| [FND-OBJECTIVE-003](../findings/FND-OBJECTIVE-003.md) | The scenario values run Greed 0 to Armageddon 9 in the order of the string table, and the end evaluator tests each by its own switch arm | recorded |
+| [FND-OBJECTIVE-004](../findings/FND-OBJECTIVE-004.md) | Each round marks eliminated local humans, walks the slots, resolves the turn, and ends the match on the evaluator's flag or when no local human is left | recorded |
+| [FND-OBJECTIVE-005](../findings/FND-OBJECTIVE-005.md) | The Player Ranking panel places each portrait by its score scaled into 140 pixels, and closes on its button or on Enter or plus | recorded |
+| [FND-OBJECTIVE-006](../findings/FND-OBJECTIVE-006.md) | The network session transfer, the save and the load copy the scenario, the time limit and the turn counter as the same four-byte values, so a restored match keeps the scenario meanings | recorded |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported |
-| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | sourced |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | supported |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported |
-| [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | Player Rankings panel with one vertical rail per player and portraits placed by standing | supported |
+| [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | Player Rankings panel with one vertical rail per player and portraits placed by score | supported |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | Private elimination card shown to an eliminated local human over the city screen | supported |
 
 ## AWARDS
@@ -556,19 +686,23 @@
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | The award builder takes five categories in a fixed order with fixed starting thresholds and keeps every tied player, but only three awards per row are drawn | recorded |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not | recorded |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions | recorded |
+| [FND-AWARDS-004](../findings/FND-AWARDS-004.md) | The awards table holds five codes per player, and the results screen shows the victory splash when exactly one player is still active, whoever controls it | recorded |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | supported |
-| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, after a victory splash when one human plays | supported |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | Endgame screen listing the players by place with their awards or their statistics | supported |
-| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | Victory splash shown before the endgame results when one human plays | supported |
+| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | Victory splash shown on the endgame's Awards tab when one player is left | supported |
 
 ## TIMER
 
 | ID | Title | Status |
 |---|---|---|
 | [FND-TIMER-001](../findings/FND-TIMER-001.md) | A human's planning turn ends by itself after 30 seconds, 2 minutes or 5 minutes, with a shrinking bar and two warning sounds | recorded |
+| [FND-TIMER-002](../findings/FND-TIMER-002.md) | Four multimedia timer slots set flags that the event step polls; waits are counted in ticks of the six-per-second slot, and the floating-point helpers are reachable only from dead code | recorded |
+| [FND-TIMER-003](../findings/FND-TIMER-003.md) | The planning limit is a table of four values applied at every match entry, the expiry test skips an unlimited turn, and the bar is redrawn every sixth presentation tick | recorded |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | Planning time limit chosen for a match | supported |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes | supported |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds | supported |
+| [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported |
 
 ## UI
 
@@ -586,7 +720,22 @@
 | [FND-UI-010](../findings/FND-UI-010.md) | A capture of the running original shows the combat panel's 64-by-64 gang portraits and its two beveled Force tracks | recorded |
 | [FND-UI-011](../findings/FND-UI-011.md) | Panels slide in from and out to the right edge in steps set by a startup copy benchmark | recorded |
 | [FND-UI-012](../findings/FND-UI-012.md) | The completed-Research report copies one 48-by-48 frame of the item's strip into its monitor without centering it | recorded |
+| [FND-UI-013](../findings/FND-UI-013.md) | The Item Information handler takes an item record and a flag that says whether it opens over another panel | recorded |
+| [FND-UI-014](../findings/FND-UI-014.md) | The Gangs in Sector handler refuses a sector the player has no gang in, and shows each gang's portrait, Tech Level, Upkeep and effective statistics | recorded |
+| [FND-UI-015](../findings/FND-UI-015.md) | The planning loop hands every event to a city handler or a sector-view handler, chosen by one view flag | recorded |
 | [FND-UI-016](../findings/FND-UI-016.md) | The site-cooperation report stretches a crop of the site portrait with COLORONCOLOR and masks it with pattern 146 | recorded |
+| [FND-UI-017](../findings/FND-UI-017.md) | The city screen is redrawn by a map copy, a selection frame, edge labels, a six-seat Overlord bar, planning lights, a full clock bar and the Hire dock | recorded |
+| [FND-UI-018](../findings/FND-UI-018.md) | The detailed sector screen enlarges the sector's map cell as its background and composes the owner strip, a nine-sector display, three sites, the cards and the group strip over it | recorded |
+| [FND-UI-019](../findings/FND-UI-019.md) | Text, numbers and the panel buttons are drawn from fixed cells of PX00129 by four small helpers | recorded |
+| [FND-UI-020](../findings/FND-UI-020.md) | The window procedure turns Windows messages into a four-number input event that two message pumps hand to the screen loops | recorded |
+| [FND-UI-021](../findings/FND-UI-021.md) | The menu bar's items are greyed by game state through position and command helpers, table 102 gives six Ctrl accelerators, and menus 1, 2, 3 and 5 are gang order popups | recorded |
+| [FND-UI-022](../findings/FND-UI-022.md) | One dialog procedure serves every Windows dialog; a local game can reach seven of them, and six dialog resources are never opened | recorded |
+| [FND-UI-023](../findings/FND-UI-023.md) | Timer slots are flags set by timeSetEvent callbacks, the pointer is set on every call, panels slide by revealing their left columns, and numbers are drawn left to right | recorded |
+| [FND-UI-024](../findings/FND-UI-024.md) | The sector marker reads the presence bytes, the information panels close on Enter and refuse clicks outside, and Game Information opens by itself after a load or a Join | recorded |
+| [FND-UI-025](../findings/FND-UI-025.md) | The city map surface keeps the unmarked city map in its lower half, from y 416, and the sector view and Detailed Combat take their sector images from there | recorded |
+| [FND-UI-026](../findings/FND-UI-026.md) | Of the 77 calls to the copy wrapper, only the setup card portrait is scaled, and it asks for the pattern mode, so no keyed copy loses its key | recorded |
+| [FND-UI-027](../findings/FND-UI-027.md) | The sector value renderer draws Income and Tolerance with no owner test | recorded |
+| [FND-UI-028](../findings/FND-UI-028.md) | A static initializer copies the Full Screen default before WinMain, five 16-byte functions do nothing, and a list-box helper has no caller | recorded |
 | [FND-UI-031](../findings/FND-UI-031.md) | Copies from the PX00129 sheet use opaque, white-keyed and pattern modes depending on the element | recorded |
 | [FND-UI-032](../findings/FND-UI-032.md) | The main console tests eight fixed tiles, splits five of them by the press row, and acts only on release inside | recorded |
 | [FND-UI-033](../findings/FND-UI-033.md) | The city map draws the same keyed pylon crop over the six Siege headquarters sectors and the four Big Man centre sectors | recorded |
@@ -605,6 +754,8 @@
 | [RULE-UI-010](../rules/RULE-UI-010.md) | Which gangs the detailed sector cards and Gangs in Sector list | supported |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | The sector values on the main console | supported |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map | supported |
+| [RULE-UI-013](../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
+| [RULE-UI-014](../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | Title screen | supported |
 | [SCR-UI-002](../screens/SCR-UI-002.md) | Credits screen | supported |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | City screen and main console | supported |
@@ -623,6 +774,7 @@
 | [BUG-OPTIONS-002](../bugs/BUG-OPTIONS-002.md) | An option missing from the registry takes the value of the option read before it | supported |
 | [FND-OPTIONS-001](../findings/FND-OPTIONS-001.md) | Options are read from thirteen HKLM registry values into one shared buffer, and the writer opens the key read-only | recorded |
 | [FND-OPTIONS-002](../findings/FND-OPTIONS-002.md) | Done warns with the PX05020 panel when Warn if Idle Gangs is on and an active gang of the active player has no action | recorded |
+| [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | The options loader stops when the key does not open, stores one byte of most values, builds the serial number from two draws, and the idle-gang scan reads only the active player's gangs | recorded |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup | supported |
 | [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | Saving the options to the registry, which always fails | supported |
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle | supported |
@@ -632,6 +784,11 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [FND-NET-001](../findings/FND-NET-001.md) | The network packet dispatcher reads 16-byte headers and handles sixteen packet types, one set on the joining side and one on the hosting side | recorded |
+| [FND-NET-002](../findings/FND-NET-002.md) | The network progress renderer draws one progress bar per remote player and two lines of status text chosen by a code | recorded |
+| [FND-NET-003](../findings/FND-NET-003.md) | The network screens build their button rectangles as top, left, bottom, right, and their progress bars are one pixel per unit up to 100 | recorded |
+| [FND-NET-004](../findings/FND-NET-004.md) | 118 functions make up the network code, and every call into them from local code is skipped or does nothing in a local game | recorded |
+| [FND-NET-005](../findings/FND-NET-005.md) | Twenty-one serial, modem and socket helpers no entry named belong to the network code, reached only from it or from nothing | recorded |
 | [SCR-NET-001](../screens/SCR-NET-001.md) | Legacy network host lobby that edits up to four seats and waits for the participants | supported |
 | [SCR-NET-002](../screens/SCR-NET-002.md) | Legacy network client session editor with four seats | supported |
 | [SCR-NET-003](../screens/SCR-NET-003.md) | Legacy network screen that waits for every participant to be ready | supported |
