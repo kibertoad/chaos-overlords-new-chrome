@@ -355,8 +355,9 @@ public static partial class OriginalSpriteLayout
 {
     public const int ActivePlayerMarkerFrameCount = 12;
     public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);
-    public static Rectangle HiredStamp => new(120, 300, 60, 60);
-    public static Rectangle SnubbedStamp => new(180, 300, 60, 60);
+    /// <summary>SCR-HIRE-002, FND-HIRE-008: the 64-by-64 hire and snub marks.</summary>
+    public static Rectangle HiredStamp => new(114, 299, 64, 64);
+    public static Rectangle SnubbedStamp => new(178, 299, 64, 64);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
     public static Rectangle SectorBackArrow => new(120, 211, 30, 47);

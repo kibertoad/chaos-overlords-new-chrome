@@ -101,7 +101,7 @@ public sealed partial class ChaosGame
         }
         if (BeginCityConsolePress(point, ClientScreen.Sector)) return;
         var rejectSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Reject, point);
-        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Portrait, point);
+        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.PortraitHit, point);
         if (rejectSlot >= 0)
         {
             BeginHireReject(rejectSlot, ClientScreen.Sector);

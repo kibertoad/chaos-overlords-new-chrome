@@ -210,10 +210,24 @@ public sealed partial class ChaosGame
                 var itemFirst = EquipmentCommandLayout.FirstVisibleItem(indices.Count, position);
                 var itemVisible = Math.Min(
                     EquipmentCommandLayout.VisibleItemCount, indices.Count - itemFirst);
-                var itemRow = _commandTargetOptions[0].Action == GangAction.Research
-                    ? EquipmentCommandLayout.ResearchItemRowAt(point)
-                    : EquipmentCommandLayout.ItemRowAt(point);
+                var itemRow = EquipmentCommandLayout.ItemRowAt(point);
                 if (itemRow >= itemVisible) itemRow = -1;
+                if (_commandTargetOptions[0].Action == GangAction.Research)
+                {
+                    // SCR-RESEARCH-001: a press selects from panel y 26 and a double-click opens
+                    // from panel y 19, each over its own rectangle.
+                    if (itemRow >= 0) _commandTargetCursor = indices[itemFirst + itemRow];
+                    var detailRow = EquipmentCommandLayout.ResearchItemDetailRowAt(point);
+                    if (detailRow >= 0 && detailRow < itemVisible)
+                    {
+                        var detailItem = _commandTargetOptions[indices[itemFirst + detailRow]].Target.Id;
+                        if (_equipmentItemClicks.Register(detailItem, _inputTime))
+                            OpenItemDetails((short)detailItem);
+                    }
+                    else if (itemRow < 0 && !EquipmentCommandLayout.Panel.Contains(point))
+                        BackFromCommands();
+                    return;
+                }
                 if (itemRow >= 0)
                 {
                     _commandTargetCursor = indices[itemFirst + itemRow];

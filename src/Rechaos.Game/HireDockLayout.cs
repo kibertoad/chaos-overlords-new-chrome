@@ -26,17 +26,23 @@ public static class HireDockLayout
         return new Rectangle(438 + slot * 66, 370, 66, 90);
     }
 
+    /// <summary>SCR-HIRE-002, FND-HIRE-008: the offer portrait, with its hire or snub mark over it.</summary>
     public static Rectangle Portrait(int slot)
     {
         ValidateSlot(slot);
-        return new Rectangle(439 + slot * 66, 371, 64, 64);
+        return new Rectangle(440 + slot * 66, 373, 64, 64);
     }
 
-    /// <summary>The 60-by-60 stamp aperture inset two pixels into the slot's portrait.</summary>
-    public static Rectangle Stamp(int slot)
+    /// <summary>
+    /// SCR-HIRE-002, FND-HIRE-008: the press region of an offer, y 373 to 436 and x 440 to 504,
+    /// above 504 to 570 and above 570 to 636, so the three regions meet.
+    /// </summary>
+    public static Rectangle PortraitHit(int slot)
     {
-        var portrait = Portrait(slot);
-        return new Rectangle(portrait.X + 2, portrait.Y + 2, 60, 60);
+        ValidateSlot(slot);
+        return slot == 0
+            ? new Rectangle(440, 373, 65, 64)
+            : new Rectangle(439 + slot * 66, 373, 66, 64);
     }
 
     public static Rectangle Reject(int slot)

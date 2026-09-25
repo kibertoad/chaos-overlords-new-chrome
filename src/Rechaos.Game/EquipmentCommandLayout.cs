@@ -79,7 +79,11 @@ public static class EquipmentCommandLayout
 
     public static Rectangle ItemListHit => SharedPanelLayout.At(148, 26, 180, 143);
 
-    public static Rectangle ResearchItemListHit => SharedPanelLayout.At(148, 19, 180, 143);
+    /// <summary>
+    /// SCR-RESEARCH-001, FND-RESEARCH-004: the Research list's double-click rectangle starts seven
+    /// pixels above its press rectangle, <see cref="ItemListHit"/>.
+    /// </summary>
+    public static Rectangle ResearchItemDetailHit => SharedPanelLayout.At(148, 19, 180, 143);
 
     public static int ItemRowAt(Point point)
     {
@@ -87,9 +91,13 @@ public static class EquipmentCommandLayout
         return (point.Y - ItemListHit.Y) / 9;
     }
 
-    public static int ResearchItemRowAt(Point point)
+    /// <summary>
+    /// The row a double-click opens: rows count from the press rectangle's top and truncate toward
+    /// zero, so the seven pixels above the first row open that row.
+    /// </summary>
+    public static int ResearchItemDetailRowAt(Point point)
     {
-        if (!ResearchItemListHit.Contains(point)) return -1;
+        if (!ResearchItemDetailHit.Contains(point)) return -1;
         return (point.Y - ItemListHit.Y) / 9;
     }
 }

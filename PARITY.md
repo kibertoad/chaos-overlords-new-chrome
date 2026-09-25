@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 54 |
+| `supported` | 52 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 167 |
+| `implemented` | 169 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 17 |
-| `partial` | 38 |
-| `complete` | 167 |
+| `partial` | 36 |
+| `complete` | 169 |
 
 ## DATA
 
@@ -151,7 +151,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-HIRE-003` | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported | complete | None | `DEV-HIRE-001` | implemented | The rebuild refuses a drop on a sector already holding six friendly gangs, which the original accepts (see deviations). |
 | `RULE-HIRE-004` | A new match starts with every hire offer vacant and no hire order | supported | complete | None | None | implemented | None |
 | `SCR-HIRE-001` | Hire comparison panel showing the three offers side by side | supported | complete | None | None | implemented | The positions the rebuild took from captures match the ones the spec now records. |
-| `SCR-HIRE-002` | Hire offers on the main console, with drag-to-hire and Reject | supported | partial | None | `DEV-HIRE-001`, `DEV-HIRE-002` | supported | Adds a hire-shortfall warning and refuses drops on full sectors (see deviations). The rebuild draws the portraits one pixel left of and two pixels above the recorded cells, and crops the hire and snub marks from other rectangles of the image. |
+| `SCR-HIRE-002` | Hire offers on the main console, with drag-to-hire and Reject | supported | complete | None | `DEV-HIRE-001`, `DEV-HIRE-002` | implemented | Adds a hire-shortfall warning and refuses drops on full sectors (see deviations). Portraits sit at (440 + 66s, 373) with the 64-by-64 hire and snub marks over them, and the press regions meet as FND-HIRE-008 records. |
 
 ## HIDE
 
@@ -178,7 +178,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-RESEARCH-001` | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported | complete | None | None | implemented | None |
 | `RULE-RESEARCH-002` | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | supported | complete | None | None | implemented | The rebuild leaves the item table's padding records out of the researched set (see deviations). |
-| `SCR-RESEARCH-001` | Research panel with item categories and a fixed sixteen-row item list | supported | partial | None | `DEV-RESEARCH-001` | supported | The list filter follows FND-RESEARCH-003: category from item type (types 0 and 1 together), item order, only unfinished items, Tech Level at most the gang type's and at most 5 or 8 by the research-site level of a sector the player owns. The category cells match. A press on the list is taken from panel y 19 where the original's press region starts at y 26. |
+| `SCR-RESEARCH-001` | Research panel with item categories and a fixed sixteen-row item list | supported | complete | None | `DEV-RESEARCH-001` | implemented | The list filter follows FND-RESEARCH-003: category from item type (types 0 and 1 together), item order, only unfinished items, Tech Level at most the gang type's and at most 5 or 8 by the research-site level of a sector the player owns. The category cells match. A press selects from panel y 26 and a double-click opens from panel y 19, rows truncating toward zero. |
 
 ## BRIBE
 
