@@ -98,6 +98,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AI-049](../findings/FND-AI-049.md) | builds, locations |
 | [FND-AI-050](../findings/FND-AI-050.md) | builds, locations |
 | [FND-AI-051](../findings/FND-AI-051.md) | builds, locations |
+| [FND-AI-052](../findings/FND-AI-052.md) | builds, locations |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | builds, locations |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | builds, locations |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | builds, locations |
@@ -230,6 +231,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-OBJECTIVE-003](../findings/FND-OBJECTIVE-003.md) | builds, locations |
 | [FND-OBJECTIVE-004](../findings/FND-OBJECTIVE-004.md) | builds, locations |
 | [FND-OBJECTIVE-005](../findings/FND-OBJECTIVE-005.md) | builds, locations |
+| [FND-OBJECTIVE-006](../findings/FND-OBJECTIVE-006.md) | builds, locations |
 | [FND-OPTIONS-001](../findings/FND-OPTIONS-001.md) | builds, locations |
 | [FND-OPTIONS-002](../findings/FND-OPTIONS-002.md) | builds, locations |
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | builds, locations |
@@ -853,6 +855,7 @@ None.
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body |
 | [FND-AI-027](../findings/FND-AI-027.md) | body |
+| [FND-AI-052](../findings/FND-AI-052.md) | body |
 | [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | body |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
@@ -862,7 +865,7 @@ None.
 | glossary: sectors | glossary |
 | glossary: site | glossary |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | related |
-| [RULE-AI-004](../rules/RULE-AI-004.md) | body, related |
+| [RULE-AI-004](../rules/RULE-AI-004.md) | related |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | related |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | related |
 | [RULE-AI-011](../rules/RULE-AI-011.md) | related |
@@ -1620,6 +1623,8 @@ None.
 |---|---|
 | [FND-AI-030](../findings/FND-AI-030.md) | superseded_by |
 | [FND-AI-049](../findings/FND-AI-049.md) | body |
+| [FND-AI-052](../findings/FND-AI-052.md) | body |
+| [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 
@@ -1646,6 +1651,12 @@ None.
 | glossary: placement_anchor | glossary |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | evidence |
+
+## FND-AI-052
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 
 ## FND-ASSET-001
 
@@ -2750,6 +2761,7 @@ None.
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | evidence |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | evidence |
+| [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | evidence |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | evidence |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | evidence |
@@ -2804,6 +2816,8 @@ None.
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | evidence |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | evidence |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | evidence |
+| [RULE-UI-003](../rules/RULE-UI-003.md) | evidence |
+| [RULE-UI-004](../rules/RULE-UI-004.md) | evidence |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | evidence |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
@@ -3307,6 +3321,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
+| [FND-OBJECTIVE-006](../findings/FND-OBJECTIVE-006.md) | body |
 | glossary: match_over | glossary |
 | glossary: player_active | glossary |
 | glossary: scenario | glossary |
@@ -3341,6 +3356,13 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, evidence |
+
+## FND-OBJECTIVE-006
+
+| Cited by | In |
+|---|---|
+| glossary: scenario | glossary |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | body, evidence |
 
 ## FND-OPTIONS-001
 
@@ -4140,6 +4162,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-009](../findings/FND-STATE-009.md) | body |
 | glossary: active_gang_count | glossary |
@@ -4617,6 +4640,8 @@ None.
 | [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | evidence |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | evidence |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | evidence |
+| [RULE-UI-003](../rules/RULE-UI-003.md) | evidence |
+| [RULE-UI-004](../rules/RULE-UI-004.md) | evidence |
 | [RULE-UI-007](../rules/RULE-UI-007.md) | evidence |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | evidence |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | evidence |

@@ -4,7 +4,7 @@ title: Each scenario's own end condition, and the Dominance weights
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-003, FND-TURN-003, FND-UI-033, SRC-MANUAL-GOG]
+evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-006, FND-TURN-003, FND-UI-033, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-002]
@@ -132,6 +132,6 @@ None known.
 
 ## Open questions
 
-- Whether a loaded or network-restored match can carry an `elapsed_turns` at
-  or past `turn_limit`, which would stop a timed match from ending, is not
-  recorded.
+- None. A loaded or network-restored match carries `scenario`, `turn_limit`
+  and `elapsed_turns` unchanged (FND-OBJECTIVE-006), so it can pass the
+  timed test only where the match that was saved could.

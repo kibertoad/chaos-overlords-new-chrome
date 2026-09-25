@@ -219,7 +219,7 @@
 
 ## findings
 
-298 entries.
+300 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -274,6 +274,7 @@
 | [FND-AI-049](../findings/FND-AI-049.md) | The family-4 handler, read from its jump table, groups previous Chaos with Equip and Hide with Attack and Move, and chooses the human pool by the sector owner's attitude | recorded |
 | [FND-AI-050](../findings/FND-AI-050.md) | Each scenario's hire block adjusts the schedule slot by late-turn remaps, a forced hunter slot with a previous-role guard, family quotas and a minimum of family 0 or 4 | recorded |
 | [FND-AI-051](../findings/FND-AI-051.md) | The placement anchor is a 32-bit value tested for free land, then occupancy, then Big Man, and a failed anchor of 63 blocks hiring for player 0 | recorded |
+| [FND-AI-052](../findings/FND-AI-052.md) | The owner query returns -2 under police presence, and the solo Control test compares Force plus Control with Income, Support and the visible foreign gangs | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -406,6 +407,7 @@
 | [FND-OBJECTIVE-003](../findings/FND-OBJECTIVE-003.md) | The scenario values run Greed 0 to Armageddon 9 in the order of the string table, and the end evaluator tests each by its own switch arm | recorded |
 | [FND-OBJECTIVE-004](../findings/FND-OBJECTIVE-004.md) | Each round marks eliminated local humans, walks the slots, resolves the turn, and ends the match on the evaluator's flag or when no local human is left | recorded |
 | [FND-OBJECTIVE-005](../findings/FND-OBJECTIVE-005.md) | The Player Ranking panel places each portrait by its score scaled into 140 pixels, and closes on its button or on Enter or plus | recorded |
+| [FND-OBJECTIVE-006](../findings/FND-OBJECTIVE-006.md) | The network session transfer, the save and the load copy the scenario, the time limit and the turn counter as the same four-byte values, so a restored match keeps the scenario meanings | recorded |
 | [FND-OPTIONS-001](../findings/FND-OPTIONS-001.md) | Options are read from thirteen HKLM registry values into one shared buffer, and the writer opens the key read-only | recorded |
 | [FND-OPTIONS-002](../findings/FND-OPTIONS-002.md) | Done warns with the PX05020 panel when Warn if Idle Gangs is on and an active gang of the active player has no action | recorded |
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | The options loader stops when the key does not open, stores one byte of most values, builds the serial number from two draws, and the idle-gang scan reads only the active player's gangs | recorded |
