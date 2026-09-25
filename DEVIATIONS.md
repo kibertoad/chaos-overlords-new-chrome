@@ -429,17 +429,22 @@ The correction applies under the Original AI policy as well. Decided 2026-09-17.
 ## DEV-AI-002
 
 - Departs from: RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-MOVE-002
-- Reason: When a family handler plans an action that has no legal equivalent in the rebuild's
-  command queue, the rebuild gives the gang no command and keeps the planned action in its
-  planning state. The original stores the action in the gang record and resolves it. The usual
-  case is a Move to the gang's own sector, which the sector selector returns when capacity blocks
-  every step. The gang's planning history is the same; its resolved action can differ.
+- Reason: A computer player's planned action becomes a command only when a human could give the
+  same order and the planner's running total of this turn's costs leaves cash for it; any other
+  planned action is kept in the planning state and gives the gang no command. The original stores
+  every planned action in the gang record and resolves it: a Move to the gang's own sector or
+  into a full sector goes to the six-gang repair (RULE-MOVE-002), an Equip the player can no
+  longer pay for is refused when it resolves (RULE-EQUIP-001), and an Influence in a sector the
+  player does not control rolls with no owner test (RULE-INFLUENCE-001). In 21 computer-only
+  matches of 26 turns those three kinds came to 478 orders, and no other planned action a human
+  could not order was seen. The gang's planning history is the same; its resolved action can
+  differ.
 - Setting: None
 - Default: mandatory
 - Justification: A computer player's gang is held to the same legal orders as a human's, so it
-  cannot carry out an action no player could order. In the usual case, a Move to the gang's own
-  sector, the gang stays where it is either way, and its planning history, which later turns read,
-  is kept.
+  cannot carry out an action no player could order. When the dropped action is a Move to the
+  gang's own sector the gang stays where it is either way, and in every case its planning history,
+  which later turns read, is kept.
 - Dropped: no
 
 The resolved action can differ from the original's, which changes the match when it does. Decided
