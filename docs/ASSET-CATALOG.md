@@ -2,7 +2,7 @@
 
 Status: generated inventory; semantic ownership remains incomplete
 Manifest format: 6
-Extractor version: 1.0.0.0
+Extractor version: 0.10.4
 Source fingerprint: `ad958a934a691318f31a27a87252f420dd89a0ad03759457d8feaf49914d29e3`
 Asset count: 686
 
@@ -58,8 +58,8 @@ This file is generated from a fully verified local manifest. Resource names and 
 | `images/PX00150.bmp` | `DATA/PX16/PX00150` | image/bmp | bmp-header-repair; 220x56x16 (RGB555) | City site-marker sheet | Search and city marker renderer | RGB555; native exact maximum-white key | `104a1471824e56ac578a9afebeb1a02cd63e59884932cbd1cb2815aeb4ec52c2` |
 | `images/PX00200.bmp` | `DATA/PX16/PX00200` | image/bmp | bmp-header-repair; 428x410x16 (RGB555) | Endgame awards/statistics frame | Endgame | RGB555; color key unresolved | `bd3e688acae8e7076c4266c656dff8c93831297509eb9f5e1bcd0b265fcc8723` |
 | `images/PX00201.bmp` | `DATA/PX16/PX00201` | image/bmp | bmp-header-repair; 320x240x16 (RGB555) | Endgame award and statistics sprites | Endgame | RGB555; native opaque copy (black retained) | `788508e9205f0feab84466c49f4d991c0688f04ce713fd416a97fd175ff569e9` |
-| `images/PX00202.bmp` | `DATA/PX16/PX00202` | image/bmp | bmp-header-repair; 312x393x16 (RGB555) | Last-player victory splash | Endgame | RGB555; color key unresolved | `fbe17c9c94d5ff9296dd2156ab354e249e4bc5c7c028f91552b55ece2002afec` |
-| `images/PX00203.bmp` | `DATA/PX16/PX00203` | image/bmp | bmp-header-repair; 312x393x16 (RGB555) | Private elimination splash | Endgame and hot-seat elimination | RGB555; color key unresolved | `9b46e3bdff7f8f71d6fd05841c28b8fe94fcd1f8d3f59cc5aa4302bc6c4704d0` |
+| `images/PX00202.bmp` | `DATA/PX16/PX00202` | image/bmp | bmp-header-repair; 311x393x16 (RGB555) | Last-player victory splash | Endgame | RGB555; color key unresolved | `fd9a33219ba3f5575899c84dc4af10e9dcc1055e2ab38f9467ec3bf778871929` |
+| `images/PX00203.bmp` | `DATA/PX16/PX00203` | image/bmp | bmp-header-repair; 311x393x16 (RGB555) | Private elimination splash | Endgame and hot-seat elimination | RGB555; color key unresolved | `c96cf2a603678610e08fd66e2d7a670858387296c350f2e43afc848c8da9aa73` |
 | `images/PX00300.bmp` | `DATA/PX16/PX00300` | image/bmp | bmp-header-repair; 324x64x16 (RGB555) | Police combat sprite sheet | Combat compositor | RGB555; native opaque copy (black retained) | `2a898183b21bbcb5e504ef5c01394b36b21bde18936f8c3c640010c3f43f96f1` |
 | `images/PX02000.bmp` | `DATA/PX16/PX02000` | image/bmp | bmp-header-repair; 120x1408x16 (RGB555) | Site portrait strip | Site, sector, Search, and event panels | RGB555; color key unresolved | `c0374b7ef46d97d014b589fb838545c5e0ffb037a58fbe64b1c984778e88457e` |
 | `images/PX03000.bmp` | `DATA/PX16/PX03000` | image/bmp | bmp-header-repair; 640x576x16 (RGB555) | Gang portrait grid | Gang, sector, hire, and combat panels | RGB555; color key unresolved | `328a9f83a06cf3c7a144af601dda3d40242a3a4bd58e714662d0fbcc432f0212` |
@@ -272,8 +272,8 @@ This file is generated from a fully verified local manifest. Resource names and 
 | `images8/PX00150.bmp` | `DATA/PX08/PX00150` | image/bmp | rle8-decode; 220x56x8 (indexed BGRA palette) | City site-marker sheet | Search and city marker renderer | Embedded 256-entry BGRA palette; native exact white key | `330c6acf7a94b6bc3f309b53a31f63a6a927d754eb8ce24f2739d49261f03efe` |
 | `images8/PX00200.bmp` | `DATA/PX08/PX00200` | image/bmp | rle8-decode; 428x410x8 (indexed BGRA palette) | Endgame awards/statistics frame | Endgame | Embedded 256-entry BGRA palette; transparency unresolved | `149dae9ebea4003e5cf99ae51839d2404d54e3b8350fb4210701d25e0161b270` |
 | `images8/PX00201.bmp` | `DATA/PX08/PX00201` | image/bmp | rle8-decode; 320x240x8 (indexed BGRA palette) | Endgame award and statistics sprites | Endgame | Embedded 256-entry BGRA palette; native opaque copy (black retained) | `85a060761420295a9fefe60d295cf2ae1cbab4585b7f14960728f8469ba7d1fc` |
-| `images8/PX00202.bmp` | `DATA/PX08/PX00202` | image/bmp | rle8-decode; 312x393x8 (indexed BGRA palette) | Last-player victory splash | Endgame | Embedded 256-entry BGRA palette; transparency unresolved | `601df986fc09b7308baafaf2ca41e5463da8678a3b113a5af5c6af7bfd6bbb84` |
-| `images8/PX00203.bmp` | `DATA/PX08/PX00203` | image/bmp | rle8-decode; 312x393x8 (indexed BGRA palette) | Private elimination splash | Endgame and hot-seat elimination | Embedded 256-entry BGRA palette; transparency unresolved | `60fb4b5ef26b44fc0794514562b4ed0dfb8102555def41f3439a487a9d38a4d5` |
+| `images8/PX00202.bmp` | `DATA/PX08/PX00202` | image/bmp | rle8-decode; 311x393x8 (indexed BGRA palette) | Last-player victory splash | Endgame | Embedded 256-entry BGRA palette; transparency unresolved | `e5e49d960e29916b82a84b4299bfd1981170e26493ceb65808b51188f9b082a2` |
+| `images8/PX00203.bmp` | `DATA/PX08/PX00203` | image/bmp | rle8-decode; 311x393x8 (indexed BGRA palette) | Private elimination splash | Endgame and hot-seat elimination | Embedded 256-entry BGRA palette; transparency unresolved | `ed5471c6588599d8b89b00c8cb0dcda63c3d2608c66ff6c7d971ccfad6c427c9` |
 | `images8/PX00300.bmp` | `DATA/PX08/PX00300` | image/bmp | rle8-decode; 324x64x8 (indexed BGRA palette) | Police combat sprite sheet | Combat compositor | Embedded 256-entry BGRA palette; native opaque copy (black retained) | `6ec716daa87159e9d3223a54095ead4d329613b93021ca548c3b966568267ad6` |
 | `images8/PX02000.bmp` | `DATA/PX08/PX02000` | image/bmp | rle8-decode; 120x1408x8 (indexed BGRA palette) | Site portrait strip | Site, sector, Search, and event panels | Embedded 256-entry BGRA palette; transparency unresolved | `27338ea13bccce303f474bbf98fe34fb7eb50e5e015f5d8d5b521bd2521e2617` |
 | `images8/PX03000.bmp` | `DATA/PX08/PX03000` | image/bmp | rle8-decode; 640x576x8 (indexed BGRA palette) | Gang portrait grid | Gang, sector, hire, and combat panels | Embedded 256-entry BGRA palette; transparency unresolved | `5505de680e0eba8c908aff0cda47ebcb37b6733ecfaf5f97eaad22f9839fbd37` |

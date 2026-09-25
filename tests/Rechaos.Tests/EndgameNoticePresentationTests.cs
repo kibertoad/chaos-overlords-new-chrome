@@ -70,7 +70,7 @@ public sealed class EndgameNoticePresentationTests
         Assert.Equal(new Rectangle(113, 361, 16, 32), EndgameLayout.PlayerMarker(5));
         Assert.Equal(new Rectangle(32, 144, 16, 32),
             EndgameLayout.PlayerMarkerSource(new PlayerId(3), 3));
-        Assert.Equal(new Rectangle(110, 30, 312, 393), EndgameNoticeLayout.Panel);
+        Assert.Equal(new Rectangle(110, 30, 311, 393), EndgameNoticeLayout.Panel);
         Assert.Equal(new Rectangle(126, 54, 64, 64), EndgameNoticeLayout.Portrait);
         Assert.Equal(
             [new Rectangle(110, 30, 40, 12), new Rectangle(110, 42, 13, 79), new Rectangle(110, 121, 40, 302)],
