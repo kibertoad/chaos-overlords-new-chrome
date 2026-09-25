@@ -4,7 +4,7 @@ title: How a computer player picks a weapon, armor or miscellaneous upgrade, and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-021, FND-AI-024, FND-AI-037, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004]
+evidence: [FND-AI-021, FND-AI-024, FND-AI-037, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-003, RULE-AI-004]
@@ -198,9 +198,6 @@ None known.
 
 ## Open questions
 
-- `local_tech_cap` stands for the Tech ceiling selector `0x62` computes for a
-  gang from the gang and the sites near it; how it is computed is not
-  described by the findings.
 - The weapon class numbers used here (0 melee, 1 blade, 2 ranged) are
   assumptions; the item `type` values of the weapon classes are not given by
   the findings. Armor is type 3 and miscellaneous items type 4.

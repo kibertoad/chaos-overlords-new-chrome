@@ -4,7 +4,7 @@ title: Presentation waits last until the next tick of the six-per-second clock, 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-002, FND-UI-020, FND-UI-011, FND-PLATFORM-009]
+evidence: [FND-TIMER-002, FND-UI-020, FND-UI-011, FND-PLATFORM-009, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-UI-008, RULE-UI-014, RULE-UI-003]

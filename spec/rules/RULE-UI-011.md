@@ -4,7 +4,7 @@ title: The sector values on the main console
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-035, FND-UI-024, FND-UPKEEP-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-035, FND-STATE-001, FND-UI-024, FND-UPKEEP-001, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002]
@@ -48,6 +48,10 @@ Returns the Income, Tolerance, Support and Cash values in that order.
 - A neutral sector's owner is -1, which is never the active player, so its
   Support and Cash show 0.
 - Income and Tolerance are shown to every player.
+- The Income row shows `income` (byte 4), which the refresh before planning
+  copies from `base_income` (FND-STATE-001, RULE-SITE-001). FND-UI-035 read the
+  refresh as leaving byte 4 unchanged; the store at `0x004782D9` rewrites it
+  each time with the same value, so the row always shows the generated Income.
 - The Income row is drawn as text: the string resource `0x11 + income`, cut to
   two characters. Tolerance, Support and Cash are drawn by `number_cells` with
   width 2 (RULE-UI-004), so a negative value shows in red.
@@ -67,5 +71,5 @@ None known.
 
 ## Open questions
 
-- The `income` field of FMT-STATE-002 is disputed; this rule follows
-  FND-UI-035.
+- Whether Income and Tolerance are hidden from players who do not own the
+  sector has not been checked (FND-UI-035, Alternatives).

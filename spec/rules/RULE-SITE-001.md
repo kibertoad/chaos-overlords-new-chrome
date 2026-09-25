@@ -4,7 +4,7 @@ title: Before planning, each sector record is rebuilt from its completed sites, 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GANG-001, FND-STATE-001, FND-UPKEEP-001, FND-UI-035, FND-TURN-001, FND-CONTROL-001, SRC-MANUAL-GOG, SRC-RECHAOS-3561D41]
+evidence: [FND-GANG-001, FND-STATE-001, FND-UPKEEP-001, FND-UI-035, FND-TURN-001, FND-CONTROL-001, SRC-MANUAL-GOG, SRC-RECHAOS-3561D41, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]

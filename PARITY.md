@@ -56,7 +56,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AUDIO-003` | Applying the music and effects levels | supported | complete | None | None | implemented | The 0 to 10 level conversion and the level-5 music default are implemented. |
 | `RULE-AUDIO-004` | Loading the general sound effects | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-005` | Playing a sound effect, which cuts off the one playing | supported | complete | None | None | implemented | One effect voice, each new cue stopping the one before it. |
-| `RULE-AUDIO-006` | The turn-start sound | supported | partial | None | None | supported | Whether the rebuild plays the turn cue with effects off (BUG-AUDIO-001) was not checked. |
+| `RULE-AUDIO-006` | The turn-start sound | supported | partial | None | None | supported | The original plays the cue only in network games of its own protocol, on the host and on joined computers; whether the rebuild plays it in other games, or with effects off (BUG-AUDIO-001), was not checked. |
 | `RULE-AUDIO-007` | The Comlink alert plays slot 6 through the effects gate | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | None | None | implemented | The repeat is paced by the rebuild's presentation clock at four seconds. |
 | `RULE-AUDIO-009` | The sound of an attack in Detailed Combat | supported | complete | None | None | implemented | None |
@@ -249,7 +249,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-SELL-001` | Sell removes every selected item but pays half the Cost of only the last selected slot | supported | complete | None | `DEV-EQUIP-001` | implemented | None |
+| `RULE-SELL-001` | Sell removes every selected item but pays half the Cost of only the last selected slot | supported | complete | None | `DEV-EQUIP-001` | implemented | Keeps BUG-SELL-001: a multi-item Sell pays only the last selected slot, so no deviation covers it. |
 | `SCR-SELL-001` | Sell panel | supported | partial | None | None | supported | Row targets follow the original; the OK and Cancel controls and the drawn prices are not pinned. |
 
 ## TERMINATE

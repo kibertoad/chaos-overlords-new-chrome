@@ -4,7 +4,7 @@ title: The program starts one instance, chooses the image set and display depth,
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-PLATFORM-009, FND-UI-020, FND-GFX-004, FND-TIMER-002, FND-UI-022, FND-VIDEO-002]
+evidence: [FND-PLATFORM-009, FND-UI-020, FND-GFX-004, FND-TIMER-002, FND-UI-022, FND-VIDEO-002, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-OPTIONS-001, RULE-OPTIONS-002, RULE-GFX-002, RULE-UI-014, RULE-UI-008, SCR-UI-001, SCR-UI-009]

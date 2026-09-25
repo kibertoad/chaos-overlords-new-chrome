@@ -100,6 +100,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AI-051](../findings/FND-AI-051.md) | builds, locations |
 | [FND-AI-052](../findings/FND-AI-052.md) | builds, locations |
 | [FND-AI-053](../findings/FND-AI-053.md) | builds, locations |
+| [FND-AI-054](../findings/FND-AI-054.md) | builds, locations |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | builds, locations |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | builds, locations |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | builds, locations |
@@ -687,6 +688,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body |
+| [FND-AI-054](../findings/FND-AI-054.md) | body |
 | [FND-HIRE-006](../findings/FND-HIRE-006.md) | body |
 | [FND-HIRE-009](../findings/FND-HIRE-009.md) | body |
 | [FND-STATE-002](../findings/FND-STATE-002.md) | body |
@@ -847,6 +849,7 @@ None.
 | [RULE-UI-006](../rules/RULE-UI-006.md) | related |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | related |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | related |
+| [SCR-UI-005](../screens/SCR-UI-005.md) | body |
 
 ## FMT-STATE-002
 
@@ -856,6 +859,7 @@ None.
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body |
 | [FND-AI-027](../findings/FND-AI-027.md) | body |
 | [FND-AI-052](../findings/FND-AI-052.md) | body |
+| [FND-AI-054](../findings/FND-AI-054.md) | body |
 | [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | body |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
@@ -1663,6 +1667,14 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AI-018](../rules/RULE-AI-018.md) | body, evidence |
+
+## FND-AI-054
+
+| Cited by | In |
+|---|---|
+| glossary: local_tech_cap | glossary |
+| [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
 
 ## FND-ASSET-001
 
@@ -2510,6 +2522,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [BUG-SELL-001](../bugs/BUG-SELL-001.md) | body, evidence |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, evidence |
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | body, evidence |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
@@ -2686,7 +2699,16 @@ None.
 
 | Cited by | In |
 |---|---|
+| [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | evidence |
+| [BUG-OPTIONS-001](../bugs/BUG-OPTIONS-001.md) | evidence |
+| [BUG-OPTIONS-002](../bugs/BUG-OPTIONS-002.md) | evidence |
+| [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | evidence |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | evidence |
+| [FMT-DATA-003](../formats/FMT-DATA-003.md) | evidence |
+| [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | evidence |
+| [FMT-STATE-001](../formats/FMT-STATE-001.md) | evidence |
+| [FMT-STATE-002](../formats/FMT-STATE-002.md) | evidence |
+| [FMT-STATE-009](../formats/FMT-STATE-009.md) | evidence |
 | [FND-AI-041](../findings/FND-AI-041.md) | body |
 | [FND-AI-043](../findings/FND-AI-043.md) | body |
 | [FND-AI-044](../findings/FND-AI-044.md) | body |
@@ -2808,20 +2830,30 @@ None.
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | evidence |
 | [RULE-AUDIO-005](../rules/RULE-AUDIO-005.md) | evidence |
 | [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | evidence |
+| [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | evidence |
+| [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | evidence |
+| [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | evidence |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | evidence |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | evidence |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | body, evidence |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | body, evidence |
+| [RULE-CITY-003](../rules/RULE-CITY-003.md) | evidence |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body, evidence |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, evidence |
+| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | evidence |
+| [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | evidence |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | body, evidence |
+| [RULE-GFX-002](../rules/RULE-GFX-002.md) | evidence |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | evidence |
+| [RULE-HELP-001](../rules/RULE-HELP-001.md) | evidence |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | evidence |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | evidence |
 | [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | evidence |
 | [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | evidence |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | evidence |
 | [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | evidence |
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | evidence |
@@ -2832,11 +2864,16 @@ None.
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
 | [RULE-RNG-001](../rules/RULE-RNG-001.md) | evidence |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | evidence |
+| [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | evidence |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | evidence |
+| [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | evidence |
+| [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | evidence |
+| [RULE-SITE-001](../rules/RULE-SITE-001.md) | evidence |
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | evidence |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | evidence |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | evidence |
+| [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | evidence |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | evidence |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | evidence |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | evidence |
@@ -2845,22 +2882,58 @@ None.
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | evidence |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | evidence |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | evidence |
+| [RULE-UI-001](../rules/RULE-UI-001.md) | evidence |
+| [RULE-UI-002](../rules/RULE-UI-002.md) | evidence |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | evidence |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | evidence |
+| [RULE-UI-005](../rules/RULE-UI-005.md) | evidence |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | evidence |
 | [RULE-UI-007](../rules/RULE-UI-007.md) | evidence |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | evidence |
 | [RULE-UI-009](../rules/RULE-UI-009.md) | evidence |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | evidence |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | evidence |
+| [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
+| [RULE-UI-013](../rules/RULE-UI-013.md) | evidence |
+| [RULE-UI-014](../rules/RULE-UI-014.md) | evidence |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | evidence |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
+| [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | evidence |
+| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | evidence |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
+| [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | evidence |
+| [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | evidence |
+| [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | evidence |
+| [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | evidence |
+| [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | evidence |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | evidence |
+| [SCR-GANG-002](../screens/SCR-GANG-002.md) | evidence |
+| [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | evidence |
+| [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | evidence |
 | [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | evidence |
 | [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | evidence |
+| [SCR-MOVE-001](../screens/SCR-MOVE-001.md) | evidence |
+| [SCR-NET-001](../screens/SCR-NET-001.md) | evidence |
+| [SCR-NET-002](../screens/SCR-NET-002.md) | evidence |
+| [SCR-NET-003](../screens/SCR-NET-003.md) | evidence |
+| [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | evidence |
+| [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | evidence |
+| [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | evidence |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | evidence |
+| [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | evidence |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | evidence |
+| [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | evidence |
+| [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | evidence |
+| [SCR-UI-001](../screens/SCR-UI-001.md) | evidence |
+| [SCR-UI-002](../screens/SCR-UI-002.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
+| [SCR-UI-004](../screens/SCR-UI-004.md) | evidence |
+| [SCR-UI-005](../screens/SCR-UI-005.md) | evidence |
+| [SCR-UI-006](../screens/SCR-UI-006.md) | evidence |
+| [SCR-UI-007](../screens/SCR-UI-007.md) | evidence |
+| [SCR-UI-008](../screens/SCR-UI-008.md) | evidence |
+| [SCR-UI-009](../screens/SCR-UI-009.md) | evidence |
 
 ## FND-EXE-005
 
@@ -4154,6 +4227,7 @@ None.
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | evidence |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | evidence |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | evidence |
+| [RULE-UI-011](../rules/RULE-UI-011.md) | body, evidence |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | evidence |
 
 ## FND-STATE-002
@@ -4692,6 +4766,7 @@ None.
 | [RULE-UI-007](../rules/RULE-UI-007.md) | body, evidence |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | evidence |
+| [SCR-UI-006](../screens/SCR-UI-006.md) | evidence |
 
 ## FND-UI-024
 
@@ -4703,6 +4778,11 @@ None.
 | [RULE-UI-009](../rules/RULE-UI-009.md) | evidence |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body, evidence |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | evidence |
+| [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | body, evidence |
+| [SCR-UI-005](../screens/SCR-UI-005.md) | body, evidence |
+| [SCR-UI-006](../screens/SCR-UI-006.md) | body, evidence |
+| [SCR-UI-007](../screens/SCR-UI-007.md) | body, evidence |
+| [SCR-UI-008](../screens/SCR-UI-008.md) | body, evidence |
 
 ## FND-UI-025
 
@@ -5947,7 +6027,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [BUG-SELL-001](../bugs/BUG-SELL-001.md) | related |
+| [BUG-SELL-001](../bugs/BUG-SELL-001.md) | body, related |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | body, related |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | body, related |
 
@@ -6019,6 +6099,7 @@ None.
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | body, related |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | body, related |
+| [SCR-UI-008](../screens/SCR-UI-008.md) | body |
 
 ## RULE-SETUP-009
 
@@ -6045,6 +6126,7 @@ None.
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | body |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | body, related |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
+| [RULE-UI-011](../rules/RULE-UI-011.md) | body |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | body, related |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | body, related |
 
@@ -6250,6 +6332,7 @@ None.
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | related |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | body, related |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | body, related |
+| [SCR-UI-006](../screens/SCR-UI-006.md) | body |
 
 ## RULE-UI-009
 

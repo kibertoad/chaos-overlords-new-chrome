@@ -7,7 +7,7 @@ superseded_by: []
 impact: presentation
 intent: unintended
 player_reliance: not-relied-on
-evidence: [FND-OPTIONS-001, FND-RNG-001]
+evidence: [FND-OPTIONS-001, FND-RNG-001, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-OPTIONS-001, RULE-OPTIONS-002]

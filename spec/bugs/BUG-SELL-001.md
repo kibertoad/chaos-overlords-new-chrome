@@ -7,7 +7,7 @@ superseded_by: []
 impact: rules
 intent: unintended
 player_reliance: unknown
-evidence: [FND-EQUIP-002, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-002, FND-EQUIP-007, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-SELL-001, SCR-SELL-001]
@@ -27,8 +27,11 @@ A Sell order with more than one item selected on the Sell panel.
 
 The Sell branch of the transaction pass tests the weapon, armor and
 miscellaneous bits in that order. Each selected branch empties its slot and
-assigns half that item's Cost to one local value instead of adding to it. Cash
-and cash earned are then raised once by that value (FND-EQUIP-002). The panel
+stores half that item's Cost in the same scratch local, replacing what the
+previous branch stored. Cash and cash earned are then raised once by that local
+(FND-EQUIP-002). The three stores are at `0x00474B3D`, `0x00474B81` and
+`0x00474BC5` and the two additions at `0x00474BDF` and `0x00474BF3`
+(FND-EQUIP-007); RULE-SELL-001 gives the procedure. The panel
 lets the player select every filled slot, and the manual says each selected
 item is sold for half its price.
 

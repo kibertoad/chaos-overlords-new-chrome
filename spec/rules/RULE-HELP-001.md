@@ -4,7 +4,7 @@ title: Help Topics does nothing, and no key opens the help file
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HELP-005, FND-UI-020, FND-UI-021, FND-HELP-003, FND-HELP-004]
+evidence: [FND-HELP-005, FND-UI-020, FND-UI-021, FND-HELP-003, FND-HELP-004, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-UI-014, SCR-UI-009, FMT-HELP-001]

@@ -119,66 +119,17 @@ order of priority, unless a group says otherwise.
 ## Screens, options, planning timer and sound
 
 Gaps more reading of `Chaos Overlords.exe` or the data files could close.
-### Addresses and ranges
-- Give full function ranges for every finding location written as a single
-  entry address in FND-UI-*, FND-AUDIO-001..003, FND-AUDIO-010..013,
-  FND-OPTIONS-*, FND-TIMER-001 (the extents were not in the old notes).
-- Find the addresses of `music_enabled`, `effect_slots`,
-  `sound_output_available` (and its writer), `pointer_shape`,
-  `presentation_tick_pending` (timer slot 0), `comlink_blink_step`,
-  `planning_limit_ms`, `planning_start_ms` and `blit_benchmark_count`, and add
-  them as locations and glossary addresses. Rules: RULE-AUDIO-003, 004, 005,
-  008; RULE-UI-003, 007, 008; RULE-TIMER-001, 002, 003.
-- Record the widths of `local_game` (`0x00482178`), `network_game`
-  (`0x00487B58`) and `comlink_alert_repeat` (`0x00487808`), and read the
-  writers of the two game-type flags to confirm their meaning (RULE-AUDIO-006).
-### Behaviour
-- RULE-OPTIONS-001: what the loader does when `RegOpenKeyExA` fails; the
-  shared buffer's value before the first query; how the two serial draws are
-  combined and whether the result is kept in `serial_number`; the effect of a
-  value of another type or size.
-- RULE-OPTIONS-002: which player actions reach the writer's three callers
-  (`0x00460EF9`, `0x00460F40`, `0x0046224A`).
-- RULE-OPTIONS-003: confirm the idle scan covers only the active player's 81
-  slots.
-- RULE-TIMER-001/002/003: whether the limit mapping is a table or compares;
-  where the -1 "no limit" case is tested (a signed compare would expire at
-  once); the types in the expiry compare; what happens to an open modal panel
-  on expiry; the countdown's value at planning start; whether the bar is drawn
-  with no limit; whether a loaded game recomputes the limit from the saved
-  choice byte.
-- RULE-AUDIO-001..003: the effect of a nonzero music level after 0 on
-  `music_enabled`; the order of music and effects application; which auxiliary
-  device the volume call addresses; which callers run the level helper.
-- RULE-AUDIO-004/005: behaviour on a missing sound file; the lower helper's
-  slot bounds check; what the priority and channel record do.
-- RULE-AUDIO-009: what the evasion branch leaves in slot 5; whether "base"
-  Martial Arts is the definition's or the effective value.
-- RULE-UI-003: the last partial slide step; the divisor when
-  `blit_benchmark_count` is below 4; whether the slide-out redraws what is
-  underneath.
-- RULE-UI-004: cell walk direction and overflow; the red digits' source x.
-- RULE-UI-006: whether incoming hires come from `hire_orders`.
-- RULE-UI-007: which callers pass `force`.
-- RULE-UI-008: whether timer slot 0 is a flag or a counter; what else is paced
-  by it (Item Information rotation, the Comlink Send cursor).
-- RULE-UI-009: the string resource IDs of the scenario names; whether the
-  eliminated test reads `player_active`; the label for `controller` 3.
-- RULE-UI-010: whose roster Gangs in Sector scans; more than six matches.
-- RULE-UI-011: whether Income and Tolerance are hidden from non-owners; which
-  number helper draws the values.
-- SCR-UI-005: the close face rectangle and the keys the panel takes; which
-  gang field each statistic row reads and which rows Base Statistics switches.
-- SCR-UI-006: the screen row of Cost and Tech Level (backing y 236); the timer
-  behind the item rotation; how Equip and Research open the panel.
-- SCR-UI-007, SCR-UI-008: the keys each panel takes; whether Site Information
-  shows remaining or base Resistance.
-- SCR-UI-008: the code that opens Game Information at the start of a
-  multi-player game and after loading (RULE-SETUP-008 calls `fn_0045519D` for a
-  new local game).
-- SCR-OPTIONS-001: the sounds Cancel and OK play; a click outside both faces.
-- FND-UI-031: whether the scaled copy path ignores the requested copy mode
-  (possible GFX bug).
+- RULE-OPTIONS-003: the byte `0x004ABC9C` also suppresses the idle-gang
+  warning (FND-OPTIONS-003). Read its writers (`0x004614AF`, `fn_0046E766`) and
+  say what it marks.
+- FND-UI-031: the scaled copy ignores the copy mode (FND-UI-023). List which of
+  the 32 callers of `fn_00427864` pass rectangles of different sizes with a
+  keyed or patterned mode, to say whether any visible draw loses its key.
+- Needs a run of the original, not static reading: what `RegQueryValueExA`
+  writes when an option value is longer than four bytes (RULE-OPTIONS-001), and
+  whether the incoming-hire marker of RULE-UI-006 really disappears from all
+  but the last such sector after a full map draw (a capture with two sectors
+  holding only incoming hires).
 
 ## Coverage of the executable
 
@@ -216,44 +167,18 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
 
 ## Movies
 
-- The intro `fn_004329C0` (992 bytes) opens `Data\mvIntro` and `Data\mvLogos` and raises the
-  thread priority. Its Smacker wrappers are `fn_0040DBC0` (open), `fn_0040DDFF` (frame loop:
-  decode, copy to a rectangle, colour remap, new palette, wait), `fn_0040DD7B` (close),
-  `fn_0040E049` (volume and pan), `fn_0040DAB9`, `fn_0040DAE0` and `fn_0040E00E`; `fn_0040DFFE`
-  and `fn_0040E02B` have no callers. The VIDEO area has two entries and no rule for playback.
-  Record the order of the two movies, which keys or clicks end each, where a frame lands on the
-  screen, how the palette is handled in the 8-bit set, the sound setting, and what happens when a
-  file is missing or fails to open. DEV-VIDEO-001 then cites the rule.
-- `0x00490598..0x004905E0` is read by the Smacker wrappers and by the network screens
-  (`fn_0040B9C0`, `fn_0040C4C5`, `fn_0046913D`). Identify what they share.
+- Needs a run of the original: how `smackw32.dll` fits a movie's palette in the
+  8-bit display set (blit type 3 and `SmackColorRemap`, FND-VIDEO-002) and how
+  it treats the volume `effects_level * 25 * 256`, above its normal level from
+  level 6 up. The executable's side is recorded in RULE-VIDEO-001.
 
 ## Sound, music and the CD drive
 
-- Sound setup `fn_00458290` builds paths from `data\snd00000`, counts auxiliary devices and reads
-  the registry through `fn_0042B8EC`. `fn_004589B8` uses the same path and `PlaySoundA` and has no
-  direct callers. `fn_00458895` is the play primitive; `fn_00458858` and `fn_004584BA` sit above
-  it. FND-AUDIO-002 covers the slots. Record the path construction and file numbering, how a
-  missing file is handled, and whether `fn_004589B8` is dead.
-- CD music through MCI: `fn_00458EA6` opens the device (commands `0x803` and `0x80D`),
-  `fn_00458CA0` plays (`0x808`), `fn_00458CEF` queries status (`0x814`), `fn_00458D54` waits, and
-  `fn_00458ACC` and `fn_00458E2F` read the auxiliary volume. The window procedure receives the MCI
-  notification (`0x3B9`). FND-AUDIO-001 says which track programs play; record the command
-  sequence, the time format, the track numbers per program, what the notification restarts, and
-  what happens with no disc.
-- CD drive search: `fn_004667DC` (`GetLogicalDrives`, the string `" A:\CHAOS\CDTrack"`),
-  `fn_0046678D` (`GetDriveTypeA`) and `fn_0046638E` (`GetDriveTypeA`, `GetVolumeInformationA`;
-  called from WinMain and the main console). Record which drive letters are tried and in what
-  order, the drive type and volume label accepted, what the path string is used for, and what the
-  player sees without a disc. This ties to the leading-space item of FND-ASSET-001. The rebuild
-  does not reimplement any of it: it plays the music tracks from the files of the GOG release
-  (`MUSIC/TrackNN.ogg`, docs/AUDIO-VIDEO.md) and never looks for a drive. Document the original's
-  behaviour in the spec (a PLATFORM finding and an AUDIO rule) and add a DEV-AUDIO entry that
-  names it as not reproduced, so its PARITY rows are accounted for. No setting is needed, since it
-  changes no game state.
-- Name the audio state: `0x00494BF0..0x00494C32` (written by `fn_00451F80`, `fn_00458290`,
-  `fn_00458B43`, `fn_00458CEF`, `fn_00458EA6`) and `0x00497FE8..0x00498012` (written by
-  `fn_00458290` and `fn_00458EA6`). Several of the glossary addresses the Screens group asks for
-  (`music_enabled`, `effect_slots`, `sound_output_available`) are expected here.
+- Needs a run of the original: how the GOG build's `winmm.dll` answers the MCI
+  status query and the resume command, and whether the resume plays past the
+  last track of the program (FND-AUDIO-007, RULE-AUDIO-002); and how
+  `GetDriveTypeA` answered the strings `.\` to `Y\` on the Windows versions of
+  the time (FND-PLATFORM-012, RULE-AUDIO-010).
 
 ## Menus, dialogs, help and other resources
 

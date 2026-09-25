@@ -4,7 +4,7 @@ title: The display is a 640-by-480 window or screen whose drawing area of 640 by
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GFX-004, FND-PLATFORM-009, FND-PLATFORM-007, FND-PLATFORM-008, FND-UI-020]
+evidence: [FND-GFX-004, FND-PLATFORM-009, FND-PLATFORM-007, FND-PLATFORM-008, FND-UI-020, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-UI-013, RULE-UI-014]

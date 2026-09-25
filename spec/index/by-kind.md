@@ -219,7 +219,7 @@
 
 ## findings
 
-301 entries.
+302 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -276,6 +276,7 @@
 | [FND-AI-051](../findings/FND-AI-051.md) | The placement anchor is a 32-bit value tested for free land, then occupancy, then Big Man, and a failed anchor of 63 blocks hiring for player 0 | recorded |
 | [FND-AI-052](../findings/FND-AI-052.md) | The owner query returns -2 under police presence, and the solo Control test compares Force plus Control with Income, Support and the visible foreign gangs | recorded |
 | [FND-AI-053](../findings/FND-AI-053.md) | The difficulty band table is set from controller 1 only, saved, and read at nine places in the resolver | recorded |
+| [FND-AI-054](../findings/FND-AI-054.md) | Selector 0x62 caps the gang definition's Tech Level at 5, 8 or 10 by the research level of the gang's sector, whoever owns it | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |

@@ -4,7 +4,7 @@ title: Input reaches the screen loops as one polled event at a time, and the eve
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-020, FND-UI-021, FND-HELP-005]
+evidence: [FND-UI-020, FND-UI-021, FND-HELP-005, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [FMT-STATE-009, RULE-UI-008, RULE-UI-007, RULE-HELP-001, RULE-AUDIO-003, RULE-AUDIO-002, SCR-UI-002, SCR-UI-009]

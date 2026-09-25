@@ -4,7 +4,7 @@ title: Objective sectors marked on the city map
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-033, SRC-MANUAL-GOG]
+evidence: [FND-UI-033, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []

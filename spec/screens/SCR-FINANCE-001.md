@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-FINANCE-001, FND-FINANCE-002, FND-OPTIONS-001, FND-GANG-004, SRC-MANUAL-GOG]
+evidence: [FND-FINANCE-001, FND-FINANCE-002, FND-OPTIONS-001, FND-GANG-004, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-FINANCE-001, RULE-UI-003, RULE-UI-004]

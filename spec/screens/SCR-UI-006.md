@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-004, FND-UI-006, FND-UI-011, FND-UI-013, FND-AUDIO-011, SRC-MANUAL-GOG]
+evidence: [FND-UI-004, FND-UI-006, FND-UI-011, FND-UI-013, FND-UI-024, FND-UI-023, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-004]
@@ -56,12 +56,13 @@ related: [RULE-UI-003, RULE-UI-004]
 
 | State | Entered when | Left when | Evidence |
 |---|---|---|---|
-| Open | A double-click on an item in the Equip, Research, Attack, Give or Sell panels, the gang information panel, or a gang card of the sector screen | The exit face or Enter; a panel it was opened over stays on screen | FND-UI-004, FND-UI-013, SRC-MANUAL-GOG |
+| Open | A double-click on an item in the Equip, Research, Attack, Give or Sell panels, the gang information panel, or a gang card of the sector screen. In Equip the list rows are panel-local x 148 to 328 from y 26, 9 pixels each, to y 169; in Research from y 19 to 162 | The exit face or Enter; a panel it was opened over stays on screen | FND-UI-004, FND-UI-013, FND-UI-024, SRC-MANUAL-GOG |
 
 ## Timing
 
-The item turns one frame per tick of a timer; which timer, and so the rate, is
-not recorded.
+The item turns one frame per `presentation_tick` it takes, at most six frames a
+second, so a full turn of fifteen frames takes 2.5 seconds (RULE-UI-008). The
+slide takes about a quarter of a second (RULE-UI-003).
 
 ## Differences between builds
 
@@ -69,7 +70,6 @@ None known.
 
 ## Open questions
 
-- Which timer drives the rotation.
 - Which item each caller passes on a double-click is recorded with each
   caller; FND-UI-013 lists the eight functions that open the panel.
 - `VK_EXECUTE` is a key code that no key on a US keyboard sends.

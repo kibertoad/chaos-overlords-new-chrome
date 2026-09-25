@@ -4,7 +4,7 @@ title: The six players get the six fixed headquarters sectors in a random order,
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CITY-003, FND-UI-033, FND-RNG-005]
+evidence: [FND-CITY-003, FND-UI-033, FND-RNG-005, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-002, FMT-STATE-004]

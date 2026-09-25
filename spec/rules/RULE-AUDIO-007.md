@@ -4,7 +4,7 @@ title: The Comlink alert plays slot 6 through the effects gate
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-012, FND-COMLINK-004]
+evidence: [FND-AUDIO-012, FND-COMLINK-004, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005, RULE-AUDIO-008, RULE-SETUP-008, RULE-COMLINK-001]

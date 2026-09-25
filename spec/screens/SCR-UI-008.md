@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-003, FND-UI-011, FND-UI-032, FND-AUDIO-011, SRC-MANUAL-GOG]
+evidence: [FND-UI-003, FND-UI-011, FND-UI-032, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-009, SCR-UI-003]
@@ -27,12 +27,13 @@ related: [RULE-UI-003, RULE-UI-009, SCR-UI-003]
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
 | OK face | `(161,293,49,22)` | While open | Closes the panel (RULE-UI-003) | FND-UI-003 |
+| Outside the panel | Outside `(104,124,344,209)` | While open | Refused; plays slot 4 | FND-UI-024 |
 
 ## Keyboard input
 
 | Key | Enabled when | Effect | Evidence |
 |---|---|---|---|
-| None known | | | FND-UI-003 |
+| Enter, or virtual key `0x2B` | While open | Closes the panel | FND-UI-024 |
 
 ## Other input
 
@@ -51,7 +52,7 @@ related: [RULE-UI-003, RULE-UI-009, SCR-UI-003]
 
 | State | Entered when | Left when | Evidence |
 |---|---|---|---|
-| Open | The Game Info tile (RULE-UI-002 route 12); by itself at the start of a multi-player game and when a saved game is opened | The OK face | FND-UI-032, SRC-MANUAL-GOG |
+| Open | The Game Info tile (RULE-UI-002 route 12); by itself at each local human's first planning after a saved game is loaded or on a computer that joined a network game (RULE-SETUP-008). A new local game and the hosting computer do not open it | The OK face or Enter | FND-UI-032, FND-UI-024, SRC-MANUAL-GOG |
 
 ## Timing
 
@@ -63,7 +64,7 @@ None known.
 
 ## Open questions
 
-- The keys the panel takes.
-- The automatic opening at the start of a multi-player game and after loading
-  rests on the manual; the code that does it has not been read.
+- The manual says the panel opens at the start of a multi-player game; the
+  executable opens it for a computer that joined and not for the host
+  (FND-UI-024).
 - The player names' colours, which the manual says match the players.

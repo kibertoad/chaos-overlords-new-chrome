@@ -4,7 +4,7 @@ title: The first local setup of a session starts with one human, later ones with
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-005, FND-SETUP-017, FND-SETUP-013, FND-NET-004, FND-RNG-005, FND-AUDIO-002, FND-AUDIO-010, SRC-HELP-GOG, SRC-MANUAL-GOG]
+evidence: [FND-SETUP-005, FND-SETUP-017, FND-SETUP-013, FND-NET-004, FND-RNG-005, FND-AUDIO-002, FND-AUDIO-010, SRC-HELP-GOG, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001, RULE-AUDIO-005]
