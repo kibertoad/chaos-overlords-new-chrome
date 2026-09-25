@@ -35,8 +35,6 @@ roster slot order.
 
 ```text
 # one row per scenario, one column per hire role 0 to 6; -1 assigns nothing
-# reset_planning_record(idx): family 99, needs_family 0, the three action
-# triplets 0 and both cooldowns 0
 let families = [
     0, 0, 3, 2, 6, -1, 7,
     0, 1, 3, 2, 6, 5, 7,
@@ -52,7 +50,14 @@ let idx = player * 81 + slot
 let r = planning_records[idx]
 let s = gangs[idx].sector
 if r.needs_family != 0:
-    reset_planning_record(idx)
+    r.family = 99
+    r.needs_family = 0
+    # the six target bytes of the three triplets are cleared as well
+    r.older_action = ACTION_NONE
+    r.previous_action = ACTION_NONE
+    r.planned_action = ACTION_NONE
+    r.weapon_cooldown = 0
+    r.armor_cooldown = 0
     if scenario == 8 and elapsed_turns == 0:
         hire_role[player] = 1
     let role = hire_role[player]

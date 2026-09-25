@@ -483,6 +483,13 @@ RULE-AI-004.
 `draw_target(player, idx, kind, tries)` makes up to `tries` target draws and
 returns the last target drawn. A function, defined by RULE-AI-004.
 
+## drive_type
+
+`drive_type(letter)` gives the answer of the Windows drive-type query for the
+string made of the character `letter` and a backslash, 3 for a fixed drive. A
+value from outside the game: `GetDriveTypeA`, called by the startup drive check
+[FND-PLATFORM-012].
+
 ## effect_slots
 
 The loaded general sound effects, one per slot. A list the game keeps: 48
@@ -858,6 +865,17 @@ Snitch actions, carried out gang by gang in `turn_order` and roster slot
 order, followed by clamping every sector's base Tolerance to 1..40. It runs
 before `chaos_phase` [FND-TURN-001, FND-SNITCH-001, FND-CHAOS-001, FND-TOLERANCE-001].
 
+## intro_tick
+
+The timer that paces the intro's input test, ten times a second. A clock,
+defined by RULE-VIDEO-001.
+
+## intro_tick_pending
+
+Set by each `intro_tick` and cleared by the intro when it reads it. Any other
+value the game keeps: the flag byte of timer slot 1 at `0x00494811`
+[FND-UI-023, FND-VIDEO-002].
+
 ## IntroPlayed
 
 An event: the intro movies play before the title screen
@@ -1043,6 +1061,46 @@ by player slot, at `0x004AB588` [FND-SETUP-011, FND-DETECT-001].
 
 The step of `resolution` that moves gangs to their destinations. It runs after
 `terminate_phase` and before `control_phase` [FND-MOVE-001, FND-CHAOS-001].
+
+## movie_frame_count
+
+`movie_frame_count()` gives the number of frames of the movie playing, from its
+file header. A value from outside the game: read by the Smacker library
+[FND-VIDEO-001, FND-VIDEO-002].
+
+## movie_frame_due
+
+`movie_frame_due()` gives 1 when the Smacker library says the next frame of the
+movie playing is due. A value from outside the game: the library's wait test
+[FND-VIDEO-002].
+
+## movie_open
+
+`movie_open(name)` opens a movie file through the Smacker library with all its
+sound tracks and gives 1 when it opened. A value from outside the game
+[FND-VIDEO-002].
+
+## movie_path_prefix
+
+The drive prefix put in front of the movie paths. Any other value the game
+keeps: the counted string at `0x00498760`, written by the startup drive check
+[FND-PLATFORM-012].
+
+## movie_set_volume
+
+`movie_set_volume(level)` sets the volume of every sound track of the movie
+playing to `level * 256` at the centre pan. An effect on the Smacker library
+[FND-VIDEO-002].
+
+## MovieAreaCleared
+
+Emitted when the intro fills the movie rectangle `(80,102)-(560,358)` with
+black. An event, defined by RULE-VIDEO-001.
+
+## MovieFrameShown
+
+Emitted when a movie frame is drawn at `(80,102)`. An event, defined by
+RULE-VIDEO-001.
 
 ## music_enabled
 
@@ -1238,6 +1296,11 @@ function, defined by RULE-TIMER-002.
 
 `play_effect(slot)` plays an effect slot when sound effects are on. A
 function, defined by RULE-AUDIO-005.
+
+## play_movie
+
+`play_movie(name)` plays one intro movie. A function, defined by
+RULE-VIDEO-001.
 
 ## play_sound
 
@@ -1598,6 +1661,11 @@ FND-AI-009]. Selector `0x2D` of the computer players searches these bytes for
 player slot numbers, as if the table listed players in ranking order
 [FND-STATE-004].
 
+## ScreenFilledBlack
+
+Emitted when the intro fills `(0,0)-(640,460)` with black. An event, defined by
+RULE-VIDEO-001.
+
 ## search_filters
 
 The Search panel's site selection: for each player and each of the 22 site
@@ -1764,6 +1832,11 @@ Read by the effect player as whether sound may play. Any other value the game
 keeps: the byte at `0x0048735C`, which silences every effect when set; it is 0
 in the executable's data and nothing writes it, so it never silences anything
 [FND-AUDIO-003, FND-AUDIO-006].
+
+## startup_drive_check
+
+`startup_drive_check()` runs the drive check at startup and always gives 1. A
+function, defined by RULE-AUDIO-010.
 
 ## stealth_sum
 

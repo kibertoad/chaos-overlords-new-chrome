@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 2 |
 | `sourced` | 1 |
-| `supported` | 77 |
+| `supported` | 88 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 134 |
+| `implemented` | 129 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
-| `missing` | 13 |
-| `partial` | 67 |
-| `complete` | 134 |
+| `missing` | 19 |
+| `partial` | 72 |
+| `complete` | 129 |
 
 ## DATA
 
@@ -43,6 +43,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-GFX-002` | 8-bit image files in DATA/PX08 | supported | complete | None | None | implemented | None |
 | `FMT-GFX-003` | Palette entry in a PX08 image file | supported | complete | None | None | implemented | None |
 | `RULE-GFX-001` | Decoding the RLE8 pixel data of a PX08 image | supported | complete | None | None | implemented | None |
+| `RULE-GFX-002` | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported | missing | None | None | supported | Not yet compared with the rebuild. |
 
 ## AUDIO
 
@@ -59,12 +60,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AUDIO-007` | The Comlink alert plays slot 6 through the effects gate | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | None | None | implemented | The repeat is paced by the rebuild's presentation clock at four seconds. |
 | `RULE-AUDIO-009` | The sound of an attack in Detailed Combat | supported | complete | None | None | implemented | None |
+| `RULE-AUDIO-010` | The startup drive check always passes and the game never looks for its disc | supported | missing | None | `DEV-AUDIO-001` | supported | The rebuild plays the music files and never checks a drive (deviation). |
 
 ## VIDEO
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `FMT-VIDEO-001` | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported | complete | None | `DEV-VIDEO-001` | implemented | The rebuild decodes only the subset the two shipped movies use. |
+| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001` | supported | Both movies play in order, centred, at 100 ms a frame. The rebuild shows them only until a showing is recorded, and skips on keys and either mouse button; neither difference has a deviation entry yet. |
 
 ## HELP
 
@@ -72,6 +75,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `FMT-HELP-001` | WinHelp container HELP/Chaos.hlp | supported | complete | None | `DEV-HELP-001`, `DEV-HELP-002` | implemented | None |
 | `FMT-HELP-002` | Help contents file HELP/CHAOS.CNT | supported | complete | None | None | implemented | None |
+| `RULE-HELP-001` | Help Topics does nothing, and no key opens the help file | supported | missing | None | `DEV-HELP-001` | supported | The rebuild opens its own help viewer where the original does nothing (deviation). |
 
 ## SAVE
 
@@ -92,6 +96,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | The rebuild keeps its own notification history and derives the Last Turn reports from it, not this 10-byte layout; whether its arguments match the report types' arguments was not checked. |
 | `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | missing | None | None | supported | The rebuild's computer players keep their own planning state; it was not compared with this 16-byte layout. |
 | `FMT-STATE-008` | Combat result row of one sector | supported | missing | None | None | supported | The rebuild keeps combat events with combatant details instead of these per-sector rows of gang and target indices. |
+| `FMT-STATE-009` | Input event record | supported | missing | None | None | supported | Not yet compared with the rebuild. |
 
 ## RNG
 
@@ -312,7 +317,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | complete | None | `DEV-AI-003` | implemented | The rebuild submits commands in roster slot order and keeps the history rollover; the family-9 seeding condition is unknown in both. |
-| `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
+| `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild applies the family table to every active gang at every pass, without the needs_family gate, the record reset, the family 99 of a blank cell or the Big Man first-turn hire role (FND-AI-041). |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | None |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | None |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | The Tech ceiling of the first weapon pass (local_tech_cap) is not described by the findings, so its match is not established. |
@@ -323,7 +328,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | partial | None | `DEV-AI-001` | supported | The rebuild deliberately compares the previous hire role with role 4 in the hunter guards (BUG-AI-001). The per-scenario slot adjustments and the hunter reversion of FND-AI-050 are not checked against the rebuild. |
 | `RULE-AI-011` | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported | complete | None | None | implemented | None |
 | `RULE-AI-012` | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported | complete | None | None | implemented | None |
-| `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | complete | None | None | implemented | Placement is carried out in the Hire phase; the anchor -1 case of BUG-AI-002 is not known to be reproduced. |
+| `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | partial | None | None | supported | Placement is carried out in the Hire phase. The rebuild always replaces an anchor of 63, where the original keeps it for player 0 while sector 0, 6, 7 or 8 is free land (FND-AI-051). |
 | `RULE-AI-014` | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported | complete | None | None | implemented | None |
 | `RULE-AI-015` | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | supported | complete | None | None | implemented | None |
 | `RULE-AI-016` | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported | partial | None | None | supported | The rebuild lowers the attitude only for attacks that are not evaded; the original also lowers it by the reaction after an evaded attack (FND-AI-047). |
@@ -413,6 +418,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-TIMER-001` | Planning time limit chosen for a match | supported | complete | None | None | implemented | None |
 | `RULE-TIMER-002` | A human planning turn ends when its time limit passes | supported | complete | None | None | implemented | On expiry the rebuild submits the finish-planning operation without the idle-gang warning. |
 | `RULE-TIMER-003` | The planning clock bar and its warning sounds | supported | complete | None | None | implemented | Checks run every sixth fixed update rather than every sixth presentation tick; the two rates were not compared. |
+| `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | missing | None | None | supported | Not yet compared with the rebuild. |
 
 ## UI
 
@@ -430,6 +436,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | partial | None | None | supported | Which gangs the roster and card lists include was not checked against the rule. |
 | `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | Income for all and Support and Cash for the owner are shown. |
 | `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | `DEV-UI-002` | implemented | The rebuild also draws the pylons on the detailed-sector minimap (deviation). |
+| `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | missing | None | None | supported | Not yet compared with the rebuild. |
+| `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | missing | None | None | supported | Not yet compared with the rebuild. |
 | `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-004`, `DEV-UI-012` | supported | The title screen shows the build version and an intro button the original lacks. |
 | `SCR-UI-002` | Credits screen | supported | partial | None | None | supported | Whether the credits sequence matches the original presenter's order and timing was not checked. |
 | `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006` | supported | Console routes and pressed art match; tooltips and projected cashflow are added. |

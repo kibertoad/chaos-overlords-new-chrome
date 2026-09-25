@@ -21,7 +21,7 @@
 
 ## supported
 
-233 entries.
+234 entries.
 
 | ID | Title |
 |---|---|
@@ -103,8 +103,9 @@
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | The Comlink alert plays slot 6 through the effects gate |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat |
+| [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three |
-| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, after a victory splash when one human plays |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors |
@@ -221,7 +222,7 @@
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | The intro plays the logos movie and then the intro movie, each ended by the left button |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | Attack picker (Target Acquisition) |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | Endgame screen listing the players by place with their awards or their statistics |
-| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | Victory splash shown before the endgame results when one human plays |
+| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | Victory splash shown on the endgame's Awards tab when one player is left |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | Combat Results panel, paged by sector |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | Detailed Combat panel |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | Comlink View panel |
@@ -667,8 +668,9 @@ Entries whose Open questions section says more than None known.
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | The Comlink alert plays slot 6 through the effects gate | supported |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks | supported |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | supported |
+| [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | supported |
-| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, after a victory splash when one human plays | supported |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income | supported |
@@ -757,7 +759,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | The intro plays the logos movie and then the intro movie, each ended by the left button | supported |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | Attack picker (Target Acquisition) | supported |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | Endgame screen listing the players by place with their awards or their statistics | supported |
-| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | Victory splash shown before the endgame results when one human plays | supported |
+| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | Victory splash shown on the endgame's Awards tab when one player is left | supported |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | Combat Results panel, paged by sector | supported |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | Detailed Combat panel | supported |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | Comlink View panel | supported |

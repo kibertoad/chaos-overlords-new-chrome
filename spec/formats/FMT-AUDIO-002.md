@@ -39,7 +39,7 @@ requests by playing `MUSIC/TrackNN.ogg` with the same track number.
 | `0x06` | 8 | `INT64LE` | `granule_position` | Sample position at the end of the last packet completed on the page. | supported | FND-AUDIO-005 |
 | `0x0E` | 4 | `UINT32LE` | `serial` | Stream serial number, the same on every page of a file. | supported | FND-AUDIO-005 |
 | `0x12` | 4 | `UINT32LE` | `sequence` | Page number within the stream, from 0. | supported | FND-AUDIO-005 |
-| `0x16` | 4 | `UINT32LE` | `checksum` | CRC-32 of the page as RFC 3533 defines it. | supported | FND-AUDIO-005 |
+| `0x16` | 4 | `UINT32LE` | `checksum` | CRC-32 of the page as RFC 3533 defines it; it matches on every shipped page. | supported | FND-AUDIO-005, FND-DATA-006 |
 | `0x1A` | 1 | `UINT8` | `segment_count` | Number of entries in `segment_table`. | supported | FND-AUDIO-005 |
 | `0x1B` | `segment_count` | `UINT8[segment_count]` | `segment_table` | Length of each segment of the page body. | supported | FND-AUDIO-005 |
 | | `body_size` | `BYTE[body_size]` | `body` | Packet data, where `body_size` is the sum of the `segment_table` entries. The first page's body is the Vorbis identification header. | supported | FND-AUDIO-005 |
