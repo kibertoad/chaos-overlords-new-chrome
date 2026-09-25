@@ -30,7 +30,7 @@ in [AGENTS.md](../AGENTS.md).
 | Build, run, and test from source | [DEVELOPMENT.md](DEVELOPMENT.md), then [VALIDATION.md](VALIDATION.md) for the fast gate, the long-running tier and the fixture classes |
 | Resume development at the current checkpoint | [HANDOVER.md](HANDOVER.md), then [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) for the roadmap |
 | Look up what the original does | The [spec](../spec/README.md), through its indexes [by area](../spec/index/by-area.md), [by kind](../spec/index/by-kind.md) and [by status](../spec/index/by-status.md), or the [topic index](#topic-index) below |
-| Know how faithful a system is and what proves it | [PARITY.md](../PARITY.md) |
+| Know how faithful a system is and what proves it | [PARITY.md](../PARITY.md), and [parity-achievement-plan.md](../parity-achievement-plan.md) for the work that closes the gaps |
 | Check whether a difference from the original is deliberate | [DEVIATIONS.md](../DEVIATIONS.md), and [DECISIONS.md](DECISIONS.md) for the reasoning |
 | Find the spec entry an old `BIN-*` or `RULE-*` citation meant | [SPEC-ID-MAP.md](SPEC-ID-MAP.md) |
 | Pick up research work | [static_validation_plan.md](../static_validation_plan.md) for work in Ghidra and on the data files, [manual_validation_plan.md](../manual_validation_plan.md) for runs of the original that need a person |
@@ -99,6 +99,7 @@ are. Git history provides change dates.
 | [DEVIATIONS.md](../DEVIATIONS.md) | Every deliberate departure from the spec, as `DEV-*` entries with their settings |
 | [static_validation_plan.md](../static_validation_plan.md) | Open questions that a reading of the executable or the data files can settle |
 | [manual_validation_plan.md](../manual_validation_plan.md) | Open questions that need a person to run the original |
+| [parity-achievement-plan.md](../parity-achievement-plan.md) | The steps, in order, that take every row of PARITY.md to complete and then to validated |
 | [README.md](../README.md) | Player-facing overview, quick start, controls, acknowledgements, licence |
 | [AGENTS.md](../AGENTS.md) | Working rules: push destination, validation scope, documentation, fidelity, version rules, orphan-process audit |
 | [multiplayer/README.md](../multiplayer/README.md) | Operator and contributor manual for the coordination server |
