@@ -94,6 +94,14 @@ public readonly record struct SectorMarkerInputs(
     bool IdleGang,
     bool IncomingHire);
 
+/// <summary>The three buttons of SCR-EVENT-001 that act on a release inside themselves.</summary>
+public enum LastTurnEventsButton
+{
+    Previous,
+    Next,
+    Exit
+}
+
 /// <summary>
 /// SCR-EVENT-001 in screen coordinates: the compositor's panel-local positions plus the panel
 /// origin (104, 124) (FND-EVENT-005).
@@ -164,6 +172,46 @@ public static class LastTurnEventsLayout
     /// The pointer rectangle of Exit, whose plain face is part of <c>PX05010</c> (SCR-EVENT-001).
     /// </summary>
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
+
+    /// <summary>The Exit face, one pixel wider and taller than its pointer rectangle (SCR-EVENT-001).</summary>
+    public static Rectangle ExitFace => SharedPanelLayout.At(33, 169, 50, 23);
+
+    /// <summary>Where a held button's pressed face is drawn (SCR-EVENT-001).</summary>
+    public static Rectangle Face(LastTurnEventsButton button) => button switch
+    {
+        LastTurnEventsButton.Previous => Previous,
+        LastTurnEventsButton.Next => Next,
+        LastTurnEventsButton.Exit => ExitFace,
+        _ => throw new ArgumentOutOfRangeException(nameof(button))
+    };
+
+    /// <summary>The rectangle a press starts in and a release must end in (SCR-EVENT-001).</summary>
+    public static Rectangle Hit(LastTurnEventsButton button) => button switch
+    {
+        LastTurnEventsButton.Previous => Previous,
+        LastTurnEventsButton.Next => Next,
+        LastTurnEventsButton.Exit => Ok,
+        _ => throw new ArgumentOutOfRangeException(nameof(button))
+    };
+
+    /// <summary>
+    /// The pressed faces in <c>PX00129</c>: Previous (66, 363) and Next (92, 363) from
+    /// <c>fn_00451602</c>, Exit (50, 386) from the held-button helper <c>fn_00418821</c>
+    /// (SCR-EVENT-001, FND-EVENT-005).
+    /// </summary>
+    public static Rectangle PressedSource(LastTurnEventsButton button) => button switch
+    {
+        LastTurnEventsButton.Previous => new Rectangle(66, 363, 26, 23),
+        LastTurnEventsButton.Next => new Rectangle(92, 363, 26, 23),
+        LastTurnEventsButton.Exit => new Rectangle(50, 386, 50, 23),
+        _ => throw new ArgumentOutOfRangeException(nameof(button))
+    };
+
+    public static LastTurnEventsButton? ButtonAt(Point point) =>
+        Previous.Contains(point) ? LastTurnEventsButton.Previous
+        : Next.Contains(point) ? LastTurnEventsButton.Next
+        : Ok.Contains(point) ? LastTurnEventsButton.Exit
+        : null;
 
     /// <summary>
     /// SCR-EVENT-001's year and week for <paramref name="elapsedTurns"/>, or null at 0, when the

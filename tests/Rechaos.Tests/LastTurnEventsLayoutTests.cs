@@ -49,6 +49,38 @@ public sealed class LastTurnEventsLayoutTests
             LastTurnEventsLayout.NextSource(lastPage: false).Size);
     }
 
+    /// <summary>
+    /// SCR-EVENT-001: the pressed faces of Previous, Next and Exit, where they are drawn, and the
+    /// rectangle a release must end in for the button to act.
+    /// </summary>
+    [Fact]
+    public void PressedFacesFollowScrEvent001()
+    {
+        Assert.Equal(new Rectangle(66, 363, 26, 23),
+            LastTurnEventsLayout.PressedSource(LastTurnEventsButton.Previous));
+        Assert.Equal(new Rectangle(92, 363, 26, 23),
+            LastTurnEventsLayout.PressedSource(LastTurnEventsButton.Next));
+        Assert.Equal(new Rectangle(50, 386, 50, 23),
+            LastTurnEventsLayout.PressedSource(LastTurnEventsButton.Exit));
+        Assert.Equal(new Rectangle(135, 157, 26, 23), LastTurnEventsLayout.Face(LastTurnEventsButton.Previous));
+        Assert.Equal(new Rectangle(163, 157, 26, 23), LastTurnEventsLayout.Face(LastTurnEventsButton.Next));
+        Assert.Equal(new Rectangle(137, 293, 50, 23), LastTurnEventsLayout.Face(LastTurnEventsButton.Exit));
+        Assert.Equal(new Rectangle(137, 293, 49, 22), LastTurnEventsLayout.Hit(LastTurnEventsButton.Exit));
+        foreach (var button in new[]
+                 {
+                     LastTurnEventsButton.Previous, LastTurnEventsButton.Next, LastTurnEventsButton.Exit
+                 })
+        {
+            Assert.Equal(LastTurnEventsLayout.Face(button).Size,
+                LastTurnEventsLayout.PressedSource(button).Size);
+            Assert.True(LastTurnEventsLayout.Face(button).Contains(LastTurnEventsLayout.Hit(button)));
+            Assert.Equal(button, LastTurnEventsLayout.ButtonAt(LastTurnEventsLayout.Hit(button).Location));
+        }
+        // The Exit face's last column and row are outside its pointer rectangle.
+        Assert.Null(LastTurnEventsLayout.ButtonAt(new Point(186, 293)));
+        Assert.Null(LastTurnEventsLayout.ButtonAt(new Point(137, 315)));
+    }
+
     [Theory]
     [InlineData(1, "2050", "01")]
     [InlineData(52, "2050", "52")]

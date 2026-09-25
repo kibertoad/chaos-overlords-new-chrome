@@ -145,31 +145,104 @@ public sealed partial class ChaosGame
         _eventViewedPages.Clear();
         if (count > 0) _eventViewedPages.Add(0);
         _eventPageShownAt = _inputTime;
+        CancelEventsButton();
     }
 
+    /// <summary>
+    /// A press on the panel (SCR-EVENT-001, FND-EVENT-005). Previous and Next play slot 3 and
+    /// hold their pressed face when a step is allowed, and play slot 4 without holding on the
+    /// first or last report. Exit plays slot 3 and holds its face through <c>fn_00418821</c>. All
+    /// three act on a release inside themselves.
+    /// </summary>
     private void HandleEventsClick(Point point)
     {
-        if (LastTurnEventsLayout.Previous.Contains(point)) MoveEventCursor(-1);
-        else if (LastTurnEventsLayout.Next.Contains(point)) MoveEventCursor(1);
-        else if (LastTurnEventsLayout.Ok.Contains(point))
-            AcceptAndInvoke(CloseEvents);
+        switch (LastTurnEventsLayout.ButtonAt(point))
+        {
+            case LastTurnEventsButton.Previous:
+                BeginEventStepButton(LastTurnEventsButton.Previous, -1);
+                break;
+            case LastTurnEventsButton.Next:
+                BeginEventStepButton(LastTurnEventsButton.Next, 1);
+                break;
+            case LastTurnEventsButton.Exit:
+                _pressedEventsButton = LastTurnEventsButton.Exit;
+                AcceptInput();
+                break;
+        }
     }
 
+    private LastTurnEventsButton? _pressedEventsButton;
+
+    private void BeginEventStepButton(LastTurnEventsButton button, int delta)
+    {
+        if (!CanStepEventPage(delta))
+        {
+            PlayGeneralSound(AudioRouting.PageNavigationSound(false));
+            return;
+        }
+        PlayGeneralSound(AudioRouting.PageNavigationSound(true));
+        _pressedEventsButton = button;
+    }
+
+    private void CompleteEventsButton(Point point)
+    {
+        var button = _pressedEventsButton;
+        CancelEventsButton();
+        if (button is not { } pressed || _screens.Current != ClientScreen.Events
+            || !LastTurnEventsLayout.Hit(pressed).Contains(point)) return;
+        switch (pressed)
+        {
+            case LastTurnEventsButton.Previous:
+                StepEventPage(-1);
+                break;
+            case LastTurnEventsButton.Next:
+                StepEventPage(1);
+                break;
+            default:
+                CloseEvents();
+                break;
+        }
+    }
+
+    private void CancelEventsButton() => _pressedEventsButton = null;
+
+    /// <summary>
+    /// Left or Right (SCR-EVENT-001): slot 3 and the pressed face for a short wait, then the step;
+    /// slot 4 on the first or last report. The original waits through <c>fn_00464CD9(1)</c>,
+    /// which was not read, so the face stays up for one tick of the presentation clock as the
+    /// other pressed key faces do (RULE-TIMER-004).
+    /// </summary>
     private void MoveEventCursor(int delta)
+    {
+        if (!CanStepEventPage(delta))
+        {
+            PlayGeneralSound(AudioRouting.PageNavigationSound(false));
+            return;
+        }
+        var button = delta < 0 ? LastTurnEventsButton.Previous : LastTurnEventsButton.Next;
+        PlayGeneralSound(AudioRouting.PageNavigationSound(true));
+        _tickedPresentation.Start(TickedPresentationKind.KeyFace,
+            LastTurnEventsLayout.Face(button), LastTurnEventsLayout.PressedSource(button),
+            () => StepEventPage(delta), _inputTime);
+    }
+
+    private bool CanStepEventPage(int delta)
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId) return false;
+        var count = ReviewableReports(_state, playerId).Count;
+        return count > 0 && BoundedPageNavigation.Move(_eventCursor, count, delta) != _eventCursor;
+    }
+
+    private void StepEventPage(int delta)
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
         var count = ReviewableReports(_state, playerId).Count;
-        if (count > 0)
-        {
-            var next = BoundedPageNavigation.Move(_eventCursor, count, delta);
-            PlayGeneralSound(AudioRouting.PageNavigationSound(next != _eventCursor));
-            if (next != _eventCursor)
-            {
-                _eventCursor = next;
-                _eventViewedPages.Add(_eventCursor);
-                _eventPageShownAt = _inputTime;
-            }
-        }
+        if (count == 0) return;
+        var next = BoundedPageNavigation.Move(_eventCursor, count, delta);
+        if (next == _eventCursor) return;
+        _eventCursor = next;
+        _eventViewedPages.Add(_eventCursor);
+        _eventPageShownAt = _inputTime;
     }
 
     private void CloseEvents()
@@ -270,6 +343,12 @@ public sealed partial class ChaosGame
             batch.Draw(_uiSprites, LastTurnEventsLayout.Next,
                 LastTurnEventsLayout.NextSource(lastPage: _eventCursor == reportCount - 1),
                 Color.White);
+            // SCR-EVENT-001: a held button shows its pressed face while the pointer is inside
+            // it, and its plain face otherwise.
+            if (_pressedEventsButton is { } pressed && _hoverPoint is { } hover
+                && LastTurnEventsLayout.Hit(pressed).Contains(hover))
+                batch.Draw(_uiSprites, LastTurnEventsLayout.Face(pressed),
+                    LastTurnEventsLayout.PressedSource(pressed), Color.White);
         }
         DrawEventArtworkForeground(batch, state, notification);
         // SCR-EVENT-001: the date is elapsed_turns (turns completed) as year and week, drawn
@@ -283,6 +362,9 @@ public sealed partial class ChaosGame
         // characters, inside LastTurnEventPresentation.Subject.
         font.Draw(batch, EventObject(state, notification),
             LastTurnEventsLayout.Subject.ToVector2(), Color.Lime, 1);
+        // SCR-EVENT-001 draws the caption from STRING/33 to STRING/44 of the executable, cut to
+        // 35 characters (FND-EVENT-005). The rebuild reads no string resources from the
+        // executable, so the text is its own wording until it does.
         var status = NotificationPresentation.LastTurnStatus(notification, RelatedEvent(state, notification));
         if (status.Length > LastTurnEventsLayout.CaptionColumns)
             status = status[..LastTurnEventsLayout.CaptionColumns];

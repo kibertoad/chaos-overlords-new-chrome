@@ -67,6 +67,12 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
+        if (_pressedEventsButton is not null)
+        {
+            CancelEventsButton();
+            _message = string.Empty;
+            return;
+        }
         if (_pressedCommandPanelButton is not null)
         {
             CancelCommandPanelButton();
