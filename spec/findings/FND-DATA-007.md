@@ -1,6 +1,6 @@
 ---
 id: FND-DATA-007
-title: Each match start reads DATA/Gangs, DATA/Items and DATA/Sites whole into fixed tables, and the code reads their fields at the offsets the format entries give
+title: Each match start reads DATA/Gangs, DATA/ITEMS and DATA/SITES whole into fixed tables, and the code reads their fields at the offsets the format entries give
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -48,8 +48,8 @@ reports the file can be opened, opens the slot, reads one block and closes it:
 | File | Bytes read | Table | Record size |
 |---|---|---|---|
 | `DATA/Gangs` | `0x36D8` (14,040) at `0x0046E937` | `0x004A2800` | `0x9C` |
-| `DATA/Items` | `0x2980` (10,624) at `0x0046E9C5` | `0x004A5F08` | `0xA6` |
-| `DATA/Sites` | `0x554` (1,364) at `0x0046EA53` | `0x004AB668` | `0x3E` |
+| `DATA/ITEMS` | `0x2980` (10,624) at `0x0046E9C5` | `0x004A5F08` | `0xA6` |
+| `DATA/SITES` | `0x554` (1,364) at `0x0046EA53` | `0x004AB668` | `0x3E` |
 
 Each read is the whole file. When a file cannot be opened the read is skipped
 with no message, and the table keeps what it held.

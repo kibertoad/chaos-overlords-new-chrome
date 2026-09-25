@@ -353,7 +353,9 @@ Who plays each player slot. Any other value the game keeps: `INT32LE[6]`,
 indexed by player slot, at `0x004AB638` [FND-SETUP-002, FND-PLATFORM-003].
 The values are -1 for an empty setup slot, 0 for a human at this computer, 1
 for a computer player and 3 for a human playing over the network
-[FND-SETUP-002, FND-AI-004, FND-TURN-005].
+[FND-SETUP-002, FND-AI-004, FND-TURN-005]. A local human who is eliminated
+becomes -2 at the start of the next round and -1 once the elimination card
+has been shown, so a retired player is an empty slot [FND-OBJECTIVE-004].
 
 ## ControlLostReport
 
@@ -774,8 +776,8 @@ Cancel. A value from outside the game: the player's input on SCR-OPTIONS-001
 
 The first step of `resolution`: the Bribe, Heal, Hide, Influence, Research and
 Snitch actions, carried out gang by gang in `turn_order` and roster slot
-order, followed by raising every sector's Tolerance below 1 to 1. It runs
-before `chaos_phase` [FND-TURN-001, FND-SNITCH-001, FND-CHAOS-001].
+order, followed by clamping every sector's base Tolerance to 1..40. It runs
+before `chaos_phase` [FND-TURN-001, FND-SNITCH-001, FND-CHAOS-001, FND-TOLERANCE-001].
 
 ## is_block_leader
 
@@ -834,7 +836,8 @@ the player presses or releases the button [FND-UI-032].
 
 Set when the game is a local game. Any other value the game keeps: the flag at
 `0x00482178` [FND-AUDIO-003]. The reading of this flag is an interpretation;
-its width is not recorded (unknown).
+its width is not recorded (unknown). FND-NET-004 reads the byte as the joining
+side of a network session, 0 in a local game.
 
 ## local_tech_cap
 
@@ -871,6 +874,27 @@ sector `c` in a mode. A function, defined by RULE-AI-006.
 modifier is drawn with, a zero drawn as the dim zero. A function, defined by
 RULE-UI-004.
 
+## modifier_cash
+
+Whether a player's name matched `modifier_name_cash`, which gives the player $1,500 at the start. Any
+other value the game keeps: `UINT8[6]`, indexed by player slot, at `0x0049CA70`.
+The new-match scan writes it for every slot in a local game and leaves it
+alone in a network game [FND-SETUP-015].
+
+## modifier_elite
+
+Whether a player's name matched `modifier_name_elite`, which gives the player five extra equipped gangs. Any
+other value the game keeps: `UINT8[6]`, indexed by player slot, at `0x004A2788`.
+The new-match scan writes it for every slot in a local game and leaves it
+alone in a network game [FND-SETUP-015].
+
+## modifier_islands
+
+Whether a player's name matched `modifier_name_islands`, which puts every neutral sector under a permanent Crackdown. Any
+other value the game keeps: `UINT8[6]`, indexed by player slot, at `0x004ABC10`.
+The new-match scan writes it for every slot in a local game and leaves it
+alone in a network game [FND-SETUP-015].
+
 ## modifier_name_cash
 
 The fixed upper-case string in the executable that a player's name must equal
@@ -883,6 +907,12 @@ The fixed upper-case string in the executable that a player's name must equal
 to start with five extra equipped gangs. A string the game keeps, at
 `0x00487BC0`; a match sets the flag at `0x004A2788 + player` [FND-SETUP-004,
 FND-SETUP-015].
+
+## modifier_name_hire_force
+
+The fixed upper-case string in the executable that a player's name must equal
+to set `hire_force_modifier`. A string the game keeps, at `0x00487BB4`
+[FND-HIRE-005, FND-SETUP-015].
 
 ## modifier_name_islands
 
@@ -903,6 +933,13 @@ FND-SETUP-015].
 The fixed upper-case string in the executable that a player's name must equal
 to see every opposing gang. A string the game keeps, at `0x00487BA8`
 [FND-SETUP-011, FND-SETUP-015].
+
+## modifier_right_hands
+
+Whether a player's name matched `modifier_name_right_hands`, which gives the player five extra unequipped gangs. Any
+other value the game keeps: `UINT8[6]`, indexed by player slot, at `0x004ABBD8`.
+The new-match scan writes it for every slot in a local game and leaves it
+alone in a network game [FND-SETUP-015].
 
 ## modifier_visibility
 
@@ -970,12 +1007,6 @@ otherwise. A function, defined by RULE-SETUP-001.
 Set when the game is a network game. Any other value the game keeps: the flag
 at `0x00487B58` [FND-AUDIO-003]. The reading of this flag is an
 interpretation; its width is not recorded (unknown).
-
-## new_local_game
-
-Set while a new local game has not yet shown its first player the Game
-Information panel. Any other value the game keeps [FND-SETUP-010]; its type
-and address are not recorded (unknown).
 
 ## next_option
 
@@ -1135,8 +1166,9 @@ the end of `resolution`, for a player who owns no sector and has no gang
 
 The endgame awards each player has earned, as category numbers in the order
 they were given: 0 Fist, 1 Skull, 2 Big Fat Chicken, 3 Dollar Sign, 4 Safe.
-A table the game keeps, up to five entries per player slot [FND-AWARDS-001];
-its address and the codes it stores are not recorded (unknown).
+A table the game keeps: `INT32LE[5]` per player slot at `0x00494500 + 20 *
+slot`, storing the category numbers above; only the first three entries are
+cleared, to -1, before the awards are given [FND-AWARDS-001, FND-AWARDS-004].
 
 ## player_names
 
@@ -1145,12 +1177,6 @@ The players' names. Any other value the game keeps: six 12-byte records at
 name's length, 1 to 10; the characters follow from byte 1, each from `0x20`
 (space) to `0x5A` (`Z`), with a NUL after the last [FND-STATE-004].
 
-
-## player_retired
-
-Set for a local human slot once its elimination card has been shown. Any
-other value the game keeps: one flag per player slot [FND-OBJECTIVE-002]; its
-type and address are not recorded (unknown).
 
 ## player_status_text
 
@@ -1202,9 +1228,11 @@ FND-GANG-003].
 ## portrait
 
 The Overlord portrait a player slot shows, 0 to 14, which also chooses the
-player's default name. Any other value the game keeps: one per player slot
-[FND-SETUP-002, FND-SETUP-005]; its type and address are not recorded
-(unknown).
+player's default name; 15 is an empty slot's image. Any other value the game
+keeps: `UINT8[6]`, indexed by player slot, at `0x004A5F00` [FND-SETUP-002,
+FND-SETUP-005, FND-SETUP-013]. The setup screens edit a copy at `0x00490678`,
+which the setup reset fills with 0 for slot 0 and 15 for the others
+[FND-SETUP-017].
 
 ## pref_base_stats
 
@@ -1360,6 +1388,14 @@ Before `instant_phase` it clears each player's report count and notes where
 each player has gangs, player by player, and then moves each sector's
 Tolerance one step toward normal [FND-TURN-008]. Just before resolution
 starts, the previous turn's Last Turn reports are cleared [FND-EVENT-001].
+
+## resumed_match
+
+Set when a saved or network match has been loaded, until the end of the first
+round's walk over the slots; while it is set each local human's planning
+opens with the Game Information panel. Any other value the game keeps:
+`UINT8` at `0x00487B98`, 0 in the executable's data [FND-SETUP-015,
+FND-OBJECTIVE-004].
 
 ## retaliation_damage
 

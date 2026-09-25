@@ -62,9 +62,11 @@ the length and the characters follow. Callers build them with the byte copy
 and writes the count into byte 0. Its counter is a signed byte
 (`0x00449C52..0x00449C71`): for a name of more than 126 characters it turns
 negative and the count goes wrong, and `fn_0042B60F`, which reads the length
-byte as signed (`0x0042B642`), then copies no characters and the open fails. The table, sound and palette
-names are the install directory followed by the file name
-(`0x0046E8C1..0x0046EA0D`, FND-DATA-007). The image names are the directory
+byte as signed (`0x0042B642`), then copies no characters and the open fails.
+The table and sound names are the install directory followed by the file name
+(`0x0046E8C1..0x0046EA0D`, FND-DATA-007). The palette name `data\CLT00002`
+has no directory and is opened relative to the current directory
+(FND-PLATFORM-011). The image names are the directory
 followed by `data\PX08\PX00000` or `data\PX16\PX00000` with the digits
 replaced (FND-PLATFORM-002), passed on as ordinary NUL-terminated strings to
 `CreateFileA`.

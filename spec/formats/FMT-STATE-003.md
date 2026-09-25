@@ -9,7 +9,7 @@ byte_order: little
 size: 10
 text: false
 definition: fmt_state_003.ksy
-evidence: [FND-AI-010, FND-COMBAT-004, FND-PLATFORM-003, FND-STATE-005]
+evidence: [FND-AI-010, FND-COMBAT-004, FND-COMBAT-008, FND-COMBAT-010, FND-PLATFORM-003, FND-STATE-005]
 conflicting: []
 split_with: []
 related: []
@@ -27,20 +27,23 @@ describes a retaliation on its own [FND-COMBAT-004]. Each resolution sets
 the gangs that attacked, were attacked or were hit by the police in that
 resolution. Every other record keeps bytes 0 to 8 from the last resolution in
 which its roster slot fought, even after the gang died or the slot was
-reused [FND-STATE-005].
+reused [FND-STATE-005]. Bytes 4 and 5 of a gang that fought without
+attacking (a target, or a gang only the police found) are copied from stack
+locations the combat phase never wrote, so their values are undefined
+[FND-COMBAT-008].
 
 | Offset | Size | Type | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|---|---|
-| `0x00` | 1 | `UINT8` | `definition` | The gang's definition | supported | FND-COMBAT-004 |
+| `0x00` | 1 | `UINT8` | `definition` | The gang's definition, copied from offset `0x01` of the gang record (load `0x004743DE`, store `0x004743EE`) | supported | FND-COMBAT-004, FND-COMBAT-008, FND-STATE-005 |
 | `0x01` | 1 | `INT8` | `force_start` | The gang's Force at the start of the combat phase | supported | FND-COMBAT-004 |
-| `0x02` | 1 | `INT8` | `force_final` | The gang's Force after the combat phase | supported | FND-COMBAT-004 |
-| `0x03` | 1 | `INT8` | `force_shown` | The Force Detailed Combat draws. Reset to `force_start` before presentation and reduced only by the clips shown | supported | FND-COMBAT-004 |
-| `0x04` | 1 | `INT8` | `damage_dealt` | The damage of the gang's opening attack, or -1 when the target evaded | supported | FND-COMBAT-004 |
-| `0x05` | 1 | `INT8` | `retaliation_taken` | The retaliation damage the gang took from its target | supported | FND-AI-010, FND-COMBAT-004 |
+| `0x02` | 1 | `INT8` | `force_final` | The gang's Force minus its damage for the phase capped at 10, so the Force after the combat phase, below 0 for a gang that died | supported | FND-COMBAT-004, FND-COMBAT-008 |
+| `0x03` | 1 | `INT8` | `force_shown` | The Force Detailed Combat draws. Set to `force_start` once, for every gang listed in any result row, before the presentation, and reduced only by the clips shown; the resolver does not write it | supported | FND-COMBAT-004, FND-COMBAT-010, FND-STATE-005 |
+| `0x04` | 1 | `INT8` | `damage_dealt` | The damage of the gang's opening attack, or -1 when the target evaded. Undefined for a gang that fought without attacking | supported | FND-COMBAT-004, FND-COMBAT-008 |
+| `0x05` | 1 | `INT8` | `retaliation_taken` | The retaliation damage the gang took from its target, 0 when there was none. Undefined for a gang that fought without attacking | supported | FND-AI-010, FND-COMBAT-004, FND-COMBAT-008 |
 | `0x06` | 1 | `INT8` | `weapon` | The gang's weapon item at the time of the fight, or -1 | supported | FND-COMBAT-004 |
 | `0x07` | 1 | `INT8` | `armor` | The gang's armor item at the time of the fight, or -1 | supported | FND-COMBAT-004 |
 | `0x08` | 1 | `INT8` | `misc` | The gang's miscellaneous item at the time of the fight, or -1 | supported | FND-COMBAT-004 |
-| `0x09` | 1 | `INT8` | `police_damage` | The damage the police dealt to the gang, or -1 for none | supported | FND-COMBAT-004 |
+| `0x09` | 1 | `INT8` | `police_damage` | The damage the police dealt to the gang, or -1 when the police did not find it | supported | FND-COMBAT-004, FND-COMBAT-008, FND-STATE-005 |
 | `0x0A` | | | | Total size 10 | | |
 
 ## Enumerations and flags
@@ -60,11 +63,6 @@ resolution are saved with the game.
 
 ## Open questions
 
-- The instruction that writes byte 0 needs its address recorded.
-  FND-AI-010 reports a reading of byte 0 of record 0 as an owner, but record
-  0 belongs to player 0's Right Hands, whose definition and owner are both 0,
-  so that reading cannot tell the two apart; it is not counted against
-  FND-COMBAT-004.
 - The types are assumed signed where -1 is stored. Whether the game loads
   `definition` and the Force bytes signed is not recorded.
 

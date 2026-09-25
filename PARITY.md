@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 2 |
 | `sourced` | 1 |
-| `supported` | 68 |
+| `supported` | 77 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 143 |
+| `implemented` | 134 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 13 |
-| `partial` | 58 |
-| `complete` | 143 |
+| `partial` | 67 |
+| `complete` | 134 |
 
 ## DATA
 
@@ -106,7 +106,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-TURN-001` | A turn is turn start, planning by each active player in slot order, then resolution | supported | complete | None | None | implemented | None |
 | `RULE-TURN-002` | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported | complete | None | None | implemented | None |
-| `RULE-TURN-003` | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then raises every Tolerance below 1 to 1 | supported | complete | None | None | implemented | None |
+| `RULE-TURN-003` | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported | partial | None | None | supported | The rebuild's clamp has no ceiling of 40 (RULE-TOLERANCE-002). |
 | `RULE-TURN-004` | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported | complete | None | `DEV-TURN-001` | implemented | None |
 | `RULE-TURN-005` | Giving a gang an order replaces its whole previous order, one-off or recurring | supported | partial | None | `DEV-TURN-001` | supported | The rebuild rejects recurring Bribe and Snitch from any path, and it is not recorded whether its sector-wide order leaves Research out of the recurring choices. |
 | `RULE-TURN-006` | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | supported | complete | None | None | implemented | The rebuild marks retired gangs with Force 0 and cleared orders instead of sector 100, which changes no playable state. |
@@ -124,7 +124,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-SETUP-007` | A player named with the visibility modifier sees every opposing gang for the whole match | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | partial | None | None | supported | The handoff order is Combat, Events, planning; whether the once-only Game Information panel and the Comlink scan follow the entry's order was not checked. |
 | `RULE-SETUP-009` | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported | complete | None | None | implemented | None |
-| `RULE-SETUP-010` | Local setup starts with one human, and Add and Remove change the number of local humans from one to six | sourced | complete | None | None | implemented | None |
+| `RULE-SETUP-010` | Local setup starts with one human, and Add and Remove change the number of local humans from one to six | supported | complete | None | None | implemented | None |
 | `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | None | `DEV-SETUP-002` | implemented | The scenario, time limit, mentality and timer controls are drawn from measured rectangles the entry does not yet record. |
 | `SCR-SETUP-002` | Hot-seat handoff card that waits for the next local player to press Ready | supported | complete | None | `DEV-SETUP-002` | implemented | None |
 
@@ -141,12 +141,12 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-HIRE-001` | Hires and snubs are carried out player by player and offer slot by offer slot | supported | partial | None | `DEV-HIRE-003` | supported | The rebuild allows a zero-cost hire while cash is negative, which the original's cost > cash test refuses if the comparison is read correctly; the rest of the order, draws and reports are implemented. |
+| `RULE-HIRE-001` | Hires and snubs are carried out player by player and offer slot by offer slot | supported | complete | None | None | implemented | None |
 | `RULE-HIRE-002` | Vacant hire offers are refilled in place at the player's planning entry | supported | complete | None | None | implemented | None |
 | `RULE-HIRE-003` | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported | complete | None | `DEV-HIRE-001` | implemented | The rebuild refuses a drop on a sector already holding six friendly gangs, which the original accepts (see deviations). |
 | `RULE-HIRE-004` | A new match starts with every hire offer vacant and no hire order | supported | complete | None | None | implemented | None |
-| `SCR-HIRE-001` | Hire comparison panel showing the three offers side by side | supported | complete | None | None | implemented | Positions come from unconfirmed leads, so pixel placement is unverified. |
-| `SCR-HIRE-002` | Hire offers on the main console, with drag-to-hire and Reject | supported | complete | None | `DEV-HIRE-001`, `DEV-HIRE-002` | implemented | Adds a hire-shortfall warning and refuses drops on full sectors (see deviations). |
+| `SCR-HIRE-001` | Hire comparison panel showing the three offers side by side | supported | complete | None | None | implemented | The positions the rebuild took from captures match the ones the spec now records. |
+| `SCR-HIRE-002` | Hire offers on the main console, with drag-to-hire and Reject | supported | partial | None | `DEV-HIRE-001`, `DEV-HIRE-002` | supported | Adds a hire-shortfall warning and refuses drops on full sectors (see deviations). The rebuild draws the portraits one pixel left of and two pixels above the recorded cells, and crops the hire and snub marks from other rectangles of the image. |
 
 ## HIDE
 
@@ -179,20 +179,20 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-BRIBE-001` | Bribe pays 3 cash to raise the gang's sector Tolerance by 3 | supported | complete | None | None | implemented | None |
+| `RULE-BRIBE-001` | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported | partial | None | None | supported | The rebuild keeps one Tolerance per sector, so a Bribe already protects the sector in the same turn's Chaos test, and it does not wrap the byte. |
 
 ## SNITCH
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-SNITCH-001` | Snitch lowers the gang's sector Tolerance by 3, free and whatever the player's cash | supported | complete | None | None | implemented | None |
+| `RULE-SNITCH-001` | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported | partial | None | None | supported | The rebuild keeps one Tolerance per sector, so a Snitch already reaches the same turn's Chaos test, and it does not wrap the byte. |
 
 ## TOLERANCE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TOLERANCE-001` | A sector's Tolerance moves one point per turn back toward its normal value | sourced | complete | None | None | implemented | The rebuild moves Tolerance toward normal during Upkeep; the original's timing is not yet known. |
-| `RULE-TOLERANCE-002` | After the instant phase every sector's Tolerance below 1 is raised to 1 | supported | complete | None | None | implemented | None |
+| `RULE-TOLERANCE-001` | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | supported | partial | None | None | supported | The rebuild moves its single combined Tolerance during Upkeep toward a normal value that includes the sites' Tolerance. |
+| `RULE-TOLERANCE-002` | After the instant phase every sector's base Tolerance is clamped to 1..40 | supported | partial | None | None | supported | The rebuild raises Tolerance below 1 to 1 and has no ceiling of 40. |
 
 ## SITE
 
@@ -270,7 +270,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | supported | complete | None | `DEV-HELP-002` | implemented | None |
+| `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | supported | partial | None | `DEV-HELP-002` | supported | The rebuild lowers the attitude only for an attack that was not evaded, where the original also lowers it for an evaded attack, and its Martial Arts test on the attacker is `> 0` where the original tests `== 0` (FND-COMBAT-008, FND-AI-047). |
 | `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
 | `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | partial | None | `DEV-ATTACK-001`, `DEV-UI-008` | supported | Opponent and target hit maps are the original's; the panel origin, confirm and cancel controls and target marker are not pinned by findings. |
 
@@ -296,7 +296,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-CHAOS-001` | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported | complete | None | None | implemented | None |
-| `RULE-CHAOS-002` | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported | complete | None | None | implemented | None |
+| `RULE-CHAOS-002` | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported | partial | None | None | supported | The rebuild pays nothing in a sector under police presence, where the original pays unless the sector cracked down this turn (FND-CHAOS-002); whether it skips gangs killed in this turn's combat was not checked. |
 
 ## POLICE
 
@@ -320,14 +320,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | partial | None | None | supported | FND-MOVE-003 settles mode 0 as the neighbour draw; whether the rebuild's reading matches it has not been checked. |
 | `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | supported | complete | None | None | implemented | None |
 | `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | None | None | implemented | None |
-| `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | partial | None | `DEV-AI-001` | supported | The rebuild deliberately compares the previous hire role with role 4 in the family-6 guards (BUG-AI-001), and the schedule adjustments of most scenarios are not recorded. |
+| `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | partial | None | `DEV-AI-001` | supported | The rebuild deliberately compares the previous hire role with role 4 in the hunter guards (BUG-AI-001). The per-scenario slot adjustments and the hunter reversion of FND-AI-050 are not checked against the rebuild. |
 | `RULE-AI-011` | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported | complete | None | None | implemented | None |
 | `RULE-AI-012` | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported | complete | None | None | implemented | None |
 | `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | complete | None | None | implemented | Placement is carried out in the Hire phase; the anchor -1 case of BUG-AI-002 is not known to be reproduced. |
 | `RULE-AI-014` | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported | complete | None | None | implemented | None |
 | `RULE-AI-015` | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | supported | complete | None | None | implemented | None |
-| `RULE-AI-016` | An attack lowers the defender's attitude toward the attacker by the larger of its reaction and the damage | supported | complete | None | None | implemented | Which resolver loop makes the call is not recorded, so the order against other combat writes is not established. |
-| `RULE-AI-017` | A sector changing owner lowers the previous owner's attitude toward the new owner by twice its reaction | supported | complete | None | None | implemented | Which ownership changes make the call is not recorded. |
+| `RULE-AI-016` | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported | partial | None | None | supported | The rebuild lowers the attitude only for attacks that are not evaded; the original also lowers it by the reaction after an evaded attack (FND-AI-047). |
+| `RULE-AI-017` | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | supported | complete | None | None | implemented | None |
 | `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported | complete | None | None | implemented | None |
 | `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild counts previous Hide where the original counts previous Chaos and writes Chaos (FND-AI-046), and groups the previous actions differently from the jump table (FND-AI-048). |
 | `RULE-AI-020` | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | The branches for previous actions other than None, Chaos, Heal, Control, Equip and Snitch are not recorded. |
@@ -393,7 +393,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-OBJECTIVE-002` | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-003` | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | supported | partial | None | None | supported | The rebuild tests Big 40, Siege, Big Man and Armageddon for living players only where the original counts every slot, and gives Kill 'Em All and Eliminate tests of their own where the original has none (FND-OBJECTIVE-003). The timed test was not compared. |
-| `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | complete | None | None | implemented | None |
+| `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | complete | None | None | implemented | Whether the rebuild repeats the music request once per later local human and ends a local game with no local human left without the awards (FND-OBJECTIVE-004) was not checked. |
 | `SCR-OBJECTIVE-001` | Player Rankings panel with one vertical rail per player and portraits placed by standing | supported | complete | None | None | implemented | None |
 | `SCR-OBJECTIVE-002` | Private elimination card shown to an eliminated local human over the city screen | supported | complete | None | `DEV-SETUP-002` | implemented | None |
 

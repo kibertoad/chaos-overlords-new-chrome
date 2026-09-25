@@ -115,6 +115,16 @@ No return value. Sets `force_shown` in the record of every gang listed in any
 row, lowers it for the gangs it shows, and emits `CombatClip` for each clip in
 the order they play. Makes no draws.
 
+The game keeps the procedure's locals in globals [FND-COMBAT-011]: `focal_index`
+in `combat_focal`, `target_index` in `combat_focal_target`, `focal_rec` in
+`combat_focal_record`; `listed`, `listed_target` and the records of the listed
+gangs in `fight_list` (from element 1; element 0 is the focal gang),
+`fight_list_targets` and `fight_list_records`, with the length in
+`fight_list_count`; the current `j`, its target and `other_rec` in
+`combat_other`, `combat_other_target` and `combat_other_record`; the two bars
+in `combat_focal_bar` and `combat_other_bar`. `combat_presenting` is 1 while
+the presentation runs, and ending it clears the byte.
+
 ## Edge cases
 
 - A fight between two other players is never shown, even in a sector where

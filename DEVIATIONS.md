@@ -155,10 +155,10 @@ The reasoning is in `docs/MULTIPLAYER.md`.
 - Justification: A hire that costs nothing takes nothing from cash, so refusing it because cash is
   already negative protects nothing and only keeps a player in debt from rebuilding. It adds an
   option and removes none.
-- Dropped: no
+- Dropped: 2026-09-25, the original also lets a zero-cost hire through while cash is negative: it
+  skips the cash test when the cost is 0 (FND-HIRE-006, RULE-HIRE-001)
 
-Whether the original refuses the hire rests on a static reading; the check is in
-`static_validation_plan.md`. If the original lets the hire through as well, this entry is dropped.
+The Reason above rested on reading the cash test without the zero-cost branch in front of it.
 
 ## DEV-RESEARCH-001
 

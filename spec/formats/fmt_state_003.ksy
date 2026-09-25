@@ -6,12 +6,12 @@ meta:
 doc: |
   One 10-byte combat record. The game keeps 486 of them at 0x004A11E8,
   10 * (player * 81 + roster slot).
-doc-ref: FMT-STATE-003, FND-COMBAT-004, FND-AI-010, FND-PLATFORM-003
+doc-ref: FMT-STATE-003, FND-COMBAT-004, FND-COMBAT-008, FND-AI-010, FND-PLATFORM-003
 seq:
   - id: definition
     type: u1
-    doc: The gang's definition (disputed; FND-AI-010 reads it as the owner).
-    doc-ref: FND-COMBAT-004, FND-AI-010
+    doc: The gang's definition, copied from offset 0x01 of the gang record.
+    doc-ref: FND-COMBAT-004, FND-COMBAT-008, FND-STATE-005
   - id: force_start
     type: s1
     doc: Force at the start of the combat phase.

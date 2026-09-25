@@ -8,7 +8,7 @@ resolution: 640x480
 evidence: [FND-HIRE-004, FND-HIRE-001, FND-HIRE-007, FND-HIRE-008, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
-related: [RULE-HIRE-003, RULE-HIRE-002, SCR-GANG-001]
+related: [RULE-HIRE-003, RULE-HIRE-002, SCR-GANG-002]
 ---
 
 ## Drawn elements
@@ -29,7 +29,7 @@ slot, 0 to 2.
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
 | Offer portrait, pressed and dragged | Slot 0 when x is 440 to 504, slot 1 above 504 to 570, slot 2 above 570 to 636, y 373 to 436 | During the player's `planning_phase` | Dragging starts once the pointer moves more than 2 pixels from the press point; releasing first ends with no change. A drop inside `(2, 42, 432, 416)` names a sector: in the city map the cell under the pointer, 54 by 52 pixels, eight to a row; in the sector view one of the 3-by-3 cells of `(64, 60, 162, 156)`, the shown sector for a point elsewhere in the map area. The drop is accepted when the player owns the sector or has a living gang there; it then orders the offer hired into that sector and clears the other two slots' orders (RULE-HIRE-003). Any other drop changes nothing | FND-HIRE-008 |
-| Offer portrait, double-clicked | As above | During the player's `planning_phase` | Opens the live-gang panel (SCR-GANG-001) on a Force 0 gang of the offered definition with no equipment | FND-HIRE-008 |
+| Offer portrait, double-clicked | As above | During the player's `planning_phase` | Opens the gang information panel (SCR-GANG-002) on a Force 0 gang of the offered definition with no equipment | FND-HIRE-008 |
 | Reject control under an offer | `(472 + 66s, 437, 32, 13)` | During the player's `planning_phase` | Toggles that offer between no order and a snub, or cancels its hire, and clears the other two slots' orders (RULE-HIRE-003) | FND-HIRE-008 |
 
 ## Keyboard input

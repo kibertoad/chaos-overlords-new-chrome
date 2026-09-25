@@ -4,7 +4,7 @@ title: A new match gives every player $20, or $500 in Armageddon, and $1,500 to 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-001, FND-SETUP-004, FND-RNG-005, SRC-MANUAL-GOG]
+evidence: [FND-SETUP-015, FND-SETUP-001, FND-SETUP-004, FND-RNG-005, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-004]
@@ -14,7 +14,7 @@ related: [RULE-SETUP-004]
 
 Every player starts a new match with $20, or with $500 in Armageddon. A player
 whose name is exactly the executable's cash modifier name starts with $1,500
-instead, whatever the scenario.
+instead, whatever the scenario, but only in a local game.
 
 ## When it runs
 
@@ -28,14 +28,15 @@ None.
 
 ## Inputs
 
-`scenario`, `player_names`, `modifier_name_cash`.
+`scenario`, `modifier_cash`, and what RULE-SETUP-004 reads.
 
 ## Procedure
 
 ```text
 # Compares a player's name, kept as a length byte followed by its
-# characters, with a length-prefixed string held in the executable.
-# Case is significant.
+# characters, with a length-prefixed string held in the executable, length
+# byte first. Case is significant. The executable compares every byte
+# without stopping at a difference; the result is the same.
 define name_matches(player, modifier) -> INT32:
     let name = player_names[player]
     if name[0] != modifier[0]:
@@ -45,35 +46,34 @@ define name_matches(player, modifier) -> INT32:
             return false
     return true
 
-let cash_modifier: UINT8[6] = [0, 0, 0, 0, 0, 0]
-for each player in turn_order:
+for player in 0..6:
     if scenario == 9:
         # Armageddon
         cash[player] = 500
     else:
         cash[player] = 20
-    cash_modifier[player] = name_matches(player, modifier_name_cash)
 
-# The city and the players are set up
+# The city and the players are set up; in a local game this sets
+# modifier_cash
 call RULE-SETUP-004()
 
-for each player in turn_order:
-    if cash_modifier[player]:
+for player in 0..6:
+    if modifier_cash[player]:
         cash[player] = 1500
 ```
 
 ## Outputs
 
 No return value. Sets `cash` of every player, then everything RULE-SETUP-004
-sets, then overwrites `cash` of each player whose name matched. Makes no draws
+sets, then overwrites `cash` of each player whose `modifier_cash` is set. Makes no draws
 of its own; the draws of RULE-SETUP-004 fall between the two cash writes.
 
 ## Edge cases
 
 A name that differs from the modifier only in case does not match. The
 override replaces the Armageddon $500 as well as the ordinary $20. The
-modifier leaves no flag behind: after this rule nothing but the cash shows
-that it applied, and a saved game keeps only the cash.
+scan that sets `modifier_cash` runs only in a local game; with either network
+flag set it is skipped and the flags keep whatever they held (FND-SETUP-015).
 
 ## What the sources say
 
@@ -88,11 +88,5 @@ None known.
 
 ## Open questions
 
-- The address of the string `modifier_name_cash` is not recorded.
-- Whether the player name comparison reads the name as a length byte and
-  characters, as written here, or compares the characters up to a terminator,
-  is not recorded at instruction level. Both give the same result for names
-  the setup screen can produce.
-- Whether the base cash assignment comes before the call into RULE-SETUP-004
-  or after it is not recorded; no step of RULE-SETUP-004 reads `cash`, so the
-  order does not change the result.
+- Whether `modifier_cash` is saved with the match, and whether a network
+  match reaches this rule with a network flag set, are not recorded.

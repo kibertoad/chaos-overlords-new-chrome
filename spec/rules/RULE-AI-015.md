@@ -4,7 +4,7 @@ title: At the start of each turn's resolution every attitude below +10 rises by 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-006]
+evidence: [FND-AI-006, FND-AI-047, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -18,7 +18,8 @@ At Homicidal Maniac attitudes never change this way.
 
 ## When it runs
 
-At the start of `resolution`, once per turn, before its first step.
+At the start of `resolution`, once per turn, before any action is carried out;
+it is the first thing the resolver does.
 
 ## Parameters
 
@@ -57,5 +58,4 @@ None known.
 
 ## Open questions
 
-- Where in the resolver's opening steps the loop runs relative to the other
-  start-of-resolution work is not recorded.
+None.

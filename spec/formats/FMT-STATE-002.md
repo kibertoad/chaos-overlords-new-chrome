@@ -9,7 +9,7 @@ byte_order: little
 size: 36
 text: false
 definition: fmt_state_002.ksy
-evidence: [FND-AI-004, FND-AI-010, FND-CHAOS-001, FND-CONTROL-001, FND-CONTROL-003, FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-GANG-001, FND-GANG-007, FND-HIRE-008, FND-PLATFORM-003, FND-SETUP-003, FND-STATE-001, FND-STATE-002, FND-TOLERANCE-001, FND-TURN-001, FND-TURN-003, FND-UI-015, FND-UI-018, FND-UI-035, FND-UPKEEP-001, FND-UPKEEP-002]
+evidence: [FND-CHAOS-002, FND-AI-004, FND-AI-010, FND-CHAOS-001, FND-CONTROL-001, FND-CONTROL-003, FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-GANG-001, FND-GANG-007, FND-HIRE-008, FND-PLATFORM-003, FND-SETUP-003, FND-STATE-001, FND-STATE-002, FND-TOLERANCE-001, FND-TURN-001, FND-TURN-003, FND-UI-015, FND-UI-018, FND-UI-035, FND-UPKEEP-001, FND-UPKEEP-002]
 conflicting: []
 split_with: []
 related: []
@@ -33,7 +33,7 @@ its definition's Resistance [FND-STATE-001].
 | `0x01` | 1 | `INT8` | `base_income` | The sector's Income from city generation, 3 to 7. Nothing writes it after generation | supported | FND-STATE-001 |
 | `0x02` | 1 | `INT8` | `base_tolerance` | The sector's Tolerance before its sites: 17 minus `base_income` at generation, then changed by Bribe (+3), Snitch (-3), a step of one toward 17 minus `base_income` at the start of each resolution, and a clamp to 1..40 after the instant phase. Bribe and Snitch add in 32 bits and store the low byte | supported | FND-STATE-001, FND-TOLERANCE-001 |
 | `0x03` | 1 | `INT8` | `cash_yield` | The cash the owner collects from the sector at each Upkeep: set to 1 by the refresh before planning, plus the Cash of each completed site. Shown to the owner only, on the row the panel labels Cash | supported | FND-STATE-001, FND-UI-035, FND-UPKEEP-001, FND-UPKEEP-002 |
-| `0x04` | 1 | `INT8` | `income` | The sector's Income: the refresh before planning copies `base_income` here. Shown on the Income row and read by the Chaos pool and the Control pass | supported | FND-CHAOS-001, FND-STATE-001, FND-UI-035, FND-CONTROL-003 |
+| `0x04` | 1 | `INT8` | `income` | The sector's Income: the refresh before planning copies `base_income` here. Shown on the Income row and read by the Chaos pool (load `0x004732A7`) and the Control pass | supported | FND-CHAOS-001, FND-CHAOS-002, FND-STATE-001, FND-UI-035, FND-CONTROL-003 |
 | `0x05` | 1 | `INT8` | `tolerance` | The sector's Tolerance: the refresh before planning sets it to `base_tolerance` plus the Tolerance of each completed site. Shown on the Tolerance row. Changes to `base_tolerance` during a resolution reach it only at the next refresh. The Chaos sector pass compares with this byte | supported | FND-AI-004, FND-STATE-001, FND-TOLERANCE-001, FND-UI-035 |
 | `0x06` | 1 | `INT8` | `support` | The Support of the sector's completed sites, shown on the Support row: set to 0 by the refresh, plus the Support of each completed site. Read by the Control pass | supported | FND-GANG-001, FND-STATE-001, FND-UI-035, FND-CONTROL-003 |
 | `0x07` | 6 | `FMT-STATE-004[3]` | `sites` | The sector's three site slots | supported | FND-TURN-001, FND-TURN-003 |

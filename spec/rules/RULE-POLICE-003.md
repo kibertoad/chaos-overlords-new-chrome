@@ -4,7 +4,7 @@ title: Police presence counts down by one at the end of every turn unless it is 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-POLICE-001, FND-SETUP-003, SRC-MANUAL-GOG]
+evidence: [FND-CHAOS-002, FND-EXE-004, FND-POLICE-001, FND-POLICE-004, FND-SETUP-003, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002]
@@ -18,8 +18,10 @@ count down.
 
 ## When it runs
 
-In `turn_end`, near the end of the whole-turn resolution, after
-`combat_phase` [FND-POLICE-001].
+In `turn_end`, near the end of the resolver `fn_00472775` (range in
+FND-EXE-004), after `combat_phase` and before the elimination check
+`fn_00476F3B`: the decrement is at `0x00475E74` and the call of the
+elimination helper at `0x00475ECD` [FND-POLICE-001, FND-CHAOS-002].
 
 ## Parameters
 
@@ -45,8 +47,10 @@ No draws.
 
 ## Edge cases
 
-- A Crackdown created this turn with 3 to 5 turns attacks in this turn's
-  police phase and leaves 2 to 4 more police phases after this countdown.
+- Presence added this turn by a neutralizing Crackdown (3 to 5 turns,
+  RULE-POLICE-002) attacks in this turn's police phase and leaves 2 to 4 more
+  police phases after this countdown. A Crackdown that fills a free history
+  slot adds no presence [FND-POLICE-004].
 - A value of 100 never changes.
 
 ## What the sources say
@@ -60,5 +64,4 @@ None known.
 
 ## Open questions
 
-- Whether the countdown comes before or after the elimination check in
-  `turn_end` (see `turn_end` in the glossary).
+None known.

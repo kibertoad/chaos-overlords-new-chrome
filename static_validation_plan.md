@@ -60,55 +60,6 @@ order of priority, unless a group says otherwise.
   `0x004743EE`. FMT-STATE-003 still has to cite it and drop its byte 0 open question (combat
   agent). Clearing and the other bytes' writes are recorded in FND-STATE-005.
 
-## Hire, Influence, Research, Bribe, Snitch, Tolerance and sites
-
-- FND-BRIBE-001, FND-SNITCH-001, FND-RESEARCH-001, RULE-HEAL-001,
-  RULE-INFLUENCE-001, RULE-TOLERANCE-002: record the instruction ranges of
-  the instant-phase cases 2 (Bribe), 7 (Heal), 9 (Influence), 11 (Research)
-  and 13 (Snitch) in `0x00472775` (old decompiler lines 114-127, 151-185,
-  186-208, 210-212) and of the post-instant floor loop (old lines 224-226),
-  and add them as locations. While there: the sector offset each case writes
-  for Tolerance (expected `+0x05`), whether the Tolerance add/subtract is done
-  at byte width, what the Snitch case's "changed" mark is and whether Bribe
-  sets it too, and whether the Heal case tests Force before calling the dice
-  helper.
-- All my findings: give full ranges for `0x00472775`, `0x0046E766`,
-  `0x004716EB`, `0x004078B8`, `0x00416C75`, `0x004546C5`, `0x0043F692`,
-  `0x0046DC10` and `0x004427FA`; the findings give only entry addresses.
-- RULE-HIRE-001: list every field the hire block writes into the new gang
-  record (between the free-slot search `0x00475BDB..0x00475C2D` and the cash
-  update at `0x00475C88`): equipment -1 or not, action, recurring action,
-  `visible_to`, effective statistics. Also: the free-slot search bounds
-  (slots 0-79 or 1-80); the operand order of the `CMP` at `0x00475A0E`
-  (confirms `cost > cash` fails, and so the zero-cost-in-debt case); where the
-  offer is negated in the success path.
-- RULE-HIRE-002: read the full rejection test in `0x004716EB` for any other
-  exclusion (other players' offers, gangs already hired).
-- RULE-HIRE-003 / FND-HIRE-004: confirm that the Reject branch of
-  `0x00416C75` clears the other two slots, and record what the drop handler
-  tests before writing a sector (owned, occupied, capacity). Record what
-  `0x004078B8` is (a Reject path, the AI, or both).
-- RULE-TOLERANCE-001: find the code that moves Tolerance one point toward
-  normal each turn (candidates: the turn-start loop in `0x0046E766`, the
-  rebuild `0x004782C5`, the end of `0x00472775`). The rule is `sourced` until
-  then.
-- SCR-HIRE-001: record the resource load in `0x004546C5` (expected 5016), the
-  destination rectangle, the portrait and value field positions, the order of
-  the ten modifier rows, and the close control and its handler.
-- SCR-HIRE-002: find the main-console code that draws the three offers and
-  the hit tests for dragging, Reject and double-click (and whether the
-  double-click reaches `0x00455B6B`, the `PX05022` definition panel).
-- SCR-INFLUENCE-001: the shared panel's screen origin, the Cancel and
-  confirmation rectangles and keys, and where the three site pictures are
-  drawn.
-- SCR-RESEARCH-001: whether `0x004427FA` has category cells and where, the
-  filter its list builder applies (Tech Level, the manual's Tech 5 limit and
-  the Science Center / Research Lab caps, items already researched), the
-  columns a row draws, the confirmation and Cancel controls, and the
-  double-click to `PX05001`.
-- FMT-DATA-002: find the hire-cost field the hire block reads at
-  `0x00475A0E` / `0x00475CBA`.
-
 ## Movement, Control, gangs, equipment and money
 
 - SCR-MOVE-001, SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-GANG-001,
@@ -560,32 +511,16 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
 
 ## Screen and panel code no entry describes
 
-- The city screen and main console are the largest unmapped screen code. `fn_00470E24` (2,101
-  bytes, uncited) compares positions with 294, 304, 329 and 360 and calls the city handlers
-  `fn_00414D8C`, `fn_0041462F`, `fn_00416C75`, `fn_00418821` and `fn_0044C476`; it is expected to
-  be the console's mouse dispatcher. With it: `fn_00470A34` (939), `fn_00411119` (3,202),
-  `fn_0041A0D4` (3,090), `fn_0041ACE6` (2,052), `fn_00419AA8` (1,580), `fn_00417CBA` (2,914),
-  `fn_00413858` (1,917), `fn_00411DF5` (690), `fn_004169B3` (706), `fn_0041066F`, `fn_0041B4EA`,
-  `fn_0041B668`, `fn_0041BCD8`, `fn_00413FD5` (34 callers), `fn_00418E66` (8 callers) and
-  `fn_004140AE` (no callers). For each, record what it draws or handles, its rectangles and
-  resources, and cite it from SCR-UI-003 and SCR-UI-004. `fn_00410016` builds the default player
-  name from `PLAYER #`; cite it from the setup rules.
-- Parent handlers cited only for one detail need a finding that describes each as a whole
-  (purpose, range, inputs, what it writes): the city-screen functions `fn_00410770` (11 callers),
-  `fn_00413012` (7 callers) and `fn_00412BF7`. The others of this item are recorded in
-  FND-GIVE-001, FND-SELL-001, FND-GANG-006, FND-MOVE-004, FND-UI-013, FND-UI-014, FND-COMBAT-007,
-  FND-SETUP-014, FND-NET-001 and FND-NET-002; the sub-functions they leave unread
-  (`fn_00448027`, `fn_00447ADB`, `fn_00445655`, `fn_004425AE`, `fn_00453A8D`, `fn_0041B668`) are
-  named in those findings' Alternatives.
+- City screen and sector view, what is left after FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019
+  and FND-SETUP-017: read the code that fills surface 2 to say what its second copy of the city
+  map from y 420 holds (FND-UI-018 enlarges the sector view's background from it), and whether
+  FND-UI-033's map origin `(2,44)` or FND-UI-017's `(2,42)` is right (SCR-UI-003).
 - The rectangle test `fn_00449B78` (`PtInRect`, 49 callers) decides every click. Record its
   argument order and whether the right and bottom edges are inside; that settles "the order of
   the four numbers in the held-button rectangles" in the Setup group for every screen at once.
   Also identify `fn_00449BFC` (33 callers, no callees), `fn_00449BD2`, `fn_00449C41`,
   `fn_00465B64` (16 callers), the cursor helpers `fn_00449CAE` and `fn_00449CC6`
   (`ShowCursor`) and `fn_00465B27` (`GetKeyState`).
-- Detailed Combat state `0x00494578..0x004945CF` and `0x00494760..0x00494786` (written by
-  `fn_0042E040`, `fn_0043087E`, `fn_00430C23`) has no glossary names. Name its fields for
-  RULE-COMBAT-004.
 
 ## Game-side code and data no entry describes
 
@@ -594,11 +529,10 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
   the AI planning pass (the per-player part of RULE-AI-003 is a candidate).
 - `fn_00449CDE` is called from `fn_0046DC10` during city creation. Record what it does and cite it
   from the CITY rules.
-- `0x004A287A..0x004A289A` is read by 17 functions (the AI selector, the Give, Equip, Research,
-  Finance and gang panels, planning entry) and written by no instruction, so a block read fills
-  it. Identify the table and its record layout; it is expected to be one of the in-memory copies
-  the FMT-DATA-001..003 item asks for. `0x004A26FE..0x004A2740` (read by `fn_00402D70` and
-  `fn_0042A6E0`) likewise.
+- `0x004A287A..0x004A289A` is the `hire_cost` to `martial_arts` fields of the gang definition
+  table at `0x004A2800` (FND-HIRE-006, FMT-DATA-002). `0x004A26FE..0x004A2740` (read by
+  `fn_00402D70` and `fn_0042A6E0`) still needs identifying; it lies inside `research_remaining`
+  (`0x004A2608`, 384 bytes), which is a lead to check.
 - Build the global data map: for every `.data` region game code uses, record base, extent,
   element size, writers and readers in a STATE finding, so each glossary term gets an address.
   Start with the unnamed regions used by the most functions (above: `0x00493658`, `0x004980A0`,
@@ -620,9 +554,6 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
 
 ## Found while integrating the spec
 
-- RULE-HIDE-001, FND-AWARDS-002: the award count reads every resolved Hide. Cite FND-AWARDS-002 in
-  the HIDE rule once the Hide case of `fn_00472775` is read again, and check that the counter is
-  incremented in the same place.
 - RULE-AI-016, RULE-AI-017, RULE-ATTACK-001, RULE-CONTROL-001, FND-AI-006: record the instructions
   in `fn_00472775` that lower the attitude after an attack and after an owner change. The rules
   place the calls after the opening damage and at the owner write by interpretation; whether an

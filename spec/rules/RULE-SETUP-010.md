@@ -1,10 +1,10 @@
 ---
 id: RULE-SETUP-010
 title: Local setup starts with one human, and Add and Remove change the number of local humans from one to six
-status: sourced
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-005, FND-RNG-005, FND-AUDIO-002, FND-AUDIO-010, SRC-HELP-GOG, SRC-MANUAL-GOG]
+evidence: [FND-SETUP-005, FND-SETUP-017, FND-SETUP-013, FND-RNG-005, FND-AUDIO-002, FND-AUDIO-010, SRC-HELP-GOG, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001, RULE-AUDIO-005]
@@ -12,15 +12,17 @@ related: [SCR-SETUP-001, RULE-AUDIO-005]
 
 ## Summary
 
-The local setup screen opens with one human player, in slot 0 with portrait 0.
+The local setup screen opens with one human player, in slot 0 with portrait 0,
+and five empty slots; every slot starts with a numbered default name.
 Add puts another local human in an empty slot and selects it; Remove takes
 out the selected human and selects the highest slot still occupied. There is
 always at least one local human and at most six.
 
 ## When it runs
 
-When the setup screen opens, and when Add or Remove is released inside its
-button on SCR-SETUP-001.
+When a setup screen is about to open (the reset `fn_00410016`, called from
+the title loop, the local setup and the network setup [FND-SETUP-017]), and
+when Add or Remove is released inside its button on SCR-SETUP-001.
 
 ## Parameters
 
@@ -28,14 +30,20 @@ button on SCR-SETUP-001.
 
 ## Inputs
 
-`controller`, `selected_card`.
+`controller`, `selected_card`. The setup screen edits its own copies of
+`controller`, `portrait` and `player_names`, at `0x00490680`, `0x00490678`
+and `0x00490630`, and copies them into the game's lists when it opens
+[FND-SETUP-013, FND-SETUP-017]; the procedure writes `controller` and
+`portrait` for those copies.
 
 ## Procedure
 
 ```text
 if button == 0:
     for p in 0..6:
+        # player_names[p] becomes string resource 61 followed by the digit p + 1
         controller[p] = -1
+        portrait[p] = 15
     controller[0] = 0
     portrait[0] = 0
     selected_card = 0
@@ -77,8 +85,10 @@ rejection cue after the push cue.
 
 ## What the sources say
 
-SRC-HELP-GOG's setup topic says the setup starts with one local human, Add
-adds another and Remove takes the last one away. SRC-MANUAL-GOG, page 15,
+FND-SETUP-017 shows the reset: slot 0 human with portrait 0, the other slots
+empty with portrait 15, and every name string resource 61 followed by the
+slot's number, whatever the portrait. SRC-HELP-GOG's setup topic says the
+setup starts with one local human, Add adds another and Remove takes the last one away. SRC-MANUAL-GOG, page 15,
 says the Add button adds a player and the Remove button removes one.
 FND-SETUP-005 shows that Remove takes out the selected card rather than the
 last one, and selects the highest occupied slot afterwards; FND-RNG-005 shows
@@ -93,8 +103,7 @@ None known.
 - Which empty slot Add fills (the lowest is the reading used), what portrait
   and name the new human gets, and what Remove leaves in the removed slot's
   portrait and name are not recorded.
-- Where the initial roster is written, and the name slot 0 starts with (the
-  manual's example is a default name of the form Player#1), are not recorded.
 - Whether Add and Remove count computer slots is not recorded; before Begin
   no slot is a computer.
-- The address of `portrait` is not recorded.
+- Portrait 15 in an empty slot is one past the last portrait; whether any
+  drawing reads it for an empty slot is not recorded.

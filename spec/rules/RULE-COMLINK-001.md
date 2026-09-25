@@ -4,7 +4,7 @@ title: Storing a Comlink message keeps each player's newest 16 messages
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-001, FND-COMLINK-006, FND-AUDIO-002, FND-AUDIO-012, SRC-MANUAL-GOG]
+evidence: [FND-COMLINK-001, FND-COMLINK-006, FND-COMLINK-009, FND-AUDIO-002, FND-AUDIO-012, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-005]
@@ -31,7 +31,7 @@ two bytes of `turn` swapped back from the order they travel in
 ## Inputs
 
 `comlink_messages`, `comlink_count`, `comlink_cursor`, `active_player`,
-`network_game`, `local_game`, `controller`.
+`network_game`, `local_game`, `controller`, `comlink_view_open`.
 
 ## Procedure
 
@@ -56,6 +56,8 @@ else:
     comlink_count[recipient] = 16
     if comlink_cursor[recipient] > 0:
         comlink_cursor[recipient] = comlink_cursor[recipient] - 1
+if comlink_view_open and recipient == active_player:
+    comlink_view_refresh = 1
 ```
 
 ## Outputs
@@ -70,7 +72,9 @@ and puts `message` last. Adds 1 to `comlink_count` up to 16. When a message is
 dropped, moves the recipient's `comlink_cursor` back one place, stopping at 0.
 When the recipient is the active player, first sets `comlink_pending`, emits
 `ComlinkAlert` and restarts the alert's repeat timing, then stores the
-message.
+message. When the active player's View panel is open, sets
+`comlink_view_refresh`, and the panel redraws the message on show with the new
+count (SCR-COMLINK-002) [FND-COMLINK-009].
 
 ## Edge cases
 
@@ -97,5 +101,3 @@ None known.
 - The glossary reads the flag at `0x00482178` as `local_game`; its use here,
   sending every message for a player not at this computer to connection 0,
   fits a network client better (FND-COMLINK-006).
-- After storing a message for the active player, the recorder also sets
-  `g_004877D0` when `g_004877CC` is set; what those flags do was not read.

@@ -1,6 +1,6 @@
 ---
 id: RULE-TURN-003
-title: The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then raises every Tolerance below 1 to 1
+title: The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -15,8 +15,8 @@ related: [RULE-BRIBE-001, RULE-HEAL-001, RULE-HIDE-001, RULE-INFLUENCE-001, RULE
 The instant actions are carried out one gang at a time: the first player's
 gangs in roster order, then the second player's, and so on. Each action takes
 effect before the next gang acts, so two gangs influencing the same site add to
-it one after the other. After all of them, any sector whose Tolerance has
-fallen below 1 is set to 1.
+it one after the other. After all of them, every sector's base Tolerance is
+clamped to 1..40.
 
 ## When it runs
 
@@ -57,7 +57,7 @@ call RULE-TOLERANCE-002()
 
 No return value. Runs the instant action of each gang in player slot and
 roster slot order, with the draws each of those rules makes, and then runs
-RULE-TOLERANCE-002, which sets every sector's `tolerance` below 1 to 1.
+RULE-TOLERANCE-002, which clamps every sector's `base_tolerance` to 1..40.
 
 ## Edge cases
 
@@ -71,8 +71,8 @@ The gangs' effective statistics are those rebuilt at the start of the turn. A
 site completed during this phase adds nothing to any gang until the next turn
 start (FND-GANG-001).
 
-The Tolerance floor is applied once, after every gang has acted, so a sector can
-sit below 1 between two instant actions, and Snitch's reduction is never
+The Tolerance clamp is applied once, after every gang has acted, so a sector can
+sit below 1 or above 40 between two instant actions, and Snitch's reduction is never
 limited on its own (FND-SNITCH-001).
 
 ## What the sources say

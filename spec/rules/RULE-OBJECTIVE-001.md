@@ -4,7 +4,7 @@ title: At the end of each turn the scores are rebuilt, a lone surviving player e
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-003, FND-AI-005, SRC-MANUAL-GOG]
+evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-004, FND-TURN-003, FND-AI-005, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-002, RULE-OBJECTIVE-004]
@@ -36,12 +36,12 @@ None.
 ```text
 call RULE-OBJECTIVE-002()
 let active = 0
-for each player in turn_order:
+for player in 0..6:
     if player_active[player]:
         active = active + 1
 if active == 1:
     match_over = 1
-    return
+# the scenario test runs whatever the count
 if call RULE-OBJECTIVE-004():
     match_over = 1
 ```
@@ -53,9 +53,13 @@ RULE-OBJECTIVE-002, and sets `match_over` when the match ends. Makes no draws.
 
 ## Edge cases
 
-The sole-survivor test comes before the scenario test, so it ends every
-scenario, timed or not. In Big Man the scores are rebuilt, and so grow, before
-the 40-point test.
+The sole-survivor test ends every scenario, timed or not. Nothing here clears
+`match_over`; the outer match loop clears it when a match starts. In Big Man
+the scores are rebuilt, and so grow, before the 40-point test.
+
+When no player is active the count is 0 and only the scenario test can end
+the match. A local game whose last local human has been eliminated ends in the
+outer match loop instead, without the awards (FND-OBJECTIVE-004).
 
 ## What the sources say
 
@@ -71,8 +75,5 @@ None known.
 
 ## Open questions
 
-- What happens when no player is active after an elimination (the count is 0)
-  is not recorded.
-- The address of `match_over` and how the winners are recorded are not
-  recorded.
-- `player_active` has no recorded address.
+- Whether a state with no active player can arise is not recorded.
+- How the winners are recorded, beyond the standings, is not recorded.

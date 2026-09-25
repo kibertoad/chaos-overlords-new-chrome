@@ -4,7 +4,7 @@ title: A Crackdown is recorded in the sector's history, and a third within five 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-POLICE-001, FND-POLICE-002, FND-POLICE-004, FND-RNG-003, FND-RNG-006, FND-TURN-006, FND-EVENT-004, SRC-MANUAL-GOG]
+evidence: [FND-CHAOS-002, FND-EVENT-004, FND-EXE-004, FND-POLICE-001, FND-POLICE-002, FND-POLICE-004, FND-RNG-003, FND-RNG-006, FND-TURN-006, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-002, FMT-STATE-004]
@@ -21,7 +21,8 @@ free slot brings no police.
 ## When it runs
 
 In `chaos_phase`, called by RULE-CHAOS-001 for a sector whose Chaos total
-exceeds its Tolerance, after that sector's Crackdown reports.
+exceeds its Tolerance, after that sector's Crackdown reports, in the resolver
+`fn_00472775` (range in FND-EXE-004) [FND-POLICE-004].
 
 ## Parameters
 
@@ -65,6 +66,13 @@ end of the history update skips it whenever a slot was free (FND-POLICE-004).
 - After a neutralization both slots hold the current turn, so one more
   Crackdown within five turns neutralizes the sector again, even if another
   player took it in between.
+- A neutral sector (owner -1) whose slots are full is neutralized again and
+  gets police; the report is passed owner -1 and the report recorder drops it
+  [FND-CHAOS-002].
+- The neutralization writes only the owner, the three site progress bytes
+  (offsets `0x08`, `0x0A` and `0x0C`), the history and the presence byte.
+  Support and the other values rebuilt from completed sites keep their values
+  until the next `turn_start` rebuild [FND-CHAOS-002, FND-POLICE-004].
 - Police presence therefore always comes with the loss of the sector. The
   added turns extend any police presence already there. A permanent
   presence of 100 (`CRACKDOWN_PERMANENT`) grows to 103 to 105 and then counts
@@ -85,9 +93,4 @@ None known.
 
 ## Open questions
 
-- Which values the finding's "three influence-derived values" are; the
-  procedure takes them to be the three sites' `progress`.
-- What happens when the sector has no owner and both slots are full: whether a
-  report is sent to owner -1.
-- Whether the sector's Support and other values rebuilt from completed sites
-  are cleared here or only at the next `turn_start` rebuild.
+None known. The duration draw is the call at `0x004737A9` [FND-POLICE-004].
