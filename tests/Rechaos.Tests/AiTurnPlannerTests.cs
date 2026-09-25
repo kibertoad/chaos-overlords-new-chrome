@@ -851,6 +851,27 @@ public sealed class AiTurnPlannerTests
         Assert.Equal(12, match.AiPlanning.Family(playerId, 2));
     }
 
+    // RULE-AI-020, FND-AI-057: after previous Move, a family-1 gang in its own sector moves
+    // through mode 5, and one elsewhere heals when it can.
+    [Theory]
+    [InlineData(true, 10, GangAction.Move)]
+    [InlineData(false, 8, GangAction.Heal)]
+    public void FamilyOneAfterMoveMovesOnOrHeals(bool ownsSector, int force, GangAction expected)
+    {
+        var match = CreateMatch(force: force, ownsStartingSector: ownsSector);
+        var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
+        match.AiPlanning.SetFamily(player, 0, 1);
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Move);
+        match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
+        match.FinishUpkeep();
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(player, 0));
+    }
+
     // RULE-AI-013, FND-AI-051: player 0 keeps a failed anchor while sector 0, 6, 7 or 8 is free
     // land, even after gaining a sector the scan would take, and a hire placed there is dropped.
     [Fact]

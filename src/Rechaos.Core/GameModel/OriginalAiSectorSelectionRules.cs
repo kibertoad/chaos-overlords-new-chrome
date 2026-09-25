@@ -9,6 +9,8 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiSectorSelectionRules
 {
+    /// <summary>FND-AI-059: selector 0x9A's value past the end of the weight-10 list.</summary>
+    public const int GuardTargetEndMarker = 100;
     private const int NeutralOwner = -1;
     private const int PolicePresenceOwner = -2;
     private const int MinimumRawOwner = -3;
@@ -305,7 +307,7 @@ internal static class OriginalAiSectorSelectionRules
         Func<int, int>? completedSiteScore)
     {
         if (mode is not (>= 0 and <= 10 or >= 12 and <= 16
-                or >= 0x40 and < 0x80))
+                or >= 0x40 and < 0x80 or 0x40 + GuardTargetEndMarker))
             throw new ArgumentOutOfRangeException(nameof(mode));
         if (sourceSectorId is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sourceSectorId));

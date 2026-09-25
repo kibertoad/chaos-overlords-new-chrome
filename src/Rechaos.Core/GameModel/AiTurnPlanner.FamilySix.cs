@@ -97,11 +97,15 @@ public static partial class AiTurnPlanner
         int gangSlot,
         FamilyPlanningSnapshot snapshot)
     {
+        // RULE-AI-025, FND-AI-059: with every weight-10 sector covered the guard target is the
+        // end marker 100, and mode 0x40 + 100 scores no sector, so the tie draw covers the city.
+        // The marker stored as the coverage sector is overwritten by the step below before any
+        // other gang plans, so it is not kept.
         var strategicTarget = FirstUncoveredFamilySixTarget(state, playerId);
         var mode = strategicTarget is { } targetSector
             ? 0x40 + targetSector
             : 2;
-        if (strategicTarget is { } target)
+        if (strategicTarget is { } target and < MatchLimits.SectorCount)
             state.AiPlanning.SetCoverageSector(playerId, gangSlot, target);
         var destination = OriginalAiSectorSelectionRules.Select(
             mode, gang.SectorId, playerId, 6,
@@ -123,6 +127,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId)
     {
         var player = state.FindPlayer(playerId)!;
+        var anyGuardTarget = false;
         for (var sectorId = 0; sectorId < MatchLimits.SectorCount; sectorId++)
         {
             var hasVisibleHostileHuman = state.Players.Any(candidate =>
@@ -143,7 +148,8 @@ public static partial class AiTurnPlanner
                         ? entry.candidate.SectorId
                         : state.AiPlanning.CoverageSector(playerId, entry.slot)) == sectorId);
             if (!covered) return sectorId;
+            anyGuardTarget = true;
         }
-        return null;
+        return anyGuardTarget ? OriginalAiSectorSelectionRules.GuardTargetEndMarker : null;
     }
 }

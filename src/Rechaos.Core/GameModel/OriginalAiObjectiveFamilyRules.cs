@@ -7,8 +7,8 @@ namespace Rechaos.Core.GameModel;
 internal static class OriginalAiObjectiveFamilyRules
 {
     public const int ContestedAttackMinimumForce = 5;
-    public const int ContestedAttackAttempts = 3;
-    public const int OwnedObjectiveAttackAttempts = 5;
+    /// <summary>FND-AI-062: both draw loops run while a counter set to 0 is below 5.</summary>
+    public const int AttackDraws = 5;
     public const int ObjectiveEquipmentCooldown = 2;
     public const int FamilyFourteenHealForceLimit = 10;
 
@@ -57,17 +57,9 @@ internal static class OriginalAiObjectiveFamilyRules
         && force < FamilyFourteenHealForceLimit
         && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal;
 
-    public static bool ShouldHealOwnedObjectiveWithoutVisibleOpponent(
-        ScenarioId scenario,
-        int currentSectorId,
-        bool ownedByActingPlayer,
-        bool hasVisibleOpponent,
-        int force,
-        int effectiveHeal) =>
-        IsObjectiveSector(scenario, currentSectorId)
-        && ownedByActingPlayer
-        && !hasVisibleOpponent
-        && force < FamilyFourteenHealForceLimit
+    /// <summary>RULE-AI-031 heal_ok: Force below 10 and effective Heal above -4.</summary>
+    public static bool CanHeal(int force, int effectiveHeal) =>
+        force < FamilyFourteenHealForceLimit
         && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal;
 
     public static bool ShouldScanContestedObjectiveTargets(
@@ -86,17 +78,18 @@ internal static class OriginalAiObjectiveFamilyRules
             attackerForce, attackerCombat, attackerDefense,
             targetForce, targetCombat, targetDefense);
 
+    /// <summary>
+    /// FND-AI-062: after the draws, Attack or Heal; a gang that fails the Heal test gets no write
+    /// (None here), where FND-AI-039 read Control.
+    /// </summary>
     public static GangAction SelectContestedObjectiveResult(
         bool selectedTarget,
         int force,
-        int effectiveHeal)
+        bool healOk)
     {
         if (selectedTarget && force >= ContestedAttackMinimumForce)
             return GangAction.Attack;
-        return force < FamilyFourteenHealForceLimit
-            && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal
-            ? GangAction.Heal
-            : GangAction.Control;
+        return healOk ? GangAction.Heal : GangAction.None;
     }
 
     public static int? SelectHighestSupportUnfinishedSite(
@@ -107,6 +100,9 @@ internal static class OriginalAiObjectiveFamilyRules
         if ((uint)sectorId >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sectorId));
 
+        // PLACEHOLDER: RULE-AI-031. The original never sets the starting threshold, so the scan
+        // starts from a leftover stack value (BUG-AI-006); the rebuild starts from 0 until a run
+        // of the original shows what the slot holds.
         var bestSupport = 0;
         int? bestSlot = null;
         foreach (var site in state.Sectors[sectorId].Sites.OrderBy(site => site.Slot))

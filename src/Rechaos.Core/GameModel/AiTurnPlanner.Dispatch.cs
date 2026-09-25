@@ -108,6 +108,24 @@ public static partial class AiTurnPlanner
         int gangSlot,
         FamilyPlanningSnapshot snapshot)
     {
+        PrepareFamilyOneAction(state, player, gang, gangSlot, snapshot);
+        // FND-AI-057: after the switch, the Greed Terminate of FND-AI-042.
+        TerminateForGreed(state, player.Id, gangSlot);
+    }
+
+    private static void PrepareFamilyOneAction(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int gangSlot,
+        FamilyPlanningSnapshot snapshot)
+    {
+        if (state.AiPlanning.PreviousAction(player.Id, gangSlot)
+            is GangAction.Attack or GangAction.Hide or GangAction.Move)
+        {
+            PrepareFamilyOneAfterAttackHideOrMove(state, player, gang, gangSlot, snapshot);
+            return;
+        }
         var choice = DesiredRecoveredFamilyChoice(state, player, gang, gangSlot);
         if (choice.Action == GangAction.None) return;
         if (choice.Action == GangAction.Equip)
@@ -123,7 +141,64 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        var target = OriginalAiSectorSelectionRules.Select(
+        SetRecoveredMoveAction(
+            state, player.Id, gangSlot, SelectFamilyOneMove(state, player, gang, snapshot));
+    }
+
+    /// <summary>
+    /// RULE-AI-020, FND-AI-057: after previous Attack, Hide or Move. At weight 10 one draw is
+    /// made; a passing comparison attacks. Otherwise a gang in a sector the owner query gives to
+    /// its player moves through mode 5, and any other gang heals, takes the sector, snitches or
+    /// moves. Every action but the Attack clears the focus.
+    /// </summary>
+    private static void PrepareFamilyOneAfterAttackHideOrMove(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int gangSlot,
+        FamilyPlanningSnapshot snapshot)
+    {
+        var visible = VisibleOpponentsInSector(state, player.Id, gang.SectorId);
+        var visibleWeight = FirstVisibleOpponentWeight(state, player.Id, visible);
+        if (visibleWeight == 10)
+        {
+            var draw = DrawHumanWeightedAttackTarget(
+                state, player.Id, gang, visible, visibleWeight);
+            if (draw.Accepted)
+            {
+                SetRecoveredFocusedAttack(state, player.Id, gang, gangSlot, draw.Selected);
+                return;
+            }
+        }
+        else if (OwnerQuery(state, gang.SectorId) == player.Id.Value)
+        {
+            SetRecoveredFocusedMoveAction(
+                state, player.Id, gangSlot, SelectFamilyOneMove(state, player, gang, snapshot));
+            return;
+        }
+
+        var action = OriginalAiFamilyOneRules.SelectAfterAttackHideOrMove(
+            gang.Force,
+            EffectiveStatisticsCalculator.ForGang(state, gang).Heal,
+            CanSoloControl(state, player.Id, gang),
+            OwnerIsHuman(state, gang.SectorId),
+            IsHostileOwner(state, player.Id, gang.SectorId),
+            state.Setup.AiMentality,
+            player.Cash);
+        if (action == GangAction.Move)
+            SetRecoveredFocusedMoveAction(
+                state, player.Id, gangSlot, SelectFamilyOneMove(state, player, gang, snapshot));
+        else
+            SetRecoveredActionClearingFocus(state, player.Id, gangSlot, action);
+    }
+
+    private static int SelectFamilyOneMove(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        FamilyPlanningSnapshot snapshot)
+    {
+        return OriginalAiSectorSelectionRules.Select(
             mode: 5,
             sourceSectorId: gang.SectorId,
             player: player.Id,
@@ -144,6 +219,5 @@ public static partial class AiTurnPlanner
                 .Setup.Controller == PlayerController.Human,
             snapshot.PlayerOrder,
             state.Random);
-        SetRecoveredMoveAction(state, player.Id, gangSlot, target);
     }
 }

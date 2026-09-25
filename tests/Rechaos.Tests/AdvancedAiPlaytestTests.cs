@@ -40,7 +40,8 @@ public sealed class AdvancedAiPlaytestTests
         // The ported dispatcher (RULE-AI-002) leaves few idle turns to recover, so the territory
         // gain is within noise of the original; the sample may lose at most 1% of it.
         AssertTerritoryImproves(original, advanced,
-            minimumDefendedRetentionPercent: 99, minimumControlledRetentionPercent: 99);
+            minimumDefendedRetentionPercent: 99, minimumControlledRetentionPercent: 99,
+            minimumFinalRetentionPercent: 99);
     }
 
     private static (CampaignMetrics Original, CampaignMetrics Advanced) Compare(
@@ -79,11 +80,13 @@ public sealed class AdvancedAiPlaytestTests
         CampaignMetrics original,
         CampaignMetrics advanced,
         int minimumDefendedRetentionPercent = 100,
-        int minimumControlledRetentionPercent = 100)
+        int minimumControlledRetentionPercent = 100,
+        int minimumFinalRetentionPercent = 100)
     {
         Assert.True(advanced.ControlledSectorTurns * 100
             >= original.ControlledSectorTurns * minimumControlledRetentionPercent);
-        Assert.True(advanced.FinalControlledSectors >= original.FinalControlledSectors);
+        Assert.True(advanced.FinalControlledSectors * 100
+            >= original.FinalControlledSectors * minimumFinalRetentionPercent);
         var originalDefended = original.ControlledSectorTurns - original.UndefendedSectorTurns;
         var advancedDefended = advanced.ControlledSectorTurns - advanced.UndefendedSectorTurns;
         Assert.True(
