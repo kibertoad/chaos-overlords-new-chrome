@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 55 |
+| `supported` | 54 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 166 |
+| `implemented` | 167 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
-| `missing` | 19 |
-| `partial` | 37 |
-| `complete` | 166 |
+| `missing` | 17 |
+| `partial` | 38 |
+| `complete` | 167 |
 
 ## DATA
 
@@ -88,15 +88,15 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | partial | None | None | supported | The rebuild keeps each gang's fields as named state rather than this 32-byte layout, and marks an empty roster slot with Force 0 rather than sector 100. |
-| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | The rebuild keeps sector owner, Income, the base Tolerance, the rebuilt Tolerance, the rebuilt Support, sites and site benefits as named state rather than this 36-byte layout; the research level and the seen-gang bytes are not yet mapped (see the 2026-09-26 decision in docs/DECISIONS.md). |
-| `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | partial | None | None | supported | The rebuild derives combat presentation from combat events and clip forces rather than keeping these 10-byte records. |
-| `FMT-STATE-004` | Site slot in a sector record | supported | partial | None | None | supported | The rebuild keeps remaining Resistance per site plus an explicit influencer identity that the original does not store. |
-| `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | The rebuild keeps the Comlink inbox with the same occupied, read, turn, sender and text content, not this 166-byte layout. |
-| `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | The rebuild keeps its own notification history and derives the Last Turn reports from it, not this 10-byte layout. The recipients and the report of each type follow RULE-EVENT-003, RULE-EVENT-004 and RULE-EVENT-012 to RULE-EVENT-014. |
-| `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | missing | None | None | supported | The rebuild's computer players keep their own planning state; it was not compared with this 16-byte layout. |
-| `FMT-STATE-008` | Combat result row of one sector | supported | missing | None | None | supported | The rebuild keeps combat events with combatant details instead of these per-sector rows of gang and target indices. |
-| `FMT-STATE-009` | Input event record | supported | missing | None | None | supported | Not yet compared with the rebuild. |
+| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-001-gang-record). `repeat_action` differs: a recurring Heal is cancelled once Force reaches 10 after the instant phase, where the original tests Force at the next turn start. |
+| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-002-sector-record). `cash_yield` after a Control takeover, the headquarters' Tolerance bonus in a neutral sector, `research_level` for the computer's tech cap and the permanent crackdown value 100 differ. |
+| `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-003-per-gang-combat-record). Record 0's `definition`, which the computer players read as an owner, and `force_start` for an attacker killed by a larger retaliation differ. |
+| `FMT-STATE-004` | Site slot in a sector record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-004-site-slot): `progress` is held as the Resistance still needed, a representation no rule result can tell apart. |
+| `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-005-comlink-message-record). The original empties every inbox when a match is entered; the rebuild keeps the inbox across a load. |
+| `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record). Two sites completed in one sector in one resolution give one Influence report where the original gives two. |
+| `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-007-computer-player-planning-record). `needs_family` differs when RULE-AI-010 reverts a surplus hunter after a Greed Terminate of the same pass set the flag. |
+| `FMT-STATE-008` | Combat result row of one sector | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-008-combat-result-row-of-one-sector). The gang entries were not checked against RULE-COMBAT-004. |
+| `FMT-STATE-009` | Input event record | supported | missing | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-009-input-event-record); only RULE-UI-014 reads it, and its fields were not compared. |
 
 ## RNG
 
