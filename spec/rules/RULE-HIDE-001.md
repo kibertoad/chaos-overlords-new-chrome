@@ -4,7 +4,7 @@ title: A gang hides while its action is Hide, and each Hide carried out is count
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIDE-001, FND-AWARDS-001, FND-TURN-001, FND-TURN-002, FND-TURN-004, SRC-MANUAL-GOG]
+evidence: [FND-HIDE-001, FND-HIDE-002, FND-AWARDS-001, FND-TURN-001, FND-TURN-002, FND-TURN-004, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -20,8 +20,9 @@ Big Fat Chicken award, goes up by one.
 
 ## When it runs
 
-`is_hidden` is used by any rule that asks whether a gang is hiding, such as
-attacks and police detection. The procedure below it runs in `instant_phase`,
+`is_hidden` is read in four places, all in `resolution`: the attack's Hide
+test, the retaliation, the police chance, and the defending strength in
+`control_phase` (FND-HIDE-002). The procedure below it runs in `instant_phase`,
 for each gang whose `action` is `ACTION_HIDE` (RULE-TURN-003).
 
 ## Parameters
@@ -60,6 +61,8 @@ A recurring Hide has no end test, so the gang hides every turn until the player
 changes the order or the gang dies, and is counted again every turn.
 
 The count is made without any other test, so every Hide carried out counts.
+The instant phase does nothing else for a hiding gang (FND-HIDE-002). Hiding
+does not change what other players see.
 
 ## What the sources say
 
@@ -80,8 +83,8 @@ None known.
 
 ## Open questions
 
-- Whether the Hide case of the instant phase does anything besides the count
-  has not been recorded.
 - The rules that read `is_hidden` (attack, retaliation, police, Control) are
-  written in their own areas; the manual's claims about Control have not been
-  checked against the executable here.
+  written in their own areas. The manual's claim that a hiding gang does not
+  count toward resisting an enemy's Control agrees with FND-HIDE-002; its claim
+  that a hiding gang does not count toward its own Control is moot, since a
+  gang whose action is Hide is not carrying out Control.

@@ -4,7 +4,7 @@ title: The end of a turn removes eliminated players, reports each elimination to
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-003, FND-POLICE-001, FND-EVENT-001, SRC-MANUAL-GOG]
+evidence: [FND-TURN-003, FND-TURN-008, FND-POLICE-001, FND-EVENT-001, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-POLICE-003, RULE-EVENT-003, RULE-OBJECTIVE-001, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -34,13 +34,13 @@ None.
 ## Procedure
 
 ```text
-# where the countdown falls against the steps below is not known
 call RULE-POLICE-003()
 let was_active = copy(player_active)
 
 if scenario == 7:
     for each player in turn_order:
-        if gangs[player * 81].sector == GANG_INACTIVE:
+        let right_hands = gangs[player * 81]
+        if right_hands.definition != 0 or right_hands.sector == GANG_INACTIVE:
             for each s in sectors:
                 if s.owner == player:
                     s.owner = SECTOR_NEUTRAL
@@ -87,6 +87,11 @@ is not returned to anyone, and a later hire into the slot overwrites it.
 Eliminated players' reports go to all six slots, including empty and eliminated
 ones.
 
+The Eliminate test counts the Right Hands as lost when roster slot 0 holds any
+other gang, which a hire can put there once the Right Hands are dead
+(FND-TURN-008). Neither scan skips players who are already inactive; for such
+a player the Eliminate scan finds no sector and writes `sector` 100 again.
+
 ## What the sources say
 
 SRC-MANUAL-GOG, numbered page 44 (Player Elimination), says a player without at
@@ -100,11 +105,5 @@ None known.
 
 ## Open questions
 
-- The test the Eliminate scan uses for "slot 0 no longer holds the active Right
-  Hands" has not been recorded; the procedure tests the record's `sector`
-  only.
-- Whether the Eliminate scan skips players who are already inactive has not
-  been recorded; it makes no difference to the result.
-- Where the countdown of police presence falls against the elimination steps is
-  not known.
-- The address of `player_active` is not known.
+- No run of the original has confirmed the order of the countdown, the
+  elimination and the end evaluation.

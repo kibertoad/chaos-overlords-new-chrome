@@ -4,7 +4,7 @@ title: Sending a Comlink message stores a copy for each selected recipient
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-001, FND-COMLINK-003, SRC-MANUAL-GOG]
+evidence: [FND-COMLINK-001, FND-COMLINK-003, FND-COMLINK-006, FND-COMLINK-007, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-001, FMT-STATE-005]
@@ -37,22 +37,34 @@ for p in 0..6:
         any = true
 if not any:
     return
-for recipient in 0..6:
-    if comlink_selected[recipient]:
-        call RULE-COMLINK-001(recipient, comlink_draft)
+let blank = true
+for i in 0..160:
+    if comlink_draft.text[i] != 0x20:
+        blank = false
+if not blank:
+    for recipient in 0..6:
+        if comlink_selected[recipient]:
+            call RULE-COMLINK-001(recipient, comlink_draft)
+# SCR-COMLINK-002 closes here, after the stores
 ```
 
 ## Outputs
 
 No return value. With no recipient selected, sends nothing and plays the
-rejected-input sound before any pressed face is drawn. Otherwise stores a copy
-of `comlink_draft` for each selected recipient through RULE-COMLINK-001.
+rejected-input sound before any pressed face is drawn, and the panel stays
+open. Otherwise closes the panel and, unless the text is all spaces, stores a
+copy of `comlink_draft` for each selected recipient through RULE-COMLINK-001,
+in ascending slot order. The draft's `occupied`, `read`, `turn` and `sender`
+were set when the panel opened (RULE-COMLINK-002).
 
 ## Edge cases
 
 A recipient is selected only through its card, and a card can be selected only
 while `comlink_eligible` is set for it (SCR-COMLINK-002), so every recipient is
 another human player.
+
+A message of spaces only is dropped without a sound: the panel closes as if it
+had been sent.
 
 ## What the sources say
 
@@ -66,10 +78,5 @@ None known.
 
 ## Open questions
 
-- The order in which the recipients are visited is not recorded; the
-  procedure assumes ascending player slot.
-- How `occupied`, `read`, `turn` and `sender` of `comlink_draft` are set before
-  it is copied is not recorded. `turn` is presumably the current turn and
-  `sender` the active player.
-- Whether the panel closes after sending, and whether the draft is cleared, is
-  not recorded.
+None known. The draft is not cleared on sending; the next opening of the panel
+replaces it (RULE-COMLINK-002).

@@ -4,7 +4,7 @@ title: The instant phase carries out Bribe, Heal, Hide, Influence, Research and 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-001, FND-SNITCH-001, FND-GANG-001, SRC-MANUAL-GOG]
+evidence: [FND-TURN-001, FND-TURN-008, FND-SNITCH-001, FND-GANG-001, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-BRIBE-001, RULE-HEAL-001, RULE-HIDE-001, RULE-INFLUENCE-001, RULE-RESEARCH-001, RULE-SNITCH-001, RULE-TOLERANCE-002, FMT-STATE-001]
@@ -36,6 +36,8 @@ None.
 for each player in turn_order:
     for slot in 0..81:
         let gang = gangs[player * 81 + slot]
+        if gang.sector == GANG_INACTIVE:
+            continue
         if gang.action == ACTION_BRIBE:
             call RULE-BRIBE-001(player, gang)
         else if gang.action == ACTION_HEAL:
@@ -58,6 +60,9 @@ roster slot order, with the draws each of those rules makes, and then runs
 RULE-TOLERANCE-002, which sets every sector's `tolerance` below 1 to 1.
 
 ## Edge cases
+
+An inactive record (`sector` 100) is skipped before its `action` is looked at
+(FND-TURN-008).
 
 A gang's action takes effect at once. An Influence gang that reaches a site
 after an earlier gang has completed it makes no roll (FND-TURN-001).
@@ -83,7 +88,4 @@ None known.
 
 ## Open questions
 
-- Whether the scan skips inactive gang records before looking at `action` has
-  not been recorded. The turn-start cleanup leaves an inactive gang with no
-  action (RULE-TURN-004), so the answer matters only for a gang that became
-  inactive during planning, which no known path does.
+- None beyond the step rules' own questions.

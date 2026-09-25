@@ -4,7 +4,7 @@ title: A completed item is reported to the player whose Research completed it
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, SRC-MANUAL-GOG]
+evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]
@@ -30,7 +30,7 @@ None.
 ## Procedure
 
 ```text
-call RULE-EVENT-002(player, 5)
+call RULE-EVENT-002(player, 5, item, 0, 0)
 ```
 
 ## Outputs
@@ -51,4 +51,4 @@ None known.
 
 ## Open questions
 
-- The arguments the report carries are not recorded; the event's own arguments are not shown to be among them.
+None known.

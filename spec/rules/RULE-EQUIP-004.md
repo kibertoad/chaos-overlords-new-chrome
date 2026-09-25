@@ -4,7 +4,7 @@ title: The Equip list offers researched items of the chosen category within the 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-005, FND-EQUIP-006, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-008, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-003, FMT-STATE-001, FMT-DATA-002, FMT-DATA-003]
@@ -70,6 +70,12 @@ state and makes no random draw.
 
 - Cash is not read: an item the player cannot afford is listed and can be
   ordered, and fails later in RULE-EQUIP-001.
+- The Tech Level test allows equal values, and the gang's Tech Level is the
+  definition's, which items and sites do not change [FND-EQUIP-008].
+- The research test reads the entry of `active_player`, the player at the
+  computer, rather than the gang's player; the panel is only opened for the
+  active player's own gangs, so the two agree [FND-EQUIP-008].
+- The unused entries hold -1 and their rows are blank [FND-EQUIP-008].
 - The list has sixteen fixed rows; the shipped item table never fills more than
   fifteen in one category (FND-EQUIP-005). What happens with more than sixteen
   is not known.
@@ -87,13 +93,6 @@ None known.
 
 ## Open questions
 
-- FND-EQUIP-006 lists the tests (category, Tech Level, research state, already
-  carried) without their exact comparisons. The direction of the Tech Level
-  test comes from the manual; that a researched item has
-  `research_remaining` of 0 comes from the glossary.
-- The mapping of item types to the four category cells (melee and blade
-  weapons, ranged weapons, armor, miscellaneous) is not recorded by a finding.
-- Whether the gang's Tech Level is read from its definition or from elsewhere
-  is not recorded.
-- How the list stores its entries, and what fills the unused rows, is not
-  recorded.
+- What the builder does when more than sixteen items qualify is not known: its
+  count has no bound and the list arrays hold sixteen entries
+  [FND-EQUIP-008].

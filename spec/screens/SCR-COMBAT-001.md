@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AUDIO-002, FND-AUDIO-011, FND-COMBAT-002, FND-COMBAT-004]
+evidence: [FND-AUDIO-002, FND-AUDIO-011, FND-COMBAT-002, FND-COMBAT-004, FND-COMBAT-007, FND-COMBAT-009]
 conflicting: []
 split_with: []
 related: [RULE-COMBAT-002]
@@ -20,7 +20,13 @@ The panel's origin is `(104,124)` [FND-COMBAT-002].
 | Panel | `DATA/PX16/PX05012` | None | Origin `(104, 124)`; size not recorded | While the panel is open | FND-COMBAT-002 |
 | Viewer's forces | Not recorded | The viewer's row of `combat_results` for the page's sector, filled by RULE-COMBAT-002: up to six gangs, 40 by 40 each, in a grid of two columns 44 pixels apart and three rows 52 pixels apart | Grid origin `(207, 153)` | While the page's sector is shown | FND-AUDIO-011 |
 | Enemy forces | Not recorded | The selected opponent's row of `combat_results` for the sector, laid out like the viewer's | Grid origin `(350, 153)` | While an opponent is selected | FND-AUDIO-011 |
-| Opponent portraits | Not recorded | The other five players in player order; a player with no result in the sector is drawn dim | `(306, 140 + 36 * n, 32, 32)`, `n` 0 to 4 | While the panel is open | FND-AUDIO-011, FND-COMBAT-002 |
+| Opponent portraits | `DATA/PX16/PX00129` 32-by-32 portrait `(32 * portrait, 480)`, or `(32 * portrait, 594)` for a player with no result in the sector | The other five players in player order; a player with no result in the sector is drawn dim | `(306, 140 + 36 * n, 32, 32)`, `n` 0 to 4 | While the panel is open | FND-AUDIO-011, FND-COMBAT-002, FND-COMBAT-007 |
+| Opponent frame | `DATA/PX16/PX00129` crop `(120,171,34,34)`, keyed on exact white | The chosen opponent | `(305, 139 + 36 * n, 34, 34)`, one pixel outside portrait `n` | While an opponent is chosen | FND-COMBAT-009 |
+| Page counter | Two-cell numbers with leading zeros | The page number, from 1, and the page count | From `(138, 137)` and `(174, 137)` | While the panel is open | FND-COMBAT-007 |
+| Arrows | `DATA/PX16/PX00129` 26-by-23 art: Previous from `(170, 363)` on the first page and `(118, 363)` otherwise; Next from `(196, 363)` on the last page and `(144, 363)` otherwise | Whether a page step is possible | `(135, 157)` and `(163, 157)` | While the panel is open | FND-COMBAT-007 |
+| Sector tile | 54-by-52 cell of the drawn city map, framed in black | The page's sector | `(135, 191, 54, 52)` | While the panel is open | FND-COMBAT-007 |
+| Police strip | `DATA/PX16/PX00129` `(0, 432, 54, 9)` | A police result in the sector | `(135, 191, 54, 9)` | When any player's police flag for the sector is set | FND-COMBAT-007 |
+| Sector code | The font of `fn_00413FD5` | A column letter A to H and a row digit 1 to 8 | From `(156, 246)` | While the panel is open | FND-COMBAT-007 |
 
 ## Mouse input
 
@@ -66,8 +72,10 @@ None known.
 
 ## Open questions
 
-- The page text, the sector tile and its code, the police art and the
-  pressed arrows: their positions and resources are not recorded in a finding.
+- The page counter, sector tile, sector code, police strip and arrows are
+  taken from the page renderer `fn_00453087` (FND-COMBAT-007); which rows of
+  the interface sheet hold the greyed arrows and the dimmed portraits rests on
+  its branch structure, not on a comparison of the art.
 - What selecting a slot with the force selector changes on the panel.
 - The keys that page, and whether any key closes the panel.
 - The resources of the portraits in the grids and the opponent strip.

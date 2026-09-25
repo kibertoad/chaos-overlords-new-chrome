@@ -4,7 +4,7 @@ title: roll(n) gives a whole number from 1 to n from three draws
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-RNG-002, FND-RNG-003, FND-RNG-004, SRC-MANUAL-GOG]
+evidence: [FND-RNG-002, FND-RNG-003, FND-RNG-004, FND-RNG-006, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-RNG-001]
@@ -21,7 +21,8 @@ third decides which of the first two is used.
 Whenever a rule calls `roll`. It is the only way the game draws from `rng`: the
 runtime `rand` has no other caller (FND-RNG-002), and the 61 calls of the
 wrapper cover the computer players, setup, city generation, hiring, the shared
-dice and the whole-turn resolver (FND-RNG-003, FND-RNG-004).
+dice and the whole-turn resolver (FND-RNG-003, FND-RNG-004). FND-RNG-006 lists
+the 61 calls one by one, with their bounds and their place in the turn.
 
 ## Parameters
 

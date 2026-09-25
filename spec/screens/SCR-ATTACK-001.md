@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-ATTACK-001, FND-AUDIO-002, FND-AUDIO-011, FND-DETECT-001, SRC-MANUAL-GOG]
+evidence: [FND-ATTACK-001, FND-ATTACK-002, FND-AUDIO-002, FND-AUDIO-011, FND-DETECT-001, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-ATTACK-002]
@@ -13,15 +13,17 @@ related: [RULE-ATTACK-002]
 
 ## Drawn elements
 
-Positions are panel-local: the panel's origin on the screen is not recorded
-(see Open questions).
+Positions are panel-local. The panel's origin on the screen is `(104,124)`:
+the picker subtracts it from the pointer before its rectangle tests, and its
+marks are drawn at the matching screen positions [FND-ATTACK-002].
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| Panel | `DATA/PX16/PX05003` | None | Origin not recorded | While the picker is open | FND-ATTACK-001 |
+| Panel | `DATA/PX16/PX05003` | None | Origin `(104,124)` | While the picker is open | FND-ATTACK-001 |
 | Opponent portraits | Not recorded | The five other players, one per cell | Local `(98, 16 + 36 * n, 32, 32)` for `n` 0 to 4 | While the picker is open; a disabled opponent's cell does not react | FND-ATTACK-001 |
 | Target cards | Not recorded | The selected opponent's targetable gangs, from RULE-ATTACK-002 | Local target area `(135, 16, 202, 177)`, in six cells of RULE-ATTACK-002's list | After an opponent is selected | FND-ATTACK-001, FND-DETECT-001 |
-| Target marker | Not recorded | None | On the right side of the chosen gang's card | After a target is chosen | SRC-MANUAL-GOG |
+| Opponent frame | `DATA/PX16/PX00129` crop `(120,171,34,34)`, keyed on exact white | Which opponent is chosen | Local `(97, 15 + 36 * n, 34, 34)`, one pixel outside portrait `n` | After an opponent is chosen | FND-ATTACK-002 |
+| Target marker | `DATA/PX16/PX00129` crop `(66,299,48,48)`, keyed on exact white | Which target cell is chosen | Local `(143 + 68 * (c % 3), 18 + 90 * (c / 3), 48, 48)` for cell `c`, 8 pixels right of and 2 below the cell's corner | After a target is chosen | FND-ATTACK-002 |
 
 ## Mouse input
 
@@ -70,9 +72,6 @@ None known.
 
 ## Open questions
 
-- The panel's origin on the screen. The shared command panels are drawn at
-  x 104, which would put the opponent cells at screen x 202, but no finding
-  records the picker's origin.
 - Which player each opponent cell shows (presumably the other five in slot
   order), and which cell each listed target takes.
 - The acting gang's portrait, the selected gang's equipment and Force track,

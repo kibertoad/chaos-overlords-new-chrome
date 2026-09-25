@@ -9,7 +9,7 @@ byte_order: little
 size: 10
 text: false
 definition: fmt_state_003.ksy
-evidence: [FND-AI-010, FND-COMBAT-004, FND-PLATFORM-003]
+evidence: [FND-AI-010, FND-COMBAT-004, FND-PLATFORM-003, FND-STATE-005]
 conflicting: []
 split_with: []
 related: []
@@ -22,7 +22,12 @@ The whole-turn resolver keeps one record per gang in the list
 records in all [FND-COMBAT-004, FND-AI-010]. The resolver fills them during the
 combat phase, and Detailed Combat reads them to present the fights. An attack
 and the retaliation it provokes share the attacker's record; no record
-describes a retaliation on its own [FND-COMBAT-004].
+describes a retaliation on its own [FND-COMBAT-004]. Each resolution sets
+`police_damage` to -1 in all 486 records, then writes bytes 0 to 8 only for
+the gangs that attacked, were attacked or were hit by the police in that
+resolution. Every other record keeps bytes 0 to 8 from the last resolution in
+which its roster slot fought, even after the gang died or the slot was
+reused [FND-STATE-005].
 
 | Offset | Size | Type | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|---|---|
@@ -62,7 +67,4 @@ resolution are saved with the game.
   FND-COMBAT-004.
 - The types are assumed signed where -1 is stored. Whether the game loads
   `definition` and the Force bytes signed is not recorded.
-- Which resolver instructions fill each byte: the findings give decompiler
-  positions only.
-- Whether records of gangs that did not fight are cleared or keep the values of
-  an earlier turn.
+

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-SETUP-005, FND-SETUP-002, FND-SETUP-009, FND-SETUP-012, FND-AUDIO-002, FND-AUDIO-010, FND-RNG-005, SRC-MANUAL-GOG, SRC-HELP-GOG]
+evidence: [FND-SETUP-005, FND-SETUP-014, FND-SETUP-002, FND-SETUP-009, FND-SETUP-012, FND-AUDIO-002, FND-AUDIO-010, FND-RNG-005, SRC-MANUAL-GOG, SRC-HELP-GOG]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-002, RULE-SETUP-003, RULE-SETUP-009, RULE-SETUP-010]
@@ -16,10 +16,12 @@ related: [RULE-SETUP-002, RULE-SETUP-003, RULE-SETUP-009, RULE-SETUP-010]
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Background with the scenario, settings and player panels and the four push buttons | `DATA/PX16/Px00143` | None | `(0, 0, 640, 460)` | Always | FND-AUDIO-010, SRC-MANUAL-GOG |
-| Top strip of player portraits, one per slot | `DATA/PX16/PX00129`, the 32-by-32 cell of the slot's `portrait` in row y=480 (cell 15 for an empty slot) | Each slot's `portrait` | Not recorded | Always | FND-SETUP-005, FND-SETUP-002 |
-| Player card face, per occupied slot | `DATA/PX16/PX00129`, source `(32 * portrait, 480, 32, 30)`, scaled opaquely | The slot's `portrait` | `(cardX, cardY + 3, 64, 60)` for the slot's card origin | The slot is occupied | FND-SETUP-005 |
-| Portrait arrows | `DATA/PX16/PX00140`, source `(220, 138, 64, 62)`, exact white transparent | None | At the selected card's origin, 64 by 62 | On the card of `selected_card` only | FND-SETUP-005 |
-| Player name, per occupied slot | Not recorded | The slot's entry of `player_names` | Below the card face | The slot is occupied | FND-SETUP-005, SRC-MANUAL-GOG |
+| Top strip of player portraits, one per slot | `DATA/PX16/PX00129`, the 32-by-32 cell of the slot's `portrait` in row y=480 (cell 15 for an empty slot) | Each slot's `portrait` | `(360 + 36 * n, 38, 32, 32)` for slot `n` | Always | FND-SETUP-005, FND-SETUP-002, FND-SETUP-014 |
+| Player card, per human slot | Composed from the background, a colour bar, the portrait and the name, then copied opaquely | The slot's colour, `portrait` and name | `(cardX, cardY - 3, 76, 68)`, with card origins `(385,95)`, `(468,95)`, `(385,169)`, `(468,169)`, `(385,243)` and `(468,243)` for slots 0 to 5 | The slot's `controller` is 0 or 3; for -1 and 1 the background is restored there instead | FND-SETUP-014 |
+| Colour bar | Fill in the slot's colour | The slot's colour | `(cardX, cardY, 9, 41)` | On each card | FND-SETUP-014 |
+| Player card face, per card | `DATA/PX16/PX00129`, source `(32 * portrait, 480, 32, 30)`, scaled opaquely | The slot's `portrait` | `(cardX + 12, cardY - 3, 64, 60)` | On each card | FND-SETUP-005, FND-SETUP-014 |
+| Portrait arrows | `DATA/PX16/PX00140`, source `(220, 138, 64, 62)`, exact white transparent | None | Over the card face, `(cardX + 12, cardY - 3, 64, 62)` | On the card of `selected_card` only | FND-SETUP-005, FND-SETUP-014 |
+| Player name, per card | The font of `fn_00413FD5` | The slot's entry of `player_names` | Centred on x `cardX + 45`, starting at `cardX + 45 - 3 * length`, on row `cardY + 58` | On each card | FND-SETUP-005, FND-SETUP-014, SRC-MANUAL-GOG |
 | Scenario selection light | Not recorded | Which of the ten scenarios `scenario` holds | Not recorded | Always | FND-SETUP-012 |
 | Drag token | The dragged slot's portrait, 40 by 40 | None | Centred on the pointer, the centre kept within x 20 to 620 and y 20 to 440 | While a card is dragged | FND-SETUP-005 |
 
@@ -78,10 +80,13 @@ None known.
   and 640 by 460 16-bit pixels). The coordinates here are those of the
   executable's 640-by-460 drawing surface; where that surface sits on the
   640x480 screen (below the window's menu bar) is not recorded.
-- The card origins the renderer draws at (`cardX`, `cardY`) are not recorded;
-  the input cells start at y 94, 168 and 242, and measurements of the
-  background place the faces five pixels higher, which is not confirmed.
-- The positions of the top-strip portraits, the name text, the selection
+- The drawn cards start 12 pixels left of the input cells, which start at
+  `(397,94)` (FND-SETUP-005), so the cell covers the portrait column and not the
+  colour bar (FND-SETUP-014).
+- Computer players get no card: the renderer restores the background for a
+  slot whose `controller` is 1, as for an empty slot (FND-SETUP-014). What the
+  background shows there has not been compared.
+- The positions of the selection
   lights and the input rectangles of the scenario, time limit, AI Mentality
   and turn time buttons are not recorded.
 - The pressed images of the four push buttons are taken from

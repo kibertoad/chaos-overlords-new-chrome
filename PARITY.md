@@ -13,7 +13,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 2 |
 | `sourced` | 4 |
-| `supported` | 56 |
+| `supported` | 58 |
 | `established` | 0 |
 | `disputed` | 3 |
 | `implemented` | 145 |
@@ -21,8 +21,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Code | Rows |
 |---|---|
-| `missing` | 10 |
-| `partial` | 53 |
+| `missing` | 11 |
+| `partial` | 54 |
 | `complete` | 147 |
 
 ## DATA
@@ -84,11 +84,13 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-STATE-001` | Gang record, one per player and roster slot | sourced | partial | None | None | sourced | The rebuild keeps each gang's fields as named state rather than this 32-byte layout, and marks an empty roster slot with Force 0 rather than sector 100. |
-| `FMT-STATE-002` | Sector record, one per city sector | sourced | partial | None | None | sourced | The rebuild keeps sector owner, Income, Tolerance, sites and site benefits as named state rather than this 36-byte layout, and the unknown bytes are not represented. |
+| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | partial | None | None | supported | The rebuild keeps each gang's fields as named state rather than this 32-byte layout, and marks an empty roster slot with Force 0 rather than sector 100. |
+| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | The rebuild keeps sector owner, Income, Tolerance, sites and site benefits as named state rather than this 36-byte layout; whether it keeps a base Tolerance apart from the shown one, the research level and the seen-gang bytes was not checked. |
 | `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | partial | None | None | supported | The rebuild derives combat presentation from combat events and clip forces rather than keeping these 10-byte records. |
 | `FMT-STATE-004` | Site slot in a sector record | supported | partial | None | None | supported | The rebuild keeps remaining Resistance per site plus an explicit influencer identity that the original does not store. |
 | `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | The rebuild keeps the Comlink inbox with the same occupied, read, turn, sender and text content, not this 166-byte layout. |
+| `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | The rebuild keeps its own notification history and derives the Last Turn reports from it, not this 10-byte layout; whether its arguments match the report types' arguments was not checked. |
+| `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | missing | None | None | supported | The rebuild's computer players keep their own planning state; it was not compared with this 16-byte layout. |
 
 ## RNG
 
@@ -202,21 +204,21 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported | complete | None | `DEV-MOVE-001` | implemented | None |
-| `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002` | implemented | The mode-0 fallback follows the rebuild's reading of the selector, which RULE-AI-007 disputes. |
+| `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002` | implemented | The mode-0 fallback follows the rebuild's reading of the selector; RULE-AI-007 now settles it as a random neighbour, and the rebuild has not been checked against that. |
 | `SCR-MOVE-001` | Move panel | supported | partial | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | supported | Panel resource and neighborhood cells are the original's; the controls, keys and destination marker are not pinned by findings. |
 
 ## CONTROL
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-CONTROL-001` | Control pools each player's strength per sector and settles sectors in ascending order, with a neutral candidate at a zero margin | supported | partial | None | `DEV-CONTROL-001`, `DEV-CONTROL-002` | supported | Candidates are limited to players with a Control order and a Crackdown sector gets an explicit failed result (see deviations); the report order is not pinned. |
+| `RULE-CONTROL-001` | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported | partial | None | `DEV-CONTROL-001`, `DEV-CONTROL-002` | supported | Candidates are limited to players with a Control order and a Crackdown sector gets an explicit failed result (see deviations). FND-CONTROL-003 changed the procedure (only contested sectors without police are settled; the defense joins the owner's pool); the rebuild has not been checked against it. |
 
 ## GANG
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites' | supported | complete | None | None | implemented | None |
-| `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | partial | None | None | supported | Force 0 and cleared orders stand in for the sector byte 100; the casualty count is not located. |
+| `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | partial | None | None | supported | The rebuild adds the weapon skills when an attack is computed instead of storing them in Combat (FND-GANG-007), so other readers of the stored Combat can differ. |
+| `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | partial | None | None | supported | Force 0 and cleared orders stand in for the sector byte 100. |
 | `SCR-GANG-001` | Gang definition panel for a hire offer | supported | partial | None | None | supported | Field columns and rows follow the original; which statistic sits on which row is not recorded. |
 | `SCR-GANG-002` | Gang information panel for a hired gang | supported | partial | None | `DEV-GANG-001` | supported | Value columns follow the original; the rows, equipment and portrait positions are not recorded, and the rebuild adds breakdown tooltips. |
 
@@ -300,7 +302,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-POLICE-001` | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | supported | complete | None | None | implemented | None |
-| `RULE-POLICE-002` | A Crackdown is recorded in the sector's history, a third within five turns neutralizes the sector, and it adds 3 to 5 turns of police | supported | partial | None | None | supported | The rebuild resets more on neutralization (Support, Tolerance modifiers, resistance) than the three influence values the finding names, pending which values the original clears. |
+| `RULE-POLICE-002` | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | supported | partial | None | None | supported | The rebuild adds police presence, with its draw, on every Crackdown, where the original does so only on the third (FND-POLICE-004). It also resets more on neutralization (Support, Tolerance modifiers, resistance) than the three influence values the finding names, pending which values the original clears. |
 | `RULE-POLICE-003` | Police presence counts down by one at the end of every turn unless it is permanent | supported | complete | None | None | implemented | None |
 | `RULE-POLICE-004` | Crackdown reports go to the players who had a gang in the sector when resolution began | supported | complete | None | None | implemented | None |
 
@@ -314,7 +316,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | None |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | The Tech ceiling of the first weapon pass (local_tech_cap) is not described by the findings, so its match is not established. |
 | `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported | partial | None | None | supported | Mode 4 is not written out in the findings and the rebuild's version of it is not backed by evidence. |
-| `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | disputed | partial | None | None | disputed | Mode 0 is disputed between FND-AI-005 and FND-MOVE-001; the rebuild follows one reading. |
+| `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | partial | None | None | supported | FND-MOVE-003 settles mode 0 as the neighbour draw; whether the rebuild's reading matches it has not been checked. |
 | `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | supported | complete | None | None | implemented | None |
 | `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | None | None | implemented | None |
 | `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | partial | None | `DEV-AI-001` | supported | The rebuild deliberately compares the previous hire role with role 4 in the family-6 guards (BUG-AI-001), and the schedule adjustments of most scenarios are not recorded. |
@@ -326,7 +328,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-016` | An attack lowers the defender's attitude toward the attacker by the larger of its reaction and the damage | supported | complete | None | None | implemented | Which resolver loop makes the call is not recorded, so the order against other combat writes is not established. |
 | `RULE-AI-017` | A sector changing owner lowers the previous owner's attitude toward the new owner by twice its reaction | supported | complete | None | None | implemented | Which ownership changes make the call is not recorded. |
 | `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported | complete | None | None | implemented | None |
-| `RULE-AI-019` | Family-0 computer gangs heal, hide, probe weak enemies or wander, by previous action, and turn aggressive after two moves | disputed | complete | None | `DEV-AI-002`, `DEV-AI-003` | disputed | The rebuild counts previous Hide for family 0, following FND-AI-030; FND-AI-019 says the selector counts previous Chaos. |
+| `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild counts previous Hide where the original counts previous Chaos and writes Chaos (FND-AI-046), and groups the previous actions as the superseded FND-AI-030 did (FND-AI-048). |
 | `RULE-AI-020` | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | The branches for previous actions other than None, Chaos, Heal, Control, Equip and Snitch are not recorded. |
 | `RULE-AI-021` | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-022` | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
@@ -370,6 +372,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMLINK-004` | Comlink View opens at the oldest unread message and refuses an empty inbox | supported | complete | None | None | implemented | None |
 | `RULE-COMLINK-005` | Showing a Comlink message marks it read and dates it from its turn | supported | complete | None | None | implemented | None |
 | `RULE-COMLINK-006` | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | supported | complete | None | None | implemented | None |
+| `RULE-COMLINK-007` | When a player finishes planning, the read messages at the front of the inbox are dropped | supported | missing | None | None | supported | The rebuild keeps read messages until the 16-message limit drops them. |
 | `SCR-COMLINK-001` | Comlink View panel | supported | complete | None | `DEV-COMLINK-001` | implemented | None |
 | `SCR-COMLINK-002` | Comlink Send panel | supported | complete | None | None | implemented | None |
 

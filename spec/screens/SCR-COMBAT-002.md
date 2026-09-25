@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-005, FND-DATA-003, FND-UI-001, FND-UI-010]
+evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-005, FND-COMBAT-009, FND-DATA-003, FND-UI-001, FND-UI-010]
 conflicting: []
 split_with: []
 related: [RULE-COMBAT-004]
@@ -23,7 +23,7 @@ screen at `(104,124)` [FND-UI-001], so panel-local `(x, y)` is screen
 | Sector tile | The city map art | The sector of the current clip | `(135, 135, 54, 52)` | During each clip | FND-UI-001 |
 | Sector code | Not recorded | The sector's code | Text at `(156, 190)` | During each clip | FND-UI-001 |
 | Gang portraits | Not recorded | The viewer's gang on the left, the other gang on the right | `(254, 172, 64, 64)` and `(327, 172, 64, 64)` | During each clip | FND-UI-001, FND-UI-010 |
-| Force tracks | None (drawn) | Each gang's `force_shown` from `combat_records`, as RULE-COMBAT-004 lowers it: each track has a light, a full and a dark row, and lost Force settles into the missing-Force colour | Two 60 by 3 tracks at y 238 and y 245 | During each clip | FND-UI-001, FND-UI-010 |
+| Force tracks | `DATA/PX16/PX00129`: the 60-by-3 red track `(354,3)`, then `6 * value` pixels of the green strip `(354,0)` | Two tracks per gang from its copy of the first eight bytes of its `combat_records` entry: the upper shows `force_start`, the lower `force_shown` as RULE-COMBAT-004 lowers it. Each track has a light, a full and a dark row | Left gang `(256, 240, 60, 3)` and `(256, 247, 60, 3)`; right gang `(329, 240, 60, 3)` and `(329, 247, 60, 3)` | During each clip | FND-UI-001, FND-UI-010, FND-COMBAT-009 |
 | Equipment, left | The item's `PX04xxx` rotation strip, one 48 by 48 frame chosen by the item record's last word | The left gang's weapon, armor and miscellaneous item | `(204, 172, 48, 48)`, `(204, 221, 48, 48)`, `(204, 270, 48, 48)` | During each clip, for each equipped item | FND-AUDIO-013 |
 | Equipment, right | As on the left | The right gang's items | `(393, 172, 48, 48)`, `(393, 221, 48, 48)`, `(393, 270, 48, 48)` | During each clip, for each equipped item | FND-AUDIO-013 |
 | Attack strip | See below | Eight 64 by 64 frames of the attacker | `(254, 254, 64, 64)` in a clip the viewer's gang makes, `(327, 254, 64, 64)` in a mirrored clip | Ticks 3 to 10 of each clip | FND-AUDIO-013, FND-COMBAT-005, FND-UI-001 |
@@ -93,8 +93,9 @@ None known.
 
 ## Open questions
 
-- The x positions of the two Force tracks, and whether each gang has one track
-  or both tracks belong to one gang.
+- The tracks are drawn at panel-local y 116 and 123 (FND-COMBAT-009); the
+  capture of FND-UI-010 measured y 114 and 121. Which is right depends on the
+  capture's unrecorded settings.
 - The Cancel control and any key that ends or skips the presentation are not
   recorded in a finding.
 - The resources of the gang portraits and the sector code's font.

@@ -90,19 +90,6 @@ order of priority, unless a group says otherwise.
 - Glossary (new term needed by combat and police rules): the address and type
   of the per-player casualty statistic that the damage application (old line
   538) and police deaths increment.
-- Glossary `hire_phase`, `resolution`: confirm that the hire block of
-  0x00472775 (0x0047592B..0x00475CE4) runs after the Control block
-  (0x004756D9); the order now rests only on block addresses.
-- Glossary `turn_end`: order of the Crackdown decrement at 0x00475E74 against
-  the call to elimination helper 0x00476F3B. FND-TURN-004 also mentions a
-  Crackdown-duration update in outer turn function 0x0046E766; reconcile it
-  with FND-POLICE-001, which places the decrement at the end of resolution.
-- Glossary `elapsed_turns`: check whether the Crackdown occurrence window
-  (FND-POLICE-001, "current turn - 5") reads 0x0049CA68 or another counter,
-  and where 0x0049CA68 is incremented relative to `turn_end`.
-- Glossary `roster_slot`: which 80 slots the hire search at
-  0x00475BDB..0x00475C2D covers (1..80 is expected, leaving slot 0 to the
-  Right Hands).
 - Glossary `player_names`: what byte 0 of each 12-byte record at 0x004A2588
   holds (a length is expected for a Pascal string) and the text encoding.
 - Glossary `research_remaining`: whether the Research case and pickers load
@@ -119,60 +106,6 @@ order of priority, unless a group says otherwise.
   its address, and whether it is related to `turn_order` or to the ranking.
 - FMT-STATE-005 `unk_A5` and `text`: read recorder 0x0045D2F0 and the Send
   path for the last byte and the text encoding and padding.
-
-## Random numbers and the order of a turn
-
-- FND-RNG-001..005, FND-TURN-001..005, FND-HIDE-001: every function location is
-  a single entry address. Give each function's full range (`0x00465620`,
-  `0x00478CC0`, `0x00460CCF`, `0x0046439A`, `0x00478CD0`, `0x0045D227`,
-  `0x00432DA0`, `0x00408642`, `0x00408214`, `0x0040E0A0`, `0x00468C8E`,
-  `0x0046E766`, `0x0046DC10`, `0x00475FE1`, `0x00476726`, `0x004677F0`,
-  `0x00472775`, `0x0043F692`, `0x004782C5`, `0x00402D70`, `0x00414D8C`,
-  `0x0041462F`, `0x00476F3B`, `0x00476857`, `0x0047712A`, `0x00458FA0`,
-  `0x0046FD80`, `0x004726C0`).
-- RULE-RNG-001 (open question), FND-RNG-001: check which thread each caller of
-  `fn_0045D227` runs on, and whether any thread other than the one that runs
-  `fn_00465620` can draw (it would start from the runtime default state 1).
-- FND-RNG-004: list the addresses of the twelve family-handler functions whose
-  wrapper calls make up the 46 AI calls.
-- FND-TURN-001: record the instruction addresses of the Influence case, the
-  Control block's owner write and the Chaos pass's neutralizing branch in
-  `fn_00472775` (the old text gave decompiler line numbers 151-185, 801-821 and
-  313-319). Also the base address of the in-memory site definition table that
-  `0x004AB684` points into, for the glossary term `site_definitions`.
-- RULE-TURN-003: whether the Instant scan skips records whose `sector` is 100
-  before the switch on `action`. RULE-HIDE-001: whether the Hide case at
-  `0x00472D00` does anything besides incrementing `hide_count`.
-- RULE-TURN-004, FND-TURN-004: how `repeat_target` encodes the site of a
-  recurring Influence and the item of a recurring Research (compare the
-  pickers `fn_0043F692` and `fn_004427FA` with the cleanup's reads). Reconcile
-  the Crackdown-duration update in `fn_0046E766` with the decrement at
-  `0x00475E74` (RULE-POLICE-003): one update or two.
-- RULE-TURN-005, FND-TURN-002: which of a sector's gangs `fn_0041462F` applies
-  an order to; whether the recurring paths write `target` (individual) and
-  `repeat_target` (sector-wide); what the individual handler's recurring
-  Influence shortcut is.
-- RULE-TURN-006, FND-TURN-003: the test `fn_00476F3B` uses for "slot 0 no
-  longer holds the active Right Hands" (sector byte, definition or both);
-  whether the Eliminate scan skips inactive players; the instruction addresses
-  of the call to `fn_00476F3B`, the report loops and the call to `fn_00476857`
-  (old decompiler lines 933-945); where they fall against the Crackdown
-  decrement at `0x00475E74`; the address of the player active bytes.
-- RULE-TURN-001, FND-TURN-005: how the planning loop in `fn_0046E766` tells an
-  inactive slot (active byte or controller value) and what it does for
-  controller 3; the instruction addresses of the six-byte presentation clear,
-  the planning loop and the second slot loop (old lines 309-348 and 433-448);
-  where `elapsed_turns` (`0x0049CA68`) is incremented; whether a match loaded
-  from a save enters the loop with the first-pass Upkeep skip; the order of the
-  offer refill and the visibility rebuild at a planning entry.
-- RULE-TURN-002: confirm by control flow, not only block addresses, that the
-  hire block (`0x0047592B..0x00475CE4`) runs after the Control block; the order
-  of the Crackdown-report snapshot (RULE-POLICE-004) against the second loop of
-  RULE-EVENT-001 at the start of resolution; where RULE-TOLERANCE-001 runs in
-  the turn.
-- FND-HIDE-001, RULE-HIDE-001: search for other reads of record byte `+7`
-  compared with 8 (Control strength, visibility, the computer players) to list
-  every consumer of `is_hidden`.
 
 ## Hire, Influence, Research, Bribe, Snitch, Tolerance and sites
 
@@ -419,11 +352,6 @@ order of priority, unless a group says otherwise.
   turn time controls, and the globals they write (the time limit gives
   `turn_limit`; its address is unknown). Also the positions of the top
   portrait strip, the names and the selection lights.
-- RULE-OBJECTIVE-002, RULE-OBJECTIVE-004, glossary `scenario_*`: settle the
-  scenario numbering. FND-SETUP-009 and FND-SETUP-012 make 0 Kill 'Em All; the
-  glossary makes 6 Siege and 7 Eliminate; FND-AI-005 reads 0 as cash (Greed)
-  and 6 as the headquarters count (Eliminate). Read the switch in `0x0047712A`
-  against the setup button order to give each scenario its number.
 - RULE-OBJECTIVE-004: write out the Dominance numerator in `0x0047712A` and
   the end tests of each scenario in `0x00476857` (thresholds 40 and 64, Siege
   test, timed end test), which the rule takes from the manual.
@@ -811,10 +739,12 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
   questions in the earlier groups are answered inside these, so read them before the parent
   handlers.
 - Parent handlers cited only for one detail need a finding that describes each as a whole
-  (purpose, range, inputs, what it writes): Give `fn_00445A4F`, Sell `fn_00443BBD`, the gang panel
-  `fn_00449E80`, Comlink `fn_0046BA84`, Move `fn_004413EF`, `fn_0044B699` (3,507 bytes, 29
-  callers), `fn_0044E6ED`, `fn_00453087` (7 callers), `fn_00410770` (11 callers), `fn_00413012`
-  (7 callers), `fn_0040EE8A` (10 callers), `fn_0046D77B` (13 callers) and `fn_00412BF7`.
+  (purpose, range, inputs, what it writes): the city-screen functions `fn_00410770` (11 callers),
+  `fn_00413012` (7 callers) and `fn_00412BF7`. The others of this item are recorded in
+  FND-GIVE-001, FND-SELL-001, FND-GANG-006, FND-MOVE-004, FND-UI-013, FND-UI-014, FND-COMBAT-007,
+  FND-SETUP-014, FND-NET-001 and FND-NET-002; the sub-functions they leave unread
+  (`fn_00448027`, `fn_00447ADB`, `fn_00445655`, `fn_004425AE`, `fn_00453A8D`, `fn_0041B668`) are
+  named in those findings' Alternatives.
 - The rectangle test `fn_00449B78` (`PtInRect`, 49 callers) decides every click. Record its
   argument order and whether the right and bottom edges are inside; that settles "the order of
   the four numbers in the held-button rectangles" in the Setup group for every screen at once.
@@ -842,20 +772,6 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
   Start with the unnamed regions used by the most functions (above: `0x00493658`, `0x004980A0`,
   `0x00493830`, `0x004A287A`, `0x00490598`, `0x00498570`, `0x00493F88`, `0x00494BF0`). Then read
   the 51 `.rdata` addresses and record the constant tables among them.
-
-## Random number call sites
-
-- Record every one of the 61 calls to `fn_0045D227` in one RNG finding: instruction address,
-  bound, the rule the result serves, and its place in the turn. By function: `fn_00401000` (4),
-  `fn_00408214` (2), `fn_00408642` (3), `fn_0040ABC0` (4), `fn_0041FEF0` (3), `fn_00428EF0` (8),
-  `fn_00431C60` (4), `fn_00432DA0` (2), `fn_00434080` (2), `fn_004353A0` (2), `fn_00435BD0` (2),
-  `fn_00436C70` (2), `fn_0043A1D0` (2), `fn_004605E0` (2), `fn_0046439A` (2), `fn_00466910` (4),
-  `fn_00468C8E` (1), `fn_0046DC10` (1), `fn_004716EB` (1), `fn_00472775` (5), `fn_00475F70` (1),
-  `fn_00475FE1` (2), `fn_004764B6` (1), `fn_00476726` (1). FND-RNG-004 and FND-RNG-005 cover
-  groups of these without addresses, and RULE-RNG-001's draw order can only be checked against
-  such a list.
-- The runtime `_rand` (`fn_00478CD0`) has three direct call sites, all inside `fn_0045D227`.
-  Confirm that no pointer to it is stored anywhere, so the list above is every draw.
 
 ## Boundary of the network code
 

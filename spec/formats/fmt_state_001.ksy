@@ -6,16 +6,16 @@ meta:
 doc: |
   One 32-byte gang record. The game keeps 486 of them at 0x00498DA8,
   player-major: player * 0xA20 + roster slot * 0x20.
-doc-ref: FMT-STATE-001, FND-HIRE-002, FND-UI-036, FND-PLATFORM-003
+doc-ref: FMT-STATE-001, FND-HIRE-002, FND-UI-036, FND-PLATFORM-003, FND-STATE-002
 seq:
   - id: player
     type: s1
     doc: Owning player slot, 0 to 5.
-    doc-ref: SRC-RECHAOS-3561D41
+    doc-ref: FND-STATE-002
   - id: definition
     type: u1
     doc: Record number in the gang definition table read from DATA/Gangs.
-    doc-ref: SRC-RECHAOS-3561D41
+    doc-ref: FND-STATE-002
   - id: sector
     type: s1
     enum: gang_sector
@@ -24,7 +24,7 @@ seq:
   - id: force
     type: s1
     doc: Current Force.
-    doc-ref: SRC-RECHAOS-3561D41
+    doc-ref: FND-STATE-002
   - id: weapon
     type: s1
     doc: Item record number of the equipped weapon, or -1.
@@ -45,11 +45,11 @@ seq:
   - id: target
     type: s1
     doc: First target byte of the action.
-    doc-ref: FND-COMBAT-004, FND-TURN-002
+    doc-ref: FND-COMBAT-004, FND-EQUIP-007, FND-STATE-002, FND-TURN-002
   - id: target_2
     type: s1
     doc: Second target byte of the action.
-    doc-ref: FND-COMBAT-004
+    doc-ref: FND-COMBAT-004, FND-EQUIP-007, FND-STATE-002
   - id: repeat_action
     type: u1
     enum: action
@@ -84,7 +84,7 @@ seq:
   - id: chaos
     type: s1
     doc: Effective Chaos.
-    doc-ref: SRC-RECHAOS-3561D41
+    doc-ref: FND-STATE-002
   - id: control
     type: s1
     doc: Effective Control.
@@ -96,27 +96,27 @@ seq:
   - id: influence
     type: s1
     doc: Effective Influence.
-    doc-ref: SRC-RECHAOS-3561D41
+    doc-ref: FND-STATE-002
   - id: research
     type: s1
     doc: Effective Research.
-    doc-ref: SRC-RECHAOS-3561D41
+    doc-ref: FND-STATE-002
   - id: strength
     type: s1
     doc: Effective Strength.
-    doc-ref: SRC-RECHAOS-3561D41
+    doc-ref: FND-STATE-002
   - id: blade
     type: s1
     doc: Effective Blade.
-    doc-ref: SRC-RECHAOS-3561D41
+    doc-ref: FND-STATE-002
   - id: ranged
     type: s1
     doc: Effective Ranged.
-    doc-ref: SRC-RECHAOS-3561D41
+    doc-ref: FND-STATE-002
   - id: fighting
     type: s1
     doc: Effective Fighting.
-    doc-ref: SRC-RECHAOS-3561D41
+    doc-ref: FND-STATE-002
   - id: martial_arts
     type: s1
     doc: Effective Martial Arts.

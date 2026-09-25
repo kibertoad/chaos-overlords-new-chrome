@@ -1,9 +1,9 @@
 ---
 id: FND-AI-030
 title: The family-0 handler is a general state machine over the previous action
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-048]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

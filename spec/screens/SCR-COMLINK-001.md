@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-COMLINK-002, FND-COMLINK-004, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG]
+evidence: [FND-COMLINK-002, FND-COMLINK-004, FND-COMLINK-007, FND-EVENT-005, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-004, RULE-COMLINK-005]
@@ -16,12 +16,19 @@ related: [RULE-COMLINK-004, RULE-COMLINK-005]
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Panel | `DATA/PX16/PX05017` | None | (104, 124, 344, 209) | While the panel is open | FND-COMLINK-002 |
-| Page header | Font not recorded | The one-based number of the message shown and `comlink_count`, formatted by RULE-COMLINK-005 | Not recorded | While the panel is open | FND-COMLINK-004 |
-| Date | Font not recorded | The message's `turn` as year and week, formatted by RULE-COMLINK-005 | Not recorded | While the panel is open | FND-COMLINK-004 |
-| Sender name | Font not recorded | The name in `player_names` of the message's `sender`, up to 10 characters | Not recorded | While the panel is open | FND-COMLINK-004 |
-| Sender portrait | The sender's 32-by-32 portrait and colour; resource not recorded | None | Not recorded | While the panel is open | FND-COMLINK-004 |
-| Message | Font not recorded | The four 40-character rows of the message's `text`, one per line | Not recorded | While the panel is open | FND-COMLINK-004 |
-
+| Message number | Digits of `DATA/PX16/PX00129` | `comlink_cursor + 1`, two digits with a leading zero | (138, 137) | While the panel is open | FND-COMLINK-007 |
+| Message count | Digits of `DATA/PX16/PX00129` | `comlink_count`, two digits with a leading zero | (174, 137) | While the panel is open | FND-COMLINK-007 |
+| Previous | `DATA/PX16/PX00129` rectangle (118, 363, 26, 23), or (170, 363, 26, 23) at the first message | None | (135, 157, 26, 23) | While the panel is open | FND-COMLINK-007, FND-EVENT-005 |
+| Next | `DATA/PX16/PX00129` rectangle (144, 363, 26, 23), or (196, 363, 26, 23) at the last message | None | (163, 157, 26, 23) | While the panel is open | FND-COMLINK-007, FND-EVENT-005 |
+| Previous pressed, Next pressed | `DATA/PX16/PX00129` rectangles (66, 363, 26, 23) and (92, 363, 26, 23) | None | Over Previous and Next | While the arrow is held with the pointer inside it, or briefly after Left or Right | FND-COMLINK-007, FND-EVENT-005 |
+| Dismiss pressed | `DATA/PX16/PX00129` rectangle (50, 386, 50, 23) | None | (137, 293, 50, 23) | While Dismiss is held with the pointer inside it | FND-COMLINK-007 |
+| Year | Digits of `DATA/PX16/PX00129` | `2050 + turn / 52` of the message, four digits | (199, 144) | While the panel is open | FND-COMLINK-004, FND-COMLINK-007 |
+| Week | Digits of `DATA/PX16/PX00129` | `turn % 52 + 1`, two digits with a leading zero | (229, 144) | While the panel is open | FND-COMLINK-004, FND-COMLINK-007 |
+| Name backing | Black fill | None | (199, 162, 60, 7) | While the panel is open | FND-COMLINK-007 |
+| Sender name | Character cells of `DATA/PX16/PX00129` | The first 10 characters of the name in `player_names` of the message's `sender` | (199, 162) | While the panel is open | FND-COMLINK-004, FND-COMLINK-007 |
+| Sender colour | Fill in the sender's colour | None | (199, 170, 8, 64) | While the panel is open | FND-COMLINK-007 |
+| Sender portrait | `DATA/PX16/PX00129` rectangle (`portrait * 32`, 480, 32, 32) of the sender, stretched by `StretchBlt` in `COLORONCOLOR` mode | None | (207, 170, 64, 64) | While the panel is open | FND-COMLINK-007 |
+| Message | Character cells of `DATA/PX16/PX00129` | Row `r` of the message's `text`, 40 characters | (199, 245 + 8 * r) for `r` 0 to 3 | While the panel is open | FND-COMLINK-004, FND-COMLINK-007 |
 ## Mouse input
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
@@ -68,11 +75,6 @@ None known.
 
 ## Open questions
 
-- The positions and fonts of the header, date, name, portrait and message rows
-  are not recorded.
-- FND-COMLINK-004 calls the sender's picture a 32-by-32 portrait; whether it
-  is drawn at that size is not recorded.
 - After each step the region (104, 124, 344, 209) is copied to the screen
-  again; how long a pressed arrow stays drawn is not recorded.
-- The resource and position of the pressed arrow and Dismiss faces are not
-  recorded.
+  again; how long a pressed arrow stays drawn after Left or Right depends on
+  a wait that was not read.

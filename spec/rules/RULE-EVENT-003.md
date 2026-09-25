@@ -4,7 +4,7 @@ title: An elimination is reported to all six player slots
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-003, FND-EVENT-001]
+evidence: [FND-TURN-003, FND-EVENT-001, FND-EVENT-004]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]
@@ -35,7 +35,7 @@ each eliminated player and before the end of the match is evaluated.
 for each player in turn_order:
     if was_active[player] and not player_active[player]:
         for recipient in 0..6:
-            call RULE-EVENT-002(recipient, 9)
+            call RULE-EVENT-002(recipient, 9, player, 0, 0)
 ```
 
 ## Outputs
@@ -60,5 +60,5 @@ None known.
 
 ## Open questions
 
-- The arguments the report carries, such as which player was eliminated, are
-  not recorded.
+None known. The report's first argument is the eliminated player
+[FND-EVENT-004].

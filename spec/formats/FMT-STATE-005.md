@@ -9,7 +9,7 @@ byte_order: little
 size: 166
 text: false
 definition: fmt_state_005.ksy
-evidence: [FND-COMLINK-001, FND-COMLINK-004, FND-SAVE-001]
+evidence: [FND-COMLINK-001, FND-COMLINK-004, FND-COMLINK-008, FND-SAVE-001]
 conflicting: []
 split_with: []
 related: []
@@ -28,10 +28,10 @@ a load leaves in the list has not been recorded.
 |---|---|---|---|---|---|---|
 | `0x00` | 1 | `UINT8` | `occupied` | Nonzero when the record holds a message | supported | FND-COMLINK-004 |
 | `0x01` | 1 | `UINT8` | `read` | Set when the recipient has viewed the message | supported | FND-COMLINK-004 |
-| `0x02` | 2 | `INT16LE` | `turn` | The zero-based turn the message was sent in | supported | FND-COMLINK-004 |
-| `0x04` | 1 | `UINT8` | `sender` | The sending player slot | supported | FND-COMLINK-004 |
-| `0x05` | 160 | `char[160]` | `text` | The message, four rows of 40 characters shown one row per line. Encoding and padding not recorded | supported | FND-COMLINK-004 |
-| `0xA5` | 1 | `UINT8` | `unk_A5` | Purpose unknown. Copied with the record; View never reads it | supported | FND-COMLINK-004 |
+| `0x02` | 2 | `INT16LE` | `turn` | The zero-based turn the message was sent in: the low 16 bits of `elapsed_turns` when the Send panel opened. Loaded signed by View | supported | FND-COMLINK-004, FND-COMLINK-008 |
+| `0x04` | 1 | `UINT8` | `sender` | The sending player slot | supported | FND-COMLINK-004, FND-COMLINK-008 |
+| `0x05` | 160 | `char[160]` | `text` | The message, four rows of 40 characters shown one row per line. One byte per character, each from `0x20` (space) to `0x5A` (`Z`); lower-case letters are typed as capitals. Unused characters are spaces; there is no terminator | supported | FND-COMLINK-004, FND-COMLINK-008 |
+| `0xA5` | 1 | `UINT8` | `unk_A5` | Spare. No code writes or reads it on its own; it is copied with the record and so carries the Send buffer's initial value, 0 | supported | FND-COMLINK-004, FND-COMLINK-008 |
 | `0xA6` | | | | Total size 166 | | |
 
 ## Enumerations and flags
@@ -49,7 +49,4 @@ original.
 
 ## Open questions
 
-- `unk_A5`: purpose unknown; the Send path that writes the record has not been
-  read for it.
-- The encoding of `text` and what fills the unused characters.
-- Whether `turn` is signed.
+None known.

@@ -1,11 +1,11 @@
 ---
 id: RULE-AI-007
 title: Sector selector mode 0 picks a random neighbouring sector
-status: disputed
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-AI-028]
-conflicting: [FND-MOVE-001]
+evidence: [FND-AI-005, FND-AI-028, FND-MOVE-003, FND-EXE-004]
+conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001]
 ---
@@ -51,8 +51,16 @@ row or leaves the city.
 
 ## Edge cases
 
-A gang in a corner has three legal neighbours, so the loop can take several
-attempts; each costs a `roll`.
+- A gang in a corner has three legal neighbours, so the loop can take several
+  attempts; each costs a `roll`.
+- The drawn neighbour is not checked against the six-gang limit or anything
+  else about the sector [FND-MOVE-003].
+- `fn_00476A94`, the Move-capacity repair, stores the result as the gang's new
+  destination (RULE-MOVE-002) [FND-MOVE-003].
+- FND-MOVE-001 described this call as one draw over all 64 sectors followed by
+  one-step routing. The instructions of the mode 0 block show the neighbour
+  draw above instead, one `roll(8)` over the eight offsets per attempt
+  [FND-MOVE-003].
 
 ## What the sources say
 
@@ -64,13 +72,4 @@ None known.
 
 ## Open questions
 
-- Disputed. FND-AI-005 describes mode 0 as a uniform draw among the eight
-  neighbours with rejection of illegal results. FND-MOVE-001 describes the
-  same call from `fn_00476A94` as scoring nothing, drawing once among all 64
-  sectors tied at 0, and routing one step toward the drawn sector with the
-  six-gang limit, as the nonzero modes do (RULE-AI-006). The instructions of the
-  mode 0 block need to be recorded to settle it.
-- Whether the neighbour draw is `roll(8)` over the eight offsets and retried on
-  rejection, or draws the row and column offsets separately, is not recorded.
-- `fn_00476A94` is the Move-capacity repair helper of the turn resolver; its
-  rule belongs to the MOVE area.
+None known.

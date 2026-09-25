@@ -1,13 +1,13 @@
 ---
 id: RULE-GANG-001
-title: Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites'
+title: Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GANG-001, FND-UPKEEP-001, SRC-MANUAL-GOG]
+evidence: [FND-GANG-001, FND-GANG-007, FND-UPKEEP-001, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
-related: [RULE-SITE-001, FMT-STATE-001, FMT-STATE-002, FMT-DATA-002, FMT-DATA-003]
+related: [RULE-SITE-001, RULE-COMBAT-001, FMT-STATE-001, FMT-STATE-002, FMT-DATA-002, FMT-DATA-003]
 ---
 
 ## Summary
@@ -15,7 +15,9 @@ related: [RULE-SITE-001, FMT-STATE-001, FMT-STATE-002, FMT-DATA-002, FMT-DATA-00
 A gang's Combat, Defense and its other twelve statistics are worked out again
 before every planning phase: the gang's own values, plus what each of its three
 items adds, plus what the completed sites of its sector add when its player
-owns that sector.
+owns that sector. Combat also takes the skills that go with the gang's weapon:
+Strength, Fighting and Martial Arts bare handed, Strength with a melee weapon,
+Strength and Blade with a blade, Ranged with a ranged weapon.
 
 ## When it runs
 
@@ -87,6 +89,17 @@ for each player in turn_order:
             gang.ranged = gang.ranged + sector.site_ranged
             gang.fighting = gang.fighting + sector.site_fighting
             gang.martial_arts = gang.martial_arts + sector.site_martial_arts
+        # the combat skills, read after items and sites have been added
+        if gang.weapon == -1:
+            gang.combat = gang.combat + gang.strength + gang.fighting + gang.martial_arts
+        else:
+            let kind = item_definitions[gang.weapon].type
+            if kind == ITEM_TYPE_MELEE:
+                gang.combat = gang.combat + gang.strength
+            else if kind == ITEM_TYPE_BLADE:
+                gang.combat = gang.combat + gang.strength + gang.blade
+            else if kind == ITEM_TYPE_RANGED:
+                gang.combat = gang.combat + gang.ranged
 ```
 
 ## Outputs
@@ -104,13 +117,28 @@ from `combat` to `martial_arts`. `force` is not changed. Makes no random draw.
   even from sites its player influenced before losing the sector.
 - The resolver's dice pools read these fields: Heal uses `heal + 4` and
   Research `force + research` (FND-GANG-001).
+- The combat skills added to `combat` are the rebuilt values, so items and
+  sites that raise Strength, Blade, Ranged, Fighting or Martial Arts raise
+  Combat too. The stored `combat` is the whole combat rating: the attack adds
+  it to Force without adding the skills again (FND-GANG-007).
+- A weapon whose type is not 0, 1 or 2 adds its own `combat` modifier and no
+  skill; the Equip pass never puts such an item in the weapon slot
+  (FND-GANG-007, RULE-EQUIP-001).
+- A gang hired during a turn's resolution starts with its definition's values
+  in these fields and is rebuilt with every other active gang before its
+  first planning phase (FND-GANG-007).
+- The pairing of the fourteen fields across the gang, item, sector and
+  definition records is shown by the rebuild itself: each field is built from
+  the fields at the same position in the other records (FND-GANG-007).
 
 ## What the sources say
 
 SRC-MANUAL-GOG, pages 39 and 40 (Statistics/Skill Mods), says item modifiers
 add to a gang's statistics and are cumulative, and page 42 (Stats/Site Mods)
 says an influenced site adds its modifiers to every gang in the controlled
-sector. Both agree with the executable.
+sector. Both agree with the executable. Pages 37 (Combat Skills) and 51 name
+the skills that go with each kind of weapon; the executable adds them into the
+stored Combat here.
 
 ## Differences between builds
 
@@ -118,9 +146,4 @@ None known.
 
 ## Open questions
 
-- The order of the fourteen statistics in the gang, item and site records, and
-  so the pairing of fields above, comes from the format entries, several rows
-  of which are `sourced`.
-- Whether the statistics pass also runs for a gang hired during the turn before it
-  plans, and when a hire's statistics are first set, belongs to the hire
-  rules.
+None known.

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EQUIP-005, FND-RESEARCH-002, FND-PLATFORM-002]
+evidence: [FND-EQUIP-005, FND-RESEARCH-002, FND-RESEARCH-003, FND-EQUIP-009, FND-PLATFORM-002]
 conflicting: []
 split_with: []
 related: [RULE-RESEARCH-001]
@@ -15,16 +15,18 @@ related: [RULE-RESEARCH-001]
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| Panel | `DATA/PX16/PX05007` | None | Not recorded | The panel is open | FND-EQUIP-005 |
-| Item list, sixteen fixed rows | Not recorded | The entries of the shared sixteen-entry list the list builder fills for the chosen category, each with the player's `research_remaining` for the item | Rows nine pixels apart, the first on the panel's baseline y 26 | The panel is open | FND-EQUIP-005, FND-RESEARCH-002 |
+| Panel | `DATA/PX16/PX05007` | None | `(104, 124, 344, 209)` | The panel is open | FND-EQUIP-005, FND-RESEARCH-003 |
+| Category frame | `DATA/PX16/PX00129` crop `(120,171,34,34)`, keyed on exact white | The chosen category | `(207, 139 + 36 * n, 34, 34)`, one pixel outside category cell `n` | Always; the panel opens on category 0, or on the category of the item in `target` when the gang's `action` is already Research | FND-EQUIP-009 |
+| Item list, sixteen fixed rows | The plain font of `DATA/PX16/PX00129` (`fn_00413FD5`) on a black area, panel `(147, 25, 181, 144)` | For the chosen category, each item the player has not finished researching whose `tech_level` is within the gang type's Tech Level as capped by the sector's research-site level, in item order: its name and the player's `research_remaining` for it | Name at panel `(148, 26 + 9 * k)`, number at panel `(316, 26 + 9 * k)` for row `k` | The panel is open | FND-EQUIP-005, FND-RESEARCH-002, FND-RESEARCH-003 |
 
 ## Mouse input
 
-Rectangles are in the shared panel's own coordinates; the panel's position on
-the screen is an open question.
+Rectangles are in the shared panel's own coordinates; the panel is at
+`(104,124)` on the screen [FND-RESEARCH-003].
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
+| Category cell `n`, `n` 0 to 3 | Panel `(104, 16 + 36 * n, 32, 32)` | Always | Chooses category `n`, redraws the frame and rebuilds the list | FND-RESEARCH-003, FND-EQUIP-009 |
 | Item list | Panel `(148, 19, 180, 143)` | The row holds an entry | Selects the row `(y - 26) / 9`, counted in panel coordinates and truncated toward zero, as the item to research; the Research order is carried out by RULE-RESEARCH-001 | FND-EQUIP-005 |
 
 ## Keyboard input
@@ -60,16 +62,12 @@ None known.
   y 161. The Equip panel's list rectangle is `(148, 26, 180, 143)` with the
   same rows, so the two lists line up but the Research list's first row
   reaches seven pixels higher.
-- The category controls: the Equip panel uses four 32-by-32 cells at panel
-  `(104, 16)`, `(104, 52)`, `(104, 88)` and `(104, 124)`, and choosing one
-  clears the choice and rebuilds the list. Whether the Research handler
-  `0x004427FA` uses the same cells is not recorded.
-- Which items the Research list builder admits (the manual's limits by the
-  gang's Tech Level and by controlled Science Centers or Research Labs, and
-  leaving out items already researched) is not recorded.
-- The font, colours and columns of a row, the confirmation and Cancel
+- The list builder caps the Tech Level at 5 or 8 by byte `0x0D` of the
+  gang's sector (FND-RESEARCH-003); which sites set that byte to 1 or 2, and
+  whether that matches the manual's Science Centers and Research Labs, is
+  not recorded here.
+- The colours of a row, the confirmation and Cancel
   controls, keyboard input, and the double-click that may open the Item
   Information panel (`DATA/PX16/PX05001`) are not recorded.
-- The panel's origin on the screen is not recorded in a finding.
 - When the game runs with the 8-bit image set it uses the `DATA/PX08` file of
   the same name (FND-PLATFORM-002).

@@ -1,9 +1,9 @@
 ---
 id: FND-AI-031
 title: The family-4 handler hides, probes and moves through mode 2
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-049]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

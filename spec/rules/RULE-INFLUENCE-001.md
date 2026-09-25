@@ -4,7 +4,7 @@ title: Each Influence gang rolls on its own and adds its successes to the site's
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-001, FND-AI-007, FND-GANG-001, FND-INFLUENCE-001, FND-CONTROL-001, FND-EVENT-001, SRC-MANUAL-GOG]
+evidence: [FND-TURN-001, FND-AI-007, FND-GANG-001, FND-INFLUENCE-001, FND-INFLUENCE-002, FND-CONTROL-001, FND-EVENT-001, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -97,8 +97,9 @@ None known.
 
 ## Open questions
 
-- That `target` holds the site slot for Influence is assumed; FMT-STATE-001
-  does not yet pin what `target` holds for each action.
+- The Influence picker writes the chosen site slot into `target`
+  (FND-INFLUENCE-002); that the resolver reads the slot from the same byte is
+  assumed.
 - The instruction addresses of the Influence case in `0x00472775` are not
   recorded, and the comparison guarding the roll is written as `!=` from the
   picker's test; a `<` there would behave the same while progress never

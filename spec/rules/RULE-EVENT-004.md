@@ -4,7 +4,7 @@ title: A Crackdown is reported to each player who had a gang in its sector
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, SRC-MANUAL-GOG]
+evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]
@@ -33,12 +33,16 @@ None.
 ## Procedure
 
 ```text
-call RULE-EVENT-002(player, 1)
+call RULE-EVENT-002(player, 1, sector, 0, 0)
 ```
 
 ## Outputs
 
-No return value. Records one type-1 report for `player`.
+No return value. Records one type-1 report for `player`, naming `sector`.
+The resolver emits `CrackdownReport` for players 0 to 5 in ascending order,
+from the `sector_presence` table it fills at the start of resolution, and all
+of a sector's Crackdown reports come before its control-loss report
+(RULE-EVENT-013) [FND-EVENT-004].
 
 ## Edge cases
 
@@ -57,5 +61,4 @@ None known.
 
 ## Open questions
 
-- The arguments the report carries are not recorded; `sector` is not shown to
-  be one of them.
+None known.

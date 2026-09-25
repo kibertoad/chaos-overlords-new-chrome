@@ -4,7 +4,7 @@ title: The Last Turn reports are cleared just before each resolution
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, SRC-MANUAL-GOG]
+evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: []
@@ -18,8 +18,9 @@ it carries out a turn's orders.
 
 ## When it runs
 
-After `planning_phase`, immediately before `resolution` starts. The second
-loop runs at the start of `resolution`, before any report is recorded.
+After `planning_phase`, immediately before `resolution` starts, whichever
+function then carries out the turn. The second loop runs at the start of
+`resolution`, before any report is recorded [FND-EVENT-004].
 
 ## Parameters
 
@@ -43,7 +44,8 @@ for each player in turn_order:
 ## Outputs
 
 No return value. Clears the `occupied` byte of all 192 records and sets all
-six counts to 0. The other bytes of each record keep their old values.
+six counts to 0. The other bytes of each record (FMT-STATE-006) keep their old
+values.
 
 ## Edge cases
 
@@ -62,5 +64,5 @@ None known.
 
 ## Open questions
 
-- The order in which the clearing loop visits the records does not change the
-  result and was not recorded.
+None known. The clearing loop visits players 0 to 5 and each player's records
+0 to 31 [FND-EVENT-004]; the order does not change the result.

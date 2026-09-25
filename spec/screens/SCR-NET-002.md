@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-SETUP-006, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010]
+evidence: [FND-SETUP-006, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, FND-NET-001]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001, SCR-NET-001]
@@ -66,5 +66,9 @@ None known.
 - The seat cell step of 83 by 74 pixels is taken from the four recorded
   origins.
 - How the three connection modes are offered and chosen is not recorded.
+- The host handles a joining computer's portrait steps as packet types 3 and 4
+  and keeps the seats, portraits and names; the joining side receives them as
+  packet types 0, 2 and 15 (FND-NET-001). Which control on this screen sends
+  each packet has not been traced.
 - The background image is 640 by 460 pixels; where it sits on the 640x480
   screen is not recorded. In 256-colour mode the game uses `DATA/PX08/PX00145`.

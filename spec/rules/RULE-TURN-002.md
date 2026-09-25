@@ -4,10 +4,10 @@ title: Resolution carries out the orders in a fixed order of steps, each visitin
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-005, FND-TURN-001, FND-CHAOS-001, FND-COMBAT-001, FND-EQUIP-002, FND-EQUIP-006, FND-MOVE-001, FND-CONTROL-001, FND-POLICE-001, FND-POLICE-002, FND-TURN-003, SRC-MANUAL-GOG]
+evidence: [FND-TURN-005, FND-TURN-001, FND-CHAOS-001, FND-COMBAT-001, FND-EQUIP-002, FND-EQUIP-006, FND-MOVE-001, FND-CONTROL-001, FND-POLICE-001, FND-POLICE-002, FND-TURN-003, FND-TURN-008, FND-RNG-006, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
-related: [RULE-POLICE-004, RULE-TURN-003, RULE-CHAOS-001, RULE-COMBAT-002, RULE-EQUIP-002, RULE-CHAOS-002, RULE-TERMINATE-001, RULE-MOVE-001, RULE-CONTROL-001, RULE-HIRE-001, RULE-TURN-006]
+related: [RULE-POLICE-004, RULE-TOLERANCE-001, RULE-TURN-003, RULE-CHAOS-001, RULE-COMBAT-002, RULE-EQUIP-002, RULE-CHAOS-002, RULE-TERMINATE-001, RULE-MOVE-001, RULE-CONTROL-001, RULE-HIRE-001, RULE-TURN-006]
 ---
 
 ## Summary
@@ -34,7 +34,11 @@ None of its own; each step's rule lists what it reads.
 ## Procedure
 
 ```text
+# one loop over the players clears each one's Last Turn report count (the
+# second loop of RULE-EVENT-001) and then takes that player's part of the
+# RULE-POLICE-004 snapshot
 call RULE-POLICE-004()
+call RULE-TOLERANCE-001()
 call RULE-TURN-003()          # instant_phase
 call RULE-CHAOS-001()         # chaos_phase
 call RULE-COMBAT-002()        # combat_phase, with police_phase inside it
@@ -50,9 +54,11 @@ call RULE-TURN-006()          # turn_end
 ## Outputs
 
 No return value. Runs the steps of `resolution` in the order above, with every
-draw each step's rule makes, in that order. RULE-POLICE-004 first notes which
-players have a gang in each sector, for the Crackdown reports of this
-resolution.
+draw each step's rule makes, in that order (FND-RNG-006 lists them). RULE-POLICE-004
+first notes which players have a gang in each sector, for the Crackdown
+reports of this resolution; then every sector's Tolerance moves one step
+toward its normal value (RULE-TOLERANCE-001). The steps follow one another
+by control flow, each loop's exit jumping to the next (FND-TURN-008).
 
 ## Edge cases
 
@@ -91,14 +97,4 @@ None known.
 
 ## Open questions
 
-- That `hire_phase` comes after `control_phase` rests on the order of the two
-  blocks in the resolver, not on a traced path.
-- The police step's exact test for a gang it visits (an active gang in a
-  sector whose `crackdown_turns` is positive) has not been recorded.
-- RULE-POLICE-004 and the second loop of RULE-EVENT-001 both run at the start
-  of `resolution`; their order against each other is not recorded. Neither
-  draws, and they touch different state.
-- Where RULE-TOLERANCE-001, the return of Tolerance toward normal, runs in the
-  turn is not recorded.
-- Whether the countdown of police presence in `turn_end` comes before or after
-  the elimination check is not known (RULE-TURN-006).
+- None of the order has been confirmed by a run of the original.

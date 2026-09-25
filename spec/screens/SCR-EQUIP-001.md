@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-001, FND-OPTIONS-001, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-005, FND-EQUIP-009, FND-EQUIP-006, FND-EQUIP-001, FND-OPTIONS-001, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-001, RULE-EQUIP-003, RULE-EQUIP-004, RULE-UI-003]
@@ -17,6 +17,7 @@ related: [RULE-EQUIP-001, RULE-EQUIP-003, RULE-EQUIP-004, RULE-UI-003]
 |---|---|---|---|---|---|
 | Panel | `DATA/PX08/PX05004` | None | `(104, 124, 344, 209)`, the shared panel position | While the panel is open | FND-EQUIP-005, FND-OPTIONS-001 |
 | Item list | Not recorded | The entries of RULE-EQUIP-004 for the chosen category, one per row of 9 pixels starting at y = 150, each with its price from `item_price` (RULE-EQUIP-003) | `(252, 150, 180, 143)` | While the panel is open | FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-001 |
+| Category frame | `DATA/PX16/PX00129` crop `(120,171,34,34)`, keyed on exact white | The chosen category | `(207, 139 + 36 * n, 34, 34)`, one pixel outside category cell `n` | Always; the panel opens on category 0, or on the category of the item in `target` when the gang's `action` is already Equip | FND-EQUIP-009 |
 | Chosen row mark | Not recorded | The item currently chosen | Not recorded | Once an item is chosen | FND-EQUIP-005 |
 
 ## Mouse input
@@ -66,8 +67,10 @@ None known.
 
 ## Open questions
 
-- Which category each cell selects, and the category shown when the panel
-  opens.
+- Which items each category cell lists: item types 0 and 1 map to cell 0, 2
+  to 1, 3 to 2 and 4 to 3 in the handler and in the Research list builder
+  (FND-EQUIP-009); the Equip list builder `fn_0043F136` has not been read for
+  the mapping.
 - The list rows are 9 pixels high from y = 150, so the pointer area's height of
   143 cuts the sixteenth row to 8 pixels.
 - The positions of the Confirm and Cancel controls, the key that confirms, and

@@ -4,7 +4,7 @@ title: The generator, its step, and its seed at process start
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-RNG-001, FND-RNG-002, FND-RNG-005, SRC-MANUAL-GOG]
+evidence: [FND-RNG-001, FND-RNG-002, FND-RNG-005, FND-RNG-006, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -54,6 +54,11 @@ state.
 Only 65536 seeds are possible, so a run of the program can start from only
 65536 different sequences.
 
+The state is per-thread runtime data. The seeding and every draw run on the
+main thread: every call path to `roll` starts at the program entry point, and
+neither of the game's two other threads nor its timer callback can reach it
+(FND-RNG-006).
+
 Nothing reseeds the generator after process start. Starting a new match, or
 loading a saved one, continues the sequence from wherever earlier draws in the
 same run left it (FND-RNG-005).
@@ -69,7 +74,4 @@ None known.
 
 ## Open questions
 
-- The state is per-thread runtime data. That every draw the game makes runs on
-  the thread that seeded the generator has not been shown; a draw on another
-  thread would start from the runtime's default state of 1.
 - No run of the original has confirmed a predicted sequence from a known seed.
