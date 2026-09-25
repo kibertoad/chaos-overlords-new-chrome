@@ -22,23 +22,11 @@ order of priority, unless a group says otherwise.
   extension the save dialog appends given `lpstrDefExt` `*.SAV`
   (FND-SAVE-002).
 
-## Shared in-memory structures
-
-
-## Movement, Control, gangs, equipment and money
-
-- SCR-MOVE-001, SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-GANG-001,
-  SCR-GANG-002: positions of the Confirm, OK and Cancel controls, the keys each
-  panel handler accepts, and the item picture and portrait resources.
-
 ## Attack, combat, detection, Chaos and police
 
 - SCR-COMBAT-002: the Force tracks are drawn at panel-local y 116 and 123
   (FND-COMBAT-010) and the capture of FND-UI-010 measured 114 and 121. A new
   capture with its settings recorded settles it; the executable cannot.
-
-## Setup, city generation, objectives and awards
-
 
 ## Computer players
 
@@ -56,37 +44,37 @@ Gaps more reading of `Chaos Overlords.exe` or the data files could close.
 
 ## Coverage of the executable
 
-The groups above close questions about entries that already exist. The groups from here on list
-the parts of the executable that no entry describes yet, found by comparing a function inventory
-of the build with every address the spec cites. The inventory was taken on 2026-09-25 from a
-Ghidra 12.1.3 project with default auto-analysis. FND-EXE-004 records the layout and every game
+The groups above close questions about entries that already exist. The groups from here on
+listed the parts of the executable that no entry described, found by comparing a function
+inventory of the build with every address the spec cites. The inventory was taken from a Ghidra
+12.1.3 project with default auto-analysis. FND-EXE-004 records the layout and every game
 function's range; `tools/ghidra/ReportFunctionInventory.java` and
 `node tools/spec-coverage.mjs --inventory <file>` reproduce the counts (see `docs/GHIDRA.md`), and
-`spec/index/functions.md` lists the entries that cite each function:
+`spec/index/functions.md` lists the entries that cite each function. Measured on 2026-09-25:
 
 - Ghidra finds 694 functions. Game code runs from `0x00401000` to `0x0047862F`: 464 functions,
   480,397 bytes. The import thunks (Smacker, DirectDraw, WinSock, TAPI, common dialogs) start at
   `0x00478630` and the statically linked C runtime at `0x004787E0`. Inside the game code only
   309 bytes lie outside a function body, in gaps of at most 15 bytes, so auto-analysis missed no
   game code.
-- 190 game functions (376,915 bytes) are cited by at least one spec entry. 274 (103,482 bytes)
-  are cited by none. 69 of those (27,868 bytes) import WinSock, TAPI or serial functions or are
-  called only by functions that do; they are the network play DEV-NET-001 leaves out. That leaves
-  205 functions (75,614 bytes) that the groups below assign to subsystems.
-- A citation does not mean a function is mapped. 44 functions over 1,000 bytes are cited by one
-  or two entries, often a finding about another subject: the main console `fn_0046FD80` appears
-  only in FND-AUDIO-012, and the Give handler `fn_00445A4F` (8,290 bytes) only in FND-EQUIP-003.
-- Of the 1,108 `.data` addresses game code reads or writes, 362 lie within 16 bytes of an address
-  the spec cites. Of the 51 `.rdata` addresses it reads, 3 are cited.
-- The bounded random wrapper `fn_0045D227` has 61 call sites in 24 functions. The spec cites 5 of
-  them by instruction address.
-- The resource section holds 5 menus, 27 dialogs, 7 string-table blocks, 1 accelerator table,
-  4 bitmaps, 11 icons in 8 groups and a version record. The spec cites menu 101, dialog `0x8B`
-  and a few string IDs.
+- All 464 game functions (480,397 bytes) are cited by at least one spec entry. The network code
+  DEV-NET-001 leaves out is 124 functions, 73,353 bytes: the 118 of FND-NET-004 and six more of
+  FND-NET-005, which also names the serial and modem helpers inside FND-NET-004's ranges and what
+  keeps each out of a local game. Dead code and empty functions are recorded as such (FND-NET-005,
+  FND-UI-028, FND-DATA-008).
+- A citation does not mean a function is fully described. 4 functions over 1,000 bytes are cited
+  by only one or two entries: `fn_00419AA8` (1,580 bytes; FND-UI-018, FND-UI-026), the Telephony
+  callback `fn_0041D51B` (1,327; FND-PLATFORM-013, FND-STATE-011), `fn_00419022` (1,271;
+  FND-AUDIO-010, FND-UI-032) and `fn_00427A09` (1,111; FND-PLATFORM-008, FND-UI-026).
+- Of the 1,157 `.data` addresses game code reads or writes, 880 lie within 16 bytes of an address
+  the spec cites; the regions around the rest are mapped by FND-STATE-007, FND-STATE-008 and
+  FND-STATE-011, which cite region bounds and record sizes rather than every field. All 9 `.rdata`
+  addresses the code reads are cited. Of the 48 `.rsrc` addresses Ghidra links to code, 5 are
+  cited by address; the spec names resources by ID (FND-EXE-005).
+- All 61 call sites of the bounded random wrapper `fn_0045D227` are cited by instruction address.
 
-## Program shell: startup, window, input and shutdown
-
-## Display, drawing primitives and palette
+Every group below that listed code no entry described is closed, and its heading has been
+removed; the groups left hold only questions that need a run of the original.
 
 ## Movies
 
@@ -112,15 +100,8 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
   dialogs, popups, accelerators and help is closed by FND-EXE-005, FND-UI-021,
   FND-UI-022, FND-HELP-005 and RULE-HELP-001.
 
-## Timing, delays and arithmetic helpers
-
 ## Screen and panel code no entry describes
 
 - City screen: whether FND-UI-033's map origin `(2,44)` or FND-UI-017's `(2,42)` is right
   (SCR-UI-003). The copy, the selection frame and the cell restore all use `(2,42)`; a screenshot
   of the original settles it.
-
-## Game-side code and data no entry describes
-
-## Found while integrating the spec
-

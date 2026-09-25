@@ -154,6 +154,7 @@
 | [FND-STATE-008](../findings/FND-STATE-008.md) | Map of the interface, platform and network globals in .data, with each region's element, writers, readers and identity | recorded |
 | [FND-STATE-009](../findings/FND-STATE-009.md) | Game code reads nine .rdata constants, all but one in the computer players' planning pass; two initialized .data tables of sines and cosines are used only by uncalled helpers | recorded |
 | [FND-STATE-010](../findings/FND-STATE-010.md) | The byte at 0x004ABC9C is set while no match is in play, from startup and again once a match has ended | recorded |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | The most used .data addresses the data map left unnamed are fields of known records, the modem and socket handles, and a per-connection flag array | recorded |
 
 ## RNG
 
@@ -734,6 +735,7 @@
 | [FND-UI-025](../findings/FND-UI-025.md) | The city map surface keeps the unmarked city map in its lower half, from y 416, and the sector view and Detailed Combat take their sector images from there | recorded |
 | [FND-UI-026](../findings/FND-UI-026.md) | Of the 77 calls to the copy wrapper, only the setup card portrait is scaled, and it asks for the pattern mode, so no keyed copy loses its key | recorded |
 | [FND-UI-027](../findings/FND-UI-027.md) | The sector value renderer draws Income and Tolerance with no owner test | recorded |
+| [FND-UI-028](../findings/FND-UI-028.md) | A static initializer copies the Full Screen default before WinMain, five 16-byte functions do nothing, and a list-box helper has no caller | recorded |
 | [FND-UI-031](../findings/FND-UI-031.md) | Copies from the PX00129 sheet use opaque, white-keyed and pattern modes depending on the element | recorded |
 | [FND-UI-032](../findings/FND-UI-032.md) | The main console tests eight fixed tiles, splits five of them by the press row, and acts only on release inside | recorded |
 | [FND-UI-033](../findings/FND-UI-033.md) | The city map draws the same keyed pylon crop over the six Siege headquarters sectors and the four Big Man centre sectors | recorded |
@@ -786,6 +788,7 @@
 | [FND-NET-002](../findings/FND-NET-002.md) | The network progress renderer draws one progress bar per remote player and two lines of status text chosen by a code | recorded |
 | [FND-NET-003](../findings/FND-NET-003.md) | The network screens build their button rectangles as top, left, bottom, right, and their progress bars are one pixel per unit up to 100 | recorded |
 | [FND-NET-004](../findings/FND-NET-004.md) | 118 functions make up the network code, and every call into them from local code is skipped or does nothing in a local game | recorded |
+| [FND-NET-005](../findings/FND-NET-005.md) | Twenty-one serial, modem and socket helpers no entry named belong to the network code, reached only from it or from nothing | recorded |
 | [SCR-NET-001](../screens/SCR-NET-001.md) | Legacy network host lobby that edits up to four seats and waits for the participants | supported |
 | [SCR-NET-002](../screens/SCR-NET-002.md) | Legacy network client session editor with four seats | supported |
 | [SCR-NET-003](../screens/SCR-NET-003.md) | Legacy network screen that waits for every participant to be ready | supported |

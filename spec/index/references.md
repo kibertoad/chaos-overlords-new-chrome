@@ -241,6 +241,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-NET-002](../findings/FND-NET-002.md) | builds, locations |
 | [FND-NET-003](../findings/FND-NET-003.md) | builds, locations |
 | [FND-NET-004](../findings/FND-NET-004.md) | builds, locations |
+| [FND-NET-005](../findings/FND-NET-005.md) | builds, locations |
 | [FND-OBJECTIVE-001](../findings/FND-OBJECTIVE-001.md) | builds, locations |
 | [FND-OBJECTIVE-002](../findings/FND-OBJECTIVE-002.md) | builds, locations |
 | [FND-OBJECTIVE-003](../findings/FND-OBJECTIVE-003.md) | builds, locations |
@@ -315,6 +316,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-STATE-008](../findings/FND-STATE-008.md) | builds, locations |
 | [FND-STATE-009](../findings/FND-STATE-009.md) | builds, locations |
 | [FND-STATE-010](../findings/FND-STATE-010.md) | builds, locations |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | builds, locations |
 | [FND-TIMER-001](../findings/FND-TIMER-001.md) | builds, locations |
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | builds, locations |
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | builds, locations |
@@ -355,6 +357,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-025](../findings/FND-UI-025.md) | builds, locations |
 | [FND-UI-026](../findings/FND-UI-026.md) | builds, locations |
 | [FND-UI-027](../findings/FND-UI-027.md) | builds, locations |
+| [FND-UI-028](../findings/FND-UI-028.md) | builds, locations |
 | [FND-UI-031](../findings/FND-UI-031.md) | builds, locations |
 | [FND-UI-032](../findings/FND-UI-032.md) | builds, locations |
 | [FND-UI-033](../findings/FND-UI-033.md) | builds, locations |
@@ -697,6 +700,7 @@ None.
 |---|---|
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-TURN-006](../findings/FND-TURN-006.md) | body |
 | glossary: site_definitions | glossary |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | body, related |
@@ -1929,6 +1933,7 @@ None.
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | evidence |
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | body |
 | glossary: effect_slots | glossary |
 | glossary: effects_suppressed | glossary |
@@ -2526,6 +2531,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-DATA-005](../formats/FMT-DATA-005.md) | body, evidence |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 
 ## FND-DETECT-001
 
@@ -2869,6 +2875,7 @@ None.
 | [FND-NET-001](../findings/FND-NET-001.md) | body |
 | [FND-NET-002](../findings/FND-NET-002.md) | body |
 | [FND-NET-004](../findings/FND-NET-004.md) | body |
+| [FND-NET-005](../findings/FND-NET-005.md) | body |
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | body |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
 | [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | body |
@@ -2891,6 +2898,7 @@ None.
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | [FND-STATE-009](../findings/FND-STATE-009.md) | body |
 | [FND-STATE-010](../findings/FND-STATE-010.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | body |
 | [FND-TURN-006](../findings/FND-TURN-006.md) | body |
 | [FND-TURN-007](../findings/FND-TURN-007.md) | body |
@@ -2905,6 +2913,7 @@ None.
 | [FND-UI-025](../findings/FND-UI-025.md) | body |
 | [FND-UI-026](../findings/FND-UI-026.md) | body |
 | [FND-UI-027](../findings/FND-UI-027.md) | body |
+| [FND-UI-028](../findings/FND-UI-028.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -3086,6 +3095,7 @@ None.
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body, evidence |
 | [FND-HIRE-006](../findings/FND-HIRE-006.md) | body |
 | [FND-RESEARCH-001](../findings/FND-RESEARCH-001.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | glossary: site | glossary |
 | glossary: turn_start | glossary |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | body |
@@ -3218,8 +3228,10 @@ None.
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
 | [FND-UI-026](../findings/FND-UI-026.md) | body |
+| [FND-UI-028](../findings/FND-UI-028.md) | body |
 | glossary: desktop_depth | glossary |
 | glossary: display_depth | glossary |
 | glossary: display_mode_set | glossary |
@@ -3550,11 +3562,18 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-NET-005](../findings/FND-NET-005.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | glossary: local_game | glossary |
 | [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | evidence |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | body |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | body, evidence |
+
+## FND-NET-005
+
+| Cited by | In |
+|---|---|
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 
 ## FND-OBJECTIVE-001
 
@@ -3835,6 +3854,7 @@ None.
 | [FND-PLATFORM-011](../findings/FND-PLATFORM-011.md) | body |
 | [FND-SAVE-002](../findings/FND-SAVE-002.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 
 ## FND-PLATFORM-011
 
@@ -4075,6 +4095,7 @@ None.
 | [FND-DATA-008](../findings/FND-DATA-008.md) | body |
 | [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 
 ## FND-SAVE-003
 
@@ -4439,6 +4460,7 @@ None.
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-009](../findings/FND-STATE-009.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | glossary: active_gang_count | glossary |
 | glossary: aux_records | glossary |
 | glossary: combat_advantage | glossary |
@@ -4447,7 +4469,9 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-NET-005](../findings/FND-NET-005.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | glossary: active_player | glossary |
 | glossary: selected_card | glossary |
 | glossary: viewed_player | glossary |
@@ -4465,6 +4489,13 @@ None.
 | glossary: no_match_in_play | glossary |
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | body, evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body, evidence |
+
+## FND-STATE-011
+
+| Cited by | In |
+|---|---|
+| glossary: combat_advantage | glossary |
+| glossary: site_definitions | glossary |
 
 ## FND-TIMER-001
 
@@ -4905,6 +4936,8 @@ None.
 |---|---|
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
+| [FND-UI-028](../findings/FND-UI-028.md) | body |
 | glossary: DialogShown | glossary |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | evidence |
 
@@ -4967,6 +5000,12 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-UI-011](../rules/RULE-UI-011.md) | body, evidence |
+
+## FND-UI-028
+
+| Cited by | In |
+|---|---|
+| glossary: full_screen_active | glossary |
 
 ## FND-UI-031
 
@@ -5106,6 +5145,7 @@ None.
 |---|---|
 | [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-UI-023](../findings/FND-UI-023.md) | body |
 | glossary: intro_tick_pending | glossary |
 | glossary: IntroPlayed | glossary |

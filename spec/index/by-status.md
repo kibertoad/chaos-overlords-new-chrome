@@ -277,7 +277,7 @@
 
 ## recorded
 
-315 entries.
+318 entries.
 
 | ID | Title |
 |---|---|
@@ -472,6 +472,7 @@
 | [FND-NET-002](../findings/FND-NET-002.md) | The network progress renderer draws one progress bar per remote player and two lines of status text chosen by a code |
 | [FND-NET-003](../findings/FND-NET-003.md) | The network screens build their button rectangles as top, left, bottom, right, and their progress bars are one pixel per unit up to 100 |
 | [FND-NET-004](../findings/FND-NET-004.md) | 118 functions make up the network code, and every call into them from local code is skipped or does nothing in a local game |
+| [FND-NET-005](../findings/FND-NET-005.md) | Twenty-one serial, modem and socket helpers no entry named belong to the network code, reached only from it or from nothing |
 | [FND-OBJECTIVE-001](../findings/FND-OBJECTIVE-001.md) | The Player Rankings panel draws a portrait on a fixed rail per player, at a height set by the standing, and none for an eliminated player |
 | [FND-OBJECTIVE-002](../findings/FND-OBJECTIVE-002.md) | A local human who has been eliminated sees a private elimination card, in slot order, before the slot is retired |
 | [FND-OBJECTIVE-003](../findings/FND-OBJECTIVE-003.md) | The scenario values run Greed 0 to Armageddon 9 in the order of the string table, and the end evaluator tests each by its own switch arm |
@@ -546,6 +547,7 @@
 | [FND-STATE-008](../findings/FND-STATE-008.md) | Map of the interface, platform and network globals in .data, with each region's element, writers, readers and identity |
 | [FND-STATE-009](../findings/FND-STATE-009.md) | Game code reads nine .rdata constants, all but one in the computer players' planning pass; two initialized .data tables of sines and cosines are used only by uncalled helpers |
 | [FND-STATE-010](../findings/FND-STATE-010.md) | The byte at 0x004ABC9C is set while no match is in play, from startup and again once a match has ended |
+| [FND-STATE-011](../findings/FND-STATE-011.md) | The most used .data addresses the data map left unnamed are fields of known records, the modem and socket handles, and a per-connection flag array |
 | [FND-TIMER-001](../findings/FND-TIMER-001.md) | A human's planning turn ends by itself after 30 seconds, 2 minutes or 5 minutes, with a shrinking bar and two warning sounds |
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | Four multimedia timer slots set flags that the event step polls; waits are counted in ticks of the six-per-second slot, and the floating-point helpers are reachable only from dead code |
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | The planning limit is a table of four values applied at every match entry, the expiry test skips an unlimited turn, and the bar is redrawn every sixth presentation tick |
@@ -586,6 +588,7 @@
 | [FND-UI-025](../findings/FND-UI-025.md) | The city map surface keeps the unmarked city map in its lower half, from y 416, and the sector view and Detailed Combat take their sector images from there |
 | [FND-UI-026](../findings/FND-UI-026.md) | Of the 77 calls to the copy wrapper, only the setup card portrait is scaled, and it asks for the pattern mode, so no keyed copy loses its key |
 | [FND-UI-027](../findings/FND-UI-027.md) | The sector value renderer draws Income and Tolerance with no owner test |
+| [FND-UI-028](../findings/FND-UI-028.md) | A static initializer copies the Full Screen default before WinMain, five 16-byte functions do nothing, and a list-box helper has no caller |
 | [FND-UI-031](../findings/FND-UI-031.md) | Copies from the PX00129 sheet use opaque, white-keyed and pattern modes depending on the element |
 | [FND-UI-032](../findings/FND-UI-032.md) | The main console tests eight fixed tiles, splits five of them by the press row, and acts only on release inside |
 | [FND-UI-033](../findings/FND-UI-033.md) | The city map draws the same keyed pylon crop over the six Siege headquarters sectors and the four Big Man centre sectors |

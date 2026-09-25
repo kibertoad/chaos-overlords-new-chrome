@@ -171,7 +171,8 @@ function, defined by RULE-AI-013.
 Set when a computer player's gangs out-fight the visible defenders in more than
 three quarters of another player's sectors. Any other value the game keeps:
 the byte at +20 of a 24-byte player-pair record, element `observer * 6 +
-other`, at `0x0048F810` [FND-AI-018, FND-AI-032, FND-AI-044, FND-STATE-007].
+other`, at `0x0048F810`, so the flag of the first pair is at `0x0048F824`
+[FND-AI-018, FND-AI-032, FND-AI-044, FND-STATE-007, FND-STATE-011].
 
 ## combat_focal
 
@@ -717,7 +718,9 @@ around an owned centre. A function, defined by RULE-AI-013.
 Whether this run uses full screen. Any other value the game keeps: a byte at
 `0x00498354`, copied from `pref_full_screen` when the options are read at
 start and not changed afterwards; the Full Screen menu item changes only the
-preference [FND-PLATFORM-009, FND-GFX-004, FND-UI-020].
+preference. Before `WinMain` runs, the static initializer `fn_00460CA0` copies
+the preference's image value 1 into it [FND-PLATFORM-009, FND-GFX-004,
+FND-UI-020, FND-UI-028].
 
 ## g_004A08C4
 
@@ -1903,7 +1906,9 @@ The site types, read from `DATA/SITES`. A list the game keeps, of
 FMT-DATA-001, in file order, indexed by a site slot's `definition`. The
 list is at `0x004AB668`, 22 entries of 62 bytes read whole from `data\Sites`,
 so the `resistance` field of entry `d` is at `0x004AB67E + d × 0x3E` and the
-`tolerance` field at `0x004AB684 + d × 0x3E` [FND-TURN-001, FND-TURN-006].
+`tolerance` field at `0x004AB684 + d × 0x3E` [FND-TURN-001, FND-TURN-006]. The
+six 16-bit skill modifiers (Research, Strength, Blade, Range, Fighting,
+Martial Arts) are at `0x004AB698` to `0x004AB6A2` `+ d × 0x3E` [FND-STATE-011].
 
 ## site_meter_length
 
