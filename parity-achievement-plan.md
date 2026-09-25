@@ -36,10 +36,9 @@ DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay
 
 ## Step 9: Remaining rule details
 
-- The in-memory layouts, what docs/STATE-MAPPING.md still leaves open: the Give and Sell mask
-  order (FMT-STATE-001), the signed-byte wrap of `crackdown_turns` past 127 (FMT-STATE-002), the
-  Comlink text padding (FMT-STATE-005, RULE-COMLINK-006) and the Last Turn report arguments
-  (FMT-STATE-006).
+- RULE-POLICE-002's edge case says a count of 103 to 105 then counts down, while RULE-POLICE-003's
+  procedure never lowers a count of 100 or above. The rebuild follows the procedure; the two
+  entries need reconciling from the executable.
 
 ## Step 10: Screens
 
@@ -49,6 +48,9 @@ needs static reads or captures of the original:
 - RULE-TIMER-004: how much lighter a flash copy is and the order of the city-cell copies
   (FND-UI-017); the pressed faces of Influence's Escape, Move and Research, which no finding
   records.
+- SCR-EVENT-001: the rebuild draws the footer from its own measurements, with the subject at
+  x 305 and the caption at x 239 where the entry gives 298 and 226, and the illustration and
+  researched item a few pixels above the entry's positions.
 - SCR-GANG-001's half-tone pattern (its PLACEHOLDER), SCR-GIVE-001's list background and dimming
   pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's police portrait and
   header strips.

@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 21 |
+| `supported` | 17 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 192 |
+| `implemented` | 196 |
 | `validated` | 9 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 1 |
-| `partial` | 20 |
-| `complete` | 201 |
+| `partial` | 16 |
+| `complete` | 205 |
 
 ## DATA
 
@@ -88,12 +88,12 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-001-gang-record). The order in which the Give and Sell item mask is handled is not checked. |
-| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-002-sector-record). The signed-byte wrap of `crackdown_turns` past 127 is not reproduced. |
+| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-001-gang-record); every field is held with the same value or a representation no rule can tell apart, and the Give and Sell mask order is pinned by tests. |
+| `FMT-STATE-002` | Sector record, one per city sector | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-002-sector-record); `crackdown_turns` is held as a signed byte and wraps past 127 as in the original. |
 | `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-003-per-gang-combat-record); every field a rule reads is held with the same value. |
 | `FMT-STATE-004` | Site slot in a sector record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-004-site-slot): `progress` is held as the Resistance still needed, a representation no rule result can tell apart. |
-| `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-005-comlink-message-record). The padding of `text` and the all-space case (RULE-COMLINK-006) are not checked. |
-| `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record). The per-type arguments are not checked. |
+| `FMT-STATE-005` | Comlink message record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-005-comlink-message-record); the text is stored without its trailing spaces, and a message of spaces only is dropped as RULE-COMLINK-003 records. |
+| `FMT-STATE-006` | Last Turn report record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record); every report carries the type and arguments SCR-EVENT-001 reads. |
 | `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-007-computer-player-planning-record); every field is held with the same value or a representation no rule can tell apart. |
 | `FMT-STATE-008` | Combat result row of one sector | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-008-combat-result-row-of-one-sector); the gang entries follow RULE-COMBAT-004. |
 | `FMT-STATE-009` | Input event record | supported | complete | None | `DEV-UI-018` | implemented | The rebuild polls input once per frame and keeps no event record (DEV-UI-018); only RULE-UI-014 reads the record ([docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-009-input-event-record)). |
