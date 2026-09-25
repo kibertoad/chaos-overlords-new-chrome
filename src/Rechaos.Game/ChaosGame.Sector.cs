@@ -40,8 +40,13 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Down) && row < 7) _cursor += 8;
         if (_cursor != previousCursor) _sectorGangCardOwner = null;
         _gangSelection.KeepOnly(_cursor);
-        if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+        if (Pressed(keyboard, Keys.Back))
             _screens.Show(ClientScreen.City);
+        // FND-UI-015: Enter and Execute show the back control pressed for one tick of the
+        // presentation clock, then return to the city (fn_00418CCC kind 3, RULE-TIMER-004).
+        else if (PressedEnterOrExecute(keyboard))
+            PressKeyFace(PressedKeyFace.SectorBack, SectorDetailLayout.Back.Location,
+                () => _screens.Show(ClientScreen.City));
     }
 
     /// <summary>
@@ -382,11 +387,15 @@ public sealed partial class ChaosGame
         if (siteSlot >= 0)
         {
             var target = CommandTarget.Site(_cursor * MatchLimits.SitesPerSector + siteSlot);
-            DropGangCommand(gang,
+            var influenced = DropGangCommand(gang,
                 new BulkCommandIntent(GangAction.Influence, target, Repeat: true),
                 _state.Sectors[_cursor].Owner != gang.Owner
                     ? "CONTROL SECTOR TO INFLUENCE"
                     : "BUILDING CANNOT BE INFLUENCED");
+            // FND-UI-018: the command handler flashes the site with fn_00419AA8 when its progress
+            // is short of its resistance, that is while some resistance remains (RULE-TIMER-004).
+            if (influenced && _state.Sectors[_cursor].Sites[siteSlot].Resistance != 0)
+                StartFlash(TickedPresentationKind.SiteFlash, SectorDetailLayout.SitePortrait(siteSlot));
             return;
         }
         if (!SectorDetailLayout.TrySectorAt(point, _cursor, out var sectorId))
@@ -394,31 +403,35 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
-        DropGangCommand(gang, SectorMapGangDrop.Intent(gang.SectorId, sectorId),
-            SectorMapGangDrop.Rejection(_state, gang, sectorId));
+        var intent = SectorMapGangDrop.Intent(gang.SectorId, sectorId);
+        // FND-UI-018: a Move destination flashes its cell of the nine-sector display with
+        // fn_0041A0D4 (RULE-TIMER-004).
+        if (DropGangCommand(gang, intent, SectorMapGangDrop.Rejection(_state, gang, sectorId))
+            && intent.Action == GangAction.Move
+            && SectorDetailLayout.CellOf(_cursor, sectorId) is { } cell)
+            StartFlash(TickedPresentationKind.SectorDisplayCellFlash, cell);
     }
 
     /// <summary>
     /// Carries a finished drag out: for the gang dragged alone, or for the whole ctrl-picked
     /// selection when the gang dragged is one of them.
     /// </summary>
-    private void DropGangCommand(MatchGangState gang, BulkCommandIntent intent, string rejection)
+    /// <returns>Whether at least one order was accepted.</returns>
+    private bool DropGangCommand(MatchGangState gang, BulkCommandIntent intent, string rejection)
     {
-        if (_state is null || _actions is null) return;
+        if (_state is null || _actions is null) return false;
         if (IsSelectedForBulkCommand(gang))
-        {
-            ApplyBulkCommand(gang.Owner, intent, rejection);
-            return;
-        }
+            return ApplyBulkCommand(gang.Owner, intent, rejection);
         var command = new GameCommand(
             gang.Owner, gang.Id, intent.Action, intent.Target, intent.Repeat);
         if (!CommandValidator.Validate(_state, command).IsValid)
         {
             RejectInput(rejection);
-            return;
+            return false;
         }
         var result = _actions.Submit(command);
         ReportInputResult(result.Accepted, result.Validation.Message);
+        return result.Accepted;
     }
 
     private void CancelGangDrag()
@@ -667,7 +680,8 @@ public sealed partial class ChaosGame
         var playerId = ViewingPlayer(state);
         // RULE-UI-006: the 3-by-3 display is copied from the prepared city map, so it shows the
         // markers the full map draw left behind.
-        var markerFrames = GangStatusMarkerPresentation.MapFrames(state, playerId);
+        var markerFrames = GangStatusMarkerPresentation.MapFrames(
+            state, playerId, _gangSight.For(state, playerId));
         for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
             if (markerFrames[sectorId] >= 0
                 && SectorDetailLayout.Marker(_cursor, sectorId) is { } marker)

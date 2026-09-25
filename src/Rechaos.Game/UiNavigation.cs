@@ -178,6 +178,22 @@ public static class VirtualInput
             0);
     }
 
+    /// <summary>
+    /// The window pixels a virtual rectangle covers, for a scissor rectangle. Both edges are
+    /// rounded to the nearest pixel, so two rectangles that share an edge share it on screen too.
+    /// </summary>
+    public static Rectangle ToPhysical(Viewport viewport, Rectangle area)
+    {
+        var scale = MathF.Min(viewport.Width / (float)Width, viewport.Height / (float)Height);
+        var left = (viewport.Width - Width * scale) / 2;
+        var top = (viewport.Height - Height * scale) / 2;
+        var x0 = (int)MathF.Round(left + area.Left * scale);
+        var y0 = (int)MathF.Round(top + area.Top * scale);
+        var x1 = (int)MathF.Round(left + area.Right * scale);
+        var y1 = (int)MathF.Round(top + area.Bottom * scale);
+        return new Rectangle(x0, y0, Math.Max(0, x1 - x0), Math.Max(0, y1 - y0));
+    }
+
     public static bool TryMap(Viewport viewport, Point physical, out Point virtualPoint)
     {
         var scale = MathF.Min(viewport.Width / (float)Width, viewport.Height / (float)Height);
@@ -457,6 +473,17 @@ public static partial class SectorDetailLayout
         }
         sectorId = mapped;
         return true;
+    }
+
+    /// <summary>The cell of the nine-sector display that shows <paramref name="sectorId"/>.</summary>
+    public static Rectangle? CellOf(int centerSectorId, int sectorId)
+    {
+        _ = CityMapLayout.Source(centerSectorId);
+        _ = CityMapLayout.Source(sectorId);
+        var deltaColumn = sectorId % 8 - centerSectorId % 8;
+        var deltaRow = sectorId / 8 - centerSectorId / 8;
+        if (deltaColumn is < -1 or > 1 || deltaRow is < -1 or > 1) return null;
+        return Cell(deltaColumn + 1, deltaRow + 1);
     }
 
     public static Rectangle? Marker(int centerSectorId, int sectorId)

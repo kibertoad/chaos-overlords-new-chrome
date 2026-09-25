@@ -100,7 +100,13 @@ public sealed partial class ChaosGame
         // four-row editor cursor, so it must never dispatch a message here.
         if (Pressed(keyboard, Keys.Execute))
         {
-            SendComlink();
+            // FND-COMLINK-007: with a recipient chosen, Execute presses the Send face for one tick
+            // of the presentation clock before sending (fn_00418CCC, RULE-TIMER-004).
+            if (_comlinkRecipients.Any(selected => selected))
+                PressKeyFace(PressedKeyFace.Confirm, ComlinkSendLayout.Ok.Location,
+                    () => SendComlink(pointerButton: true));
+            else
+                SendComlink();
             return;
         }
         if (Pressed(keyboard, Keys.Back))

@@ -132,4 +132,55 @@ public sealed class GangStatusMarkerPresentationTests
         Assert.Equal(8, frames[63]);
         Assert.Equal(3, frames.Count(frame => frame >= 0));
     }
+
+    /// <summary>
+    /// RULE-UI-006, FND-UI-018: the markers read the gangs_seen bytes the original sets from the
+    /// visibility RULE-DETECT-001 works out when planning starts, so a gang whose Detect rises
+    /// during planning does not turn a circle red until the next planning entry.
+    /// </summary>
+    [Fact]
+    public void EnemySightIsTheSnapshotTakenWhenPlanningStarts()
+    {
+        var data = BundledOriginalData.Load();
+        var setupPlayers = Enumerable.Range(0, 2)
+            .Select(id => new MatchPlayerSetup(new PlayerId(id), $"P{id + 1}", PlayerController.Human))
+            .ToArray();
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setupPlayers);
+        var player = new PlayerId(0);
+        var definition = data.Gangs[0].Id;
+        var watcher = new MatchGangState(new GangId(1), player, definition, 5, 10);
+        var lurker = new MatchGangState(new GangId(10), new PlayerId(1), definition, 5, 10);
+        var players = new[]
+        {
+            new MatchPlayerState(setupPlayers[0], 20, [watcher]),
+            new MatchPlayerState(setupPlayers[1], 20, [lurker])
+        };
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, data.Sites[0].Resistance),
+                new MatchSiteState(1, 1, data.Sites[1].Resistance),
+                new MatchSiteState(2, 2, data.Sites[2].Resistance)
+            ]))
+            .ToArray();
+        var state = new MatchState(data, setup, players, sectors);
+        state.FinishUpkeep();
+        Assert.Equal(TurnPhase.Command, state.Coordinator.Phase);
+        var blind = EffectiveStatistics.From(data.Gangs[0].Stats) with { Detect = 0, Stealth = 0 };
+        watcher.StoredStatistics = blind;
+        lurker.StoredStatistics = blind with { Stealth = 9 };
+        var cache = new GangSightSnapshotCache();
+
+        // Idle own gang, enemy out of sight: frame 2.
+        Assert.Equal(2, GangStatusMarkerPresentation.MapFrames(state, player, cache.For(state, player))[5]);
+
+        // A Detect item bought during planning lifts the gang's Detect at once.
+        watcher.StoredStatistics = blind with { Detect = 20 };
+        Assert.True(state.CanPlayerDetectGang(player, lurker.Id));
+        Assert.Equal(2, GangStatusMarkerPresentation.MapFrames(state, player, cache.For(state, player))[5]);
+
+        // The next snapshot, taken at the next planning entry, turns the circle red.
+        cache.Clear();
+        Assert.Equal(3, GangStatusMarkerPresentation.MapFrames(state, player, cache.For(state, player))[5]);
+    }
 }

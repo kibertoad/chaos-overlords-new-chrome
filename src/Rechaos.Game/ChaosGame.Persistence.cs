@@ -55,7 +55,8 @@ public sealed partial class ChaosGame
         // become the backup generation.
         _autoSave.ForgetVerifiedPrimary();
         return AdoptLoadedMatch(
-            () => NativeSaveStore.LoadRecoveringBackup(_autoSavePath, _definitions!).State,
+            () => _autoSave.Load(
+                () => NativeSaveStore.LoadRecoveringBackup(_autoSavePath, _definitions!).State),
             _ => null,
             _saveSlots[SaveSlotCatalog.AutoSaveRow]);
     }

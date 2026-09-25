@@ -222,6 +222,17 @@ public sealed partial class ChaosGame
         }
         var result = _actions.QueueHire(playerId, definitionId.Value, sectorId);
         ReportHireSubmission(result, _state.FindPlayer(playerId)!);
+        if (!result.Accepted) return;
+        // The Hire handler flashes the cell the portrait was dropped on: the city cell with
+        // fn_0041ACE6 (FND-UI-017), or the cell of the nine-sector display with fn_0041A0D4 on the
+        // sector view (FND-UI-018), pausing on the presentation clock (RULE-TIMER-004).
+        if (_screens.Current == ClientScreen.Sector)
+        {
+            if (SectorDetailLayout.CellOf(_cursor, sectorId) is { } cell)
+                StartFlash(TickedPresentationKind.SectorDisplayCellFlash, cell);
+        }
+        else
+            StartFlash(TickedPresentationKind.CityCellFlash, CityMapLayout.Destination(sectorId));
     }
 
     private void CancelHireDrag()
