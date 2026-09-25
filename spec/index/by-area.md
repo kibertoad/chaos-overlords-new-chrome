@@ -9,6 +9,7 @@
 | [FND-EXE-001](../findings/FND-EXE-001.md) | The executable is a stripped 32-bit PE for the Windows GUI subsystem with image base 0x00400000 | recorded |
 | [FND-EXE-002](../findings/FND-EXE-002.md) | The executable has six sections, and .data has a large zero-initialized tail | recorded |
 | [FND-EXE-003](../findings/FND-EXE-003.md) | The executable was linked by Microsoft's linker 3.10 with a statically linked C runtime | recorded |
+| [FND-EXE-004](../findings/FND-EXE-004.md) | Game code occupies 0x00401000..0x0047862F as 464 functions, followed by import thunks and the C runtime | recorded |
 
 ## PLATFORM
 

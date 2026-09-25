@@ -132,6 +132,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-EXE-001](../findings/FND-EXE-001.md) | builds, locations |
 | [FND-EXE-002](../findings/FND-EXE-002.md) | builds, locations |
 | [FND-EXE-003](../findings/FND-EXE-003.md) | builds, locations |
+| [FND-EXE-004](../findings/FND-EXE-004.md) | builds, locations |
 | [FND-FINANCE-001](../findings/FND-FINANCE-001.md) | builds, locations |
 | [FND-GANG-001](../findings/FND-GANG-001.md) | builds, locations |
 | [FND-GANG-002](../findings/FND-GANG-002.md) | builds, locations |
@@ -1872,9 +1873,15 @@ None.
 
 ## FND-EXE-002
 
-None.
+| Cited by | In |
+|---|---|
+| [FND-EXE-004](../findings/FND-EXE-004.md) | body |
 
 ## FND-EXE-003
+
+None.
+
+## FND-EXE-004
 
 None.
 
@@ -3812,6 +3819,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-EXE-004](../findings/FND-EXE-004.md) | body |
 | glossary: rng | glossary |
 | glossary: rng_step | glossary |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | body, related |
