@@ -6,24 +6,21 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    // SCR-AWARDS-001, SCR-AWARDS-002: the Awards tab shows the victory splash again when one
+    // player is left, and Done leaves at once from either view.
     private void HandleEndgameClick(Point point)
     {
-        if (_showEndgameNotice && EndgameDone.Contains(point))
-        {
-            PlayGeneralSound(AudioRouting.PointerPushSound());
-            AdvanceEndgamePresentation();
-        }
-        else if (!_showEndgameNotice && EndgameLayout.Awards.Contains(point))
+        if (EndgameLayout.Awards.Contains(point))
         {
             PlayGeneralSound(AudioRouting.PointerPushSound());
             _showEndgameStats = false;
         }
-        else if (!_showEndgameNotice && EndgameLayout.Stats.Contains(point))
+        else if (EndgameLayout.Stats.Contains(point))
         {
             PlayGeneralSound(AudioRouting.PointerPushSound());
             _showEndgameStats = true;
         }
-        else if (!_showEndgameNotice && EndgameDone.Contains(point))
+        else if (EndgameDone.Contains(point))
         {
             PlayGeneralSound(AudioRouting.PointerPushSound());
             LeaveEndgame();
@@ -35,19 +32,25 @@ public sealed partial class ChaosGame
     private Texture2D? _endgameSprites;
     private Texture2D? _victoryBackground;
     private Texture2D? _eliminationBackground;
-    private bool _showEndgameNotice;
     private bool _showEndgameStats;
 
-    /// <summary>The victory or elimination card: artwork, the overlord's portrait, and the name.</summary>
+    /// <summary>
+    /// The victory or elimination card: artwork, the overlord's portrait, and the name. The victory
+    /// splash also paints its three bands in the survivor's colour (SCR-AWARDS-002).
+    /// </summary>
     private void DrawEndgameNoticeCard(
         SpriteBatch batch, Texture2D pixel, PixelFont font, Texture2D? background,
-        PlayerId player, int portraitId, string name)
+        PlayerId player, int portraitId, string name, bool victory = false)
     {
         DrawPanelArtwork(batch, pixel, background, EndgameNoticeLayout.Panel, 255);
+        if (victory)
+            foreach (var band in EndgameNoticeLayout.VictoryColourBands)
+                batch.Draw(pixel, band, PlayerColors[player.Value]);
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, EndgameNoticeLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(portraitId), Color.White);
-        DrawBorder(batch, pixel, EndgameNoticeLayout.Portrait, PlayerColors[player.Value], 1);
+        if (!victory)
+            DrawBorder(batch, pixel, EndgameNoticeLayout.Portrait, PlayerColors[player.Value], 1);
         DrawEndgameNoticeName(batch, font, player, name);
     }
 
@@ -56,13 +59,13 @@ public sealed partial class ChaosGame
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         DrawEndgameBackground(batch, pixel);
-        if (_showEndgameNotice && EndgameNoticePresentation.For(state) is { } notice)
+        // RULE-AWARDS-002: with one player left, human or computer, the Awards tab shows that
+        // player's victory splash in place of the table.
+        if (!_showEndgameStats && EndgameNoticePresentation.Survivor(state) is { } survivor)
         {
-            var background = notice.Kind == EndgameNoticeKind.Victory
-                ? _victoryBackground
-                : _eliminationBackground;
-            DrawEndgameNoticeCard(batch, pixel, font, background, notice.Player, notice.PortraitId,
-                state.FindPlayer(notice.Player)!.Setup.Name);
+            DrawEndgameNoticeCard(batch, pixel, font, _victoryBackground, survivor.Player,
+                survivor.PortraitId, state.FindPlayer(survivor.Player)!.Setup.Name, victory: true);
+            DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.EndgameTab(EndgameLayout.Awards));
             return;
         }
 
@@ -153,20 +156,6 @@ public sealed partial class ChaosGame
         }
     }
 
-    private void AdvanceEndgamePresentation()
-    {
-        if (_showEndgameNotice)
-        {
-            var notice = _state is null ? null : EndgameNoticePresentation.For(_state);
-            if (notice is not null && EndgameNoticePresentation.ContinuesToSummary(notice.Kind))
-            {
-                _showEndgameNotice = false;
-                return;
-            }
-        }
-        LeaveEndgame();
-    }
-
     /// <summary>
     /// The last step out of the endgame, whichever presentation led to it.
     /// </summary>
@@ -197,33 +186,23 @@ public sealed partial class ChaosGame
     }
 }
 
-public enum EndgameNoticeKind
-{
-    Victory,
-    Elimination
-}
-
-public sealed record EndgameNotice(EndgameNoticeKind Kind, PlayerId Player, short PortraitId);
+public sealed record EndgameNotice(PlayerId Player, short PortraitId);
 
 public static class EndgameNoticePresentation
 {
-    public static bool ContinuesToSummary(EndgameNoticeKind kind) =>
-        kind == EndgameNoticeKind.Victory;
-
-    public static EndgameNotice? For(MatchState state)
+    /// <summary>
+    /// RULE-AWARDS-002: the player whose victory splash the endgame shows, the only one still
+    /// active when the match ended, whoever controls it (FND-AWARDS-004). None when several are
+    /// active, as at the end of a timed scenario, or when none is.
+    /// </summary>
+    public static EndgameNotice? Survivor(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
         if (state.Outcome is null) return null;
-        var humans = state.Setup.Players
-            .Where(player => player.Controller == PlayerController.Human).ToArray();
-        if (humans.Length != 1) return null;
-        var human = humans[0];
-        return new EndgameNotice(
-            state.Outcome.Winners.Contains(human.Id)
-                ? EndgameNoticeKind.Victory
-                : EndgameNoticeKind.Elimination,
-            human.Id,
-            human.PortraitId);
+        var active = state.Players.Where(player => player.Status == PlayerStatus.Active).ToArray();
+        return active is [var survivor]
+            ? new EndgameNotice(survivor.Id, survivor.Setup.PortraitId)
+            : null;
     }
 }
 
@@ -233,6 +212,14 @@ public static class EndgameNoticeLayout
     public const int NameY = 46;
     public static Rectangle Panel => new(110, 30, 312, 393);
     public static Rectangle Portrait => new(126, 54, 64, 64);
+
+    /// <summary>SCR-AWARDS-002: the splash's areas painted in the survivor's colour.</summary>
+    public static IReadOnlyList<Rectangle> VictoryColourBands { get; } =
+    [
+        new(110, 30, 40, 12),
+        new(110, 42, 13, 79),
+        new(110, 121, 40, 302)
+    ];
 }
 
 public sealed record EndgamePlayerRow(PlayerId Player, int Place, string Label);

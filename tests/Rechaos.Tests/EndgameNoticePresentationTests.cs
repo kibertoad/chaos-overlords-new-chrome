@@ -8,39 +8,39 @@ namespace Rechaos.Tests;
 
 public sealed class EndgameNoticePresentationTests
 {
+    // RULE-AWARDS-002: the splash goes to the lone active player.
     [Fact]
-    public void SingleHumanWinnerGetsVictoryNoticeWithConfiguredPortrait()
+    public void LoneActiveHumanGetsTheSplashWithConfiguredPortrait()
     {
-        var state = CompletedMatch(ScenarioId.Greed, humanPortrait: 9);
+        var state = CompletedEliminationMatch(humanPortrait: 9, eliminated: 1);
 
-        var notice = EndgameNoticePresentation.For(state);
+        var notice = EndgameNoticePresentation.Survivor(state);
 
         Assert.NotNull(notice);
-        Assert.Equal(EndgameNoticeKind.Victory, notice.Kind);
         Assert.Equal(new PlayerId(0), notice.Player);
         Assert.Equal(9, notice.PortraitId);
-        Assert.True(EndgameNoticePresentation.ContinuesToSummary(notice.Kind));
     }
 
+    // RULE-AWARDS-002: a computer survivor's splash is shown to the humans (FND-AWARDS-004).
     [Fact]
-    public void SingleHumanLoserGetsEliminationNotice()
+    public void LoneActiveComputerGetsTheSplash()
     {
-        var state = CompletedEliminatedHumanMatch(humanPortrait: 4);
+        var state = CompletedEliminationMatch(humanPortrait: 4, eliminated: 0);
 
-        var notice = EndgameNoticePresentation.For(state);
+        var notice = EndgameNoticePresentation.Survivor(state);
 
         Assert.NotNull(notice);
-        Assert.Equal(EndgameNoticeKind.Elimination, notice.Kind);
-        Assert.Equal(4, notice.PortraitId);
-        Assert.False(EndgameNoticePresentation.ContinuesToSummary(notice.Kind));
+        Assert.Equal(new PlayerId(1), notice.Player);
+        Assert.Equal(1, notice.PortraitId);
     }
 
+    // RULE-AWARDS-002: with several players active, as at a time limit, the table comes first.
     [Fact]
-    public void HotSeatMatchGoesDirectlyToSharedAwardsScreen()
+    public void SeveralActivePlayersOpenOnTheTable()
     {
         var state = CompletedMatch(ScenarioId.Greed, humanPortrait: 2, humanCount: 2);
 
-        Assert.Null(EndgameNoticePresentation.For(state));
+        Assert.Null(EndgameNoticePresentation.Survivor(state));
     }
 
     [Fact]
@@ -72,6 +72,9 @@ public sealed class EndgameNoticePresentationTests
             EndgameLayout.PlayerMarkerSource(new PlayerId(3), 3));
         Assert.Equal(new Rectangle(110, 30, 312, 393), EndgameNoticeLayout.Panel);
         Assert.Equal(new Rectangle(126, 54, 64, 64), EndgameNoticeLayout.Portrait);
+        Assert.Equal(
+            [new Rectangle(110, 30, 40, 12), new Rectangle(110, 42, 13, 79), new Rectangle(110, 121, 40, 302)],
+            EndgameNoticeLayout.VictoryColourBands);
         Assert.Equal(158, EndgameNoticeLayout.NameCenterX);
         Assert.Equal(46, EndgameNoticeLayout.NameY);
         Assert.Equal(new Rectangle(96, 112, 160, 64), EndgameLayout.StatisticsSource);
@@ -107,7 +110,7 @@ public sealed class EndgameNoticePresentationTests
         return state;
     }
 
-    private static MatchState CompletedEliminatedHumanMatch(short humanPortrait)
+    private static MatchState CompletedEliminationMatch(short humanPortrait, int eliminated)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -120,9 +123,9 @@ public sealed class EndgameNoticePresentationTests
         MatchPlayerState[] players =
         [
             new(setups[0], 20,
-                [new MatchGangState(new GangId(10), new PlayerId(0), 0, 0, 0)]),
+                [new MatchGangState(new GangId(10), new PlayerId(0), 0, 0, eliminated == 0 ? (short)0 : (short)10)]),
             new(setups[1], 20,
-                [new MatchGangState(new GangId(20), new PlayerId(1), 0, 1, 10)])
+                [new MatchGangState(new GangId(20), new PlayerId(1), 0, 1, eliminated == 1 ? (short)0 : (short)10)])
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
@@ -130,7 +133,7 @@ public sealed class EndgameNoticePresentationTests
                 new MatchSiteState(0, 0, 7),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ], owner: id == 1 ? new PlayerId(1) : null))
+            ], owner: id == 1 - eliminated ? new PlayerId(1 - eliminated) : null))
             .ToArray();
         var state = new MatchState(data, setup, players, sectors);
         state.FinishUpkeep();

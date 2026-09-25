@@ -118,7 +118,7 @@ public sealed partial class ChaosGame
 
     private void SelectSoundtrackMode(ClientScreen screen, TimeSpan now)
     {
-        var mode = OriginalSoundtrackPolicy.ModeFor(screen);
+        var mode = OriginalSoundtrackPolicy.ModeFor(screen, _eliminationMusicHeld);
         if (_soundtrackMode == mode) return;
 
         if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();

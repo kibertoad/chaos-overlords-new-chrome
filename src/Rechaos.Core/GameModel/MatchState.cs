@@ -602,9 +602,11 @@ public sealed partial class MatchState
     {
         if (Coordinator.Phase != TurnPhase.PlayerElimination)
             return CaptureBoundary(Coordinator.FinishPlayerElimination());
+        var humanActiveAtTurnStart = Players.Any(player =>
+            player.Setup.Controller == PlayerController.Human && player.Status == PlayerStatus.Active);
         ResolvePlayerEliminations();
         AwardBigManPoints();
-        if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this) is { } outcome)
+        if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this, humanActiveAtTurnStart) is { } outcome)
         {
             Outcome = MatchOutcomeValidator.Freeze(outcome);
             AppendMatchEndedEvent(Outcome);

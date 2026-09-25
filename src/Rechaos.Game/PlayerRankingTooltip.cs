@@ -31,7 +31,7 @@ public static class PlayerRankingTooltip
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(entries);
         var hovered = entries.FirstOrDefault(entry =>
-            PlayerRankingLayout.Portrait(entry.Player.Value, entry.Standing).Contains(point));
+            PlayerRankingLayout.Portrait(entry).Contains(point));
         return hovered is null ? [] : Lines(state, hovered, entries);
     }
 
@@ -58,6 +58,11 @@ public static class PlayerRankingTooltip
             .OrderBy(candidate => candidate.Standing)
             .ThenBy(candidate => candidate.Player.Value)
             .Select(candidate => StandingRow(state, candidate, candidate.Player == entry.Player)));
+        // SCR-OBJECTIVE-001: the height on the rail follows the score, not the place.
+        lines.Add("");
+        lines.Add("THE LEADER TOPS ITS RAIL. EACH OTHER");
+        lines.Add("PORTRAIT SITS LOWER BY HOW FAR ITS");
+        lines.Add("SCORE TRAILS; EQUAL SCORES, EQUAL HEIGHT.");
         return lines;
     }
 

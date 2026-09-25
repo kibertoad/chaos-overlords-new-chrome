@@ -19,6 +19,19 @@ public sealed class ScenarioSetupTooltipTests
         }
     }
 
+    // RULE-OBJECTIVE-004: the timed scenarios name the turn they end after, and every tooltip says
+    // what else ends the match.
+    [Fact]
+    public void TooltipsStateTheEndConditionTheOriginalTests()
+    {
+        Assert.Contains("ENDS AFTER TURN 52: THE HIGHEST CASH WINS.",
+            ScenarioSetupTooltip.Lines(ScenarioId.Greed, GameDuration.OneYear));
+        Assert.Contains("IT HAS NO OTHER END TEST.",
+            ScenarioSetupTooltip.Lines(ScenarioId.Eliminate, GameDuration.OneYear));
+        Assert.Contains("IT ALSO ENDS WHEN ONE OVERLORD IS LEFT.",
+            ScenarioSetupTooltip.Lines(ScenarioId.Big40, GameDuration.OneYear));
+    }
+
     [Fact]
     public void DominanceTooltipUsesTheSelectedDurationWeights()
     {

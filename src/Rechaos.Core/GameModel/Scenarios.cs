@@ -70,15 +70,17 @@ public static class ScenarioCatalog
         _ => throw new ArgumentOutOfRangeException(nameof(duration), duration, null)
     };
 
+    /// <summary>
+    /// RULE-OBJECTIVE-004: the scenario's own end test, run for every slot whether or not it is
+    /// still playing. Kill 'Em All and Eliminate have no test of their own and end only when one
+    /// player is left (FND-OBJECTIVE-003).
+    /// </summary>
     public static bool HasObjectiveVictory(ScenarioId scenario, PlayerScoreState state) => scenario switch
     {
-        ScenarioId.KillEmAll => state.IsAlive && state.OpponentsAlive == 0,
-        ScenarioId.Big40 => state.IsAlive && state.ControlledSectors >= 40,
-        ScenarioId.Eliminate => state.IsAlive && state.OpposingRightHandsAlive == 0,
-        ScenarioId.Siege => state.IsAlive && state.ImportantSectorsControlled >= 6,
-        ScenarioId.BigMan => state.IsAlive && state.BigManPoints >= 40,
-        ScenarioId.Armageddon => state.IsAlive
-            && state.ControlledSectors >= MatchLimits.SectorCount,
+        ScenarioId.Big40 => state.ControlledSectors >= 40,
+        ScenarioId.Siege => state.ImportantSectorsControlled >= 6,
+        ScenarioId.BigMan => state.BigManPoints >= 40,
+        ScenarioId.Armageddon => state.ControlledSectors >= MatchLimits.SectorCount,
         _ => false
     };
 }

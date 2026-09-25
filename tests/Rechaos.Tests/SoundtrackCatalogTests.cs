@@ -34,9 +34,20 @@ public sealed class SoundtrackCatalogTests
     [InlineData(ClientScreen.City, OriginalSoundtrackMode.Gameplay)]
     [InlineData(ClientScreen.Handoff, OriginalSoundtrackMode.Gameplay)]
     [InlineData(ClientScreen.Endgame, OriginalSoundtrackMode.Endgame)]
+    [InlineData(ClientScreen.Elimination, OriginalSoundtrackMode.Endgame)]
     public void ClientScreensSelectRecoveredMusicContext(
         ClientScreen screen, OriginalSoundtrackMode expected) =>
         Assert.Equal(expected, OriginalSoundtrackPolicy.ModeFor(screen));
+
+    // RULE-OBJECTIVE-005: after the card of the last local human in slot order the endgame music
+    // keeps playing over the planning screens; the title still has its own.
+    [Theory]
+    [InlineData(ClientScreen.City, OriginalSoundtrackMode.Endgame)]
+    [InlineData(ClientScreen.Handoff, OriginalSoundtrackMode.Endgame)]
+    [InlineData(ClientScreen.Title, OriginalSoundtrackMode.Title)]
+    public void EliminationCardHoldsTheEndgameMusic(
+        ClientScreen screen, OriginalSoundtrackMode expected) =>
+        Assert.Equal(expected, OriginalSoundtrackPolicy.ModeFor(screen, eliminationMusicHeld: true));
 
     [Theory]
     [InlineData(0, 0)]
