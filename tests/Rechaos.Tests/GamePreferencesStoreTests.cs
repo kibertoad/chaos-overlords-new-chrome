@@ -32,6 +32,8 @@ public sealed class GamePreferencesStoreTests : IDisposable
             preferences.CustomMultiplayerServer);
         Assert.Equal(OnlineLobbyPresentation.Modern, preferences.LobbyPresentation);
         Assert.Equal(OriginalOptionsPolicy.IntroOnlyOnceByDefault, preferences.IntroOnlyOnce);
+        // RULE-SETUP-002: Greed when nothing is stored.
+        Assert.Equal(ScenarioId.Greed, preferences.PreferredScenario);
     }
 
     [Fact]
@@ -41,7 +43,8 @@ public sealed class GamePreferencesStoreTests : IDisposable
             GamePreferences.CurrentFormatVersion, 8, 3, false,
             PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true,
             AiPolicyMode.Advanced, OnlineServiceMode.Custom, "https://games.example.test",
-            OnlineLobbyPresentation.Classic, IntroOnlyOnce: false);
+            OnlineLobbyPresentation.Classic, IntroOnlyOnce: false,
+            PreferredScenario: ScenarioId.Siege);
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -276,6 +279,14 @@ public sealed class GamePreferencesStoreTests : IDisposable
                 PlanningTimeLimit.None, false, true, false, false, false, false,
                 AiPolicyMode.Original, OnlineServiceMode.Central,
                 GamePreferences.DefaultCustomMultiplayerServer, (OnlineLobbyPresentation)99)));
+        Assert.False(File.Exists(Path()));
+    }
+
+    [Fact]
+    public void InvalidPreferredScenarioIsNotWritten()
+    {
+        Assert.False(GamePreferencesStore.TrySave(
+            Path(), GamePreferences.Default with { PreferredScenario = (ScenarioId)99 }));
         Assert.False(File.Exists(Path()));
     }
 

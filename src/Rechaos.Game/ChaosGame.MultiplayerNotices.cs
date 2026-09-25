@@ -79,6 +79,8 @@ public sealed partial class ChaosGame
                 // The lobby says what it is waiting for on its own standing line, so the status is
                 // left clear for what happens next: a settings change, or a refusal of one.
                 _online.Status = string.Empty;
+                // RULE-SETUP-010: opening a network lobby resets the local roster to one human.
+                _begunLocalSetup = null;
                 _screens.Show(ClientScreen.Lobby);
                 return;
             case LobbyNotice.Updated updated:

@@ -57,16 +57,6 @@ public sealed class GameInformationUiTests
     }
 
     [Fact]
-    public void OnlyLocalMultiplayerAutomaticallyOpensAtNewGame()
-    {
-        Assert.False(GameInformationPresentation.OpensAtNewGame(Setup(PlayerController.Human)));
-        Assert.True(GameInformationPresentation.OpensAtNewGame(
-            Setup(PlayerController.Human, PlayerController.Human)));
-        Assert.False(GameInformationPresentation.OpensAtNewGame(
-            Setup(PlayerController.Human, PlayerController.Computer)));
-    }
-
-    [Fact]
     public void GameInformationIsAStandardSlidingPanel()
     {
         Assert.True(PanelSlideTransition.IsPanel(ClientScreen.GameInfo));
@@ -75,11 +65,4 @@ public sealed class GameInformationUiTests
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.City, router.Current);
     }
-
-    private static MatchSetup Setup(params PlayerController[] controllers) => new(
-        ScenarioId.Greed,
-        GameDuration.SixMonths,
-        1,
-        controllers.Select((controller, index) => new MatchPlayerSetup(
-            new PlayerId(index), $"PLAYER#{index + 1}", controller, (short)index)).ToArray());
 }

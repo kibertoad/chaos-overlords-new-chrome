@@ -34,19 +34,6 @@ them together with a single session bump, or accept one bump per release.
 DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay so (the
 2026-09-26 decision in `docs/DECISIONS.md`); no step adds the original's path for them.
 
-## Step 7: Setup
-
-Closes RULE-SETUP-002, RULE-SETUP-009, RULE-SETUP-010 and the unchecked order of
-RULE-SETUP-008.
-
-- Keep a stored scenario preference, Greed when nothing is stored.
-- Portrait arrows skip the portraits other slots hold; Add gives the new human the lowest free
-  portrait; a later setup reopens with the roster of the last Begin (FND-SETUP-013).
-- Check the order of the Ready card, Game Information, combat results and Last Turn Events at the
-  start of planning.
-
-Tooltips: the setup tooltips for the portrait arrows, Add and the scenario selector.
-
 ## Step 8: Computer players
 
 Closes RULE-AI-001, RULE-AI-002, RULE-AI-005, RULE-AI-006, RULE-AI-010, RULE-AI-013 and
