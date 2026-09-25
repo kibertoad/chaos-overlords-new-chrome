@@ -219,7 +219,7 @@
 
 ## findings
 
-297 entries.
+298 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -510,6 +510,7 @@
 | [FND-UI-022](../findings/FND-UI-022.md) | One dialog procedure serves every Windows dialog; a local game can reach seven of them, and six dialog resources are never opened | recorded |
 | [FND-UI-023](../findings/FND-UI-023.md) | Timer slots are flags set by timeSetEvent callbacks, the pointer is set on every call, panels slide by revealing their left columns, and numbers are drawn left to right | recorded |
 | [FND-UI-024](../findings/FND-UI-024.md) | The sector marker reads the presence bytes, the information panels close on Enter and refuse clicks outside, and Game Information opens by itself after a load or a Join | recorded |
+| [FND-UI-025](../findings/FND-UI-025.md) | The city map surface keeps the unmarked city map in its lower half, from y 416, and the sector view and Detailed Combat take their sector images from there | recorded |
 | [FND-UI-031](../findings/FND-UI-031.md) | Copies from the PX00129 sheet use opaque, white-keyed and pattern modes depending on the element | recorded |
 | [FND-UI-032](../findings/FND-UI-032.md) | The main console tests eight fixed tiles, splits five of them by the press row, and acts only on release inside | recorded |
 | [FND-UI-033](../findings/FND-UI-033.md) | The city map draws the same keyed pylon crop over the six Siege headquarters sectors and the four Big Man centre sectors | recorded |

@@ -334,6 +334,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-022](../findings/FND-UI-022.md) | builds, locations |
 | [FND-UI-023](../findings/FND-UI-023.md) | builds, locations |
 | [FND-UI-024](../findings/FND-UI-024.md) | builds, locations |
+| [FND-UI-025](../findings/FND-UI-025.md) | builds, locations |
 | [FND-UI-031](../findings/FND-UI-031.md) | builds, locations |
 | [FND-UI-032](../findings/FND-UI-032.md) | builds, locations |
 | [FND-UI-033](../findings/FND-UI-033.md) | builds, locations |
@@ -455,7 +456,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | builds |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | builds |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | builds |
-| [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | body, builds |
+| [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | builds |
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | builds |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | builds |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | builds |
@@ -2743,6 +2744,7 @@ None.
 | [FND-UI-019](../findings/FND-UI-019.md) | body |
 | [FND-UI-023](../findings/FND-UI-023.md) | body |
 | [FND-UI-024](../findings/FND-UI-024.md) | body |
+| [FND-UI-025](../findings/FND-UI-025.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -2779,6 +2781,9 @@ None.
 | [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | evidence |
 | [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | evidence |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | evidence |
+| [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | evidence |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | evidence |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | body, evidence |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | body, evidence |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | body, evidence |
@@ -3043,6 +3048,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FMT-HELP-001](../formats/FMT-HELP-001.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | evidence |
@@ -3394,7 +3400,11 @@ None.
 
 | Cited by | In |
 |---|---|
+| glossary: registry_key_opened | glossary |
 | glossary: serial_number | glossary |
+| [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | evidence |
+| [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | evidence |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | body, evidence |
 
 ## FND-PLATFORM-001
 
@@ -3781,6 +3791,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
+| [FND-UI-025](../findings/FND-UI-025.md) | body |
 
 ## FND-SEARCH-001
 
@@ -4514,6 +4525,7 @@ None.
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-015](../findings/FND-UI-015.md) | body |
 | [FND-UI-018](../findings/FND-UI-018.md) | body |
+| [FND-UI-025](../findings/FND-UI-025.md) | body |
 | glossary: viewed_player | glossary |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
@@ -4525,6 +4537,7 @@ None.
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-017](../findings/FND-UI-017.md) | body |
+| [FND-UI-025](../findings/FND-UI-025.md) | body |
 | glossary: viewed_player | glossary |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -4614,6 +4627,10 @@ None.
 |---|---|
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | body |
 | glossary: fn_0045519D | glossary |
+
+## FND-UI-025
+
+None.
 
 ## FND-UI-031
 
@@ -5589,6 +5606,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FMT-HELP-001](../formats/FMT-HELP-001.md) | body, related |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | body, related |
 | [SCR-UI-009](../screens/SCR-UI-009.md) | body, related |
 

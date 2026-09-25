@@ -1559,6 +1559,12 @@ The DWORD a registry value holds. A value from outside the game: read with
 once at startup; `registry_dword[index]` is the value the loader queries
 `index`th [FND-OPTIONS-001].
 
+## registry_key_opened
+
+Whether the options key `HKLM\SOFTWARE\Stick Man Games\Chaos Overlords.0`
+opened for reading at startup. A value from outside the game: the result of
+`RegOpenKeyExA` [FND-OPTIONS-003].
+
 ## registry_present
 
 Whether a registry query succeeds. A value from outside the game: the result of

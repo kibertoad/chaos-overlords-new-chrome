@@ -279,7 +279,7 @@
 
 ## recorded
 
-295 entries.
+296 entries.
 
 | ID | Title |
 |---|---|
@@ -568,6 +568,7 @@
 | [FND-UI-022](../findings/FND-UI-022.md) | One dialog procedure serves every Windows dialog; a local game can reach seven of them, and six dialog resources are never opened |
 | [FND-UI-023](../findings/FND-UI-023.md) | Timer slots are flags set by timeSetEvent callbacks, the pointer is set on every call, panels slide by revealing their left columns, and numbers are drawn left to right |
 | [FND-UI-024](../findings/FND-UI-024.md) | The sector marker reads the presence bytes, the information panels close on Enter and refuse clicks outside, and Game Information opens by itself after a load or a Join |
+| [FND-UI-025](../findings/FND-UI-025.md) | The city map surface keeps the unmarked city map in its lower half, from y 416, and the sector view and Detailed Combat take their sector images from there |
 | [FND-UI-031](../findings/FND-UI-031.md) | Copies from the PX00129 sheet use opaque, white-keyed and pattern modes depending on the element |
 | [FND-UI-032](../findings/FND-UI-032.md) | The main console tests eight fixed tiles, splits five of them by the press row, and acts only on release inside |
 | [FND-UI-033](../findings/FND-UI-033.md) | The city map draws the same keyed pylon crop over the six Siege headquarters sectors and the four Big Man centre sectors |
@@ -707,7 +708,6 @@ Entries whose Open questions section says more than None known.
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | supported |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup | supported |
-| [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | Saving the options to the registry, which always fails | supported |
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle | supported |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | supported |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | supported |

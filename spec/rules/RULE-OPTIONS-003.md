@@ -56,6 +56,10 @@ SCR-OPTIONS-001 when a gang is idle.
   turn and does not count as idle.
 - The warning is not shown when a turn ends because its time limit passed
   (RULE-TIMER-002).
+- The scan reads only the active player's 81 slots and does not stop at the
+  first idle gang.
+- The original also skips the warning while a byte of the match state at
+  `g_004ABC9C` is set; what that byte marks is not recorded (FND-OPTIONS-003).
 
 ## What the sources say
 
@@ -70,4 +74,4 @@ None known.
 
 ## Open questions
 
-None.
+- What the byte `g_004ABC9C` marks, and so when the warning is skipped.
