@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 25 |
+| `supported` | 23 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 196 |
+| `implemented` | 198 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 1 |
-| `partial` | 25 |
-| `complete` | 196 |
+| `partial` | 23 |
+| `complete` | 198 |
 
 ## DATA
 
@@ -418,7 +418,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-TIMER-001` | Planning time limit chosen for a match | supported | complete | None | None | implemented | None |
 | `RULE-TIMER-002` | A human planning turn ends when its time limit passes | supported | complete | None | None | implemented | On expiry the rebuild submits the finish-planning operation without the idle-gang warning. |
 | `RULE-TIMER-003` | The planning clock bar and its warning sounds | supported | complete | None | None | implemented | Checks run every sixth fixed update rather than every sixth presentation tick; the two rates were not compared. |
-| `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | partial | None | `DEV-TIMER-001` | supported | No wait depends on the machine (DEV-TIMER-001). The one-tick waits of the pressed key faces and the cell and site flashes are missing, as those features are. |
+| `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | partial | None | `DEV-TIMER-001` | supported | No wait depends on the machine (DEV-TIMER-001). Pressed key faces and the city, site and sector-cell flashes wait on 166 ms ticks. How much lighter the flash copy is, and the order of the city-cell copies, are not recorded, so the rebuild picks them. |
 
 ## UI
 
@@ -426,10 +426,10 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-UI-001` | A push-button control acts only when released inside | supported | complete | None | None | implemented | None |
 | `RULE-UI-002` | Routing a press on the main console | supported | complete | None | None | implemented | None |
-| `RULE-UI-003` | Panels slide in from the right and out to the right | supported | partial | None | `DEV-TIMER-001`, `DEV-UI-001` | supported | The slide-in follows the rule's step and copy sequence at a fixed benchmark of 84 copies a second, and only panels slide; the slide-out is not animated (deviation). The panel moves with the whole screen where the original reveals only its left columns up to x 448, and the machine is not measured. |
+| `RULE-UI-003` | Panels slide in from the right and out to the right | supported | complete | None | `DEV-TIMER-001`, `DEV-UI-001` | implemented | The slide-in reveals only the panel's left columns up to x 448 over the screen it opened from, in the rule's step and copy sequence at a fixed benchmark of 84 copies a second (DEV-TIMER-001); the slide-out is not animated (DEV-UI-001). |
 | `RULE-UI-004` | Drawing numbers in fixed glyph cells | supported | complete | None | None | implemented | None |
 | `RULE-UI-005` | Lengths of the site progress and Force meters | supported | complete | None | None | implemented | Site meters truncate progress * 100 / Resistance (100 at Resistance 0) and Force meters are Force * 6 pixels, checked by SectorMeterLengthTests. |
-| `RULE-UI-006` | Choosing a sector's gang-status marker | supported | partial | None | None | supported | Frames, and the one saved cell that loses frame 8, follow the rule. Enemy visibility is computed live where the original uses the snapshot taken when planning starts. |
+| `RULE-UI-006` | Choosing a sector's gang-status marker | supported | complete | None | None | implemented | Frames and the one saved cell that loses frame 8 follow the rule. Enemy sight and presence come from a snapshot kept for each planning entry, and the idle test and incoming hires are read live. |
 | `RULE-UI-007` | The pointer shape | supported | complete | None | None | implemented | The stock arrow shows at all times, and the hourglass while a city is set up, a game is loaded or a turn is resolved. |
 | `RULE-UI-008` | The presentation timer | supported | complete | None | `DEV-TIMER-001` | implemented | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). |
 | `RULE-UI-009` | The texts of the Game Information panel | supported | partial | None | `DEV-AI-003` | supported | Game Information appends the AI policy label after Mentality (deviation); the other fields follow the original. |
