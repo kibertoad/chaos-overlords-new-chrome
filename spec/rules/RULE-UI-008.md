@@ -4,7 +4,7 @@ title: The presentation timer
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-001, FND-PLATFORM-006]
+evidence: [FND-UI-001, FND-PLATFORM-006, FND-TIMER-002, FND-UI-023]
 conflicting: []
 split_with: []
 related: []
@@ -42,7 +42,12 @@ clock read and clear `presentation_tick_pending`.
 
 ## Edge cases
 
-The period is `1000 / 6` in integer arithmetic, 166 ms, not 166.67 ms.
+- The period is `1000 / 6` in integer arithmetic, 166 ms, not 166.67 ms. The
+  timer is created with a resolution of 20 ms.
+- `presentation_tick_pending` is a flag byte: a tick that comes while it is
+  still set changes nothing, so ticks a busy loop misses are lost.
+- A second clock, slot 1, is started at the same time at 10 per second (100 ms)
+  and read by the intro; slots 2 and 3 are not used by reachable code.
 
 ## What the sources say
 
@@ -54,8 +59,5 @@ None known.
 
 ## Open questions
 
-- Whether slot 0 is a flag, as written, or a counter of ticks not yet taken, and
-  so whether ticks missed by a busy loop are lost.
-- `presentation_tick_pending` has no recorded address.
 - What else advances on this clock: the item rotation of Item Information and
   the Send cursor of the Comlink are candidates.

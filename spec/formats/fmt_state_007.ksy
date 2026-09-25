@@ -13,10 +13,10 @@ seq:
     enum: family
     doc: Planning family; 99 after a reset.
     doc-ref: FND-AI-019, FND-STATE-006
-  - id: unk_01
+  - id: needs_family
     type: u1
-    doc: Flag read only by selector 0x48.
-    doc-ref: FND-STATE-006
+    doc: Set when the record needs a new family; read only by selector 0x48.
+    doc-ref: FND-STATE-006, FND-AI-042
   - id: older_action
     type: u1
     doc: Action planned two turns ago.

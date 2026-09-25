@@ -4,7 +4,7 @@ title: The pointer shape
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-034, FND-UI-020]
+evidence: [FND-UI-034, FND-UI-020, FND-UI-023]
 conflicting: []
 split_with: []
 related: []

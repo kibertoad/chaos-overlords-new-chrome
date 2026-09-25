@@ -9,7 +9,7 @@ byte_order: little
 size: 16
 text: false
 definition: fmt_save_002.ksy
-evidence: [FND-SAVE-001]
+evidence: [FND-SAVE-001, FND-DATA-006]
 conflicting: []
 split_with: []
 related: []
@@ -42,7 +42,8 @@ None known.
 ## Coverage
 
 No file of this form was examined; the layout was read from the load function
-of BLD-GOG-EN-1.1 (FND-SAVE-001). The Kaitai definition has not been compiled.
+of BLD-GOG-EN-1.1 (FND-SAVE-001). The Kaitai definition compiles; no file of this form exists to run it against
+(FND-DATA-006).
 
 ## Open questions
 

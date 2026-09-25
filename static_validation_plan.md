@@ -469,15 +469,6 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
   the AI planning pass (the per-player part of RULE-AI-003 is a candidate).
 - `fn_00449CDE` is called from `fn_0046DC10` during city creation. Record what it does and cite it
   from the CITY rules.
-- `0x004A287A..0x004A289A` is the `hire_cost` to `martial_arts` fields of the gang definition
-  table at `0x004A2800` (FND-HIRE-006, FMT-DATA-002). `0x004A26FE..0x004A2740` (read by
-  `fn_00402D70` and `fn_0042A6E0`) still needs identifying; it lies inside `research_remaining`
-  (`0x004A2608`, 384 bytes), which is a lead to check.
-- Build the global data map: for every `.data` region game code uses, record base, extent,
-  element size, writers and readers in a STATE finding, so each glossary term gets an address.
-  Start with the unnamed regions used by the most functions (above: `0x00493658`, `0x004980A0`,
-  `0x00493830`, `0x004A287A`, `0x00490598`, `0x00498570`, `0x00493F88`, `0x00494BF0`). Then read
-  the 51 `.rdata` addresses and record the constant tables among them.
 
 ## Boundary of the network code
 

@@ -9,7 +9,7 @@ byte_order: little
 size: null
 text: false
 definition: fmt_save_001.ksy
-evidence: [FND-SAVE-001, SRC-RECHAOS-3561D41, FND-STATE-003, FND-AI-041, FND-AI-042, FND-AI-043, FND-SETUP-015, FND-AI-012, FND-AI-001, FND-AI-002, FND-AI-004, FND-UI-003, FND-TURN-005, FND-AI-005, FND-AI-006, FND-AI-007, FND-AI-009, FND-AI-010, FND-AI-019, FND-AUDIO-011, FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, FND-COMBAT-004, FND-CONTROL-001, FND-EVENT-001, FND-HIDE-001, FND-HIRE-001, FND-HIRE-004, FND-HIRE-005, FND-POLICE-001, FND-RESEARCH-001, FND-RESEARCH-002, FND-SETUP-001, FND-SETUP-002, FND-SETUP-009, FND-SETUP-011, FND-TURN-002, FND-UPKEEP-001, FND-PLATFORM-003]
+evidence: [FND-SAVE-001, SRC-RECHAOS-3561D41, FND-STATE-003, FND-AI-041, FND-AI-042, FND-AI-043, FND-SETUP-015, FND-AI-012, FND-AI-001, FND-AI-002, FND-AI-004, FND-UI-003, FND-TURN-005, FND-AI-005, FND-AI-006, FND-AI-007, FND-AI-009, FND-AI-010, FND-AI-019, FND-AUDIO-011, FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, FND-COMBAT-004, FND-CONTROL-001, FND-EVENT-001, FND-HIDE-001, FND-HIRE-001, FND-HIRE-004, FND-HIRE-005, FND-POLICE-001, FND-RESEARCH-001, FND-RESEARCH-002, FND-SETUP-001, FND-SETUP-002, FND-SETUP-009, FND-SETUP-011, FND-TURN-002, FND-UPKEEP-001, FND-PLATFORM-003, FND-DATA-006]
 conflicting: []
 split_with: []
 related: []
@@ -100,8 +100,8 @@ same offsets and the same two sizes.
 No save file was examined. The block list, the sizes and the globals were read
 from the load and save functions of BLD-GOG-EN-1.1 (FND-SAVE-001), and the
 offsets are their running sums; they match the offsets in the source's table
-row for row. The Kaitai definition has not been compiled or run against a
-save.
+row for row. The Kaitai definition compiles; no save exists to run it against
+(FND-DATA-006).
 
 ## Open questions
 

@@ -9,7 +9,7 @@ byte_order: little
 size: null
 text: false
 definition: fmt_audio_002.ksy
-evidence: [FND-AUDIO-005]
+evidence: [FND-AUDIO-005, FND-DATA-006]
 conflicting: []
 split_with: []
 related: []
@@ -59,8 +59,8 @@ with the Ogg files (BLD-GOG-EN-1.1, Compared with other builds).
 All eight files `MUSIC/Track02.ogg` to `MUSIC/Track09.ogg` of BLD-GOG-EN-1.1
 were walked page by page with a script (FND-AUDIO-005): every page starts with
 `OggS`, pages cover each file exactly, and each file has one serial number.
-The checksums were not verified. The Kaitai definition has not been compiled
-or run against the files.
+The Kaitai definition compiles and parses all eight files, and the CRC-32 of
+every one of the 10,618 pages equals its `checksum` (FND-DATA-006).
 
 ## Open questions
 

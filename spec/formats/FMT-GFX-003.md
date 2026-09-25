@@ -9,7 +9,7 @@ byte_order: little
 size: 4
 text: false
 definition: fmt_gfx_003.ksy
-evidence: [FND-GFX-002]
+evidence: [FND-GFX-002, FND-PLATFORM-011, FND-DATA-006]
 conflicting: []
 split_with: []
 related: []
@@ -40,11 +40,11 @@ None known.
 
 The 256 entries of all 214 files under `DATA/PX08/` of BLD-GOG-EN-1.1 were
 read with a script (FND-GFX-002); `reserved_03` is 0 in all of them. The
-Kaitai definition has not been compiled or run against the files.
+Kaitai definition compiles and parses them (FND-DATA-006). The image loader
+passes the colour table to `SetDIBits` with `DIB_RGB_COLORS`, so at 8 bits
+GDI matches these colours to the palette built from `DATA/CLT00002`
+(FND-PLATFORM-011).
 
 ## Open questions
 
-- Whether the executable uses these colours at all, or only the palette it
-  builds from a CLT file (FND-PLATFORM-007), has not been traced. The loader
-  reads the colour table (FND-PLATFORM-002), but what it does with it is not
-  written down.
+- Which palette entry GDI picks for each colour has not been computed.

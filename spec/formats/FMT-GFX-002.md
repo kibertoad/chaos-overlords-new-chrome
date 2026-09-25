@@ -9,7 +9,7 @@ byte_order: little
 size: null
 text: false
 definition: fmt_gfx_002.ksy
-evidence: [FND-GFX-002, FND-GFX-003, FND-PLATFORM-002, FND-ASSET-001]
+evidence: [FND-GFX-002, FND-GFX-003, FND-GFX-005, FND-PLATFORM-011, FND-DATA-006, FND-PLATFORM-002, FND-ASSET-001]
 conflicting: []
 split_with: []
 related: [RULE-GFX-001]
@@ -69,13 +69,12 @@ All 214 files under `DATA/PX08/` of BLD-GOG-EN-1.1 were read with a script
 with the end-of-bitmap code on the file's last two bytes. The widths and
 heights, from the line lengths and line counts, are those in the Coverage
 table of FMT-GFX-001 for the same names, apart from `PX00131`, which has no
-`PX08` file (FND-GFX-003). The Kaitai definition has not been compiled or run
-against the files.
+`PX08` file (FND-GFX-003). The executable passes the same sizes, except
+`PX06008`, which it reads as 242 x 158 (FND-GFX-005). The Kaitai definition
+compiles and parses all 214 files, with `rle8_data` kept as stored bytes
+(FND-DATA-006).
 
 ## Open questions
 
-- The widths and heights the executable passes for each image have not been
-  collected (FND-GFX-003).
-- What the loader does with the file's colour table at 8-bit depth, given that
-  the game builds its own palette from a CLT file (FND-PLATFORM-007), has not
-  been traced.
+- Which pixels `SetDIBits` leaves in the row and column of `PX06008` that the
+  RLE8 data never sets has not been observed (FND-GFX-005).
