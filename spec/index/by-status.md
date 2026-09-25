@@ -227,7 +227,7 @@
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | Equip panel |
 | [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | Last Turn Events panel |
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | Financial panel, City and Sector |
-| [SCR-GANG-001](../screens/SCR-GANG-001.md) | Gang definition panel for a hire offer |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels |
 | [SCR-GANG-002](../screens/SCR-GANG-002.md) | Gang information panel for a hired gang |
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | Give panel |
 | [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | Hire comparison panel showing the three offers side by side |
@@ -276,7 +276,7 @@
 
 ## recorded
 
-304 entries.
+307 entries.
 
 | ID | Title |
 |---|---|
@@ -425,6 +425,7 @@
 | [FND-GANG-006](../findings/FND-GANG-006.md) | The gang information panel handler takes a whole gang record, lays out effective and base statistics in two columns, and closes on one face |
 | [FND-GANG-007](../findings/FND-GANG-007.md) | The statistics rebuild pairs the fourteen fields of the gang, item and site records in one order, adds the weapon's combat skills to Combat, and runs for every active gang at the top of each turn, including a gang hired in the turn before |
 | [FND-GANG-008](../findings/FND-GANG-008.md) | The Hire input handler opens the gang information panel PX05000 for an offer with a record whose Force is 0, so the panel shows two question marks for Force |
+| [FND-GANG-009](../findings/FND-GANG-009.md) | The compact gang information panel 0x00455B6B is opened only from the Attack, Equip, Research, Sell and Give panels, with a copy of a live gang record |
 | [FND-GFX-001](../findings/FND-GFX-001.md) | Every PX16 file is a 16-bit BMP whose width and height are 0 and whose plane count is 255 |
 | [FND-GFX-002](../findings/FND-GFX-002.md) | Every PX08 file is an 8-bit BMP with a 256-colour palette, RLE8 in 207 files and uncompressed in 7 |
 | [FND-GFX-003](../findings/FND-GFX-003.md) | The PX08 line geometry gives every image's width and height, and the PX16 rows are padded to four bytes |
@@ -457,6 +458,7 @@
 | [FND-MOVE-003](../findings/FND-MOVE-003.md) | The Terminate and Move passes skip inactive gangs, the destination is target, and selector mode 0 draws one of the eight neighbours, which the Move repair stores as the new destination |
 | [FND-MOVE-004](../findings/FND-MOVE-004.md) | The Move panel handler shows the city around the gang, blacks out cells beyond the edge, and stores the chosen sector in the target byte |
 | [FND-MOVE-005](../findings/FND-MOVE-005.md) | The Move panel marks the chosen neighbour with one of eight 32-by-32 keyed arrows from PX00129 placed around the centre cell |
+| [FND-MOVE-006](../findings/FND-MOVE-006.md) | The Move repair loop has no bound, and some order sets keep it running for ever |
 | [FND-NET-001](../findings/FND-NET-001.md) | The network packet dispatcher reads 16-byte headers and handles sixteen packet types, one set on the joining side and one on the hosting side |
 | [FND-NET-002](../findings/FND-NET-002.md) | The network progress renderer draws one progress bar per remote player and two lines of status text chosen by a code |
 | [FND-NET-003](../findings/FND-NET-003.md) | The network screens build their button rectangles as top, left, bottom, right, and their progress bars are one pixel per unit up to 100 |
@@ -574,6 +576,7 @@
 | [FND-UI-024](../findings/FND-UI-024.md) | The sector marker reads the presence bytes, the information panels close on Enter and refuse clicks outside, and Game Information opens by itself after a load or a Join |
 | [FND-UI-025](../findings/FND-UI-025.md) | The city map surface keeps the unmarked city map in its lower half, from y 416, and the sector view and Detailed Combat take their sector images from there |
 | [FND-UI-026](../findings/FND-UI-026.md) | Of the 77 calls to the copy wrapper, only the setup card portrait is scaled, and it asks for the pattern mode, so no keyed copy loses its key |
+| [FND-UI-027](../findings/FND-UI-027.md) | The sector value renderer draws Income and Tolerance with no owner test |
 | [FND-UI-031](../findings/FND-UI-031.md) | Copies from the PX00129 sheet use opaque, white-keyed and pattern modes depending on the element |
 | [FND-UI-032](../findings/FND-UI-032.md) | The main console tests eight fixed tiles, splits five of them by the press row, and acts only on release inside |
 | [FND-UI-033](../findings/FND-UI-033.md) | The city map draws the same keyed pylon crop over the six Siege headquarters sectors and the four Big Man centre sectors |
@@ -745,7 +748,6 @@ Entries whose Open questions section says more than None known.
 | [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | supported |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker | supported |
 | [RULE-UI-007](../rules/RULE-UI-007.md) | The pointer shape | supported |
-| [RULE-UI-011](../rules/RULE-UI-011.md) | The sector values on the main console | supported |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | supported |
@@ -760,7 +762,7 @@ Entries whose Open questions section says more than None known.
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | Equip panel | supported |
 | [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | Last Turn Events panel | supported |
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | Financial panel, City and Sector | supported |
-| [SCR-GANG-001](../screens/SCR-GANG-001.md) | Gang definition panel for a hire offer | supported |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported |
 | [SCR-GANG-002](../screens/SCR-GANG-002.md) | Gang information panel for a hired gang | supported |
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | Give panel | supported |
 | [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | Hire comparison panel showing the three offers side by side | supported |

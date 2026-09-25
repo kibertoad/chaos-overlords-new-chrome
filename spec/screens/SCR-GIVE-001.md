@@ -39,7 +39,7 @@ related: [RULE-GIVE-001, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
 | Confirm face | `(137, 293, 49, 22)` | Ready | Stores the Give order and closes the panel when the button is released inside; refused with slot 4 otherwise | FND-GIVE-001 |
 | Outside the panel | Outside `(104, 124, 344, 209)` | Always | Refused with slot 4 | FND-GIVE-001 |
 | Item cell, double-click | As the item cells | The slot holds an item | Opens SCR-UI-006 for the item | FND-GIVE-001 |
-| Giver portrait, double-click | `(130, 141, 64, 64)` | Always | Opens SCR-GANG-001 for the giver's definition | FND-GIVE-001 |
+| Giver portrait, double-click | `(130, 141, 64, 64)` | Always | Opens SCR-GANG-001 for the giver | FND-GIVE-001 |
 | Recipient portrait, double-click | `(313, 140 + 36 * n, 32, 32)` | A recipient is listed there | Opens SCR-GANG-001 for that gang | FND-GIVE-001 |
 | Recipient item icon, double-click | x `346`, `367` or `388`, y `150 + 36 * n`, 20 by 20 | The recipient holds an item in that slot | Opens SCR-UI-006 for that item | FND-GIVE-001 |
 

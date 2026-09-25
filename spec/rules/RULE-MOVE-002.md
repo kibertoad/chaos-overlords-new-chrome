@@ -4,7 +4,7 @@ title: Move destinations are rewritten until no sector would hold more than six 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-MOVE-001, FND-MOVE-003, FND-AI-005, FND-AI-028]
+evidence: [FND-MOVE-001, FND-MOVE-003, FND-MOVE-006, FND-AI-005, FND-AI-028]
 conflicting: []
 split_with: []
 related: [RULE-AI-006, RULE-AI-007, FMT-STATE-001]
@@ -98,6 +98,14 @@ the map.
 - The random neighbour is not checked against the six-gang limit when it is
   drawn; if it overfills a sector, a later round repairs that sector
   [FND-MOVE-003].
+- The loop has no bound on its rounds and ends only when no sector counts
+  above six [FND-MOVE-006]. It never ends when a sector holds more than six of
+  the player's gangs that are not moving, since no round then changes
+  anything. It can also cycle for ever: when the earliest mover into a crowded
+  sector is sent back to its own sector, every sector it can then draw counts
+  six, and every other mover into those sectors comes from a sector counting
+  six, the fallback keeps taking the same gang and sends it back each time.
+  FND-MOVE-006 gives a set of legal-looking orders that does this.
 
 ## What the sources say
 
@@ -111,5 +119,6 @@ None known.
 
 ## Open questions
 
-- Whether the loop can fail to finish, for example when the selector returns a
-  sector that is still crowded, is not known.
+- Whether the Move panel and the computer players let a player give the
+  orders that make the loop cycle, and whether the original then hangs in a
+  run, is not recorded [FND-MOVE-006].

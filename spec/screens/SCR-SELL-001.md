@@ -35,7 +35,7 @@ related: [RULE-SELL-001, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
 | Cancel face | `(137, 261, 49, 22)` | Always | Closes the panel without an order when the button is released inside | FND-EQUIP-004, FND-SELL-001 |
 | Outside the panel | Outside `(104, 124, 344, 209)` | Always | Refused with slot 4 | FND-SELL-001 |
 | Item row, double-click | As the rows | The slot holds an item | Opens SCR-UI-006 for the item | FND-SELL-001 |
-| Portrait, double-click | `(130, 141, 64, 64)` | Always | Opens SCR-GANG-001 for the gang's definition | FND-SELL-001 |
+| Portrait, double-click | `(130, 141, 64, 64)` | Always | Opens SCR-GANG-001 for the gang | FND-SELL-001 |
 
 ## Keyboard input
 

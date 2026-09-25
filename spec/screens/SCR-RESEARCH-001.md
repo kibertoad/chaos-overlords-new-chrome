@@ -30,7 +30,7 @@ Rectangles are in the shared panel's own coordinates; the panel is at
 | Category cell `n`, `n` 0 to 3 | Panel `(104, 16 + 36 * n, 32, 32)` | Always | Chooses category `n`, redraws the frame, rebuilds the list and clears the selection | FND-RESEARCH-003, FND-RESEARCH-004, FND-EQUIP-009 |
 | Item list, press | Panel `(148, 26, 180, 143)` | Always | Selects the row `(y - 26) / 9`, in panel coordinates, and enables the confirmation control; a row with no entry clears the selection and disables it | FND-EQUIP-005, FND-RESEARCH-004 |
 | Item list, double-click | Panel `(148, 19, 180, 143)` | The row holds an entry | Opens the Item Information panel for the row `(y - 26) / 9`, truncated toward zero, and selects nothing | FND-RESEARCH-004 |
-| Gang portrait, double-click | Panel `(26, 17, 64, 64)` | Always | Opens the gang definition panel (SCR-GANG-001) for the acting gang | FND-RESEARCH-004 |
+| Gang portrait, double-click | Panel `(26, 17, 64, 64)` | Always | Opens the compact gang information panel (SCR-GANG-001) for the acting gang | FND-RESEARCH-004 |
 | Cancel control | Panel `(33, 137, 49, 22)` | Always | On release inside, closes the panel and leaves the gang's order as it was | FND-RESEARCH-004 |
 | Confirmation control | Panel `(33, 169, 49, 22)` | A row is selected; otherwise a press plays the rejected sound | Writes the selected item to the gang's `target` and closes the panel; RULE-RESEARCH-001 carries the order out | FND-RESEARCH-004 |
 | Outside the panel | Anywhere outside `(104, 124, 344, 209)` on the screen | Always | Plays the rejected sound | FND-RESEARCH-004 |

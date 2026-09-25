@@ -194,6 +194,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-GANG-006](../findings/FND-GANG-006.md) | builds, locations |
 | [FND-GANG-007](../findings/FND-GANG-007.md) | builds, locations |
 | [FND-GANG-008](../findings/FND-GANG-008.md) | builds, locations |
+| [FND-GANG-009](../findings/FND-GANG-009.md) | builds, locations |
 | [FND-GFX-001](../findings/FND-GFX-001.md) | builds, locations |
 | [FND-GFX-002](../findings/FND-GFX-002.md) | builds, locations |
 | [FND-GFX-003](../findings/FND-GFX-003.md) | builds, locations |
@@ -226,6 +227,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-MOVE-003](../findings/FND-MOVE-003.md) | builds, locations |
 | [FND-MOVE-004](../findings/FND-MOVE-004.md) | builds, locations |
 | [FND-MOVE-005](../findings/FND-MOVE-005.md) | builds, locations |
+| [FND-MOVE-006](../findings/FND-MOVE-006.md) | builds, locations |
 | [FND-NET-001](../findings/FND-NET-001.md) | builds, locations |
 | [FND-NET-002](../findings/FND-NET-002.md) | builds, locations |
 | [FND-NET-003](../findings/FND-NET-003.md) | builds, locations |
@@ -343,6 +345,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-024](../findings/FND-UI-024.md) | builds, locations |
 | [FND-UI-025](../findings/FND-UI-025.md) | builds, locations |
 | [FND-UI-026](../findings/FND-UI-026.md) | builds, locations |
+| [FND-UI-027](../findings/FND-UI-027.md) | builds, locations |
 | [FND-UI-031](../findings/FND-UI-031.md) | builds, locations |
 | [FND-UI-032](../findings/FND-UI-032.md) | builds, locations |
 | [FND-UI-033](../findings/FND-UI-033.md) | builds, locations |
@@ -1743,6 +1746,7 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | evidence |
 
 ## FND-AUDIO-001
 
@@ -2770,6 +2774,7 @@ None.
 | [FND-GANG-006](../findings/FND-GANG-006.md) | body |
 | [FND-GANG-007](../findings/FND-GANG-007.md) | body |
 | [FND-GANG-008](../findings/FND-GANG-008.md) | body |
+| [FND-GANG-009](../findings/FND-GANG-009.md) | body |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | body |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | body |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | body |
@@ -2780,6 +2785,7 @@ None.
 | [FND-MOVE-003](../findings/FND-MOVE-003.md) | body |
 | [FND-MOVE-004](../findings/FND-MOVE-004.md) | body |
 | [FND-MOVE-005](../findings/FND-MOVE-005.md) | body |
+| [FND-MOVE-006](../findings/FND-MOVE-006.md) | body |
 | [FND-NET-001](../findings/FND-NET-001.md) | body |
 | [FND-NET-002](../findings/FND-NET-002.md) | body |
 | [FND-NET-004](../findings/FND-NET-004.md) | body |
@@ -2818,6 +2824,7 @@ None.
 | [FND-UI-024](../findings/FND-UI-024.md) | body |
 | [FND-UI-025](../findings/FND-UI-025.md) | body |
 | [FND-UI-026](../findings/FND-UI-026.md) | body |
+| [FND-UI-027](../findings/FND-UI-027.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -3018,6 +3025,7 @@ None.
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | body, evidence |
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | body |
 | [FND-GANG-004](../findings/FND-GANG-004.md) | body |
+| [FND-GANG-009](../findings/FND-GANG-009.md) | body |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | body, evidence |
 
 ## FND-GANG-003
@@ -3077,7 +3085,14 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-GANG-009](../findings/FND-GANG-009.md) | body |
 | [SCR-GANG-002](../screens/SCR-GANG-002.md) | body, evidence |
+
+## FND-GANG-009
+
+| Cited by | In |
+|---|---|
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | body, evidence |
 
 ## FND-GFX-001
 
@@ -3150,6 +3165,7 @@ None.
 | [FND-SELL-001](../findings/FND-SELL-001.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | body, evidence |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | evidence |
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | body, evidence |
 
 ## FND-GIVE-002
@@ -3319,7 +3335,9 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
+| [FND-GANG-009](../findings/FND-GANG-009.md) | body |
 | [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | body, evidence |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | body, evidence |
 | [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
@@ -3388,6 +3406,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
+| [FND-MOVE-006](../findings/FND-MOVE-006.md) | body |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | body, evidence |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | body, evidence |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | body, evidence |
@@ -3408,6 +3427,12 @@ None.
 |---|---|
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | body |
 | [SCR-MOVE-001](../screens/SCR-MOVE-001.md) | body, evidence |
+
+## FND-MOVE-006
+
+| Cited by | In |
+|---|---|
+| [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | body, evidence |
 
 ## FND-NET-001
 
@@ -3845,6 +3870,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | body, evidence |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | evidence |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | body, evidence |
 
 ## FND-RNG-001
@@ -4022,6 +4048,7 @@ None.
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | body, evidence |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | body |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | body, evidence |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | evidence |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | body, evidence |
 
 ## FND-SELL-002
@@ -4846,6 +4873,12 @@ None.
 | [RULE-UI-006](../rules/RULE-UI-006.md) | evidence |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, evidence |
 
+## FND-UI-027
+
+| Cited by | In |
+|---|---|
+| [RULE-UI-011](../rules/RULE-UI-011.md) | body, evidence |
+
 ## FND-UI-031
 
 | Cited by | In |
@@ -4916,6 +4949,7 @@ None.
 |---|---|
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
 | [FND-STATE-001](../findings/FND-STATE-001.md) | body |
+| [FND-UI-027](../findings/FND-UI-027.md) | body |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | body |
 | glossary: sector | glossary |
 | glossary: sectors | glossary |
@@ -5849,6 +5883,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-MOVE-006](../findings/FND-MOVE-006.md) | body |
 | [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | body |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | body, related |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body |
@@ -6467,6 +6502,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | body, related |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | related |
 
 ## SCR-AWARDS-001
 
@@ -6521,6 +6557,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | body |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | related |
 
 ## SCR-EVENT-001
 
@@ -6547,13 +6584,16 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-GANG-006](../findings/FND-GANG-006.md) | body |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | body, related |
 | [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | body, related |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, related |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, related |
 
 ## SCR-GIVE-001
 
-None.
+| Cited by | In |
+|---|---|
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | related |
 
 ## SCR-HIRE-001
 
@@ -6576,7 +6616,9 @@ None.
 
 ## SCR-MOVE-001
 
-None.
+| Cited by | In |
+|---|---|
+| [FND-MOVE-006](../findings/FND-MOVE-006.md) | body |
 
 ## SCR-NET-001
 
@@ -6625,6 +6667,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | body |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | related |
 
 ## SCR-SEARCH-001
 
@@ -6635,6 +6678,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | related |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | related |
 
 ## SCR-SETUP-001
 
