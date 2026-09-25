@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-SETUP-006, FND-AUDIO-002, FND-AUDIO-010]
+evidence: [FND-NET-003, FND-SETUP-006, FND-AUDIO-002, FND-AUDIO-010]
 conflicting: []
 split_with: []
 related: []
@@ -23,8 +23,8 @@ related: []
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Upper control | Recorded as `(230, 224, 45, 92)` | Always | Continues the session on a release inside | FND-SETUP-006 |
-| Lower control | Recorded as `(230, 322, 45, 92)` | Always | Closes all twelve tracked connections and returns on a release inside | FND-SETUP-006 |
+| Continue | `(224, 230, 92, 45)` | Always | Continues the session on a release inside | FND-SETUP-006, FND-NET-003 |
+| Cancel | `(322, 230, 92, 45)`, beside Continue | Always | Closes the session and all twelve tracked connections and returns on a release inside | FND-SETUP-006, FND-NET-003 |
 
 ## Keyboard input
 
@@ -57,9 +57,6 @@ None known.
 
 ## Open questions
 
-- The order of the four numbers in each control rectangle is not settled; read
-  as `(x, y, width, height)` the controls are two 45-by-92 buttons one above
-  the other at x 230.
 - The seat strip's position and cell sources are not recorded.
 - Whether the rejection cue plays on this screen is not recorded.
 - The background image is 640 by 460 pixels; where it sits on the 640x480

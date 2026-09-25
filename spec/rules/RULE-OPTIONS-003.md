@@ -4,7 +4,7 @@ title: Warn if Idle Gangs asks before Done ends a turn with a gang left idle
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OPTIONS-002, FND-OPTIONS-001, SRC-MANUAL-GOG]
+evidence: [FND-OPTIONS-002, FND-OPTIONS-001, FND-OPTIONS-003, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, SCR-OPTIONS-001]
@@ -70,5 +70,4 @@ None known.
 
 ## Open questions
 
-- Whether the scan visits only the active player's 81 slots, as written, or
-  every slot with a test of the owner.
+None.

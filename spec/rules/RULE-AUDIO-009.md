@@ -4,7 +4,7 @@ title: The sound of an attack in Detailed Combat
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-013, FND-AUDIO-002]
+evidence: [FND-AUDIO-013, FND-AUDIO-002, FND-AUDIO-006]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005, FMT-AUDIO-001]
@@ -27,7 +27,8 @@ starts.
 - `evaded` (`INT32`): nonzero when the target evaded the attack.
 - `weapon_sound` (`INT32`): the sound number in the `ITEMS` record of the
   attacker's equipped weapon, or -1 when it has none.
-- `base_martial_arts` (`INT32`): the attacking gang's base Martial Arts.
+- `base_martial_arts` (`INT32`): the Martial Arts of the attacking gang's
+  definition in `DATA/Gangs`.
 
 ## Inputs
 
@@ -39,8 +40,9 @@ starts.
 if police != 0:
     effect_slots[5] = resource("DATA/Snd00518")
 else if evaded != 0:
-    # the evasion value loads no usable sound
-    return
+    # the sound number -1 names file number 499, which the build does not
+    # ship, so the slot stays empty and the play below is silent
+    effect_slots[5] = 0
 else if weapon_sound >= 0:
     effect_slots[5] = resource(sprintf("DATA/SND%05d", 500 + weapon_sound))
 else if base_martial_arts > 0:
@@ -72,8 +74,5 @@ None known.
 
 ## Open questions
 
-- What the evasion branch leaves in slot 5 and whether any sound plays.
-- Whether "base" Martial Arts is the gang definition's value or the effective
-  one.
 - Whether an armed attack whose item's sound number is out of the range of the
   files can occur.

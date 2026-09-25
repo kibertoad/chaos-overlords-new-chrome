@@ -45,16 +45,11 @@ for player in 0..6:
 let handoff = humans > 1
 if humans == 0:
     # the local game ends here, with no awards
-    end the match loop
     return
 for player in 0..6:
-    if controller[player] == 0 and player_active[player]:
-        if handoff:
-            show SCR-SETUP-002
-        the player plans
-    else if controller[player] == 1 and player_active[player]:
-        the computer player plans
-    else if controller[player] == -2:
+    # an active slot plans here: a local human behind the Ready card when
+    # handoff is set (RULE-SETUP-008), a computer player directly
+    if controller[player] == -2:
         if handoff:
             show SCR-SETUP-002
         active_player = player

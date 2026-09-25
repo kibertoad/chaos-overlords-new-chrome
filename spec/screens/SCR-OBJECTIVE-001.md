@@ -1,11 +1,11 @@
 ---
 id: SCR-OBJECTIVE-001
-title: Player Rankings panel with one vertical rail per player and portraits placed by standing
+title: Player Rankings panel with one vertical rail per player and portraits placed by score
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-OBJECTIVE-001, FND-AI-005, FND-UI-011, FND-UI-032, SRC-MANUAL-GOG]
+evidence: [FND-OBJECTIVE-005, FND-OBJECTIVE-001, FND-AI-005, FND-UI-011, FND-UI-032, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-002, RULE-UI-002, SCR-UI-003]
@@ -13,18 +13,29 @@ related: [RULE-OBJECTIVE-002, RULE-UI-002, SCR-UI-003]
 
 ## Drawn elements
 
+Positions inside the panel are panel-local, from its top-left corner. `hi` and
+`lo` are the highest and lowest `scenario_score` of the active players, and
+`offset` for slot `p` is `(hi - scenario_score[p]) * (140.0 / (hi - lo + 1))`
+in single precision with its fraction removed toward zero, or 70 when `hi`
+equals `lo`.
+
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| Panel with six player-colour rails | `DATA/PX16/PX05011` | None | `(104, 124, 344, 209)` once it has slid in | While the panel is open | FND-OBJECTIVE-001, FND-UI-011 |
-| Overlord portrait, per player slot `p` (0 to 5) | 32 by 32, source not recorded | `scenario_standing` of the player, computed by RULE-OBJECTIVE-002, as the portrait's height on its rail | Panel-local x `98 + 40 * p`; y set by the standing, higher for a better standing | `scenario_standing[p]` is not `0xFF` | FND-OBJECTIVE-001, FND-AI-005 |
+| Panel with six player-colour rails and a close button | `DATA/PX16/PX05011` | None | `(104, 124, 344, 209)` once it has slid in | While the panel is open | FND-OBJECTIVE-001, FND-OBJECTIVE-005, FND-UI-011 |
+| Overlord portrait, per player slot `p` (0 to 5) | Interface sheet, source `(32 * portrait, 480, 32, 32)`, unscaled | How far the player's `scenario_score` is behind the leader's | Panel-local `(98 + 40 * p, 18 + offset, 32, 32)` | `scenario_standing[p]` is not `0xFF` | FND-OBJECTIVE-005 |
 
 ## Mouse input
 
-None known.
+| Region | Rectangle | Enabled when | Effect | Evidence |
+|---|---|---|---|---|
+| Close button | `(137, 293, 50, 23)`; the press must land in panel-local `(33, 169, 49, 22)` | Always | Held-button press; closes on a release inside | FND-OBJECTIVE-005 |
+| Outside the panel | Outside `(104, 124, 344, 209)` | Always | Plays the rejection sound, slot 4 | FND-OBJECTIVE-005 |
 
 ## Keyboard input
 
-None known.
+| Key | Enabled when | Effect | Evidence |
+|---|---|---|---|
+| Enter or `VK_EXECUTE` (`0x0D`, `0x2B`) | Always | Draws the close button pressed and closes | FND-OBJECTIVE-005 |
 
 ## Other input
 
@@ -32,13 +43,15 @@ None.
 
 ## Sounds
 
-None known.
+| Sound | Resource | Played when | Evidence |
+|---|---|---|---|
+| Rejection (slot 4) | Not recorded here | A press outside the panel | FND-OBJECTIVE-005 |
 
 ## States
 
 | State | Entered when | Left when | Evidence |
 |---|---|---|---|
-| Open | The Ranking control of SCR-UI-003 is pressed during planning (RULE-UI-002, route 9) | Not recorded | FND-UI-032, FND-OBJECTIVE-001 |
+| Open | The Ranking control of SCR-UI-003 is pressed during planning (RULE-UI-002, route 9) | The close button is released inside, or Enter or `VK_EXECUTE` is pressed | FND-UI-032, FND-OBJECTIVE-001, FND-OBJECTIVE-005 |
 
 ## Timing
 
@@ -51,12 +64,7 @@ None known.
 
 ## Open questions
 
-- The formula for a portrait's vertical position (origin and step per
-  standing) is not recorded, nor whether the x values are left edges or
-  centres.
-- The source sheet and cell of the 32-by-32 portraits are not recorded.
-- How the panel is closed, and whether it reacts to the pointer, is not
-  recorded.
-- Tied players share a height, since they share a standing.
+- Tied players share a height, since they share a score. The leader's
+  portrait is at the top of its rail.
 - The panel image is used through the `DATA/PX08` file of the same name in
   256-colour mode.

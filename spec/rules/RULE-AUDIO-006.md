@@ -4,7 +4,7 @@ title: The turn-start sound
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-003]
+evidence: [FND-AUDIO-003, FND-AUDIO-006, FND-NET-004, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005]
@@ -12,8 +12,10 @@ related: [RULE-AUDIO-005]
 
 ## Summary
 
-Each turn after the first begins with a sound, in local games and in network
-games of the original's own protocol. It plays even when sound effects are off.
+In a network game of the original's own protocol, each turn after the first
+begins with a sound, on the hosting computer and on every computer that joined.
+A game started with New Game has no turn-start sound. The sound plays even when
+sound effects are off.
 
 ## When it runs
 
@@ -43,7 +45,10 @@ does not test `effects_enabled`.
 
 ## Edge cases
 
-The first turn played after the outer turn function is entered is silent.
+- The first turn played after the outer turn function is entered is silent.
+- `local_game` is set only by the Join command and `network_game` only by Host
+  and by resuming a saved network game; New Game clears both. Despite its name,
+  `local_game` does not mark a game on one computer (FND-AUDIO-006).
 
 ## What the sources say
 
@@ -57,6 +62,5 @@ None known.
 
 - Whether the outer loop is entered once per match or again after loading a
   save, and so whether the first turn after a load is silent.
-- The meanings of `local_game` and `network_game` are read from their use here;
-  their writers have not been checked.
-- The call passes priority 1; what that changes is not recorded.
+- Whether every saved network game is resumed through the path that sets
+  `network_game` has not been followed past the load dispatcher.

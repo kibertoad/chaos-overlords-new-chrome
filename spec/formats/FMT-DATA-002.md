@@ -1,7 +1,7 @@
 ---
 id: FMT-DATA-002
 title: Gang definition records in DATA/Gangs
-status: supported
+status: sourced
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 files: ["DATA/Gangs"]

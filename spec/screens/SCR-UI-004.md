@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-036, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-032, FND-UI-035, SRC-MANUAL-GOG]
+evidence: [FND-UI-036, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-032, FND-UI-035, SRC-MANUAL-GOG, FND-UI-021]
 conflicting: []
 split_with: []
 related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-UI-003, SCR-UI-007, SCR-HIRE-001]
@@ -38,8 +38,8 @@ related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-U
 | Console tiles | As on SCR-UI-003 | Planning | RULE-UI-002 | FND-UI-032 |
 | Neighbouring sector | `(64,60,162,156)`; column `(x - 64 > 53) + (x - 64 > 107)`, row `(y - 60 > 51) + (y - 60 > 103)` | A double-click, on a cell that is on the map and whose owner byte is not -2 | Makes that sector the selected one and redraws the screen for the active player | FND-UI-015 |
 | Site portrait | `(86,228,120,196)`; slot `(y > 294) + (y > 360)` | A double-click | Opens SCR-UI-007 for the site | FND-UI-015 |
-| Gang card | `(254,80,150,336)`; card `(x > 329) + 2*(y > 192) + 2*(y > 304)` | A press (left or right) or a double-click, on a card that holds a gang | For the active player's own cards, the individual command handler with mode 1 for a press and 2 for a double-click; for another player's card, a double-click on the portrait opens the gang panel and on an equipment icon opens Item Information | FND-UI-015 |
-| Group order strip | `(253,61,152,16)`; left half to x 367, right half beyond | A press, while the strip is drawn | One order for all the active player's gangs in the sector, for this turn (left) or recurring (right) | FND-UI-015 |
+| Gang card | `(254,80,150,336)`; card `(x > 329) + 2*(y > 192) + 2*(y > 304)` | A press (left or right) or a double-click, on a card that holds a gang | For the active player's own cards, the individual command handler with mode 1 for a press and 2 for a double-click; for another player's card, a double-click on the portrait opens the gang panel and on an equipment icon opens Item Information. On the active player's card, a press inside the card's strip from `(5,8)` to `(69,17)` opens a Windows popup menu at the card's corner moved 1 left and 8 down: menu 2 (recurring orders: Chaos, Control, Heal, Hide, Influence, Research, None) right of card x 37, menu 1 (the thirteen orders, None and Terminate) otherwise, with items that cannot apply greyed | FND-UI-015, FND-UI-021 |
+| Group order strip | `(253,61,152,16)`; left half to x 367, right half beyond | A press, while the strip is drawn | Opens a Windows popup menu at `(290,65)`: menu 3 (Attack, Bribe, Chaos, Control, Heal, Hide, Influence, Move, Snitch, None, Terminate) on the left half, menu 5 (recurring Chaos, Control, Heal, Hide, Influence, None) on the right. The choice becomes the order of all the active player's gangs in the sector, for this turn (left) or recurring (right); Heal changes only gangs below Force 10 | FND-UI-015, FND-UI-021 |
 | Overlord bar portrait | `(12 + 70*n, 5, 62, 32)` for player `n` | A press, when that player's `gangs_seen` byte for the sector is set | Shows player `n`'s gangs in the sector that the active player can see | FND-UI-015 |
 | Hire dock | `(440,373,196,77)` | A press or double-click | The Hire handler (SCR-HIRE-001) | FND-UI-015 |
 | Back to the city | `(4,394,32,63)` | A press (left or right), released inside | Returns to SCR-UI-003 with the same sector selected | FND-UI-015 |

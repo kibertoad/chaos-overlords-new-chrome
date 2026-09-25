@@ -4,7 +4,7 @@ title: A human planning turn ends when its time limit passes
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-001, FND-OPTIONS-002]
+evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-OPTIONS-003]
@@ -27,16 +27,21 @@ None.
 
 ## Inputs
 
-`controller`, `planning_limit_ms`, `planning_start_ms`, `timer_ms`.
+`controller`, `planning_limit_ms`, `planning_start_ms`, `planning_timed`, `timer_ms`.
 
 ## Procedure
 
 ```text
 define planning_timer_start():
     planning_start_ms = timer_ms
+    planning_timed = planning_limit_ms != -1
+    # the clock bar is drawn at once (RULE-TIMER-003)
 
 define planning_time_expired() -> INT32:
-    let elapsed = timer_ms - planning_start_ms
+    if planning_timed == 0:
+        return 0
+    # 32-bit difference, compared as signed values
+    let elapsed: INT32 = timer_ms - planning_start_ms
     return elapsed > planning_limit_ms
 
 # at the start of a human player's planning
@@ -55,8 +60,13 @@ player's planning ends; RULE-OPTIONS-003 does not run for that ending.
 ## Edge cases
 
 - The test is strictly greater: the turn ends on the first pass after the limit.
-- With no limit (`planning_limit_ms` of -1) the turn must never expire; how the
-  helper arranges that is not recorded (see Open questions).
+- With no limit, `planning_timed` is 0 and the test returns 0 without comparing.
+- The difference is taken in 32 bits, so `timer_ms` wrapping during a turn
+  gives the right elapsed time.
+- The test runs only in the planning loop itself. A panel open when the time
+  passes keeps running, with the bar and warning sounds of RULE-TIMER-003
+  going on, and the turn ends on the loop's next pass after the panel closes.
+- When planning ends the flag is cleared and the bar is left as last drawn.
 
 ## What the sources say
 
@@ -69,10 +79,4 @@ None known.
 
 ## Open questions
 
-- Whether the expiry helper tests for -1 itself, or its caller skips it. A
-  signed compare of `elapsed` with -1 would expire at once, and an unsigned one
-  never.
-- The types of `elapsed` and of `planning_limit_ms` in the compare.
-- Whether a modal panel open at expiry is closed, or the expiry waits for it.
-- What happens when `timer_ms` wraps during a turn.
-- Where `planning_start_ms` is stored.
+None.

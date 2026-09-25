@@ -4,7 +4,7 @@ title: Family-7 computer gangs sit where sites add the most Research, influence 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028]
+evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -42,6 +42,7 @@ The gang's record in `gangs` (`sector`, `force`, `heal`) and in
 ```text
 # The signed sum of the Research modifiers of the sites in sector c
 define research_score(c):
+    # read from a sum cached when the match starts or is loaded
     let n = 0
     for k in 0..3:
         n = n + site_definitions[sectors[c].sites[k].definition].research
@@ -165,6 +166,12 @@ computer is not hostile to, falls through to the research sequence. Item 0 is
 never researched through the type scans. A previous action whose target byte
 was cleared reads as item 0 in the research continuation only when the
 previous action was Research, which is never cleared.
+
+`research_score` reads a sum the game caches for every sector when a match
+starts or is loaded, not at each planning pass. It adds the Research of the
+definitions in all three site slots without testing a site's progress or an
+empty slot, and the cache is the same for every player. A change to a
+sector's sites during a match is not seen until the match is loaded again.
 
 ## What the sources say
 

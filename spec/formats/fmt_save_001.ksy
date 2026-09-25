@@ -134,9 +134,9 @@ seq:
     repeat: expr
     repeat-expr: 486
     doc: Block 26, copied from 0x004A11E8.
-  - id: current_player
+  - id: city_map_image
     type: s2
-    doc: Block 27, copied from 0x00494830.
+    doc: Block 27, copied from 0x00494830. The city map is image PX10000 plus this value.
   - id: player_names
     size: 72
     doc: Block 28, copied from 0x004A2588.

@@ -1,7 +1,7 @@
 ---
 id: FMT-DATA-001
 title: Site definition records in DATA/SITES
-status: supported
+status: sourced
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 files: ["DATA/SITES"]

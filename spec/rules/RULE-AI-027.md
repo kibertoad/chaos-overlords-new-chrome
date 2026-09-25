@@ -4,10 +4,10 @@ title: Family-9 computer gangs equip without waiting, leave owned land, and figh
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-036, FND-AI-038, FND-AI-033, FND-AI-028]
+evidence: [FND-AI-036, FND-AI-038, FND-AI-033, FND-AI-028, FND-AI-043, FND-EXE-004]
 conflicting: []
 split_with: []
-related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
+related: [RULE-AI-001, BUG-AI-005, RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
 ---
 
 ## Summary
@@ -20,7 +20,14 @@ Control, moving on after a Control.
 
 ## When it runs
 
-From RULE-AI-002, for a gang whose family is 9.
+From RULE-AI-002, for a gang whose family is 9. Only a player whose
+`raider_mode` is set has family-9 gangs. It is set when a network player's
+connection is lost and a computer player takes the slot over: at that moment
+the game switches the slot's controller to a computer, resets its planning
+records, writes family 9 to every active gang's record and runs its planning
+pass at once. From then on RULE-AI-001 sets family 9 on every active gang at
+every pass, so later hires are raiders too. The flag is kept in saves and
+cleared when a new match starts.
 
 ## Parameters
 
@@ -89,8 +96,5 @@ None known.
 
 ## Open questions
 
-- How a gang gets family 9 is not settled: no cell of the family table assigns
-  it, and the planning pass sets it under a condition that is not recorded
-  (FND-AI-003).
 - The pool choice for the draws is taken from family 12 (FND-AI-038), as
   FND-AI-036 says it is the same.

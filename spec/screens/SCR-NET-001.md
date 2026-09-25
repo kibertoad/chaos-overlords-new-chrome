@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-SETUP-006, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG]
+evidence: [FND-NET-003, FND-SETUP-006, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001]
@@ -24,10 +24,10 @@ related: [SCR-SETUP-001]
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
 | Seat cell, seat `n` (`n` 0 to 3) | `(397 + 83 * (n % 2), 94 + 74 * (n / 2), 64, 68)` | Always | Selects the seat; its portrait and name bands work as on SCR-SETUP-001 but change the network session's seat | FND-SETUP-006, FND-SETUP-005 |
-| Action 1 | Recorded as `(254, 371, 24, 92)` | Always | Not recorded | FND-SETUP-006 |
-| Action 2 | Recorded as `(254, 468, 24, 92)` | Always | Not recorded | FND-SETUP-006 |
-| Action 3 | Recorded as `(375, 370, 45, 92)` | Always | Not recorded | FND-SETUP-006 |
-| Action 4 | Recorded as `(375, 468, 45, 92)` | Always | Not recorded | FND-SETUP-006 |
+| Add | `(371, 254, 92, 24)`; its pressed image, surface 7 `(220, 0, 92, 24)`, is drawn at x 370 | Always | With fewer than four local seats, makes the lowest empty slot a local seat with the lowest free portrait; otherwise the rejection cue | FND-NET-003 |
+| Remove | `(468, 254, 92, 24)`, pressed image `(220, 24, 92, 24)` | Always | With at least two local seats, empties the last one added; otherwise the rejection cue | FND-NET-003 |
+| Begin | `(370, 375, 92, 45)`, pressed image `(220, 48, 92, 45)` | Always | Marks the local seats ready when the last remote seat in slot order is ready; otherwise the rejection cue | FND-NET-003 |
+| Cancel | `(468, 375, 92, 45)`, pressed image `(220, 93, 92, 45)` | Always | Closes all twelve connections and leaves | FND-NET-003 |
 
 ## Keyboard input
 
@@ -48,7 +48,7 @@ None.
 
 | State | Entered when | Left when | Evidence |
 |---|---|---|---|
-| Editing, one seat configured; the participants' states are polled and the game cannot start until they allow it | The screen opens | The session starts or the host leaves | FND-SETUP-006 |
+| Editing, one seat configured; the participants' states are polled and the game cannot start until they allow it | The screen opens | Every slot's ready byte is set, and the session starts with the slots still showing portrait 15 made computer players; or the host leaves | FND-SETUP-006, FND-NET-003 |
 | Action held; its pressed image shows while the pointer stays inside | An action is pressed | The button is released; the action runs only on a release inside | FND-SETUP-006 |
 
 ## Timing
@@ -61,12 +61,8 @@ None known.
 
 ## Open questions
 
-- The order of the four numbers in each action rectangle is not settled. Read
-  as `(y, x, height, width)`, the actions are 92-wide buttons at x 370 or 371
-  and 468, y 254 and 375, the positions of the Add, Remove, Begin and Cancel
-  buttons of SCR-SETUP-001; read as `(x, y, width, height)`, two of them fall
-  below the 460-pixel image.
-- Which action does what is not recorded.
+- Begin tests only the last remote seat's ready byte; whether that is
+  intended is not settled (FND-NET-003).
 - The keyboard handling and the message that gives the host address are not
   recorded.
 - The background image is 640 by 460 pixels; where it sits on the 640x480

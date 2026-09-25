@@ -1,7 +1,7 @@
 ---
 id: FMT-DATA-003
 title: Item definition records in DATA/ITEMS
-status: supported
+status: sourced
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 files: ["DATA/ITEMS"]

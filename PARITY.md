@@ -11,19 +11,19 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Status | Rows |
 |---|---|
-| `unknown` | 2 |
-| `sourced` | 1 |
-| `supported` | 88 |
+| `unknown` | 1 |
+| `sourced` | 0 |
+| `supported` | 95 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 129 |
+| `implemented` | 126 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
-| `missing` | 19 |
-| `partial` | 72 |
-| `complete` | 129 |
+| `missing` | 20 |
+| `partial` | 76 |
+| `complete` | 126 |
 
 ## DATA
 
@@ -32,7 +32,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-DATA-001` | Site definition records in DATA/SITES | sourced | complete | None | None | implemented | None |
 | `FMT-DATA-002` | Gang definition records in DATA/Gangs | sourced | complete | None | None | implemented | None |
 | `FMT-DATA-003` | Item definition records in DATA/ITEMS | sourced | complete | None | None | implemented | None |
-| `FMT-DATA-004` | Colour list in DATA/CLT00002 | unknown | missing | None | None | unknown | The rebuild copies CLT00002 unread into its asset pack. |
+| `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | missing | None | None | supported | The rebuild copies CLT00002 unread into its asset pack. |
 | `FMT-DATA-005` | Compressed archive DATA/DATA.Z | unknown | missing | None | None | unknown | The rebuild copies DATA.Z unread into its asset pack. |
 
 ## GFX
@@ -81,7 +81,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-SAVE-001` | Full save file | sourced | missing | None | `DEV-NET-001`, `DEV-SAVE-001` | sourced | Reading or writing original saves is a declared non-goal; the rebuild has its own save format. |
+| `FMT-SAVE-001` | Full save file | supported | missing | None | `DEV-NET-001`, `DEV-SAVE-001` | supported | Reading or writing original saves is a declared non-goal; the rebuild has its own save format. |
 | `FMT-SAVE-002` | Short M10W save file | supported | missing | None | `DEV-SAVE-001` | supported | Reading or writing original saves is a declared non-goal. |
 
 ## STATE
@@ -123,14 +123,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-SETUP-001` | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-002` | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported | partial | None | None | supported | The rebuild starts every setup on Kill 'Em All and keeps no scenario preference; value 0 is Greed (FND-SETUP-013, FND-OBJECTIVE-003). |
 | `RULE-SETUP-003` | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | supported | complete | None | None | implemented | None |
-| `RULE-SETUP-004` | A new match draws the computer players' reactions, then generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported | complete | None | None | implemented | The initial-state fixture from the original that would confirm the draw order is still pending. |
+| `RULE-SETUP-004` | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported | complete | None | None | implemented | The initial-state fixture from the original that would confirm the draw order is still pending. |
 | `RULE-SETUP-005` | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-006` | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-007` | A player named with the visibility modifier sees every opposing gang for the whole match | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | partial | None | None | supported | The handoff order is Combat, Events, planning; whether the once-only Game Information panel and the Comlink scan follow the entry's order was not checked. |
 | `RULE-SETUP-009` | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported | partial | None | None | supported | The rebuild's portrait arrows step through every portrait instead of skipping the ones other slots hold (FND-SETUP-013). |
 | `RULE-SETUP-010` | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported | partial | None | None | supported | Add does not give the new human the lowest free portrait, and whether the rebuild reopens setup with the roster of the last Begin was not checked (FND-SETUP-013). |
-| `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | None | `DEV-SETUP-002` | implemented | The scenario, time limit, mentality and timer controls are drawn from measured rectangles the entry does not yet record. |
+| `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | None | `DEV-SETUP-002` | implemented | The rebuild's measured rectangles for the scenario, time limit, mentality and timer controls were not compared with those FND-SETUP-013 records. |
 | `SCR-SETUP-002` | Hot-seat handoff card that waits for the next local player to press Ready | supported | complete | None | `DEV-SETUP-002` | implemented | None |
 
 ## CITY
@@ -277,7 +277,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | supported | partial | None | `DEV-HELP-002` | supported | The rebuild lowers the attitude only for an attack that was not evaded, where the original also lowers it for an evaded attack, and its Martial Arts test on the attacker is `> 0` where the original tests `== 0` (FND-COMBAT-008, FND-AI-047). |
 | `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
-| `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | partial | None | `DEV-ATTACK-001`, `DEV-UI-008` | supported | Opponent and target hit maps are the original's. FND-ATTACK-003 now records the panel origin, the Confirm and Cancel faces, Enter, plus and Escape, the acting gang's portrait and equipment and the initial selection; the rebuild was not compared with them. |
+| `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | partial | None | `DEV-ATTACK-001`, `DEV-UI-008` | supported | Opponent and target hit maps are the original's. FND-ATTACK-003 now records the panel origin, the Confirm and Cancel faces, Enter, plus and Escape, the acting gang's portrait and equipment and the initial selection, and FND-ATTACK-004 the double-click information panels; the rebuild was not compared with them. |
 
 ## COMBAT
 
@@ -288,7 +288,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
 | `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | partial | None | `DEV-COMBAT-002` | supported | Paging, opponent strip and exit follow the original. FND-COMBAT-012 now records the arrow and Enter/plus keys (Escape is not handled), the force selector's focus and its outlines, and the grid cells' portraits and tracks; the rebuild was not compared with them. |
-| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips and 166 ms cadence are implemented. FND-COMBAT-010 now records the track positions, the portrait cells, the Exit face and Escape, which end the whole presentation; the rebuild was not compared with them. The portraits' resource file is still not traced. |
+| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips and 166 ms cadence are implemented. FND-COMBAT-010 now records the track positions, the portrait cells, the Exit face and Escape, which end the whole presentation; the rebuild was not compared with them. The portraits come from `PX03000` (FND-COMBAT-013). |
 
 ## DETECT
 
@@ -399,7 +399,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-OBJECTIVE-003` | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | supported | partial | None | None | supported | The rebuild tests Big 40, Siege, Big Man and Armageddon for living players only where the original counts every slot, and gives Kill 'Em All and Eliminate tests of their own where the original has none (FND-OBJECTIVE-003). The timed test was not compared. |
 | `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | complete | None | None | implemented | Whether the rebuild repeats the music request once per later local human and ends a local game with no local human left without the awards (FND-OBJECTIVE-004) was not checked. |
-| `SCR-OBJECTIVE-001` | Player Rankings panel with one vertical rail per player and portraits placed by standing | supported | complete | None | None | implemented | None |
+| `SCR-OBJECTIVE-001` | Player Rankings panel with one vertical rail per player and portraits placed by score | supported | partial | None | None | supported | The rebuild places each portrait 28 pixels lower per standing where the original places it in proportion to the score's distance from the leader, over 140 pixels (FND-OBJECTIVE-005). |
 | `SCR-OBJECTIVE-002` | Private elimination card shown to an eliminated local human over the city screen | supported | complete | None | `DEV-SETUP-002` | implemented | None |
 
 ## AWARDS
@@ -407,9 +407,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-AWARDS-001` | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | supported | complete | None | None | implemented | None |
-| `RULE-AWARDS-002` | The endgame lists players by standing, ties in slot order, eliminated players last, after a victory splash when one human plays | supported | complete | None | None | implemented | None |
+| `RULE-AWARDS-002` | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported | partial | None | None | supported | The rebuild shows its notice when one human played, for that human, where the original shows the splash of the lone active player, human or computer, on the Awards tab (FND-AWARDS-004). |
 | `SCR-AWARDS-001` | Endgame screen listing the players by place with their awards or their statistics | supported | complete | None | `DEV-SETUP-002` | implemented | Row typography and timing are unconfirmed against captures of the original. |
-| `SCR-AWARDS-002` | Victory splash shown before the endgame results when one human plays | supported | complete | None | None | implemented | None |
+| `SCR-AWARDS-002` | Victory splash shown on the endgame's Awards tab when one player is left | supported | partial | None | None | supported | Shown under the rebuild's one-human test instead of the one-active-player test (FND-AWARDS-004); whether it takes the place of the Awards tab was not checked. |
 
 ## TIMER
 

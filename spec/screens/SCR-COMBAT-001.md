@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AUDIO-002, FND-AUDIO-011, FND-COMBAT-002, FND-COMBAT-004, FND-COMBAT-007, FND-COMBAT-009, FND-COMBAT-012, FND-EXE-004]
+evidence: [FND-AUDIO-002, FND-AUDIO-011, FND-COMBAT-002, FND-COMBAT-004, FND-COMBAT-007, FND-COMBAT-009, FND-COMBAT-012, FND-COMBAT-013, FND-EXE-004, FND-GFX-005]
 conflicting: []
 split_with: []
 related: [RULE-COMBAT-002]
@@ -21,9 +21,9 @@ FND-EXE-004) [FND-COMBAT-012].
 |---|---|---|---|---|---|
 | Panel | `DATA/PX16/PX05012` | None | Origin `(104, 124)`; size not recorded | While the panel is open | FND-COMBAT-002 |
 | Viewer's forces | Not recorded | The viewer's row of `combat_results` for the page's sector, filled by RULE-COMBAT-002: up to six gangs, 40 by 40 each, in a grid of two columns 44 pixels apart and three rows 52 pixels apart | Grid origin `(207, 153)` | While the page's sector is shown | FND-AUDIO-011 |
-| Gang cell | 64-by-64 portrait cell of surface 3, chosen by the definition in byte 0 of the gang's combat record, scaled to 40 by 40 | One gang of a grid | Entry `k` at grid origin plus `(44 * (k % 2), 52 * (k / 2))` | While the gang's entry is not -1 | FND-COMBAT-012 |
+| Gang cell | 64-by-64 portrait cell of `DATA/PX16/PX03000` (surface 3), chosen by the definition in byte 0 of the gang's combat record, scaled to 40 by 40 | One gang of a grid | Entry `k` at grid origin plus `(44 * (k % 2), 52 * (k / 2))` | While the gang's entry is not -1 | FND-COMBAT-012, FND-COMBAT-013 |
 | Force tracks | Surface 6, 40 by 3 each, 4 pixels per point | `force_start` (upper) and `force_final` (lower) of the gang's combat record | Cell origin plus `(0, 41)` and `(0, 45)` | Under every gang cell | FND-COMBAT-012 |
-| Focus outlines | Outline around `(x - 2, y - 2)-(x + 42, y + 50)` in colour `(0, 0xFFFF, 0)` for the focal gang, `(0xFFFF, 0, 0)` for its target and `(0xFFFF, 0xFFFF, 0)` for a gang that attacked the focal gang; surface 6 art `(468, 15)-(512, 67)` for a gang that is both | The focal gang, its target and its attackers | Around the cell | While a focal gang is set | FND-COMBAT-012 |
+| Focus outlines | One-pixel outline around `(x - 2, y - 2)-(x + 42, y + 50)`, green `(0, 255, 0)` for the focal gang, red `(255, 0, 0)` for its target and yellow `(255, 255, 0)` for a gang that attacked the focal gang; surface 6 art `(468, 15)-(512, 67)` for a gang that is both | The focal gang, its target and its attackers | Around the cell | While a focal gang is set | FND-COMBAT-012, FND-COMBAT-013 |
 | Enemy forces | Not recorded | The selected opponent's row of `combat_results` for the sector, laid out like the viewer's | Grid origin `(350, 153)` | While an opponent is selected | FND-AUDIO-011 |
 | Opponent portraits | `DATA/PX16/PX00129` 32-by-32 portrait `(32 * portrait, 480)`, or `(32 * portrait, 594)` for a player with no result in the sector | The other five players in player order; a player with no result in the sector is drawn dim | `(306, 140 + 36 * n, 32, 32)`, `n` 0 to 4 | While the panel is open | FND-AUDIO-011, FND-COMBAT-002, FND-COMBAT-007 |
 | Opponent frame | `DATA/PX16/PX00129` crop `(120,171,34,34)`, keyed on exact white | The chosen opponent | `(305, 139 + 36 * n, 34, 34)`, one pixel outside portrait `n` | While an opponent is chosen | FND-COMBAT-009 |
@@ -84,10 +84,6 @@ None known.
   the interface sheet hold the greyed arrows and the dimmed portraits rests on
   its branch structure, not on a comparison of the art.
 - Escape is not handled; no other key is tested [FND-COMBAT-012].
-- Which resource surface 3 holds when the panel opens, and so the portraits'
-  file, was not traced [FND-COMBAT-012].
-- The colour triples are read as red, green and blue; the argument order of
-  the colour helper was not traced [FND-COMBAT-012].
 - The page index is a global that is not compared with the new page count
   when the panel opens again; with fewer pages than before it can point past
   the page list [FND-COMBAT-012].

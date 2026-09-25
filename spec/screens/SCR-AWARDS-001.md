@@ -8,7 +8,7 @@ resolution: 640x480
 evidence: [FND-AWARDS-004, FND-AWARDS-003, FND-AWARDS-001, FND-GFX-003, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
-related: [RULE-AWARDS-001, RULE-AWARDS-002]
+related: [RULE-AWARDS-001, RULE-AWARDS-002, SCR-AWARDS-002]
 ---
 
 ## Drawn elements
@@ -47,9 +47,9 @@ None known.
 
 ## Other input
 
-| Input | Effect | Evidence |
-|---|---|---|
-| Menu command `0x81`/9 | Sets the quit flag and leaves | FND-AWARDS-004 |
+| Device | Input | Enabled when | Effect | Evidence |
+|---|---|---|---|---|
+| Menu | Command `0x81`/9 | Always | Sets the quit flag and leaves | FND-AWARDS-004 |
 
 ## Sounds
 

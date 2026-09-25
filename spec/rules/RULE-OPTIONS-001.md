@@ -4,7 +4,7 @@ title: Reading the options from the registry at startup
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OPTIONS-001, FND-RNG-001, SRC-MANUAL-GOG]
+evidence: [FND-OPTIONS-001, FND-OPTIONS-003, FND-RNG-001, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002]
@@ -15,8 +15,10 @@ related: [RULE-RNG-002]
 At startup the game reads its options from the registry key
 `HKLM\SOFTWARE\Stick Man Games\Chaos Overlords\1.0`. Every value is read into
 one shared buffer, so a missing value takes the value of the option read before
-it rather than its default. When the serial number that comes out is 0, the game
-makes two random draws to build a new one.
+it rather than its default. When the key cannot be opened, nothing is read and
+every option keeps its initialized value. When the key opens and the serial
+number that comes out is 0, the game makes two random draws to build a new one
+and keeps it for the session.
 
 ## When it runs
 
@@ -29,7 +31,8 @@ None.
 
 ## Inputs
 
-`registry_present`, `registry_dword`, and `rng` through `roll`.
+`registry_key_opened`, `registry_present`, `registry_dword`, and `rng` through
+`roll`.
 
 ## Procedure
 
@@ -41,39 +44,42 @@ define next_option(index: INT32, buffer: UINT32) -> UINT32:
     return buffer
 
 # the key is opened once with KEY_READ
+if registry_key_opened == 0:
+    return
 let buffer: UINT32 = 0
 buffer = next_option(0, buffer)
-pref_thousands_colors = buffer
+# every option but comm_type and serial_number keeps only the low byte
+pref_thousands_colors = buffer % 256
 buffer = next_option(1, buffer)
-pref_slide_panels = buffer
+pref_slide_panels = buffer % 256
 buffer = next_option(2, buffer)
-pref_base_stats = buffer
+pref_base_stats = buffer % 256
 buffer = next_option(3, buffer)
-pref_detailed_combat = buffer
+pref_detailed_combat = buffer % 256
 buffer = next_option(4, buffer)
-pref_warn_idle = buffer
+pref_warn_idle = buffer % 256
 buffer = next_option(5, buffer)
-comm_type = buffer
+comm_type = buffer % 65536
 buffer = next_option(6, buffer)
-effects_level = buffer
+effects_level = buffer % 256
 buffer = next_option(7, buffer)
-music_level = buffer
+music_level = buffer % 256
 buffer = next_option(8, buffer)
-mentality = buffer
+mentality = buffer % 256
 buffer = next_option(9, buffer)
-planning_limit_choice = buffer
+planning_limit_choice = buffer % 256
 buffer = next_option(10, buffer)
-objective_choice = buffer
+objective_choice = buffer % 256
 buffer = next_option(11, buffer)
-pref_full_screen = buffer
+pref_full_screen = buffer % 256
 buffer = next_option(12, buffer)
 serial_number = buffer
 if serial_number == 0:
-    let serial_low = roll(16384) - 1
     let serial_high = roll(16384) - 1
-    # the two values are combined into a serial number, which the loader then
-    # tries to write back through the read-only key; the write fails
-    # (BUG-OPTIONS-001)
+    let serial_low = roll(16384) - 1
+    serial_number = serial_high * 65536 + serial_low
+    # the loader then tries to write it back through the read-only key; the
+    # write fails (BUG-OPTIONS-001)
 ```
 
 ## Outputs
@@ -96,14 +102,19 @@ No return value. Sets the thirteen options in this order:
 | 11 | `prefsFullScreen` | `pref_full_screen` | 1 |
 | 12 | `serialNum` | `serial_number` | 0 |
 
-When the serial number is 0, makes two calls of `roll(16384)`, six draws from
-`rng` in all. Otherwise makes none.
+When the key opens and the serial number is 0, makes two calls of
+`roll(16384)`, six draws from `rng` in all, the first giving the high half of
+the new serial number. Otherwise makes none. `pref_full_screen` is also copied
+to a second byte the display code reads.
 
 ## Edge cases
 
 - A value missing from the registry takes the value read for the option before
-  it (BUG-OPTIONS-002). Only when every value from the first is missing does an
-  option keep what the buffer held before the first query.
+  it (BUG-OPTIONS-002). When every value from the first is missing, the options
+  take 0, the value the buffer is set to before the first query.
+- Without the key the options keep the initialized values of the table and
+  `serial_number` stays 0 for the session, with no draws.
+- A value above 255 keeps only its low byte, above 65535 for `comm_type`.
 - Since the serial number can never be written (BUG-OPTIONS-001), a key without
   `serialNum` makes the draws at every start, unless the value read before it,
   `prefsFullScreen`, is nonzero, in which case the serial number becomes that
@@ -123,11 +134,7 @@ None known.
 
 ## Open questions
 
-- What the loader does when the key cannot be opened at all: whether it returns
-  at once and every option keeps its initialized value, or runs the queries.
-- What the shared buffer holds before the first query; the procedure assumes 0.
-- How the two draws are combined into the serial number, and whether the
-  combined value is stored in `serial_number` in memory.
-- Whether a registry value of another type or size changes the buffer.
-- `mentality` is kept as a byte, but the loader writes four bytes at its address;
-  what the three bytes after it hold is not recorded.
+- The size passed to each query is never reset, so a value longer than four
+  bytes changes the size used by every later query. What Windows then writes
+  next to the 4-byte buffer has not been observed. A value of another type
+  and four bytes or less is read as its first bytes.

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-005, FND-COMBAT-009, FND-COMBAT-010, FND-COMBAT-011, FND-DATA-003, FND-EXE-004, FND-UI-001, FND-UI-010]
+evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-005, FND-COMBAT-009, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-DATA-003, FND-EXE-004, FND-GFX-005, FND-UI-001, FND-UI-010]
 conflicting: []
 split_with: []
 related: [RULE-COMBAT-004]
@@ -24,7 +24,7 @@ presentation is `fn_0042E040` and each clip is played by `fn_00430C23`
 | Panel | `DATA/PX16/PX05014` | None | `(104, 124, 344, 209)` | While the presentation runs | FND-UI-001 |
 | Sector tile | The city map art | The sector of the current clip | `(135, 135, 54, 52)` | During each clip | FND-UI-001 |
 | Sector code | Not recorded | The sector's code | Text at `(156, 190)` | During each clip | FND-UI-001 |
-| Gang portraits | 64-by-64 cell of surface 3, column `n % 10` and row `n / 10`, where `n` is the definition's portrait number; for the police, from resource 300 loaded into surface 7 | The viewer's gang on the left, the other gang on the right | `(254, 172, 64, 64)` and `(327, 172, 64, 64)` | During each clip | FND-UI-001, FND-UI-010, FND-COMBAT-010 |
+| Gang portraits | 64-by-64 cell of `DATA/PX16/PX03000` (surface 3), column `n % 10` and row `n / 10`, where `n` is the definition's portrait number; for the police, from resource 300 loaded into surface 7 | The viewer's gang on the left, the other gang on the right | `(254, 172, 64, 64)` and `(327, 172, 64, 64)` | During each clip | FND-UI-001, FND-UI-010, FND-COMBAT-010, FND-COMBAT-013 |
 | Force tracks | `DATA/PX16/PX00129`: the 60-by-3 red track `(354,3)`, then `6 * value` pixels of the green strip `(354,0)` | Two tracks per gang from its copy of the first eight bytes of its `combat_records` entry: the upper shows `force_start`, the lower `force_shown` as RULE-COMBAT-004 lowers it. Each track has a light, a full and a dark row | Left gang `(256, 240, 60, 3)` and `(256, 247, 60, 3)`; right gang `(329, 240, 60, 3)` and `(329, 247, 60, 3)`, from buffer x 152 and 225 and buffer rows 260 and 267 | During each clip | FND-UI-001, FND-UI-010, FND-COMBAT-009, FND-COMBAT-010 |
 | Equipment, left | The item's `PX04xxx` rotation strip, one 48 by 48 frame chosen by the item record's last word | The left gang's weapon, armor and miscellaneous item | `(204, 172, 48, 48)`, `(204, 221, 48, 48)`, `(204, 270, 48, 48)` | During each clip, for each equipped item | FND-AUDIO-013 |
 | Equipment, right | As on the left | The right gang's items | `(393, 172, 48, 48)`, `(393, 221, 48, 48)`, `(393, 270, 48, 48)` | During each clip, for each equipped item | FND-AUDIO-013 |
@@ -106,8 +106,7 @@ None known.
 - The tracks are drawn at panel-local y 116 and 123 (FND-COMBAT-009,
   FND-COMBAT-010); the capture of FND-UI-010 measured y 114 and 121. Which is right depends on the
   capture's unrecorded settings.
-- Which resource surface 3 holds when the presentation runs, and so the
-  portraits' file, and the sector code's font [FND-COMBAT-010].
+- The sector code's font.
 - A freeze of the original during this presentation has been reported but not
   reproduced (BUG-COMBAT-001).
 - The panel exists as `DATA/PX08/PX05014` too, and each strip as a `PX08` file;

@@ -38,9 +38,9 @@ None known.
 
 ## Other input
 
-| Input | Effect | Evidence |
-|---|---|---|
-| Menu command `0x81`/9 | Sets the quit flag and leaves | FND-AWARDS-004 |
+| Device | Input | Enabled when | Effect | Evidence |
+|---|---|---|---|---|
+| Menu | Command `0x81`/9 | Always | Sets the quit flag and leaves | FND-AWARDS-004 |
 
 ## Sounds
 

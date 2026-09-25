@@ -16,43 +16,21 @@ order of priority, unless a group says otherwise.
 
 ## Executable, platform and file formats
 
-- All `.ksy` files of this task (fmt_data_001..003, fmt_gfx_001..003,
-  fmt_audio_001..002, fmt_video_001, fmt_help_001, fmt_save_001..002): every definition
-  now compiles with kaitai-struct-compiler 0.11; parse the shipped files with the
-  generated readers and compare every field with the entry. `fmt_gfx_002` names a process routine
-  `rule_gfx_001` that has to be supplied; `fmt_audio_002` and `fmt_video_001`
-  use `_index` in repeated sizes. Changes the Coverage sections of every
-  format.
-- FND-PLATFORM-001..008, FND-SAVE-001, FND-ASSET-001: several functions are
-  located by their entry address alone. Give the full address range of each.
-- FMT-GFX-001, FMT-GFX-002, FND-GFX-003: collect the width and height the
-  executable passes to the image loader for each image number, in particular
-  `PX00202`, `PX00203` and `PX06008`, whose file data give 311, 311 and 241
-  where the older notes say 312 and 242. Look at the callers of the loader
-  and the constants they push.
-- FMT-DATA-004, FND-PLATFORM-007: find which `CLT` number the palette loader
-  opens (the template reads `CLT00000`; the only file is `CLT00002`), and
-  whether the colour table inside each PX08 file is ever used or replaced by
-  the CLT palette.
-- FMT-DATA-001..003: list the field offsets the executable reads from the
-  `SITES`, `Gangs` and `ITEMS` records (starting from `0x004782C5`, the
-  equipment resolver, and `0x0042E040`, which reads an item's sound byte) and
-  the in-memory addresses the tables are copied to. Rows still resting on the
-  source alone would become supported.
-- FMT-DATA-005: confirm that no code path, including the installer
-  components, opens `DATA.Z`.
-- FND-PLATFORM-004: map the WinSock and `smackw32.dll` imports taken by
-  ordinal to names, and find the callers of the TAPI and serial functions.
-- FND-ASSET-001: explain the strings with a leading space
-  (`" data\PX08\px00128"`, `" data\PX16\px00128"`, `" A:\CHAOS\CDTrack"`):
-  whether the space is skipped by the code that uses them.
-- FND-PLATFORM-002: give the exact test that chooses the 8-bit or 16-bit image
-  set (display depth query and threshold).
-- FMT-SAVE-002: find what writes an `M10W` file, if anything, and what the
-  caller does with the load result 3; identify the 12-byte global.
-- FMT-SAVE-001: identify blocks 16, 17, 18, 21, 36 and 37, confirm blocks 3,
-  4, 8, 13, 27, 33 and 39 (now resting on the source), and name which
-  preference each of the three preference bytes is.
+- FMT-DATA-001..003 stay `sourced` only through a few rows: follow what the
+  readers of item `cost` (`0x7E`, 19 functions) and `tech_level` (`0x80`, four
+  functions) do with them, whether gang and item names and item descriptions
+  are drawn from the table (the gang records are passed by address from
+  `fn_00449E80`, `fn_0044FD6C` and `fn_00455B6B`), and whether sector byte
+  `0x0E`, which site `special` 3 sets, is the discount the Equip resolver
+  tests (FND-DATA-007, FND-STATE-001).
+- FND-PLATFORM-013: which Telephony call each of the 21 TAPI callers makes,
+  and which setting makes `fn_00424AE5` use `getservbyname` for the service
+  name at `0x00492F90` in place of port 4269.
+- Needs a run of the original, not the executable alone: what the extra top
+  row of `PX06008` shows (FND-GFX-005); whether `IDirectDraw::CreatePalette`
+  with flags 8 fails in full-screen 8-bit play (FND-PLATFORM-011); which
+  extension the save dialog appends given `lpstrDefExt` `*.SAV`
+  (FND-SAVE-002).
 
 ## Shared in-memory structures
 
@@ -65,60 +43,12 @@ order of priority, unless a group says otherwise.
 
 ## Attack, combat, detection, Chaos and police
 
-- SCR-ATTACK-001, SCR-COMBAT-001, SCR-COMBAT-002: which resources surfaces 3
-  and 5 hold while the picker, Combat Results and Detailed Combat are open,
-  which gives the files of the portraits and equipment icons; the picker's
-  event 5 branch (`0x0043C4BC`), which tests the portrait and equipment
-  rectangles; the argument order of the colour helper behind the Combat
-  Results outlines (FND-ATTACK-003, FND-COMBAT-010, FND-COMBAT-012).
 - SCR-COMBAT-002: the Force tracks are drawn at panel-local y 116 and 123
   (FND-COMBAT-010) and the capture of FND-UI-010 measured 114 and 121. A new
   capture with its settings recorded settles it; the executable cannot.
-- RULE-COMBAT-004: the fight list's record area holds four entries
-  (FND-COMBAT-011). Check whether one sector can list more than four gangs
-  against one focal gang.
 
 ## Setup, city generation, objectives and awards
 
-- SCR-SETUP-001, RULE-SETUP-002, RULE-OBJECTIVE-004: find the local setup
-  handler's rectangles for the scenario buttons, time limit, AI Mentality and
-  turn time controls, and the globals they write (the time limit gives
-  `turn_limit`; its address is unknown). Also the positions of the top
-  portrait strip, the names and the selection lights.
-- RULE-OBJECTIVE-004: write out the Dominance numerator in `0x0047712A` and
-  the end tests of each scenario in `0x00476857` (thresholds 40 and 64, Siege
-  test, timed end test), which the rule takes from the manual.
-- RULE-SETUP-001, RULE-SETUP-005, RULE-SETUP-006, RULE-SETUP-007: record the
-  addresses of the five `modifier_name_*` strings and of the name-compare
-  helper; confirm whether the scan is one pass or several.
-- RULE-SETUP-003, RULE-SETUP-009, RULE-SETUP-010: find the `portrait` table's
-  address and the stepping rules of `fn_00468D87` and `fn_00468CFC` (skipping
-  used portraits, wrapping at 0 and 14).
-- RULE-SETUP-004: find the address of `reaction`, and whether computer and
-  human players both get a draw (coordinate with the AI task, FND-AI-006).
-- RULE-SETUP-008: find where `new_local_game` lives and is cleared, and what
-  `fn_0045519D` and `fn_00451F80` show.
-- RULE-OBJECTIVE-001, RULE-OBJECTIVE-005: addresses of `match_over`,
-  `player_retired` and `player_active`, and where the elimination walk sits in
-  the turn relative to resolution and the next planning scan.
-- RULE-AWARDS-001, SCR-AWARDS-001: address and layout of `player_awards`, the
-  icon cells in `PX00201`, the Awards and Stats rectangles in `0x0042CE61`,
-  which statistic each of the five fields holds, and which tab shows first.
-- SCR-AWARDS-002, RULE-AWARDS-002: where `PX00202` is drawn, how it is
-  dismissed, whether the shared results follow it, and whether the human count
-  includes controller 3.
-- SCR-OBJECTIVE-001: the vertical position formula of the rankings portraits
-  in `0x004518D9`, the portrait source, and how the panel closes.
-- SCR-SETUP-002: position of `PX00132`, the portrait drawn on it and the Ready
-  rectangle in `0x004396C0` and `0x00439F7A`.
-- SCR-NET-001, SCR-NET-002, SCR-NET-003: settle the order of the four numbers
-  in the held-button rectangles (read the helper's comparisons), and name each
-  action.
-- SCR-NET-004, SCR-NET-005: the progress-to-width mapping in `0x0040D3C0` and
-  `0x0046D77B`, the spinner cell arithmetic and timer period, and the
-  `PX00139` destination.
-- All screens: where the 640-by-460 drawing surface sits on the 640x480
-  window (menu bar offset).
 
 ## Computer players
 
@@ -292,63 +222,7 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
 
 ## Program shell: startup, window, input and shutdown
 
-- `fn_00460CCF` is WinMain (5,565 bytes, called from the runtime entry at `0x00478E4B`). Eight
-  findings cite it for single details. Record its whole order as a rule: any single-instance
-  check (shutdown releases a mutex), the preference load (RULE-OPTIONS-001), display setup
-  `fn_00425850`, sound setup `fn_00458290`, the CD drive search `fn_004667DC`, the image set
-  choice (FND-PLATFORM-002), the intro `fn_004329C0`, the title loop, and shutdown `fn_00465A95`
-  (menu destroyed, mutex released, timer period ended).
-- The window procedure `fn_0045C33B` (2,398 bytes, no direct callers; registered by
-  `fn_00425850`) is described nowhere. List every message it handles (it compares with `0x100`,
-  `0x102`, `0x111` and `0x3B9`: key down, character, menu command and the MCI notification) and
-  what each does, including its calls into `fn_00423C81`, `fn_0042B60F`, save and load
-  `fn_0046381A`, and `fn_00465BC8`. Record how keys are read (`MapVirtualKeyA`,
-  `GetAsyncKeyState`) and how the mouse position is read (`GetCursorPos`). This becomes the input
-  dispatch rule (UI area) that every screen's keyboard and mouse questions above depend on.
-- The two message pumps: `fn_0045C180` (4 callers; `GetMessageA`, `IsDialogMessageA`,
-  `TranslateAcceleratorA` with accelerator table 102, `timeGetTime`) and `fn_0045C2CD` (22 callers;
-  `PeekMessageA` without waiting). Record which modal loops use which, and what a panel's loop
-  does while the pump runs.
-- The block `0x004980A0..0x00498125` is written by every panel handler (Attack, Equip,
-  Influence, Move, Research, Sell, Give, Search, gang panels) and read by the pumps, the window
-  procedure and the Comlink panels. Identify its fields (the open panel, the last click, the last
-  key are expected) and record it as a FMT-STATE entry for the input state.
-- `0x00498570..0x004985DA` is written by `fn_00425850`, the window procedure, `fn_00465620` and
-  `fn_00465B64`, and read by 25 functions: give each field (window handle, instance and so on) a
-  glossary name.
-- `fn_0045CD70` and `fn_0045CDA4` wrap `BeginPaint` and `EndPaint` for 39 callers each. Record
-  what a repaint of the window redraws and from where (see the presentation model below).
-
 ## Display, drawing primitives and palette
-
-- Display setup `fn_00425850` (1,351 bytes: `CreateWindowExA`, `AdjustWindowRectEx`,
-  `DirectDrawCreate`, `SetSysColors`, `SystemParametersInfoA`, the `MS Sans Serif` font) and its
-  undo `fn_00425D97` (`ChangeDisplaySettingsA`, `SelectPalette`, `RealizePalette`,
-  `SetSysColors`). Record the window style and client size, whether and to what the display mode
-  is changed, what DirectDraw is used for, what the font is used for, and which system colours are
-  replaced and restored. This also settles "where the 640-by-460 drawing surface sits on the
-  window" in the Screens group.
-- The drawing primitives every screen calls are not described: `fn_00425E99` (44 callers),
-  `fn_00425F4D` (57), `fn_00425F8C` (60), `fn_0042639F` (48), `fn_00426405` (48), `fn_00426575`
-  (42, a GDI rectangle with pen and brush), the off-screen bitmap setup `fn_00425FB0` and its
-  release `fn_00426202`. With the cited `fn_00425EDF`, `fn_0042773E`, `fn_00427864`,
-  `fn_004266A6` and `fn_00449B20` they form the drawing layer. For each, record the arguments and
-  the effect (surface, rectangle, colour, copy mode). Then record the presentation model as a
-  GFX rule: what is drawn off screen, when and how it reaches the window, and whether only changed
-  rectangles are copied. Pixel parity of every SCR entry rests on it.
-- Name the drawing layer's state: `0x00493830..0x00493878` (written and read by the primitives;
-  current pen, brush or colour is expected), `0x00493598..0x004935F8` and
-  `0x00493658..0x00493680` (written once by `fn_00425850`, read by 24 functions; device context
-  and bitmap handles are expected).
-- GDI shape helpers with no direct callers: lines `fn_00426427`, `fn_004264D4`; rectangle
-  `fn_00426909`; ellipses `fn_00426A37`, `fn_00426B7D`, `fn_00426CAB`, `fn_00426E1D`; and
-  `fn_00425F14`, `fn_00428E6A`, `fn_0042B7E3`. Search for their entry addresses stored as data
-  (pointer tables) and record each as reachable, with its caller, or as dead code.
-- Palette: `fn_0042885B` opens `data\CLT00000`, reads 1,024 or 1,032 bytes and creates a palette,
-  and has no direct callers. `fn_00428BAB` builds a palette from the device capabilities;
-  `fn_004289D3` and `fn_00428ADC` select and realize one. Find how `fn_0042885B` is reached, if at
-  all, and what happens when `CLT00000` is missing (the build ships only `CLT00002`). This
-  answers part of the FMT-DATA-004 item in the first group.
 
 ## Movies
 
@@ -393,61 +267,14 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
 
 ## Menus, dialogs, help and other resources
 
-- Record the resource section as an EXE finding: every menu (1, 2, 3, 5, 101), dialog
-  (`DIALDIALOG`, `DIRECTDIALOG`, 128 to 141, 143 to 145, 201, 20000, 20002 to 20007),
-  string-table block (1 to 7), the accelerator table (102), bitmap (143, 146, 147, 148), icon
-  group (152, 153, 158, 159, 160, 164, 166, 167) and the version record, with its size and the
-  function that loads it. Find the loaders by the ID pushed before `LoadMenuA`,
-  `DialogBoxParamA`, `CreateDialogParamA`, `LoadStringA`, `LoadAcceleratorsA`, `LoadBitmapA` and
-  `LoadIconA`. Record IDs and roles only; the spec never reproduces the texts.
-- Accelerator table 102: record each key and the command it sends, and whether the window
-  procedure handles those commands the same way as the menu items. The keyboard items of every
-  SCR entry depend on it.
-- Menu state helpers: `fn_0042533F` and `fn_0042548A` (13 and 16 callers, pushing 1024 and
-  1025), `fn_004255D5` (redraws the menu bar, 13 callers), `fn_00425601` (check marks),
-  `fn_0042572C` (switches the whole menu), `fn_004257D7` (no callers), and `fn_004120A7` and
-  `fn_004120CB` (27 callers each, both pass 129). Record which items each greys out and when (open
-  panels, planning, resolution), which menu resource each game state uses, and add it to
-  SCR-UI-009.
-- `fn_0042566D` opens a popup menu (`TrackPopupMenu`) from the city screen handlers
-  `fn_00414D8C` and `fn_0041462F`. Record which menu resource it shows, where, and what each item
-  does. No entry mentions a popup menu.
-- Dialogs: `fn_00465EC6` (1,219 bytes, no direct callers, controls 1003 to 1015) is a dialog
-  procedure, reached through `fn_00465CEC` (`DialogBoxParamA`, 15 callers, compares with 20000
-  and 20002) or `fn_00465DD5` (`CreateDialogParamA`). Record which dialog each caller opens, the
-  controls and their effects, and which dialogs a local game can reach. `DIALDIALOG`, `DIRECTDIALOG`
-  and the TAPI dialogs belong to network play and need only be listed.
-- Help: `fn_0046508C` calls `WinHelpA` with `.\Help\Chaos.hlp` and has no direct callers. Record
-  how it is reached (a menu or accelerator command in the window procedure is expected) and the
-  command and context it passes. DEV-HELP-001 then has a rule to depart from.
-
-## Files, registry and the save dialogs
-
-- File layer: `fn_0042B60F` (`CreateFileA`, called from WinMain, the sound loader and planning
-  entry `fn_0046E766`), `fn_0042AB80`, `fn_0042ABFB`, `fn_0042B7F3` and `fn_0042B87B` sit around
-  the cited `fn_0042AC7A..fn_0042B27A` (FND-PLATFORM-003) and share `0x00493F88..0x00493FE7`.
-  Record path building, open modes, error handling (what the player sees on a missing or short
-  file) and which file `fn_0042B60F` opens at planning entry.
-- `fn_0042B8EC` reads a value under `SOFTWARE\Microsoft\Windows\CurrentVersion` (buffer of 260
-  bytes). Record which value and where the result goes. RULE-OPTIONS-001 covers a different key.
-- Save and load dialogs: the thunks for `GetOpenFileNameA` and `GetSaveFileNameA` (`0x00478630`,
-  `0x00478636`) and `fn_00458155`, which the save and load path `fn_00463CC5` calls. Record the
-  default directory and extension, the filter's roles, the overwrite prompt and what a failed load
-  does. DEV-SAVE-001 departs from the files, not from this flow.
+- Needs a run of the original, since Windows decides it: whether
+  `TranslateAcceleratorA` sends the command of a greyed menu item, so whether
+  Ctrl+S saves during resolution or Backspace acts as Host on the title when
+  Host is greyed (SCR-UI-009, RULE-UI-014). The static reading of the menus,
+  dialogs, popups, accelerators and help is closed by FND-EXE-005, FND-UI-021,
+  FND-UI-022, FND-HELP-005 and RULE-HELP-001.
 
 ## Timing, delays and arithmetic helpers
-
-- `fn_0043287C` and `fn_00432897` (`timeGetTime`), `fn_00432847` (`timeKillEvent`),
-  `fn_00464B43` (no callers; draws and waits), `fn_00464CD9` (7 callers; waits through
-  `fn_00462579`) and `fn_00418F16` (called from planning entry; constants 1,280, 1,408, 2,000,
-  3,000 and 4,999). Record every presentation delay with its length and whether it depends on
-  processor speed, as a TIMER or UI rule. Speed tied to the processor may be fixed under the
-  fidelity rules, so each delay needs its source known.
-- Floating-point helpers `fn_0045CDE0`, `fn_0045CE26`, `fn_0045CE61`, `fn_0045CEBE` (compares
-  with 360), `fn_0045CF05`, `fn_0045CF99` (pushes 180; no direct callers) and `fn_0045D17E` do
-  angle arithmetic through the runtime's `__ftol`. Find what uses them (the rotating item picture
-  of SCR-UI-006 or the network spinner are candidates) and record the rounding, since `__ftol`
-  truncates.
 
 ## Screen and panel code no entry describes
 
@@ -455,33 +282,12 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
   and FND-SETUP-017: read the code that fills surface 2 to say what its second copy of the city
   map from y 420 holds (FND-UI-018 enlarges the sector view's background from it), and whether
   FND-UI-033's map origin `(2,44)` or FND-UI-017's `(2,42)` is right (SCR-UI-003).
-- The rectangle test `fn_00449B78` (`PtInRect`, 49 callers) decides every click. Record its
-  argument order and whether the right and bottom edges are inside; that settles "the order of
-  the four numbers in the held-button rectangles" in the Setup group for every screen at once.
-  Also identify `fn_00449BFC` (33 callers, no callees), `fn_00449BD2`, `fn_00449C41`,
-  `fn_00465B64` (16 callers), the cursor helpers `fn_00449CAE` and `fn_00449CC6`
-  (`ShowCursor`) and `fn_00465B27` (`GetKeyState`).
 
 ## Game-side code and data no entry describes
 
 - `fn_00409F47` (608 bytes), `fn_0040AA65` and `fn_0040AAE3` are called from planning entry
   `fn_0046E766` and call the AI selector `fn_00402D70` and `fn_0040A1A7`. Record their role in
   the AI planning pass (the per-player part of RULE-AI-003 is a candidate).
-- `fn_00449CDE` is called from `fn_0046DC10` during city creation. Record what it does and cite it
-  from the CITY rules.
-
-## Boundary of the network code
-
-- 69 functions use WinSock, TAPI or serial imports or are called only from such functions. More
-  are reached only from the network screens: `fn_0046981D` and `fn_0046A115` (constants 1,200,
-  1,920, 2,304 and 2,592), `fn_0042202D` (the handshake strings), `fn_004211E0`, `fn_00423C81`,
-  `fn_0046D00D`, `fn_0046913D`, `fn_0040C4C5`, `fn_004217C0`, and `fn_004688CA..fn_00468C0E`.
-  DEV-NET-001 leaves all of it out, but the boundary is not recorded. Some of it is called from
-  local code: `fn_00421A2D` has 12 callers, and the send routine `fn_00423749` is called from the
-  Comlink recorder `fn_0045D2F0` and the hot-seat handoff `fn_004396C0`. Record a NET finding that
-  lists the network functions and every call into them from local code with the test that skips
-  it in a local game (`network_game`, `0x00487B58`, is expected). That shows the local game never
-  depends on them, and closes the 27,868 bytes as out of scope rather than unread.
 
 ## Found while integrating the spec
 

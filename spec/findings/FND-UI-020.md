@@ -34,6 +34,9 @@ locations:
     address: 0x00498360..0x0049836F
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
+    address: 0x004980A0..0x00498125
+  - build: BLD-GOG-EN-1.1
+    file: Chaos Overlords.exe
     address: 0x00498570..0x004985D8
 tool: Ghidra 12.1.3
 environment: null
@@ -149,6 +152,24 @@ Helpers:
 - `fn_00465BC8(shape, force)` compares `shape` with the value at `0x00487B20`,
   which is 99 in the file and has no writer, so for shapes 0 to 4 it always
   loads and sets the stock cursor (FND-UI-034).
+
+The block `0x004980A0..0x00498125` holds several unrelated globals:
+`0x004980A0..0x004980BF` are MCI parameter blocks of the CD code
+(`fn_00458B43` and `fn_00458EA6`); `0x004980C0` is the
+`PAINTSTRUCT` that `fn_0045CD70` and `fn_0045CDA4` pass to `BeginPaint` and
+`EndPaint`, and `0x0049810C` the device context `BeginPaint` returns;
+`0x00498100` is the double-click phase above; `0x00498104` the network wake
+flag; `0x00498108` the flag that makes the procedure validate a repaint; and
+`0x00498110..0x00498125` belong to the Comlink Send panel `fn_0045EAB1`. The 25
+panel functions that write the block write only `0x00498100`, setting it to 1
+just after their slide-out call.
+
+The block `0x00498570..0x004985DA` holds the window handle at `0x00498570`,
+the `MSG` the pumps fill at `0x00498578` (28 bytes), the pointer snapshot of
+`fn_00465B64` from `0x00498598` (a zero word, the client point at `0x0049859C`,
+the screen point at `0x004985A0`, and the left and right button bytes at
+`0x004985A4` to `0x004985A7`), the window class at `0x004985A8` (48 bytes) and
+the command-line file name from `0x004985D8` (FND-PLATFORM-009).
 
 ## Interpretation
 

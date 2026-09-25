@@ -18,6 +18,9 @@ locations:
     file: DATA/ITEMS
     offset: 0x00..0x297F
   - build: BLD-GOG-EN-1.1
+    file: DATA/CLT00002
+    offset: 0x00..0x3AF
+  - build: BLD-GOG-EN-1.1
     file: DATA/PX16/PX00128
     offset: 0x00..0x8FC35
   - build: BLD-GOG-EN-1.1
@@ -44,7 +47,7 @@ environment: null
 
 ## Observation
 
-Every `.ksy` file of the shipped formats (`fmt_data_001` to `fmt_data_003`,
+Every `.ksy` file of the shipped formats (`fmt_data_001` to `fmt_data_004`,
 `fmt_gfx_001` to `fmt_gfx_003`, `fmt_audio_001`, `fmt_audio_002`,
 `fmt_video_001`, `fmt_help_001`, `fmt_save_001`, `fmt_save_002`) compiles with
 kaitai-struct-compiler 0.11. The only messages are style warnings about field
@@ -61,6 +64,7 @@ The generated Python readers were run on every shipped file of each format:
 | `fmt_data_001` | `DATA/SITES` | 22 records, ends on the last byte. `id` equals the record index in all 22. `special` holds only 0 to 3. `combat`, `control`, `blade` and `martial_arts` are 0 in every record. |
 | `fmt_data_002` | `DATA/Gangs` | 90 records, ends on the last byte. `id` equals the record index in all 90. |
 | `fmt_data_003` | `DATA/ITEMS` | 64 records, ends on the last byte. `id` equals the index in records 0 to 52 and is 0 in records 53 to 63. `type` holds 0 to 4 and 99. `blade`, `fighting` and `martial_arts` are 0 in every record. |
+| `fmt_data_004` | `DATA/CLT00002` | 236 entries, ends on the last byte. Every red, green and blue level is a multiple of 17, and the fourth byte is 4 in every entry. |
 | `fmt_gfx_001` | all 215 files under `DATA/PX16/` | Each ends on its last byte. `file_size` equals the file's length, `pixel_offset` 54, `header_size` 40, `width` and `height` 0, `planes` 255, `bit_count` 16, `compression` 0, `image_size` the file length minus 54, the other fields 0. Bit 15 is clear in every pixel. |
 | `fmt_gfx_002`, `fmt_gfx_003` | all 214 files under `DATA/PX08/` | Each ends on its last byte. `pixel_offset` 1078, `header_size` 40, `width` and `height` 0, `planes` 255, `bit_count` 8, `compression` 1 in 207 files and 0 in 7, `image_size` the file length minus 1078, both pixels-per-metre fields 2835, `colors_used` and `colors_important` 0. Each has 256 palette entries whose `reserved_03` is 0. |
 | `fmt_audio_001` | the 28 files `DATA/SND*` and `DATA/Snd*` | Each ends on its last byte. `fmt_size` 16, `format_tag` 1, `channels` 1, `sample_rate` and `byte_rate` 22050, `block_align` 1, `bits_per_sample` 8. `riff_size` is 36 plus `data_size` in all 28; `data_size` is odd in 6 of them. |

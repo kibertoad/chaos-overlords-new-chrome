@@ -28,9 +28,9 @@
 |---|---|---|
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | Sound effect files DATA/SNDnnnnn | supported |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported |
-| [FMT-DATA-001](../formats/FMT-DATA-001.md) | Site definition records in DATA/SITES | supported |
-| [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | supported |
-| [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | supported |
+| [FMT-DATA-001](../formats/FMT-DATA-001.md) | Site definition records in DATA/SITES | sourced |
+| [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | sourced |
+| [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | sourced |
 | [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 | supported |
 | [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | unknown |
 | [FMT-GFX-001](../formats/FMT-GFX-001.md) | 16-bit image files in DATA/PX16 | supported |
@@ -38,7 +38,7 @@
 | [FMT-GFX-003](../formats/FMT-GFX-003.md) | Palette entry in a PX08 image file | supported |
 | [FMT-HELP-001](../formats/FMT-HELP-001.md) | WinHelp container HELP/Chaos.hlp | supported |
 | [FMT-HELP-002](../formats/FMT-HELP-002.md) | Help contents file HELP/CHAOS.CNT | supported |
-| [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | Full save file | sourced |
+| [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | Full save file | supported |
 | [FMT-SAVE-002](../formats/FMT-SAVE-002.md) | Short M10W save file | supported |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | Gang record, one per player and roster slot | supported |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | Sector record, one per city sector | supported |
@@ -219,7 +219,7 @@
 
 ## findings
 
-295 entries.
+297 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -278,6 +278,7 @@
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
 | [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, plus or its lower face and cancels with Escape or its upper face | recorded |
+| [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | A double-click in the Attack picker opens Item Information for an equipment icon and the gang information panel for a portrait, of the acting gang or of a listed target | recorded |
 | [FND-AUDIO-001](../findings/FND-AUDIO-001.md) | Music plays one of three CD track programs, restarts each when it ends, and pauses while the window is inactive | recorded |
 | [FND-AUDIO-002](../findings/FND-AUDIO-002.md) | Nine general sound effects load into slots 0 to 9 with slot 5 left empty, and a wrapper plays them only while effects are enabled | recorded |
 | [FND-AUDIO-003](../findings/FND-AUDIO-003.md) | The turn-start sound plays at every turn start after the first, and every effect interrupts the one playing | recorded |
@@ -311,6 +312,7 @@
 | [FND-COMBAT-010](../findings/FND-COMBAT-010.md) | Detailed Combat resets every listed gang's shown Force once, builds each focal list from the result rows, subtracts nothing for an evaded attack, and stops on Escape or the exit face | recorded |
 | [FND-COMBAT-011](../findings/FND-COMBAT-011.md) | Detailed Combat builds each focal gang's fight list from the combat result entries, resets displayed Force once for every listed gang, and keeps its state in two blocks of globals | recorded |
 | [FND-COMBAT-012](../findings/FND-COMBAT-012.md) | Combat Results pages with the left and right arrow keys, closes on Enter or plus but not Escape, and the force selector makes one of the viewer's gangs the focus whose target and attackers are framed | recorded |
+| [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | Surfaces 3 and 5 hold PX03000 and PX02000 with PX04999 whenever a combat panel is open, the outline colours are red, green and blue in that order, and the Detailed Combat fight list has room for 36 elements | recorded |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | Each player keeps at most 16 Comlink messages, and a 17th drops the oldest | recorded |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls | recorded |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
@@ -436,7 +438,7 @@
 | [FND-RNG-006](../findings/FND-RNG-006.md) | The 61 bounded draws, call by call, all made on the main thread; no pointer to rand or to any function that reaches it is stored | recorded |
 | [FND-SAVE-001](../findings/FND-SAVE-001.md) | A save is a marker, 44 global blocks in a fixed order, an optional network block and the marker again | recorded |
 | [FND-SAVE-002](../findings/FND-SAVE-002.md) | Save and Open use the common dialogs on file slot 3, the save dialog truncates the chosen file before anything is written, and nothing writes an M10W file | recorded |
-| [FND-SAVE-003](../findings/FND-SAVE-003.md) | What the code does with save blocks 3, 4, 16, 17, 18, 21, 27, 36, 37 and 39, and which preference each preference byte holds | recorded |
+| [FND-SAVE-003](../findings/FND-SAVE-003.md) | Save blocks 3, 4, 27 and 39 hold the selected sector, the portrait, the city map picture number and the local-human flags, and the preference bytes are the Mentality, time limit and objective | recorded |
 | [FND-SEARCH-001](../findings/FND-SEARCH-001.md) | Each player has 22 Search filter bytes, one per site definition, cleared when a new game starts | recorded |
 | [FND-SEARCH-002](../findings/FND-SEARCH-002.md) | The Search panel's ALL, NONE and Done controls and its 22 row targets | recorded |
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | The city draws a marker for each site the viewer controls and for each other site whose definition the viewer's Search filter selects | recorded |
@@ -573,7 +575,7 @@
 | [SCR-NET-003](../screens/SCR-NET-003.md) | Legacy network screen that waits for every participant to be ready | supported |
 | [SCR-NET-004](../screens/SCR-NET-004.md) | Legacy network transfer progress frame with a status line and a spinner | supported |
 | [SCR-NET-005](../screens/SCR-NET-005.md) | Legacy network turn synchronization frame with one progress row per seat and a spinner | supported |
-| [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | Player Rankings panel with one vertical rail per player and portraits placed by standing | supported |
+| [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | Player Rankings panel with one vertical rail per player and portraits placed by score | supported |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | Private elimination card shown to an eliminated local human over the city screen | supported |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | Idle gang warning panel | supported |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | Research panel with item categories and a fixed sixteen-row item list | supported |

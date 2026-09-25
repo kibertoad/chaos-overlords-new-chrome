@@ -9,6 +9,12 @@ order of a list, the order of handlers or of a queue, what an outside value is
 read from) is followed by the IDs of its findings or experiments in brackets,
 or by `(unknown)`.
 
+## active_gang_count
+
+The number of living gangs a computer player had when its planning pass
+looked over the board. Any other value the game keeps: `INT32LE[6]`, one per
+player slot, at `0x0048E2E0` [FND-AI-044, FND-STATE-007].
+
 ## active_gangs
 
 `active_gangs(player)` counts a player's active gangs. A function, defined by
@@ -23,8 +29,10 @@ panels and reports show. Any other value the game keeps: a player slot, at
 ## ai_started
 
 Whether a computer player's planning records have been reset for this match.
-Any other value the game keeps: one byte per player slot at `0x00482108`
-[FND-AI-003].
+Any other value the game keeps: one byte per player slot at `0x00482108`,
+cleared when a new match starts and set by the first planning pass or by the
+takeover of a dropped network player [FND-AI-003, FND-AI-042, FND-AI-043,
+FND-AI-045].
 
 ## app_deactivated
 
@@ -356,6 +364,12 @@ The communication type the player last chose for network play. Any other value
 the game keeps: a DWORD at `0x00487884`, initialized to 0 and read from the
 registry value `commType` [FND-OPTIONS-001].
 
+## completed_site_support
+
+`completed_site_support(player)` gives the sum of the Support of every site in
+the player's sectors whose progress equals its definition's Resistance. A
+function, defined by RULE-OBJECTIVE-002.
+
 ## control_phase
 
 The step of `resolution` that pools each player's Control strength and settles
@@ -515,6 +529,14 @@ Whether sound effects play. Any other value the game keeps: a byte at
 The Sound Effects volume the Options dialog shows, 0 to 10. Any other value
 the game keeps: a DWORD at `0x00487864`, initialized to 6 and read from the
 registry value `prefsVolumeSFX` [FND-OPTIONS-001, FND-AUDIO-002].
+
+## effects_suppressed
+
+Whether every sound effect is silenced. Any other value the game keeps: the
+byte at `0x0048735C`, which the effect player tests before `PlaySoundA`; it is
+0 in the executable's data and nothing writes it, so it never silences anything
+[FND-AUDIO-003, FND-AUDIO-006]. Earlier versions of the spec called it
+`sound_output_available` and read it as the presence of a wave output device.
 
 ## EffectsVolumeSet
 
@@ -684,7 +706,7 @@ preference [FND-PLATFORM-009, FND-GFX-004, FND-UI-020].
 
 The unidentified byte of build BLD-GOG-EN-1.1 at `0x004A08C4`, 36 bytes before
 the sector list, which the placement-anchor scan reads as the owner of sector
--1 [FND-AI-010].
+-1. No instruction refers to it and it holds 0 [FND-AI-010, FND-AI-051].
 
 ## game_info_limit_text
 
@@ -932,7 +954,8 @@ elements are FMT-STATE-006 [FND-EVENT-004].
 
 Whether the left mouse button is held. A value from outside the game: taken
 from the Windows mouse messages the event pump receives; it changes whenever
-the player presses or releases the button [FND-UI-032].
+the player presses or releases the button [FND-UI-032]. The window procedure
+keeps it in the byte `0x004985A4` [FND-UI-020].
 
 ## loaded_game_kind
 
@@ -1120,6 +1143,12 @@ Which music program plays: 0 the title program, 1 the endgame program, 2 the
 game program. Any other value the game keeps: a DWORD at `0x00487878`
 [FND-AUDIO-001].
 
+## music_playing
+
+Whether the CD audio device reports that it is playing. A value from outside
+the game: the MCI status query for the mode, true only when the query succeeds
+and the mode is play [FND-AUDIO-007].
+
 ## MusicPaused
 
 An event: CD playback pauses because the game window lost focus. It carries
@@ -1234,8 +1263,8 @@ applied [FND-COMBAT-008].
 ## placement_anchor
 
 The sector a computer player places its new gangs in, stored as the sector
-plus `0x40`. Any other value the game keeps: one per player slot at
-`0x0048E2F8`; its element type is not recorded [FND-AI-010].
+plus `0x40`. Any other value the game keeps: `INT32LE[6]`, one per player
+slot, at `0x0048E2F8` [FND-AI-010, FND-AI-051].
 
 ## plan
 
@@ -1286,6 +1315,12 @@ value the game keeps: a DWORD at `0x004906A0` [FND-TIMER-001, FND-TIMER-003].
 
 `planning_time_expired()` tells whether the current player's planning time has
 run out. A function, defined by RULE-TIMER-002.
+
+## planning_timed
+
+Set while a human player plans under a time limit. Any other value the game
+keeps: the byte at `0x00490698`, set when planning starts with a limit other
+than -1 and cleared when planning ends [FND-TIMER-003].
 
 ## planning_timer_start
 
@@ -1367,13 +1402,15 @@ never written, so it never equals a shape and every call sets the cursor
 
 The pointer's horizontal position on the 640-by-480 screen. A value from
 outside the game: taken from the Windows mouse messages; it changes whenever
-the mouse moves [FND-UI-032].
+the mouse moves [FND-UI-032]. The window procedure keeps the client point, x in
+the low 16 bits, at `0x0049859C` [FND-UI-020].
 
 ## pointer_y
 
 The pointer's vertical position on the 640-by-480 screen. A value from outside
 the game: taken from the Windows mouse messages; it changes whenever the mouse
-moves [FND-UI-032].
+moves [FND-UI-032]. The window procedure keeps the client point, y in the high
+16 bits, at `0x0049859C` [FND-UI-020].
 
 ## PointerShapeSet
 
@@ -1484,6 +1521,13 @@ the two kinds Armageddon excludes. A function, defined by RULE-CITY-002.
 Whether the program should leave the title loop and exit. Any other value the
 game keeps: a byte at `0x00487828`, set by File, Exit, by closing the window
 and by the end of some network games [FND-PLATFORM-009].
+
+## raider_mode
+
+Set for a computer player that took over a network player whose connection
+was lost; every active gang of that player is then planned as family 9. Any
+other value the game keeps: one byte per player slot at `0x00482158`, cleared
+when a new match starts and kept in saves [FND-AI-043, FND-AI-045].
 
 ## random_neighbour
 
@@ -1722,9 +1766,9 @@ panel lists. A function, defined by RULE-UI-010.
 ## sector_weight
 
 A computer player's cached `visible_weight` of each sector, rebuilt at each
-planning pass. Any other value the game keeps: element `player * 64 +
-sector`; its type and address are not recorded (unknown) [FND-AI-039,
-FND-AI-013].
+planning pass. Any other value the game keeps: the 16-bit value at +2 of the
+14-byte per-sector record at `0x0048E310 + player * 0x380 + sector * 14`, not
+saved [FND-AI-039, FND-AI-013, FND-AI-044].
 
 ## sectors
 
@@ -1826,13 +1870,6 @@ function, defined by RULE-UI-003.
 `solo_control_ok(player, idx, s)` tells whether a gang could take sector `s` by
 Control on its own. A function, defined by RULE-AI-004.
 
-## sound_output_available
-
-Read by the effect player as whether sound may play. Any other value the game
-keeps: the byte at `0x0048735C`, which silences every effect when set; it is 0
-in the executable's data and nothing writes it, so it never silences anything
-[FND-AUDIO-003, FND-AUDIO-006].
-
 ## startup_drive_check
 
 `startup_drive_check()` runs the drive check at startup and always gives 1. A
@@ -1842,6 +1879,12 @@ function, defined by RULE-AUDIO-010.
 
 `stealth_sum(c)` sums the positive Stealth of sector `c`'s finished sites. A
 function, defined by RULE-AI-028.
+
+## step_portrait
+
+`step_portrait(slot, delta)` moves a setup slot's `portrait` by `delta`
+through 0 to 14, wrapping at both ends, until no slot holds it. A function,
+defined by RULE-SETUP-009.
 
 ## strength_check
 
@@ -1878,8 +1921,8 @@ every check (RULE-TIMER-002, RULE-TIMER-003).
 ## timer_redraw_countdown
 
 Counts presentation ticks down to the next redraw of the planning timer bar,
-reloaded with 6. Any other value the game keeps: a DWORD at `0x00487898`
-[FND-TIMER-001].
+reloaded with 6. Any other value the game keeps: a DWORD at `0x00487898`, 6 in
+the executable's data [FND-TIMER-001, FND-TIMER-003].
 
 ## TimerBarDrawn
 
@@ -1969,6 +2012,12 @@ sector `s`: 10, 1 or 0. A function, defined by RULE-AI-004.
 
 `weight_at(player, c)` gives the cached weight a neighbourhood scan reads at
 index `c`, 0 to 64. A function, defined by RULE-AI-005.
+
+## window_inactive
+
+Set while the game's window is inactive. Any other value the game keeps: the
+byte at `0x00487890`, set by the pump on deactivation and cleared on activation
+[FND-AUDIO-007].
 
 ## WindowAreaCopied
 

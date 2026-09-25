@@ -12,15 +12,16 @@ definition: fmt_help_001.ksy
 evidence: [FND-HELP-003, FND-HELP-001, FND-HELP-002, FND-ASSET-001, FND-DATA-006]
 conflicting: []
 split_with: []
-related: []
+related: [RULE-HELP-001]
 ---
 
 ## Layout
 
 The help file is a WinHelp 3.1 container: a 16-byte header, then internal
 files, each with a 9-byte header, and a directory that names them. The
-executable opens it by the path `.\Help\Chaos.hlp` (FND-ASSET-001) and leaves
-reading it to the Windows help viewer. The field names follow the public
+executable names it by the path `.\Help\Chaos.hlp` (FND-ASSET-001) in a call
+that would hand it to the Windows help viewer, but nothing reaches that call, so
+the game never opens the file (RULE-HELP-001, FND-HELP-005). The field names follow the public
 description of the WinHelp format. This entry describes the container, the
 directory and the internal file headers; the contents of the internal files
 are left as blocks of bytes, and FND-HELP-001 and FND-HELP-002 record what
@@ -106,4 +107,4 @@ definition compiles and parses the file (FND-DATA-006).
   spec, so the field names and the reading of `|SYSTEM` flags 4 as compressed
   topics rest on it without a citable source.
 - The topic compression (phrase replacement and LZ77) is not described here.
-  The game never decodes it; only the help viewer does.
+  The game never decodes it; only the help viewer would.

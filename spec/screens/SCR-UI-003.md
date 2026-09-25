@@ -5,10 +5,10 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-032, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG]
+evidence: [FND-UI-032, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004]
 conflicting: []
 split_with: []
-related: [RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-UI-012, RULE-TIMER-002, RULE-TIMER-003, RULE-OPTIONS-003, RULE-AUDIO-001, RULE-AUDIO-007, RULE-AUDIO-008, SCR-UI-004, SCR-UI-005, SCR-UI-008, SCR-OPTIONS-001, SCR-HIRE-001]
+related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-UI-012, RULE-TIMER-002, RULE-TIMER-003, RULE-OPTIONS-003, RULE-AUDIO-001, RULE-AUDIO-007, RULE-AUDIO-008, SCR-UI-004, SCR-UI-005, SCR-UI-008, SCR-OPTIONS-001, SCR-HIRE-001]
 ---
 
 ## Drawn elements
@@ -100,8 +100,6 @@ None known.
 
 ## Open questions
 
-- The drawn area is 640 by 460 below the window's menu bar; how that maps onto
-  the 640-by-480 canvas is not recorded.
 - The offsets of the site markers inside a cell are not recorded here (see the
   Search panel).
 - FND-UI-033 places the map at `(2,44)`; the copy in FND-UI-017 puts it at

@@ -4,7 +4,7 @@ title: Detailed Combat plays the viewer's fights sector by sector, one clip per 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-004, FND-COMBAT-005, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-011, FND-EXE-004, FND-UI-001]
+evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-004, FND-COMBAT-005, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-EXE-004, FND-UI-001]
 conflicting: []
 split_with: []
 related: [SCR-COMBAT-002, RULE-COMBAT-002, RULE-AUDIO-005, FMT-STATE-001, FMT-STATE-003, FMT-STATE-008]
@@ -147,6 +147,10 @@ the presentation runs, and ending it clears the byte.
 - `damage_dealt` and `retaliation_taken` of a gang that fought without
   attacking are undefined (RULE-COMBAT-002). A listed attacker's own values
   are always defined; the target branch reads only the focal gang's values.
+- The fight list has room for 36 elements [FND-COMBAT-013]. Since the picker
+  offers only other players' gangs, at most 30 gangs attack one gang in a
+  sector and a list holds at most 33 elements. The builder does not check the
+  count; a 37th element would overwrite the list length.
 - With no sector to show, the presentation plays effect 4 only when the
   player asked for it.
 
@@ -161,6 +165,5 @@ None known.
 
 ## Open questions
 
-- The fight list keeps its records in a global area with room for four
-  entries; a longer list would write past it [FND-COMBAT-011]. Whether one
-  sector can produce more than four has not been checked.
+- Whether a computer player can order an Attack on one of its own gangs,
+  which could make a list longer than 36, was not checked [FND-COMBAT-013].

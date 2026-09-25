@@ -4,7 +4,7 @@ title: The Comlink alert repeats every 24 presentation ticks
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-012, FND-UI-001, FND-EVENT-006]
+evidence: [FND-AUDIO-012, FND-UI-001, FND-EVENT-006, FND-UI-023]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005, RULE-AUDIO-007, RULE-UI-008, RULE-SETUP-008, RULE-COMLINK-001]

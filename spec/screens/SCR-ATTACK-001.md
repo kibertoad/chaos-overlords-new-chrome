@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-ATTACK-001, FND-ATTACK-002, FND-ATTACK-003, FND-AUDIO-002, FND-AUDIO-011, FND-DETECT-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-ATTACK-001, FND-ATTACK-002, FND-ATTACK-003, FND-ATTACK-004, FND-AUDIO-002, FND-AUDIO-011, FND-COMBAT-013, FND-DETECT-001, FND-EXE-004, FND-GFX-005, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-ATTACK-002]
@@ -22,8 +22,8 @@ FND-EXE-004).
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Panel | `DATA/PX16/PX05003` | None | Origin `(104,124)` | While the picker is open | FND-ATTACK-001 |
-| Acting gang | 64-by-64 cell of surface 3, chosen by the definition's portrait number; a blank from surface 6 for definition -1 | The gang being ordered | Local `(26, 17, 64, 64)` | While the picker is open | FND-ATTACK-003 |
-| Acting gang's equipment | 20-by-20 icons of surface 5, column by the item's `id` | The weapon, armor and miscellaneous item, each when not -1 | Local `(26, 82, 20, 20)`, `(48, 82, 20, 20)` and `(70, 82, 20, 20)` | While the picker is open | FND-ATTACK-003 |
+| Acting gang | 64-by-64 cell of `DATA/PX16/PX03000` (surface 3), chosen by the definition's portrait number; a blank from surface 6 for definition -1 | The gang being ordered | Local `(26, 17, 64, 64)` | While the picker is open | FND-ATTACK-003, FND-COMBAT-013 |
+| Acting gang's equipment | 20-by-20 icons of `DATA/PX16/PX04999` (surface 5 from x 120), row `20 * id` for the item's `id` | The weapon, armor and miscellaneous item, each when not -1 | Local `(26, 82, 20, 20)`, `(48, 82, 20, 20)` and `(70, 82, 20, 20)` | While the picker is open | FND-ATTACK-003 |
 | Opponent portraits | Surface 6 rows 480 (enabled) and 594 (disabled), column by the opponent's colour byte | The five other players in ascending slot order, skipping the acting player, one per cell | Local `(98, 16 + 36 * n, 32, 32)` for `n` 0 to 4 | While the picker is open; a disabled opponent's cell does not react | FND-ATTACK-001 |
 | Target cards | Not recorded | The selected opponent's targetable gangs, from RULE-ATTACK-002 | Local target area `(135, 16, 202, 177)`, in six cells of RULE-ATTACK-002's list | After an opponent is selected | FND-ATTACK-001, FND-DETECT-001 |
 | Opponent frame | `DATA/PX16/PX00129` crop `(120,171,34,34)`, keyed on exact white | Which opponent is chosen | Local `(97, 15 + 36 * n, 34, 34)`, one pixel outside portrait `n` | After an opponent is chosen | FND-ATTACK-002 |
@@ -43,6 +43,10 @@ FND-EXE-004).
 | Confirm | Local `(33, 169, 50, 23)`, tracked as screen `(137, 293)-(187, 316)`; acts on release over the face | An opponent and a target are selected; otherwise plays the rejected sound | Writes the opponent's player slot into `target` and the chosen cell's roster slot into `target_2`, and closes the picker | FND-ATTACK-001, FND-ATTACK-003 |
 | Cancel | Local `(33, 137, 50, 23)`, tracked as screen `(137, 261)-(187, 284)`; acts on release over the face | Always | Closes the picker without an order | FND-ATTACK-001, FND-ATTACK-003 |
 | Outside the panel | Anywhere outside screen `(104, 124)-(448, 333)` | Always | Plays the rejected sound | FND-ATTACK-003 |
+| Double-click, acting gang's portrait | Local `(26, 17, 64, 64)` | The acting gang's definition is not -1 | Opens the gang information panel for the acting gang, then redraws the markers and Confirm | FND-ATTACK-004 |
+| Double-click, acting gang's item | Local `(26, 82, 20, 20)`, `(48, 82, 20, 20)`, `(70, 82, 20, 20)` | The item is not -1 | Opens Item Information for the weapon, armor or miscellaneous item | FND-ATTACK-004 |
+| Double-click, target portrait `k` | Local `(136 + 68 * (k % 3), 17 + 90 * (k / 3), 64, 64)` | Cell `k` holds a target | Opens the gang information panel for that target | FND-ATTACK-004 |
+| Double-click, target item | 20 by 20 at the cell's portrait corner plus `(0, 65)`, `(22, 65)` and `(44, 65)` | The target's item is not -1 | Opens Item Information for that item | FND-ATTACK-004 |
 
 ## Keyboard input
 
@@ -80,9 +84,6 @@ None known.
 
 ## Open questions
 
-- Which resources surfaces 3 and 5 hold while the picker is open was not
-  traced [FND-ATTACK-003].
-- The handler's event 5 branch, which tests the portrait and equipment
-  rectangles, was not read [FND-ATTACK-003].
-- The panel exists as `DATA/PX08/PX05003` too; which of the two files is drawn
-  depends on the display mode, which the GFX entries describe.
+- The panel exists as `DATA/PX08/PX05003` too, and each image as a `PX08`
+  file; which is drawn depends on the display mode, which the GFX entries
+  describe.
