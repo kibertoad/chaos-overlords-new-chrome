@@ -267,28 +267,24 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// SCR-GANG-001, FND-GANG-010: black drawn through a pattern over the base values.
+    /// SCR-GANG-001, FND-GANG-010, FND-GANG-011: black drawn through bitmap 143, the pattern
+    /// 0x7FFF selects, over the base values. Each area starts the pattern at its own corner, so
+    /// its top-left pixel is black.
     /// </summary>
     private void DrawGangBaseValueDimming(SpriteBatch batch)
     {
-        // PLACEHOLDER: SCR-GANG-001. The pattern of selector 0 has not been read; the half-tone
-        // brush stands in for it.
         _gangBaseValueDimPattern ??= CreateBaseValueDimPattern(GraphicsDevice);
         foreach (var area in GangDefinitionInformationLayout.BaseValueDimAreas)
             batch.Draw(_gangBaseValueDimPattern, area,
-                new Rectangle(area.X & 7, area.Y & 7, area.Width, area.Height), Color.White);
+                new Rectangle(0, 0, area.Width, area.Height), Color.White);
     }
 
     private static Texture2D CreateBaseValueDimPattern(GraphicsDevice graphicsDevice)
     {
         const int size = 64;
-        var pixels = new Color[size * size];
-        for (var y = 0; y < size; y++)
-        for (var x = 0; x < size; x++)
-            pixels[y * size + x] = OriginalPatternMask.PreservesDestination(
-                OriginalPatternMask.Half, x, y) ? Color.Transparent : Color.Black;
         var texture = new Texture2D(graphicsDevice, size, size);
-        texture.SetData(pixels);
+        texture.SetData(OriginalPatternMask.ShadedRectangle(
+            GangDefinitionInformationLayout.BaseValueDimPattern, size, size, Color.Black, Color.Black));
         return texture;
     }
 

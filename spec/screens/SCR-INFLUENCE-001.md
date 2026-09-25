@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003, FND-TURN-001, FND-AUDIO-011, FND-EXE-004, FND-PLATFORM-002]
+evidence: [FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003, FND-RESEARCH-005, FND-TURN-001, FND-AUDIO-011, FND-EXE-004, FND-PLATFORM-002]
 conflicting: []
 split_with: []
 related: [RULE-INFLUENCE-001]
@@ -40,8 +40,8 @@ Rectangles are in the shared panel's own coordinates; the panel is at
 
 | Key | Enabled when | Effect | Evidence |
 |---|---|---|---|
-| Enter or Execute | The picker is open | With a slot selected, as the confirmation control; otherwise plays the rejected sound | FND-INFLUENCE-002, FND-INFLUENCE-003 |
-| Escape | The picker is open | As the Cancel control | FND-INFLUENCE-002, FND-INFLUENCE-003 |
+| Enter or Execute | The picker is open | With a slot selected, draws the pressed confirmation face for one tick with `fn_00418CCC`, then as the confirmation control; otherwise plays the rejected sound | FND-INFLUENCE-002, FND-INFLUENCE-003, FND-RESEARCH-005 |
+| Escape | The picker is open | Draws the pressed Cancel face for one tick with `fn_00418CCC`, then as the Cancel control | FND-INFLUENCE-002, FND-INFLUENCE-003, FND-RESEARCH-005 |
 
 ## Other input
 

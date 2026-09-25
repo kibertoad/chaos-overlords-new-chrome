@@ -52,11 +52,9 @@ public sealed class TickedPresentationTests
     [Fact]
     public void FlashesFollowTheCopiesTheirFindingsRecord()
     {
-        // FND-UI-017: lit, wait, normal, lit, wait, normal; the normal cell between the two lit
-        // copies is replaced without a wait.
-        Assert.Equal(new[] { true, true },
+        // FND-UI-037: each flash makes four copies separated by three waits.
+        Assert.Equal(new[] { true, false, true },
             TickedPresentation.LitPattern(TickedPresentationKind.CityCellFlash));
-        // FND-UI-018: four copies separated by three waits.
         Assert.Equal(new[] { true, false, true },
             TickedPresentation.LitPattern(TickedPresentationKind.SiteFlash));
         Assert.Equal(new[] { true, false, true },
@@ -94,5 +92,22 @@ public sealed class TickedPresentationTests
         // FND-UI-015: the sector view's back control at (4,394)-(36,457).
         Assert.Equal(new Rectangle(4, 394, 32, 63),
             PressedKeyFaces.Destination(PressedKeyFace.SectorBack, new Point(4, 394)));
+    }
+
+    /// <summary>
+    /// FND-UI-037: white through bitmap 143 over a cell from one pixel inside its corner, 52 by
+    /// 50, or over the whole site image.
+    /// </summary>
+    [Fact]
+    public void FlashesLightenTheAreasTheirFindingRecords()
+    {
+        Assert.Equal(OriginalPatternMask.Half, TickedPresentation.FlashPattern);
+        Assert.Equal(new Rectangle(7, 46, 52, 50),
+            TickedPresentation.LitArea(TickedPresentationKind.CityCellFlash, new Rectangle(6, 45, 54, 52)));
+        Assert.Equal(new Rectangle(65, 61, 52, 50),
+            TickedPresentation.LitArea(TickedPresentationKind.SectorDisplayCellFlash,
+                new Rectangle(64, 60, 54, 52)));
+        Assert.Equal(new Rectangle(83, 226, 120, 64),
+            TickedPresentation.LitArea(TickedPresentationKind.SiteFlash, new Rectangle(83, 226, 120, 64)));
     }
 }

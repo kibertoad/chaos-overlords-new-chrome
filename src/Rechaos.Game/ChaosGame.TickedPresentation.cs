@@ -55,11 +55,23 @@ public sealed partial class ChaosGame
             _batch.End();
             return;
         }
-        // The findings record a lightened copy without its exact colours; an additive grey lifts
-        // every channel of the cell by the same amount.
-        _batch.Begin(blendState: BlendState.Additive, samplerState: SamplerState.PointClamp,
+        // FND-UI-037: white through bitmap 143 from the lightened area's corner, every other pixel
+        // white, with the outline the scratch surface's black pen draws through the same pattern.
+        var lit = TickedPresentation.LitArea(_tickedPresentation.Kind, area);
+        var size = new Point(lit.Width, lit.Height);
+        if (!_flashOverlays.TryGetValue(size, out var overlay))
+        {
+            // The outline lies on the lightened area's own edges, so each size has its own fill.
+            overlay = new Texture2D(GraphicsDevice, lit.Width, lit.Height);
+            overlay.SetData(OriginalPatternMask.ShadedRectangle(
+                TickedPresentation.FlashPattern, lit.Width, lit.Height, Color.White, Color.Black));
+            _flashOverlays[size] = overlay;
+        }
+        _batch.Begin(samplerState: SamplerState.PointClamp,
             transformMatrix: VirtualInput.Transform(viewport));
-        _batch.Draw(_pixel, area, new Color(72, 72, 72));
+        _batch.Draw(overlay, lit, Color.White);
         _batch.End();
     }
+
+    private readonly Dictionary<Point, Texture2D> _flashOverlays = [];
 }

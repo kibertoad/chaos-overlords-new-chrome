@@ -8,7 +8,7 @@ public enum TickedPresentationKind
     /// <summary><c>fn_00418CCC</c>: a panel face drawn pressed for one wait (FND-UI-019).</summary>
     KeyFace,
 
-    /// <summary><c>fn_0041ACE6</c>: a city cell flashed for a Hire drop (FND-UI-017).</summary>
+    /// <summary><c>fn_0041ACE6</c>: a city cell flashed for a Hire drop (FND-UI-017, FND-UI-037).</summary>
     CityCellFlash,
 
     /// <summary><c>fn_00419AA8</c>: a site portrait flashed for an Influence order (FND-UI-018).</summary>
@@ -80,20 +80,34 @@ public sealed class TickedPresentation
     /// <list type="bullet">
     /// <item><c>fn_00418CCC</c> copies the pressed face, waits once and copies the released face
     /// (FND-UI-019).</item>
-    /// <item><c>fn_0041ACE6</c> puts the lightened cell up, waits, puts the normal cell back, and
-    /// does both once more (FND-UI-017). The normal cell is put back and replaced by the lightened
-    /// one with no wait between them, so it shows for no time and the cell stays lit for two
-    /// waits.</item>
-    /// <item><c>fn_00419AA8</c> and <c>fn_0041A0D4</c> make four copies separated by waits:
-    /// lightened, normal, lightened, normal (FND-UI-018).</item>
+    /// <item><c>fn_0041ACE6</c>, <c>fn_00419AA8</c> and <c>fn_0041A0D4</c> each make four
+    /// copies separated by three waits: lightened, normal, lightened, normal (FND-UI-037).</item>
     /// </list>
     /// </remarks>
     public static IReadOnlyList<bool> LitPattern(TickedPresentationKind kind) => kind switch
     {
         TickedPresentationKind.KeyFace => [true],
-        TickedPresentationKind.CityCellFlash => [true, true],
-        TickedPresentationKind.SiteFlash or TickedPresentationKind.SectorDisplayCellFlash =>
-            [true, false, true],
+        TickedPresentationKind.CityCellFlash or TickedPresentationKind.SiteFlash
+            or TickedPresentationKind.SectorDisplayCellFlash => [true, false, true],
+        _ => throw new ArgumentOutOfRangeException(nameof(kind))
+    };
+
+    /// <summary>
+    /// FND-UI-037: the flashes lighten with white through bitmap 143, the pattern the grey 0x7FFF
+    /// selects, anchored at the corner of the lightened area.
+    /// </summary>
+    public static int FlashPattern => OriginalPatternMask.ForGrey(0x7fff);
+
+    /// <summary>
+    /// The part of <paramref name="area"/> a flash lightens (FND-UI-037). A city cell or a cell
+    /// of the nine-sector display is lightened from one pixel inside its 54-by-52 corner, 52 by
+    /// 50; a site flash lightens the whole 120-by-64 site image.
+    /// </summary>
+    public static Rectangle LitArea(TickedPresentationKind kind, Rectangle area) => kind switch
+    {
+        TickedPresentationKind.CityCellFlash or TickedPresentationKind.SectorDisplayCellFlash =>
+            new Rectangle(area.X + 1, area.Y + 1, 52, 50),
+        TickedPresentationKind.SiteFlash => area,
         _ => throw new ArgumentOutOfRangeException(nameof(kind))
     };
 

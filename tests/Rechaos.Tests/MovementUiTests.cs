@@ -88,4 +88,23 @@ public sealed class MovementUiTests
         Assert.Equal(new Rectangle(224, 448, 32, 32), MovementLayout.ArrowSource(7));
         Assert.Throws<ArgumentOutOfRangeException>(() => MovementLayout.Arrow(8));
     }
+
+    /// <summary>
+    /// SCR-MOVE-001, FND-MOVE-007: fn_00411119 sets all nine flags and clears the row or column
+    /// of cells beyond the city's edge; nothing else the rebuild's sectors can hold clears one.
+    /// </summary>
+    [Fact]
+    public void NeighbourFlagsEnableEveryCellOnTheMap()
+    {
+        Assert.All(MovementLayout.NeighbourFlags(27), Assert.True);
+        Assert.Equal(new[] { false, false, false, false, true, true, false, true, true },
+            MovementLayout.NeighbourFlags(0));
+        Assert.Equal(new[] { true, true, false, true, true, false, false, false, false },
+            MovementLayout.NeighbourFlags(63));
+        Assert.Equal(new[] { false, false, false, true, true, true, true, true, true },
+            MovementLayout.NeighbourFlags(3));
+        Assert.Equal(new[] { true, true, false, true, true, false, true, true, false },
+            MovementLayout.NeighbourFlags(15));
+        Assert.Throws<ArgumentOutOfRangeException>(() => MovementLayout.NeighbourFlags(64));
+    }
 }

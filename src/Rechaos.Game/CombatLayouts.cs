@@ -55,8 +55,6 @@ public static class CombatPanelLayout
     /// <summary>The width of the green part of a track for <paramref name="force"/> (FND-COMBAT-009).</summary>
     public static int TrackFill(int force) =>
         Math.Clamp(force * ForceBarPixelsPerPoint, 0, ForceBarWidth);
-    public static Rectangle LeftHeader => SharedPanelLayout.At(97, 11, 119, 37);
-    public static Rectangle RightHeader => SharedPanelLayout.At(220, 11, 119, 37);
     public static Rectangle LeftWeapon => SharedPanelLayout.At(98, 48, 50, 81);
     public static Rectangle LeftGang => SharedPanelLayout.At(149, 48, 67, 81);
     public static Rectangle LeftEquipment => SharedPanelLayout.At(98, 130, 50, 64);
@@ -71,39 +69,58 @@ public static class CombatPanelLayout
         : SharedPanelLayout.At(LeftAnimationX, AnimationY, CombatAnimationRouting.FrameSize,
             CombatAnimationRouting.FrameSize);
 
+    /// <summary>
+    /// SCR-COMBAT-002, FND-COMBAT-014: the 18-by-32 strip filled with the owner's colour at the
+    /// left of each gang's header.
+    /// </summary>
     public static Rectangle HeaderColor(bool right) => right
-        ? SharedPanelLayout.At(223, 14, 12, 28)
-        : SharedPanelLayout.At(100, 14, 12, 28);
-    public static Rectangle HeaderPortrait(bool right) => right
-        ? SharedPanelLayout.At(238, 14, 32, 32)
-        : SharedPanelLayout.At(115, 14, 32, 32);
-    public static Point HeaderName(bool right)
-    {
-        var header = right ? RightHeader : LeftHeader;
-        return new Point(header.X + 52, header.Y + 4);
-    }
+        ? SharedPanelLayout.At(224, 13, 18, 32)
+        : SharedPanelLayout.At(101, 13, 18, 32);
 
-    public static Point PoliceName(bool right)
+    /// <summary>
+    /// The owner's 32-by-32 Overlord portrait from <c>PX00129</c> row 480, right of the colour
+    /// strip (FND-COMBAT-014).
+    /// </summary>
+    public static Rectangle HeaderPortrait(bool right) => right
+        ? SharedPanelLayout.At(242, 13, 32, 32)
+        : SharedPanelLayout.At(119, 13, 32, 32);
+
+    /// <summary>Where <c>fn_00413FD5</c> writes the owner's name (FND-COMBAT-014).</summary>
+    public static Point HeaderName(bool right) => right
+        ? new Point(SharedPanelLayout.X(276), SharedPanelLayout.Y(14))
+        : new Point(SharedPanelLayout.X(153), SharedPanelLayout.Y(14));
+
+    /// <summary>
+    /// What each side clears in black before its header is drawn (FND-COMBAT-014): the left
+    /// side only the 60-by-8 name field, the right side its whole 116-by-36 header.
+    /// </summary>
+    public static Rectangle HeaderClear(bool right) => right
+        ? SharedPanelLayout.At(222, 11, 116, 36)
+        : SharedPanelLayout.At(153, 14, 60, 8);
+
+    /// <summary>
+    /// The police opponent's header: the 116-by-36 area at <c>(208,0)</c> of <c>PX00300</c>,
+    /// drawn over the right header (FND-COMBAT-014).
+    /// </summary>
+    public static Rectangle PoliceHeader => SharedPanelLayout.At(222, 11, 116, 36);
+
+    public static Rectangle PoliceHeaderSource => new(208, 0, 116, 36);
+
+    /// <summary>The police portrait, the 64-by-64 area at <c>(0,0)</c> of <c>PX00300</c> (FND-COMBAT-014).</summary>
+    public static Rectangle PolicePortraitSource => new(0, 0, 64, 64);
+
+    /// <summary>
+    /// The police opponent's three item pictures, the 48-by-48 areas at x 64, 112 and 160 of
+    /// <c>PX00300</c>, drawn in the right side's item slots (FND-COMBAT-014).
+    /// </summary>
+    public static Rectangle PoliceItemSource(int slot)
     {
-        var header = right ? RightHeader : LeftHeader;
-        return new Point(header.X + 8, header.Y + 4);
+        if (slot is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(64 + 48 * slot, 0, 48, 48);
     }
 
     public static Rectangle GangPortrait(bool right)
         => SharedPanelLayout.At(right ? RightCombatantX : LeftCombatantX, 48, 64, 64);
-
-    /// <summary>
-    /// The patrol car's aperture inside the police combatant's 64-by-64 portrait cell. It keeps
-    /// the source cell's own size so the sheet is copied one pixel per pixel, and is centered
-    /// horizontally against the top of the cell so the car clears the force tracks below it.
-    /// </summary>
-    public static Rectangle PolicePortrait(bool right)
-    {
-        var portrait = GangPortrait(right);
-        var car = OriginalSpriteLayout.PolicePatrolCar;
-        return new Rectangle(portrait.X + (portrait.Width - car.Width) / 2, portrait.Y,
-            car.Width, car.Height);
-    }
 
     public static Rectangle EquipmentItem(bool right, int slot)
     {

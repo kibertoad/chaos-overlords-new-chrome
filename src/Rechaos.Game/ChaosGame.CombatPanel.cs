@@ -23,7 +23,7 @@ public sealed partial class ChaosGame
 
         var attackerOnRight = clip.Reversed;
         if (clip.Police)
-            DrawPoliceCombatant(batch, pixel, font, rightSide: attackerOnRight);
+            DrawPoliceCombatant(batch, pixel, rightSide: attackerOnRight);
         else if (attacker is not null && clip.Forces.AttackerAfter is { } attackerForce)
             DrawCombatant(batch, pixel, font, state, attacker, rightSide: attackerOnRight,
                 gameEvent?.Resolution?.ItemId,
@@ -71,15 +71,18 @@ public sealed partial class ChaosGame
         int force,
         int damage)
     {
+        // SCR-COMBAT-002, FND-COMBAT-014: the side clears its name field (left) or its whole
+        // header (right) in black, fills the colour strip with the owner's colour, copies the
+        // Overlord portrait and writes the owner's name with fn_00413FD5.
         var player = state.FindPlayer(gang.Owner)!;
+        batch.Draw(pixel, CombatPanelLayout.HeaderClear(rightSide), Color.Black);
         batch.Draw(pixel, CombatPanelLayout.HeaderColor(rightSide), PlayerColors[gang.Owner.Value]);
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, CombatPanelLayout.HeaderPortrait(rightSide),
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         var name = player.Setup.Name.ToUpperInvariant();
         if (name.Length > 10) name = name[..10];
-        font.Draw(batch, name, CombatPanelLayout.HeaderName(rightSide).ToVector2(),
-            PlayerColors[gang.Owner.Value], 1);
+        font.Draw(batch, name, CombatPanelLayout.HeaderName(rightSide).ToVector2(), Color.Lime, 1);
 
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, CombatPanelLayout.GangPortrait(rightSide),
@@ -91,13 +94,25 @@ public sealed partial class ChaosGame
         DrawCombatItem(batch, state, gang.MiscellaneousItemId, CombatPanelLayout.EquipmentItem(rightSide, 2));
     }
 
-    private void DrawPoliceCombatant(SpriteBatch batch, Texture2D pixel, PixelFont font, bool rightSide)
+    /// <summary>
+    /// SCR-COMBAT-002, FND-COMBAT-014: the police opponent, always on the right. The side clears
+    /// its header in black and copies the header, the portrait and the three item pictures from
+    /// <c>PX00300</c>.
+    /// </summary>
+    private void DrawPoliceCombatant(SpriteBatch batch, Texture2D pixel, bool rightSide)
     {
-        font.Draw(batch, "POLICE", CombatPanelLayout.PoliceName(rightSide).ToVector2(), Color.LightBlue, 1);
+        batch.Draw(pixel, CombatPanelLayout.HeaderClear(rightSide), Color.Black);
         batch.Draw(pixel, CombatPanelLayout.GangPortrait(rightSide), Color.Black);
         if (_policeSprites is not null)
-            batch.Draw(_policeSprites, CombatPanelLayout.PolicePortrait(rightSide),
-                OriginalSpriteLayout.PolicePatrolCar, Color.White);
+        {
+            batch.Draw(_policeSprites, CombatPanelLayout.PoliceHeader,
+                CombatPanelLayout.PoliceHeaderSource, Color.White);
+            batch.Draw(_policeSprites, CombatPanelLayout.GangPortrait(rightSide),
+                CombatPanelLayout.PolicePortraitSource, Color.White);
+            for (var slot = 0; slot < 3; slot++)
+                batch.Draw(_policeSprites, CombatPanelLayout.EquipmentItem(rightSide, slot),
+                    CombatPanelLayout.PoliceItemSource(slot), Color.White);
+        }
         // The police are drawn with Force 10 on both tracks (RULE-COMBAT-004).
         DrawDetailedCombatForce(batch, pixel, rightSide,
             ManualRules.MaximumForce, ManualRules.MaximumForce, 0);
@@ -105,7 +120,12 @@ public sealed partial class ChaosGame
 
     private void DrawCombatItem(SpriteBatch batch, MatchState state, short? itemId, Rectangle aperture)
     {
-        if (itemId is not { } resolved || resolved < 0 || resolved >= state.Definitions.Items.Count) return;
+        // FND-COMBAT-014: an empty slot is filled with black.
+        if (itemId is not { } resolved || resolved < 0 || resolved >= state.Definitions.Items.Count)
+        {
+            if (_pixel is not null) batch.Draw(_pixel, aperture, Color.Black);
+            return;
+        }
         var item = state.Definitions.Items[resolved];
         if (resolved < _itemRotationTextures.Length && _itemRotationTextures[resolved] is { } rotation)
         {
@@ -220,5 +240,22 @@ public sealed partial class ChaosGame
         if (_combatAnimationTextures.TryGetValue(
                 CombatAnimationRouting.AttackFile(clip.AttackAnimation, clip.Reversed), out var attackTexture))
             batch.Draw(attackTexture, attackDestination, frame, Color.White);
+        if (!_combatAnimationPlayer.ShowsDimmedFrames) return;
+        // FND-COMBAT-014: from tick 12 the last frames are darkened with black through bitmap
+        // 143, anchored at the corner of the two stacked 64-by-64 frames.
+        _combatFrameDimPattern ??= CreateCombatFrameDimPattern(GraphicsDevice);
+        batch.Draw(_combatFrameDimPattern, attackDestination, Color.White);
+        batch.Draw(_combatFrameDimPattern, hitDestination, Color.White);
+    }
+
+    private Texture2D? _combatFrameDimPattern;
+
+    private static Texture2D CreateCombatFrameDimPattern(GraphicsDevice graphicsDevice)
+    {
+        var size = CombatAnimationRouting.FrameSize;
+        var texture = new Texture2D(graphicsDevice, size, size);
+        texture.SetData(OriginalPatternMask.ShadedRectangle(
+            OriginalPatternMask.ForGrey(0x7fff), size, size, Color.Black, Color.Black));
+        return texture;
     }
 }
