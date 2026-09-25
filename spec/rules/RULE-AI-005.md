@@ -4,7 +4,7 @@ title: How a computer player picks a weapon, armor or miscellaneous upgrade, and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-021, FND-AI-024, FND-AI-037, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054]
+evidence: [FND-AI-021, FND-AI-024, FND-AI-037, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054, FND-AI-055]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-003, RULE-AI-004]
@@ -30,7 +30,8 @@ None.
 `gangs` (the gang's `weapon`, `armor`, `misc`, `sector`, `definition`,
 `strength`, `blade`, `ranged`, `fighting` and `martial_arts`),
 `gang_definitions` (`tech_level`), `item_definitions` (`type`, `cost`,
-`tech_level`, `combat`, `defense`, `chaos`), `research_remaining`, `cash`,
+`tech_level`, `combat`, `defense`, `stealth`, `detect`, `control`),
+`research_remaining`, `cash`, `local_tech_cap`,
 `scenario`, `sectors`, `sector_weight` and `combat_records`.
 
 ## Procedure
@@ -82,111 +83,128 @@ define danger_near(player, idx):
                 return true
     return false
 
+# The first item of type k the gang may buy under its local Tech ceiling, or 0
+define first_affordable(player, idx, k):
+    for item in 0..64:
+        let it = item_definitions[item]
+        if it.type == k and it.tech_level <= local_tech_cap[idx] and research_remaining[item * 6 + player] == 0 and it.cost <= cash[player]:
+            return item
+    return 0
+
 # The weapon upgrade for the gang idx, or -1
 define weapon_upgrade(player, idx):
     let g = gangs[idx]
-    let cap = local_tech_cap[idx]
-    # classes in the order that wins ties: ranged, melee, blade
-    let classes = [2, 0, 1]
-    let best_class = -1
-    let best = 0
-    let baseline = 0
-    for each k in classes:
-        let first = -1
-        for item in 0..64:
-            if item_definitions[item].type == k and item_ok(player, item, cap):
-                first = item
-                break
-        if first == -1:
-            continue
-        let score = item_definitions[first].combat + g.strength
-        if k == 1:
-            score = score + g.blade
-        if k == 2:
-            score = item_definitions[first].combat + g.ranged
-        if best_class == -1 or score > best:
-            best = score
-            best_class = k
-            baseline = item_definitions[first].combat
-    # bare hands win only on a strictly greater score
-    if best_class == -1 or g.strength + g.fighting + g.martial_arts > best:
+    let bare = g.strength + g.fighting + g.martial_arts
+    let s1 = item_definitions[first_affordable(player, idx, 1)].combat + g.strength + g.blade
+    let s0 = item_definitions[first_affordable(player, idx, 0)].combat + g.strength
+    let s2 = item_definitions[first_affordable(player, idx, 2)].combat + g.ranged
+    if s1 < bare and s0 < bare and s2 < bare:
         return -1
+    # the greatest score; ranged wins every tie, melee wins a tie with blade
+    let k = 2
+    if s0 >= s1 and s0 > s2 and s0 >= bare:
+        k = 0
+    else if s1 > s0 and s1 > s2 and s1 >= bare:
+        k = 1
     let own_tech = gang_definitions[g.definition].tech_level
-    let choice = -1
+    let choice = g.weapon
+    if choice == -1:
+        choice = 24
     for item in 0..64:
-        if item_definitions[item].type == best_class and item_ok(player, item, own_tech):
-            if item_definitions[item].combat > baseline:
-                baseline = item_definitions[item].combat
+        let it = item_definitions[item]
+        if it.type == k and research_remaining[item * 6 + player] == 0 and it.tech_level <= own_tech:
+            if it.combat > item_definitions[choice].combat and it.cost <= cash[player]:
                 choice = item
-    if choice == g.weapon:
+    if choice == 24 or choice == g.weapon:
         return -1
     return choice
 
-# The armor upgrade for the gang idx, or -1
+# The armor upgrade by Defense, within cash (selector 0x64)
 define armor_upgrade(player, idx):
     let g = gangs[idx]
     let own_tech = gang_definitions[g.definition].tech_level
-    let current = 0
-    if g.armor != -1:
-        current = item_definitions[g.armor].defense
-    let choice = -1
-    for item in 0..64:
-        let it = item_definitions[item]
-        if it.type == 3 and research_remaining[item * 6 + player] == 0 and it.tech_level <= own_tech and it.cost < cash[player]:
-            if it.defense > current:
-                current = it.defense
-                choice = item
-    return choice
-
-# The armor with the greatest Defense improvement, ignoring cash (family 10)
-define armor_defense_upgrade(player, idx):
-    let g = gangs[idx]
-    let own_tech = gang_definitions[g.definition].tech_level
-    let base = g.armor
-    if base == -1:
-        base = 1
-    let current = item_definitions[base].defense
-    let choice = -1
+    let choice = g.armor
+    if choice == -1:
+        choice = 0
     for item in 0..64:
         let it = item_definitions[item]
         if it.type == 3 and research_remaining[item * 6 + player] == 0 and it.tech_level <= own_tech:
-            if it.defense > current:
-                current = it.defense
+            if it.defense > item_definitions[choice].defense and it.cost < cash[player]:
                 choice = item
+    if choice == 0 or choice == g.armor:
+        return -1
     return choice
 
-# The miscellaneous item with the greatest Chaos improvement, ignoring cash
-define misc_chaos_upgrade(player, idx):
+# The armor upgrade by Stealth, ignoring cash (selector 0x72, family 10)
+define armor_stealth_upgrade(player, idx):
     let g = gangs[idx]
     let own_tech = gang_definitions[g.definition].tech_level
-    let base = g.misc
-    if base == -1:
-        base = 0
-    let current = item_definitions[base].chaos
-    let choice = -1
+    let choice = g.armor
+    if choice == -1:
+        choice = 1
+    for item in 0..64:
+        let it = item_definitions[item]
+        if it.type == 3 and research_remaining[item * 6 + player] == 0 and it.tech_level <= own_tech:
+            if it.stealth > item_definitions[choice].stealth:
+                choice = item
+    if choice == 1 or choice == g.armor:
+        return -1
+    return choice
+
+# The miscellaneous item upgrade by Detect, ignoring cash (selector 0x74)
+define misc_detect_upgrade(player, idx):
+    let g = gangs[idx]
+    let own_tech = gang_definitions[g.definition].tech_level
+    let choice = g.misc
+    if choice == -1:
+        choice = 0
     for item in 0..64:
         let it = item_definitions[item]
         if it.type == 4 and research_remaining[item * 6 + player] == 0 and it.tech_level <= own_tech:
-            if it.chaos > current:
-                current = it.chaos
+            if it.detect > item_definitions[choice].detect:
                 choice = item
+    if choice == 0 or choice == g.misc:
+        return -1
+    return choice
+
+# The miscellaneous item upgrade by Control, ignoring cash (selector 0x75)
+define misc_control_upgrade(player, idx):
+    let g = gangs[idx]
+    let own_tech = gang_definitions[g.definition].tech_level
+    let choice = g.misc
+    if choice == -1:
+        choice = 0
+    for item in 0..64:
+        let it = item_definitions[item]
+        if it.type == 4 and research_remaining[item * 6 + player] == 0 and it.tech_level <= own_tech:
+            if it.control > item_definitions[choice].control:
+                choice = item
+    if choice == 0 or choice == g.misc:
+        return -1
     return choice
 ```
 
 ## Outputs
 
-`danger_near` returns true or false. `weapon_upgrade`, `armor_upgrade`,
-`armor_defense_upgrade` and `misc_chaos_upgrade` return an item record number
+`danger_near` returns true or false. `first_affordable` returns an item record
+number. `weapon_upgrade`, `armor_upgrade`, `armor_stealth_upgrade`,
+`misc_detect_upgrade` and `misc_control_upgrade` return an item record number
 or -1. None of them changes state or draws from `rng`.
 
 ## Edge cases
 
-Bare hands win the class comparison when no weapon class scores more than
-Strength + Fighting + Martial Arts, and then `weapon_upgrade` returns -1. The
-first class pass caps an item's Tech with `local_tech_cap`, and the second
-pass caps it with the gang's own Tech, so the item finally chosen can differ
-from the one that won its class. `danger_near` reads index 64 past the last
-sector (BUG-AI-002).
+Bare hands win the class comparison only when every weapon class scores less
+than Strength + Fighting + Martial Arts, and then `weapon_upgrade` returns -1.
+A class with no item the gang may buy is scored with item 0's Combat. The first
+class pass caps an item's Tech with `local_tech_cap` and needs the full cost in
+cash, and the second pass caps it with the gang's own Tech, so the item finally
+chosen can differ from the one that won its class. Every upgrade must beat the
+equipped item; an empty slot is compared with item 24 (weapon), item 0 (armor
+by Defense, miscellaneous) or item 1 (armor by Stealth), and choosing that item
+itself counts as no upgrade. Only the weapon and the Defense armor test cash,
+the weapon with cost at most cash and the armor with cost below it. Among equal
+values the first item in record order wins. `danger_near` reads index 64 past
+the last sector (BUG-AI-002).
 
 ## What the sources say
 
@@ -198,20 +216,6 @@ None known.
 
 ## Open questions
 
-- The weapon class numbers used here (0 melee, 1 blade, 2 ranged) are
-  assumptions; the item `type` values of the weapon classes are not given by
-  the findings. Armor is type 3 and miscellaneous items type 4.
-- The second pass keeps an item only when its Combat bonus is strictly greater
-  than the baseline, the Combat bonus of the first eligible item of the winning
-  class. FND-AI-024 says the selector returns -1 when "no upgrade beats the
-  baseline", which this reading follows; whether the baseline is instead the
-  equipped weapon's bonus is not settled.
-- `armor_upgrade` (selector `0x64`) and `misc_chaos_upgrade` (selectors `0x74`
-  and `0x75`): the findings give their conditions but not which candidate
-  wins when several qualify. The first strictly greatest value in item order is
-  assumed, as selector `0x72` does.
-- Whether the item 0 and item 1 baselines used here index the item table (the
-  findings call them the empty-slot and zero-Defense baselines) is assumed.
 - Whether `danger_near` scans the centre cell with its neighbours is assumed.
 - `combat_records[0].definition` is the disputed byte 0 of FMT-STATE-003;
   either reading gives 0 for player 0's Right Hands (FND-AI-010).

@@ -99,13 +99,13 @@ Makes no draw.
 ## Edge cases
 
 Exactly 75 percent does not qualify. A sector where the player has no gangs
-never counts as advantaged. Hidden
-defenders (visibility byte not 1) are left out, so the test can overrate the
-player's strength. An opponent with no sectors is never made hostile here. Since the pass clears
-every player's `combat_advantage` and sets only its own row, the other
-players' flags stay clear until their own passes; no rule reads another
-player's row. The weights are cached before the hostility test, so a player
-made hostile here changes the weights only at the next pass.
+never counts as advantaged. Hidden defenders (visibility byte not 1) are left
+out, so the test can overrate the player's strength. An opponent with no
+sectors is never made hostile here. Since the pass clears every player's
+`combat_advantage` and sets only its own row, the other players' flags stay
+clear until their own passes; no rule reads another player's row. The weights
+are cached before the hostility test, so a player made hostile here changes the
+weights only at the next pass.
 
 ## What the sources say
 

@@ -33,7 +33,7 @@ Areas are added to this list and never removed or renamed.
 | `GFX` | The `PX16` and `PX08` image files, their palettes, and how they are copied to the screen. |
 | `AUDIO` | Sound effects, music tracks and when each plays. |
 | `VIDEO` | The Smacker movies and when they play. |
-| `HELP` | The WinHelp file and its contents file, and how the executable opens help topics. |
+| `HELP` | The WinHelp file and its contents file, and the Help Topics command that would open them. |
 | `SAVE` | The save file. |
 | `STATE` | In-memory structures that several areas share: players, gangs, sectors, sites and the match. |
 | `RNG` | The random number generator, its seeding, and the functions that reduce its draws to ranges. |

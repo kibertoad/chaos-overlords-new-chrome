@@ -4,7 +4,7 @@ title: Warn if Idle Gangs asks before Done ends a turn with a gang left idle
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OPTIONS-002, FND-OPTIONS-001, FND-OPTIONS-003, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-OPTIONS-002, FND-OPTIONS-001, FND-OPTIONS-003, FND-STATE-010, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, SCR-OPTIONS-001]
@@ -27,12 +27,12 @@ None.
 
 ## Inputs
 
-`pref_warn_idle`, `active_player`, `gangs`, `idle_warning_choice`.
+`pref_warn_idle`, `no_match_in_play`, `active_player`, `gangs`, `idle_warning_choice`.
 
 ## Procedure
 
 ```text
-if pref_warn_idle == 0:
+if pref_warn_idle == 0 or no_match_in_play != 0:
     return 1
 let idle = 0
 for slot in 0..81:
@@ -58,8 +58,8 @@ SCR-OPTIONS-001 when a gang is idle.
   (RULE-TIMER-002).
 - The scan reads only the active player's 81 slots and does not stop at the
   first idle gang.
-- The original also skips the warning while a byte of the match state at
-  `g_004ABC9C` is set; what that byte marks is not recorded (FND-OPTIONS-003).
+- The warning is also skipped while `no_match_in_play` is set, which is the
+  case in the last planning passes after a match has ended (FND-STATE-010).
 
 ## What the sources say
 
@@ -74,4 +74,4 @@ None known.
 
 ## Open questions
 
-- What the byte `g_004ABC9C` marks, and so when the warning is skipped.
+None.

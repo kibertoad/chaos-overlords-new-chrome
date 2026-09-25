@@ -4,7 +4,7 @@ title: Family-7 computer gangs sit where sites add the most Research, influence 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054]
+evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -54,7 +54,7 @@ define research_first(player, idx, want):
     if want == -1:
         let list = [44, 41, 42, 43, 46, 50, 49, 52]
         for each item in list:
-            if research_remaining[item * 6 + player] > 0:
+            if item_definitions[item].tech_level <= local_tech_cap[idx] and research_remaining[item * 6 + player] > 0:
                 return item
         return -1
     for item in 1..64:
@@ -185,8 +185,6 @@ None known.
 
 - The item `type` numbers (0 melee, 1 blade, 2 ranged, 3 armor, 4
   miscellaneous) are assumptions shared with RULE-AI-005.
-- Whether the fixed list is also filtered by the Tech cap is not recorded; the
-  procedure only tests the research value.
 - Whether the strength-tested draw uses the owner test of the drawn gang or of
   the gang the comparison used is not recorded; the procedure tests the drawn
   gang's player.

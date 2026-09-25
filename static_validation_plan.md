@@ -42,79 +42,24 @@ order of priority, unless a group says otherwise.
 
 ## Computer players
 
-- Scenario numbering (RULE-AI-002, RULE-AI-010, RULE-AI-011, RULE-AI-013,
-  RULE-AI-019 to RULE-AI-031, BUG-AI-001; FND-AI-002, FND-AI-005): FND-AI-002
-  and FND-AI-005 read scenario 0 as Greed, 6 as Eliminate and 7 as Siege;
-  FND-UI-033 and FND-TURN-003 read 6 as Siege and 7 as Eliminate; FND-SETUP-009
-  and FND-SETUP-012 read 0 as Kill 'Em All. The AI rules use numeric
-  literals and were not renumbered. Settle the numbering from the scenario
-  global `0x004ABBE8`'s writers in the setup panel and from the name resource
-  the setup presenter loads for each value.
-- Selector `0x5B` (RULE-AI-019, RULE-AI-023, RULE-AI-028; FND-AI-019,
-  FND-AI-030, FND-AI-031, FND-AI-037): read the call sites in `0x00428EF0` and
-  `0x00401000` and check whether the selector takes the counted action as an
-  argument, or always counts previous Chaos at `0x004048B8`.
-- Full function ranges for every finding that gives only an entry address:
-  the family handlers (`0x00428EF0`, `0x00434080`, `0x0041FEF0`, `0x00435BD0`,
-  `0x00401000`, `0x0043A1D0`, `0x00431C60`, `0x00436C70`, `0x004605E0`,
-  `0x0042A6E0`, `0x00420950`, `0x004353A0`, `0x0040ABC0`, `0x00466910`), the
-  dispatcher, `0x00458FA0`, `0x0040A1A7`, `0x00402D70`, `0x00408642`,
-  `0x0046DC10`, `0x00472775` (FND-AI-001 to FND-AI-040).
-- Family-9 seeding in the outer pass (RULE-AI-001, RULE-AI-027; FND-AI-003):
-  the condition under which `0x00458FA0` writes family 9 before the dispatch.
-- Meaning of planning record byte +1 (`unk_01`) to the planner (RULE-AI-002, RULE-AI-001;
-  FND-AI-002, FND-AI-003). Its writers and its one reader are in FND-STATE-006; +11 is never
-  addressed.
-- Dispatcher tail (RULE-AI-002; FND-AI-001): the scenario 6, 7, 8 comparisons
-  after the handler and the mode 9 Move for roster slot 0.
-- Reuse of a roster slot's planning record (RULE-AI-001): where a hire resets
-  the record so the new gang does not inherit family and history.
-- Hire-role schedule adjustments for every scenario, and what a family-6 guard
-  does when it fires (RULE-AI-010, BUG-AI-001; FND-AI-009, FND-AI-014).
-- Selector `0x62` (`local_tech_cap`, RULE-AI-005, RULE-AI-026; FND-AI-024): how
-  the Tech ceiling is computed.
-- Selectors `0x64`, `0x74` and `0x75` (RULE-AI-005): which candidate wins when
-  several qualify; the weapon class `type` numbers of the item table.
-- Mode 4 of the sector selector (RULE-AI-006), and mode 0 (RULE-AI-007; conflict with
-  FND-MOVE-001). The table selector `0x2D` reads is the standings table `0x004ABC08`, searched as
-  if it listed player slots (FND-STATE-004); RULE-AI-006 should cite it.
 - Family 1 (RULE-AI-020; FND-AI-020): the branches for previous Attack, Bribe,
   Give, Hide, Influence, Move, Research, Sell and Terminate; the Snitch branch
   gated on cash above 50; the Mentality 2 branch; the selector `0x35` test for
   a neutral owner.
-- Family 0 and family 4 target pools (RULE-AI-019, RULE-AI-023): whether the
-  single and five-draw loops choose the human pool by the owner's hostility, as
-  family 3 does.
 - Family 2 (RULE-AI-021; FND-AI-032): whether the attack step tests selector
   `0xAB` or the pool size; whether the late Control gates replace an Equip or
   Heal.
 - Family 6 (RULE-AI-025; FND-AI-029): the thresholds of the unreachable Heal and
   Control branches; whether the equipment step is gated by selector `0x6C`;
   whether selector `0x5F` counts the planning gang itself.
-- Family 7 (RULE-AI-026; FND-AI-035): whether the fixed item list is Tech
-  capped; whose owner the Attack hostility test reads.
-- Family 11 (RULE-AI-029; FND-AI-024): the armor, miscellaneous and Heal tests.
+- Family 7 (RULE-AI-026; FND-AI-035): whose owner the Attack hostility test reads
+  (the drawn gang's or the compared gang's). The fixed Research list is Tech capped
+  (FND-AI-055).
+- Family 11 (RULE-AI-029; FND-AI-024): the Heal test. The armor and
+  miscellaneous choices are selectors `0x64` and `0x74` (FND-AI-055).
 - Families 13 and 14 (RULE-AI-031; FND-AI-039): instruction addresses of the
   owned-objective Heal branch; the contested pool (owner's gangs or every
   visible opponent); whose Force the Force-5 test reads.
-- Attitude updates (RULE-AI-015, RULE-AI-016, RULE-AI-017; FND-AI-006):
-  instruction addresses in `0x00472775` of the recovery loop, the combat
-  decrement and the takeover decrement; whose reaction the combat decrement
-  uses; which ownership changes call the takeover decrement; the address of
-  the reaction values.
-- Difficulty band reads (RULE-AI-018; FND-AI-007): instruction addresses of the
-  nine reads in `0x00472775`; which controller values count as computer.
-- Addresses of `sector_weight` and of the player-pair records holding
-  `combat_advantage` (RULE-AI-003; FND-AI-018, FND-AI-039), and the order of
-  the three parts of `0x0040A1A7`.
-- `solo_control_ok` (RULE-AI-004; FND-AI-004): what makes a sector disabled
-  (owner -2); whether the unavailable test is the Crackdown byte; the offsets of
-  the Income and Support bytes selector `0x2C` reads.
-- The auxiliary record block's base and stride (FND-AI-015) and whether the
-  planning and auxiliary records are saved.
-- Placement anchor (RULE-AI-013; FND-AI-010): the element type at
-  `0x0048E2F8`; the order of the keep tests; what the byte at `0x004A08C4`
-  holds; what the hire resolver does with sector -1; where `seed_anchor` runs.
 
 ## Screens, options, planning timer and sound
 
@@ -199,14 +144,5 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
 
 ## Game-side code and data no entry describes
 
-- `fn_00409F47` (608 bytes), `fn_0040AA65` and `fn_0040AAE3` are called from planning entry
-  `fn_0046E766` and call the AI selector `fn_00402D70` and `fn_0040A1A7`. Record their role in
-  the AI planning pass (the per-player part of RULE-AI-003 is a candidate).
-
 ## Found while integrating the spec
 
-- RULE-AI-016, RULE-AI-017, RULE-CONTROL-001: FND-AI-047 records the instructions in
-  `fn_00472775` that lower the attitude after an attack (every Attack order, evaded ones included,
-  by the larger of the reaction and the opening damage; the retaliation writes no cell) and at a
-  Control takeover (twice the previous owner's reaction, only when there was an owner). The three
-  rules still have to cite it and match it (AI agent). RULE-ATTACK-001 already does.

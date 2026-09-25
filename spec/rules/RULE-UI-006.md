@@ -4,7 +4,7 @@ title: Choosing a sector's gang-status marker
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-031, FND-UI-024, FND-DETECT-001, FND-HIRE-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-031, FND-UI-024, FND-UI-026, FND-DETECT-001, FND-HIRE-001, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]

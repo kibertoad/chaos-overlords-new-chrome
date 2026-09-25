@@ -41,10 +41,10 @@ other value the game keeps: a byte at `0x00487890`, set by the deactivation
 event and cleared by the activation event in the event step `fn_00462579`
 [FND-UI-020].
 
-## armor_defense_upgrade
+## armor_stealth_upgrade
 
-`armor_defense_upgrade(player, idx)` gives the armor with the greatest Defense
-improvement, or -1. A function, defined by RULE-AI-005.
+`armor_stealth_upgrade(player, idx)` gives the armor with the greatest Stealth
+above the equipped armor's, or -1. A function, defined by RULE-AI-005.
 
 ## armor_upgrade
 
@@ -651,6 +651,12 @@ for a gang on an objective. A function, defined by RULE-AI-031.
 A function, defined by RULE-FINANCE-001: the eight amounts of the Financial
 panel and its gang count, for the whole city or one sector [FND-FINANCE-002].
 
+## first_affordable
+
+`first_affordable(player, idx, k)` gives the first item of type `k` a computer
+gang may buy under its local Tech ceiling, or 0. A function, defined by
+RULE-AI-005.
+
 ## first_hostile
 
 `first_hostile(player)` gives the first sector, in ascending order, whose
@@ -1014,10 +1020,17 @@ The AI Mentality chosen at setup, which sets how the computer players play.
 Any other value the game keeps: `INT8` at `0x00487850`, 0 for Goon, 1 for
 Criminal, 2 for Crime Lord and 3 for Homicidal Maniac [FND-AI-004].
 
-## misc_chaos_upgrade
+## misc_control_upgrade
 
-`misc_chaos_upgrade(player, idx)` gives the miscellaneous item with the
-greatest Chaos improvement, or -1. A function, defined by RULE-AI-005.
+`misc_control_upgrade(player, idx)` gives the miscellaneous item with the
+greatest Control above the equipped one's, or -1. A function, defined by
+RULE-AI-005.
+
+## misc_detect_upgrade
+
+`misc_detect_upgrade(player, idx)` gives the miscellaneous item with the
+greatest Detect above the equipped one's, or -1. A function, defined by
+RULE-AI-005.
 
 ## mode_score
 
@@ -1215,6 +1228,13 @@ the game keeps: a byte at `0x00487B58` [FND-AUDIO-003, FND-AUDIO-006].
 `next_option(index, buffer)` gives what the registry loader stores for its
 `index`th value: the registry value when the query succeeds, the unchanged
 shared buffer otherwise. A function, defined by RULE-OPTIONS-001.
+
+## no_match_in_play
+
+Set while no match is in play: from startup until a match starts, and again
+once the end evaluation has finished a match, including the last planning
+passes of the end sequence. Any other value the game keeps: the byte at
+`0x004ABC9C` [FND-STATE-010].
 
 ## number_cells
 
@@ -1911,6 +1931,12 @@ function, defined by RULE-UI-003.
 
 `solo_control_ok(player, idx, s)` tells whether a gang could take sector `s` by
 Control on its own. A function, defined by RULE-AI-004.
+
+## standings_test
+
+`standings_test(p, q)` is selector `0x2D`: it searches `scenario_standing` for
+the values `p` and `q` as if the bytes listed player slots in ranking order. A
+function, defined by RULE-AI-006.
 
 ## startup_drive_check
 

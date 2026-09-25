@@ -85,10 +85,10 @@ same slot `n` again for each later match.
 
 ## Interpretation
 
-Each computer player hires a hunter (family 6, or family 12 in scenario 7) as soon
-as a hostile human gang is visible in a sector no hunter covers, provided the
-families the test needs are present; the redirect makes the hunter's own slot
-hire the first missing family instead. The quotas cap each family at a
+Each computer player hires a hunter (family 6, or family 12 in scenario 7) as
+soon as a hostile human gang is visible in a sector no hunter covers, provided
+the families the test needs are present; the redirect makes the hunter's own
+slot hire the first missing family instead. The quotas cap each family at a
 multiple of the match length in 52-turn units, and the minimum keeps four or
 five gangs of family 0 or 4 before anything else. Late in a match, slots move
 to the cheap default hire.

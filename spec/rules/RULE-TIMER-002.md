@@ -4,7 +4,7 @@ title: A human planning turn ends when its time limit passes
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-EXE-004]
+evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-STATE-010, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-OPTIONS-003]
@@ -61,6 +61,10 @@ player's planning ends; RULE-OPTIONS-003 does not run for that ending.
 
 - The test is strictly greater: the turn ends on the first pass after the limit.
 - With no limit, `planning_timed` is 0 and the test returns 0 without comparing.
+- The clock is not started in the planning passes that follow the end of a
+  match, while `no_match_in_play` is set (FND-STATE-010); `planning_timed`
+  stays 0 from the end of the previous planning, so those passes never
+  expire.
 - The difference is taken in 32 bits, so `timer_ms` wrapping during a turn
   gives the right elapsed time.
 - The test runs only in the planning loop itself. A panel open when the time

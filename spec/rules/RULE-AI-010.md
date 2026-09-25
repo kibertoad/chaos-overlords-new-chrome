@@ -302,10 +302,10 @@ and a turn whose own slot is the hunter slot takes the redirect.
 
 A final slot equal to the hunter slot always comes from the forcing branch,
 since the later adjustments set the slot only to 0 or 3, so `first_hostile`
-gives a sector there. In Eliminate (scenario 7) slots 5 and 7 place the new gang
-with the Right Hands. Scenarios 0 and 7 test the offer's cost against cash again after the
-ranking; the ranking has already made that test (RULE-AI-008), so it changes
-nothing.
+gives a sector there. In Eliminate (scenario 7) slots 5 and 7 place the new
+gang with the Right Hands. Scenarios 0 and 7 test the offer's cost against cash
+again after the ranking; the ranking has already made that test (RULE-AI-008),
+so it changes nothing.
 
 In the hunter reversion, the planned-action test reads the planning record of
 roster slot `n` (the sector count), whichever hunter is being visited, so an

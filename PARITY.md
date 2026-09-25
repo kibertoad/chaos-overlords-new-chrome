@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 96 |
+| `supported` | 98 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 125 |
+| `implemented` | 123 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 20 |
-| `partial` | 77 |
-| `complete` | 125 |
+| `partial` | 79 |
+| `complete` | 123 |
 
 ## DATA
 
@@ -67,7 +67,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `FMT-VIDEO-001` | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported | complete | None | `DEV-VIDEO-001` | implemented | The rebuild decodes only the subset the two shipped movies use. |
-| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001` | supported | Both movies play in order, centred, at 100 ms a frame. The rebuild shows them only until a showing is recorded, and skips on keys and either mouse button; neither difference has a deviation entry yet. |
+| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | supported | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; showing the movies only once is DEV-VIDEO-003, whose setting does not exist yet, so the rebuild departs from its default. The movie volume does not follow the Sound Effects level as in the original; this was not checked. |
 
 ## HELP
 
@@ -121,7 +121,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-SETUP-001` | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported | complete | None | `DEV-SETUP-001` | implemented | None |
-| `RULE-SETUP-002` | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported | partial | None | None | supported | The rebuild starts every setup on Kill 'Em All and keeps no scenario preference; value 0 is Greed (FND-SETUP-013, FND-OBJECTIVE-003). |
+| `RULE-SETUP-002` | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported | partial | None | None | supported | The rebuild starts every setup on Kill 'Em All and keeps no scenario preference; value 0 is Greed (FND-SETUP-013, FND-OBJECTIVE-003). The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
 | `RULE-SETUP-003` | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | supported | complete | None | None | implemented | None |
 | `RULE-SETUP-004` | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported | complete | None | None | implemented | The initial-state fixture from the original that would confirm the draw order is still pending. |
 | `RULE-SETUP-005` | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | supported | complete | None | `DEV-SETUP-001` | implemented | None |
@@ -178,7 +178,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-RESEARCH-001` | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported | complete | None | None | implemented | None |
 | `RULE-RESEARCH-002` | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | supported | complete | None | None | implemented | The rebuild leaves the item table's padding records out of the researched set (see deviations). |
-| `SCR-RESEARCH-001` | Research panel with item categories and a fixed sixteen-row item list | supported | partial | None | `DEV-RESEARCH-001` | supported | The Research panel's category cells and list filter are not pinned by the spec, so the rebuild's choices there are unverified. |
+| `SCR-RESEARCH-001` | Research panel with item categories and a fixed sixteen-row item list | supported | partial | None | `DEV-RESEARCH-001` | supported | The list filter follows FND-RESEARCH-003: category from item type (types 0 and 1 together), item order, only unfinished items, Tech Level at most the gang type's and at most 5 or 8 by the research-site level of a sector the player owns. The category cells match. A press on the list is taken from panel y 19 where the original's press region starts at y 26. |
 
 ## BRIBE
 
@@ -320,8 +320,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild applies the family table to every active gang at every pass, without the needs_family gate, the record reset, the family 99 of a blank cell or the Big Man first-turn hire role (FND-AI-041). |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | None |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | Whether the rebuild reproduces the out-of-row attitude reads of hostile_owner for a neutral sector or one under police presence (FND-AI-048) is not checked. |
-| `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | The Tech ceiling of the first weapon pass (local_tech_cap) is not described by the findings, so its match is not established. |
-| `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported | partial | None | None | supported | Mode 4 is not written out in the findings and the rebuild's version of it is not backed by evidence. |
+| `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | partial | None | None | supported | FND-AI-055 changes the reading: the weapon choice starts from the equipped weapon, family 10's armor is chosen by Stealth, and the miscellaneous upgrades compare Detect (families 11 and 12) or Control (13 and 14). The rebuild chooses family 12's item by Chaos; the other choices are not checked against it. |
+| `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported | partial | None | None | supported | Mode 4 is now written out (FND-AI-056); no call reaches it, and the rebuild's version is not checked against it. |
 | `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | partial | None | None | supported | FND-MOVE-003 settles mode 0 as the neighbour draw; whether the rebuild's reading matches it has not been checked. |
 | `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | supported | complete | None | None | implemented | None |
 | `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | None | None | implemented | None |
@@ -345,7 +345,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-027` | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-028` | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-029` | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | The armor, miscellaneous and Heal tests of family 11 are not recorded, so the rebuild's versions are not backed by evidence. |
-| `RULE-AI-030` | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | The empty human-only pool case is not recorded. |
+| `RULE-AI-030` | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild chooses the miscellaneous item by Chaos where the original compares Detect (FND-AI-055). |
 | `RULE-AI-031` | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 
 ## EVENT
@@ -397,7 +397,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-OBJECTIVE-001` | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-002` | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-003` | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported | complete | None | None | implemented | None |
-| `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | supported | partial | None | None | supported | The rebuild tests Big 40, Siege, Big Man and Armageddon for living players only where the original counts every slot, and gives Kill 'Em All and Eliminate tests of their own where the original has none (FND-OBJECTIVE-003). The timed test was not compared. |
+| `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | supported | partial | None | None | supported | The rebuild tests Big 40, Siege, Big Man and Armageddon for living players only where the original counts every slot, and gives Kill 'Em All and Eliminate tests of their own where the original has none (FND-OBJECTIVE-003). The timed test was not compared. The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
 | `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | complete | None | None | implemented | Whether the rebuild repeats the music request once per later local human and ends a local game with no local human left without the awards (FND-OBJECTIVE-004) was not checked. |
 | `SCR-OBJECTIVE-001` | Player Rankings panel with one vertical rail per player and portraits placed by score | supported | partial | None | None | supported | The rebuild places each portrait 28 pixels lower per standing where the original places it in proportion to the score's distance from the leader, over 140 pixels (FND-OBJECTIVE-005). |
 | `SCR-OBJECTIVE-002` | Private elimination card shown to an eliminated local human over the city screen | supported | complete | None | `DEV-SETUP-002` | implemented | None |

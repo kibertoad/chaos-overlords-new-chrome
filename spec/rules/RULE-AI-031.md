@@ -4,7 +4,7 @@ title: Family-13 and family-14 computer gangs move to the Big Man or Siege objec
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-039, FND-AI-027, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003]
+evidence: [FND-AI-039, FND-AI-027, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-AI-022, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -13,13 +13,13 @@ related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-AI-022, RULE-RNG-002, FMT-
 ## Summary
 
 Families 13 and 14 play for the objective sectors: the four centre sectors in
-scenario 8 (Big Man) and the six headquarters sectors in scenario 6 (Siege). A gang off an
-objective moves toward one. On an objective its player does not own, it fights
-the owner's visible gangs on turns when the number of turns remaining is even
-and otherwise takes the sector by Control. On an owned objective it heals,
-fights visible gangs, buys equipment, or influences the site with the most
-Support. A family-14 gang that took its sector by Control last turn and is
-hurt heals and becomes family 13.
+scenario 8 (Big Man) and the six headquarters sectors in scenario 6 (Siege). A
+gang off an objective moves toward one. On an objective its player does not
+own, it fights the owner's visible gangs on turns when the number of turns
+remaining is even and otherwise takes the sector by Control. On an owned
+objective it heals, fights visible gangs, buys equipment, or influences the
+site with the most Support. A family-14 gang that took its sector by Control
+last turn and is hurt heals and becomes family 13.
 
 ## When it runs
 
@@ -95,7 +95,7 @@ else if w != 0:
 else:
     let wp = weapon_upgrade(player, idx)
     let ar = armor_upgrade(player, idx)
-    let mi = misc_chaos_upgrade(player, idx)
+    let mi = misc_control_upgrade(player, idx)
     let site = best_site(s, 1)
     if wp != -1 and r.weapon_cooldown <= 0 and r.previous_action != ACTION_ATTACK:
         plan(idx, ACTION_EQUIP, wp, 0)

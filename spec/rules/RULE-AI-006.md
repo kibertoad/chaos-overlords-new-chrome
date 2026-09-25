@@ -4,7 +4,7 @@ title: The shared AI sector selector scores the nearest sectors by mode and rout
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-AI-025, FND-AI-026, FND-AI-027, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004]
+evidence: [FND-AI-005, FND-AI-025, FND-AI-026, FND-AI-027, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-007, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -71,6 +71,23 @@ define unique_leader():
             found = p
     return found
 
+# Selector 0x2D: searches the standings bytes for the values p and q as if
+# they were player slots in ranking order
+define standings_test(p, q):
+    if q == -1 or q == p:
+        return false
+    let i = 6
+    for k in 0..6:
+        if scenario_standing[k] == p:
+            i = k
+            break
+    let j = 6
+    for k in 0..6:
+        if scenario_standing[k] == q:
+            j = k
+            break
+    return j < i or i == 0
+
 define human_count():
     let n = 0
     for p in 0..6:
@@ -91,6 +108,9 @@ define mode_score(player, mode, idx, c):
             score = 1
     else if mode == 3:
         if o >= 0 and o != player:
+            score = 1
+    else if mode == 4:
+        if standings_test(player, owner_query(c)):
             score = 1
     else if mode == 5:
         if o == SECTOR_NEUTRAL and solo_control_ok(player, idx, c):
@@ -153,7 +173,6 @@ define mode_score(player, mode, idx, c):
     else if mode >= 0x40:
         if c == mode - 0x40:
             score = 1
-    # mode 4 is not written out; see Open questions
     # the common block after the mode switch
     if score > 0 and o >= 0 and is_human(o) and attitude[player * 6 + o] < 0:
         score = score * 5
@@ -222,6 +241,11 @@ one sector ties for the best score, and none otherwise.
 
 ## Edge cases
 
+No direct call passes mode 4 (FND-AI-028), so its scoring is written out for
+completeness. It compares where the player and the owner query first appear
+among the standings bytes, which hold places, so it does not compare the two
+players' standings (FND-STATE-004).
+
 When every sector scores 0 after the filters, all 64 sectors tie at 0, one
 `roll(64)` picks one of them, and the gang steps toward it. Encoded modes and
 mode 11 always end that way, because the only sector they score is removed
@@ -241,9 +265,6 @@ None known.
 
 ## Open questions
 
-- Mode 4 scores +1 when the player-pair test (selector `0x2D`) accepts the
-  sector's owner; the six-byte player-order table it compares has no address,
-  so the mode is not written out. No direct call passes mode 4 (FND-AI-028).
 - Whether each radius clears the scores before rescanning is not recorded; the
   procedure writes each score by assignment, which gives the same result.
 - The order of tied sectors after the descending sort decides which sector a

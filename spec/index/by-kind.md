@@ -219,7 +219,7 @@
 
 ## findings
 
-302 entries.
+306 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -277,6 +277,8 @@
 | [FND-AI-052](../findings/FND-AI-052.md) | The owner query returns -2 under police presence, and the solo Control test compares Force plus Control with Income, Support and the visible foreign gangs | recorded |
 | [FND-AI-053](../findings/FND-AI-053.md) | The difficulty band table is set from controller 1 only, saved, and read at nine places in the resolver | recorded |
 | [FND-AI-054](../findings/FND-AI-054.md) | Selector 0x62 caps the gang definition's Tech Level at 5, 8 or 10 by the research level of the gang's sector, whoever owns it | recorded |
+| [FND-AI-055](../findings/FND-AI-055.md) | The equipment selectors start from the equipped item, compare Combat, Defense, Stealth, Detect or Control, and the Research list is Tech capped | recorded |
+| [FND-AI-056](../findings/FND-AI-056.md) | Mode 4 of the sector selector scores a sector 1 when selector 0x2D accepts the owner query's value for the planning player | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -477,6 +479,7 @@
 | [FND-STATE-007](../findings/FND-STATE-007.md) | Map of the match and computer-player state in .data, with each region's element, writers, readers and identity | recorded |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | Map of the interface, platform and network globals in .data, with each region's element, writers, readers and identity | recorded |
 | [FND-STATE-009](../findings/FND-STATE-009.md) | Game code reads nine .rdata constants, all but one in the computer players' planning pass; two initialized .data tables of sines and cosines are used only by uncalled helpers | recorded |
+| [FND-STATE-010](../findings/FND-STATE-010.md) | The byte at 0x004ABC9C is set while no match is in play, from startup and again once a match has ended | recorded |
 | [FND-TIMER-001](../findings/FND-TIMER-001.md) | A human's planning turn ends by itself after 30 seconds, 2 minutes or 5 minutes, with a shrinking bar and two warning sounds | recorded |
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | Four multimedia timer slots set flags that the event step polls; waits are counted in ticks of the six-per-second slot, and the floating-point helpers are reachable only from dead code | recorded |
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | The planning limit is a table of four values applied at every match entry, the expiry test skips an unlimited turn, and the bar is redrawn every sixth presentation tick | recorded |
@@ -515,6 +518,7 @@
 | [FND-UI-023](../findings/FND-UI-023.md) | Timer slots are flags set by timeSetEvent callbacks, the pointer is set on every call, panels slide by revealing their left columns, and numbers are drawn left to right | recorded |
 | [FND-UI-024](../findings/FND-UI-024.md) | The sector marker reads the presence bytes, the information panels close on Enter and refuse clicks outside, and Game Information opens by itself after a load or a Join | recorded |
 | [FND-UI-025](../findings/FND-UI-025.md) | The city map surface keeps the unmarked city map in its lower half, from y 416, and the sector view and Detailed Combat take their sector images from there | recorded |
+| [FND-UI-026](../findings/FND-UI-026.md) | Of the 77 calls to the copy wrapper, only the setup card portrait is scaled, and it asks for the pattern mode, so no keyed copy loses its key | recorded |
 | [FND-UI-031](../findings/FND-UI-031.md) | Copies from the PX00129 sheet use opaque, white-keyed and pattern modes depending on the element | recorded |
 | [FND-UI-032](../findings/FND-UI-032.md) | The main console tests eight fixed tiles, splits five of them by the press row, and acts only on release inside | recorded |
 | [FND-UI-033](../findings/FND-UI-033.md) | The city map draws the same keyed pylon crop over the six Siege headquarters sectors and the four Big Man centre sectors | recorded |

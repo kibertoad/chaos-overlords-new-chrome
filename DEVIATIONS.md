@@ -58,6 +58,40 @@ Dated product decisions behind many of these entries, with their full reasoning,
   there is nothing after that point to keep or compare.
 - Dropped: no
 
+Decided 2026-09-13.
+
+## DEV-VIDEO-002
+
+- Departs from: RULE-VIDEO-001
+- Reason: A press of Escape, Enter or Space, or of either mouse button, ends the movie playing,
+  and the press is consumed. The original ends a movie only when the left button is held down at
+  one of its 100 ms input ticks and ignores the keyboard. While the window is inactive the rebuild
+  holds the movie where it is; the original plays on.
+- Setting: None
+- Default: mandatory
+- Justification: This is an interface change that removes friction: a click the original could
+  miss between two ticks always takes effect, and the usual keys work. It changes no rule and
+  nothing a match starts from, since the movies end before the title screen either way. A setting
+  to bring back the missed clicks would give a player nothing.
+- Dropped: no
+
+## DEV-VIDEO-003
+
+- Departs from: RULE-VIDEO-001
+- Reason: The rebuild plays the two movies unattended only until it has recorded a showing: its
+  preferences file keeps `IntroMoviesSeen`, set once the queue drains after at least one movie
+  opened, and every later start goes straight to the title screen. The title screen gains an INTRO
+  button that plays the movies again on request. The original plays both movies at every start
+  that does not load a saved game.
+- Setting: Intro only once (not yet in the rebuild, which has no switch for it and always behaves
+  as if it were on)
+- Default: off
+- Dropped: no
+
+Showing the movies once is a convenience some players will want, but a player who expects the
+intro at every start, as the original gives it, is not better served, so the original's behaviour
+is the default. Until the setting exists the rebuild departs from its own default.
+
 ## DEV-AUDIO-001
 
 - Departs from: RULE-AUDIO-010
@@ -70,8 +104,6 @@ Dated product decisions behind many of these entries, with their full reasoning,
   game state. Its only effect in the original, the prefix of the movie paths, is replaced by the
   rebuild's own asset paths. A setting would have nothing to switch.
 - Dropped: no
-
-Decided 2026-09-13.
 
 ## DEV-SAVE-001
 

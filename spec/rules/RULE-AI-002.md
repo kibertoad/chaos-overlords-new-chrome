@@ -99,10 +99,10 @@ else if r.family == 13 or r.family == 14:
 ## Outputs
 
 No return value. For a record with `needs_family` set: resets the record, may
-set its `family`, and for hire role 4 the gang's `coverage_sector`; in Big
-Man on the first turn sets `hire_role[player]` to 1. Then whatever the family's handler writes: the gang's
-planned action and targets, and for some families a new family, cooldowns and
-auxiliary values. Draws only through the handler.
+set its `family`, and for hire role 4 the gang's `coverage_sector`; in Big Man
+on the first turn sets `hire_role[player]` to 1. Then whatever the family's
+handler writes: the gang's planned action and targets, and for some families a
+new family, cooldowns and auxiliary values. Draws only through the handler.
 
 ## Edge cases
 
@@ -120,8 +120,9 @@ hire choice writes a new one.
 
 After the handler, the dispatcher runs a further block only when a per-slot
 value that is 0 in every match makes a Force test pass; it therefore never
-runs, and the Move through sector selector mode 9 for the Right Hands in Eliminate (scenario 7) and
-the Attack or Hide it holds are never ordered there (FND-AI-041).
+runs, and the Move through sector selector mode 9 for the Right Hands in
+Eliminate (scenario 7) and the Attack or Hide it holds are never ordered there
+(FND-AI-041).
 
 ## What the sources say
 
