@@ -164,7 +164,8 @@ internal static class OriginalAiEquipmentRules
             throw new InvalidOperationException("Original AI weapon selection requires the 64-item table.");
 
         var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
-        var localTechLimit = SpecialSiteRules.ResearchTechLimit(state, gang);
+        // RULE-AI-005: local_tech_cap reads the sector's research level whoever owns it (FND-AI-054).
+        var localTechLimit = SpecialSiteRules.ComputerTechLimit(state, gang);
         var blade = FirstEligibleClassItem(state, player, 1, localTechLimit, availableCash);
         var melee = FirstEligibleClassItem(state, player, 0, localTechLimit, availableCash);
         var ranged = FirstEligibleClassItem(state, player, 2, localTechLimit, availableCash);
@@ -307,8 +308,10 @@ internal static class OriginalAiEquipmentRules
                 var sectorId = gang.SectorId + vertical * 8 + horizontal;
                 if (sectorId is < 0 or > MatchLimits.SectorCount) continue;
 
+                // RULE-AI-005 owner_at: index 64 reads byte 0 of the first combat record
+                // (FMT-STATE-003).
                 var owner = sectorId == MatchLimits.SectorCount
-                    ? 0
+                    ? state.AiPlanning.FirstCombatRecordDefinition
                     : state.Sectors[sectorId].Owner?.Value ?? -1;
                 var hasVisibleHostileHuman = sectorId == MatchLimits.SectorCount
                     ? AliasedSectorWeightIsTen(state, player.Id)

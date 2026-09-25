@@ -103,7 +103,7 @@ internal static class AiPlanningPreparation
             if (!playerState.Gangs[gangSlot].IsActive
                 || state.AiPlanning.Family(player, gangSlot) is not (6 or 12))
                 continue;
-            state.AiPlanning.SetFamily(player, gangSlot, 0);
+            state.AiPlanning.RewriteFamily(player, gangSlot, 0);
             return;
         }
     }
@@ -127,10 +127,10 @@ internal static class AiPlanningPreparation
         var playerState = state.FindPlayer(player)
             ?? throw new ArgumentOutOfRangeException(nameof(player));
         var owners = state.Sectors.Select(sector => sector.Owner?.Value ?? -1)
-            // Sector index 64 aliases player 0 gang slot 0's owner byte. In a
-            // fresh game that byte is initialized to zero and remains stale at
-            // zero if the Right Hands slot later becomes inactive.
-            .Append(0)
+            // RULE-AI-013: the owner read at sector index 64 is byte 0 of the first combat record,
+            // the definition of the last gang in player 0's roster slot 0 that fought
+            // (FMT-STATE-003).
+            .Append(state.AiPlanning.FirstCombatRecordDefinition)
             .ToArray();
         var availability = state.Sectors
             // Clamped, not checked. The original held this counter in a byte; here it is an int

@@ -98,6 +98,8 @@ internal static class CanonicalEventWriter
         WriteNullableShort(writer, value.WeaponItemId);
         WriteNullableShort(writer, value.ArmorItemId);
         WriteNullableShort(writer, value.MiscellaneousItemId);
+        WriteNullableInt(writer, value.Force);
+        WriteNullableInt(writer, value.RosterSlot);
     }
 
     private static void WriteEconomy(BinaryWriter writer, EconomyResolutionDetails? value)

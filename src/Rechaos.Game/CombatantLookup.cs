@@ -27,7 +27,7 @@ internal static class CombatantLookup
     {
         ArgumentNullException.ThrowIfNull(state);
         if (state.FindGang(id) is { } live) return live;
-        if (gameEvent is null || Recorded(gameEvent, id) is not { } recorded) return null;
+        if (gameEvent is null || RecordedCombatant(gameEvent, id) is not { } recorded) return null;
         if (!Retired.TryGetValue(recorded, out var retired))
         {
             retired = recorded.ToRetiredGang(state, id);
@@ -36,7 +36,8 @@ internal static class CombatantLookup
         return retired;
     }
 
-    private static CombatantDetails? Recorded(GameEvent gameEvent, GangId id)
+    /// <summary>The gang <paramref name="id"/> as <paramref name="gameEvent"/> recorded it, if it fought there.</summary>
+    public static CombatantDetails? RecordedCombatant(GameEvent gameEvent, GangId id)
     {
         if (gameEvent.PoliceAttack is { } police) return gameEvent.Gang == id ? police.Target : null;
         if (gameEvent.Resolution is not { } resolution) return null;

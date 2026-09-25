@@ -44,6 +44,7 @@ public sealed class AiPlanningState
     private readonly short[] _coverageSectors;
     private readonly bool[] _needsFamily;
     private readonly bool[] _raiderMode;
+    private byte _firstCombatRecordDefinition;
 
     private AiPlanningState(
         IReadOnlyList<int> currentHireRoles,
@@ -62,7 +63,8 @@ public sealed class AiPlanningState
         IReadOnlyList<short> focusValues,
         IReadOnlyList<short> coverageSectors,
         IReadOnlyList<bool> needsFamily,
-        IReadOnlyList<bool> raiderMode)
+        IReadOnlyList<bool> raiderMode,
+        byte firstCombatRecordDefinition)
     {
         ArgumentNullException.ThrowIfNull(currentHireRoles);
         ArgumentNullException.ThrowIfNull(previousHireRoles);
@@ -145,6 +147,7 @@ public sealed class AiPlanningState
         _coverageSectors = coverageSectors.ToArray();
         _needsFamily = needsFamily.ToArray();
         _raiderMode = raiderMode.ToArray();
+        _firstCombatRecordDefinition = firstCombatRecordDefinition;
     }
 
     public int CurrentHireRole(PlayerId player) => _currentHireRoles[PlayerIndex(player)];
@@ -186,6 +189,20 @@ public sealed class AiPlanningState
     internal IReadOnlyList<short> CaptureCoverageSectors() => _coverageSectors.ToArray();
     internal IReadOnlyList<bool> CaptureNeedsFamily() => _needsFamily.ToArray();
     internal IReadOnlyList<bool> CaptureRaiderMode() => _raiderMode.ToArray();
+
+    /// <summary>
+    /// Byte 0, <c>definition</c>, of the first combat record (FMT-STATE-003): player 0's roster
+    /// slot 0. The computer players read it as the owner of sector index 64, one past the last
+    /// sector (RULE-AI-005, RULE-AI-013). It is 0 until that slot's gang fights; RULE-COMBAT-002
+    /// then writes the definition of the gang holding the slot, and the value stays through later
+    /// phases in which the slot does not fight, after the gang dies and after a hire reuses the
+    /// slot (FND-STATE-005).
+    /// </summary>
+    public int FirstCombatRecordDefinition => _firstCombatRecordDefinition;
+
+    internal void RecordFirstCombatRecordDefinition(short definitionId) =>
+        // The record stores the low byte of the gang's definition byte (FND-STATE-005).
+        _firstCombatRecordDefinition = unchecked((byte)definitionId);
 
     /// <summary>
     /// RULE-AI-001 raider_mode: set when the computer takes over a player's seat (RULE-AI-027), it
@@ -271,6 +288,18 @@ public sealed class AiPlanningState
         // RULE-AI-002: a record holding a family no longer needs one. Handlers only change a
         // family after the dispatcher has cleared the flag, so this matters for set-up records.
         _needsFamily[GangSlotIndex(player, gangSlot)] = false;
+    }
+
+    /// <summary>
+    /// RULE-AI-010: the rewrite of a surplus hunter stores family 0 and nothing else, so a
+    /// needs_family flag the Greed Terminate branch of a family-6 or family-12 gang set earlier in
+    /// the pass (RULE-AI-025, RULE-AI-030) stays set.
+    /// </summary>
+    internal void RewriteFamily(PlayerId player, int gangSlot, int family)
+    {
+        if (!IsValidFamily(family))
+            throw new ArgumentOutOfRangeException(nameof(family));
+        _families[FamilyIndex(player, gangSlot)] = family;
     }
 
     internal void SetSectorAnchor(PlayerId player, int anchor)
@@ -451,7 +480,8 @@ public sealed class AiPlanningState
             checked((short)InactiveCoverageSector),
             MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray(),
         new bool[MatchLimits.PlayerCount * GangSlotsPerPlayer],
-        new bool[MatchLimits.PlayerCount]);
+        new bool[MatchLimits.PlayerCount],
+        0);
 
     internal static AiPlanningState Initialize(IReadOnlyList<MatchPlayerState> players)
     {
@@ -533,7 +563,8 @@ public sealed class AiPlanningState
         IReadOnlyList<short>? formationSectors = null,
         IReadOnlyList<short>? coverageSectors = null,
         IReadOnlyList<bool>? needsFamily = null,
-        IReadOnlyList<bool>? raiderMode = null) => new(
+        IReadOnlyList<bool>? raiderMode = null,
+        byte firstCombatRecordDefinition = 0) => new(
             currentHireRoles, previousHireRoles, families, sectorAnchors,
             olderActions, previousActions, plannedActions,
             olderTargets, previousTargets, plannedTargets, hasPlanned,
@@ -546,7 +577,8 @@ public sealed class AiPlanningState
                 checked((short)InactiveCoverageSector),
                 MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray(),
             needsFamily ?? new bool[MatchLimits.PlayerCount * GangSlotsPerPlayer],
-            raiderMode ?? new bool[MatchLimits.PlayerCount]);
+            raiderMode ?? new bool[MatchLimits.PlayerCount],
+            firstCombatRecordDefinition);
 
     private static bool IsValidFamily(int family) =>
         family == UnusedFamily || family is >= 0 and <= MaximumFamily and not 8;
