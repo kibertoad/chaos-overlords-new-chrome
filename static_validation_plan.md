@@ -599,6 +599,291 @@ Gaps more reading of `Chaos Overlords.exe` or the data files could close.
 - FND-UI-031: whether the scaled copy path ignores the requested copy mode
   (possible GFX bug).
 
+## Coverage of the executable
+
+The groups above close questions about entries that already exist. The groups from here on list
+the parts of the executable that no entry describes yet, found by comparing a function inventory
+of the build with every address the spec cites. The inventory was taken on 2026-09-25 from a
+Ghidra 12.1.3 project with default auto-analysis:
+
+- Ghidra finds 694 functions. Game code runs from `0x00401000` to `0x0047862F`: 464 functions,
+  480,397 bytes. The import thunks (Smacker, DirectDraw, WinSock, TAPI, common dialogs) start at
+  `0x00478630` and the statically linked C runtime at `0x004787E0`. Inside the game code only
+  309 bytes lie outside a function body, in gaps of at most 15 bytes, so auto-analysis missed no
+  game code.
+- 190 game functions (376,915 bytes) are cited by at least one spec entry. 274 (103,482 bytes)
+  are cited by none. 69 of those (27,868 bytes) import WinSock, TAPI or serial functions or are
+  called only by functions that do; they are the network play DEV-NET-001 leaves out. That leaves
+  205 functions (75,614 bytes) that the groups below assign to subsystems.
+- A citation does not mean a function is mapped. 44 functions over 1,000 bytes are cited by one
+  or two entries, often a finding about another subject: the main console `fn_0046FD80` appears
+  only in FND-AUDIO-012, and the Give handler `fn_00445A4F` (8,290 bytes) only in FND-EQUIP-003.
+- Of the 1,108 `.data` addresses game code reads or writes, 362 lie within 16 bytes of an address
+  the spec cites. Of the 51 `.rdata` addresses it reads, 3 are cited.
+- The bounded random wrapper `fn_0045D227` has 61 call sites in 24 functions. The spec cites 5 of
+  them by instruction address.
+- The resource section holds 5 menus, 27 dialogs, 7 string-table blocks, 1 accelerator table,
+  4 bitmaps, 11 icons in 8 groups and a version record. The spec cites menu 101, dialog `0x8B`
+  and a few string IDs.
+
+## Coverage tooling
+
+- Add a bounded inventory script to `tools/ghidra/` that writes, for every function, its entry,
+  end, size, caller count, callee entries and imported API names, and no instruction text. Its
+  output stays outside the repository like every other script's.
+- Add a coverage mode to `tools/check-spec.mjs` (or a separate script) that reads a local
+  inventory file and reports the game functions and `.data` regions no entry cites, and the large
+  functions cited only by findings about other subjects. The numbers in the section above were
+  measured this way and are not reproducible without it.
+- Record the program's layout as an EXE finding: the section extents, the game code range, the
+  thunk range, the start of the runtime (`0x004787E0`; Ghidra's function ID names `_memcpy`,
+  `_strlen`, `_rand`, `__ftol` and others) and the 464-function count. That gives "every function
+  of the game" a fixed denominator and puts the runtime out of scope explicitly.
+- Once most functions are described, have `check-spec.mjs` generate an index in `spec/index/`
+  from the locations of findings: every game function range, its neutral name and the entries
+  that describe it.
+
+## Program shell: startup, window, input and shutdown
+
+- `fn_00460CCF` is WinMain (5,565 bytes, called from the runtime entry at `0x00478E4B`). Eight
+  findings cite it for single details. Record its whole order as a rule: any single-instance
+  check (shutdown releases a mutex), the preference load (RULE-OPTIONS-001), display setup
+  `fn_00425850`, sound setup `fn_00458290`, the CD drive search `fn_004667DC`, the image set
+  choice (FND-PLATFORM-002), the intro `fn_004329C0`, the title loop, and shutdown `fn_00465A95`
+  (menu destroyed, mutex released, timer period ended).
+- The window procedure `fn_0045C33B` (2,398 bytes, no direct callers; registered by
+  `fn_00425850`) is described nowhere. List every message it handles (it compares with `0x100`,
+  `0x102`, `0x111` and `0x3B9`: key down, character, menu command and the MCI notification) and
+  what each does, including its calls into `fn_00423C81`, `fn_0042B60F`, save and load
+  `fn_0046381A`, and `fn_00465BC8`. Record how keys are read (`MapVirtualKeyA`,
+  `GetAsyncKeyState`) and how the mouse position is read (`GetCursorPos`). This becomes the input
+  dispatch rule (UI area) that every screen's keyboard and mouse questions above depend on.
+- The two message pumps: `fn_0045C180` (4 callers; `GetMessageA`, `IsDialogMessageA`,
+  `TranslateAcceleratorA` with accelerator table 102, `timeGetTime`) and `fn_0045C2CD` (22 callers;
+  `PeekMessageA` without waiting). Record which modal loops use which, and what a panel's loop
+  does while the pump runs.
+- The block `0x004980A0..0x00498125` is written by every panel handler (Attack, Equip,
+  Influence, Move, Research, Sell, Give, Search, gang panels) and read by the pumps, the window
+  procedure and the Comlink panels. Identify its fields (the open panel, the last click, the last
+  key are expected) and record it as a FMT-STATE entry for the input state.
+- `0x00498570..0x004985DA` is written by `fn_00425850`, the window procedure, `fn_00465620` and
+  `fn_00465B64`, and read by 25 functions: give each field (window handle, instance and so on) a
+  glossary name.
+- `fn_0045CD70` and `fn_0045CDA4` wrap `BeginPaint` and `EndPaint` for 39 callers each. Record
+  what a repaint of the window redraws and from where (see the presentation model below).
+
+## Display, drawing primitives and palette
+
+- Display setup `fn_00425850` (1,351 bytes: `CreateWindowExA`, `AdjustWindowRectEx`,
+  `DirectDrawCreate`, `SetSysColors`, `SystemParametersInfoA`, the `MS Sans Serif` font) and its
+  undo `fn_00425D97` (`ChangeDisplaySettingsA`, `SelectPalette`, `RealizePalette`,
+  `SetSysColors`). Record the window style and client size, whether and to what the display mode
+  is changed, what DirectDraw is used for, what the font is used for, and which system colours are
+  replaced and restored. This also settles "where the 640-by-460 drawing surface sits on the
+  window" in the Screens group.
+- The drawing primitives every screen calls are not described: `fn_00425E99` (44 callers),
+  `fn_00425F4D` (57), `fn_00425F8C` (60), `fn_0042639F` (48), `fn_00426405` (48), `fn_00426575`
+  (42, a GDI rectangle with pen and brush), the off-screen bitmap setup `fn_00425FB0` and its
+  release `fn_00426202`. With the cited `fn_00425EDF`, `fn_0042773E`, `fn_00427864`,
+  `fn_004266A6` and `fn_00449B20` they form the drawing layer. For each, record the arguments and
+  the effect (surface, rectangle, colour, copy mode). Then record the presentation model as a
+  GFX rule: what is drawn off screen, when and how it reaches the window, and whether only changed
+  rectangles are copied. Pixel parity of every SCR entry rests on it.
+- Name the drawing layer's state: `0x00493830..0x00493878` (written and read by the primitives;
+  current pen, brush or colour is expected), `0x00493598..0x004935F8` and
+  `0x00493658..0x00493680` (written once by `fn_00425850`, read by 24 functions; device context
+  and bitmap handles are expected).
+- GDI shape helpers with no direct callers: lines `fn_00426427`, `fn_004264D4`; rectangle
+  `fn_00426909`; ellipses `fn_00426A37`, `fn_00426B7D`, `fn_00426CAB`, `fn_00426E1D`; and
+  `fn_00425F14`, `fn_00428E6A`, `fn_0042B7E3`. Search for their entry addresses stored as data
+  (pointer tables) and record each as reachable, with its caller, or as dead code.
+- Palette: `fn_0042885B` opens `data\CLT00000`, reads 1,024 or 1,032 bytes and creates a palette,
+  and has no direct callers. `fn_00428BAB` builds a palette from the device capabilities;
+  `fn_004289D3` and `fn_00428ADC` select and realize one. Find how `fn_0042885B` is reached, if at
+  all, and what happens when `CLT00000` is missing (the build ships only `CLT00002`). This
+  answers part of the FMT-DATA-004 item in the first group.
+
+## Movies
+
+- The intro `fn_004329C0` (992 bytes) opens `Data\mvIntro` and `Data\mvLogos` and raises the
+  thread priority. Its Smacker wrappers are `fn_0040DBC0` (open), `fn_0040DDFF` (frame loop:
+  decode, copy to a rectangle, colour remap, new palette, wait), `fn_0040DD7B` (close),
+  `fn_0040E049` (volume and pan), `fn_0040DAB9`, `fn_0040DAE0` and `fn_0040E00E`; `fn_0040DFFE`
+  and `fn_0040E02B` have no callers. The VIDEO area has two entries and no rule for playback.
+  Record the order of the two movies, which keys or clicks end each, where a frame lands on the
+  screen, how the palette is handled in the 8-bit set, the sound setting, and what happens when a
+  file is missing or fails to open. DEV-VIDEO-001 then cites the rule.
+- `0x00490598..0x004905E0` is read by the Smacker wrappers and by the network screens
+  (`fn_0040B9C0`, `fn_0040C4C5`, `fn_0046913D`). Identify what they share.
+
+## Sound, music and the CD drive
+
+- Sound setup `fn_00458290` builds paths from `data\snd00000`, counts auxiliary devices and reads
+  the registry through `fn_0042B8EC`. `fn_004589B8` uses the same path and `PlaySoundA` and has no
+  direct callers. `fn_00458895` is the play primitive; `fn_00458858` and `fn_004584BA` sit above
+  it. FND-AUDIO-002 covers the slots. Record the path construction and file numbering, how a
+  missing file is handled, and whether `fn_004589B8` is dead.
+- CD music through MCI: `fn_00458EA6` opens the device (commands `0x803` and `0x80D`),
+  `fn_00458CA0` plays (`0x808`), `fn_00458CEF` queries status (`0x814`), `fn_00458D54` waits, and
+  `fn_00458ACC` and `fn_00458E2F` read the auxiliary volume. The window procedure receives the MCI
+  notification (`0x3B9`). FND-AUDIO-001 says which track programs play; record the command
+  sequence, the time format, the track numbers per program, what the notification restarts, and
+  what happens with no disc.
+- CD drive search: `fn_004667DC` (`GetLogicalDrives`, the string `" A:\CHAOS\CDTrack"`),
+  `fn_0046678D` (`GetDriveTypeA`) and `fn_0046638E` (`GetDriveTypeA`, `GetVolumeInformationA`;
+  called from WinMain and the main console). Record which drive letters are tried and in what
+  order, the drive type and volume label accepted, what the path string is used for, and what the
+  player sees without a disc. This ties to the leading-space item of FND-ASSET-001. The rebuild
+  does not reimplement any of it: it plays the music tracks from the files of the GOG release
+  (`MUSIC/TrackNN.ogg`, docs/AUDIO-VIDEO.md) and never looks for a drive. Document the original's
+  behaviour in the spec (a PLATFORM finding and an AUDIO rule) and add a DEV-AUDIO entry that
+  names it as not reproduced, so its PARITY rows are accounted for. No setting is needed, since it
+  changes no game state.
+- Name the audio state: `0x00494BF0..0x00494C32` (written by `fn_00451F80`, `fn_00458290`,
+  `fn_00458B43`, `fn_00458CEF`, `fn_00458EA6`) and `0x00497FE8..0x00498012` (written by
+  `fn_00458290` and `fn_00458EA6`). Several of the glossary addresses the Screens group asks for
+  (`music_enabled`, `effect_slots`, `sound_output_available`) are expected here.
+
+## Menus, dialogs, help and other resources
+
+- Record the resource section as an EXE finding: every menu (1, 2, 3, 5, 101), dialog
+  (`DIALDIALOG`, `DIRECTDIALOG`, 128 to 141, 143 to 145, 201, 20000, 20002 to 20007),
+  string-table block (1 to 7), the accelerator table (102), bitmap (143, 146, 147, 148), icon
+  group (152, 153, 158, 159, 160, 164, 166, 167) and the version record, with its size and the
+  function that loads it. Find the loaders by the ID pushed before `LoadMenuA`,
+  `DialogBoxParamA`, `CreateDialogParamA`, `LoadStringA`, `LoadAcceleratorsA`, `LoadBitmapA` and
+  `LoadIconA`. Record IDs and roles only; the spec never reproduces the texts.
+- Accelerator table 102: record each key and the command it sends, and whether the window
+  procedure handles those commands the same way as the menu items. The keyboard items of every
+  SCR entry depend on it.
+- Menu state helpers: `fn_0042533F` and `fn_0042548A` (13 and 16 callers, pushing 1024 and
+  1025), `fn_004255D5` (redraws the menu bar, 13 callers), `fn_00425601` (check marks),
+  `fn_0042572C` (switches the whole menu), `fn_004257D7` (no callers), and `fn_004120A7` and
+  `fn_004120CB` (27 callers each, both pass 129). Record which items each greys out and when (open
+  panels, planning, resolution), which menu resource each game state uses, and add it to
+  SCR-UI-009.
+- `fn_0042566D` opens a popup menu (`TrackPopupMenu`) from the city screen handlers
+  `fn_00414D8C` and `fn_0041462F`. Record which menu resource it shows, where, and what each item
+  does. No entry mentions a popup menu.
+- Dialogs: `fn_00465EC6` (1,219 bytes, no direct callers, controls 1003 to 1015) is a dialog
+  procedure, reached through `fn_00465CEC` (`DialogBoxParamA`, 15 callers, compares with 20000
+  and 20002) or `fn_00465DD5` (`CreateDialogParamA`). Record which dialog each caller opens, the
+  controls and their effects, and which dialogs a local game can reach. `DIALDIALOG`, `DIRECTDIALOG`
+  and the TAPI dialogs belong to network play and need only be listed.
+- Help: `fn_0046508C` calls `WinHelpA` with `.\Help\Chaos.hlp` and has no direct callers. Record
+  how it is reached (a menu or accelerator command in the window procedure is expected) and the
+  command and context it passes. DEV-HELP-001 then has a rule to depart from.
+
+## Files, registry and the save dialogs
+
+- File layer: `fn_0042B60F` (`CreateFileA`, called from WinMain, the sound loader and planning
+  entry `fn_0046E766`), `fn_0042AB80`, `fn_0042ABFB`, `fn_0042B7F3` and `fn_0042B87B` sit around
+  the cited `fn_0042AC7A..fn_0042B27A` (FND-PLATFORM-003) and share `0x00493F88..0x00493FE7`.
+  Record path building, open modes, error handling (what the player sees on a missing or short
+  file) and which file `fn_0042B60F` opens at planning entry.
+- `fn_0042B8EC` reads a value under `SOFTWARE\Microsoft\Windows\CurrentVersion` (buffer of 260
+  bytes). Record which value and where the result goes. RULE-OPTIONS-001 covers a different key.
+- Save and load dialogs: the thunks for `GetOpenFileNameA` and `GetSaveFileNameA` (`0x00478630`,
+  `0x00478636`) and `fn_00458155`, which the save and load path `fn_00463CC5` calls. Record the
+  default directory and extension, the filter's roles, the overwrite prompt and what a failed load
+  does. DEV-SAVE-001 departs from the files, not from this flow.
+
+## Timing, delays and arithmetic helpers
+
+- `fn_0043287C` and `fn_00432897` (`timeGetTime`), `fn_00432847` (`timeKillEvent`),
+  `fn_00464B43` (no callers; draws and waits), `fn_00464CD9` (7 callers; waits through
+  `fn_00462579`) and `fn_00418F16` (called from planning entry; constants 1,280, 1,408, 2,000,
+  3,000 and 4,999). Record every presentation delay with its length and whether it depends on
+  processor speed, as a TIMER or UI rule. Speed tied to the processor may be fixed under the
+  fidelity rules, so each delay needs its source known.
+- Floating-point helpers `fn_0045CDE0`, `fn_0045CE26`, `fn_0045CE61`, `fn_0045CEBE` (compares
+  with 360), `fn_0045CF05`, `fn_0045CF99` (pushes 180; no direct callers) and `fn_0045D17E` do
+  angle arithmetic through the runtime's `__ftol`. Find what uses them (the rotating item picture
+  of SCR-UI-006 or the network spinner are candidates) and record the rounding, since `__ftol`
+  truncates.
+
+## Screen and panel code no entry describes
+
+- The city screen and main console are the largest unmapped screen code. `fn_00470E24` (2,101
+  bytes, uncited) compares positions with 294, 304, 329 and 360 and calls the city handlers
+  `fn_00414D8C`, `fn_0041462F`, `fn_00416C75`, `fn_00418821` and `fn_0044C476`; it is expected to
+  be the console's mouse dispatcher. With it: `fn_00470A34` (939), `fn_00411119` (3,202),
+  `fn_0041A0D4` (3,090), `fn_0041ACE6` (2,052), `fn_00419AA8` (1,580), `fn_00417CBA` (2,914),
+  `fn_00413858` (1,917), `fn_00411DF5` (690), `fn_004169B3` (706), `fn_0041066F`, `fn_0041B4EA`,
+  `fn_0041B668`, `fn_0041BCD8`, `fn_00413FD5` (34 callers), `fn_00418E66` (8 callers) and
+  `fn_004140AE` (no callers). For each, record what it draws or handles, its rectangles and
+  resources, and cite it from SCR-UI-003 and SCR-UI-004. `fn_00410016` builds the default player
+  name from `PLAYER #`; cite it from the setup rules.
+- Sub-functions of panels whose parent handler is cited but which no entry names: Attack
+  `fn_0043D073`, `fn_0043D93C` (SCR-ATTACK-001); the Equip and Research list rows `fn_0043F52C`
+  (SCR-EQUIP-001, SCR-RESEARCH-001); Influence `fn_0044127B` (SCR-INFLUENCE-001); Move
+  `fn_004425AE` (SCR-MOVE-001); Research `fn_004437E7`; Sell `fn_00445655` (SCR-SELL-001); Give
+  `fn_00447ADB`, `fn_00448027` (SCR-GIVE-001); Search `fn_00449925`, `fn_004499A9`
+  (SCR-SEARCH-001); Detailed Combat `fn_0042F779`, `fn_0043066C` (SCR-COMBAT-002); setup
+  `fn_004384F4`, `fn_00438B35` (SCR-SETUP-001); `fn_00454251` under `fn_00451F80`; Comlink
+  `fn_0041B7D6`, `fn_004604A7`, `fn_00460560`, `fn_00460391` (SCR-COMLINK-002). Most position
+  questions in the earlier groups are answered inside these, so read them before the parent
+  handlers.
+- Parent handlers cited only for one detail need a finding that describes each as a whole
+  (purpose, range, inputs, what it writes): Give `fn_00445A4F`, Sell `fn_00443BBD`, the gang panel
+  `fn_00449E80`, Comlink `fn_0046BA84`, Move `fn_004413EF`, `fn_0044B699` (3,507 bytes, 29
+  callers), `fn_0044E6ED`, `fn_00453087` (7 callers), `fn_00410770` (11 callers), `fn_00413012`
+  (7 callers), `fn_0040EE8A` (10 callers), `fn_0046D77B` (13 callers) and `fn_00412BF7`.
+- The rectangle test `fn_00449B78` (`PtInRect`, 49 callers) decides every click. Record its
+  argument order and whether the right and bottom edges are inside; that settles "the order of
+  the four numbers in the held-button rectangles" in the Setup group for every screen at once.
+  Also identify `fn_00449BFC` (33 callers, no callees), `fn_00449BD2`, `fn_00449C41`,
+  `fn_00465B64` (16 callers), the cursor helpers `fn_00449CAE` and `fn_00449CC6`
+  (`ShowCursor`) and `fn_00465B27` (`GetKeyState`).
+- Detailed Combat state `0x00494578..0x004945CF` and `0x00494760..0x00494786` (written by
+  `fn_0042E040`, `fn_0043087E`, `fn_00430C23`) has no glossary names. Name its fields for
+  RULE-COMBAT-004.
+
+## Game-side code and data no entry describes
+
+- `fn_00409F47` (608 bytes), `fn_0040AA65` and `fn_0040AAE3` are called from planning entry
+  `fn_0046E766` and call the AI selector `fn_00402D70` and `fn_0040A1A7`. Record their role in
+  the AI planning pass (the per-player part of RULE-AI-003 is a candidate).
+- `fn_00449CDE` is called from `fn_0046DC10` during city creation. Record what it does and cite it
+  from the CITY rules.
+- `0x004A287A..0x004A289A` is read by 17 functions (the AI selector, the Give, Equip, Research,
+  Finance and gang panels, planning entry) and written by no instruction, so a block read fills
+  it. Identify the table and its record layout; it is expected to be one of the in-memory copies
+  the FMT-DATA-001..003 item asks for. `0x004A26FE..0x004A2740` (read by `fn_00402D70` and
+  `fn_0042A6E0`) likewise.
+- Build the global data map: for every `.data` region game code uses, record base, extent,
+  element size, writers and readers in a STATE finding, so each glossary term gets an address.
+  Start with the unnamed regions used by the most functions (above: `0x00493658`, `0x004980A0`,
+  `0x00493830`, `0x004A287A`, `0x00490598`, `0x00498570`, `0x00493F88`, `0x00494BF0`). Then read
+  the 51 `.rdata` addresses and record the constant tables among them.
+
+## Random number call sites
+
+- Record every one of the 61 calls to `fn_0045D227` in one RNG finding: instruction address,
+  bound, the rule the result serves, and its place in the turn. By function: `fn_00401000` (4),
+  `fn_00408214` (2), `fn_00408642` (3), `fn_0040ABC0` (4), `fn_0041FEF0` (3), `fn_00428EF0` (8),
+  `fn_00431C60` (4), `fn_00432DA0` (2), `fn_00434080` (2), `fn_004353A0` (2), `fn_00435BD0` (2),
+  `fn_00436C70` (2), `fn_0043A1D0` (2), `fn_004605E0` (2), `fn_0046439A` (2), `fn_00466910` (4),
+  `fn_00468C8E` (1), `fn_0046DC10` (1), `fn_004716EB` (1), `fn_00472775` (5), `fn_00475F70` (1),
+  `fn_00475FE1` (2), `fn_004764B6` (1), `fn_00476726` (1). FND-RNG-004 and FND-RNG-005 cover
+  groups of these without addresses, and RULE-RNG-001's draw order can only be checked against
+  such a list.
+- The runtime `_rand` (`fn_00478CD0`) has three direct call sites, all inside `fn_0045D227`.
+  Confirm that no pointer to it is stored anywhere, so the list above is every draw.
+
+## Boundary of the network code
+
+- 69 functions use WinSock, TAPI or serial imports or are called only from such functions. More
+  are reached only from the network screens: `fn_0046981D` and `fn_0046A115` (constants 1,200,
+  1,920, 2,304 and 2,592), `fn_0042202D` (the handshake strings), `fn_004211E0`, `fn_00423C81`,
+  `fn_0046D00D`, `fn_0046913D`, `fn_0040C4C5`, `fn_004217C0`, and `fn_004688CA..fn_00468C0E`.
+  DEV-NET-001 leaves all of it out, but the boundary is not recorded. Some of it is called from
+  local code: `fn_00421A2D` has 12 callers, and the send routine `fn_00423749` is called from the
+  Comlink recorder `fn_0045D2F0` and the hot-seat handoff `fn_004396C0`. Record a NET finding that
+  lists the network functions and every call into them from local code with the test that skips
+  it in a local game (`network_game`, `0x00487B58`, is expected). That shows the local game never
+  depends on them, and closes the 27,868 bytes as out of scope rather than unread.
+
 ## Found while integrating the spec
 
 - FMT-STATE-002 `factory`, RULE-SITE-001, RULE-EQUIP-003: find the instruction that writes sector
