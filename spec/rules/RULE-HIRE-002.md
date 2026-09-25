@@ -4,7 +4,7 @@ title: Vacant hire offers are refilled in place at the player's planning entry
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-001, SRC-MANUAL-GOG]
+evidence: [FND-HIRE-001, FND-HIRE-007, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002]
@@ -65,6 +65,9 @@ slot is vacant.
 - The number of draws is not bounded: each rejected candidate costs another
   three draws.
 - Definition 0 is never offered, since `roll(89)` gives 1 to 89.
+- The test reads only the player's own three offers: a candidate may repeat
+  a gang another player is offered or a type the player already employs
+  (FND-HIRE-007).
 
 ## What the sources say
 
@@ -78,8 +81,5 @@ None known.
 
 ## Open questions
 
-- Whether any other test (gangs other players are offered, gangs the player
-  already has) applies to a candidate has not been read; the observed test
-  has none.
-- The order of the comparisons inside one candidate's test is not recorded;
-  it does not change the draws.
+None known. The candidate is compared with slots 0, 1 and 2 and then with the
+removed gang (FND-HIRE-007); the order does not change the draws.

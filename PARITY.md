@@ -12,18 +12,18 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Status | Rows |
 |---|---|
 | `unknown` | 2 |
-| `sourced` | 4 |
-| `supported` | 58 |
+| `sourced` | 1 |
+| `supported` | 68 |
 | `established` | 0 |
-| `disputed` | 3 |
-| `implemented` | 145 |
+| `disputed` | 0 |
+| `implemented` | 143 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
-| `missing` | 11 |
-| `partial` | 54 |
-| `complete` | 147 |
+| `missing` | 13 |
+| `partial` | 58 |
+| `complete` | 143 |
 
 ## DATA
 
@@ -278,7 +278,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-COMBAT-001` | A gang's combat rating adds the skills that match its weapon to its Combat | sourced | complete | None | None | implemented | None |
+| `RULE-COMBAT-001` | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported | partial | None | None | supported | The rebuild adds the weapon skills when an attack is computed instead of storing them in Combat (FND-GANG-007), so other readers of the stored Combat can differ. |
 | `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | partial | None | None | supported | Damage, deaths and order follow the rule, but the rebuild keeps combat events with combatant details instead of the per-gang combat records and per-sector result rows. |
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
@@ -329,11 +329,11 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-016` | An attack lowers the defender's attitude toward the attacker by the larger of its reaction and the damage | supported | complete | None | None | implemented | Which resolver loop makes the call is not recorded, so the order against other combat writes is not established. |
 | `RULE-AI-017` | A sector changing owner lowers the previous owner's attitude toward the new owner by twice its reaction | supported | complete | None | None | implemented | Which ownership changes make the call is not recorded. |
 | `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported | complete | None | None | implemented | None |
-| `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild counts previous Hide where the original counts previous Chaos and writes Chaos (FND-AI-046), and groups the previous actions as the superseded FND-AI-030 did (FND-AI-048). |
+| `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild counts previous Hide where the original counts previous Chaos and writes Chaos (FND-AI-046), and groups the previous actions differently from the jump table (FND-AI-048). |
 | `RULE-AI-020` | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | The branches for previous actions other than None, Chaos, Heal, Control, Equip and Snitch are not recorded. |
 | `RULE-AI-021` | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-022` | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
-| `RULE-AI-023` | Family-4 computer gangs hide in owned land, probe weak enemies and move through sector selector mode 2 | disputed | complete | None | `DEV-AI-002`, `DEV-AI-003` | disputed | Selector 0x5B is disputed as in RULE-AI-019. |
+| `RULE-AI-023` | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild counts previous Hide where the original counts previous Chaos and writes Chaos, and groups the previous actions differently from the jump table (FND-AI-049). No match writes family 4, so the handler matters only for a loaded planning record. |
 | `RULE-AI-024` | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-025` | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-026` | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
@@ -392,7 +392,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-OBJECTIVE-001` | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-002` | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-003` | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported | complete | None | None | implemented | None |
-| `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | sourced | complete | None | None | implemented | None |
+| `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | supported | complete | None | None | supported | None |
 | `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | complete | None | None | implemented | None |
 | `SCR-OBJECTIVE-001` | Player Rankings panel with one vertical rail per player and portraits placed by standing | supported | complete | None | None | implemented | None |
 | `SCR-OBJECTIVE-002` | Private elimination card shown to an eliminated local human over the city screen | supported | complete | None | `DEV-SETUP-002` | implemented | None |

@@ -76,6 +76,13 @@ only after two moves in a row. The target pool depends on the owner's
 attitude, as for families 0 and 3, with the same out-of-row reads for a
 neutral sector or one under police presence.
 
+No cell of the family table writes 4 (FND-AI-002), a blank cell writes 99
+(FND-AI-041), and no family change in a handler or in the planning pass
+stores 4 in byte +0 of a planning record. The planning records start each
+match cleared to family 0. The handler is therefore never reached in a match
+that starts normally, and the behaviour above matters only for a save whose
+planning block holds family 4.
+
 ## Alternatives
 
 None known.

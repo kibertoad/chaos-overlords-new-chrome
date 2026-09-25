@@ -4,7 +4,7 @@ title: A human player holds at most one hire or snub order, set by dragging an o
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-004, FND-HIRE-001, SRC-MANUAL-GOG]
+evidence: [FND-HIRE-004, FND-HIRE-001, FND-HIRE-008, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: []
@@ -64,6 +64,13 @@ to -1 (none), and sets the other two slots' orders to -1. Changes neither
   order to that sector.
 - Cash is not tested, so a player can order a hire it cannot pay for; the
   hire then fails at resolution (RULE-HIRE-001).
+- A drop is accepted on a sector the player owns or one where the player has
+  a living gang, read from the player's `gangs_seen` byte (FMT-STATE-002);
+  anywhere else the order is left unchanged (FND-HIRE-008). The drop does not count the gangs
+  already there, so a sector holding six of the player's gangs is accepted
+  and the hire fails at resolution.
+- The Reject branch clears the other two slots' orders like a drop does
+  (FND-HIRE-008).
 
 ## What the sources say
 
@@ -78,10 +85,5 @@ None known.
 
 ## Open questions
 
-- Which sectors the drop accepts (the manual's owned-or-occupied test, and
-  whether a sector already holding six of the player's gangs is refused) is
-  not recorded from the handler.
-- Whether the Reject branch clears the other two slots is stated for the
-  handler as a whole and has not been confirmed for that branch.
 - The order a computer player's hire planner writes is covered by the AI
   rules, not here.

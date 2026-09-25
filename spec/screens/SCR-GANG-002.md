@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-GANG-004, FND-GANG-006, FND-OPTIONS-001, SRC-MANUAL-GOG]
+evidence: [FND-GANG-004, FND-GANG-006, FND-GANG-008, FND-OPTIONS-001, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-GANG-001, RULE-UI-003, RULE-UI-004, SCR-UI-006]
@@ -52,7 +52,7 @@ None.
 
 | State | Entered when | Left when | Evidence |
 |---|---|---|---|
-| Open | A gang's information is opened: from the gang command box `fn_00414D8C`, from `fn_004169B3`, or from the Hire input handler | The panel is closed | FND-GANG-004, FND-GANG-006 |
+| Open | A gang's information is opened: from the gang command box `fn_00414D8C`, from `fn_004169B3`, or from the Hire input handler for an offer, which passes a record with Force 0, no items and sector 100, so Force shows two question marks | The panel is closed | FND-GANG-004, FND-GANG-006, FND-GANG-008 |
 
 ## Timing
 
@@ -68,6 +68,5 @@ None known.
 - Screen positions follow from the handler's buffer positions through the
   shared panel's mapping, screen = buffer + (104, -20) (FND-GANG-006); they have
   not been checked against a capture.
-- Which caller can pass a record whose `force` is 0, so that Force shows two
-  question marks, has not been traced; the Hire input handler is a candidate for
-  showing an offered gang.
+- Whether callers other than the Hire input handler can pass a record whose
+  `force` is 0 has not been checked (FND-GANG-008).

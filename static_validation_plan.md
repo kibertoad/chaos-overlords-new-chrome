@@ -88,8 +88,6 @@ order of priority, unless a group says otherwise.
   `0x00416C75` clears the other two slots, and record what the drop handler
   tests before writing a sector (owned, occupied, capacity). Record what
   `0x004078B8` is (a Reject path, the AI, or both).
-
-
 - RULE-TOLERANCE-001: find the code that moves Tolerance one point toward
   normal each turn (candidates: the turn-start loop in `0x0046E766`, the
   rebuild `0x004782C5`, the end of `0x00472775`). The rule is `sourced` until
@@ -116,8 +114,6 @@ order of priority, unless a group says otherwise.
 - SCR-MOVE-001, SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-GANG-001,
   SCR-GANG-002: positions of the Confirm, OK and Cancel controls, the keys each
   panel handler accepts, and the item picture and portrait resources.
-- SCR-GANG-002, FND-GANG-004: how `PX05000` is opened, its y offset, and
-  whether it also shows offers with the unknown Force marker.
 
 ## Attack, combat, detection, Chaos and police
 
@@ -181,14 +177,8 @@ order of priority, unless a group says otherwise.
 - SCR-COMBAT-002: the x positions of the Force tracks, the portrait resource,
   the Cancel cell and any key handling in `0x0042E040`/`0x00430C23`.
 
-
 ## Last Turn Events, Comlink and Search
 
-- RULE-SEARCH-001, RULE-COMLINK-001, FMT-STATE-005: whether loading a saved
-  game (the start-menu load through `fn_004637B8` at `0x00461902`, and the
-  in-game load `fn_0045C33B`) enters `fn_0046E766` again, which empties the
-  Search filters and every Comlink inbox (FND-COMLINK-006). Follow the jumps
-  after `0x00461902` in `fn_00460CCF` and the return path of `fn_0045C33B`.
 - RULE-EVENT-005: which branch of the event pump `fn_00462579` restores the
   Events control while `events_unviewed` (`0x00487814`) is set, so the light
   can be described as blinking or steady (FND-EVENT-005, `0x00463267`).

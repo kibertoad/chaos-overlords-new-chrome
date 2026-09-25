@@ -101,7 +101,8 @@ and at step 1, so that subtraction has no effect on Control.
 - The update of `0x004AB590` is the attitude change of the computer players;
   its meaning is left to the AI entries.
 - Whether an owned sector's Crackdown byte can be nonzero with the owner's
-  gangs still ordered to Control is a matter of play, not of this reading.
+  gangs still ordered to Control is a matter of play that this reading does
+  not settle.
 
 ## How to reproduce
 

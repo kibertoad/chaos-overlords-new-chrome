@@ -78,7 +78,7 @@
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs hide in owned land, probe weak enemies and move through sector selector mode 2 | disputed |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported |
@@ -107,7 +107,7 @@
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way | supported |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site | supported |
 | [RULE-CITY-004](../rules/RULE-CITY-004.md) | Each player's Right Hands starts in roster slot 0 in its headquarters at Force 10 with no equipment | supported |
-| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's combat rating adds the skills that match its weapon to its Combat | sourced |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported |
@@ -155,7 +155,7 @@
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported |
-| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | sourced |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | supported |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup | supported |
 | [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | Saving the options to the registry, which always fails | supported |
@@ -211,7 +211,7 @@
 
 ## findings
 
-278 entries.
+281 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -349,6 +349,7 @@
 | [FND-GANG-005](../findings/FND-GANG-005.md) | Combat deaths are counted in a per-player INT32 array at 0x004AB620, raised by one instruction in the damage loop that attack and police damage share | recorded |
 | [FND-GANG-006](../findings/FND-GANG-006.md) | The gang information panel handler takes a whole gang record, lays out effective and base statistics in two columns, and closes on one face | recorded |
 | [FND-GANG-007](../findings/FND-GANG-007.md) | The statistics rebuild pairs the fourteen fields of the gang, item and site records in one order, adds the weapon's combat skills to Combat, and runs for every active gang at the top of each turn, including a gang hired in the turn before | recorded |
+| [FND-GANG-008](../findings/FND-GANG-008.md) | The Hire input handler opens the gang information panel PX05000 for an offer with a record whose Force is 0, so the panel shows two question marks for Force | recorded |
 | [FND-GFX-001](../findings/FND-GFX-001.md) | Every PX16 file is a 16-bit BMP whose width and height are 0 and whose plane count is 255 | recorded |
 | [FND-GFX-002](../findings/FND-GFX-002.md) | Every PX08 file is an 8-bit BMP with a 256-colour palette, RLE8 in 207 files and uncompressed in 7 | recorded |
 | [FND-GFX-003](../findings/FND-GFX-003.md) | The PX08 line geometry gives every image's width and height, and the PX16 rows are padded to four bytes | recorded |
@@ -423,7 +424,7 @@
 | [FND-SEARCH-002](../findings/FND-SEARCH-002.md) | The Search panel's ALL, NONE and Done controls and its 22 row targets | recorded |
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | The city draws a marker for each site the viewer controls and for each other site whose definition the viewer's Search filter selects | recorded |
 | [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | Search rows show the controlled-site icon and the site name, a press flips a row between 0 and 1, the filter is not saved, and the city counts a site as controlled when its progress reaches its Resistance in a sector the viewer owns | recorded |
-| [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and the match function clears it on entry whether it starts a new match or resumes a loaded one | recorded |
+| [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry | recorded |
 | [FND-SELL-001](../findings/FND-SELL-001.md) | The Sell panel handler shows each carried item at half its cost and stores the chosen items as a three-bit mask in the target byte | recorded |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | The Sell panel marks each selected row with a 192-by-54 keyed overlay from PX00129 and restores the panel's own pixels for the others | recorded |
 | [FND-SETUP-001](../findings/FND-SETUP-001.md) | Starting cash is $500 in Armageddon and $20 otherwise, and one exact player name overrides it with $1,500 after setup | recorded |
@@ -451,6 +452,8 @@
 | [FND-STATE-005](../findings/FND-STATE-005.md) | Each resolution sets byte 9 of all 486 combat records to -1 and rewrites bytes 0 to 8 only for gangs that took part in a fight | recorded |
 | [FND-STATE-006](../findings/FND-STATE-006.md) | In the computer players' 16-byte planning record, byte 1 is a flag only selector 0x48 reads, byte 11 is never referenced, and byte 15 is the high byte of the 16-bit field at 14 | recorded |
 | [FND-TIMER-001](../findings/FND-TIMER-001.md) | A human's planning turn ends by itself after 30 seconds, 2 minutes or 5 minutes, with a shrinking bar and two warning sounds | recorded |
+| [FND-TIMER-002](../findings/FND-TIMER-002.md) | Four multimedia timer slots set flags that the event step polls; waits are counted in ticks of the six-per-second slot, and the floating-point helpers are reachable only from dead code | recorded |
+| [FND-TIMER-003](../findings/FND-TIMER-003.md) | The planning limit is a table of four values applied at every match entry, the expiry test skips an unlimited turn, and the bar is redrawn every sixth presentation tick | recorded |
 | [FND-TOLERANCE-001](../findings/FND-TOLERANCE-001.md) | Bribe, Snitch and a one-point drift change the base Tolerance at sector offset 0x02, which is clamped to 1..40 after the instant phase, while the Chaos test reads offset 0x05 | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |

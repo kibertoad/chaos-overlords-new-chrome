@@ -38,6 +38,19 @@ site definitions' `resistance` and `support` (FMT-DATA-001), `hq_sectors`,
 ## Procedure
 
 ```text
+# The Support of every completed site in the player's sectors, read from the
+# site definitions at the moment of the evaluation
+define completed_site_support(player) -> INT32:
+    let n = 0
+    for s in 0..64:
+        if sectors[s].owner == player:
+            for k in 0..3:
+                let site = sectors[s].sites[k]
+                let d = site_definitions[site.definition]
+                if d.resistance == site.progress:
+                    n = n + d.support
+    return n
+
 define owned_sector_count(player) -> INT32:
     let n = 0
     for s in 0..64:

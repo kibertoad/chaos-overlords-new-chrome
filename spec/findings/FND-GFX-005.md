@@ -68,19 +68,20 @@ the call from `x`):
 | `PX00300` | 324 x 64 | 0, 0, 64, 324 | `0x0043033A` |
 | `PX02000` | 120 x 1408 | 0, 0, 1408, 120 | `0x00418FD1` |
 | `PX03000` | 640 x 576 | 0, 0, 576, 640 | `0x00418F95`, `0x0046501C` |
-| `PX04000 + item` | 720 x 48 | 0, 48 or 96 to 48 more, 0 to 720; one at 353 | 20 sites in `fn_0042EE46`, `fn_0042F98B`, `fn_00443BBD`, `fn_00445A4F`, `fn_00449E80`, `fn_0044B699`, `fn_0044FD6C` |
+| `PX04000 + item` | 720 x 48 | top 0, 48, 96 or 353, left 0, 48 rows, right 720 | 17 sites in `fn_0042EE46`, `fn_0042F98B`, `fn_00443BBD`, `fn_00445A4F`, `fn_00449E80`, `fn_0044B699` and `fn_0044FD6C` (`0x0045050A`) |
 | `PX04999` | 20 x 1280 | 0, 120, 1280, 140 | `0x00419010` |
 | `PX05000` to `PX05022`, `PX05024` | 344 x 209 | 144, 0 or 344, 353, 344 or 688 | 25 sites, one image number each |
 | `PX05023` | 344 x 209 | 144, 0, 353, 344 | `0x0045EB75` |
 | `PX06004`, `PX06005` | 242 x 158 | 144, 344, 302, 586 and 155, 94, 313, 336 | `0x0045037B`, `0x00450488` |
-| `PX06000 + kind` | 242 x 158 | 155, 94, 313, 336 | `0x0045060C`, `0x0045075D` |
+| `PX06000 + kind` | 242 x 158 | 155, 94, 313, 336 | `0x0045060C`, `0x0045075D` in `fn_0044FD6C` |
 | `PX07000 + n`, `PX07100 + n`, `PX07200 + n`, `PX07300 + n`, `PX07228`, `PX07301`, `PX07320` | 512 x 64 | 0 or 64, 0, 64 or 128, 512 | `fn_0042E040`: `0x0042E81A`, `0x0042E875`, `0x0042EB49`, `0x0042EBA7`, `0x0042ECD5`, `0x0042EC7E`, `0x0042EC25` |
 | `PX10000 + map`, `PX10001 + player` | 432 x 416 | 0, 0, 416, 432 | `0x00439637`, `0x004124C0` |
 
-- `PX06000 + kind` is loaded by `fn_0044FD6C` for a Last Turn report whose
-  kind is neither 4 nor 5 (those two load `PX06004` and `PX06005`) nor 9
-  (which loads `PX06009` through the first of the two calls). Every `PX06`
-  image, `PX06008` included, is therefore read at 242 by 158.
+- In `fn_0044FD6C` the kind is the word read at `0x0045010B` from the
+  records at `0x004AAE0A`. Kind 4 loads `PX06004` and kind 5 `PX06005`
+  (`0x00450776`, `0x00450783`); kind 9 and every other kind load `PX06000`
+  plus the kind (`0x00450790`, `0x00450796`). Every `PX06` image, `PX06008`
+  included, is therefore read at 242 by 158.
 - `PX05023` is loaded only when the byte `0x0048735C` is nonzero
   (`0x0045EB22`); no instruction writes that byte, and it is 0 in the file.
   No `PX05023` file exists in either image set.
@@ -110,12 +111,11 @@ never loaded because its branch is dead.
 What `SetDIBits` leaves in the pixels an RLE8 bitmap does not set, and what the
 memory after the 16-bit block holds, are not settled by reading the
 executable; a run of the original at each depth would show the drawn row and
-column. The report kinds that reach `PX06000 + kind` are listed by the event
-findings, not here.
+column. Which report kinds reach `PX06000 + kind` in play is not followed here.
 
 ## How to reproduce
 
 List the calls of `fn_00464108` and read, before each, the image number pushed
 second and the four values pushed to the most recent `fn_00425EDF` call, whose
-result is pushed as the last two arguments. The branch that loads `PX06000 +
-kind` is in `fn_0044FD6C` after the load of the report kind at `0x004500FF`.
+result is pushed as the last two arguments. The branches that load `PX06` images
+are chosen by the comparisons at `0x0045076F..0x00450796`.

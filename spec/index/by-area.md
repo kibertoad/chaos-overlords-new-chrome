@@ -340,6 +340,7 @@
 | [FND-GANG-005](../findings/FND-GANG-005.md) | Combat deaths are counted in a per-player INT32 array at 0x004AB620, raised by one instruction in the damage loop that attack and police damage share | recorded |
 | [FND-GANG-006](../findings/FND-GANG-006.md) | The gang information panel handler takes a whole gang record, lays out effective and base statistics in two columns, and closes on one face | recorded |
 | [FND-GANG-007](../findings/FND-GANG-007.md) | The statistics rebuild pairs the fourteen fields of the gang, item and site records in one order, adds the weapon's combat skills to Combat, and runs for every active gang at the top of each turn, including a gang hired in the turn before | recorded |
+| [FND-GANG-008](../findings/FND-GANG-008.md) | The Hire input handler opens the gang information panel PX05000 for an offer with a record whose Force is 0, so the panel shows two question marks for Force | recorded |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | supported |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | Gang definition panel for a hire offer | supported |
@@ -434,7 +435,7 @@
 | [FND-COMBAT-010](../findings/FND-COMBAT-010.md) | Detailed Combat resets every listed gang's shown Force once, builds each focal list from the result rows, subtracts nothing for an evaded attack, and stops on Escape or the exit face | recorded |
 | [FND-COMBAT-011](../findings/FND-COMBAT-011.md) | Detailed Combat builds each focal gang's fight list from the combat result entries, resets displayed Force once for every listed gang, and keeps its state in two blocks of globals | recorded |
 | [FND-COMBAT-012](../findings/FND-COMBAT-012.md) | Combat Results pages with the left and right arrow keys, closes on Enter or plus but not Escape, and the force selector makes one of the viewer's gangs the focus whose target and attackers are framed | recorded |
-| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's combat rating adds the skills that match its weapon to its Combat | sourced |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported |
@@ -552,7 +553,7 @@
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs hide in owned land, probe weak enemies and move through sector selector mode 2 | disputed |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported |
@@ -617,7 +618,7 @@
 | [FND-SEARCH-002](../findings/FND-SEARCH-002.md) | The Search panel's ALL, NONE and Done controls and its 22 row targets | recorded |
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | The city draws a marker for each site the viewer controls and for each other site whose definition the viewer's Search filter selects | recorded |
 | [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | Search rows show the controlled-site icon and the site name, a press flips a row between 0 and 1, the filter is not saved, and the city counts a site as controlled when its progress reaches its Resistance in a sector the viewer owns | recorded |
-| [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and the match function clears it on entry whether it starts a new match or resumes a loaded one | recorded |
+| [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry | recorded |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | supported |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | supported |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | Search panel | supported |
@@ -635,7 +636,7 @@
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported |
-| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | sourced |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | supported |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | Player Rankings panel with one vertical rail per player and portraits placed by standing | supported |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | Private elimination card shown to an eliminated local human over the city screen | supported |
@@ -659,6 +660,8 @@
 | ID | Title | Status |
 |---|---|---|
 | [FND-TIMER-001](../findings/FND-TIMER-001.md) | A human's planning turn ends by itself after 30 seconds, 2 minutes or 5 minutes, with a shrinking bar and two warning sounds | recorded |
+| [FND-TIMER-002](../findings/FND-TIMER-002.md) | Four multimedia timer slots set flags that the event step polls; waits are counted in ticks of the six-per-second slot, and the floating-point helpers are reachable only from dead code | recorded |
+| [FND-TIMER-003](../findings/FND-TIMER-003.md) | The planning limit is a table of four values applied at every match entry, the expiry test skips an unlimited turn, and the bar is redrawn every sixth presentation tick | recorded |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | Planning time limit chosen for a match | supported |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes | supported |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds | supported |

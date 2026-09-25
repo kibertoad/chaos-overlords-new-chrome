@@ -12,7 +12,7 @@ definition: fmt_state_008.ksy
 evidence: [FND-COMBAT-007, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-012, FND-SAVE-001]
 conflicting: []
 split_with: []
-related: [FMT-STATE-003, RULE-COMBAT-002, RULE-COMBAT-004]
+related: [RULE-COMBAT-002, RULE-COMBAT-004]
 ---
 
 ## Layout

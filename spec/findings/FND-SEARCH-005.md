@@ -1,6 +1,6 @@
 ---
 id: FND-SEARCH-005
-title: The save file does not hold the Search filter table, and the match function clears it on entry whether it starts a new match or resumes a loaded one
+title: The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -42,23 +42,26 @@ environment: null
   `0x0046EB4E` that chooses between setting up a new match (argument nonzero)
   and carrying on with the state already in memory (argument 0). The shell
   `fn_00460CCF` calls it with 1 at `0x0046179A` and `0x004619E5`, and with 0 at
-  `0x00461BBF`, `0x00461EB6`, `0x0046204A` and `0x00462212`; the shell's load
-  (`0x00461902`, through `fn_004637B8`) happens outside the match function.
+  `0x00461BBF`, `0x00461EB6`, `0x0046204A` and `0x00462212`.
+- Both callers of the load function store its result (1, 2 or 3, one per file
+  kind of FND-SAVE-001) in `0x0048788C`: the shell's menu load at `0x00461902`
+  through `fn_004637B8` (stores at `0x00461917`, `0x0046192D`, `0x00461943`),
+  and the window procedure `fn_0045C33B` when the window is created
+  (`0x0045C6CB`). The shell then tests `0x0048788C` for 1 at `0x00461E87`, for
+  2 at `0x00461FF9` and for 3 at `0x004621B5`; each branch clears it
+  (`0x00461EA3`, `0x0046200B`, `0x004621C7`) and calls the match function with
+  0 (`0x00461EB6`, `0x0046204A`, `0x00462212`).
 
 ## Interpretation
 
-The Search filters are not saved. A match resumed from a save through the
-match function starts with every player's filter empty, the same as a new
-match.
+The Search filters are not saved. Every load reaches the match function, so a
+loaded match starts with every player's filter empty, the same as a new match.
 
 ## Alternatives
 
-- Which of the shell's calls with argument 0 follows a load, and which follows
-  a network or hot-seat resumption, has not been traced call by call. All of
-  them pass through the clear, so the result holds for each.
-- The load function has a second caller, the window procedure `fn_0045C33B`
-  (`0x0045C6C6`), which opens a save when the window is created. It is also
-  outside the match function.
+- A match function already running when a load is chosen would have to return
+  to the shell first; the load function has no caller inside the match
+  function, so no load bypasses the clear.
 
 ## How to reproduce
 

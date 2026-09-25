@@ -120,7 +120,7 @@ back the Upkeep of gangs moving out.
 
 - That the comparison at `0x00471BB2` is on the vertical axis, so that the
   lower part of the control opens the Sector variant, is inferred from the
-  local's position in the pointer record, not checked.
+  local's position in the pointer record; it was not checked.
 - The row labels are in the template images, which were not read; the
   pairing with the manual's order rests on the eight rows being drawn from top
   to bottom in that order.

@@ -180,6 +180,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-GANG-005](../findings/FND-GANG-005.md) | builds, locations |
 | [FND-GANG-006](../findings/FND-GANG-006.md) | builds, locations |
 | [FND-GANG-007](../findings/FND-GANG-007.md) | builds, locations |
+| [FND-GANG-008](../findings/FND-GANG-008.md) | builds, locations |
 | [FND-GFX-001](../findings/FND-GFX-001.md) | builds, locations |
 | [FND-GFX-002](../findings/FND-GFX-002.md) | builds, locations |
 | [FND-GFX-003](../findings/FND-GFX-003.md) | builds, locations |
@@ -282,6 +283,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-STATE-005](../findings/FND-STATE-005.md) | builds, locations |
 | [FND-STATE-006](../findings/FND-STATE-006.md) | builds, locations |
 | [FND-TIMER-001](../findings/FND-TIMER-001.md) | builds, locations |
+| [FND-TIMER-002](../findings/FND-TIMER-002.md) | builds, locations |
+| [FND-TIMER-003](../findings/FND-TIMER-003.md) | builds, locations |
 | [FND-TOLERANCE-001](../findings/FND-TOLERANCE-001.md) | builds, locations |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | builds, locations |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | builds, locations |
@@ -643,6 +646,7 @@ None.
 | glossary: site_definitions | glossary |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | body, related |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | related |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | body |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | related |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | body, related |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | related |
@@ -659,7 +663,7 @@ None.
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | related |
 | [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | related |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | related |
-| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, related |
+| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | related |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | related |
 
 ## FMT-DATA-003
@@ -669,6 +673,7 @@ None.
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | body |
 | [FND-UI-013](../findings/FND-UI-013.md) | body |
 | glossary: item_definitions | glossary |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | related |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | related |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | related |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | related |
@@ -773,7 +778,7 @@ None.
 | [RULE-CITY-004](../rules/RULE-CITY-004.md) | body, related |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, related |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | related |
-| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, related |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | related |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | related |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | related |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | body, related |
@@ -849,6 +854,7 @@ None.
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | related |
 | [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | related |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | related |
+| [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | body |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | related |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | related |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | related |
@@ -872,7 +878,6 @@ None.
 |---|---|
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
-| [FMT-STATE-008](../formats/FMT-STATE-008.md) | related |
 | [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | body |
 | [FND-COMBAT-011](../findings/FND-COMBAT-011.md) | body |
 | glossary: combat_records | glossary |
@@ -938,7 +943,11 @@ None.
 
 ## FMT-STATE-008
 
-None.
+| Cited by | In |
+|---|---|
+| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body, related |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, related |
+| [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | related |
 
 ## FMT-VIDEO-001
 
@@ -966,6 +975,7 @@ None.
 | [FND-AI-019](../findings/FND-AI-019.md) | body |
 | [FND-AI-031](../findings/FND-AI-031.md) | body |
 | [FND-AI-041](../findings/FND-AI-041.md) | body |
+| [FND-AI-049](../findings/FND-AI-049.md) | body |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, evidence |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | body |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
@@ -1060,10 +1070,8 @@ None.
 | [RULE-AI-018](../rules/RULE-AI-018.md) | body, evidence |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | body, evidence |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
-| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | evidence |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
-| [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | body |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
 
 ## FND-AI-008
@@ -1077,7 +1085,6 @@ None.
 | glossary: hire_offers | glossary |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | body, evidence |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | evidence |
-| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body |
 
 ## FND-AI-009
 
@@ -1225,7 +1232,6 @@ None.
 | [RULE-AI-003](../rules/RULE-AI-003.md) | evidence |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | evidence |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | body, conflicting |
 | [RULE-AI-028](../rules/RULE-AI-028.md) | evidence |
 
 ## FND-AI-020
@@ -1347,7 +1353,6 @@ None.
 |---|---|
 | [FND-AI-046](../findings/FND-AI-046.md) | body |
 | [FND-AI-049](../findings/FND-AI-049.md) | body |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | body, evidence |
 
 ## FND-AI-032
 
@@ -1375,7 +1380,7 @@ None.
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | body, evidence |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
@@ -1454,7 +1459,9 @@ None.
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FND-AI-042](../findings/FND-AI-042.md) | body |
 | [FND-AI-043](../findings/FND-AI-043.md) | body |
+| [FND-AI-049](../findings/FND-AI-049.md) | body |
 | [FND-STATE-003](../findings/FND-STATE-003.md) | body |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 
 ## FND-AI-042
 
@@ -1483,6 +1490,7 @@ None.
 | [FND-AI-050](../findings/FND-AI-050.md) | body |
 | [FND-STATE-003](../findings/FND-STATE-003.md) | body |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 
 ## FND-AI-045
 
@@ -1497,6 +1505,7 @@ None.
 |---|---|
 | [FND-AI-048](../findings/FND-AI-048.md) | body |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 
 ## FND-AI-047
 
@@ -1513,12 +1522,14 @@ None.
 | [FND-AI-030](../findings/FND-AI-030.md) | superseded_by |
 | [FND-AI-049](../findings/FND-AI-049.md) | body |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 
 ## FND-AI-049
 
 | Cited by | In |
 |---|---|
 | [FND-AI-031](../findings/FND-AI-031.md) | superseded_by |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 
 ## FND-AI-050
 
@@ -1609,7 +1620,7 @@ None.
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | evidence |
 | [RULE-AUDIO-005](../rules/RULE-AUDIO-005.md) | evidence |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | evidence |
-| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body, evidence |
+| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, evidence |
 | [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | evidence |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | evidence |
@@ -1667,6 +1678,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | body |
+| [FND-TIMER-003](../findings/FND-TIMER-003.md) | body |
 
 ## FND-AUDIO-007
 
@@ -1704,6 +1716,8 @@ None.
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 | [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | body, evidence |
+| [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | body, evidence |
+| [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | body, evidence |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | body, evidence |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | body, evidence |
 | [SCR-UI-005](../screens/SCR-UI-005.md) | body, evidence |
@@ -1934,6 +1948,10 @@ None.
 | glossary: phase_damage | glossary |
 | glossary: retaliation_damage | glossary |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | body, evidence |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, evidence |
+| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body, evidence |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | evidence |
+| [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | body, evidence |
 
 ## FND-COMBAT-009
 
@@ -1949,10 +1967,14 @@ None.
 |---|---|
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | body, evidence |
 | [FND-COMBAT-008](../findings/FND-COMBAT-008.md) | body |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, evidence |
 
 ## FND-COMBAT-011
 
-None.
+| Cited by | In |
+|---|---|
+| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, evidence |
 
 ## FND-COMBAT-012
 
@@ -2097,6 +2119,7 @@ None.
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
 | [FND-AI-047](../findings/FND-AI-047.md) | body |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | body |
+| glossary: overthrow_count | glossary |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | body |
 
 ## FND-DATA-001
@@ -2116,7 +2139,6 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | body, evidence |
-| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 
 ## FND-DATA-004
@@ -2256,6 +2278,7 @@ None.
 | [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | evidence |
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | body, evidence |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | body, evidence |
+| [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | evidence |
 
 ## FND-EQUIP-009
 
@@ -2421,6 +2444,7 @@ None.
 | [FND-GANG-005](../findings/FND-GANG-005.md) | body |
 | [FND-GANG-006](../findings/FND-GANG-006.md) | body |
 | [FND-GANG-007](../findings/FND-GANG-007.md) | body |
+| [FND-GANG-008](../findings/FND-GANG-008.md) | body |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | body |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | body |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | body |
@@ -2450,6 +2474,7 @@ None.
 | [FND-STATE-002](../findings/FND-STATE-002.md) | body |
 | [FND-STATE-004](../findings/FND-STATE-004.md) | body |
 | [FND-STATE-005](../findings/FND-STATE-005.md) | body |
+| [FND-TIMER-003](../findings/FND-TIMER-003.md) | body |
 | [FND-TURN-006](../findings/FND-TURN-006.md) | body |
 | [FND-TURN-007](../findings/FND-TURN-007.md) | body |
 | [FND-UI-013](../findings/FND-UI-013.md) | body |
@@ -2462,11 +2487,19 @@ None.
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | evidence |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | evidence |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, evidence |
+| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body, evidence |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, evidence |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | evidence |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | evidence |
+| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | evidence |
+| [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | evidence |
+| [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | evidence |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | body, evidence |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
 | [RULE-RNG-001](../rules/RULE-RNG-001.md) | evidence |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | evidence |
@@ -2479,6 +2512,8 @@ None.
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | evidence |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | evidence |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | evidence |
+| [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | evidence |
+| [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | evidence |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | evidence |
 
 ## FND-FINANCE-001
@@ -2528,7 +2563,6 @@ None.
 |---|---|
 | [FND-GANG-004](../findings/FND-GANG-004.md) | body |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | body, evidence |
-| [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | body |
 
 ## FND-GANG-003
 
@@ -2557,6 +2591,7 @@ None.
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | [FND-COMBAT-008](../findings/FND-COMBAT-008.md) | body |
 | glossary: casualties | glossary |
+| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body, evidence |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | body, evidence |
 | [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | body |
 
@@ -2564,6 +2599,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-GANG-008](../findings/FND-GANG-008.md) | body |
 | [SCR-GANG-002](../screens/SCR-GANG-002.md) | body, evidence |
 
 ## FND-GANG-007
@@ -2573,7 +2609,15 @@ None.
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | evidence |
 | [FND-DATA-007](../findings/FND-DATA-007.md) | body |
+| [FND-GANG-008](../findings/FND-GANG-008.md) | body |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, evidence |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | body, evidence |
+
+## FND-GANG-008
+
+| Cited by | In |
+|---|---|
+| [SCR-GANG-002](../screens/SCR-GANG-002.md) | body, evidence |
 
 ## FND-GFX-001
 
@@ -2702,7 +2746,7 @@ None.
 | glossary: planning_phase | glossary |
 | glossary: roster_slot | glossary |
 | [RULE-AI-012](../rules/RULE-AI-012.md) | body |
-| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, evidence |
+| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | evidence |
 | [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | evidence |
 | [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | evidence |
 | [RULE-HIRE-004](../rules/RULE-HIRE-004.md) | evidence |
@@ -2757,6 +2801,8 @@ None.
 |---|---|
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | body, evidence |
 | [FND-HIRE-008](../findings/FND-HIRE-008.md) | body |
+| glossary: gang_definitions | glossary |
+| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, evidence |
 
 ## FND-HIRE-007
 
@@ -2765,18 +2811,24 @@ None.
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | body, evidence |
 | [FND-HIRE-006](../findings/FND-HIRE-006.md) | body |
 | [FND-HIRE-009](../findings/FND-HIRE-009.md) | body |
+| [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | body, evidence |
+| [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | body, evidence |
+| [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | body, evidence |
 
 ## FND-HIRE-008
 
 | Cited by | In |
 |---|---|
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
+| [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | body, evidence |
+| [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | body, evidence |
 
 ## FND-HIRE-009
 
 | Cited by | In |
 |---|---|
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | body, evidence |
+| [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | body, evidence |
 
 ## FND-INFLUENCE-001
 
@@ -2801,6 +2853,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | body, evidence |
 
 ## FND-MOVE-001
 
@@ -2905,6 +2958,8 @@ None.
 | glossary: scenario_greed | glossary |
 | glossary: scenario_power | glossary |
 | glossary: turn_limit | glossary |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | body, evidence |
 
 ## FND-OBJECTIVE-004
 
@@ -3081,6 +3136,7 @@ None.
 | [FND-GFX-004](../findings/FND-GFX-004.md) | body |
 | [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | body |
 | [FND-SAVE-002](../findings/FND-SAVE-002.md) | body |
+| [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
 
 ## FND-PLATFORM-010
@@ -3132,7 +3188,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-POLICE-001](../findings/FND-POLICE-001.md) | body |
-| [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | body, evidence |
+| [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | evidence |
 
 ## FND-POLICE-004
 
@@ -3339,6 +3395,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FMT-STATE-005](../formats/FMT-STATE-005.md) | evidence |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | body, evidence |
 
 ## FND-SELL-001
@@ -3517,6 +3574,12 @@ None.
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FND-AI-047](../findings/FND-AI-047.md) | body |
 | [FND-STATE-003](../findings/FND-STATE-003.md) | body |
+| glossary: modifier_name_cash | glossary |
+| glossary: modifier_name_elite | glossary |
+| glossary: modifier_name_islands | glossary |
+| glossary: modifier_name_right_hands | glossary |
+| glossary: modifier_name_visibility | glossary |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | body |
 
 ## FND-SETUP-016
 
@@ -3568,6 +3631,8 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
+| glossary: hire_limit | glossary |
+| glossary: reaction | glossary |
 
 ## FND-STATE-004
 
@@ -3584,6 +3649,8 @@ None.
 |---|---|
 | [FMT-STATE-003](../formats/FMT-STATE-003.md) | body, evidence |
 | [FND-COMBAT-008](../findings/FND-COMBAT-008.md) | body |
+| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body, evidence |
+| [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | body, evidence |
 
 ## FND-STATE-006
 
@@ -3605,6 +3672,17 @@ None.
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | evidence |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## FND-TIMER-002
+
+| Cited by | In |
+|---|---|
+| [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
+| [FND-UI-020](../findings/FND-UI-020.md) | body |
+
+## FND-TIMER-003
+
+None.
 
 ## FND-TOLERANCE-001
 
@@ -3675,7 +3753,7 @@ None.
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | evidence |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | evidence |
-| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | body, evidence |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | evidence |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | evidence |
 | [RULE-UI-009](../rules/RULE-UI-009.md) | evidence |
@@ -3863,6 +3941,7 @@ None.
 | [FND-HIRE-009](../findings/FND-HIRE-009.md) | body |
 | [FND-INFLUENCE-003](../findings/FND-INFLUENCE-003.md) | body |
 | [FND-OPTIONS-002](../findings/FND-OPTIONS-002.md) | body |
+| [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | [FND-UI-013](../findings/FND-UI-013.md) | body |
 | glossary: blit_benchmark_count | glossary |
 | glossary: PanelSlideDrawn | glossary |
@@ -3943,6 +4022,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
+| [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | [FND-UI-021](../findings/FND-UI-021.md) | body |
 
 ## FND-UI-021
@@ -4007,7 +4087,7 @@ None.
 | [RULE-AI-010](../rules/RULE-AI-010.md) | body |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | evidence |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
-| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | body, evidence |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
@@ -4162,7 +4242,7 @@ None.
 | [RULE-AI-020](../rules/RULE-AI-020.md) | related |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | related |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | related |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | related |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | body, related |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | related |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | related |
 | [RULE-AI-027](../rules/RULE-AI-027.md) | related |
@@ -4411,7 +4491,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | body |
-| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, related |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body, related |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | body |
 
@@ -4458,6 +4538,7 @@ None.
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | related |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | related |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | related |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | related |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | related |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | related |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | related |
@@ -4581,7 +4662,7 @@ None.
 |---|---|
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | related |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | body |
-| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, related |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | body |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | body, related |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, related |
@@ -4599,6 +4680,7 @@ None.
 |---|---|
 | [BUG-COMBAT-001](../bugs/BUG-COMBAT-001.md) | related |
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | related |
+| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | body, related |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, related |
 
@@ -4849,6 +4931,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, related |
+| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | body |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
 | [SCR-GANG-002](../screens/SCR-GANG-002.md) | related |
@@ -4964,7 +5048,7 @@ None.
 | [BUG-OBJECTIVE-001](../bugs/BUG-OBJECTIVE-001.md) | related |
 | glossary: owned_sector_count | glossary |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | body, related |
-| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | related |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | body, related |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, related |
 
 ## RULE-OBJECTIVE-003
@@ -4979,7 +5063,7 @@ None.
 |---|---|
 | glossary: dominance_points | glossary |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | body, related |
-| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | body, related |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | related |
 
 ## RULE-OBJECTIVE-005
 
@@ -5351,6 +5435,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | glossary: slide_step | glossary |
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | body |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | body, related |
@@ -5406,6 +5491,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | glossary: presentation_tick | glossary |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | related |
 
@@ -5471,7 +5557,9 @@ None.
 
 ## SCR-COMBAT-001
 
-None.
+| Cited by | In |
+|---|---|
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body |
 
 ## SCR-COMBAT-002
 
@@ -5520,6 +5608,7 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | body, related |
+| [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | body, related |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | body, related |
 
 ## SCR-GANG-002
@@ -5866,7 +5955,7 @@ None.
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, evidence |
 | [SCR-GANG-002](../screens/SCR-GANG-002.md) | body, evidence |
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | evidence |
-| [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | body, evidence |
+| [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | evidence |
 | [SCR-MOVE-001](../screens/SCR-MOVE-001.md) | body, evidence |
 | [SCR-NET-001](../screens/SCR-NET-001.md) | evidence |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | evidence |

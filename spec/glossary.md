@@ -160,7 +160,8 @@ applied [FND-CHAOS-001, FND-COMBAT-001, FND-COMBAT-004, FND-GANG-003].
 
 ## combat_rating
 
-A gang's Combat plus the skills that match its weapon. A function, defined by
+`combat_rating(g)` gives the skills that match gang `g`'s weapon, which the
+statistics rebuild adds to its stored Combat. A function, defined by
 RULE-COMBAT-001.
 
 ## combat_records
@@ -931,8 +932,10 @@ defined by RULE-AI-009.
 ## overthrow_count
 
 The number of sectors each player has taken from another player, used by the
-endgame awards. Any other value the game keeps: `INT32LE[6]`, indexed by
-player slot, at `0x004A27A8` [FND-AWARDS-001, FND-PLATFORM-003].
+endgame awards. The Control pass raises the winner's entry by one when it
+takes a sector that had an owner, at `0x00475753`; taking a neutral sector does
+not count. Any other value the game keeps: `INT32LE[6]`, indexed by player
+slot, at `0x004A27A8` [FND-AWARDS-001, FND-PLATFORM-003, FND-CONTROL-003].
 
 ## opening_damage
 
