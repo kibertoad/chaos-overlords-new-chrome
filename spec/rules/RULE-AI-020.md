@@ -34,8 +34,8 @@ From RULE-AI-002, for a gang whose family is 1.
 ## Inputs
 
 The gang's record in `gangs` and in `planning_records` (`previous_action`,
-`older_action`, `weapon_cooldown`, `armor_cooldown`), `sectors` (`owner`,
-`tolerance`), `sector_weight`, `cash`, `mentality`, `scenario`,
+`older_action`, `weapon_cooldown`, `armor_cooldown`), `aux_records`, `sectors`
+(`owner`, `tolerance`), `sector_weight`, `cash`, `mentality`, `scenario`,
 `item_definitions` (`cost`), and what the functions it calls read.
 
 ## Procedure
@@ -104,11 +104,11 @@ else if prev == ACTION_ATTACK or prev == ACTION_HIDE or prev == ACTION_MOVE:
             fallback = true
     else if owner_query(s) == player:
         plan(idx, ACTION_MOVE, select_sector(player, 5, idx), 0)
-        aux_records[idx].focus = -1
     else:
         fallback = true
     if fallback:
-        let snitch_ok = owner_is_human(s) and ((hostile_owner(player, s) and mentality >= 1) or mentality == 2)
+        let hostile_gate = hostile_owner(player, s) and mentality >= 1
+        let snitch_ok = owner_is_human(s) and (hostile_gate or mentality == 2)
         if g.force < 9 and g.heal >= -3:
             plan(idx, ACTION_HEAL, 0, 0)
         else if solo_control_ok(player, idx, s):
@@ -117,8 +117,10 @@ else if prev == ACTION_ATTACK or prev == ACTION_HIDE or prev == ACTION_MOVE:
             plan(idx, ACTION_SNITCH, 0, 0)
         else:
             plan(idx, ACTION_MOVE, select_sector(player, 5, idx), 0)
-        aux_records[idx].focus = -1
-# previous Bribe, Give, Influence, Research, Sell and Terminate: nothing is written
+# previous Bribe, Give, Influence, Research, Sell and Terminate: no write
+# every action written above except Attack clears the first auxiliary value
+if r.planned_action != ACTION_NONE and r.planned_action != ACTION_ATTACK:
+    aux_records[idx].focus = -1
 if scenario == 0 and turns_remaining() < 4:
     plan(idx, ACTION_TERMINATE, 0, 0)
     r.needs_family = 1
@@ -128,8 +130,11 @@ if scenario == 0 and turns_remaining() < 4:
 
 No return value. Writes the gang's planned action and targets through `plan`
 (Move targets the sector `select_sector` returns; Equip targets the item). An
-Equip sets the matching cooldown to three times the item's cost. Draws from
-`rng` only inside `select_sector`.
+Equip sets the matching cooldown to three times the item's cost. An Attack
+stores the current sector in the first auxiliary value, and every other action
+the handler writes stores -1. The scenario-0 Terminate also sets
+`needs_family`. Draws from `rng` only inside `select_sector` and
+`draw_once`.
 
 ## Edge cases
 
@@ -160,6 +165,3 @@ None known.
   armor is not tried, is not recorded; the procedure tries armor when the
   weapon is missing or its cooldown has not run out.
 - The Tolerance byte read is taken to be `tolerance` at sector record +5.
-- The branches for previous actions None, Chaos, Heal, Control, Equip and
-  Snitch are not recorded as writing the first auxiliary value; the procedure
-  writes it only after Attack, Hide or Move.

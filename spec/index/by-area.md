@@ -357,6 +357,7 @@
 | [FND-GANG-007](../findings/FND-GANG-007.md) | The statistics rebuild pairs the fourteen fields of the gang, item and site records in one order, adds the weapon's combat skills to Combat, and runs for every active gang at the top of each turn, including a gang hired in the turn before | recorded |
 | [FND-GANG-008](../findings/FND-GANG-008.md) | The Hire input handler opens the gang information panel PX05000 for an offer with a record whose Force is 0, so the panel shows two question marks for Force | recorded |
 | [FND-GANG-009](../findings/FND-GANG-009.md) | The compact gang information panel 0x00455B6B is opened only from the Attack, Equip, Research, Sell and Give panels, with a copy of a live gang record | recorded |
+| [FND-GANG-010](../findings/FND-GANG-010.md) | The compact gang panel places each value field in its 320-pixel frame, closes only on its face, Enter or Execute, and covers the base values with a black pattern | recorded |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | supported |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported |
@@ -375,6 +376,7 @@
 | [FND-EQUIP-007](../findings/FND-EQUIP-007.md) | The transaction pass skips inactive gangs, reads the Equip item, the Give mask and the Sell mask from target and the Give recipient from target_2, and tests only the Give recipient's sector | recorded |
 | [FND-EQUIP-008](../findings/FND-EQUIP-008.md) | The Equip, Give and Sell panels store the item, the item mask and the recipient in target and target_2, and the Equip list and the Give recipients are filtered by the gang definition's Tech Level | recorded |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | The Equip and Research panels frame the chosen category cell with a 34-by-34 keyed cell of PX00129 and open on category 0 or the category of the pending order | recorded |
+| [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | The Equip panel handler's faces, keys and double-clicks, and the chosen row redrawn in the second font of PX00129 inside a green frame | recorded |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | supported |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported |

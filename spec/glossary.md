@@ -641,10 +641,10 @@ for every attacker, every attack's target and every gang the police find, and
 copied at the record fill into the `UINT8[486]` at `0x00498BC0`
 [FND-COMBAT-008].
 
-## fight_or_hold
+## fight_or_heal
 
-`fight_or_hold(player, idx, kind, tries)` writes an Attack, Heal or Control
-for a gang on an objective. A function, defined by RULE-AI-031.
+`fight_or_heal(player, idx, kind)` writes an Attack or a Heal, or nothing, for
+a gang on an objective. A function, defined by RULE-AI-031.
 
 ## finance_rows
 
@@ -1247,6 +1247,12 @@ The objective last chosen on the setup screen. Any other value the game keeps:
 a DWORD at `0x00487858`, initialized to 0 and read from the registry value
 `prefsObjective` [FND-OPTIONS-001].
 
+## objective_site
+
+`objective_site(s, best)` gives the slot of the unfinished site of sector `s`
+with the greatest Support above `best`, or -1. A function, defined by
+RULE-AI-031.
+
 ## offer_to_snub
 
 `offer_to_snub(player)` chooses the hire offer a computer player snubs. A function,
@@ -1287,6 +1293,12 @@ owns. A function, defined by RULE-OBJECTIVE-002.
 
 `owner_at(c)` gives the owner a neighbourhood scan reads at index `c`, 0 to 64.
 A function, defined by RULE-AI-005.
+
+## owner_is_human
+
+`owner_is_human(s)` tells whether the owner byte of sector `s` names a human
+player; for a neutral sector it reads player 5's `casualties`. A function,
+defined by RULE-AI-004.
 
 ## owner_query
 

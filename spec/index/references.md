@@ -180,6 +180,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-EQUIP-007](../findings/FND-EQUIP-007.md) | builds, locations |
 | [FND-EQUIP-008](../findings/FND-EQUIP-008.md) | builds, locations |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | builds, locations |
+| [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | builds, locations |
 | [FND-EVENT-001](../findings/FND-EVENT-001.md) | builds, locations |
 | [FND-EVENT-002](../findings/FND-EVENT-002.md) | builds, locations |
 | [FND-EVENT-003](../findings/FND-EVENT-003.md) | builds, locations |
@@ -202,6 +203,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-GANG-007](../findings/FND-GANG-007.md) | builds, locations |
 | [FND-GANG-008](../findings/FND-GANG-008.md) | builds, locations |
 | [FND-GANG-009](../findings/FND-GANG-009.md) | builds, locations |
+| [FND-GANG-010](../findings/FND-GANG-010.md) | builds, locations |
 | [FND-GFX-001](../findings/FND-GFX-001.md) | builds, locations |
 | [FND-GFX-002](../findings/FND-GFX-002.md) | builds, locations |
 | [FND-GFX-003](../findings/FND-GFX-003.md) | builds, locations |
@@ -616,6 +618,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | Cited by | In |
 |---|---|
 | [FND-AI-062](../findings/FND-AI-062.md) | body |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | body |
 
 ## BUG-AUDIO-001
 
@@ -801,6 +804,7 @@ None.
 | [FND-EQUIP-008](../findings/FND-EQUIP-008.md) | body |
 | [FND-EVENT-004](../findings/FND-EVENT-004.md) | body |
 | [FND-GANG-006](../findings/FND-GANG-006.md) | body |
+| [FND-GANG-010](../findings/FND-GANG-010.md) | body |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | [FND-UI-024](../findings/FND-UI-024.md) | body |
@@ -1372,7 +1376,7 @@ None.
 | [FND-AI-061](../findings/FND-AI-061.md) | body |
 | glossary: local_tech_cap | glossary |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
-| [RULE-AI-029](../rules/RULE-AI-029.md) | body, evidence |
+| [RULE-AI-029](../rules/RULE-AI-029.md) | evidence |
 
 ## FND-AI-025
 
@@ -1735,6 +1739,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-AI-058](../findings/FND-AI-058.md) | body |
+| [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
 
@@ -1742,13 +1747,13 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
+| [RULE-AI-021](../rules/RULE-AI-021.md) | body, evidence |
 
 ## FND-AI-059
 
 | Cited by | In |
 |---|---|
-| [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
+| [RULE-AI-025](../rules/RULE-AI-025.md) | body, evidence |
 
 ## FND-AI-060
 
@@ -1758,13 +1763,16 @@ None.
 
 ## FND-AI-061
 
-None.
+| Cited by | In |
+|---|---|
+| [RULE-AI-029](../rules/RULE-AI-029.md) | evidence |
 
 ## FND-AI-062
 
 | Cited by | In |
 |---|---|
 | [BUG-AI-006](../bugs/BUG-AI-006.md) | evidence |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | body, evidence |
 
 ## FND-ASSET-001
 
@@ -2586,6 +2594,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | body |
+| [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | body |
 | [FND-RESEARCH-003](../findings/FND-RESEARCH-003.md) | body |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | body, evidence |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | body, evidence |
@@ -2648,10 +2657,17 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | body |
+| [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | body |
 | [FND-RESEARCH-003](../findings/FND-RESEARCH-003.md) | body |
 | [FND-RESEARCH-004](../findings/FND-RESEARCH-004.md) | body |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | body, evidence |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | body, evidence |
+
+## FND-EQUIP-010
+
+| Cited by | In |
+|---|---|
+| [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | body, evidence |
 
 ## FND-EVENT-001
 
@@ -2830,6 +2846,7 @@ None.
 | [FND-EQUIP-007](../findings/FND-EQUIP-007.md) | body |
 | [FND-EQUIP-008](../findings/FND-EQUIP-008.md) | body |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | body |
+| [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | body |
 | [FND-EVENT-004](../findings/FND-EVENT-004.md) | body |
 | [FND-FINANCE-002](../findings/FND-FINANCE-002.md) | body |
 | [FND-GANG-005](../findings/FND-GANG-005.md) | body |
@@ -2837,6 +2854,7 @@ None.
 | [FND-GANG-007](../findings/FND-GANG-007.md) | body |
 | [FND-GANG-008](../findings/FND-GANG-008.md) | body |
 | [FND-GANG-009](../findings/FND-GANG-009.md) | body |
+| [FND-GANG-010](../findings/FND-GANG-010.md) | body |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | body |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | body |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | body |
@@ -3128,6 +3146,7 @@ None.
 |---|---|
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | body, evidence |
 | [FND-GANG-008](../findings/FND-GANG-008.md) | body |
+| [FND-GANG-010](../findings/FND-GANG-010.md) | body |
 | [SCR-GANG-002](../screens/SCR-GANG-002.md) | body, evidence |
 
 ## FND-GANG-007
@@ -3151,6 +3170,13 @@ None.
 | [SCR-GANG-002](../screens/SCR-GANG-002.md) | body, evidence |
 
 ## FND-GANG-009
+
+| Cited by | In |
+|---|---|
+| [FND-GANG-010](../findings/FND-GANG-010.md) | body |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | body, evidence |
+
+## FND-GANG-010
 
 | Cited by | In |
 |---|---|
@@ -4827,6 +4853,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | evidence |
 
@@ -5101,6 +5128,7 @@ None.
 | [RULE-AI-010](../rules/RULE-AI-010.md) | body, related |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | body |
 | [RULE-AI-027](../rules/RULE-AI-027.md) | body, related |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | body |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
 
 ## RULE-AI-002
@@ -5141,6 +5169,7 @@ None.
 | glossary: hostile_human_owner | glossary |
 | glossary: hostile_owner | glossary |
 | glossary: is_human | glossary |
+| glossary: owner_is_human | glossary |
 | glossary: owner_query | glossary |
 | glossary: plan | glossary |
 | glossary: previous_action_count | glossary |
@@ -5352,7 +5381,7 @@ None.
 | glossary: site_builder | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | body, related |
-| [RULE-AI-031](../rules/RULE-AI-031.md) | body, related |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | related |
 
 ## RULE-AI-023
 
@@ -5418,7 +5447,8 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-006](../bugs/BUG-AI-006.md) | related |
-| glossary: fight_or_hold | glossary |
+| glossary: fight_or_heal | glossary |
+| glossary: objective_site | glossary |
 | glossary: on_objective | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 
@@ -6643,6 +6673,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | body, related |
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | body, related |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | body, related |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | body, related |
@@ -6814,6 +6845,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-013](../findings/FND-UI-013.md) | body |
+| [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | body, related |
 | [SCR-GANG-002](../screens/SCR-GANG-002.md) | body, related |
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | body, related |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | body, related |

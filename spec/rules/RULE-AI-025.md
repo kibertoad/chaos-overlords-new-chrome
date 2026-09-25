@@ -58,11 +58,18 @@ let r = planning_records[idx]
 let s = g.sector
 let w = sector_weight[player * 64 + s]
 if w < 1:
-    let dest = -1
+    # selector 0x60: the weight-10 sectors in ascending order, then 100
+    let listed = []
     for c in 0..64:
-        if sector_weight[player * 64 + c] == 10 and covered_by(player, c) == -1:
-            dest = c
-            break
+        if sector_weight[player * 64 + c] == 10:
+            append(listed, c)
+    let dest = -1
+    if count(listed) > 0:
+        append(listed, 100)
+        for each c in listed:
+            if covered_by(player, c) == -1:
+                dest = c
+                break
     let mode = 2
     if dest != -1:
         mode = dest + 0x40
@@ -94,7 +101,9 @@ else:
             r.armor_cooldown = item_definitions[ar].cost * 3
             aux_records[idx].focus = -1
             done = true
-    # a Heal branch and a Control or Move branch here cannot be reached while w is positive
+    # unreachable while w is positive: Heal needs Force below 8, Heal at least
+    # -3, prev not Attack and w == 0; then Control when w < 1 and the gang can
+    # take the sector alone, otherwise the guard Move of the w < 1 branch
     if not done:
         let u = draw_target(player, idx, kind, 5)
         plan(idx, ACTION_ATTACK, u / 81, u % 81)
@@ -119,10 +128,13 @@ draw and up to five more for the second, plus the draws inside
 A gang that sees any gang at all never moves: after a failed first draw and no
 equipment to buy it attacks the last of up to five further draws even when
 every strength test failed, and the strength test can be made on a different
-gang from the one attacked (BUG-AI-003). With no uncovered hostile sector the
-gang wanders through mode 2. The sector a hunter covers is its one-step
-destination, which is usually not the hostile sector itself, so a second hunter
-can pick the same target.
+gang from the one attacked (BUG-AI-003). With no sector of weight 10 the gang
+wanders through mode 2. When every such sector is covered, the list's end
+marker 100 is taken as the destination: mode `0xA4` scores every sector 0, so
+the sector selector steps toward a sector drawn from all 64 (FND-AI-059). The
+sector a hunter covers is its one-step destination, which is usually not the
+hostile sector itself, so a second hunter can pick the same target. The scan
+of `covered_by` includes the planning gang itself (FND-AI-059).
 
 ## What the sources say
 
@@ -134,12 +146,6 @@ None known.
 
 ## Open questions
 
-- The thresholds of the unreachable Heal and Control or Move branches are not
-  recorded.
-- Whether the five further draws use the same pool as the first draw is
-  assumed.
-- Whether the equipment step here is gated by `danger_near` is not recorded;
-  the procedure applies no gate.
-- Whether `covered_by` counts the planning gang itself is not recorded; the
-  procedure scans every active family-6 gang of the player.
 - The record layout behind `aux_records` is uncertain (FND-AI-015).
+- No stored coverage sector of 100 was found, so `covered_by(player, 100)` is
+  taken to return -1 (FND-AI-059).

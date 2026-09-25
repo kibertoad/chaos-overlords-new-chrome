@@ -4,7 +4,7 @@ title: Queries the computer players' handlers share
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004]
+evidence: [FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, RULE-RNG-002]
@@ -28,11 +28,11 @@ None.
 
 ## Inputs
 
-`controller`, `attitude`, `gangs` (each gang's `player`, `sector`, `force`,
-`combat`, `defense`, `control`, `heal` and `visible_to`), `sectors` (each
-sector's `owner`, `income`, `support`, `crackdown_turns` and `sites`),
-`site_definitions`, `planning_records`, `turn_limit`, `elapsed_turns`, and
-`rng_state` through `roll`.
+`controller`, `casualties`, `attitude`, `gangs` (each gang's `player`,
+`sector`, `force`, `combat`, `defense`, `control`, `heal` and `visible_to`),
+`sectors` (each sector's `owner`, `income`, `support`, `crackdown_turns` and
+`sites`), `site_definitions`, `planning_records`, `turn_limit`,
+`elapsed_turns`, and `rng_state` through `roll`.
 
 ## Procedure
 
@@ -150,6 +150,18 @@ define hostile_owner(player, s):
 define hostile_human_owner(player, s):
     let o = sectors[s].owner
     return o >= 0 and hostile_owner(player, s) and is_human(o)
+
+# Whether the owner byte of sector s names a human (selector 0x35). The byte
+# is used as an index without a range test: for a neutral sector (-1) the read
+# falls on the last entry of casualties, player 5's count
+define owner_is_human(s):
+    let o = sectors[s].owner
+    let v = 0
+    if o >= 0:
+        v = controller[o]
+    else:
+        v = casualties[5]
+    return v == 0 or v == 3
 
 # One target draw from the pool of kind; the strength test uses the gang with
 # the same ordinal in the full pool. Returns the drawn target when the test

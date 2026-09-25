@@ -27,7 +27,7 @@ related: [RULE-GANG-001, RULE-UI-003, RULE-UI-004, SCR-UI-006]
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Close face | `(137, 293, 49, 22)` | Always | Closes the panel when the button is released inside | FND-GANG-006 |
+| Close face | `(137, 293, 49, 22)` | Always | Closes the panel when the button is released inside; a double-click there does the same | FND-GANG-006 |
 | Equipment picture, double-click | `(391, 140 + 64 * k, 50, 50)` | The slot holds an item | Opens SCR-UI-006 for the item | FND-GANG-006 |
 | Outside the panel | Outside `(104, 124, 344, 209)` | Always | Refused with slot 4 | FND-GANG-006 |
 

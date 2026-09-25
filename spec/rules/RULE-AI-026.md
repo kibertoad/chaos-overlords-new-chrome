@@ -186,9 +186,6 @@ None known.
 
 - The item `type` numbers (0 melee, 1 blade, 2 ranged, 3 armor, 4
   miscellaneous) are assumptions shared with RULE-AI-005.
-- Whether the strength-tested draw uses the owner test of the drawn gang or of
-  the gang the comparison used is not recorded; the procedure tests the drawn
-  gang's player.
 - A previous Research of an item of type 4 that is not on the fixed list, or of
   melee, next asks for ranged, as FND-AI-035 states for "every other type".
 - The focus value is written as the current sector and then overwritten by the

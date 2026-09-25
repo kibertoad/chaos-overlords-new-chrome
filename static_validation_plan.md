@@ -42,24 +42,8 @@ order of priority, unless a group says otherwise.
 
 ## Computer players
 
-- Family 1 (RULE-AI-020; FND-AI-020): the branches for previous Attack, Bribe,
-  Give, Hide, Influence, Move, Research, Sell and Terminate; the Snitch branch
-  gated on cash above 50; the Mentality 2 branch; the selector `0x35` test for
-  a neutral owner.
-- Family 2 (RULE-AI-021; FND-AI-032): whether the attack step tests selector
-  `0xAB` or the pool size; whether the late Control gates replace an Equip or
-  Heal.
-- Family 6 (RULE-AI-025; FND-AI-029): the thresholds of the unreachable Heal and
-  Control branches; whether the equipment step is gated by selector `0x6C`;
-  whether selector `0x5F` counts the planning gang itself.
-- Family 7 (RULE-AI-026; FND-AI-035): whose owner the Attack hostility test reads
-  (the drawn gang's or the compared gang's). The fixed Research list is Tech capped
-  (FND-AI-055).
-- Family 11 (RULE-AI-029; FND-AI-024): the Heal test. The armor and
-  miscellaneous choices are selectors `0x64` and `0x74` (FND-AI-055).
-- Families 13 and 14 (RULE-AI-031; FND-AI-039): instruction addresses of the
-  owned-objective Heal branch; the contested pool (owner's gangs or every
-  visible opponent); whose Force the Force-5 test reads.
+Nothing is left to read statically. The starting threshold of the family-13
+and family-14 Support scan (BUG-AI-006) needs a run of the original.
 
 ## Screens, options, planning timer and sound
 

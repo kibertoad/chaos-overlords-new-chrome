@@ -52,8 +52,9 @@ skips a slot whose sector byte is 100 or whose family (selector `0x59`) is not
 
 The three open questions of RULE-AI-025 are settled: the equipment step has no
 danger gate, the later draws use the first draw's pool, and `covered_by` counts
-the planning gang itself. A gang that covered a weight-10 sector last turn
-therefore sees that sector as taken and picks the next one.
+the planning gang itself. Its own entry matters only when its stored coverage
+sector has weight 10 while the sector it stands in has weight below 1, for
+example after a Move that did not complete.
 
 When every weight-10 sector is covered, selector `0x5F` finds no active gang
 in sector 100, so selector `0x60` returns 100. The handler then passes mode

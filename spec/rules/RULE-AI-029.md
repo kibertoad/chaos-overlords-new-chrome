@@ -4,7 +4,7 @@ title: Family-11 computer gangs equip, heal, attack the first visible definition
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-024, FND-AI-021, FND-AI-015, FND-AI-027, FND-AI-028, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055]
+evidence: [FND-AI-024, FND-AI-021, FND-AI-015, FND-AI-027, FND-AI-028, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-061]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002]
@@ -54,26 +54,32 @@ let idx = player * 81 + slot
 let g = gangs[idx]
 let r = planning_records[idx]
 let s = g.sector
+let not_after_attack = r.previous_action != ACTION_ATTACK
 let wp = weapon_upgrade(player, idx)
 let ar = armor_upgrade(player, idx)
 let mi = misc_detect_upgrade(player, idx)
-if wp != -1 and r.weapon_cooldown <= 0 and r.previous_action != ACTION_ATTACK:
+if wp != -1 and r.weapon_cooldown <= 0 and not_after_attack:
     plan(idx, ACTION_EQUIP, wp, 0)
     r.weapon_cooldown = item_definitions[wp].cost * 3
-else if ar != -1 and r.armor_cooldown <= 0 and r.previous_action != ACTION_ATTACK:
+    aux_records[idx].focus = s
+else if ar != -1 and r.armor_cooldown <= 0 and not_after_attack:
     plan(idx, ACTION_EQUIP, ar, 0)
     r.armor_cooldown = item_definitions[ar].cost * 3
-else if mi != -1 and item_definitions[mi].cost <= cash[player]:
+    aux_records[idx].focus = s
+else if mi != -1 and item_definitions[mi].cost <= cash[player] and not_after_attack:
     plan(idx, ACTION_EQUIP, mi, 0)
-else if g.force < 8 and g.heal >= -3:
+    aux_records[idx].focus = s
+else if g.force < 8 and g.heal >= -3 and not_after_attack:
     plan(idx, ACTION_HEAL, 0, 0)
-else if sectors[s].owner == player:
+    aux_records[idx].focus = s
+else if owner_query(s) == player:
     plan(idx, ACTION_MOVE, select_sector(player, 10, idx), 0)
     aux_records[idx].focus = s
 else:
     let t = first_visible_definition_zero(player, s)
     if t >= 0:
         plan(idx, ACTION_ATTACK, t / 81, t % 81)
+        aux_records[idx].focus = s
     else if is_block_leader(player, slot):
         let dest = select_sector(player, 10, idx)
         plan(idx, ACTION_MOVE, dest, 0)
@@ -88,9 +94,9 @@ else:
 `first_visible_definition_zero` returns an index into `gangs` or -1. The
 handler returns nothing; it writes the gang's planned action and targets
 through `plan` (Equip targets the item, Attack the found gang's player and
-roster slot, Move the sector `select_sector` returns), and sets `focus` for a
-Move: to the destination for a block leader and to the current sector
-otherwise. A weapon or armor Equip sets the matching cooldown to three times
+roster slot, Move the sector `select_sector` returns), and sets `focus` to the
+destination for a block leader's Move and to the current sector for every
+other action. A weapon or armor Equip sets the matching cooldown to three times
 the item's cost. Makes no draw of its own; draws only inside `select_sector`.
 
 ## Edge cases
@@ -99,7 +105,10 @@ The attack is made without a strength test, on the first qualifying gang in
 player slot and roster slot order. Block leadership counts inactive records
 whose family byte is still 11 (RULE-AI-006), so blocks can be shorter than six
 active gangs. A block leader that moves stores its one-step destination, and
-its followers score that sector +1 in mode 16.
+its followers score that sector +1 in mode 16. A gang whose previous action
+was Attack neither equips nor heals, so it attacks again or moves. The
+miscellaneous Equip sets no cooldown. Under police presence the owner query is
+-2, so a gang in its own sector goes on to the attack and the block Moves.
 
 ## What the sources say
 
@@ -111,12 +120,6 @@ None known.
 
 ## Open questions
 
-- The tests of the armor and miscellaneous opportunities and the Heal gate are
-  not written out for this handler (FND-AI-024). The procedure gives armor the
-  weapon's tests, gives the miscellaneous item only a cash test, and uses the
-  Force below 8 and Heal at least -3 gate of families 0 to 3; all three are
-  assumptions.
 - The byte selector `0xAC` requires to be 0 is the gang's `definition` in
   FMT-STATE-001, which reads as a test for the Right Hands; older notes call it
   a state byte.
-- Whether the miscellaneous opportunity writes a cooldown is not recorded.

@@ -219,7 +219,7 @@
 
 ## findings
 
-315 entries.
+317 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -355,6 +355,7 @@
 | [FND-EQUIP-007](../findings/FND-EQUIP-007.md) | The transaction pass skips inactive gangs, reads the Equip item, the Give mask and the Sell mask from target and the Give recipient from target_2, and tests only the Give recipient's sector | recorded |
 | [FND-EQUIP-008](../findings/FND-EQUIP-008.md) | The Equip, Give and Sell panels store the item, the item mask and the recipient in target and target_2, and the Equip list and the Give recipients are filtered by the gang definition's Tech Level | recorded |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | The Equip and Research panels frame the chosen category cell with a 34-by-34 keyed cell of PX00129 and open on category 0 or the category of the pending order | recorded |
+| [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | The Equip panel handler's faces, keys and double-clicks, and the chosen row redrawn in the second font of PX00129 inside a green frame | recorded |
 | [FND-EVENT-001](../findings/FND-EVENT-001.md) | The Last Turn reports are a keep-first table of 32 ten-byte records per player, cleared before each resolution and filled only by the resolver | recorded |
 | [FND-EVENT-002](../findings/FND-EVENT-002.md) | The Last Turn Events handler tests only Previous, Next and one exit control, and has no Delete branch | recorded |
 | [FND-EVENT-003](../findings/FND-EVENT-003.md) | Last Turn reports other than Influence and Research load the illustration numbered 6000 plus the report type | recorded |
@@ -377,6 +378,7 @@
 | [FND-GANG-007](../findings/FND-GANG-007.md) | The statistics rebuild pairs the fourteen fields of the gang, item and site records in one order, adds the weapon's combat skills to Combat, and runs for every active gang at the top of each turn, including a gang hired in the turn before | recorded |
 | [FND-GANG-008](../findings/FND-GANG-008.md) | The Hire input handler opens the gang information panel PX05000 for an offer with a record whose Force is 0, so the panel shows two question marks for Force | recorded |
 | [FND-GANG-009](../findings/FND-GANG-009.md) | The compact gang information panel 0x00455B6B is opened only from the Attack, Equip, Research, Sell and Give panels, with a copy of a live gang record | recorded |
+| [FND-GANG-010](../findings/FND-GANG-010.md) | The compact gang panel places each value field in its 320-pixel frame, closes only on its face, Enter or Execute, and covers the base values with a black pattern | recorded |
 | [FND-GFX-001](../findings/FND-GFX-001.md) | Every PX16 file is a 16-bit BMP whose width and height are 0 and whose plane count is 255 | recorded |
 | [FND-GFX-002](../findings/FND-GFX-002.md) | Every PX08 file is an 8-bit BMP with a 256-colour palette, RLE8 in 207 files and uncompressed in 7 | recorded |
 | [FND-GFX-003](../findings/FND-GFX-003.md) | The PX08 line geometry gives every image's width and height, and the PX16 rows are padded to four bytes | recorded |
