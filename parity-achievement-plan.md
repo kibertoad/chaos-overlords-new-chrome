@@ -31,9 +31,8 @@ Most gameplay steps change how a turn resolves, so they bump `MULTIPLAYER_SESSIO
 To retire live matches once instead of once per step, land steps 2 to 9 on one branch and release
 them together with a single session bump, or accept one bump per release.
 
-DEV-EQUIP-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay so (the 2026-09-26 decision in
-`docs/DECISIONS.md`); no step adds the original's path for them. DEV-CONTROL-001 has no dated
-decision yet and is settled in step 3.
+DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay so (the
+2026-09-26 decision in `docs/DECISIONS.md`); no step adds the original's path for them.
 
 ## Step 2: Split Tolerance into base and site parts
 
@@ -67,9 +66,8 @@ Crackdown test reads the new Tolerance.
 - Chaos pays in a sector under police presence unless that sector cracked down this turn
   (FND-CHAOS-002). Check whether gangs killed in this turn's combat are skipped, and match it.
 - Control settles only contested sectors without police, and adds the owner's defense to the
-  owner's own pool (FND-CONTROL-003). Decide whether DEV-CONTROL-001 stays mandatory, becomes a
-  setting, or is dropped so every player enters the scan as BUG-CONTROL-001 describes, and record
-  it in `docs/DECISIONS.md`. DEV-CONTROL-002 stays mandatory.
+  owner's own pool (FND-CONTROL-003). Only players with a Control order compete, as the
+  mandatory DEV-CONTROL-001 requires, and DEV-CONTROL-002 stays mandatory.
 
 Tooltips: Chaos (when it pays and when a Crackdown follows), Control (which sectors are settled,
 how the owner's defense is pooled, the tie rule), and the Control statistic in

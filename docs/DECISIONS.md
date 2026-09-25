@@ -52,8 +52,13 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 - Reason for DEV-AI-001 and DEV-AI-002: the 2026-09-17 decisions stand. The hunter guard compares
   a slot number with a role, which is an indexing defect, and a computer gang is held to the same
   legal orders as a human's.
-- DEV-CONTROL-001 has no dated decision. Step 3 of the parity achievement plan, which brings
-  Control in line with FND-CONTROL-003, settles it.
+- DEV-CONTROL-001 (only players who ordered Control compete for the sector) is also mandatory.
+  The original's behaviour is a bug (BUG-CONTROL-001): every player slot enters the Control pass,
+  so a player with no order starts at 0 and has a positive margin when the sector's Income plus
+  Support is negative, which hands the sector to a bystander or lets one tie with a real
+  challenger. The manual describes the comparison only among players who try to control the
+  sector, and no player source relies on the case. Step 3 of the parity achievement plan keeps
+  the correction when it brings Control in line with FND-CONTROL-003.
 - In-memory layouts: a FMT-STATE entry counts as `complete` when its row's notes, or a document
   they link, map every field a rule reads or writes to the rebuild state that holds the same
   value at the same point. A difference of representation that no rule result can observe, such

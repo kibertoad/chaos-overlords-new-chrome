@@ -259,13 +259,19 @@ destination, as DEV-HIRE-001 does, would remove that difference.
   sector when its defence sum is negative.
 - Setting: None
 - Default: mandatory
-- Justification: A sector goes only to a player who ordered Control of it, as the manual describes
-  the rule. In the original, a player with no order there is handed the sector when negative Support
-  drags its sum below zero, and ties with a real challenger who would otherwise win. No player
-  source relies on it, and a player who wants the sector can still order Control.
+- Justification: The original's behaviour is a bug (BUG-CONTROL-001). The pass gives every player
+  slot a pool, and a player with no order there starts at 0, so when the sector's Income plus
+  Support is negative that player's margin comes out positive. The player is then handed a sector
+  they never tried to take, or ties with and can beat a challenger who would otherwise win alone.
+  Nothing about it reads as design: the manual describes the comparison only among players who
+  try to control the sector, the case needs completed sites with negative Support and no police,
+  the player gets no cue that it can happen, and no player source relies on it. Restoring it
+  would only hand sectors to bystanders by accident, so it gets no setting. A player who wants
+  the sector can still order Control.
 - Dropped: no
 
-The fix changes which player owns the sector when the case arises.
+The fix changes which player owns the sector when the case arises. Decided as mandatory on
+2026-09-26.
 
 ## DEV-CONTROL-002
 
