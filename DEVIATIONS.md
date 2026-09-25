@@ -330,9 +330,9 @@ Kept mandatory on 2026-09-26, after a proposal to put it behind a setting that s
   the same selection.
 - Setting: None
 - Default: mandatory
-- Justification: A quality-of-life improvement that is strictly better. In the original a player
-  buying an item cannot see what the gang already carries in that slot, although buying replaces
-  and destroys it, so a purchase can throw away a better item unseen. The boxes show the gang's
+- Justification: A quality-of-life improvement that is strictly better. Buying an item replaces
+  and destroys the one the gang holds in that slot, and the boxes keep the held items in sight
+  while the player chooses, so a better item is not thrown away by accident. They show the gang's
   own items, which the gang information panel already shows, and the double-click only opens that
   panel and comes back. Every original control works as before and no rule changes.
 - Dropped: no
