@@ -262,7 +262,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _introMoviesSeen = preferences.IntroMoviesSeen;
         _introOnlyOnce = preferences.IntroOnlyOnce;
         _defaultAiPolicy = preferences.DefaultAiPolicy;
-        _revisedRules = preferences.RevisedRules;
         _online.Service = preferences.OnlineService;
         _online.Server.Set(preferences.CustomMultiplayerServer);
         _onlineLobbyPresentation = preferences.LobbyPresentation;

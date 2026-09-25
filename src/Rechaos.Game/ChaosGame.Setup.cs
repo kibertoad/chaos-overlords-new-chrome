@@ -11,11 +11,6 @@ public sealed partial class ChaosGame
 {
     private AiDifficulty _selectedAiMentality = AiDifficulty.Criminal;
     private AiPolicyMode _defaultAiPolicy = OriginalOptionsPolicy.AiPolicyByDefault;
-    private bool _revisedRules = OriginalOptionsPolicy.RevisedRulesByDefault;
-
-    /// <summary>The rule revisions a new match starts with, from the Revised rules option.</summary>
-    private RuleRevisions SelectedRuleRevisions =>
-        _revisedRules ? RuleRevisions.All : RuleRevisions.None;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
     private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
@@ -346,8 +341,7 @@ public sealed partial class ChaosGame
         var setup = new MatchSetup(
             _selectedScenario, _selectedDuration, _originalProcessSeed, players,
             _selectedAiMentality, allowSparsePlayerIds: true,
-            aiPolicy: _defaultAiPolicy,
-            ruleRevisions: SelectedRuleRevisions);
+            aiPolicy: _defaultAiPolicy);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
         {
             ["scenario"] = _selectedScenario.ToString(),
@@ -356,7 +350,6 @@ public sealed partial class ChaosGame
             ["computerPlayers"] = "0",
             ["mentality"] = _selectedAiMentality.ToString(),
             ["aiPolicy"] = _defaultAiPolicy.ToString(),
-            ["ruleRevisions"] = SelectedRuleRevisions.ToString(),
             ["seed"] = setup.InitialSeed.ToString()
         });
         _state = OriginalMatchFactory.Create(_definitions, setup);

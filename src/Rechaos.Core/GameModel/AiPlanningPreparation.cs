@@ -61,8 +61,7 @@ internal static class AiPlanningPreparation
             CountFamilies(state, player, playerState, 3),
             CountFamilies(state, player, playerState, 6, 12),
             CountFamilies(state, player, playerState, 0, 4),
-            state.Setup.Duration,
-            state.Setup.Revises(RuleRevisions.CorrectedHunterGuard));
+            state.Setup.Duration);
         return OriginalAiHireRoleRules.SelectAdjusted(
             state.Setup.Scenario, elapsedTurns, inputs);
     }

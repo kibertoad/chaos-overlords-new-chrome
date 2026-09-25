@@ -43,14 +43,11 @@ public static partial class CommandResolver
         MatchState state,
         IReadOnlyList<QueuedCommand> commands)
     {
-        // RULE-EQUIP-002: the original scans each player's roster slots, so cash changes gang by
-        // gang in slot order. DEV-EQUIP-001 instead follows the order the player gave Equip and
-        // Sell in. Give keeps the roster order for its deferred deliveries either way.
+        // Cash-affecting transactions follow the player's visible order sequence. Give retains
+        // the original roster ordering for its deferred recipient writes and overwrite rule.
+        var ordered = commands.OrderBy(queued => queued.Command.Player.Value)
+            .ThenBy(queued => queued.Sequence).ToArray();
         var rosterOrdered = InRosterOrder(state, commands);
-        var ordered = state.Setup.Revises(RuleRevisions.TransactionsInOrderGiven)
-            ? commands.OrderBy(queued => queued.Command.Player.Value)
-                .ThenBy(queued => queued.Sequence).ToArray()
-            : rosterOrdered;
         var prepared = rosterOrdered.Where(queued => queued.Command.Action == GangAction.Give)
             .ToDictionary(queued => queued.Sequence, queued => PrepareGive(state, queued.Command));
         foreach (var give in prepared.Values.Where(give => give.Available))

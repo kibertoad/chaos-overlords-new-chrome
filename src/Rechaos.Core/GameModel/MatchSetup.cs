@@ -13,32 +13,6 @@ public enum AiPolicyMode : byte
     Advanced
 }
 
-/// <summary>
-/// The rebuild's revisions of rules and computer-player behaviour that a match can switch on. With
-/// none set the match follows the original. The Revised rules option sets them all together for a
-/// new match, and the match keeps the set it was started with.
-/// </summary>
-[Flags]
-public enum RuleRevisions : byte
-{
-    None = 0,
-
-    /// <summary>
-    /// DEV-EQUIP-001: Equip and Sell change cash in the order the player gave them, where the
-    /// original scans roster slots (RULE-EQUIP-002).
-    /// </summary>
-    TransactionsInOrderGiven = 1,
-
-    /// <summary>
-    /// DEV-AI-001: the guards against a second family-6 hire compare the previous hire role with
-    /// role 4, where the original compares it with the schedule slot number (BUG-AI-001).
-    /// </summary>
-    CorrectedHunterGuard = 2,
-
-    /// <summary>Every revision this build has.</summary>
-    All = TransactionsInOrderGiven | CorrectedHunterGuard
-}
-
 public sealed class MatchSetup
 {
     public MatchSetup(
@@ -48,8 +22,7 @@ public sealed class MatchSetup
         IReadOnlyList<MatchPlayerSetup> players,
         AiDifficulty aiMentality = AiDifficulty.Criminal,
         bool allowSparsePlayerIds = false,
-        AiPolicyMode aiPolicy = AiPolicyMode.Original,
-        RuleRevisions ruleRevisions = RuleRevisions.None)
+        AiPolicyMode aiPolicy = AiPolicyMode.Original)
     {
         ArgumentNullException.ThrowIfNull(players);
         if (players.Count is < 1 or > MatchLimits.PlayerCount)
@@ -73,8 +46,6 @@ public sealed class MatchSetup
                 "Player portrait is outside the original 16-entry atlas.", nameof(players));
         if (!Enum.IsDefined(aiMentality)) throw new ArgumentOutOfRangeException(nameof(aiMentality));
         if (!Enum.IsDefined(aiPolicy)) throw new ArgumentOutOfRangeException(nameof(aiPolicy));
-        if ((ruleRevisions & ~RuleRevisions.All) != 0)
-            throw new ArgumentOutOfRangeException(nameof(ruleRevisions));
 
         Scenario = scenario;
         Duration = duration;
@@ -82,7 +53,6 @@ public sealed class MatchSetup
         Players = players.ToArray();
         AiMentality = aiMentality;
         AiPolicy = aiPolicy;
-        RuleRevisions = ruleRevisions;
         AllowsSparsePlayerIds = allowSparsePlayerIds;
     }
 
@@ -92,11 +62,7 @@ public sealed class MatchSetup
     public IReadOnlyList<MatchPlayerSetup> Players { get; }
     public AiDifficulty AiMentality { get; }
     public AiPolicyMode AiPolicy { get; }
-    public RuleRevisions RuleRevisions { get; }
     public bool AllowsSparsePlayerIds { get; }
-
-    /// <summary>Whether the match plays <paramref name="revision"/> instead of the original rule.</summary>
-    public bool Revises(RuleRevisions revision) => (RuleRevisions & revision) == revision;
 
     internal MatchSetup WithController(PlayerId playerId, PlayerController controller)
     {
@@ -112,7 +78,6 @@ public sealed class MatchSetup
                 : player).ToArray(),
             AiMentality,
             AllowsSparsePlayerIds,
-            AiPolicy,
-            RuleRevisions);
+            AiPolicy);
     }
 }

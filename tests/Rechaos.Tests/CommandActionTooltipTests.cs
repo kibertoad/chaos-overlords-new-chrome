@@ -49,7 +49,7 @@ public sealed class CommandActionTooltipTests
     [InlineData(GangAction.Heal, "RESTORES FORCE TO 10")]
     [InlineData(GangAction.Move, "SIX")]
     [InlineData(GangAction.Terminate, "UPKEEP")]
-    [InlineData(GangAction.Equip, "ROSTER-SLOT ORDER")]
+    [InlineData(GangAction.Equip, "CLICK ORDER")]
     [InlineData(GangAction.Equip, "CASH >= PRICE")]
     public void TooltipsQuoteTheRuleValuesThatDriveTheCommand(GangAction action, string expected)
     {
@@ -67,24 +67,6 @@ public sealed class CommandActionTooltipTests
         Assert.Contains(lines, line => line.Contains("ON LATER TURNS"));
         Assert.Contains("EVERY UPKEEP, TOLERANCE MOVES ONE POINT", lines);
         Assert.Contains("BACK TOWARD ITS NORMAL VALUE.", lines);
-    }
-
-    // RULE-EQUIP-002 by default; DEV-EQUIP-001 once the match plays Revised rules.
-    [Theory]
-    [InlineData(RuleRevisions.None, "ROSTER-SLOT ORDER")]
-    [InlineData(RuleRevisions.TransactionsInOrderGiven, "CLICK ORDER")]
-    public void TheEquipTooltipDescribesTheOrderTheMatchResolvesPurchasesIn(
-        RuleRevisions revisions, string expected)
-    {
-        var state = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 1996,
-            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)],
-            allowSparsePlayerIds: true, ruleRevisions: revisions));
-
-        var lines = CommandActionTooltips.Lines(GangAction.Equip, state, state.Players[0].Gangs[0]);
-
-        Assert.Equal("EQUIP", lines[0]);
-        Assert.Contains(lines, line => line.Contains(expected));
     }
 
     [Fact]

@@ -12,7 +12,7 @@ internal static class OriginalAiHireRoleRules
     // differ by scenario (6, 5, 2, 10, and 5), even though every branch is the
     // same "do not immediately select another family-6 hire" guard. Comparing
     // with role 4 is the deliberate clean-room bug fix recorded in DECISIONS.md.
-    internal const int Family6HireRole = 4;
+    private const int Family6HireRole = 4;
 
     public static int CalculateHireGangLimit(
         ScenarioId scenario,
@@ -125,7 +125,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family5Count < 1
             || inputs.Family7Count < 1
-            || inputs.PreviousRole == inputs.HunterGuardRole(6);
+            || inputs.PreviousRole == Family6HireRole;
         if (!changesSix)
         {
             slot = 6;
@@ -214,7 +214,7 @@ internal static class OriginalAiHireRoleRules
         var changesFive = !inputs.HasVisibleHostileSector
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
-            || inputs.PreviousRole == inputs.HunterGuardRole(5);
+            || inputs.PreviousRole == Family6HireRole;
         if (!changesFive)
         {
             slot = 5;
@@ -254,7 +254,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.Family7Count < 1
-            || inputs.PreviousRole == inputs.HunterGuardRole(5);
+            || inputs.PreviousRole == Family6HireRole;
         if (!changesFive)
         {
             slot = 5;
@@ -295,7 +295,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family5Count < 1
             || inputs.Family7Count < 1
-            || inputs.PreviousRole == inputs.HunterGuardRole(2);
+            || inputs.PreviousRole == Family6HireRole;
         if (!changesTwo)
         {
             slot = 2;
@@ -335,7 +335,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.Family7Count < 1
-            || inputs.PreviousRole == inputs.HunterGuardRole(10);
+            || inputs.PreviousRole == Family6HireRole;
         if (!changesTen)
         {
             slot = 10;
@@ -419,11 +419,11 @@ internal readonly record struct OriginalAiHireRoleSelection(int RankingMode, int
 /// The hire role this player picked last turn, 0 to 6.
 /// <para>
 /// Selector <c>0x8f</c> is statically verified to read the prior role. The shipped
-/// planner compares it with the scenario-specific schedule-slot number whose result is role 4
-/// (BUG-AI-001). <paramref name="CorrectedHunterGuard"/> compares with role 4 instead (DEV-AI-001).
+/// planner incorrectly compares it with the scenario-specific schedule-slot number whose result is
+/// role 4. This recreation deliberately compares with role 4 instead, preventing consecutive
+/// family-6 hires without reproducing that original indexing defect.
 /// </para>
 /// </param>
-/// <param name="CorrectedHunterGuard">Whether the match plays DEV-AI-001.</param>
 internal readonly record struct OriginalAiHireAdjustmentInputs(
     int TurnsRemaining,
     int Cash,
@@ -437,13 +437,4 @@ internal readonly record struct OriginalAiHireAdjustmentInputs(
     int Family3Count,
     int Family6Or12Count,
     int Family0Or4Count,
-    GameDuration Duration,
-    bool CorrectedHunterGuard = false)
-{
-    /// <summary>
-    /// The role the hunter guard compares the previous hire role with: the scenario's schedule slot
-    /// number in the original (BUG-AI-001), or role 4, the family-6 hire, under DEV-AI-001.
-    /// </summary>
-    public int HunterGuardRole(int originalSlot) =>
-        CorrectedHunterGuard ? OriginalAiHireRoleRules.Family6HireRole : originalSlot;
-}
+    GameDuration Duration);

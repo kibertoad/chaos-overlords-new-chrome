@@ -216,8 +216,7 @@ public static class StatusConsolePresentation
     /// calculated from the current orders.
     /// </summary>
     public static IReadOnlyList<string> CashTooltip(
-        int cash, IReadOnlyList<QueuedCashSpend> spends, FinanceProjection projection,
-        bool transactionsInOrderGiven = false)
+        int cash, IReadOnlyList<QueuedCashSpend> spends, FinanceProjection projection)
     {
         ArgumentNullException.ThrowIfNull(spends);
         ArgumentNullException.ThrowIfNull(projection);
@@ -233,10 +232,7 @@ public static class StatusConsolePresentation
             "",
             $"[{unspent}] - UNSPENT: CASH LEFT AFTER QUEUED BRIBES AND EQUIPS.",
             $"  {cash} CASH - {bribes} BRIBES - {equips} EQUIPS = {unspent}",
-            // RULE-EQUIP-002 scans roster slots; DEV-EQUIP-001 follows the order given.
-            transactionsInOrderGiven
-                ? "  BRIBES PAY FIRST, THEN EQUIPS IN SUBMISSION ORDER."
-                : "  BRIBES PAY FIRST, THEN EQUIPS IN ROSTER-SLOT ORDER.",
+            "  BRIBES PAY FIRST, THEN EQUIPS IN SUBMISSION ORDER.",
             "  NO CASH IS RESERVED; EARLIER SELLS MAY FUND EQUIPS.",
             "  BELOW ZERO, A QUEUED PURCHASE MAY FAIL.",
             "",
@@ -268,15 +264,9 @@ public static class StatusConsolePresentation
     public static IReadOnlyList<QueuedCashSpend> QueuedCashSpends(
         MatchState state, MatchPlayerState player) => state.Commands.ExecutionPlan()
         // The plan is ordered by phase and then by sequence, so Instant Bribes precede every
-        // Transaction Equip. Equips then take the resolver's order: roster slot (RULE-EQUIP-002),
-        // or submission order under DEV-EQUIP-001.
+        // Transaction Equip and each group keeps the submission order the resolver uses.
         .Where(entry => entry.Command.Player == player.Id
             && entry.Command.Action is GangAction.Bribe or GangAction.Equip)
-        .OrderBy(entry => entry.Command.Action == GangAction.Equip ? 1 : 0)
-        .ThenBy(entry => entry.Command.Action == GangAction.Equip
-            && !state.Setup.Revises(RuleRevisions.TransactionsInOrderGiven)
-                ? RosterSlot(player, entry.Command.Gang)
-                : 0)
         .Select((entry, index) =>
         {
             var gang = state.FindGang(entry.Command.Gang)!;
@@ -288,13 +278,6 @@ public static class StatusConsolePresentation
             return new QueuedCashSpend(index + 1, gang.Id, gangName, GangAction.Equip,
                 item.Name, SpecialSiteRules.EquipmentCost(state, gang, item));
         }).ToArray();
-
-    private static int RosterSlot(MatchPlayerState player, GangId gang)
-    {
-        for (var slot = 0; slot < player.Gangs.Count; slot++)
-            if (player.Gangs[slot].Id == gang) return slot;
-        return player.Gangs.Count;
-    }
 
     public static int UnspentCash(MatchState state, MatchPlayerState player) =>
         UnspentCash(player, QueuedCashSpends(state, player));

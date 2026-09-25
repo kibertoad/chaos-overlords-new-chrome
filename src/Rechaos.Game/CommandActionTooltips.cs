@@ -36,8 +36,6 @@ public static class CommandActionTooltips
     public static IReadOnlyList<string> Lines(GangAction action, MatchState state, MatchGangState? gang)
     {
         ArgumentNullException.ThrowIfNull(state);
-        if (action == GangAction.Equip && state.Setup.Revises(RuleRevisions.TransactionsInOrderGiven))
-            return [Name(action), .. EquipInOrderGiven];
         var lines = Lines(action);
         if (action is not (GangAction.Bribe or GangAction.Snitch) || gang is null) return lines;
 
@@ -53,19 +51,6 @@ public static class CommandActionTooltips
             $"CURRENT {sector.Tolerance}; NORMAL TOLERANCE {normal}."
         ];
     }
-
-    // DEV-EQUIP-001: with Revised rules on, cash changes in the order the orders were given.
-    private static readonly string[] EquipInOrderGiven =
-    [
-        "BUYS AN ITEM: ONE WEAPON, ONE ARMOR, AND ONE MISC PER GANG.",
-        "REPLACING A FILLED SLOT DESTROYS THE ITEM ALREADY THERE.",
-        "PRICE = COST - TRUNC(COST / 3) IN YOUR SECTOR WITH AN INFLUENCED FACTORY.",
-        "QUEUING SPENDS NOTHING. PURCHASES USE YOUR CLICK ORDER.",
-        "AT THIS ORDER: CASH = START CASH - BRIBES - EARLIER EQUIPS",
-        "                         + EARLIER SELLS.",
-        "BUY IF CASH >= PRICE; OTHERWISE THE ORDER FAILS UNCHARGED.",
-        "LATER SELLS, CHAOS CASH, AND NEXT UPKEEP CANNOT FUND IT."
-    ];
 
     private static string Name(GangAction action) => action switch
     {
@@ -102,18 +87,16 @@ public static class CommandActionTooltips
             "DEFENDERS, SITE SUPPORT, AND SECTOR INCOME OPPOSE THE CLAIM.",
             "IT IS ILLEGAL DURING A CRACKDOWN OR IN A SECTOR YOU OWN."
         ],
-        // RULE-EQUIP-001, RULE-EQUIP-002: the transaction pass takes gangs in roster-slot order.
         GangAction.Equip =>
         [
             "BUYS AN ITEM: ONE WEAPON, ONE ARMOR, AND ONE MISC PER GANG.",
             "REPLACING A FILLED SLOT DESTROYS THE ITEM ALREADY THERE.",
             "PRICE = COST - TRUNC(COST / 3) IN YOUR SECTOR WITH AN INFLUENCED FACTORY.",
-            "QUEUING SPENDS NOTHING. PURCHASES AND SALES RESOLVE GANG BY",
-            "GANG IN ROSTER-SLOT ORDER; THE ORDER YOU CLICKED IS IGNORED.",
-            "AT THIS GANG: CASH = START CASH - BRIBES - EQUIPS OF",
-            "              EARLIER SLOTS + SELLS OF EARLIER SLOTS.",
+            "QUEUING SPENDS NOTHING. PURCHASES USE YOUR CLICK ORDER.",
+            "AT THIS ORDER: CASH = START CASH - BRIBES - EARLIER EQUIPS",
+            "                         + EARLIER SELLS.",
             "BUY IF CASH >= PRICE; OTHERWISE THE ORDER FAILS UNCHARGED.",
-            "LATER SLOTS' SELLS, CHAOS CASH, AND NEXT UPKEEP CANNOT FUND IT."
+            "LATER SELLS, CHAOS CASH, AND NEXT UPKEEP CANNOT FUND IT."
         ],
         GangAction.Give =>
         [

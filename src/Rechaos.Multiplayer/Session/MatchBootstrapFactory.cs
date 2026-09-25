@@ -47,8 +47,7 @@ public static class MatchBootstrapFactory
         }
         return new MatchSetup(
             settings.Scenario, settings.Duration, seed, setups, settings.AiMentality,
-            aiPolicy: settings.AiPolicy,
-            ruleRevisions: settings.RuleRevisions);
+            aiPolicy: settings.AiPolicy);
     }
 
     /// <summary>The match, generated from the setup, with hire offers drawn for every seat.</summary>

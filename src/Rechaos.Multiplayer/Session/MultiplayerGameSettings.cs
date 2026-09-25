@@ -34,8 +34,7 @@ public sealed record MultiplayerGameSettings(
     AiDifficulty AiMentality,
     IReadOnlyList<short> Portraits,
     AiPolicyMode AiPolicy = AiPolicyMode.Original,
-    bool AllowLateJoin = false,
-    RuleRevisions RuleRevisions = RuleRevisions.None)
+    bool AllowLateJoin = false)
 {
     private static JsonSerializerOptions ReadOptions { get; } = new(WireJson.Options)
     {
@@ -49,7 +48,7 @@ public sealed record MultiplayerGameSettings(
         JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
             JsonSerializer.Serialize(new Wire(
                 (int)Scenario, (int)Duration, (int)AiMentality, [.. Portraits],
-                (int)AiPolicy, AllowLateJoin, (int)RuleRevisions),
+                (int)AiPolicy, AllowLateJoin),
                 WireJson.Options),
             WireJson.Options)!;
 
@@ -75,20 +74,7 @@ public sealed record MultiplayerGameSettings(
             wire.AiPolicy is { } aiPolicy
                 ? Defined<AiPolicyMode>(aiPolicy, nameof(wire.AiPolicy))
                 : AiPolicyMode.Original,
-            wire.AllowLateJoin,
-            wire.RuleRevisions is { } revisions
-                ? DefinedRevisions(revisions)
-                : RuleRevisions.None);
-    }
-
-    private static RuleRevisions DefinedRevisions(int value)
-    {
-        if (value is < 0 or > byte.MaxValue || (value & ~(int)RuleRevisions.All) != 0)
-        {
-            throw new MultiplayerProtocolException(
-                $"the match's rule revisions are {value}, which this build of the game does not have");
-        }
-        return (RuleRevisions)value;
+            wire.AllowLateJoin);
     }
 
     private static TEnum Defined<TEnum>(int value, string field) where TEnum : struct, Enum
@@ -130,6 +116,5 @@ public sealed record MultiplayerGameSettings(
         int AiMentality,
         short[] Portraits,
         int? AiPolicy = null,
-        bool AllowLateJoin = false,
-        int? RuleRevisions = null);
+        bool AllowLateJoin = false);
 }

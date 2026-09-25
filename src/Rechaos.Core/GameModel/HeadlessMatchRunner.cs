@@ -11,8 +11,7 @@ public sealed record HeadlessMatchOptions(
     AiPolicyMode AiPolicy = AiPolicyMode.Original,
     int? ThroughTurn = null,
     bool VerifyReplay = false,
-    int ProgressEveryTurns = 10,
-    RuleRevisions RuleRevisions = RuleRevisions.None);
+    int ProgressEveryTurns = 10);
 
 /// <summary>A stable progress point emitted at an upkeep boundary.</summary>
 public sealed record HeadlessMatchProgress(
@@ -56,8 +55,7 @@ public static class HeadlessMatchRunner
         ];
         var setup = new MatchSetup(
             options.Scenario, options.Duration, options.Seed, players,
-            aiPolicy: options.AiPolicy,
-            ruleRevisions: options.RuleRevisions);
+            aiPolicy: options.AiPolicy);
         var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(definitions, setup));
         var boundaries = 0;
         var lastReportedTurn = 0;
