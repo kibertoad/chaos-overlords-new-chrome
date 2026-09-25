@@ -28,6 +28,9 @@ internal sealed class RollingAutoSave
         bool trustExistingPrimary);
 
     private readonly Writer _write;
+
+    /// <summary>The cross-process guard of the file, when this queue writes a real one.</summary>
+    internal AutoSaveFileGuard? Guard { get; }
     private readonly Action<int, Exception> _reportFailure;
     private Task? _task;
     private Snapshot? _pending;
@@ -47,20 +50,32 @@ internal sealed class RollingAutoSave
     private bool _primaryVerified;
 
     public RollingAutoSave(string path, Action<int, Exception> reportFailure)
+        : this(new AutoSaveFileGuard(path), reportFailure)
+    {
+    }
+
+    /// <remarks>
+    /// Every write goes through <paramref name="guard"/>, so a second copy of the rebuild waits
+    /// for this one's write to finish, and a primary that copy replaced is not trusted as this
+    /// process's own (DEV-UI-015).
+    /// </remarks>
+    internal RollingAutoSave(AutoSaveFileGuard guard, Action<int, Exception> reportFailure)
         : this(
-            (snapshot, definitions, row, trustExistingPrimary) =>
-            {
-                NativeSaveStore.SaveAtomic(path, snapshot, definitions, trustExistingPrimary);
-                // The sidecar describes the file that has just been promoted, so it is written
-                // here rather than on the game thread: what it records for the staleness check is
-                // that file's own length and write time, and only this thread knows when the
-                // promotion happened. It never throws, and never stands between a durable
-                // generation and the next one.
-                SaveSlotCatalog.WriteAutoSaveMetadata(path, row, definitions);
-            },
+            (snapshot, definitions, row, trustExistingPrimary) => guard.Write(
+                trustExistingPrimary,
+                trust =>
+                {
+                    NativeSaveStore.SaveAtomic(guard.Path, snapshot, definitions, trust);
+                    // The sidecar describes the file that has just been promoted, so it is
+                    // written here rather than on the game thread: what it records for the
+                    // staleness check is that file's own length and write time, and only this
+                    // thread knows when the promotion happened. It never throws, and never
+                    // stands between a durable generation and the next one.
+                    SaveSlotCatalog.WriteAutoSaveMetadata(guard.Path, row, definitions);
+                }),
             reportFailure)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        Guard = guard;
     }
 
     internal RollingAutoSave(Writer write, Action<int, Exception> reportFailure)
@@ -115,6 +130,17 @@ internal sealed class RollingAutoSave
     /// turn loop.
     /// </remarks>
     public void Flush() => ObserveCompleted(wait: true);
+
+    /// <summary>
+    /// Loads the autosave under the lock its writers take, after this process's own writes have
+    /// finished, so no other copy of the rebuild renames a generation over it mid-read.
+    /// </summary>
+    public T Load<T>(Func<T> load)
+    {
+        ArgumentNullException.ThrowIfNull(load);
+        Flush();
+        return Guard is { } guard ? guard.Read(load) : load();
+    }
 
     /// <summary>
     /// Forgets that this process verified the file, after a load replaced it or left it damaged.

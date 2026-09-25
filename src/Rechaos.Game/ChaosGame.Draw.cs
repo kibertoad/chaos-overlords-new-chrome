@@ -47,7 +47,8 @@ public sealed partial class ChaosGame
             _batch.End();
 
             var panelTransform = Matrix.CreateTranslation(slideOffset, 0, 0) * fixedTransform;
-            _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: panelTransform);
+            _batch.Begin(samplerState: SamplerState.PointClamp,
+                rasterizerState: SlideClip(viewport, slideOffset), transformMatrix: panelTransform);
             DrawGangDetailsPanel(_batch, _pixel, _font, _state);
             _batch.End();
 
@@ -69,12 +70,73 @@ public sealed partial class ChaosGame
             CompleteDraw(gameTime);
             return;
         }
-        var transform = Matrix.CreateTranslation(slideOffset, 0, 0)
-            * VirtualInput.Transform(viewport);
-        _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
-        _batch.Draw(_pixel, new Rectangle(0, 0, 640, 460), new Color(8, 10, 12));
-        switch (_screens.Current)
+        var fixedScreen = VirtualInput.Transform(viewport);
+        var transform = Matrix.CreateTranslation(slideOffset, 0, 0) * fixedScreen;
+        if (slideOffset > 0)
         {
+            // RULE-UI-003: the screen the panel opened from stays in place, and each copy adds
+            // only the panel's left columns, cut off at its right edge.
+            _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: fixedScreen);
+            DrawSlideBackdrop();
+            _batch.End();
+            _batch.Begin(samplerState: SamplerState.PointClamp,
+                rasterizerState: SlideClip(viewport, slideOffset), transformMatrix: transform);
+            DrawScreenBody(_screens.Current);
+            _batch.End();
+            _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: fixedScreen);
+            DrawScreenOverlays(_batch, _pixel, _font);
+            _batch.End();
+            CompleteDraw(gameTime);
+            return;
+        }
+        _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
+        DrawScreenBody(_screens.Current);
+        DrawScreenOverlays(_batch, _pixel, _font);
+        _batch.End();
+        CompleteDraw(gameTime);
+    }
+
+    private static readonly RasterizerState SlideClipRasterizer = new()
+    {
+        CullMode = CullMode.None,
+        ScissorTestEnable = true
+    };
+
+    /// <summary>
+    /// RULE-UI-003: the rasterizer that limits a sliding panel's pass to the columns the copy at
+    /// <paramref name="slideOffset"/> reveals, or null when no panel is sliding.
+    /// </summary>
+    private RasterizerState? SlideClip(Viewport viewport, int slideOffset)
+    {
+        if (slideOffset <= 0) return null;
+        var visible = PanelSlideTransition.VisibleArea(_panelSlideTransition.PanelArea, slideOffset);
+        GraphicsDevice.ScissorRectangle = Rectangle.Intersect(
+            VirtualInput.ToPhysical(viewport, visible), viewport.Bounds);
+        return SlideClipRasterizer;
+    }
+
+    /// <summary>
+    /// The screen a sliding panel opened from, drawn in place under it (RULE-UI-003). The Last
+    /// Turn Events panel is composed in several passes, so the city board stands in for it.
+    /// </summary>
+    private void DrawSlideBackdrop()
+    {
+        var previous = _panelSlideTransition.Previous ?? ClientScreen.City;
+        if (previous == ClientScreen.Events) previous = ClientScreen.City;
+        DrawScreenBody(previous);
+    }
+
+    /// <summary>Draws one screen's background and content, without the overlays.</summary>
+    private void DrawScreenBody(ClientScreen screen)
+    {
+        if (_batch is null || _pixel is null || _font is null) return;
+        _batch.Draw(_pixel, new Rectangle(0, 0, 640, 460), new Color(8, 10, 12));
+        switch (screen)
+        {
+            case ClientScreen.Gang when _state is not null:
+                DrawGangDetailsBackdrop(_batch, _pixel, _font, _state);
+                DrawGangDetailsPanel(_batch, _pixel, _font, _state);
+                break;
             case ClientScreen.Title:
                 DrawTitle(_batch, _pixel, _font);
                 break;
@@ -154,10 +216,8 @@ public sealed partial class ChaosGame
                 DrawSearch(_batch, _pixel, _font, _state);
                 break;
         }
-        DrawScreenOverlays(_batch, _pixel, _font);
-        _batch.End();
-        CompleteDraw(gameTime);
     }
+
 
     /// <summary>What sits above every screen: combat playback, the timer, votes, menu, reconnect.</summary>
     private void DrawScreenOverlays(SpriteBatch batch, Texture2D pixel, PixelFont font)

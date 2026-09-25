@@ -90,6 +90,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
     private readonly DetailedCombatExit _combatExit = new();
     private readonly PanelSlideTransition _panelSlideTransition = new();
+    private readonly GangSightSnapshotCache _gangSight = new();
     private MatchState? _state;
     /// <summary>
     /// Where a player's mutations go, and the only handle on the match's recorder.
@@ -239,6 +240,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _screens.Changed += (previous, current) =>
         {
             if (!KeepsGangSelection(current)) _gangSelection.Clear();
+            // A pressed face acts on the screen it was pressed on; if something else moved the
+            // screen during the wait, the key's action is dropped.
+            _tickedPresentation.Clear();
             _citySectorClicks.Cancel();
             _sectorSiteClicks.Cancel();
             _sectorGangClicks.Cancel();
@@ -494,6 +498,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _combatExit.Reset();
         if (_automaticDetailedCombatPresentation)
             FinishAutomaticCombatPresentation();
+        // RULE-TIMER-004: the original handles no message while a pressed face or a flash waits
+        // on the presentation clock, so this frame's keys and clicks are dropped.
+        if (UpdateTickedPresentation())
+        {
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
+        }
         if (rightClicked && !_gameMenuOpen) CancelCurrentInteraction();
         if (_gameMenuOpen)
         {
@@ -599,7 +610,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     }
                     if (Pressed(keyboard, Keys.Enter)
                         || (CommandPanelOpen && Pressed(keyboard, Keys.Execute)))
-                        ActivateCommandSelection();
+                        ConfirmCommandsByKey();
                     if (Pressed(keyboard, Keys.Back))
                         AcceptAndInvoke(BackFromCommands);
                     break;
@@ -607,8 +618,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveHireCursor(1);
                     if (Pressed(keyboard, Keys.S)) SnubSelectedHireOffer();
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        AcceptAndShow(_managementReturnScreen);
+                    if (Pressed(keyboard, Keys.Back)) AcceptAndShow(_managementReturnScreen);
+                    // FND-HIRE-009: Enter or Execute presses the OK face for one tick, then closes.
+                    else if (PressedEnterOrExecute(keyboard))
+                        PressKeyFace(PressedKeyFace.Confirm, HireComparisonLayout.Ok.Location,
+                            () => _screens.Show(_managementReturnScreen));
                     break;
                 case ClientScreen.Sector:
                     UpdateSector(keyboard);
@@ -628,9 +642,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) CycleGangDetails(-1);
                         if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) CycleGangDetails(1);
                     }
-                    // SCR-GANG-001, SCR-GANG-002: Enter or Execute presses the close face.
-                    if (Pressed(keyboard, Keys.Back) || PressedEnterOrExecute(keyboard))
-                        AcceptAndInvoke(CloseGangDetails);
+                    // SCR-GANG-001, SCR-GANG-002: Enter or Execute presses the close face for one
+                    // tick before the panel closes (FND-GANG-006, FND-GANG-010).
+                    if (Pressed(keyboard, Keys.Back)) AcceptAndInvoke(CloseGangDetails);
+                    else if (PressedEnterOrExecute(keyboard))
+                        PressKeyFace(PressedKeyFace.Confirm, GangDetailsOk.Location, CloseGangDetails);
                     break;
                 case ClientScreen.Site:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
@@ -650,8 +666,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         AcceptAndShow(_managementReturnScreen);
                     break;
                 case ClientScreen.Ranking:
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        AcceptAndShow(_managementReturnScreen);
+                    // FND-OBJECTIVE-005: Enter or Execute presses the button for one tick, then
+                    // closes.
+                    if (Pressed(keyboard, Keys.Back)) AcceptAndShow(_managementReturnScreen);
+                    else if (PressedEnterOrExecute(keyboard))
+                        PressKeyFace(PressedKeyFace.Confirm, PlayerRankingLayout.Ok.Location,
+                            () => _screens.Show(_managementReturnScreen));
                     break;
                 case ClientScreen.Items:
                     if (Pressed(keyboard, Keys.Up)) MoveItemCursor(-1);
@@ -671,7 +691,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Up)) MoveGiveCursor(-1);
                     if (Pressed(keyboard, Keys.Down)) MoveGiveCursor(1);
                     if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute))
-                        QueueSelectedGive();
+                        ConfirmCommandPanelByKey();
                     if (Pressed(keyboard, Keys.Back))
                         AcceptAndInvoke(CloseGiveEquipment);
                     break;
@@ -686,7 +706,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.D2)) ToggleSellSelection(1);
                     if (Pressed(keyboard, Keys.D3)) ToggleSellSelection(2);
                     if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute))
-                        QueueSelectedSale();
+                        ConfirmCommandPanelByKey();
                     if (Pressed(keyboard, Keys.Back))
                         AcceptAndInvoke(CloseSellEquipment);
                     break;

@@ -50,24 +50,26 @@ public static class GangStatusMarkerPresentation
     /// gangs, the idle test reads every friendly gang without an order, and a pending hire marks
     /// its target sector.
     /// </summary>
-    public static int[] MapFrames(MatchState state, PlayerId player)
+    public static int[] MapFrames(MatchState state, PlayerId player) =>
+        MapFrames(state, player, GangSightSnapshot.Capture(state, player));
+
+    /// <summary>
+    /// RULE-UI-006 with presence and enemy sight read from <paramref name="sight"/>, the
+    /// <c>gangs_seen</c> bytes as they stood when the snapshot was taken. The idle test and the
+    /// incoming hires are read from the match as it is now, as the original reads the gang
+    /// records and <c>hire_orders</c> on every draw.
+    /// </summary>
+    public static int[] MapFrames(MatchState state, PlayerId player, GangSightSnapshot sight)
     {
         ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(sight);
         var owner = state.FindPlayer(player) ?? throw new ArgumentOutOfRangeException(nameof(player));
         var inputs = new SectorMarkerInputs[MatchLimits.SectorCount];
-        foreach (var gang in owner.Gangs.Where(gang => gang.IsActive))
-        {
-            var current = inputs[gang.SectorId];
-            inputs[gang.SectorId] = current with
-            {
-                PlayerPresent = true,
-                IdleGang = current.IdleGang || gang.QueuedCommand is null
-            };
-        }
-        foreach (var other in state.Players.Where(other => other.Id != player))
-        foreach (var gang in other.Gangs.Where(gang => gang.IsActive))
-            if (!inputs[gang.SectorId].EnemySeen && state.CanPlayerDetectGang(player, gang.Id))
-                inputs[gang.SectorId] = inputs[gang.SectorId] with { EnemySeen = true };
+        for (var sector = 0; sector < inputs.Length; sector++)
+            inputs[sector] = new SectorMarkerInputs(
+                sight.PlayerPresent(sector), sight.EnemySeen(sector), false, false);
+        foreach (var gang in owner.Gangs.Where(gang => gang.IsActive && gang.QueuedCommand is null))
+            inputs[gang.SectorId] = inputs[gang.SectorId] with { IdleGang = true };
         foreach (var pending in owner.PendingHires)
             inputs[pending.TargetSectorId] = inputs[pending.TargetSectorId] with { IncomingHire = true };
         return MapFrames(inputs);

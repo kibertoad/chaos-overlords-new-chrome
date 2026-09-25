@@ -69,11 +69,20 @@ public sealed partial class ChaosGame
     {
         switch (IdleGangWarningPolicy.KeyboardChoice(keyboard, _previousKeyboard))
         {
+            // FND-UI-024: the keys go through fn_00418CCC, which shows the face pressed for one
+            // tick of the presentation clock before the panel acts (RULE-TIMER-004).
             case IdleGangWarningChoice.Confirm:
-                ConfirmIdleGangWarning();
+                PressKeyFace(PressedKeyFace.Confirm, IdleGangWarningLayout.Ok.Location, () =>
+                {
+                    // The planning timer may have closed the warning during the wait.
+                    if (_idleGangWarningOpen) ConfirmIdleGangWarning();
+                });
                 break;
             case IdleGangWarningChoice.Cancel:
-                CancelIdleGangWarning();
+                PressKeyFace(PressedKeyFace.Cancel, IdleGangWarningLayout.Cancel.Location, () =>
+                {
+                    if (_idleGangWarningOpen) CancelIdleGangWarning();
+                });
                 break;
         }
     }

@@ -51,19 +51,15 @@ DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay
 
 ## Step 10: Screens
 
-The screens and interface rules were compared with the findings #181 recorded. What is left:
+The screens and interface rules were compared with the findings #181 recorded. What is left
+needs static reads or captures of the original:
 
-- RULE-UI-003: clip the sliding panel at x 448 so only its left columns show, as the original's
-  copies do.
-- RULE-UI-006: take enemy visibility for the gang-status markers from the snapshot made when
-  planning starts.
-- RULE-TIMER-004: the pressed key faces (fn_00418CCC) and the cell and site flashes (FND-UI-017,
-  FND-UI-018), with their one-tick waits.
-- Static reads the screens wait on: SCR-GANG-001's half-tone pattern (its PLACEHOLDER), SCR-GIVE-001's
-  list background and dimming pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's
-  police portrait and header strips.
-- Two copies of the rebuild (DEV-UI-015) share the rolling autosave file, and the autosave
-  assumes only its own process writes it; give each process its own guard.
+- RULE-TIMER-004: how much lighter a flash copy is and the order of the city-cell copies
+  (FND-UI-017); the pressed faces of Influence's Escape, Move and Research, which no finding
+  records.
+- SCR-GANG-001's half-tone pattern (its PLACEHOLDER), SCR-GIVE-001's list background and dimming
+  pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's police portrait and
+  header strips.
 
 ## Step 11: Deviations for what the rebuild does not reproduce
 

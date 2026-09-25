@@ -216,7 +216,8 @@ public sealed partial class ChaosGame
         }
         DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
         // RULE-UI-006: the markers the map keeps after drawing every sector in number order.
-        var markerFrames = GangStatusMarkerPresentation.MapFrames(state, player.Id);
+        var markerFrames = GangStatusMarkerPresentation.MapFrames(
+            state, player.Id, _gangSight.For(state, player.Id));
         for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
             if (markerFrames[sectorId] >= 0)
                 DrawGangStatusMarker(batch, sectorId, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]));
@@ -436,7 +437,7 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.IncomingGangStatus, Color.White);
     }
 
-    private static Rectangle GangStatusSource(
+    private Rectangle GangStatusSource(
         MatchState state,
         PlayerId viewer,
         int sectorId,
@@ -444,12 +445,8 @@ public sealed partial class ChaosGame
         bool hasPendingHire)
     {
         var hasIdleGang = friendlyGangs.Any(gang => gang.QueuedCommand is null);
-        var hasDetectedEnemyGang = state.Players
-            .Where(player => player.Id != viewer)
-            .SelectMany(player => player.Gangs)
-            .Any(gang => gang.IsActive
-                && gang.SectorId == sectorId
-                && state.CanPlayerDetectGang(viewer, gang.Id));
+        // RULE-UI-006: enemy sight comes from the snapshot taken when planning started.
+        var hasDetectedEnemyGang = _gangSight.For(state, viewer).EnemySeen(sectorId);
         return GangStatusMarkerPresentation.Source(
             hasIdleGang, hasDetectedEnemyGang, hasPendingHire);
     }
