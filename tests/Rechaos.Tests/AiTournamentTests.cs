@@ -20,8 +20,8 @@ public sealed class AiTournamentTests
     [
         ScenarioId.KillEmAll,
         ScenarioId.Big40,
-        ScenarioId.Eliminate,
         ScenarioId.Siege,
+        ScenarioId.Eliminate,
         ScenarioId.BigMan,
         ScenarioId.Armageddon
     ];
@@ -62,8 +62,8 @@ public sealed class AiTournamentTests
     [Theory]
     [InlineData(ScenarioId.KillEmAll)]
     [InlineData(ScenarioId.Big40)]
-    [InlineData(ScenarioId.Eliminate)]
     [InlineData(ScenarioId.Siege)]
+    [InlineData(ScenarioId.Eliminate)]
     [InlineData(ScenarioId.BigMan)]
     [InlineData(ScenarioId.Armageddon)]
     public void SixComputerObjectiveMatchRunsDeterministicReplayWindow(
@@ -83,8 +83,8 @@ public sealed class AiTournamentTests
     [Theory]
     [InlineData(ScenarioId.KillEmAll)]
     [InlineData(ScenarioId.Big40)]
-    [InlineData(ScenarioId.Eliminate)]
     [InlineData(ScenarioId.Siege)]
+    [InlineData(ScenarioId.Eliminate)]
     [InlineData(ScenarioId.BigMan)]
     [InlineData(ScenarioId.Armageddon)]
     public void SixComputerObjectiveCampaignMakesProgressWithLiveHiring(

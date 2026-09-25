@@ -60,10 +60,10 @@ internal static class OriginalAiScenarioStandingRules
                 ControlledSectorCount(state, player.Id),
             ScenarioId.Acceptance => player.Support,
             ScenarioId.Dominance => DominanceScore(state, player),
-            ScenarioId.KillEmAll or ScenarioId.Siege =>
+            ScenarioId.KillEmAll or ScenarioId.Eliminate =>
                 MatchLimits.PlayerCount - state.Players.Count(candidate =>
                     candidate.Status == PlayerStatus.Active),
-            ScenarioId.Eliminate => OriginalCityGenerator.HeadquartersCandidates.Count(
+            ScenarioId.Siege => OriginalCityGenerator.HeadquartersCandidates.Count(
                 sectorId => state.Sectors[sectorId].Owner == player.Id),
             ScenarioId.BigMan => player.BigManPoints,
             _ => throw new ArgumentOutOfRangeException()

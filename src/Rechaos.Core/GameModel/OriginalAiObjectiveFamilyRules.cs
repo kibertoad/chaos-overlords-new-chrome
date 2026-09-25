@@ -19,7 +19,7 @@ internal static class OriginalAiObjectiveFamilyRules
         return scenario switch
         {
             ScenarioId.BigMan => sectorId is 27 or 28 or 35 or 36,
-            ScenarioId.Eliminate => OriginalCityGenerator.HeadquartersCandidates.Contains(sectorId),
+            ScenarioId.Siege => OriginalCityGenerator.HeadquartersCandidates.Contains(sectorId),
             _ => false
         };
     }
@@ -28,11 +28,11 @@ internal static class OriginalAiObjectiveFamilyRules
         (scenario, family) switch
         {
             (ScenarioId.BigMan, 13) => 12,
-            (ScenarioId.Eliminate, 13) => 13,
+            (ScenarioId.Siege, 13) => 13,
             (ScenarioId.BigMan, 14) => 14,
-            (ScenarioId.Eliminate, 14) => 15,
+            (ScenarioId.Siege, 14) => 15,
             (_, 13 or 14) => throw new ArgumentException(
-                "Objective families are only dispatched by Big Man and Eliminate.",
+                "Objective families are only dispatched by Big Man and Siege.",
                 nameof(scenario)),
             _ => throw new ArgumentOutOfRangeException(nameof(family))
         };

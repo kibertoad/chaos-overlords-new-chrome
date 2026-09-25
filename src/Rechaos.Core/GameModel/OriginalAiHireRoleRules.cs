@@ -57,8 +57,8 @@ internal static class OriginalAiHireRoleRules
                 && ScenarioCatalog.Turns(duration) / 8 < turnsRemaining,
             ScenarioId.Power or ScenarioId.Acceptance or ScenarioId.Dominance =>
                 activeGangCount <= hireGangLimit && turnsRemaining > 2,
-            ScenarioId.KillEmAll or ScenarioId.Big40 or ScenarioId.Eliminate
-                or ScenarioId.Siege or ScenarioId.Armageddon =>
+            ScenarioId.KillEmAll or ScenarioId.Big40 or ScenarioId.Siege
+                or ScenarioId.Eliminate or ScenarioId.Armageddon =>
                 activeGangCount <= hireGangLimit,
             // The original Big Man case enters its turn schedule directly.
             ScenarioId.BigMan => true,
@@ -76,8 +76,8 @@ internal static class OriginalAiHireRoleRules
                 SelectPowerAdjusted(scenario, turn, inputs),
             ScenarioId.Acceptance => SelectAcceptanceAdjusted(turn, inputs),
             ScenarioId.Dominance => SelectDominanceAdjusted(turn, inputs),
-            ScenarioId.Eliminate => SelectEliminateAdjusted(turn, inputs),
             ScenarioId.Siege => SelectSiegeAdjusted(turn, inputs),
+            ScenarioId.Eliminate => SelectEliminateAdjusted(turn, inputs),
             ScenarioId.BigMan => SelectBigManAdjusted(turn, inputs),
             ScenarioId.Armageddon => SelectArmageddonAdjusted(turn, inputs),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, null)
@@ -93,8 +93,8 @@ internal static class OriginalAiHireRoleRules
             ScenarioId.Power or ScenarioId.KillEmAll or ScenarioId.Big40 => Power,
             ScenarioId.Acceptance => Acceptance,
             ScenarioId.Dominance => Dominance,
-            ScenarioId.Eliminate => Eliminate,
             ScenarioId.Siege => Siege,
+            ScenarioId.Eliminate => Eliminate,
             ScenarioId.BigMan => BigMan,
             ScenarioId.Armageddon => Armageddon,
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, null)
@@ -148,9 +148,9 @@ internal static class OriginalAiHireRoleRules
     }
 
     /// <summary>
-    /// Applies the instruction-verified Eliminate adjustment block.
+    /// Applies the instruction-verified Siege adjustment block.
     /// </summary>
-    public static OriginalAiHireRoleSelection SelectEliminateAdjusted(
+    public static OriginalAiHireRoleSelection SelectSiegeAdjusted(
         int turn,
         OriginalAiHireAdjustmentInputs inputs)
     {
@@ -162,13 +162,13 @@ internal static class OriginalAiHireRoleRules
         if (slot == 4 && inputs.Family7Count >= durationFactor) slot = 0;
         if (inputs.Family0Or4Count < 4) slot = 0;
 
-        return Eliminate[slot];
+        return Siege[slot];
     }
 
     /// <summary>
-    /// Applies the instruction-verified Siege adjustment block.
+    /// Applies the instruction-verified Eliminate adjustment block.
     /// </summary>
-    public static OriginalAiHireRoleSelection SelectSiegeAdjusted(
+    public static OriginalAiHireRoleSelection SelectEliminateAdjusted(
         int turn,
         OriginalAiHireAdjustmentInputs inputs)
     {
@@ -184,7 +184,7 @@ internal static class OriginalAiHireRoleRules
         if (inputs.Family0Or4Count < 5) slot = 0;
         if (inputs.Family6Or12Count < 1) slot = 5;
 
-        return Siege[slot];
+        return Eliminate[slot];
     }
 
     /// <summary>
@@ -385,13 +385,13 @@ internal static class OriginalAiHireRoleRules
         S(2, 2), S(0, 1), S(2, 5), S(0, 1), S(3, 4)
     ];
 
-    private static readonly OriginalAiHireRoleSelection[] Eliminate =
+    private static readonly OriginalAiHireRoleSelection[] Siege =
     [
         S(0, 0), S(1, 2), S(0, 0), S(1, 2), S(4, 6),
         S(1, 1), S(1, 2), S(0, 0), S(1, 1), S(2, 5)
     ];
 
-    private static readonly OriginalAiHireRoleSelection[] Siege =
+    private static readonly OriginalAiHireRoleSelection[] Eliminate =
     [
         S(0, 1), S(4, 6), S(0, 1), S(2, 2), S(0, 1),
         S(3, 4), S(2, 2), S(3, 4), S(2, 2), S(5, 3)

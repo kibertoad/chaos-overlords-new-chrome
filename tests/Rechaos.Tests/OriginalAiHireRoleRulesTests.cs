@@ -12,8 +12,8 @@ public sealed class OriginalAiHireRoleRulesTests
     [InlineData(ScenarioId.Dominance, 3, 6)]
     [InlineData(ScenarioId.KillEmAll, 3, 12)]
     [InlineData(ScenarioId.Big40, 3, 12)]
-    [InlineData(ScenarioId.Eliminate, 3, 12)]
     [InlineData(ScenarioId.Siege, 3, 12)]
+    [InlineData(ScenarioId.Eliminate, 3, 12)]
     [InlineData(ScenarioId.BigMan, 3, 12)]
     [InlineData(ScenarioId.Armageddon, 21, 80)]
     public void NeutralSectorHireLimitUsesOriginalScenarioMultiplier(
@@ -44,8 +44,8 @@ public sealed class OriginalAiHireRoleRulesTests
         { ScenarioId.Dominance, [(0, 1), (0, 1), (2, 5), (2, 2), (4, 6), (3, 3), (2, 2), (0, 1), (2, 5), (0, 1), (3, 4)] },
         { ScenarioId.KillEmAll, [(0, 0), (1, 1), (0, 0), (0, 0), (4, 6), (0, 0), (3, 4), (0, 0), (3, 3), (2, 5)] },
         { ScenarioId.Big40, [(0, 0), (1, 1), (0, 0), (0, 0), (4, 6), (0, 0), (3, 4), (0, 0), (3, 3), (2, 5)] },
-        { ScenarioId.Eliminate, [(0, 0), (1, 2), (0, 0), (1, 2), (4, 6), (1, 1), (1, 2), (0, 0), (1, 1), (2, 5)] },
-        { ScenarioId.Siege, [(0, 1), (4, 6), (0, 1), (2, 2), (0, 1), (3, 4), (2, 2), (3, 4), (2, 2), (5, 3)] },
+        { ScenarioId.Siege, [(0, 0), (1, 2), (0, 0), (1, 2), (4, 6), (1, 1), (1, 2), (0, 0), (1, 1), (2, 5)] },
+        { ScenarioId.Eliminate, [(0, 1), (4, 6), (0, 1), (2, 2), (0, 1), (3, 4), (2, 2), (3, 4), (2, 2), (5, 3)] },
         { ScenarioId.BigMan, [(0, 0), (1, 2), (0, 0), (1, 1), (1, 1), (2, 3), (1, 2), (0, 0), (1, 1), (1, 2)] },
         { ScenarioId.Armageddon, [(0, 0), (1, 1), (0, 0), (3, 3), (0, 0), (3, 4), (0, 0), (3, 3), (0, 0), (2, 5)] }
     };
@@ -80,8 +80,8 @@ public sealed class OriginalAiHireRoleRulesTests
     [Theory]
     [InlineData(ScenarioId.KillEmAll)]
     [InlineData(ScenarioId.Big40)]
-    [InlineData(ScenarioId.Eliminate)]
     [InlineData(ScenarioId.Siege)]
+    [InlineData(ScenarioId.Eliminate)]
     [InlineData(ScenarioId.Armageddon)]
     public void UntimedBranchesUseInclusiveGangLimit(ScenarioId scenario)
     {
@@ -222,13 +222,13 @@ public sealed class OriginalAiHireRoleRulesTests
 
         Assert.Equal(
             new OriginalAiHireRoleSelection(0, 0),
-            OriginalAiHireRoleRules.SelectEliminateAdjusted(turn, inputs));
+            OriginalAiHireRoleRules.SelectSiegeAdjusted(turn, inputs));
     }
 
     [Fact]
     public void EliminateDurationFactorScalesQuota()
     {
-        var result = OriginalAiHireRoleRules.SelectEliminateAdjusted(
+        var result = OriginalAiHireRoleRules.SelectSiegeAdjusted(
             turn: 9,
             PowerInputs(duration: GameDuration.FourYears, family5Count: 11));
 
@@ -238,7 +238,7 @@ public sealed class OriginalAiHireRoleRulesTests
     [Fact]
     public void EliminateMinimumBaseFamilyCountOverridesOtherSlots()
     {
-        var result = OriginalAiHireRoleRules.SelectEliminateAdjusted(
+        var result = OriginalAiHireRoleRules.SelectSiegeAdjusted(
             turn: 1,
             PowerInputs(family0Or4Count: 3));
 
@@ -253,7 +253,7 @@ public sealed class OriginalAiHireRoleRulesTests
     {
         Assert.Equal(
             new OriginalAiHireRoleSelection(0, 1),
-            OriginalAiHireRoleRules.SelectSiegeAdjusted(
+            OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn,
                 PowerInputs(family3Count: 4, family6Or12Count: 1)));
     }
@@ -265,7 +265,7 @@ public sealed class OriginalAiHireRoleRulesTests
     {
         Assert.Equal(
             new OriginalAiHireRoleSelection(0, 1),
-            OriginalAiHireRoleRules.SelectSiegeAdjusted(
+            OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn,
                 PowerInputs(family6Or12Count: 6)));
     }
@@ -277,7 +277,7 @@ public sealed class OriginalAiHireRoleRulesTests
     {
         Assert.Equal(
             new OriginalAiHireRoleSelection(0, 1),
-            OriginalAiHireRoleRules.SelectSiegeAdjusted(
+            OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn: 9,
                 PowerInputs(cash: cash, family2Count: family2Count, family6Or12Count: 1)));
     }
@@ -287,7 +287,7 @@ public sealed class OriginalAiHireRoleRulesTests
     {
         Assert.Equal(
             new OriginalAiHireRoleSelection(5, 3),
-            OriginalAiHireRoleRules.SelectSiegeAdjusted(
+            OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn: 9,
                 PowerInputs(cash: 100, family2Count: 1, family6Or12Count: 1)));
     }
@@ -297,7 +297,7 @@ public sealed class OriginalAiHireRoleRulesTests
     {
         Assert.Equal(
             new OriginalAiHireRoleSelection(3, 4),
-            OriginalAiHireRoleRules.SelectSiegeAdjusted(
+            OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn: 1,
                 PowerInputs(family0Or4Count: 5, family6Or12Count: 0)));
     }
@@ -676,8 +676,8 @@ public sealed class OriginalAiHireRoleRulesTests
     [InlineData(ScenarioId.Dominance, 10, 2, 5)]
     [InlineData(ScenarioId.KillEmAll, 6, 3, 3)]
     [InlineData(ScenarioId.Big40, 6, 3, 3)]
-    [InlineData(ScenarioId.Eliminate, 9, 2, 5)]
-    [InlineData(ScenarioId.Siege, 1, 3, 4)]
+    [InlineData(ScenarioId.Siege, 9, 2, 5)]
+    [InlineData(ScenarioId.Eliminate, 1, 3, 4)]
     [InlineData(ScenarioId.BigMan, 5, 2, 3)]
     [InlineData(ScenarioId.Armageddon, 5, 3, 3)]
     public void AdjustedDispatcherCoversEveryScenario(

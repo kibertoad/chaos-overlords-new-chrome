@@ -84,7 +84,7 @@ public static class StatusConsoleTooltip
             $"{ScenarioCatalog.Get(mode).Name} RATES: {PlayerRankingTooltip.Basis(mode)}",
             "USED FOR RANKING."
         };
-        if (mode is ScenarioId.KillEmAll or ScenarioId.Siege)
+        if (mode is ScenarioId.KillEmAll or ScenarioId.Eliminate)
             lines.Add("SHARED BY EVERY SURVIVING OVERLORD.");
         return lines;
     }

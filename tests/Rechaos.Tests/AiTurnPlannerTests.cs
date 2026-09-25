@@ -405,7 +405,7 @@ public sealed class AiTurnPlannerTests
 
     [Theory]
     [InlineData(ScenarioId.BigMan, 1, 13, 0, 9)]
-    [InlineData(ScenarioId.Eliminate, 2, 14, 20, 12)]
+    [InlineData(ScenarioId.Siege, 2, 14, 20, 12)]
     public void ObjectiveFamilyTerminalMoveIsPreparedAndResolved(
         ScenarioId scenario,
         int hireRole,
@@ -490,7 +490,7 @@ public sealed class AiTurnPlannerTests
 
     [Theory]
     [InlineData(ScenarioId.BigMan, 27)]
-    [InlineData(ScenarioId.Eliminate, 9)]
+    [InlineData(ScenarioId.Siege, 9)]
     public void FamilyThirteenOwnedObjectiveWithoutVisibleOpponentHealsAndReplays(
         ScenarioId scenario,
         int objectiveSector)

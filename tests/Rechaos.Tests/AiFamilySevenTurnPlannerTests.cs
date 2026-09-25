@@ -294,7 +294,7 @@ public sealed class AiFamilySevenTurnPlannerTests
         short? weaponItemId = null,
         short? armorItemId = null,
         bool hostileNeighbor = false,
-        ScenarioId scenario = ScenarioId.Siege)
+        ScenarioId scenario = ScenarioId.Eliminate)
     {
         MatchPlayerSetup[] setups =
         [

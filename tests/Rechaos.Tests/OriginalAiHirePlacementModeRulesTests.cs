@@ -36,7 +36,7 @@ public sealed class OriginalAiHirePlacementModeRulesTests
     }
 
     [Theory]
-    [InlineData(ScenarioId.Eliminate)]
+    [InlineData(ScenarioId.Siege)]
     [InlineData(ScenarioId.BigMan)]
     public void RoleFourRetainsAnchorForEliminateAndBigMan(ScenarioId scenario)
     {
@@ -47,9 +47,9 @@ public sealed class OriginalAiHirePlacementModeRulesTests
     public void SiegeRoleFourUsesEncodedGangSlotZeroSector()
     {
         Assert.Equal(76, Select(
-            ScenarioId.Siege, role: 4, hostileSector: 27, gangZero: 12));
+            ScenarioId.Eliminate, role: 4, hostileSector: 27, gangZero: 12));
         Assert.Equal(AiPlanningState.InactiveSectorAnchor, Select(
-            ScenarioId.Siege,
+            ScenarioId.Eliminate,
             role: 4,
             hostileSector: OriginalAiHirePlacementRules.InactiveGangSector,
             gangZero: OriginalAiHirePlacementRules.InactiveGangSector));
