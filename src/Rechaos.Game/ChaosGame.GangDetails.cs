@@ -6,9 +6,24 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    /// <summary>
+    /// Whether the open gang panel is the compact one an order panel opens (SCR-GANG-001); the
+    /// other callers open the Gang Information panel of SCR-GANG-002.
+    /// </summary>
+    private bool _gangDetailsCompact;
+
+    /// <summary>When the carried items' rotation last started at frame 0 (SCR-GANG-002).</summary>
+    private TimeSpan _gangDetailsAnimationStart;
+
+    private Texture2D? _gangBaseValueDimPattern;
+
     private void OpenSectorGangDetails(ClientScreen returnScreen) =>
         OpenSectorGangs(returnScreen);
 
+    /// <summary>
+    /// Opens a gang that exists. An order panel (the Commands screen) opens the compact panel of
+    /// SCR-GANG-001 with the gang's record (FND-GANG-009); every other caller opens SCR-GANG-002.
+    /// </summary>
     private void OpenGangDetails(
         MatchGangState gang,
         ClientScreen returnScreen,
@@ -18,16 +33,24 @@ public sealed partial class ChaosGame
         _gangDetailsDefinitionId = gang.DefinitionId;
         _gangDetailsReturnScreen = returnScreen;
         _gangDetailsSectorFilter = sectorFilter;
+        _gangDetailsCompact = returnScreen == ClientScreen.Commands;
+        _gangDetailsAnimationStart = _inputTime;
         _gangEquipmentItemClicks.Cancel();
         _screens.Show(ClientScreen.Gang);
     }
 
+    /// <summary>
+    /// Opens a hire offer on the Gang Information panel of SCR-GANG-002, as a Force 0 record with
+    /// no items, so Force shows two question marks (FND-HIRE-008, FND-GANG-008).
+    /// </summary>
     private void OpenGangDefinitionDetails(short definitionId, ClientScreen returnScreen)
     {
         _gangDetailsInstanceId = null;
         _gangDetailsDefinitionId = definitionId;
         _gangDetailsReturnScreen = returnScreen;
         _gangDetailsSectorFilter = null;
+        _gangDetailsCompact = false;
+        _gangDetailsAnimationStart = _inputTime;
         _gangEquipmentItemClicks.Cancel();
         _screens.Show(ClientScreen.Gang);
     }
@@ -38,6 +61,7 @@ public sealed partial class ChaosGame
         _gangDetailsInstanceId = null;
         _gangDetailsDefinitionId = null;
         _gangDetailsSectorFilter = null;
+        _gangDetailsCompact = false;
         _gangEquipmentItemClicks.Cancel();
         _screens.Show(returnScreen);
     }
@@ -62,6 +86,7 @@ public sealed partial class ChaosGame
         var gang = gangs[Mod(current + delta, gangs.Count)];
         _gangDetailsInstanceId = gang.Id;
         _gangDetailsDefinitionId = gang.DefinitionId;
+        _gangDetailsAnimationStart = _inputTime;
         _gangEquipmentItemClicks.Cancel();
         _selectedGangIndex = _state.FindPlayer(playerId)!.Gangs
             .Where(candidate => candidate.IsActive)
@@ -76,9 +101,20 @@ public sealed partial class ChaosGame
         DrawGangDetailsPanel(batch, pixel, font, state);
     }
 
+    /// <summary>The panel the open gang panel covers, for the outside-the-panel test.</summary>
+    private Rectangle GangDetailsPanel => _gangDetailsCompact
+        ? GangDefinitionInformationLayout.Panel
+        : GangInformationLayout.Panel;
+
+    private Rectangle GangDetailsOk => _gangDetailsCompact
+        ? GangDefinitionInformationLayout.Ok
+        : GangInformationLayout.Ok;
+
     private bool HandleGangDetailsEquipmentClick(Point point)
     {
-        if (_gangDetailsInstanceId is not { } gangId
+        // SCR-GANG-001 draws no items; only SCR-GANG-002 opens an item from its picture.
+        if (_gangDetailsCompact
+            || _gangDetailsInstanceId is not { } gangId
             || _state?.FindGang(gangId) is not { } gang
             || GangInformationLayout.EquipmentSlotAt(point) is not { } slot)
             return false;
@@ -86,7 +122,11 @@ public sealed partial class ChaosGame
         var itemId = EquippedItem(gang, slot);
         if (itemId is { } resolved
             && _gangEquipmentItemClicks.Register(slot, _inputTime))
+        {
+            // FND-GANG-006: the rotation restarts at frame 0 after the item's panel.
+            _gangDetailsAnimationStart = _inputTime;
             OpenItemDetails(resolved, ClientScreen.Gang);
+        }
         return true;
     }
 
@@ -102,149 +142,201 @@ public sealed partial class ChaosGame
             DrawMapBackdrop(batch, pixel, font, state, _gangDetailsReturnScreen);
     }
 
+    /// <summary>
+    /// Draws SCR-GANG-002 (PX05000, the shared panel) or, from an order panel, SCR-GANG-001
+    /// (PX05022's 320-pixel crop). Both draw the gang's own values; with Base Statistics on they
+    /// also draw the definition's values 18 pixels to the left, dimmed on the compact panel.
+    /// </summary>
     private void DrawGangDetailsPanel(
         SpriteBatch batch,
         Texture2D pixel,
         PixelFont font,
         MatchState state)
     {
-        var definitionOnly = _gangDetailsInstanceId is null;
-        var panel = definitionOnly ? GangDefinitionInformationLayout.Panel : GangInformationLayout.Panel;
-        var background = definitionOnly
-            ? _gangDefinitionInfoBackground
-            : _gangInfoBackground;
-        if (background is not null)
+        var compact = _gangDetailsCompact;
+        if (compact)
         {
-            if (definitionOnly)
-                batch.Draw(background, panel, GangDefinitionInformationLayout.BackgroundSource, Color.White);
+            if (_gangDefinitionInfoBackground is not null)
+                batch.Draw(_gangDefinitionInfoBackground, GangDefinitionInformationLayout.Panel,
+                    GangDefinitionInformationLayout.BackgroundSource, Color.White);
             else
-                batch.Draw(background, panel, Color.White);
+                batch.Draw(pixel, GangDefinitionInformationLayout.Panel, new Color(0, 0, 0, 245));
         }
         else
-            batch.Draw(pixel, panel, new Color(0, 0, 0, 245));
+            DrawPanelArtwork(batch, pixel, _gangInfoBackground, GangInformationLayout.Panel);
+
+        var nameLeft = compact ? GangDefinitionInformationLayout.NameLeft : GangInformationLayout.NameLeft;
+        var nameY = compact ? GangDefinitionInformationLayout.NameY : GangInformationLayout.NameY;
         var gang = _gangDetailsInstanceId is { } instanceId ? state.FindGang(instanceId) : null;
         var definitionId = gang?.DefinitionId ?? _gangDetailsDefinitionId;
         if (definitionId is null)
         {
-            font.Draw(batch, "NO ACTIVE GANG",
-                new Vector2(definitionOnly ? GangDefinitionInformationLayout.NameLeft : SharedPanelLayout.X(96),
-                    definitionOnly ? GangDefinitionInformationLayout.NameY : SharedPanelLayout.Y(28)), Color.White, 1);
+            font.Draw(batch, "NO ACTIVE GANG", new Vector2(nameLeft, nameY), Color.White, 1);
+            return;
         }
-        else
-        {
-            var definition = state.Definitions.Gang(definitionId.Value);
-            var stats = gang is null || _showBaseStatistics
-                ? EffectiveStatistics.From(definition.Stats)
-                : EffectiveStatisticsCalculator.ForGang(state, gang);
-            ClearGangInformationFields(batch, pixel, definitionOnly);
-            if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, definitionOnly
+
+        var definition = state.Definitions.Gang(definitionId.Value);
+        var baseStats = EffectiveStatistics.From(definition.Stats);
+        // FND-GANG-008: a hire offer is shown as a record with no items in no sector, so its
+        // values are the definition's with the bare-handed weapon skills in Combat (RULE-COMBAT-001).
+        var stats = gang is null
+            ? baseStats with
+            {
+                Combat = checked(baseStats.Combat + ManualRules.WeaponSkills(baseStats, null))
+            }
+            : EffectiveStatisticsCalculator.ForGang(state, gang);
+        ClearGangInformationFields(batch, pixel, compact);
+        if (_gangPortraits is not null)
+            batch.Draw(_gangPortraits, compact
                     ? GangDefinitionInformationLayout.Portrait
                     : GangInformationLayout.Portrait,
-                    OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
-            if (gang is not null && _itemPortraits is not null)
-            {
-                for (var slot = 0; slot < 3; slot++)
-                    if (EquippedItem(gang, slot) is { } itemId)
-                        batch.Draw(_itemPortraits, GangInformationLayout.Equipment(slot),
-                            OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
-            }
-            font.Draw(batch, definition.Name,
-                new Vector2(definitionOnly ? GangDefinitionInformationLayout.NameLeft : SharedPanelLayout.X(98),
-                    definitionOnly ? GangDefinitionInformationLayout.NameY : SharedPanelLayout.Y(28)), Color.Lime, 1);
-            var descriptionColumns = definitionOnly ? 29 : 27;
-            foreach (var entry in WrapPanelText(definition.Description, descriptionColumns).Take(3)
-                         .Select((text, row) => (text, row)))
-                font.Draw(batch, entry.text,
-                    new Vector2(definitionOnly ? GangDefinitionInformationLayout.DescriptionLeft : SharedPanelLayout.X(98),
-                        definitionOnly ? GangDefinitionInformationLayout.DescriptionY(entry.row)
-                            : SharedPanelLayout.Y(45 + entry.row * 10)), Color.Lime, 1);
-            var forceLeft = definitionOnly ? GangDefinitionInformationLayout.LeftValueLeft
-                : GangInformationLayout.LeftValueLeft;
-            var forceY = definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92);
-            if (gang is null)
-                DrawGangPanelValue(font, batch, "??", forceLeft, forceY);
-            else
-                DrawNativeTwoCellValue(font, batch, gang.Force, forceLeft, forceY,
-                    NativeTwoCellNumberPresentation.Kind.Baseline);
-            DrawNativeTwoCellValue(font, batch, -definition.Upkeep,
-                definitionOnly ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft,
-                definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92),
+                OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
+        if (!compact && gang is not null)
+            DrawGangDetailsEquipment(batch, gang);
+        font.Draw(batch, definition.Name, new Vector2(nameLeft, nameY), Color.Lime, 1);
+        // FMT-DATA-002: the description is drawn as three fixed rows of 30 characters.
+        foreach (var entry in ItemInformationLayout.DescriptionLines(definition.Description)
+                     .Select((text, row) => (text, row)))
+            if (entry.text is not null)
+                font.Draw(batch, entry.text, new Vector2(nameLeft, compact
+                    ? GangDefinitionInformationLayout.DescriptionY(entry.row)
+                    : GangInformationLayout.DescriptionY(entry.row)), Color.Lime, 1);
+
+        var leftValueLeft = compact
+            ? GangDefinitionInformationLayout.LeftValueLeft : GangInformationLayout.LeftValueLeft;
+        var rightValueLeft = compact
+            ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft;
+        var forceY = compact ? GangDefinitionInformationLayout.ForceY : GangInformationLayout.ForceY;
+        var techLevelY = compact
+            ? GangDefinitionInformationLayout.TechLevelY : GangInformationLayout.TechLevelY;
+        // SCR-GANG-001, SCR-GANG-002: a record whose Force is 0 shows two question marks.
+        var force = gang?.Force ?? 0;
+        if (force == 0)
+            DrawGangPanelValue(font, batch, "??", leftValueLeft, forceY);
+        else
+            DrawNativeTwoCellValue(font, batch, force, leftValueLeft, forceY,
                 NativeTwoCellNumberPresentation.Kind.Baseline);
-            DrawNativeTwoCellValue(font, batch, definition.TechLevel,
-                definitionOnly ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft,
-                definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101),
-                NativeTwoCellNumberPresentation.Kind.Baseline);
-            int[] left = [stats.Combat, stats.Defense, stats.Chaos, stats.Control, stats.Heal, stats.Influence, stats.Research];
-            int[] right = [stats.Stealth, stats.Detect, stats.Strength, stats.Blade, stats.Range, stats.Fighting, stats.MartialArts];
-            for (var index = 0; index < left.Length; index++)
-            {
-                var y = definitionOnly ? GangDefinitionInformationLayout.StatisticY(index)
-                    : GangInformationLayout.StatisticY(index);
-                DrawNativeTwoCellValue(font, batch, left[index], definitionOnly
-                    ? GangDefinitionInformationLayout.LeftValueLeft : GangInformationLayout.LeftValueLeft, y,
-                    index < 2 ? NativeTwoCellNumberPresentation.Kind.Baseline
-                        : NativeTwoCellNumberPresentation.Kind.Modifier);
-                DrawNativeTwoCellValue(font, batch, right[index], definitionOnly
-                    ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft, y,
-                    index < 2 ? NativeTwoCellNumberPresentation.Kind.Baseline
-                        : NativeTwoCellNumberPresentation.Kind.Modifier);
-            }
+        DrawNativeTwoCellValue(font, batch, -definition.Upkeep, rightValueLeft, forceY,
+            NativeTwoCellNumberPresentation.Kind.Baseline);
+        DrawNativeTwoCellValue(font, batch, definition.TechLevel, rightValueLeft, techLevelY,
+            NativeTwoCellNumberPresentation.Kind.Baseline);
+        DrawGangStatisticColumns(font, batch, stats, leftValueLeft, rightValueLeft, compact,
+            baseValues: false);
+        if (_showBaseStatistics)
+        {
+            DrawGangStatisticColumns(font, batch, baseStats,
+                leftValueLeft - GangInformationLayout.BaseValueOffset,
+                rightValueLeft - GangInformationLayout.BaseValueOffset, compact, baseValues: true);
+            if (compact) DrawGangBaseValueDimming(batch);
         }
-        if (_hoverPoint is { } hover)
+
+        // DEV-GANG-001: the full panel's statistics explain themselves on hover.
+        if (!compact && _hoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.GangAt(hover,
                 gang is null
                     ? null
                     : effect => GangStatisticModifierTooltip.Lines(effect, state, gang)));
     }
 
-    private static void ClearGangInformationFields(
-        SpriteBatch batch, Texture2D pixel, bool definitionOnly)
+    /// <summary>
+    /// Combat, Defense, Stealth and Detect as plain numbers and the ten skills as modifiers
+    /// (FND-GANG-006, FND-GANG-010, RULE-UI-004). The base values all go through the plain
+    /// number helper.
+    /// </summary>
+    private static void DrawGangStatisticColumns(
+        PixelFont font, SpriteBatch batch, EffectiveStatistics stats, int leftValueLeft,
+        int rightValueLeft, bool compact, bool baseValues)
     {
-        var nameLeft = definitionOnly ? GangDefinitionInformationLayout.NameLeft : SharedPanelLayout.X(96);
-        var nameY = definitionOnly ? GangDefinitionInformationLayout.NameY : SharedPanelLayout.Y(27);
-        var descriptionLeft = definitionOnly ? GangDefinitionInformationLayout.DescriptionLeft : SharedPanelLayout.X(96);
-        var descriptionY = definitionOnly ? GangDefinitionInformationLayout.DescriptionY(0) : SharedPanelLayout.Y(44);
-        var leftValueLeft = definitionOnly ? GangDefinitionInformationLayout.LeftValueLeft
+        int[] left = [stats.Combat, stats.Defense, stats.Chaos, stats.Control, stats.Heal, stats.Influence, stats.Research];
+        int[] right = [stats.Stealth, stats.Detect, stats.Strength, stats.Blade, stats.Range, stats.Fighting, stats.MartialArts];
+        for (var index = 0; index < left.Length; index++)
+        {
+            var y = compact ? GangDefinitionInformationLayout.StatisticY(index)
+                : GangInformationLayout.StatisticY(index);
+            var kind = baseValues || index < 2
+                ? NativeTwoCellNumberPresentation.Kind.Baseline
+                : NativeTwoCellNumberPresentation.Kind.Modifier;
+            DrawNativeTwoCellValue(font, batch, left[index], leftValueLeft, y, kind);
+            DrawNativeTwoCellValue(font, batch, right[index], rightValueLeft, y, kind);
+        }
+    }
+
+    /// <summary>
+    /// SCR-GANG-001, FND-GANG-010: black drawn through a pattern over the base values.
+    /// </summary>
+    private void DrawGangBaseValueDimming(SpriteBatch batch)
+    {
+        // PLACEHOLDER: SCR-GANG-001. The pattern of selector 0 has not been read; the half-tone
+        // brush stands in for it.
+        _gangBaseValueDimPattern ??= CreateBaseValueDimPattern(GraphicsDevice);
+        foreach (var area in GangDefinitionInformationLayout.BaseValueDimAreas)
+            batch.Draw(_gangBaseValueDimPattern, area,
+                new Rectangle(area.X & 7, area.Y & 7, area.Width, area.Height), Color.White);
+    }
+
+    private static Texture2D CreateBaseValueDimPattern(GraphicsDevice graphicsDevice)
+    {
+        const int size = 64;
+        var pixels = new Color[size * size];
+        for (var y = 0; y < size; y++)
+        for (var x = 0; x < size; x++)
+            pixels[y * size + x] = OriginalPatternMask.PreservesDestination(
+                OriginalPatternMask.Half, x, y) ? Color.Transparent : Color.Black;
+        var texture = new Texture2D(graphicsDevice, size, size);
+        texture.SetData(pixels);
+        return texture;
+    }
+
+    /// <summary>
+    /// SCR-GANG-002, FND-GANG-006: each carried item's rotation strip, 15 frames of 48 by 48,
+    /// starting at frame 0 when the panel opens.
+    /// </summary>
+    private void DrawGangDetailsEquipment(SpriteBatch batch, MatchGangState gang)
+    {
+        var elapsed = _inputTime - _gangDetailsAnimationStart;
+        if (elapsed < TimeSpan.Zero) elapsed = TimeSpan.Zero;
+        var frame = ItemRotationPresentation.Frame(elapsed);
+        for (var slot = 0; slot < 3; slot++)
+        {
+            if (EquippedItem(gang, slot) is not { } itemId) continue;
+            if (itemId >= 0 && itemId < _itemRotationTextures.Length
+                && _itemRotationTextures[itemId] is { } rotation)
+                batch.Draw(rotation, GangInformationLayout.Equipment(slot), frame, Color.White);
+            else if (_itemPortraits is not null)
+                batch.Draw(_itemPortraits, GangInformationLayout.Equipment(slot),
+                    OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
+        }
+    }
+
+    private static void ClearGangInformationFields(
+        SpriteBatch batch, Texture2D pixel, bool compact)
+    {
+        var nameLeft = compact ? GangDefinitionInformationLayout.NameLeft : GangInformationLayout.NameLeft;
+        var nameY = compact ? GangDefinitionInformationLayout.NameY : GangInformationLayout.NameY;
+        var descriptionY = compact
+            ? GangDefinitionInformationLayout.DescriptionY(0) : GangInformationLayout.DescriptionY(0);
+        var leftValueLeft = compact ? GangDefinitionInformationLayout.LeftValueLeft
             : GangInformationLayout.LeftValueLeft;
-        var rightValueLeft = definitionOnly ? GangDefinitionInformationLayout.RightValueLeft
+        var rightValueLeft = compact ? GangDefinitionInformationLayout.RightValueLeft
             : GangInformationLayout.RightValueLeft;
-        var forceY = definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92);
-        var techLevelY = definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101);
-        batch.Draw(pixel, new Rectangle(nameLeft, nameY, 180, 10), Color.Black);
-        var descriptionWidth = definitionOnly
-            ? GangDefinitionInformationLayout.DescriptionClearWidth
-            : 186;
-        batch.Draw(pixel, new Rectangle(descriptionLeft, descriptionY, descriptionWidth, 37), Color.Black);
+        var forceY = compact ? GangDefinitionInformationLayout.ForceY : GangInformationLayout.ForceY;
+        var techLevelY = compact
+            ? GangDefinitionInformationLayout.TechLevelY : GangInformationLayout.TechLevelY;
+        var textWidth = ItemInformationLayout.DescriptionColumns * OriginalFontLayout.CellWidth;
+        batch.Draw(pixel, new Rectangle(nameLeft, nameY, textWidth, OriginalFontLayout.GlyphHeight),
+            Color.Black);
+        batch.Draw(pixel, new Rectangle(nameLeft, descriptionY, textWidth,
+            2 * OriginalFontLayout.LineHeight + OriginalFontLayout.GlyphHeight), Color.Black);
         batch.Draw(pixel, GangInformationLayout.ValueField(leftValueLeft, forceY), Color.Black);
         batch.Draw(pixel, GangInformationLayout.ValueField(rightValueLeft, forceY), Color.Black);
         batch.Draw(pixel, GangInformationLayout.ValueField(rightValueLeft, techLevelY), Color.Black);
         for (var row = 0; row < 7; row++)
         {
-            var y = definitionOnly ? GangDefinitionInformationLayout.StatisticY(row)
+            var y = compact ? GangDefinitionInformationLayout.StatisticY(row)
                 : GangInformationLayout.StatisticY(row);
             batch.Draw(pixel, GangInformationLayout.ValueField(leftValueLeft, y), Color.Black);
             batch.Draw(pixel, GangInformationLayout.ValueField(rightValueLeft, y), Color.Black);
         }
-    }
-
-    private static IEnumerable<string> WrapPanelText(string text, int width)
-    {
-        var remaining = text.ToUpperInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var line = "";
-        foreach (var word in remaining)
-        {
-            if (line.Length > 0 && line.Length + word.Length + 1 > width)
-            {
-                yield return line;
-                line = word;
-            }
-            else
-            {
-                line = line.Length == 0 ? word : line + " " + word;
-            }
-        }
-        if (line.Length > 0) yield return line;
     }
 
     private static short? EquippedItem(MatchGangState gang, int slot) => slot switch

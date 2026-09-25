@@ -32,11 +32,16 @@ public sealed class PanelSlideTransition
         _started = now;
     }
 
-    public void Begin(ClientScreen previous, ClientScreen current, TimeSpan now)
+    /// <param name="compactGangPanel">
+    /// Whether a Gang screen being opened is the compact panel of SCR-GANG-001, which slides in the
+    /// alternate form.
+    /// </param>
+    public void Begin(ClientScreen previous, ClientScreen current, TimeSpan now,
+        bool compactGangPanel = false)
     {
         if (now < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(now));
         _screen = ShouldAnimate(previous, current) ? current : null;
-        _startOffset = StartOffsetFor(current);
+        _startOffset = StartOffsetFor(current, compactGangPanel);
         _started = now;
     }
 
@@ -102,15 +107,16 @@ public sealed class PanelSlideTransition
         IsPanel(current) && current != ClientScreen.Commands;
 
     /// <summary>
-    /// The travel of a panel: 320 for the alternate crop of Item Information, Site Information,
-    /// the Financial panels, the Hire comparison and Game Information, 344 for the others,
-    /// Gangs in Sector among them (RULE-UI-003, FND-UI-011).
+    /// RULE-UI-003: the six panels drawn from the 320-pixel alternate crop travel 320 pixels, the
+    /// others 344. Gangs in Sector is a primary panel (SCR-UI-005, FND-UI-014); the Gang screen is
+    /// the alternate SCR-GANG-001 only when an order panel opened it.
     /// </summary>
-    public static int StartOffsetFor(ClientScreen screen) => screen is
-        ClientScreen.GameInfo or ClientScreen.Hire
+    public static int StartOffsetFor(ClientScreen screen, bool compactGangPanel = false) =>
+        screen is ClientScreen.GameInfo or ClientScreen.Hire
             or ClientScreen.Site or ClientScreen.ItemInformation or ClientScreen.Finance
-        ? AlternateStartOffset
-        : StartOffset;
+        || (screen == ClientScreen.Gang && compactGangPanel)
+            ? AlternateStartOffset
+            : StartOffset;
 
     /// <summary>
     /// The screens that open as panels. The detailed sector screen is a full view that the

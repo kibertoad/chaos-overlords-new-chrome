@@ -549,48 +549,6 @@ public static class CommandOverlayLayout
         : Actions;
 }
 
-public static class GangInformationLayout
-{
-    public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static int LeftValueLeft => SharedPanelLayout.X(172);
-    public static int RightValueLeft => SharedPanelLayout.X(268);
-
-    // PX05000/PX05022 reserve exactly two opaque glyph cells for each live value.
-    public static Rectangle ValueField(int left, int y) => new(
-        left, y,
-        2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
-
-    public static int ValueTextLeft(int left, string text) =>
-        left + (2 - text.Length) * OriginalFontLayout.CellWidth;
-
-    public static Rectangle Equipment(int slot)
-    {
-        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return SharedPanelLayout.At(290, 21 + slot * 64, 40, 40);
-    }
-
-    public static int? EquipmentSlotAt(Point point)
-    {
-        for (var slot = 0; slot < 3; slot++)
-            if (Equipment(slot).Contains(point)) return slot;
-        return null;
-    }
-
-    public static int StatisticY(int row) => row switch
-    {
-        0 => SharedPanelLayout.Y(119),
-        1 => SharedPanelLayout.Y(128),
-        2 => SharedPanelLayout.Y(146),
-        3 => SharedPanelLayout.Y(155),
-        4 => SharedPanelLayout.Y(164),
-        5 => SharedPanelLayout.Y(173),
-        6 => SharedPanelLayout.Y(182),
-        _ => throw new ArgumentOutOfRangeException(nameof(row))
-    };
-}
-
 public static class SiteInformationLayout
 {
     // Native handler 0x0044c476 uses the alternate PX05002 slide form.

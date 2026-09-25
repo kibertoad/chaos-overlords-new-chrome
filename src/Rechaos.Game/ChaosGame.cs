@@ -241,7 +241,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _sectorSiteClicks.Cancel();
             _sectorGangClicks.Cancel();
             _siteSearchClicks.Cancel();
-            if (_slidePanels) _panelSlideTransition.Begin(previous, current, _inputTime);
+            if (_slidePanels)
+                _panelSlideTransition.Begin(previous, current, _inputTime, _gangDetailsCompact);
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
                 PlayGeneralSound(slot);
             // RULE-AWARDS-002: the endgame opens on its Awards tab.
@@ -444,6 +445,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // Before the planning timer, so a turn that resolved on the server is adopted even on the
         // frame the local clock would otherwise have taken over the loop.
         UpdateOnlineSession();
+        // SCR-UI-002: the credits hold every input until a click or a key closes them.
+        if (_creditsOpen)
+        {
+            UpdateCredits(keyboard, mouse);
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
+        }
         var rightClicked = PointerButtonEdges.Pressed(
             mouse.RightButton, _previousMouse.RightButton);
         if (!_gameMenuOpen && UpdatePlanningTimer(gameTime.TotalGameTime))
@@ -509,7 +517,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             // TextInput event can deliver that character to the field.
             if (!_idleGangWarningOpen && !TextInputHasFocus())
             {
-                if (Pressed(keyboard, Keys.F1)) OpenHelp();
+                if (Pressed(keyboard, Keys.F1)
+                    && (keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift)))
+                    OpenCredits();
+                else if (Pressed(keyboard, Keys.F1)) OpenHelp();
                 else if (Pressed(keyboard, Keys.O)) OpenOptions();
                 else if (Pressed(keyboard, Keys.Escape))
                 {
@@ -598,7 +609,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         MoveSectorGangCursor(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down))
                         MoveSectorGangCursor(1);
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    // SCR-UI-005: Enter or Execute presses the close face.
+                    if (Pressed(keyboard, Keys.Back) || PressedEnterOrExecute(keyboard))
                         AcceptAndInvoke(CloseSectorGangs);
                     break;
                 case ClientScreen.Gang:
@@ -607,7 +619,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) CycleGangDetails(-1);
                         if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) CycleGangDetails(1);
                     }
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    // SCR-GANG-001, SCR-GANG-002: Enter or Execute presses the close face.
+                    if (Pressed(keyboard, Keys.Back) || PressedEnterOrExecute(keyboard))
                         AcceptAndInvoke(CloseGangDetails);
                     break;
                 case ClientScreen.Site:
@@ -623,6 +636,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         AcceptAndInvoke(CloseGameInformation);
                     break;
                 case ClientScreen.Finance:
+                    // SCR-FINANCE-001: Enter or Execute presses the close control.
+                    if (Pressed(keyboard, Keys.Back) || PressedEnterOrExecute(keyboard))
+                        AcceptAndShow(_managementReturnScreen);
+                    break;
                 case ClientScreen.Ranking:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                         AcceptAndShow(_managementReturnScreen);
@@ -833,19 +850,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleSectorClick(point);
                 break;
             case ClientScreen.SectorGangs:
-                if (SectorGangsLayout.Ok.Contains(point))
-                    AcceptAndInvoke(CloseSectorGangs);
+                // SCR-UI-005: the face closes on a release inside it; a press outside the panel
+                // is refused, and a press elsewhere inside it does nothing.
+                PressPanelFace(point, SectorGangsLayout.Panel, SectorGangsLayout.Ok, CloseSectorGangs);
                 break;
             case ClientScreen.Gang:
-            {
                 if (HandleGangDetailsEquipmentClick(point)) break;
-                var gangOk = _gangDetailsInstanceId is null
-                    ? GangDefinitionInformationLayout.Ok
-                    : GangInformationLayout.Ok;
-                if (gangOk.Contains(point))
-                    AcceptAndInvoke(CloseGangDetails);
+                // SCR-GANG-001, SCR-GANG-002: the same face and outside test.
+                PressPanelFace(point, GangDetailsPanel, GangDetailsOk, CloseGangDetails);
                 break;
-            }
             case ClientScreen.Site:
                 if (SiteInformationLayout.Ok.Contains(point))
                     AcceptAndInvoke(CloseSiteDetails);

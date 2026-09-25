@@ -5,8 +5,9 @@ namespace Rechaos.Game;
 public static class GangInformationRoster
 {
     /// <summary>
-    /// RULE-UI-010 <c>sector_roster_slots</c>: the player's active gangs in the sector, in roster
-    /// slot order, whatever their visibility.
+    /// The player's active gangs in the sector in roster-slot order, which is the order of the
+    /// player's gang list and of <c>sector_roster_slots</c> (RULE-UI-010); the Gangs in Sector
+    /// panel draws its columns in it (SCR-UI-005).
     /// </summary>
     public static IReadOnlyList<MatchGangState> ForSector(
         IEnumerable<MatchGangState> gangs,

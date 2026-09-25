@@ -89,4 +89,22 @@ public sealed class PanelSlideTransitionTests
         Assert.Equal([GeneralSoundSlot.PanelClose],
             AudioRouting.PanelTransitionSounds(ClientScreen.Gang, ClientScreen.Sector, true));
     }
+
+    [Fact]
+    public void GangsInSectorAndTheFullGangPanelTravelTheSharedWidth()
+    {
+        // RULE-UI-003, SCR-UI-005, SCR-GANG-002: primary panels travel 344 pixels.
+        Assert.Equal(PanelSlideTransition.StartOffset,
+            PanelSlideTransition.StartOffsetFor(ClientScreen.SectorGangs));
+        Assert.Equal(PanelSlideTransition.StartOffset,
+            PanelSlideTransition.StartOffsetFor(ClientScreen.Gang));
+        // SCR-GANG-001: the compact panel an order panel opens is an alternate one.
+        Assert.Equal(PanelSlideTransition.AlternateStartOffset,
+            PanelSlideTransition.StartOffsetFor(ClientScreen.Gang, compactGangPanel: true));
+
+        var slide = new PanelSlideTransition();
+        var start = TimeSpan.FromSeconds(4);
+        slide.Begin(ClientScreen.Commands, ClientScreen.Gang, start, compactGangPanel: true);
+        Assert.Equal(PanelSlideTransition.AlternateStartOffset, slide.Offset(ClientScreen.Gang, start));
+    }
 }
