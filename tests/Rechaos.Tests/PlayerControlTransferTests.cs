@@ -32,6 +32,34 @@ public sealed class PlayerControlTransferTests
         Assert.False(match.TransferPlayerToHuman(new PlayerId(1)));
     }
 
+    // RULE-AI-001, RULE-AI-027: the computer that takes over a seat plans every gang as a raider
+    // from its second pass; on the first the flagged slot takes its hire role's family.
+    [Fact]
+    public void ATakenOverSeatPlansEveryGangAsARaider()
+    {
+        var match = CreateMatch();
+        var seat = new PlayerId(1);
+        match.FinishUpkeep();
+        Assert.True(match.TransferPlayerToComputer(seat));
+        Assert.True(match.AiPlanning.RaiderMode(seat));
+
+        match.FinishCommand(new PlayerId(0));
+        match.PrepareAiPlanning(seat);
+        Assert.NotEqual(AiPlanningState.UnusedFamily, match.AiPlanning.Family(seat, 0));
+
+        AdvanceToNextCommandPhase(match);
+        match.FinishCommand(new PlayerId(0));
+        match.PrepareAiPlanning(seat);
+
+        var active = match.Players[1].Gangs
+            .Select((gang, slot) => (gang, slot))
+            .Where(entry => entry.gang.IsActive)
+            .ToArray();
+        Assert.NotEmpty(active);
+        Assert.All(active, entry => Assert.Equal(9, match.AiPlanning.Family(seat, entry.slot)));
+        Assert.False(match.AiPlanning.RaiderMode(new PlayerId(0)));
+    }
+
     [Fact]
     public void TransferRequiresCleanCommandBoundaryAndKnownSeat()
     {

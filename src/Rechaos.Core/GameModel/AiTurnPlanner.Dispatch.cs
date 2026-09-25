@@ -38,6 +38,10 @@ public static partial class AiTurnPlanner
         foreach (var entry in player.Gangs.Select((gang, slot) => (gang, slot)))
         {
             if (!entry.gang.IsActive) continue;
+            // RULE-AI-001: a player whose seat the computer took over plans every gang as a
+            // raider.
+            if (state.AiPlanning.RaiderMode(playerId))
+                state.AiPlanning.SetRaiderFamily(playerId, entry.slot);
             // RULE-AI-002: the family is settled just before the gang's own handler, so an earlier
             // gang's handler sees a later new gang's record as it stood.
             AiPlanningPreparation.AssignFamilyIfNeeded(state, playerId, entry.slot);

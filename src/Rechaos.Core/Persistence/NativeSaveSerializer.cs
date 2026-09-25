@@ -14,7 +14,7 @@ public static class NativeSaveSerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
-    public const int CurrentFormatVersion = 32;
+    public const int CurrentFormatVersion = 33;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -205,7 +205,9 @@ public static class NativeSaveSerializer
                 savedPlanning.CoverageSectors
                     ?? throw new InvalidDataException("Native save AI coverage sectors are missing."),
                 savedPlanning.NeedsFamily
-                    ?? throw new InvalidDataException("Native save AI family flags are missing."))
+                    ?? throw new InvalidDataException("Native save AI family flags are missing."),
+                savedPlanning.RaiderMode
+                    ?? throw new InvalidDataException("Native save AI raider flags are missing."))
             : throw new InvalidDataException("Native save AI planning state is missing.");
         var runtime = new MatchRuntimeRestore(
             document.Runtime.Turn,
@@ -301,7 +303,8 @@ public static class NativeSaveSerializer
                 state.AiPlanning.CaptureArmorCooldowns(),
                 state.AiPlanning.CaptureFormationSectors(),
                 state.AiPlanning.CaptureCoverageSectors(),
-                state.AiPlanning.CaptureNeedsFamily()),
+                state.AiPlanning.CaptureNeedsFamily(),
+                state.AiPlanning.CaptureRaiderMode()),
             state.Players.Select(player => new PlayerComlinkDocument(
                 player.Id.Value,
                 state.ComlinkFor(player.Id).NextSequence,
@@ -614,7 +617,8 @@ internal sealed record AiPlanningDocument(
     IReadOnlyList<short>? ArmorCooldowns = null,
     IReadOnlyList<short>? FormationSectors = null,
     IReadOnlyList<short>? CoverageSectors = null,
-    IReadOnlyList<bool>? NeedsFamily = null);
+    IReadOnlyList<bool>? NeedsFamily = null,
+    IReadOnlyList<bool>? RaiderMode = null);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,
