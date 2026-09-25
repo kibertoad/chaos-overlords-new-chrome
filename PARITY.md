@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 18 |
+| `supported` | 15 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 195 |
+| `implemented` | 198 |
 | `validated` | 9 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 1 |
-| `partial` | 17 |
-| `complete` | 204 |
+| `partial` | 14 |
+| `complete` | 207 |
 
 ## DATA
 
@@ -211,7 +211,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported | complete | None | `DEV-MOVE-001` | implemented | None |
 | `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002`, `DEV-MOVE-002` | implemented | The fallback for a mover already sent back draws a random neighbour (RULE-AI-007); after 256 of them DEV-MOVE-002 applies. |
-| `SCR-MOVE-001` | Move panel | supported | partial | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | supported | The map crop, off-city bands, arrow, faces and keys follow the original. The table that disables cells is not read, so the rebuild enables the cells it can legally order (DEV-MOVE-001). |
+| `SCR-MOVE-001` | Move panel | supported | complete | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | implemented | The map crop, off-city bands, arrow, faces and keys follow the original. The enabled cells follow the edge table of FND-MOVE-007, Enter, Execute and Escape press their faces, and only DEV-MOVE-001 refuses a Move into a full sector. |
 
 ## CONTROL
 
@@ -225,7 +225,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | The fields are kept as 32-bit values; the INT8 wrap of a total outside -128 to 127 is not reproduced, and no shipped combination reaches it. |
 | `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | complete | None | None | implemented | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-25 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. |
-| `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | partial | None | `DEV-UI-010` | supported | Opened from the order panels' portraits with the gang's values, the Force question marks and the recorded positions. The base values are dimmed through a stand-in pattern (PLACEHOLDER), as the original's half-tone is not read. |
+| `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | complete | None | `DEV-UI-010` | implemented | Opened from the order panels' portraits with the gang's values, the Force question marks and the recorded positions. The base values are blacked out through bitmap 143 from each area's corner (FND-GANG-011, FND-GFX-006). |
 | `SCR-GANG-002` | Gang information panel for a hired gang | supported | complete | None | `DEV-GANG-001`, `DEV-UI-013` | implemented | Opened for hired gangs and hire offers, with every recorded position, rotating items, base values 18 pixels to the left, and the close face acting on release. |
 
 ## EQUIP
@@ -243,7 +243,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-GIVE-001` | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | supported | complete | None | None | implemented | None |
-| `SCR-GIVE-001` | Give panel | supported | partial | None | `DEV-GIVE-001` | supported | The recipient cards, eligibility, marks, faces and keys follow the original. The list's background colour and the dimming pattern are not recorded, so a sparse mask stands in. |
+| `SCR-GIVE-001` | Give panel | supported | complete | None | `DEV-GIVE-001` | implemented | The recipient cards, eligibility, marks, faces and keys follow the original. The list has no background fill, and ineligible cards are blacked out through bitmap 146 from the card's corner (FND-GIVE-003). |
 
 ## SELL
 
@@ -288,7 +288,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
 | `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | complete | None | `DEV-COMBAT-002` | implemented | Paging, keys, the opponent and police strips, grid cells with portraits, force_start and force_final tracks and the focus outlines follow FND-COMBAT-007 and FND-COMBAT-012. The pressed Exit face on Enter is not drawn as the panel closes at once, and the pressed arrows are not recorded. |
-| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips, 166 ms cadence, the tracks at local y 116 and 123, the Exit face on release, the refused press outside the panel and Escape follow FND-COMBAT-009 and FND-COMBAT-010. The police portrait and the header strips are not recorded, and the entry's open question still gives y 114 and 121 for the tracks. |
+| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips, 166 ms cadence, the Exit face on release, the refused press outside the panel and Escape follow FND-COMBAT-009 and FND-COMBAT-010; the header strips, police art and the darkening from tick 12 follow FND-COMBAT-014. The entry's open question gives the tracks at y 114 and 121, where the rebuild draws them at 116 and 123; a run of the original settles it. |
 
 ## DETECT
 

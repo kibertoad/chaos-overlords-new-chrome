@@ -230,8 +230,8 @@ The reasoning is in `docs/MULTIPLAYER.md`.
 
 - Departs from: RULE-MOVE-001, SCR-MOVE-001
 - Reason: The rebuild refuses a Move, when it is ordered, into a sector that already holds six
-  of the player's gangs. Whether the original's panel refuses it too is not recorded; if it does
-  not, the original accepts the order and RULE-MOVE-002 sends the gang back at resolution.
+  of the player's gangs. The original's panel has no capacity test (FND-MOVE-007): it accepts the
+  order, and RULE-MOVE-002 sends the gang back at resolution.
 - Setting: None
 - Default: mandatory
 - Justification: The player learns at once that the gang cannot enter, where the original accepts
