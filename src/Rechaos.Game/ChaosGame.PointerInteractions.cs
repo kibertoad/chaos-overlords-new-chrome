@@ -34,6 +34,13 @@ public sealed partial class ChaosGame
             return;
         }
 
+        if (_pressedAttackFace is not null)
+        {
+            if (pointerMapped) CompleteAttackFace(point);
+            else CancelAttackFace();
+            return;
+        }
+
         if (_pressedHireRejectSlot is not null)
         {
             if (pointerMapped) CompleteHireReject(point);

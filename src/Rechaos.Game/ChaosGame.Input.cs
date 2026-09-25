@@ -61,6 +61,12 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
+        if (_pressedAttackFace is not null)
+        {
+            CancelAttackFace();
+            _message = string.Empty;
+            return;
+        }
         if (_pressedHireRejectSlot is not null)
         {
             CancelHireReject();
@@ -105,7 +111,8 @@ public sealed partial class ChaosGame
                 CloseComlink();
                 break;
             case ClientScreen.Commands:
-                BackFromCommands();
+                // SCR-ATTACK-001 lists no right-button input, so the Attack picker stays open.
+                if (!IsAttackPickerOpen()) BackFromCommands();
                 break;
             case ClientScreen.Hire:
                 _screens.Show(_managementReturnScreen);

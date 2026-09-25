@@ -263,6 +263,11 @@ public sealed partial class ChaosGame
         if (_actions is null) return;
         if (_choosingCommandTarget)
         {
+            if (IsAttackCommandPicker())
+            {
+                ConfirmAttack();
+                return;
+            }
             if (IsEquipmentCommandPicker() && (_state is null
                 || !EquipmentCommandLayout.CanConfirm(
                     _commandTargetCursor, EquipmentCommandIndices(_state))))
@@ -306,12 +311,13 @@ public sealed partial class ChaosGame
             _choosingCommandTarget = true;
             if (action is GangAction.Equip or GangAction.Research)
                 SelectEquipmentCategory(0);
+            if (action == GangAction.Attack) OpenAttackPicker();
             return;
         }
         SubmitCommand(options[0]);
     }
 
-    private void SubmitCommand(GameCommand selection)
+    private void SubmitCommand(GameCommand selection, bool pointerButton = false)
     {
         if (_actions is null) return;
         if (_bulkCommand)
@@ -321,7 +327,7 @@ public sealed partial class ChaosGame
         }
         var command = selection with { Repeat = _commandRepeats };
         var result = _actions.Submit(command);
-        ReportInputResult(result.Accepted, result.Validation.Message);
+        ReportButtonResult(result.Accepted, result.Validation.Message, pointerButton);
         if (result.Accepted) _screens.Show(_commandReturnScreen);
     }
 
@@ -446,7 +452,7 @@ public sealed partial class ChaosGame
         }
         if (IsAttackCommandPicker())
         {
-            DrawAttackCommandTargets(batch, pixel, font, state);
+            DrawAttackCommandTargets(batch, pixel, state);
             return;
         }
         var panel = CommandOverlayLayout.TargetPanel;

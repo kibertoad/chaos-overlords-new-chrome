@@ -1,167 +1,262 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private enum AttackFace
+    {
+        Cancel,
+        Confirm
+    }
+
+    private AttackPickerSelection _attackSelection = AttackPickerSelection.None;
+    private AttackFace? _pressedAttackFace;
+
+    private bool IsAttackPickerOpen() => _screens.Current == ClientScreen.Commands
+        && _choosingCommandTarget && IsAttackCommandPicker();
+
+    /// <summary>SCR-ATTACK-001, FND-ATTACK-003: the selection the picker opens with.</summary>
+    private void OpenAttackPicker()
+    {
+        _pressedAttackFace = null;
+        _attackTargetClicks.Cancel();
+        _attackSelection = _state is not null && _commandTargetOptions.Count > 0
+            && _state.FindGang(_commandTargetOptions[0].Gang) is { } actor
+            ? AttackPicker.Initial(_state, _commandTargetOptions, actor)
+            : AttackPickerSelection.None;
+        _commandTargetCursor = _attackSelection.Target ?? 0;
+    }
+
     private void HandleAttackCommandClick(Point point)
     {
+        if (_state is null) return;
+        // SCR-ATTACK-001, FND-ATTACK-003: a press outside the panel is refused and leaves it open.
+        if (!AttackCommandLayout.Panel.Contains(point))
+        {
+            PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+            return;
+        }
+        // SCR-ATTACK-001, FND-ATTACK-003: both faces act when the button is released on them.
         if (AttackCommandLayout.Cancel.Contains(point))
         {
+            _pressedAttackFace = AttackFace.Cancel;
             AcceptInput();
-            BackFromCommands();
             return;
         }
         if (AttackCommandLayout.Ok.Contains(point))
         {
-            ActivateCommandSelection();
+            if (!_attackSelection.CanConfirm)
+            {
+                RejectInput("CHOOSE A TARGET");
+                return;
+            }
+            _pressedAttackFace = AttackFace.Confirm;
+            AcceptInput();
             return;
         }
 
-        if (_state is null || _commandTargetOptions.Count == 0) return;
-        var owners = AttackTargetOwners(_state);
-        for (var slot = 0; slot < owners.Count; slot++)
+        var actor = _state.FindGang(_commandTargetOptions[0].Gang);
+        if (actor is null) return;
+        var opponents = AttackPicker.Opponents(actor.Owner);
+        for (var slot = 0; slot < opponents.Count; slot++)
         {
             if (!AttackCommandLayout.Opponent(slot).Contains(point)) continue;
-            SelectFirstAttackTarget(owners[slot]);
+            // SCR-ATTACK-001, FND-ATTACK-001: a disabled cell does not react; an enabled one
+            // chooses its player and clears the chosen target.
+            if (AttackPicker.IsOpponentEnabled(_state, _commandTargetOptions, opponents[slot]))
+                _attackSelection = new AttackPickerSelection(opponents[slot], null);
+            _attackTargetClicks.Cancel();
             return;
         }
 
-        var targets = AttackTargetIndicesForSelectedOwner(_state);
-        for (var slot = 0; slot < Math.Min(targets.Count, AttackCommandLayout.VisibleTargets); slot++)
+        var cells = AttackPicker.TargetCells(_state, _commandTargetOptions, _attackSelection.Opponent);
+        var cell = AttackCommandLayout.TargetCellAt(point);
+        if (cell >= 0 && cell < cells.Count)
         {
-            if (!AttackCommandLayout.TargetHit(slot).Contains(point)) continue;
-            _commandTargetCursor = targets[slot];
-            var targetId = _commandTargetOptions[_commandTargetCursor].Target.Id;
-            if (_attackTargetClicks.Register(targetId, _inputTime)
-                && _state.FindGang(new GangId(targetId)) is { } target)
-                OpenGangDetails(target, ClientScreen.Commands);
+            _attackSelection = _attackSelection with { Target = cells[cell] };
+            _commandTargetCursor = cells[cell];
+        }
+        HandleAttackDoubleClick(point, actor, cells);
+    }
+
+    /// <summary>
+    /// SCR-ATTACK-001, FND-ATTACK-004: a double-click on the acting gang's portrait or on a
+    /// listed target's portrait opens that gang's information panel, and one on an item icon opens
+    /// Item Information. The picker's selection is kept for the return. It plays no sound.
+    /// </summary>
+    private void HandleAttackDoubleClick(Point point, MatchGangState actor, IReadOnlyList<int> cells)
+    {
+        if (_state is null) return;
+        var region = -1;
+        MatchGangState? gang = null;
+        short? itemId = null;
+        if (AttackCommandLayout.ActorPortrait.Contains(point))
+        {
+            region = 0;
+            gang = actor;
+        }
+        for (var slot = 0; region < 0 && slot < AttackCommandLayout.EquippedItemCount; slot++)
+        {
+            if (!AttackCommandLayout.ActorItem(slot).Contains(point)
+                || EquippedItem(actor, slot) is not { } item) continue;
+            region = 1 + slot;
+            itemId = item;
+        }
+        for (var cell = 0; region < 0 && cell < cells.Count; cell++)
+        {
+            if (_state.FindGang(new GangId(_commandTargetOptions[cells[cell]].Target.Id)) is not { } target)
+                continue;
+            // Regions are keyed by the target gang so a double-click has to land on one gang.
+            var baseRegion = 4 + target.Id.Value * 4;
+            if (AttackCommandLayout.TargetPortrait(cell).Contains(point))
+            {
+                region = baseRegion;
+                gang = target;
+                break;
+            }
+            for (var slot = 0; slot < AttackCommandLayout.EquippedItemCount; slot++)
+            {
+                if (!AttackCommandLayout.TargetItem(cell, slot).Contains(point)
+                    || EquippedItem(target, slot) is not { } item) continue;
+                region = baseRegion + 1 + slot;
+                itemId = item;
+                break;
+            }
+        }
+
+        if (region < 0)
+        {
+            _attackTargetClicks.Cancel();
             return;
         }
-        if (!AttackCommandLayout.Panel.Contains(point)) BackFromCommands();
+        if (!_attackTargetClicks.Register(region, _inputTime)) return;
+        if (gang is not null) OpenGangDetails(gang, ClientScreen.Commands);
+        else if (itemId is { } resolved) OpenItemDetails(resolved);
+    }
+
+    private void CompleteAttackFace(Point point)
+    {
+        var face = _pressedAttackFace;
+        CancelAttackFace();
+        if (face is null || !IsAttackPickerOpen()) return;
+        if (face == AttackFace.Cancel && AttackCommandLayout.Cancel.Contains(point))
+            BackFromCommands();
+        else if (face == AttackFace.Confirm && AttackCommandLayout.Ok.Contains(point))
+            ConfirmAttack(pointerButton: true);
+    }
+
+    private void CancelAttackFace() => _pressedAttackFace = null;
+
+    /// <summary>
+    /// SCR-ATTACK-001, FND-ATTACK-003: Confirm orders the attack on the chosen target when an
+    /// opponent and a target are chosen, and is refused otherwise.
+    /// </summary>
+    private void ConfirmAttack(bool pointerButton = false)
+    {
+        if (!_attackSelection.CanConfirm || _attackSelection.Target is not { } target
+            || target >= _commandTargetOptions.Count)
+        {
+            RejectInput("CHOOSE A TARGET");
+            return;
+        }
+        SubmitCommand(_commandTargetOptions[target], pointerButton);
+    }
+
+    /// <summary>
+    /// SCR-ATTACK-001, FND-ATTACK-003: the handler tests Enter, 0x2B and Escape and no other key,
+    /// so the rebuild's arrow and Backspace keys do nothing here.
+    /// </summary>
+    private void UpdateAttackPicker(KeyboardState keyboard)
+    {
+        if (AttackCommandLayout.ConfirmKeys.Any(key => Pressed(keyboard, key))) ConfirmAttack();
+    }
+
+    /// <summary>SCR-ATTACK-001, FND-ATTACK-003: Escape presses Cancel and closes without an order.</summary>
+    private void CancelAttackPickerByKey()
+    {
+        CancelAttackFace();
+        AcceptInput();
+        BackFromCommands();
     }
 
     private void DrawAttackCommandTargets(
         SpriteBatch batch,
         Texture2D pixel,
-        PixelFont font,
         MatchState state)
     {
         DrawPanelArtwork(batch, pixel, _targetAcquisitionBackground, AttackCommandLayout.Panel, 248);
 
-        var selected = _commandTargetOptions[_commandTargetCursor];
-        var actor = state.FindGang(selected.Gang)!;
-        var target = state.FindGang(new GangId(selected.Target.Id))!;
-        DrawAttackGang(batch, pixel, actor, AttackCommandLayout.ActorPortrait,
-            AttackCommandLayout.ActorForceBar, AttackCommandLayout.ActorItem);
+        var actor = state.FindGang(_commandTargetOptions[0].Gang)!;
+        DrawAttackGang(batch, actor, AttackCommandLayout.ActorPortrait, AttackCommandLayout.ActorItem);
 
-        var owners = AttackTargetOwners(state);
-        for (var slot = 0; slot < owners.Count; slot++)
+        var opponents = AttackPicker.Opponents(actor.Owner);
+        for (var slot = 0; slot < opponents.Count; slot++)
         {
-            var owner = state.FindPlayer(owners[slot])!;
-            var destination = AttackCommandLayout.Opponent(slot);
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, destination,
-                    OriginalSpriteLayout.OverlordPortrait(owner.Setup.PortraitId), Color.White);
-            DrawBorder(batch, pixel, destination, PlayerColors[owner.Id.Value],
-                owner.Id == target.Owner ? 2 : 1);
+            if (_uiSprites is null || state.FindPlayer(opponents[slot]) is not { } opponent) continue;
+            var enabled = AttackPicker.IsOpponentEnabled(state, _commandTargetOptions, opponent.Id);
+            batch.Draw(_uiSprites, AttackCommandLayout.Opponent(slot),
+                AttackCommandLayout.OpponentSource(opponent.Setup.PortraitId, enabled), Color.White);
         }
 
-        var targets = AttackTargetIndicesForSelectedOwner(state);
-        foreach (var entry in targets.Take(AttackCommandLayout.VisibleTargets)
-                     .Select((commandIndex, slot) => (commandIndex, slot)))
+        // SCR-ATTACK-001: the target cards' art is not recorded; the rebuild draws each target's
+        // portrait and items at the rectangles FND-ATTACK-004 tests, as for the acting gang.
+        var cells = AttackPicker.TargetCells(state, _commandTargetOptions, _attackSelection.Opponent);
+        for (var cell = 0; cell < cells.Count; cell++)
         {
-            var candidate = state.FindGang(new GangId(
-                _commandTargetOptions[entry.commandIndex].Target.Id))!;
-            DrawAttackGang(batch, pixel, candidate,
-                AttackCommandLayout.TargetPortrait(entry.slot),
-                AttackCommandLayout.TargetForceBar(entry.slot),
-                itemSlot => AttackCommandLayout.TargetItem(entry.slot, itemSlot));
-            if (entry.commandIndex == _commandTargetCursor)
-                DrawTargetReticle(batch, pixel, AttackCommandLayout.TargetPortrait(entry.slot));
+            var candidate = state.FindGang(new GangId(_commandTargetOptions[cells[cell]].Target.Id))!;
+            DrawAttackGang(batch, candidate, AttackCommandLayout.TargetPortrait(cell),
+                itemSlot => AttackCommandLayout.TargetItem(cell, itemSlot));
         }
 
-        DrawActiveAttackOk(batch, pixel, font);
+        if (_uiKeyedSprites is not null)
+        {
+            var opponentSlot = _attackSelection.Opponent is { } chosen
+                ? opponents.ToList().IndexOf(chosen)
+                : -1;
+            if (opponentSlot >= 0)
+                batch.Draw(_uiKeyedSprites, AttackCommandLayout.OpponentFrame(opponentSlot),
+                    AttackCommandLayout.OpponentFrameSource, Color.White);
+            var targetCell = _attackSelection.Target is { } target ? cells.ToList().IndexOf(target) : -1;
+            if (targetCell >= 0)
+                batch.Draw(_uiKeyedSprites, AttackCommandLayout.TargetMarker(targetCell),
+                    AttackCommandLayout.TargetMarkerSource, Color.White);
+        }
+
+        if (_uiSprites is null) return;
+        // FND-ATTACK-004, FND-UI-019: the Confirm face shows whether the order can be confirmed.
+        batch.Draw(_uiSprites, AttackCommandLayout.Ok, _attackSelection.CanConfirm
+            ? AttackCommandLayout.OkEnabledSource
+            : AttackCommandLayout.OkDisabledSource, Color.White);
+        if (_hoverPoint is not { } hover) return;
+        if (_pressedAttackFace == AttackFace.Cancel && AttackCommandLayout.Cancel.Contains(hover))
+            batch.Draw(_uiSprites, AttackCommandLayout.Cancel,
+                AttackCommandLayout.CancelPressedSource, Color.White);
+        else if (_pressedAttackFace == AttackFace.Confirm && AttackCommandLayout.Ok.Contains(hover))
+            batch.Draw(_uiSprites, AttackCommandLayout.Ok,
+                AttackCommandLayout.OkPressedSource, Color.White);
     }
 
+    /// <summary>
+    /// SCR-ATTACK-001, FND-ATTACK-003: a gang's 64-by-64 portrait and the 20-by-20 icon of each
+    /// item it holds.
+    /// </summary>
     private void DrawAttackGang(
         SpriteBatch batch,
-        Texture2D pixel,
         MatchGangState gang,
         Rectangle portrait,
-        Rectangle forceBar,
         Func<int, Rectangle> itemDestination)
     {
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, portrait,
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
-        DrawBorder(batch, pixel, portrait, PlayerColors[gang.Owner.Value], 1);
-
-        var itemIds = EquippedItems(gang);
-        for (var slot = 0; slot < itemIds.Length; slot++)
-        {
-            var destination = itemDestination(slot);
-            batch.Draw(pixel, destination, Color.Black);
-            DrawBorder(batch, pixel, destination, Color.LightGray, 1);
-            if (_itemPortraits is not null && itemIds[slot] is { } itemId)
-                batch.Draw(_itemPortraits, destination,
+        if (_itemPortraits is null) return;
+        for (var slot = 0; slot < AttackCommandLayout.EquippedItemCount; slot++)
+            if (EquippedItem(gang, slot) is { } itemId)
+                batch.Draw(_itemPortraits, itemDestination(slot),
                     OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
-        }
-
-        batch.Draw(pixel, forceBar, Color.DarkRed);
-        var forceWidth = forceBar.Width * gang.Force / ManualRules.MaximumForce;
-        if (forceWidth > 0)
-            batch.Draw(pixel, new Rectangle(forceBar.X, forceBar.Y, forceWidth, forceBar.Height),
-                Color.Lime);
-    }
-
-    private void DrawTargetReticle(SpriteBatch batch, Texture2D pixel, Rectangle target)
-    {
-        var center = target.Center;
-        var red = new Color(220, 30, 20);
-        batch.Draw(pixel, new Rectangle(center.X - 13, center.Y, 27, 1), red);
-        batch.Draw(pixel, new Rectangle(center.X, center.Y - 13, 1, 27), red);
-        DrawBorder(batch, pixel, new Rectangle(center.X - 8, center.Y - 8, 17, 17), red, 1);
-    }
-
-    private IReadOnlyList<PlayerId> AttackTargetOwners(MatchState state) => _commandTargetOptions
-        .Select(command => state.FindGang(new GangId(command.Target.Id))?.Owner)
-        .OfType<PlayerId>()
-        .Distinct()
-        .OrderBy(owner => owner.Value)
-        .Take(5)
-        .ToArray();
-
-    private void SelectFirstAttackTarget(PlayerId owner)
-    {
-        if (_state is null) return;
-        for (var index = 0; index < _commandTargetOptions.Count; index++)
-        {
-            if (_state.FindGang(new GangId(_commandTargetOptions[index].Target.Id))?.Owner != owner) continue;
-            _commandTargetCursor = index;
-            return;
-        }
-    }
-
-    private IReadOnlyList<int> AttackTargetIndicesForSelectedOwner(MatchState state)
-    {
-        if (_commandTargetOptions.Count == 0) return [];
-        var current = state.FindGang(new GangId(_commandTargetOptions[_commandTargetCursor].Target.Id));
-        return current is null
-            ? []
-            : Enumerable.Range(0, _commandTargetOptions.Count)
-                .Where(index => state.FindGang(
-                    new GangId(_commandTargetOptions[index].Target.Id))?.Owner == current.Owner)
-                .ToArray();
-    }
-
-    private static void DrawActiveAttackOk(SpriteBatch batch, Texture2D pixel, PixelFont font)
-    {
-        var button = AttackCommandLayout.Ok;
-        batch.Draw(pixel, button, new Color(5, 18, 8));
-        DrawBorder(batch, pixel, button, Color.Lime, 2);
-        font.Draw(batch, "OK", new Vector2(button.Center.X - 6, button.Y + 8), Color.Lime, 1);
     }
 }

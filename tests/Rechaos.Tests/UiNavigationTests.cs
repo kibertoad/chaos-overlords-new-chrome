@@ -40,7 +40,7 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(EquipmentCommandLayout.Panel, AttackCommandLayout.Panel);
         Assert.Equal(new Rectangle(130, 141, 64, 64), AttackCommandLayout.ActorPortrait);
-        Assert.Equal(new Rectangle(240, 140, 64, 64), AttackCommandLayout.TargetPortrait(0));
+        Assert.Equal(new Rectangle(240, 141, 64, 64), AttackCommandLayout.TargetPortrait(0));
         Assert.Equal(new Rectangle(202, 140, 32, 32), AttackCommandLayout.Opponent(0));
         Assert.Equal(new Rectangle(202, 284, 32, 32), AttackCommandLayout.Opponent(4));
         Assert.Equal(new Rectangle(130, 206, 20, 20), AttackCommandLayout.ActorItem(0));
@@ -901,15 +901,17 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
-    public void AttackTargetGridHasSixNonOverlappingCards()
+    public void AttackTargetPortraitsSitInsideTheirOwnHitCells()
     {
-        var cards = Enumerable.Range(0, AttackCommandLayout.VisibleTargets)
-            .Select(AttackCommandLayout.TargetCard).ToArray();
-
-        Assert.Equal(new Rectangle(240, 140, 64, 90), cards[0]);
-        Assert.Equal(new Rectangle(372, 230, 64, 90), cards[^1]);
-        Assert.All(cards.SelectMany((left, index) => cards.Skip(index + 1)
-            .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
+        // SCR-ATTACK-001, FND-ATTACK-001, FND-ATTACK-004: each target's portrait and item icons
+        // lie inside the pointer cell that selects it.
+        for (var cell = 0; cell < AttackCommandLayout.VisibleTargets; cell++)
+        {
+            var hit = AttackCommandLayout.TargetHit(cell);
+            Assert.True(hit.Contains(AttackCommandLayout.TargetPortrait(cell)));
+            for (var item = 0; item < AttackCommandLayout.EquippedItemCount; item++)
+                Assert.True(hit.Contains(AttackCommandLayout.TargetItem(cell, item)));
+        }
     }
 
     [Fact]

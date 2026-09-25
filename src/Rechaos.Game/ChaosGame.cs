@@ -511,7 +511,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 else if (Pressed(keyboard, Keys.O)) OpenOptions();
                 else if (Pressed(keyboard, Keys.Escape))
                 {
-                    if (_configuringOnlineLobby) CloseOnlineSetup();
+                    // SCR-ATTACK-001, FND-ATTACK-003: Escape is the Attack picker's Cancel.
+                    if (IsAttackPickerOpen()) CancelAttackPickerByKey();
+                    else if (_configuringOnlineLobby) CloseOnlineSetup();
                     else if (_state is not null && _screens.Current is not ClientScreen.Title)
                         OpenGameMenu();
                     else if (!_screens.Back()) Exit();
@@ -558,6 +560,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     UpdateComlinkView(keyboard);
                     break;
                 case ClientScreen.Commands:
+                    if (IsAttackPickerOpen())
+                    {
+                        UpdateAttackPicker(keyboard);
+                        break;
+                    }
                     if (IsMovementCommandPicker())
                     {
                         if (Pressed(keyboard, Keys.Left)) MoveMovementTarget(-1, 0);
