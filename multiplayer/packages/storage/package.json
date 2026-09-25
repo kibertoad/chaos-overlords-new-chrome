@@ -77,7 +77,7 @@
     "drizzle-kit": "^0.31.10",
     "pg": "^8.23.0",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.11",
+    "vitest": "^5.0.1",
     "@chaos-overlords/conformance": "workspace:*"
   },
   "peerDependencies": {
