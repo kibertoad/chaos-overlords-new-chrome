@@ -8,16 +8,27 @@ public sealed record CrackdownTriggerResult(
 
 public static class CrackdownResolver
 {
+    /// <summary>
+    /// The police presence that never counts down, which the island name rule writes into every
+    /// neutral sector (RULE-SETUP-005, RULE-POLICE-003).
+    /// </summary>
+    public const int PermanentCrackdownTurns = 100;
+
     public static void ResolveUpkeep(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
     }
 
+    /// <summary>
+    /// RULE-POLICE-003: after the combat phase every presence from 1 to 99 loses a turn. A value
+    /// of 100 or more stays, so the island name's police never leave, and a Crackdown that adds
+    /// its 3 to 5 turns to them keeps them permanent.
+    /// </summary>
     public static void FinishCombat(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
         foreach (var sector in state.Sectors.OrderBy(sector => sector.Id))
-            if (sector.CrackdownTurnsRemaining > 0)
+            if (sector.CrackdownTurnsRemaining is > 0 and < PermanentCrackdownTurns)
                 sector.CrackdownTurnsRemaining--;
     }
 

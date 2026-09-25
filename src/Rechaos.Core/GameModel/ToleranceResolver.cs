@@ -29,8 +29,9 @@ public static class ToleranceResolver
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);
         return sector.Sites
-            .Where(site => SiteControlRules.Controller(sector, site) is not null)
-            .Sum(site => state.Definitions.Site(site.DefinitionId).Tolerance);
+            .Select(site => (Site: site, Definition: state.Definitions.Site(site.DefinitionId)))
+            .Where(pair => SiteControlRules.IsComplete(pair.Site, pair.Definition))
+            .Sum(pair => pair.Definition.Tolerance);
     }
 
     /// <summary>RULE-BRIBE-001: the base plus 3, stored as a signed byte.</summary>
@@ -76,7 +77,9 @@ public static class ToleranceResolver
 
     /// <summary>
     /// RULE-SITE-001: before planning, the Tolerance the Chaos test reads is rebuilt as the base
-    /// plus the completed sites' Tolerance, each sum stored as a signed byte.
+    /// plus the completed sites' Tolerance, each sum stored as a signed byte. The headquarters
+    /// site is complete at progress 0 and adds its Tolerance whoever owns the sector, neutral
+    /// included (RULE-CHAOS-001).
     /// </summary>
     internal static void RebuildBeforePlanning(MatchState state)
     {
@@ -87,8 +90,8 @@ public static class ToleranceResolver
             var support = 0;
             foreach (var site in sector.Sites)
             {
-                if (SiteControlRules.Controller(sector, site) is null) continue;
                 var definition = state.Definitions.Site(site.DefinitionId);
+                if (!SiteControlRules.IsComplete(site, definition)) continue;
                 tolerance = SignedByte(tolerance + definition.Tolerance);
                 support = SignedByte(support + definition.Support);
             }

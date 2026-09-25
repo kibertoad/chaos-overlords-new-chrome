@@ -477,6 +477,7 @@ public static class MatchStateHasher
         writer.Write(sector.Id); WriteNullableInt(writer, sector.Owner?.Value); writer.Write(sector.Tolerance);
         writer.Write(sector.BaseTolerance);
         writer.Write(sector.Support);
+        writer.Write(sector.CashYield);
         writer.Write(sector.CrackdownActive); writer.Write(sector.IsImportant); writer.Write(sector.Sites.Count);
         // A sector orders its sites by slot when it is built, so the list is already in slot order.
         foreach (var site in sector.Sites)

@@ -184,7 +184,8 @@ public sealed class MatchSectorState
         int crackdownTurnsRemaining = 0,
         IReadOnlyList<int>? crackdownHistory = null,
         int? baseTolerance = null,
-        int support = 0)
+        int support = 0,
+        int? cashYield = null)
     {
         if (id is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(id));
@@ -216,6 +217,7 @@ public sealed class MatchSectorState
         IsImportant = isImportant;
         Income = income;
         _crackdownHistory = crackdownHistory?.ToList() ?? [];
+        _cashYield = cashYield;
     }
 
     public int Id { get; }
@@ -241,6 +243,24 @@ public sealed class MatchSectorState
     /// still counts until the next rebuild.
     /// </summary>
     public int Support { get; internal set; }
+
+    /// <summary>
+    /// The Cash the sector pays its owner at Upkeep: 1 plus the completed sites' Cash, rebuilt
+    /// before planning and left alone during resolution (FMT-STATE-002 `cash_yield`,
+    /// RULE-SITE-001, RULE-UPKEEP-001). A site reset by a takeover still counts until the next
+    /// rebuild, so the new owner collects its Cash once. A match fills in the value of a sector
+    /// built without one from its sites when the match is constructed.
+    /// </summary>
+    public int CashYield
+    {
+        get => _cashYield
+            ?? throw new InvalidOperationException("The sector's Cash yield has not been rebuilt.");
+        internal set => _cashYield = value;
+    }
+
+    /// <summary>The Cash yield given at construction, or null when the match derives it.</summary>
+    internal int? StoredCashYield => _cashYield;
+    private int? _cashYield;
     // Retained only so pre-v24 saves/replays can verify their historical fingerprints.
     // The original executable has no persistent sector-Chaos accumulator.
     internal int LegacyChaos { get; }
@@ -394,6 +414,10 @@ public sealed partial class MatchState
         _notifications = Players.ToDictionary(player => player.Id, _ => new NotificationQueue());
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         _comlinkInboxes = Players.ToDictionary(player => player.Id, _ => new ComlinkInbox());
+        // FMT-STATE-002 `cash_yield`: a sector built or restored without one takes the value the
+        // rebuild before planning would give it (RULE-SITE-001).
+        foreach (var sector in Sectors.Where(sector => sector.StoredCashYield is null))
+            sector.CashYield = SectorIncomeResolver.Rebuilt(definitions, sector);
         if (restore is not null) RestoreRuntime(restore);
         // RULE-GANG-001 runs before the first planning phase; a gang joining without stored values
         // (a new match, including the generator's, which passes a synthetic restore) stores them
@@ -523,6 +547,7 @@ public sealed partial class MatchState
         CrackdownResolver.ResolveUpkeep(this);
         LastUpkeepResolutions = Coordinator.Turn == 1 ? [] : EconomyResolver.ResolveUpkeep(this);
         SectorBenefitResolver.ActivatePending(this);
+        SectorIncomeResolver.RebuildBeforePlanning(this);
         ToleranceResolver.RebuildBeforePlanning(this);
         EffectiveStatisticsCalculator.RebuildBeforePlanning(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());

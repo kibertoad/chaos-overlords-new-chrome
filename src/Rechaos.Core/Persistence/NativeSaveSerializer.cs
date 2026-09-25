@@ -390,7 +390,8 @@ public static class NativeSaveSerializer
         sector.CrackdownHistory.ToArray(),
         Chaos: null,
         BaseTolerance: sector.BaseTolerance,
-        Support: sector.Support);
+        Support: sector.Support,
+        CashYield: sector.CashYield);
 
     private static MatchSectorState RestoreSector(SectorDocument sector) => new(
         sector.Id,
@@ -412,7 +413,10 @@ public static class NativeSaveSerializer
         sector.BaseTolerance
             ?? throw new InvalidDataException("Native save base Tolerance is missing."),
         sector.Support
-            ?? throw new InvalidDataException("Native save sector Support is missing."));
+            ?? throw new InvalidDataException("Native save sector Support is missing."),
+        // FMT-STATE-002 `cash_yield`. A save without it is filled in from the sites when the match
+        // is built, which gives the value of the last rebuild at every planning boundary.
+        sector.CashYield);
 
     /// <summary>
     /// Copies <paramref name="source"/> into memory and rewinds the copy, throwing
@@ -575,7 +579,8 @@ internal sealed record SectorDocument(
     IReadOnlyList<int>? CrackdownHistory = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Chaos = null,
     int? BaseTolerance = null,
-    int? Support = null);
+    int? Support = null,
+    int? CashYield = null);
 
 internal sealed record SiteDocument(int Slot, short DefinitionId, int Resistance, int? InfluencedBy);
 

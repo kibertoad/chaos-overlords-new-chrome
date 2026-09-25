@@ -75,11 +75,13 @@ public static class EconomyResolver
         ArgumentNullException.ThrowIfNull(player);
         state.RequirePlayer(player);
         var previousCash = player.Cash;
-        var sectorIncome = state.Sectors.Count(sector => sector.Owner == player.Id)
-            * ManualRules.ControlledSectorTax;
-        var siteIncome = state.Sectors.SelectMany(sector => sector.Sites)
-            .Where(site => site.InfluencedBy == player.Id)
-            .Sum(site => state.Definitions.Site(site.DefinitionId).Cash);
+        // RULE-UPKEEP-001: each owned sector pays the Cash yield of the last rebuild, shown as the
+        // tax and the sites' part. A sector taken during resolution pays its new owner the old
+        // sites' Cash once, although the takeover reset their progress.
+        var ownedSectors = state.Sectors.Where(sector => sector.Owner == player.Id).ToArray();
+        var sectorIncome = ownedSectors.Length * ManualRules.ControlledSectorTax;
+        var siteIncome = ownedSectors.Sum(sector =>
+            SectorIncomeResolver.SectorCash(state, sector) - ManualRules.ControlledSectorTax);
         var gangUpkeep = player.Gangs.Where(gang => gang.IsActive)
             .Sum(gang => state.Definitions.Gang(gang.DefinitionId).Upkeep);
         return new EconomyForecast(previousCash, sectorIncome, siteIncome, gangUpkeep,

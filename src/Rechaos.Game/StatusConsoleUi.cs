@@ -133,9 +133,12 @@ public static class StatusConsoleTooltip
                 "A CHALLENGER'S CONTROL MUST BEAT INCOME PLUS SUPPORT."
             ];
         if (StatusConsoleLayout.SectorEntry(4).Contains(point))
+            // RULE-UPKEEP-001, RULE-SITE-001
             return [
                 "SECTOR CASH",
-                "OWNER-ONLY UPKEEP: $1 TAX PLUS COMPLETED-SITE CASH."
+                "OWNER-ONLY UPKEEP: $1 TAX PLUS COMPLETED-SITE CASH,",
+                "SET BEFORE PLANNING. A SECTOR TAKEN THIS TURN STILL",
+                "PAYS ITS NEW OWNER THE OLD SITES' CASH ONCE."
             ];
         return [];
     }
