@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 94 |
+| `supported` | 90 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 127 |
+| `implemented` | 131 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 20 |
-| `partial` | 75 |
-| `complete` | 127 |
+| `partial` | 71 |
+| `complete` | 131 |
 
 ## DATA
 
@@ -223,7 +223,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | partial | None | None | supported | The rebuild adds the weapon skills when an attack is computed instead of storing them in Combat (FND-GANG-007), so other readers of the stored Combat can differ. |
+| `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | The fields are kept as 32-bit values; the INT8 wrap of a total outside -128 to 127 is not reproduced, and no shipped combination reaches it. |
 | `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | partial | None | None | supported | Force 0 and cleared orders stand in for the sector byte 100. |
 | `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | partial | None | None | supported | Field columns and rows follow the original; which statistic sits on which row is not recorded. |
 | `SCR-GANG-002` | Gang information panel for a hired gang | supported | partial | None | `DEV-GANG-001` | supported | Value columns follow the original; the rows, equipment and portrait positions are not recorded, and the rebuild adds breakdown tooltips. |
@@ -275,7 +275,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | supported | partial | None | `DEV-HELP-002` | supported | The rebuild lowers the attitude only for an attack that was not evaded, where the original also lowers it for an evaded attack, and its Martial Arts test on the attacker is `> 0` where the original tests `== 0` (FND-COMBAT-008, FND-AI-047). |
+| `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | supported | complete | None | `DEV-HELP-002` | implemented | None |
 | `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
 | `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | partial | None | `DEV-ATTACK-001`, `DEV-UI-008` | supported | Opponent and target hit maps are the original's. FND-ATTACK-003 now records the panel origin, the Confirm and Cancel faces, Enter, plus and Escape, the acting gang's portrait and equipment and the initial selection, and FND-ATTACK-004 the double-click information panels; the rebuild was not compared with them. |
 
@@ -283,7 +283,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-COMBAT-001` | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported | partial | None | None | supported | The rebuild adds the weapon skills when an attack is computed instead of storing them in Combat (FND-GANG-007), so other readers of the stored Combat can differ. |
+| `RULE-COMBAT-001` | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | partial | None | None | supported | Damage, deaths and order follow the rule, but the rebuild keeps combat events with combatant details instead of the per-gang combat records and per-sector result rows. |
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
@@ -331,7 +331,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | partial | None | None | supported | Placement is carried out in the Hire phase. The rebuild always replaces an anchor of 63, where the original keeps it for player 0 while sector 0, 6, 7 or 8 is free land (FND-AI-051). |
 | `RULE-AI-014` | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported | complete | None | None | implemented | None |
 | `RULE-AI-015` | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | supported | complete | None | None | implemented | None |
-| `RULE-AI-016` | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported | partial | None | None | supported | The rebuild lowers the attitude only for attacks that are not evaded; the original also lowers it by the reaction after an evaded attack (FND-AI-047). |
+| `RULE-AI-016` | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported | complete | None | None | implemented | None |
 | `RULE-AI-017` | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | supported | complete | None | None | implemented | None |
 | `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported | complete | None | None | implemented | None |
 | `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild counts previous Hide where the original counts previous Chaos and writes Chaos (FND-AI-046), and groups the previous actions differently from the jump table (FND-AI-048). |

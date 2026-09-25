@@ -112,7 +112,7 @@ public static class MatchStateHasher
     /// multiplayer session version — so the file is refused as an older format before its
     /// fingerprint is ever compared. <c>StateFingerprintVersionCouplingTests</c> holds the rule.
     /// </remarks>
-    internal const int FormatVersion = 5;
+    internal const int FormatVersion = 6;
 
     /// <summary>The number of lowercase hex characters a fingerprint has.</summary>
     public const int FingerprintLength = 2 * DigestBytes;
@@ -436,6 +436,9 @@ public static class MatchStateHasher
             writer.Write(gang.Id.Value); writer.Write(gang.Owner.Value); writer.Write(gang.DefinitionId); writer.Write(gang.SectorId);
             writer.Write(gang.Force); writer.Write(gang.Hidden); writer.Write(gang.HiredThisTurn);
             WriteNullableShort(writer, gang.WeaponItemId); WriteNullableShort(writer, gang.ArmorItemId); WriteNullableShort(writer, gang.MiscellaneousItemId);
+            writer.Write(gang.StoredStatistics.HasValue);
+            if (gang.StoredStatistics is { } statistics)
+                foreach (var value in NativeStatistics.ToArray(statistics)) writer.Write(value);
         }
         foreach (var slot in player.HireOfferSlots)
         {

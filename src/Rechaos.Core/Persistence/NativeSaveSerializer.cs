@@ -14,7 +14,7 @@ public static class NativeSaveSerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
-    public const int CurrentFormatVersion = 30;
+    public const int CurrentFormatVersion = 31;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -315,7 +315,8 @@ public static class NativeSaveSerializer
         player.Gangs.Select(gang => new GangDocument(
             gang.Id.Value, gang.DefinitionId, gang.SectorId, gang.Force,
             gang.Hidden, gang.HiredThisTurn,
-            gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId)).ToArray(),
+            gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId,
+            gang.StoredStatistics is { } statistics ? NativeStatistics.ToArray(statistics) : null)).ToArray(),
         player.HirePool.ToArray(),
         player.PendingHires.ToArray(),
         player.ResearchProgress.OrderBy(entry => entry.Key).ToDictionary(),
@@ -344,7 +345,8 @@ public static class NativeSaveSerializer
         {
             var restored = new MatchGangState(
                 new GangId(gang.Id), playerId, gang.DefinitionId, gang.SectorId, gang.Force,
-                gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId)
+                gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId,
+                gang.Statistics is { } statistics ? NativeStatistics.FromArray(statistics) : null)
             {
                 Hidden = gang.Hidden,
                 HiredThisTurn = gang.HiredThisTurn
@@ -544,7 +546,8 @@ internal sealed record GangDocument(
     bool HiredThisTurn,
     short? WeaponItemId,
     short? ArmorItemId,
-    short? MiscellaneousItemId);
+    short? MiscellaneousItemId,
+    IReadOnlyList<int>? Statistics = null);
 
 internal sealed record StatisticsDocument(
     long CashEarned,

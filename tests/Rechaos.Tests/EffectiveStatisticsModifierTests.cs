@@ -21,7 +21,9 @@ public sealed class EffectiveStatisticsModifierTests
             (GangModifierSource.Weapon, data.Items[weapon].Name),
             (GangModifierSource.Site, SiteName(data, match, 0)),
             (GangModifierSource.Site, SiteName(data, match, 2))
-        ], modifiers.Select(modifier => (modifier.Source, modifier.Name)));
+        ], modifiers
+            .Where(modifier => modifier.Source != GangModifierSource.WeaponSkills)
+            .Select(modifier => (modifier.Source, modifier.Name)));
     }
 
     [Fact]
@@ -39,6 +41,39 @@ public sealed class EffectiveStatisticsModifierTests
         Assert.Equal(EffectiveStatisticsCalculator.ForGang(match, gang), summed);
     }
 
+    // RULE-GANG-001: statistics are stored at the rebuild before planning, so an item bought during
+    // the turn changes nothing until the next rebuild.
+    [Fact]
+    public void StoredStatisticsChangeOnlyAtTheRebuildBeforePlanning()
+    {
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(data, weaponItemId: null, influencedSiteSlots: []);
+        var gang = match.FindGang(new GangId(10))!;
+        var before = EffectiveStatisticsCalculator.ForGang(match, gang);
+        var armor = data.Items.Select((item, index) => (item, index))
+            .First(entry => entry.item.Type == 3 && entry.item.Stats.Defense > 0).index;
+
+        gang.ArmorItemId = checked((short)armor);
+
+        Assert.Equal(before, EffectiveStatisticsCalculator.ForGang(match, gang));
+        match.FinishUpkeep();
+        Assert.Equal(before.Defense + data.Items[armor].Stats.Defense,
+            EffectiveStatisticsCalculator.ForGang(match, gang).Defense);
+    }
+
+    // RULE-COMBAT-001: an unarmed gang's stored Combat holds its Strength, Fighting and Martial Arts.
+    [Fact]
+    public void AnUnarmedGangsStoredCombatHoldsItsSkills()
+    {
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(data, weaponItemId: null, influencedSiteSlots: []);
+        var gang = match.FindGang(new GangId(10))!;
+        var stats = data.Gangs.Single(value => value.Id == gang.DefinitionId).Stats;
+
+        Assert.Equal(stats.Combat + stats.Strength + stats.Fighting + stats.MartialArts,
+            EffectiveStatisticsCalculator.ForGang(match, gang).Combat);
+    }
+
     [Fact]
     public void SitesInfluencedByOtherPlayersDoNotModifyTheGang()
     {
@@ -47,7 +82,8 @@ public sealed class EffectiveStatisticsModifierTests
             influencedSiteSlots: [0], influencedBy: new PlayerId(1));
         var gang = match.FindGang(new GangId(10))!;
 
-        Assert.Empty(EffectiveStatisticsCalculator.ModifiersForGang(match, gang));
+        Assert.DoesNotContain(EffectiveStatisticsCalculator.ModifiersForGang(match, gang),
+            modifier => modifier.Source == GangModifierSource.Site);
     }
 
     private static string SiteName(OriginalData data, MatchState match, int slot) =>

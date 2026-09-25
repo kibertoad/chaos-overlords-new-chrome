@@ -47,7 +47,10 @@ public enum GangModifierSource
     Weapon,
     Armor,
     Miscellaneous,
-    Site
+    Site,
+
+    /// <summary>The skills that go with the gang's weapon, added to Combat (RULE-COMBAT-001).</summary>
+    WeaponSkills
 }
 
 /// <summary>One named contribution to a gang's effective statistics.</summary>
@@ -57,35 +60,49 @@ public readonly record struct GangStatisticsModifier(
     Statistics Stats);
 
 /// <summary>
-/// Calculates definition, equipped-item modifiers, and local influenced-site
-/// modifiers for the influencing player's gangs.
+/// Builds a gang's fourteen statistics as RULE-GANG-001 does before every planning phase: the
+/// definition's values, plus each item's, plus the completed sites of its sector when its player
+/// owns that sector, and then the weapon skills in Combat (RULE-COMBAT-001).
 /// </summary>
 public static class EffectiveStatisticsCalculator
 {
+    /// <summary>
+    /// The statistics the gang has now: the values stored at the last rebuild, which resolution
+    /// reads, so an item bought or a site completed during a turn counts from the next rebuild.
+    /// </summary>
     public static EffectiveStatistics ForGang(MatchState state, MatchGangState gang)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(gang);
+        return gang.StoredStatistics ?? Rebuilt(state, gang);
+    }
+
+    /// <summary>The values RULE-GANG-001 writes for the gang from the state as it stands.</summary>
+    public static EffectiveStatistics Rebuilt(MatchState state, MatchGangState gang)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gang);
         var definition = state.Definitions.Gang(gang.DefinitionId);
         var result = EffectiveStatistics.From(definition.Stats);
-        if (gang.WeaponItemId is { } weapon)
-            result = result.Add(state.Definitions.Items[weapon].Stats);
-        if (gang.ArmorItemId is { } armor)
-            result = result.Add(state.Definitions.Items[armor].Stats);
-        if (gang.MiscellaneousItemId is { } miscellaneous)
-            result = result.Add(state.Definitions.Items[miscellaneous].Stats);
-        foreach (var site in state.Sectors[gang.SectorId].Sites)
-        {
-            if (site.InfluencedBy != gang.Owner) continue;
-            result = result.Add(state.Definitions.Site(site.DefinitionId).Stats);
-        }
-        return result;
+        foreach (var modifier in SourceModifiers(state, gang))
+            result = result.Add(modifier.Stats);
+        return result with { Combat = checked(result.Combat + WeaponSkills(state, gang, result)) };
     }
 
     /// <summary>
-    /// Names every contribution behind <see cref="ForGang"/>, in the order it is applied, so the
-    /// interface can explain where an effective statistic comes from. The resolution path stays on
-    /// <see cref="ForGang"/>: this allocates the descriptions that only a reader needs.
+    /// Rebuilds and stores the statistics of every active gang, after the sectors' completed-site
+    /// values are rebuilt and before planning (RULE-GANG-001). An inactive gang keeps its values.
+    /// </summary>
+    internal static void RebuildBeforePlanning(MatchState state)
+    {
+        foreach (var gang in state.Players.SelectMany(player => player.Gangs))
+            if (gang.IsActive) gang.StoredStatistics = Rebuilt(state, gang);
+    }
+
+    /// <summary>
+    /// Names every contribution behind <see cref="Rebuilt"/>, in the order it is applied, so the
+    /// interface can explain where an effective statistic comes from. The last one is the weapon
+    /// skills Combat takes, when they are not zero.
     /// </summary>
     public static IReadOnlyList<GangStatisticsModifier> ModifiersForGang(
         MatchState state,
@@ -93,20 +110,42 @@ public static class EffectiveStatisticsCalculator
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gang);
-        var modifiers = new List<GangStatisticsModifier>();
+        var modifiers = SourceModifiers(state, gang).ToList();
+        var summed = modifiers.Aggregate(
+            EffectiveStatistics.From(state.Definitions.Gang(gang.DefinitionId).Stats),
+            (result, modifier) => result.Add(modifier.Stats));
+        var skills = WeaponSkills(state, gang, summed);
+        if (skills != 0)
+            modifiers.Add(new GangStatisticsModifier(
+                GangModifierSource.WeaponSkills, "WEAPON SKILLS",
+                new Statistics(checked((short)skills), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)));
+        return modifiers;
+    }
+
+    private static IEnumerable<GangStatisticsModifier> SourceModifiers(
+        MatchState state,
+        MatchGangState gang)
+    {
         foreach (var (source, itemId) in EquippedItems(gang))
         {
             var item = state.Definitions.Items[itemId];
-            modifiers.Add(new GangStatisticsModifier(source, item.Name, item.Stats));
+            yield return new GangStatisticsModifier(source, item.Name, item.Stats);
         }
-        foreach (var site in InfluencedSites(state, gang))
+        foreach (var site in CompletedSitesOfOwnedSector(state, gang))
         {
             var definition = state.Definitions.Site(site.DefinitionId);
-            modifiers.Add(new GangStatisticsModifier(
-                GangModifierSource.Site, definition.Name, definition.Stats));
+            yield return new GangStatisticsModifier(
+                GangModifierSource.Site, definition.Name, definition.Stats);
         }
-        return modifiers;
     }
+
+    /// <summary>
+    /// The skills Combat takes for the gang's weapon, read from the statistics with items and
+    /// sites already added (RULE-COMBAT-001). A weapon of another type adds none.
+    /// </summary>
+    private static int WeaponSkills(MatchState state, MatchGangState gang, EffectiveStatistics statistics) =>
+        ManualRules.WeaponSkills(statistics,
+            gang.WeaponItemId is { } weapon ? state.Definitions.Items[weapon].Type : null);
 
     private static IEnumerable<(GangModifierSource Source, short ItemId)> EquippedItems(
         MatchGangState gang)
@@ -119,10 +158,16 @@ public static class EffectiveStatisticsCalculator
             yield return (GangModifierSource.Miscellaneous, miscellaneous);
     }
 
-    private static IEnumerable<MatchSiteState> InfluencedSites(
+    // RULE-GANG-001: a gang takes the completed sites of its sector only when its player owns the
+    // sector, whoever completed them.
+    private static IEnumerable<MatchSiteState> CompletedSitesOfOwnedSector(
         MatchState state,
-        MatchGangState gang) =>
-        state.Sectors[gang.SectorId].Sites.Where(site => site.InfluencedBy == gang.Owner);
+        MatchGangState gang)
+    {
+        var sector = state.Sectors[gang.SectorId];
+        if (sector.Owner != gang.Owner) return [];
+        return sector.Sites.Where(site => SiteControlRules.Controller(sector, site) is not null);
+    }
 }
 
 public static class DiceRoller
@@ -134,5 +179,25 @@ public static class DiceRoller
         var rolls = new int[count];
         for (var index = 0; index < rolls.Length; index++) rolls[index] = random.NextInt(6) + 1;
         return rolls;
+    }
+}
+
+/// <summary>The fourteen statistics in record order, as the hash and the native save write them.</summary>
+internal static class NativeStatistics
+{
+    public static int[] ToArray(EffectiveStatistics value) =>
+    [
+        value.Combat, value.Defense, value.Stealth, value.Detect, value.Chaos, value.Control,
+        value.Heal, value.Influence, value.Research, value.Strength, value.Blade, value.Range,
+        value.Fighting, value.MartialArts
+    ];
+
+    public static EffectiveStatistics FromArray(IReadOnlyList<int> values)
+    {
+        if (values.Count != 14)
+            throw new InvalidDataException("A gang's statistics must hold fourteen values.");
+        return new EffectiveStatistics(
+            values[0], values[1], values[2], values[3], values[4], values[5], values[6],
+            values[7], values[8], values[9], values[10], values[11], values[12], values[13]);
     }
 }

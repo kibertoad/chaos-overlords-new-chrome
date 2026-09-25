@@ -162,46 +162,6 @@ public sealed partial class MatchPlayerState
     }
 }
 
-public sealed class MatchGangState
-{
-    public MatchGangState(
-        GangId id,
-        PlayerId owner,
-        short definitionId,
-        int sectorId,
-        int force,
-        short? weaponItemId = null,
-        short? armorItemId = null,
-        short? miscellaneousItemId = null)
-    {
-        if (sectorId is < 0 or >= MatchLimits.SectorCount)
-            throw new ArgumentOutOfRangeException(nameof(sectorId));
-        if (force is < 0 or > ManualRules.MaximumForce)
-            throw new ArgumentOutOfRangeException(nameof(force));
-        Id = id;
-        Owner = owner;
-        DefinitionId = definitionId;
-        SectorId = sectorId;
-        Force = force;
-        WeaponItemId = weaponItemId;
-        ArmorItemId = armorItemId;
-        MiscellaneousItemId = miscellaneousItemId;
-    }
-
-    public GangId Id { get; }
-    public PlayerId Owner { get; }
-    public short DefinitionId { get; }
-    public int SectorId { get; internal set; }
-    public int Force { get; internal set; }
-    public bool Hidden { get; internal set; }
-    public bool HiredThisTurn { get; internal set; }
-    public short? WeaponItemId { get; internal set; }
-    public short? ArmorItemId { get; internal set; }
-    public short? MiscellaneousItemId { get; internal set; }
-    public QueuedCommand? QueuedCommand { get; internal set; }
-    public bool IsActive => Force > 0;
-}
-
 public sealed record PendingHireState(
     short GangDefinitionId,
     int TargetSectorId,
@@ -435,6 +395,11 @@ public sealed partial class MatchState
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         _comlinkInboxes = Players.ToDictionary(player => player.Id, _ => new ComlinkInbox());
         if (restore is not null) RestoreRuntime(restore);
+        // RULE-GANG-001 runs before the first planning phase; a new match stores the values now so
+        // resolution never meets a gang without them. A restored match keeps what it saved.
+        else
+            foreach (var gang in Players.SelectMany(player => player.Gangs))
+                gang.StoredStatistics ??= EffectiveStatisticsCalculator.Rebuilt(this, gang);
     }
     internal MatchState(
         OriginalData definitions,
@@ -553,6 +518,7 @@ public sealed partial class MatchState
         LastUpkeepResolutions = Coordinator.Turn == 1 ? [] : EconomyResolver.ResolveUpkeep(this);
         SectorBenefitResolver.ActivatePending(this);
         ToleranceResolver.RebuildBeforePlanning(this);
+        EffectiveStatisticsCalculator.RebuildBeforePlanning(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }
     public TurnTransition FinishCommand(PlayerId player)

@@ -181,9 +181,10 @@ public static partial class CommandResolver
                 }
             }
 
+            // RULE-COMBAT-001: the stored Combat already holds the weapon skills.
             var attackDice = ManualRules.AttackDiceCount(
                 attacker.Force,
-                ManualRules.CombatRating(attacker.Statistics, attacker.WeaponType),
+                attacker.Statistics.Combat,
                 OriginalResolutionRules.AdjustDefense(
                     OriginalResolutionRules.Band(state, target.Owner),
                     target.Statistics.Defense));
@@ -195,13 +196,13 @@ public static partial class CommandResolver
             var attackDamage = OriginalResolutionRules.MainAttackDamage(
                 attackDice, attackSuccesses);
             var suppressesRetaliation = target.Hidden
-                || ManualRules.SuppressesRetaliation(attacker.Statistics, attacker.WeaponType)
-                && !ManualRules.SuppressesRetaliation(target.Statistics, target.WeaponType);
+                || ManualRules.SuppressesRetaliation(
+                    attacker.Statistics, attacker.WeaponType, target.Statistics, target.WeaponType);
             var retaliationDice = suppressesRetaliation
                 ? 0
                 : ManualRules.AttackDiceCount(
                     target.Force,
-                    ManualRules.CombatRating(target.Statistics, target.WeaponType),
+                    target.Statistics.Combat,
                     attacker.Statistics.Defense);
             var retaliationRolls = DiceRoller.RollD6(state.Random, retaliationDice);
             var retaliationSuccesses = OriginalResolutionRules.CountSuccesses(
@@ -223,11 +224,14 @@ public static partial class CommandResolver
             .Select(snapshot => RollPoliceAttack(state, snapshot))
             .ToArray();
 
+        // RULE-AI-016: every Attack order lowers the target player's attitude, an evaded one by the
+        // reaction alone, since its opening damage is -1 [FND-AI-047].
+        foreach (var outcome in outcomes)
+            state.AiStrategy.RecordCombat(outcome.Attacker.Owner, outcome.Target.Owner,
+                outcome.Code == CommandResolutionCode.Resolved ? outcome.Damage : -1);
         var incomingDamage = new Dictionary<GangId, int>();
         foreach (var outcome in outcomes.Where(outcome => outcome.Code == CommandResolutionCode.Resolved))
         {
-            state.AiStrategy.RecordCombat(
-                outcome.Attacker.Owner, outcome.Target.Owner, outcome.Damage);
             AddDamage(incomingDamage, outcome.Target.Id, outcome.Damage);
             AddDamage(incomingDamage, outcome.Attacker.Id, outcome.RetaliationDamage);
         }

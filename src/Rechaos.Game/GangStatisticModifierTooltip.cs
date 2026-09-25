@@ -4,8 +4,8 @@ using Rechaos.Core.GameModel;
 namespace Rechaos.Game;
 
 /// <summary>
-/// Explains an effective gang statistic by listing every equipment and influenced-site modifier
-/// that moves it away from the gang definition's own value.
+/// Explains an effective gang statistic by listing every equipment and completed-site modifier
+/// that moves it away from the gang definition's own value, and for Combat the weapon skills.
 /// </summary>
 public static class GangStatisticModifierTooltip
 {
@@ -60,6 +60,8 @@ public static class GangStatisticModifierTooltip
         GangModifierSource.Armor => "ARMOR",
         GangModifierSource.Miscellaneous => "MISC",
         GangModifierSource.Site => "SITE",
+        // RULE-COMBAT-001: the skills of the weapon are part of the stored Combat.
+        GangModifierSource.WeaponSkills => "WEAPON",
         _ => throw new ArgumentOutOfRangeException(nameof(source))
     };
 
