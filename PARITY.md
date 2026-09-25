@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 42 |
+| `supported` | 36 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 179 |
+| `implemented` | 185 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
-| `missing` | 11 |
-| `partial` | 32 |
-| `complete` | 179 |
+| `missing` | 10 |
+| `partial` | 27 |
+| `complete` | 185 |
 
 ## DATA
 
@@ -224,9 +224,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | The fields are kept as 32-bit values; the INT8 wrap of a total outside -128 to 127 is not reproduced, and no shipped combination reaches it. |
-| `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | complete | None | None | implemented | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-26 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. |
-| `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | partial | None | None | supported | Field columns and rows follow the original; which statistic sits on which row is not recorded. |
-| `SCR-GANG-002` | Gang information panel for a hired gang | supported | partial | None | `DEV-GANG-001` | supported | Value columns follow the original; the rows, equipment and portrait positions are not recorded, and the rebuild adds breakdown tooltips. |
+| `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | complete | None | None | implemented | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-25 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. |
+| `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | partial | None | `DEV-UI-010` | supported | Opened from the order panels' portraits with the gang's values, the Force question marks and the recorded positions. The base values are dimmed through a stand-in pattern (PLACEHOLDER), as the original's half-tone is not read. |
+| `SCR-GANG-002` | Gang information panel for a hired gang | supported | complete | None | `DEV-GANG-001`, `DEV-UI-013` | implemented | Opened for hired gangs and hire offers, with every recorded position, rotating items, base values 18 pixels to the left, and the close face acting on release. |
 
 ## EQUIP
 
@@ -269,7 +269,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-FINANCE-001` | The Financial panel projects next turn's cash flow for the whole city or one sector | supported | complete | None | `DEV-FINANCE-001` | implemented | Each row follows FND-FINANCE-002 except the Sell credit of DEV-FINANCE-001: terminating gangs give back their Upkeep, the Sector variant charges a moving gang to its destination, and the Chaos row is a third of Income + Chaos + Force, halved outside the player's sectors. |
-| `SCR-FINANCE-001` | Financial panel, City and Sector | supported | partial | None | `DEV-FINANCE-001`, `DEV-UI-006` | supported | Panel, close control, field positions and the row assignment of FND-FINANCE-002 follow the original; the row labels in the template images were not read. |
+| `SCR-FINANCE-001` | Financial panel, City and Sector | supported | complete | None | `DEV-FINANCE-001`, `DEV-UI-006` | implemented | Panel, portrait, close control, row labels, fields, gang count and the Sector variant's sector code follow the original, and Enter or Execute closes it. What the Sector variant draws in the portrait box is not recorded. |
 
 ## ATTACK
 
@@ -287,8 +287,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | partial | None | None | supported | Damage, deaths and order follow the rule, but the rebuild keeps combat events with combatant details instead of the per-gang combat records and per-sector result rows. |
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
-| `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | partial | None | `DEV-COMBAT-002` | supported | Paging, opponent strip and exit follow the original. FND-COMBAT-012 now records the arrow and Enter/plus keys (Escape is not handled), the force selector's focus and its outlines, and the grid cells' portraits and tracks; the rebuild was not compared with them. |
-| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips and 166 ms cadence are implemented. FND-COMBAT-010 now records the track positions, the portrait cells, the Exit face and Escape, which end the whole presentation; the rebuild was not compared with them. The portraits come from `PX03000` (FND-COMBAT-013). |
+| `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | complete | None | `DEV-COMBAT-002` | implemented | Paging, keys, the opponent and police strips, grid cells with portraits, force_start and force_final tracks and the focus outlines follow FND-COMBAT-007 and FND-COMBAT-012. The pressed Exit face on Enter is not drawn as the panel closes at once, and the pressed arrows are not recorded. |
+| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips, 166 ms cadence, the tracks at local y 116 and 123, the Exit face on release, the refused press outside the panel and Escape follow FND-COMBAT-009 and FND-COMBAT-010. The police portrait and the header strips are not recorded, and the entry's open question still gives y 114 and 121 for the tracks. |
 
 ## DETECT
 
@@ -439,14 +439,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | complete | None | `DEV-UI-015`, `DEV-UI-016` | implemented | The title loop starts a new game on a press outside the rebuild's buttons, and the options are read at start and saved at exit. The single-instance check, the command-line file and the image-set choice are deviations. |
 | `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | complete | None | `DEV-GFX-001`, `DEV-UI-016`, `DEV-UI-017`, `DEV-UI-018` | implemented | Input is polled once per frame (DEV-UI-018), and the US shift table and upper-case letters are kept for setup names and Comlink text. |
 | `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-004`, `DEV-UI-012` | supported | The title screen shows the build version and an intro button the original lacks. |
-| `SCR-UI-002` | Credits screen | supported | partial | None | None | supported | Whether the credits sequence matches the original presenter's order and timing was not checked. |
+| `SCR-UI-002` | Credits screen | supported | complete | None | `DEV-UI-019` | implemented | Shift+F1 stands in for Help, About (DEV-UI-019); the credits image covers the screen until any key or click. Whether the music keeps playing is not recorded, and the rebuild keeps it playing. |
 | `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006` | supported | Console routes and pressed art match; tooltips and projected cashflow are added. |
 | `SCR-UI-004` | Detailed sector screen | supported | partial | None | `DEV-UI-002`, `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-013`, `DEV-UI-014` | supported | Draws the group order strip. Adds tooltips, target highlights, ctrl-picking and minimap pylons. |
-| `SCR-UI-005` | Gangs in Sector panel | supported | partial | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | supported | Whether the compact all-gangs roster matches the original rows was not checked. |
+| `SCR-UI-005` | Gangs in Sector panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | The sector cell, code, portraits and the sixteen rows follow the original in roster order, with Upkeep negated and Base Statistics ignored. A seventh gang is not drawn where the original draws it past the panel's right edge. |
 | `SCR-UI-006` | Item Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-009`, `DEV-UI-010` | implemented | Item Information uses PX05001 with the 15-frame rotation; it can also be opened from Gang Information. |
 | `SCR-UI-007` | Site Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | None |
 | `SCR-UI-008` | Game Information panel | supported | partial | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | supported | Appends the AI policy label. |
-| `SCR-UI-009` | Application menu bar | supported | missing | None | `DEV-HELP-001`, `DEV-OPTIONS-003`, `DEV-UI-011`, `DEV-UI-016` | supported | The rebuild has no Windows menu bar; its commands live in the Escape menu, Options and shortcuts. |
+| `SCR-UI-009` | Application menu bar | supported | complete | None | `DEV-HELP-001`, `DEV-OPTIONS-003`, `DEV-UI-011`, `DEV-UI-016`, `DEV-UI-019` | implemented | The rebuild has no menu bar, and every command on it is reached another way (DEV-UI-019). |
 
 ## OPTIONS
 

@@ -297,7 +297,7 @@ The fix changes which player owns the sector when the case arises. Decided as ma
 ## DEV-GANG-001
 
 - Departs from: SCR-GANG-002
-- Reason: Hovering one of a live gang's fourteen statistics shows its base value and one signed
+- Reason: Hovering one of the fourteen statistics of a live gang or a hire offer shows its base value and one signed
   line for each item and site that changes it.
 - Setting: None
 - Default: mandatory
@@ -510,7 +510,8 @@ it.
 
 ## DEV-UI-001
 
-- Departs from: RULE-UI-003, SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-OPTIONS-001
+- Departs from: RULE-UI-003, SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-OPTIONS-001,
+  SCR-GANG-001, SCR-GANG-002, SCR-FINANCE-001
 - Reason: With Slide Panels on, a panel slides in as in the original but closes at once. The
   original's closing slide holds input for about a quarter of a second, and without it the close
   cue and the next cue start in the same frame, so the next cue cuts the close cue off.
@@ -625,8 +626,10 @@ it.
 
 ## DEV-UI-010
 
-- Departs from: SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-OPTIONS-001
-- Reason: Panels accept keyboard navigation, and Escape and the right mouse button cancel them.
+- Departs from: SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-OPTIONS-001, SCR-GANG-001,
+  SCR-GANG-002, SCR-FINANCE-001
+- Reason: Panels accept keyboard navigation, and Escape, Backspace and the right mouse button
+  cancel them; the arrow keys cycle gangs on the gang information panel.
   The original's panels take Enter and Execute and, on the idle-gang warning, Escape.
 - Setting: None
 - Default: mandatory
@@ -659,9 +662,10 @@ it.
 
 ## DEV-UI-013
 
-- Departs from: SCR-UI-004
+- Departs from: SCR-UI-004, SCR-GANG-002
 - Reason: The detailed-sector screen's portrait strip marks each opponent with detected gangs in
-  the sector, and the player can page that opponent's detected gangs on the cards. The original
+  the sector, and the player can page that opponent's detected gangs on the cards and open their
+  gang information panels. The original
   lists only the viewer's own gangs.
 - Setting: None
 - Default: mandatory
@@ -736,6 +740,19 @@ Whether the original shows the count is not recorded.
 - Default: mandatory
 - Justification: It changes how commands are reached and leaves what they do alone. Every option
   and command the original's event step handles stays reachable.
+- Dropped: no
+
+## DEV-UI-019
+
+- Departs from: SCR-UI-009, SCR-UI-002
+- Reason: The rebuild has no menu bar. Its commands are reached elsewhere: saving, loading and
+  quitting from the Escape menu (DEV-UI-011), the options from the Options screen, Help Topics
+  with F1 (DEV-HELP-001), full screen with F11 (DEV-OPTIONS-003), and About, which shows the
+  credits screen, with Shift+F1.
+- Setting: None
+- Default: mandatory
+- Justification: Every command of the menu bar stays reachable, and the drawing area is drawn
+  without the Windows frame above it (DEV-GFX-001), where a menu bar would have no place.
 - Dropped: no
 
 ## DEV-GFX-001
