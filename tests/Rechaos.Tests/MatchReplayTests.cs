@@ -39,7 +39,8 @@ public sealed class MatchReplayTests
                 (ReplayOperationKind.PrepareSimultaneousHireOffers, 15),
                 (ReplayOperationKind.TransferPlayerToComputer, 16),
                 (ReplayOperationKind.TransferPlayerToHuman, 17),
-                (ReplayOperationKind.ContinueRandomStream, 18)
+                (ReplayOperationKind.ContinueRandomStream, 18),
+                (ReplayOperationKind.EmptyComlinkInboxes, 19)
             },
             Enum.GetValues<ReplayOperationKind>().Select(kind => (kind, (int)kind)));
     }
@@ -142,6 +143,33 @@ public sealed class MatchReplayTests
         var recipients = Assert.IsAssignableFrom<IList<PlayerId>>(
             recorder.Steps.First(step => step.Kind == ReplayOperationKind.SendComlinkMessage).Recipients!);
         Assert.True(recipients.IsReadOnly);
+    }
+
+    // RULE-COMLINK-004, FMT-STATE-005: a local load empties every inbox, and the journal replays it.
+    [Fact]
+    public void ReplaysTheComlinkClearingOfALoad()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch(secondPlayerHuman: true));
+        recorder.FinishUpkeep();
+        Assert.True(recorder.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "TRUCE?").Accepted);
+        Assert.True(recorder.EmptyComlinkInboxes());
+        Assert.False(recorder.EmptyComlinkInboxes());
+        Assert.True(recorder.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "AGAIN").Accepted);
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
+
+        Assert.Equal(["AGAIN"],
+            restored.ComlinkFor(new PlayerId(1)).Messages.Select(message => message.Text));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restored));
+        Assert.Equal([true, false], recorder.Steps
+            .Where(step => step.Kind == ReplayOperationKind.EmptyComlinkInboxes)
+            .Select(step => step.Accepted!.Value));
     }
 
     [Fact]

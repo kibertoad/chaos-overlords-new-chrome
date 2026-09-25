@@ -450,7 +450,7 @@ public static class LastTurnEventProjection
         for (var index = first; index < events.Count; index++)
             eventsBySequence[events[index].Sequence] = events[index];
         var reports = new List<GameNotification>(MatchLimits.LastTurnReportsPerPlayer);
-        var sectorMilestones = new HashSet<(GameNotificationKind Kind, int? Sector)>();
+        var controlledSectors = new HashSet<int?>();
         foreach (var notification in notifications)
         {
             if (notification.Turn != completedTurn) continue;
@@ -459,8 +459,11 @@ public static class LastTurnEventProjection
                     ? gameEvent
                     : null;
             if (!NotificationPresentation.IsLastTurnReport(notification, related)) continue;
-            if ((notification.Kind is GameNotificationKind.Control or GameNotificationKind.Influence)
-                && !sectorMilestones.Add((notification.Kind, notification.SectorId)))
+            // Every gang of the winning player gets a Control result, and the report is one per
+            // sector. RULE-EVENT-006 records one report per completed site, so Influence reports
+            // are all kept: two sites completed in one sector give two (RULE-EVENT-005).
+            if (notification.Kind == GameNotificationKind.Control
+                && !controlledSectors.Add(notification.SectorId))
                 continue;
             reports.Add(notification);
             // The original recorder retains the first 32 records and ignores

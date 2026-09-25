@@ -28,7 +28,9 @@ public enum ReplayOperationKind : byte
     /// <summary>Returns an AI-held online seat to its authenticated human owner.</summary>
     TransferPlayerToHuman,
     /// <summary>A local load moves the generator to the run's sequence (RULE-RNG-001).</summary>
-    ContinueRandomStream
+    ContinueRandomStream,
+    /// <summary>A local load empties every Comlink inbox (RULE-COMLINK-004, FMT-STATE-005).</summary>
+    EmptyComlinkInboxes
 }
 
 public sealed record ReplayStep(
@@ -296,6 +298,15 @@ public sealed class MatchReplayRecorder
         State.ContinueRandomStream(state);
         Add(new ReplayStep(
             ReplayOperationKind.ContinueRandomStream, CurrentHash(), RandomState: state));
+    }
+
+    public bool EmptyComlinkInboxes()
+    {
+        EnsureSynchronized();
+        var changed = State.EmptyComlinkInboxes();
+        Add(new ReplayStep(
+            ReplayOperationKind.EmptyComlinkInboxes, CurrentHash(), Accepted: changed));
+        return changed;
     }
 
     internal ReplayDocument Capture()
@@ -609,6 +620,11 @@ public static class MatchReplaySerializer
             case ReplayOperationKind.ContinueRandomStream:
                 state.ContinueRandomStream(Required(step.RandomState, index));
                 break;
+            case ReplayOperationKind.EmptyComlinkInboxes:
+                if (step.Accepted != state.EmptyComlinkInboxes())
+                    throw new InvalidDataException(
+                        $"Replay step {index} produced a different Comlink clearing result.");
+                break;
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }
     }
@@ -649,6 +665,7 @@ public static class MatchReplaySerializer
             ReplayOperationKind.TransferPlayerToComputer or ReplayOperationKind.TransferPlayerToHuman =>
                 ReplayStepFields.Player | ReplayStepFields.Accepted,
             ReplayOperationKind.ContinueRandomStream => ReplayStepFields.RandomState,
+            ReplayOperationKind.EmptyComlinkInboxes => ReplayStepFields.Accepted,
             ReplayOperationKind.SendComlinkMessage => ReplayStepFields.Player | result
                 | ReplayStepFields.Recipients | ReplayStepFields.Text,
             ReplayOperationKind.FinishUpkeep

@@ -48,7 +48,9 @@ public sealed partial class MatchState
             GangAction.Control => gang is not null && Sectors[gang.SectorId].Owner == command.Player,
             GangAction.Equip or GangAction.Give or GangAction.Sell or GangAction.Move
                 or GangAction.Terminate => true,
-            GangAction.Heal => gang is null || gang.Force >= ManualRules.MaximumForce,
+            // RULE-TURN-004, RULE-HEAL-001: a recurring Heal is tested only at the next turn start
+            // (NormalizeRecurringCommands), so a gang healed to Force 10 and then hurt in Combat
+            // heals again next turn.
             GangAction.Research => FindPlayer(command.Player)!.ResearchedItems.Contains((short)command.Target.Id),
             GangAction.Snitch => gang is not null && Sectors[gang.SectorId].Tolerance <= 0,
             _ => false

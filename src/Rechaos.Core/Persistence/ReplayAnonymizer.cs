@@ -237,6 +237,9 @@ public static class ReplayAnonymizer
             case ReplayOperationKind.ContinueRandomStream:
                 recorder.ContinueRandomStream(RequiredValue(step.RandomState, index));
                 break;
+            case ReplayOperationKind.EmptyComlinkInboxes:
+                VerifyOutcome(step.Accepted, recorder.EmptyComlinkInboxes(), index);
+                break;
             default:
                 throw new ReplayAnonymizationException(
                     $"Journal step {index} has an operation this build cannot re-apply.");
