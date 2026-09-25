@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-036, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-032, FND-UI-035, SRC-MANUAL-GOG, FND-UI-021]
+evidence: [FND-UI-036, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-025, FND-UI-031, FND-UI-032, FND-UI-035, SRC-MANUAL-GOG, FND-UI-021]
 conflicting: []
 split_with: []
 related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-UI-003, SCR-UI-007, SCR-HIRE-001]
@@ -16,7 +16,7 @@ related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-U
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Console, Overlord bar and pressed tiles | As on SCR-UI-003 | As on SCR-UI-003; a portrait is drawn from the row at source y 594 when that player has no gang here the active player can see (`gangs_seen`), and the animated marker follows the viewed player | As on SCR-UI-003 | Always | FND-UI-017, FND-UI-032 |
-| Background | The sector's 52-by-50 cell of the prepared city map, stretched and darkened through a one-bit pattern | The selected sector | `(2,42,432,416)` | Always | FND-UI-018 |
+| Background | The 52-by-50 interior of the sector's cell in the unmarked copy of `DATA/PX16/PX10000` kept below y 416 of the city map surface, stretched and darkened through a one-bit pattern | The selected sector's terrain, without ownership colour or markers | `(2,42,432,416)` | Always | FND-UI-018, FND-UI-025 |
 | Owner strip and back control | `DATA/PX16/PX00129` `(236 + 32*o, 67, 32, 207)` for owner `o + 1` (0 for none) and `(460,67,32,207)` | The sector's owner | `(4,43,32,207)` and `(4,250,32,207)` | Always | FND-UI-018 |
 | 9 Sector Display | The prepared city map (`DATA/PX16/PX10000` to `DATA/PX16/PX10006`), the frame `DATA/PX16/PX00129` `(0,15,162,156)` keyed on exact white, and the grid labels | The selected sector at the centre of its 3-by-3 neighbourhood, with ownership and markers; cells off the map are black | `(64,60,162,156)`; cell `(i, j)` at `(65 + 53*i, 61 + 51*j)` | Always | FND-UI-018 |
 | Gang-status markers | `DATA/PX16/PX00129` crop `(492, 67 + 20*f, 20, 20)`, keyed on exact white | The frame RULE-UI-006 picks for each visible sector | At the same offset in each cell as on SCR-UI-003, since the display is copied from the prepared map | When RULE-UI-006 returns a frame | FND-UI-017, FND-UI-031 |
@@ -86,5 +86,3 @@ None known.
   cards can show that player's gangs; the rows above follow FND-UI-015.
 - Whether the site progress meter is drawn for a player who does not own the
   sector (the reading is that it is not).
-- What the prepared city map holds from y 420, where the background and the
-  Detailed Combat sector tiles are taken from, has not been read.

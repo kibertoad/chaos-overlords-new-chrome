@@ -278,10 +278,9 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
 
 ## Screen and panel code no entry describes
 
-- City screen and sector view, what is left after FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019
-  and FND-SETUP-017: read the code that fills surface 2 to say what its second copy of the city
-  map from y 420 holds (FND-UI-018 enlarges the sector view's background from it), and whether
-  FND-UI-033's map origin `(2,44)` or FND-UI-017's `(2,42)` is right (SCR-UI-003).
+- City screen: whether FND-UI-033's map origin `(2,44)` or FND-UI-017's `(2,42)` is right
+  (SCR-UI-003). The copy, the selection frame and the cell restore all use `(2,42)`; a screenshot
+  of the original settles it.
 
 ## Game-side code and data no entry describes
 

@@ -114,8 +114,8 @@ card count is not reached in normal play. A seventh card would be stored at
 
 ## Alternatives
 
-- What surface 2 holds from y 420, and whether it differs from the upper copy,
-  has not been read from the code that fills surface 2.
+- What surface 2 holds from y 420 is answered by FND-UI-025: the unmarked
+  city map, copied there from y 416 when planning starts.
 - The one-tick wait's length in milliseconds depends on timer 0, which this
   finding does not measure.
 

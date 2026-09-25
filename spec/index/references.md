@@ -4630,7 +4630,10 @@ None.
 
 ## FND-UI-025
 
-None.
+| Cited by | In |
+|---|---|
+| [FND-UI-018](../findings/FND-UI-018.md) | body |
+| [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
 
 ## FND-UI-031
 

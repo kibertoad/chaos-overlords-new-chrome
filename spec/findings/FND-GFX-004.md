@@ -87,8 +87,8 @@ deletes what it created:
 - `fn_004266A6(rect, colour, fill, shade)` does the same, except that with
   `fill` set and `shade` from 0 to 2 it paints the rectangle's size into the
   scratch surface 11 and composites it through the pattern compositor
-  `fn_00427E60` (FND-UI-031), whose pattern is chosen by `0x00494868`, not by
-  `shade`.
+  `fn_00427E60` (FND-UI-031). The pattern comes from `0x00494868`; `shade` only
+  decides whether this path is taken.
 - `fn_00426427(p1, p2, colour)` draws a line with `MoveToEx` and `LineTo`, which
   leaves out the end point; `fn_004264D4` does the same with a palette index.
   `fn_00426909` is the rectangle and `fn_00426A37`, `fn_00426B7D` the ellipse
