@@ -23,25 +23,27 @@ public static partial class AiTurnPlanner
                 PrepareFamilyZeroAfterAttack(
                     state, playerId, gang, gangSlot, visible, visibleWeight, snapshot);
                 break;
-            case GangAction.Hide:
+            // FND-AI-048: the jump table groups the previous actions as below; Bribe, Give,
+            // Influence, Research and Sell plan nothing.
+            case GangAction.Chaos:
             case GangAction.Equip:
-                PrepareFamilyZeroAfterHideOrEquip(
+                PrepareFamilyZeroAfterChaosOrEquip(
                     state, playerId, gang, gangSlot, visible, visibleWeight, snapshot);
                 break;
             case GangAction.Control:
                 if (state.Sectors[gang.SectorId].Owner == playerId)
-                    SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
+                    SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Chaos);
                 else
                     PrepareFamilyZeroMove(
                         state, playerId, gang, gangSlot, snapshot);
                 break;
             case GangAction.Heal:
-            case GangAction.Snitch:
+            case GangAction.Hide:
             case GangAction.Move:
-                PrepareFamilyZeroAfterHealSnitchOrMove(
+                PrepareFamilyZeroAfterHealHideOrMove(
                     state, playerId, gang, gangSlot, visible, visibleWeight, snapshot);
                 break;
-            case GangAction.Research:
+            case GangAction.Snitch:
                 PrepareFamilyZeroMove(
                     state, playerId, gang, gangSlot, snapshot);
                 break;
@@ -68,8 +70,8 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        if (!HasPreviousFamilyZeroHideInSector(state, playerId, gang.SectorId))
-            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
+        if (CountPreviousChaosInSector(state, playerId, gang.SectorId) == 0)
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Chaos);
         else
             PrepareFamilyZeroMove(
                 state, playerId, gang, gangSlot, snapshot);
@@ -107,7 +109,7 @@ public static partial class AiTurnPlanner
                 state, playerId, gang, gangSlot, snapshot);
     }
 
-    private static void PrepareFamilyZeroAfterHideOrEquip(
+    private static void PrepareFamilyZeroAfterChaosOrEquip(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
@@ -120,7 +122,7 @@ public static partial class AiTurnPlanner
         {
             RecoveredAttackDraw draw = default;
             for (var attempt = 0;
-                 attempt < OriginalAiFamilyZeroRules.AttackAttemptsAfterHideOrEquip;
+                 attempt < OriginalAiFamilyZeroRules.AttackAttemptsAfterChaosOrEquip;
                  attempt++)
             {
                 draw = DrawHumanWeightedAttackTarget(
@@ -147,7 +149,7 @@ public static partial class AiTurnPlanner
                     gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Heal))
                 SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
             else
-                SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
+                SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Chaos);
             return;
         }
 
@@ -157,7 +159,7 @@ public static partial class AiTurnPlanner
             state, playerId, gang, gangSlot, snapshot);
     }
 
-    private static void PrepareFamilyZeroAfterHealSnitchOrMove(
+    private static void PrepareFamilyZeroAfterHealHideOrMove(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
@@ -199,8 +201,8 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        if (!HasPreviousFamilyZeroHideInSector(state, playerId, gang.SectorId))
-            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
+        if (CountPreviousChaosInSector(state, playerId, gang.SectorId) < 1)
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Chaos);
         else
             PrepareFamilyZeroMove(
                 state, playerId, gang, gangSlot, snapshot);
@@ -238,16 +240,20 @@ public static partial class AiTurnPlanner
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }
 
-    private static bool HasPreviousFamilyZeroHideInSector(
+    /// <summary>
+    /// FND-AI-046: selector 0x5B counts the player's gangs in the sector whose previous action was
+    /// Chaos, the planning gang included.
+    /// </summary>
+    private static int CountPreviousChaosInSector(
         MatchState state,
         PlayerId playerId,
         int sectorId)
     {
         var player = state.FindPlayer(playerId)!;
         return player.Gangs.Select((gang, slot) => (gang, slot))
-            .Any(entry => entry.gang.IsActive
+            .Count(entry => entry.gang.IsActive
                 && entry.gang.SectorId == sectorId
                 && state.AiPlanning.PreviousAction(playerId, entry.slot)
-                    == GangAction.Hide);
+                    == GangAction.Chaos);
     }
 }
