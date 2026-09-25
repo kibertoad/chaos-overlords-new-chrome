@@ -77,19 +77,22 @@ Decided 2026-09-13.
 
 ## DEV-VIDEO-003
 
-- Departs from: RULE-VIDEO-001
+- Departs from: RULE-VIDEO-001, SCR-UI-001
 - Reason: With Intro only once switched on, the rebuild plays the two movies unattended only until
   it has recorded a showing: its preferences file keeps `IntroMoviesSeen`, set once the queue
   drains after at least one movie opened, and every later start goes straight to the title screen.
   The title screen gains an INTRO button that plays the movies again on request. The original plays
   both movies at every start that does not load a saved game.
 - Setting: Intro only once
-- Default: off
+- Default: on
+- Justification: Players rarely want to watch the intro again and again; one showing is plenty.
+  Playing it at every start makes the player wait through or click past the same two movies each
+  time before reaching the title screen, and nothing in a match depends on it. The INTRO button
+  plays the movies whenever the player asks, and a player who wants the original's intro at every
+  start switches Intro only once off.
 - Dropped: no
 
-Showing the movies once is a convenience some players will want, but a player who expects the
-intro at every start, as the original gives it, is not better served, so the original's behaviour
-is the default.
+Made a setting that starts off on 2026-09-25, and switched to start on on 2026-09-26.
 
 ## DEV-AUDIO-001
 
@@ -545,9 +548,8 @@ it.
 - Default: mandatory
 - Justification: The movies stay available from the title screen, and a player who has already
   watched them is not made to sit through them again.
-- Dropped: no
-
-When the original plays the movies is not yet recorded (`manual_validation_plan.md`).
+- Dropped: 2026-09-26, DEV-VIDEO-003 covers the same behaviour and the INTRO button as a setting
+  that starts on (the 2026-09-25 and 2026-09-26 decisions in `docs/DECISIONS.md`).
 
 ## DEV-UI-005
 

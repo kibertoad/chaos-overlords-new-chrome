@@ -67,7 +67,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `FMT-VIDEO-001` | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported | complete | None | `DEV-VIDEO-001` | implemented | The rebuild decodes only the subset the two shipped movies use. |
-| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | supported | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; with Intro only once off, its default, the movies play at every start; switching it on gives DEV-VIDEO-003. The movie sound follows the Sound Effects level; the level-to-volume curve was not compared. |
+| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | supported | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; with Intro only once on, its default, they play until one showing is recorded (DEV-VIDEO-003); switched off, they play at every start. The movie sound follows the Sound Effects level; the level-to-volume curve was not compared. |
 
 ## HELP
 
@@ -438,7 +438,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | `DEV-UI-002` | implemented | The rebuild also draws the pylons on the detailed-sector minimap (deviation). |
 | `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | missing | None | None | supported | Not yet compared with the rebuild. |
 | `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | missing | None | None | supported | Not yet compared with the rebuild. |
-| `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-004`, `DEV-UI-012` | supported | The title screen shows the build version and an intro button the original lacks. |
+| `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-012`, `DEV-VIDEO-003` | supported | The title screen shows the build version and an intro button the original lacks. |
 | `SCR-UI-002` | Credits screen | supported | partial | None | None | supported | Whether the credits sequence matches the original presenter's order and timing was not checked. |
 | `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006` | supported | Console routes and pressed art match; tooltips and projected cashflow are added. |
 | `SCR-UI-004` | Detailed sector screen | supported | partial | None | `DEV-UI-002`, `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-013`, `DEV-UI-014` | supported | Adds tooltips, target highlights, ctrl-picking and minimap pylons. |

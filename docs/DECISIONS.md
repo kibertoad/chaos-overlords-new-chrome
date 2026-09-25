@@ -67,6 +67,12 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   could work out, removes no control and changes no rule, so each is a quality-of-life improvement
   with no downside. Each entry's Justification says what it saves the player. Screen tests allow
   for them by ID.
+- Intro only once (DEV-VIDEO-003) starts on. Players rarely want to watch the intro again and
+  again, and one showing is plenty; the INTRO button replays it on request and a player who wants
+  it at every start switches the option off. This reverses the default of the 2026-09-25 entry
+  below. Preferences format v12 has not been released, so no format moves: a v11 file migrates
+  with the option on. DEV-UI-004, which described the same behaviour without a setting, is
+  dropped.
 - In-memory layouts: a FMT-STATE entry counts as `complete` when its row's notes, or a document
   they link, map every field a rule reads or writes to the rebuild state that holds the same
   value at the same point. A difference of representation that no rule result can observe, such
