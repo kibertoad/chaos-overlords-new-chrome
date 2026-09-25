@@ -78,8 +78,11 @@ otherwise), and caps the Tech Level of the listed items at 5 when the byte is
 
 Byte 2 is written only by `fn_00475FE1` and by the whole-turn resolver
 `fn_00472775`: a step of one toward `17 - byte 1` at the start of resolution
-(`0x00472A86` increments, `0x00472AC0` decrements), `+3` at `0x00472BAC`, `-3`
-at `0x00473065`, and a clamp to 1 (`0x00473150`) and to 40 (`0x0047317B`).
+(`0x00472A86` increments, `0x00472AC0` decrements), `+3` at `0x00472BAC` in
+the case for action 2 (Bribe) of the switch on the action byte, `-3` at
+`0x00473065` in the case for action 13 (Snitch), and, in the loop over all 64
+sectors that follows that switch, a clamp to 1 (`0x00473150`) and to 40
+(`0x0047317B`).
 Byte 5 has three direct references, all reads (`0x00402F1D`, `0x004121F1`,
 `0x0047358D`). Byte 1 is read by the resolver at `0x00472A50`, as the target
 of that step.
@@ -122,10 +125,6 @@ refresh does not test for equality.
   `0x004782D9` copies byte 1 into it, so byte 4 is rewritten each time with the
   same value as long as byte 1 does not change; nothing else writes byte 1
   after city generation.
-- Which case of the resolver each byte-2 write belongs to (Bribe, Snitch) is
-  read from the switch on the action byte; this finding records the
-  instructions only. The case assignment belongs to the Bribe, Snitch and
-  Tolerance entries.
 - What the Tech Level limit passed to `fn_004437E7` is has not been read here.
 
 ## How to reproduce

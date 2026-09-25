@@ -4,7 +4,7 @@ title: A gang hides while its action is Hide, and each Hide carried out is count
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIDE-001, FND-HIDE-002, FND-AWARDS-001, FND-TURN-001, FND-TURN-002, FND-TURN-004, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-HIDE-001, FND-HIDE-002, FND-AWARDS-001, FND-AWARDS-002, FND-TURN-007, FND-TURN-001, FND-TURN-002, FND-TURN-004, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -60,7 +60,8 @@ one-off Hide has `repeat_action` `ACTION_NONE`, so the gang stops hiding then.
 A recurring Hide has no end test, so the gang hides every turn until the player
 changes the order or the gang dies, and is counted again every turn.
 
-The count is made without any other test, so every Hide carried out counts.
+The count is made without any other test, so every Hide carried out counts
+(FND-TURN-007). The Hide award reads this count (FND-AWARDS-002).
 The instant phase does nothing else for a hiding gang (FND-HIDE-002). Hiding
 does not change what other players see.
 

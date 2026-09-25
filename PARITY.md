@@ -91,6 +91,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | The rebuild keeps the Comlink inbox with the same occupied, read, turn, sender and text content, not this 166-byte layout. |
 | `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | The rebuild keeps its own notification history and derives the Last Turn reports from it, not this 10-byte layout; whether its arguments match the report types' arguments was not checked. |
 | `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | missing | None | None | supported | The rebuild's computer players keep their own planning state; it was not compared with this 16-byte layout. |
+| `FMT-STATE-008` | Combat result row of one sector | supported | missing | None | None | supported | The rebuild keeps combat events with combatant details instead of these per-sector rows of gang and target indices. |
 
 ## RNG
 
@@ -262,8 +263,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-FINANCE-001` | The Financial panel projects next turn's cash flow for the whole city or one sector | sourced | partial | None | `DEV-FINANCE-001` | sourced | The rebuild's projection has its own components; how the original computes each row is not recorded. |
-| `SCR-FINANCE-001` | Financial panel, City and Sector | supported | partial | None | `DEV-FINANCE-001`, `DEV-UI-006` | supported | Panel, close control and field positions follow the original; which row holds which amount is not recorded. |
+| `RULE-FINANCE-001` | The Financial panel projects next turn's cash flow for the whole city or one sector | supported | partial | None | `DEV-FINANCE-001` | supported | The rebuild's projection has its own components; FND-FINANCE-002 now gives the original's rows and has not been compared with it. |
+| `SCR-FINANCE-001` | Financial panel, City and Sector | supported | partial | None | `DEV-FINANCE-001`, `DEV-UI-006` | supported | Panel, close control and field positions follow the original; the row assignment of FND-FINANCE-002 has not been compared with the rebuild. |
 
 ## ATTACK
 

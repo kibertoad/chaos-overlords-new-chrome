@@ -4,7 +4,7 @@ title: Each player's scenario score is rebuilt from what the scenario counts, an
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-TURN-003, FND-UI-033, FND-CITY-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG]
+evidence: [FND-OBJECTIVE-003, FND-AI-005, FND-TURN-003, FND-UI-033, FND-CITY-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-004, FMT-STATE-002]
@@ -13,9 +13,10 @@ related: [RULE-OBJECTIVE-004, FMT-STATE-002]
 ## Summary
 
 The score measures progress toward the scenario's goal: cash in Greed, sectors
-held in Power, Big 40 and Armageddon, Support in Acceptance, a weighted mix in
-Dominance, headquarters held in Eliminate, eliminated opponents in Kill 'Em
-All and Siege, and points gathered over the match in Big Man. A player's
+held in Power, Big 40 and Armageddon, the Support of completed sites in
+Acceptance, a weighted mix in Dominance, headquarters held in Siege,
+eliminated opponents in Kill 'Em All and Eliminate, and points gathered over
+the match in Big Man. A player's
 standing is how many players have a strictly higher score, so tied players
 share a standing and the best is 0. Eliminated players have no standing.
 
@@ -30,8 +31,9 @@ None.
 
 ## Inputs
 
-`scenario`, `player_active`, `cash`, each sector's `owner` and `support`,
-`hq_sectors`, the previous `scenario_score` (Big Man only).
+`scenario`, `player_active`, `cash`, each sector's `owner` and `sites`, the
+site definitions' `resistance` and `support` (FMT-DATA-001), `hq_sectors`,
+`turn_limit` (Dominance), the previous `scenario_score` (Big Man only).
 
 ## Procedure
 
@@ -61,22 +63,18 @@ for each player in turn_order:
     else if scenario == scenario_power or scenario == scenario_big_40 or scenario == 9:
         scenario_score[player] = owned_sector_count(player)
     else if scenario == scenario_acceptance:
-        let support = 0
-        for s in 0..64:
-            if sectors[s].owner == player:
-                support = support + sectors[s].support
-        scenario_score[player] = support
+        scenario_score[player] = completed_site_support(player)
     else if scenario == scenario_dominance:
         scenario_score[player] = dominance_points(player) / 10
-    else if scenario == 7:
-        # Eliminate: headquarters sectors held
+    else if scenario == 6:
+        # Siege: headquarters sectors held
         let held = 0
         for k in 0..6:
             if sectors[hq_sectors[k]].owner == player:
                 held = held + 1
         scenario_score[player] = held
     else:
-        # Kill 'Em All (0) and Siege (6)
+        # Kill 'Em All (4) and Eliminate (7)
         scenario_score[player] = inactive
 
 for each player in turn_order:
@@ -100,8 +98,10 @@ players. Makes no draws.
 Inactive players keep the score -32000 while the standings are counted, so an
 active player whose score is below -32000 (in Greed, a debt of more than
 $32,000) counts every inactive player as above it (BUG-OBJECTIVE-001). In
-Kill 'Em All and Siege every active player has the same score, so all share
-standing 0. Dominance divides with truncation toward zero, so a negative
+Kill 'Em All and Eliminate every active player has the same score, so all
+share standing 0. Acceptance and Dominance count a site's Support from the
+moment its progress reaches its Resistance, without waiting for the sector's
+own `support` field to be refreshed before the next planning. Dominance divides with truncation toward zero, so a negative
 numerator rounds toward zero.
 
 ## What the sources say
@@ -119,17 +119,7 @@ None known.
 
 ## Open questions
 
-- The values of `scenario` that stand for Greed, Power, Acceptance, Dominance
-  and Big 40 (the glossary terms `scenario_greed`, `scenario_power`,
-  `scenario_acceptance`, `scenario_dominance` and `scenario_big_40`) are not
-  recorded. 0 is Kill 'Em All, 6 Siege, 7 Eliminate, 8 Big Man and 9
-  Armageddon.
-- Whether Acceptance sums the `support` byte of owned sectors, as written
-  here, or another Support total, is not recorded ("accumulated current
-  Support").
-- The Dominance numerator's weights are known only from the manual
-  (`dominance_points`, RULE-OBJECTIVE-004).
-- Whether inactive players get -32000 here or keep a value set elsewhere, and
-  whether the Big Man score is cleared at the start of a match, are not
-  recorded.
-- `player_active` has no recorded address.
+- The scorer sets every score to 0 first (except in Big Man), fills in the
+  active players, then gives the inactive ones -32000; the procedure writes
+  the same result in one pass. Big Man scores are set to 0 when a match
+  starts (FND-SETUP-015).

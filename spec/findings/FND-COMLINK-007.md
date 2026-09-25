@@ -124,6 +124,9 @@ View, `fn_0045E04D`, after the read and pending updates of FND-COMLINK-004:
   `fn_0042773E` uses `StretchBlt` in `COLORONCOLOR` mode when the rectangles
   differ in size.
 - The four 40-character rows at (95, 121 + 8 * row), drawn by `fn_00413FD5`.
+- The View handler `fn_0045D61A`, like Send, plays slot 4 for a pointer press
+  or double-click outside the panel rectangle (`0x0045DD3F`) and tests its
+  controls only for one inside it.
 
 ## Interpretation
 

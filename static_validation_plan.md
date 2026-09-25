@@ -56,56 +56,9 @@ order of priority, unless a group says otherwise.
 
 ## Shared in-memory structures
 
-- FMT-STATE-002 `unk_01`, `unk_02`, `tolerance`: find where city generator
-  0x00475FE1 writes the generated Income (3..7) and the starting Tolerance
-  (17 - Income), and whether rebuild helper 0x004782C5 recomputes `tolerance`
-  from a base byte plus site Tolerance.
-- FMT-STATE-002 `tolerance`: give the offset of the Tolerance byte the Bribe
-  case (old lines 114-127), the Snitch case (old lines 210-212) and the
-  post-Instant floor loop (old lines 224-226) of 0x00472775 write.
-- FMT-STATE-002 `unk_0D`, `unk_10`..`unk_15` and the fourteen `site_*` rows:
-  list every write in 0x004782C5 with its offset, to confirm the site-bonus
-  offsets and statistic order (now from SRC-RECHAOS-3561D41 only) and find the
-  purposes of the unknown bytes.
-- FMT-STATE-001 `player`, `definition`, `force`: find their offsets in this
-  build. Leads: the Right Hands creation in 0x0046DC10 (definition 0, Force
-  10), the hire copy in 0x00472775 at 0x00475BDB..0x00475C2D and the Force
-  roll at 0x00475AC4, the damage application (old lines 530-540), and AI
-  selector 0x3C (Force byte).
-- FMT-STATE-001 `chaos`, `influence`, `research`, `strength`, `blade`,
-  `ranged`, `fighting`: confirm the statistic order at 0x12..0x1F from the add
-  sequence in 0x0047781F against the gang definition and item field offsets.
-- FMT-STATE-001 `target`, `target_2`: record what each action's picker writes
-  to +8 and +9 and what the resolver reads: Attack 0x0043B290, Move
-  0x004413EF, Equip 0x0043DAD9 (the queued item byte), Influence 0x0043F692,
-  Give 0x00445A4F, Sell 0x00443BBD (selection mask), Research 0x004427FA.
-- FMT-STATE-003 `definition` (read as the definition by FND-COMBAT-004): record the instruction that writes
-  byte 0 of each combat record in 0x00472775 (old lines 487-496) and what it
-  stores. Also whether records of gangs that did not fight are cleared each
-  resolution, and the instruction addresses of every byte's write.
-- Glossary `player_active`: give the address of the player-active bytes that
-  0x00476F3B clears; candidate six-byte blocks in the save list are
-  0x004A5F00, 0x004ABBE0, 0x00482108, 0x00482158, 0x004A2600, 0x004ABC58 and
-  0x004AB588.
-- Glossary (new term needed by combat and police rules): the address and type
-  of the per-player casualty statistic that the damage application (old line
-  538) and police deaths increment.
-- Glossary `player_names`: what byte 0 of each 12-byte record at 0x004A2588
-  holds (a length is expected for a Pascal string) and the text encoding.
-- Glossary `research_remaining`: whether the Research case and pickers load
-  the bytes signed or unsigned.
-- Last Turn report record (EVENT area needs a FMT-STATE entry): the offsets of
-  the occupied byte, the 2-byte type and the three 2-byte arguments in the
-  10-byte records at 0x004AAE08 (the listed fields make 9 bytes, so one byte of
-  padding sits somewhere), and the width of the per-player count at
-  0x004ABCA8. Once known, core-state (or the lead) adds FMT-STATE-006.
-- AI planning record (AI area): if the AI rules need it as a format, record the
-  full 16-byte layout at 0x0048A250 (player stride 0x510): +0 family byte,
-  +1, +11 and +15 unknown, +12 and +14 16-bit fields.
-- The six-byte player-order table that AI selector 0x2D compares (FND-AI-005):
-  its address, and whether it is related to `turn_order` or to the ranking.
-- FMT-STATE-005 `unk_A5` and `text`: read recorder 0x0045D2F0 and the Send
-  path for the last byte and the text encoding and padding.
+- FMT-STATE-003 `definition`: FND-COMBAT-008 and FND-STATE-005 record the store of gang byte 1 at
+  `0x004743EE`. FMT-STATE-003 still has to cite it and drop its byte 0 open question (combat
+  agent). Clearing and the other bytes' writes are recorded in FND-STATE-005.
 
 ## Hire, Influence, Research, Bribe, Snitch, Tolerance and sites
 
@@ -135,13 +88,8 @@ order of priority, unless a group says otherwise.
   `0x00416C75` clears the other two slots, and record what the drop handler
   tests before writing a sector (owned, occupied, capacity). Record what
   `0x004078B8` is (a Reject path, the AI, or both).
-- FMT-STATE-001 `target`: record what `0x0043F692` (Influence) and
-  `0x004427FA` (Research) write on confirmation, and which field the Influence
-  and Research cases of `0x00472775` read.
-- RULE-SITE-001: list every write in `0x004782C5`, including whether it
-  clears `support` and the fourteen sums first, and where it puts each
-  completed site's Tolerance and special flag (`tolerance`, `unk_02`,
-  `factory`, `unk_0D`).
+
+
 - RULE-TOLERANCE-001: find the code that moves Tolerance one point toward
   normal each turn (candidates: the turn-start loop in `0x0046E766`, the
   rebuild `0x004782C5`, the end of `0x00472775`). The rule is `sourced` until
@@ -165,62 +113,9 @@ order of priority, unless a group says otherwise.
 
 ## Movement, Control, gangs, equipment and money
 
-- All findings in these areas: give the full address range of `0x00472775`,
-  `0x0046E766`, `0x004782C5`, `0x0047781F`, `0x00476A94`, `0x00476F3B`,
-  `0x00474BF3`, `0x004756D9`, `0x00408642`, `0x004413EF`, `0x00443BBD`,
-  `0x00445A4F`, `0x0043DAD9`, `0x0044D1BB`, `0x00455B6B`, `0x00449E80`,
-  `0x00414187` and `0x004142E7`, which the findings give as entry addresses
-  only.
-- FND-EQUIP-002, RULE-EQUIP-002, FND-MOVE-001, RULE-MOVE-001, FND-GANG-003,
-  RULE-TERMINATE-001, FND-CONTROL-001, RULE-CONTROL-001 (replacing decompiler
-  line positions in the old text): instruction addresses of the transaction
-  scan, the gift delivery loop, the Terminate pass, the Move normalization and
-  application loops, the Control pool build and winner scan, and the death path
-  inside `0x00472775`.
-- RULE-EQUIP-002, RULE-TERMINATE-001, RULE-MOVE-001: whether each pass tests
-  that the gang is active (sector byte not 100) before acting, and whether a
-  gift delivery tests the recipient.
-- RULE-CONTROL-001, FMT-STATE-002 `income`: the load instruction and
-  displacement of the sector byte the Control pool subtracts (`0x03` or
-  `0x04`), and whether sectors with no Control order or under a Crackdown are
-  skipped by the winner scan (this decides how often BUG-CONTROL-001 fires).
-- RULE-CONTROL-001: the terms of a gang's strength and of the defense (Force
-  plus Control, hidden defenders left out), where the type-2 and type-3 reports
-  are recorded and in which order, what the capture clears besides site
-  progress, and whether `overthrow_count` is raised.
-- FND-UPKEEP-001, FMT-STATE-002: read case 6 of `fn_00402D70` and confirm or
-  drop the old claim that the computer player reads byte `+3` as Income.
-- RULE-MOVE-002, RULE-AI-007, FND-MOVE-001, FND-AI-028: settle what mode 0 of
-  the sector selector `0x00408642` does (a bounded draw over 64 sectors, or a
-  pick among the eight neighbours), and whether the normalization stores the
-  selector's result as the new destination.
-- RULE-GIVE-001, RULE-SELL-001, RULE-EQUIP-001, RULE-MOVE-001, FMT-STATE-001:
-  in the Give, Sell, Equip and Move panel handlers (`0x00445A4F`,
-  `0x00443BBD`, `0x0043DAD9`, `0x004413EF`), the stores into the planning
-  record: which byte holds the destination, item, recipient and mask, and which
-  bit stands for which slot.
-- RULE-SELL-001: the starting value of the payout local and whether each
-  branch tests that the slot holds an item.
-- RULE-EQUIP-001: how the resolver picks the slot from the item's type, and
-  whether it checks Tech Level or research again.
-- RULE-EQUIP-003, FND-EQUIP-001: which sector index the Factory test uses (the
-  buying gang's sector), and tie the reads at `0x0043F36D` and in
-  `0x0044D1BB` to the same price computation.
-- RULE-EQUIP-004, FND-EQUIP-006: the exact comparisons of the list filter
-  (category, Tech Level, research, already carried), the item type to category
-  mapping, and where the gang's Tech Level is read.
-- RULE-GANG-002, FND-GANG-003: the address and type of the casualty counter.
-- RULE-GANG-001, FND-GANG-001: whether the rebuild in `0x004782C5` runs for a
-  gang hired in the same turn, and the order of the fourteen statistic fields.
-- RULE-FINANCE-001, SCR-FINANCE-001, FND-FINANCE-001: in `0x0044D1BB`, which
-  amount goes to which of the eight rows, how each is computed (New Recruits,
-  City Officials, Chaos estimate, Cash Adjustment), the Sector variant's scope
-  and how it picks `PX05019`, and the row of the contract count.
 - SCR-MOVE-001, SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-GANG-001,
   SCR-GANG-002: positions of the Confirm, OK and Cancel controls, the keys each
   panel handler accepts, and the item picture and portrait resources.
-- SCR-GIVE-001, RULE-GIVE-001: the recipient eligibility test in `0x00445A4F`
-  (same sector, Tech Level, active).
 - SCR-GANG-002, FND-GANG-004: how `PX05000` is opened, its y offset, and
   whether it also shows offers with the unknown Force marker.
 
@@ -285,65 +180,20 @@ order of priority, unless a group says otherwise.
   selector changes.
 - SCR-COMBAT-002: the x positions of the Force tracks, the portrait resource,
   the Cancel cell and any key handling in `0x0042E040`/`0x00430C23`.
-- FMT-STATE-001: which of `target` and `target_2` holds the Attack target's
-  player and which its roster slot.
+
 
 ## Last Turn Events, Comlink and Search
 
-- FMT-STATE-006 (requested), RULE-EVENT-002: in the recorder `fn_00477748`,
-  read the offsets it writes inside the 10-byte record (occupied, type, three
-  arguments) and what the tenth byte is. Give the width of the count at
-  `0x004ABCA8`.
-- RULE-EVENT-002 to RULE-EVENT-011: list the 12 call sites of `fn_00477748`
-  inside `fn_00472775` by instruction address, with the type and the three
-  arguments each passes; say which argument holds 1, 2 or 4 for a type-6 cash
-  failure. Include the call sites for types 2 and 3 (sector control) and for
-  the Equip cash failure, so those rules can emit report events.
-- RULE-EVENT-004: find how the resolver knows which players had a gang in the
-  sector at the start of resolution (the copy RULE-CHAOS-001 calls
-  `sector_presence`), and the order of the Crackdown reports.
-- RULE-EVENT-005, SCR-EVENT-001: in `fn_0044F2FC` and `fn_0044FD6C`, read what
-  happens with no occupied record, the mapping of type and cash-failure
-  argument to string IDs 33 to 44, the positions of the status line, the
-  242-by-158 illustration area, the counter and the footer fields, and the
-  source of the pressed arrow faces. Confirm the panel origin (104, 124) for
-  this handler.
-- SCR-EVENT-001: which frame of the `PX04xxx` strip the Research report copies,
-  and whether it animates.
-- RULE-COMLINK-001: in `fn_0045D2F0`, the order of the store, the pending flag,
-  the sound and the repeat reset; whether a message for a remote recipient is
-  also stored locally; what a network-received message fills in.
-- RULE-COMLINK-002, FND-COMLINK-003: the address of the enabled array and the
-  exact eligibility test in `fn_0045EAB1` (which `controller` values count as
-  human); whether opening Send clears the selection, the draft and the cursor.
-- RULE-COMLINK-003: the order in which recipients are visited; how the draft's
-  `occupied`, `read`, `turn` and `sender` are set; whether Send closes the
-  panel and clears the draft. Give the addresses of the global message buffer
-  (`comlink_draft`), the cursor row and column, and the eligibility and
-  selection bytes.
-- RULE-COMLINK-005: whether the unread rescan in `fn_0045E04D` tests
-  `occupied`; the page header's format.
-- RULE-COMLINK-006: Backspace's effect (value stored, cursor movement), cursor
-  movement after a typed character and after column 39, Enter on the last row.
-- SCR-COMLINK-001, SCR-COMLINK-002: positions of the header, date, name,
-  portrait and message rows; which player slot each recipient cell holds; the
-  exact destination of the 50-by-23 pressed faces; where each character's cell
-  lies in `PX00129`; when resource 5023 (no file in the build) would be loaded.
-- RULE-SEARCH-001: whether the save writer includes `0x004A24E8`; the exact
-  flip operation.
-- RULE-SEARCH-002, FND-SEARCH-003: the "controlled by the active player" test
-  at `0x00412990` in `fn_004123CC`, and the sector visiting order.
-- SCR-SEARCH-001: how a row is drawn, whether ALL and NONE play the accepted
-  sound, what triggers the handler's rejected-input branch, and what the first
-  click of a double-click does.
-- All findings FND-EVENT-001..003, FND-COMLINK-001..005 and
-  FND-SEARCH-001..003 locate functions by entry address only. Give each
-  function's full range: `fn_00477748`, `fn_004726C0`, `fn_00472775`,
-  `fn_0044F2FC`, `fn_0044FD6C`, `fn_00451602`, `fn_0045D2F0`, `fn_0046BA84`,
-  `fn_0045EAB1`, `fn_0045FDF1`, `fn_0045D61A`, `fn_004718EE`, `fn_00418821`,
-  `fn_004600D2`, `fn_0046023C`, `fn_004327C0`, `fn_00432926`, `fn_004328BE`,
-  `fn_004328F8`, `fn_00460CCF`, `fn_004327DC`, `fn_0045E04D`, `fn_00448E32`,
-  `fn_0044C476`, `fn_0046E766`, `fn_004123CC`, `fn_00412AC4`.
+- RULE-SEARCH-001, RULE-COMLINK-001, FMT-STATE-005: whether loading a saved
+  game (the start-menu load through `fn_004637B8` at `0x00461902`, and the
+  in-game load `fn_0045C33B`) enters `fn_0046E766` again, which empties the
+  Search filters and every Comlink inbox (FND-COMLINK-006). Follow the jumps
+  after `0x00461902` in `fn_00460CCF` and the return path of `fn_0045C33B`.
+- RULE-EVENT-005: which branch of the event pump `fn_00462579` restores the
+  Events control while `events_unviewed` (`0x00487814`) is set, so the light
+  can be described as blinking or steady (FND-EVENT-005, `0x00463267`).
+- RULE-COMLINK-001: what `g_004877CC` and `g_004877D0` are; the recorder sets
+  the second when the first is set and the message is for `active_player`.
 
 ## Setup, city generation, objectives and awards
 
@@ -409,8 +259,9 @@ order of priority, unless a group says otherwise.
   `0x0046DC10`, `0x00472775` (FND-AI-001 to FND-AI-040).
 - Family-9 seeding in the outer pass (RULE-AI-001, RULE-AI-027; FND-AI-003):
   the condition under which `0x00458FA0` writes family 9 before the dispatch.
-- Writer of planning record byte +1 (`unk_01`) and meaning of +11
-  (RULE-AI-002, RULE-AI-001; FND-AI-002, FND-AI-003).
+- Meaning of planning record byte +1 (`unk_01`) to the planner (RULE-AI-002, RULE-AI-001;
+  FND-AI-002, FND-AI-003). Its writers and its one reader are in FND-STATE-006; +11 is never
+  addressed.
 - Dispatcher tail (RULE-AI-002; FND-AI-001): the scenario 6, 7, 8 comparisons
   after the handler and the mode 9 Move for roster slot 0.
 - Reuse of a roster slot's planning record (RULE-AI-001): where a hire resets
@@ -421,8 +272,9 @@ order of priority, unless a group says otherwise.
   the Tech ceiling is computed.
 - Selectors `0x64`, `0x74` and `0x75` (RULE-AI-005): which candidate wins when
   several qualify; the weapon class `type` numbers of the item table.
-- Selector `0x2D` table and mode 4 of the sector selector (RULE-AI-006), and
-  mode 0 (RULE-AI-007; conflict with FND-MOVE-001).
+- Mode 4 of the sector selector (RULE-AI-006), and mode 0 (RULE-AI-007; conflict with
+  FND-MOVE-001). The table selector `0x2D` reads is the standings table `0x004ABC08`, searched as
+  if it listed player slots (FND-STATE-004); RULE-AI-006 should cite it.
 - Family 1 (RULE-AI-020; FND-AI-020): the branches for previous Attack, Bribe,
   Give, Hide, Influence, Move, Research, Sell and Terminate; the Snitch branch
   gated on cash above 50; the Mentality 2 branch; the selector `0x35` test for
@@ -728,16 +580,6 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
   `fn_004140AE` (no callers). For each, record what it draws or handles, its rectangles and
   resources, and cite it from SCR-UI-003 and SCR-UI-004. `fn_00410016` builds the default player
   name from `PLAYER #`; cite it from the setup rules.
-- Sub-functions of panels whose parent handler is cited but which no entry names: Attack
-  `fn_0043D073`, `fn_0043D93C` (SCR-ATTACK-001); the Equip and Research list rows `fn_0043F52C`
-  (SCR-EQUIP-001, SCR-RESEARCH-001); Influence `fn_0044127B` (SCR-INFLUENCE-001); Move
-  `fn_004425AE` (SCR-MOVE-001); Research `fn_004437E7`; Sell `fn_00445655` (SCR-SELL-001); Give
-  `fn_00447ADB`, `fn_00448027` (SCR-GIVE-001); Search `fn_00449925`, `fn_004499A9`
-  (SCR-SEARCH-001); Detailed Combat `fn_0042F779`, `fn_0043066C` (SCR-COMBAT-002); setup
-  `fn_004384F4`, `fn_00438B35` (SCR-SETUP-001); `fn_00454251` under `fn_00451F80`; Comlink
-  `fn_0041B7D6`, `fn_004604A7`, `fn_00460560`, `fn_00460391` (SCR-COMLINK-002). Most position
-  questions in the earlier groups are answered inside these, so read them before the parent
-  handlers.
 - Parent handlers cited only for one detail need a finding that describes each as a whole
   (purpose, range, inputs, what it writes): the city-screen functions `fn_00410770` (11 callers),
   `fn_00413012` (7 callers) and `fn_00412BF7`. The others of this item are recorded in
@@ -788,12 +630,6 @@ function's range; `tools/ghidra/ReportFunctionInventory.java` and
 
 ## Found while integrating the spec
 
-- FMT-STATE-002 `factory`, RULE-SITE-001, RULE-EQUIP-003: find the instruction that writes sector
-  byte `0x0E`. No finding shows a writer, so RULE-SITE-001 cannot yet say which completed site
-  sets the Factory flag.
-- RULE-SEARCH-001: whether the original's save writes the Search filter table. If it does not,
-  the rebuild matches it and nothing is needed; if it does, the rebuild's clearing of the filters
-  on a load becomes a deviation.
 - RULE-HIDE-001, FND-AWARDS-002: the award count reads every resolved Hide. Cite FND-AWARDS-002 in
   the HIDE rule once the Hide case of `fn_00472775` is read again, and check that the counter is
   incremented in the same place.

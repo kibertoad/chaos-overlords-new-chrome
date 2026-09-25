@@ -4,7 +4,7 @@ title: Each Research gang rolls Force plus Research and takes its successes off 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-RESEARCH-001, FND-RESEARCH-002, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EVENT-001, SRC-MANUAL-GOG]
+evidence: [FND-RESEARCH-001, FND-RESEARCH-002, FND-RESEARCH-003, FND-RESEARCH-004, FND-TURN-007, FND-STATE-002, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EVENT-001, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001]
@@ -94,11 +94,8 @@ None known.
 
 ## Open questions
 
-- That `target` holds the item number for Research is assumed; FMT-STATE-001
-  does not yet pin what `target` holds for each action.
-- Where the Tech Level limits of the manual are applied (in the Research
-  picker's list, as FND-EQUIP-006 shows the Equip list testing Tech Level and
-  research state) is not recorded for the Research picker.
-- The instruction addresses of the Research case in `0x00472775` are not
-  recorded.
+- The case itself applies no Tech Level limit; the limits are in the Research
+  picker's list (FND-RESEARCH-003, SCR-RESEARCH-001), which offers only items
+  the gang may research. The picker writes the item number into `target`, and
+  the case reads it from there (FND-RESEARCH-004, FND-TURN-007).
 - The report itself is RULE-EVENT-007, the handler of `ResearchCompleted`.

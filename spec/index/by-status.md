@@ -14,7 +14,7 @@
 
 ## sourced
 
-8 entries.
+7 entries.
 
 | ID | Title |
 |---|---|
@@ -23,13 +23,12 @@
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | Full save file |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's combat rating adds the skills that match its weapon to its Combat |
-| [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | The Financial panel projects next turn's cash flow for the whole city or one sector |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | Local setup starts with one human, and Add and Remove change the number of local humans from one to six |
 
 ## supported
 
-215 entries.
+217 entries.
 
 | ID | Title |
 |---|---|
@@ -62,6 +61,7 @@
 | [FMT-STATE-005](../formats/FMT-STATE-005.md) | Comlink message record |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | Last Turn report record |
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot |
+| [FMT-STATE-008](../formats/FMT-STATE-008.md) | Combat result row of one sector |
 | [FMT-VIDEO-001](../formats/FMT-VIDEO-001.md) | Smacker movies DATA/MVINTRO and DATA/MVLOGOS |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler |
@@ -143,6 +143,7 @@
 | [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner |
 | [RULE-EVENT-013](../rules/RULE-EVENT-013.md) | Losing control of a sector is reported to the previous owner |
 | [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player |
+| [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | The Financial panel projects next turn's cash flow for the whole city or one sector |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image |
@@ -276,7 +277,7 @@
 
 ## recorded
 
-262 entries.
+276 entries.
 
 | ID | Title |
 |---|---|
@@ -327,6 +328,7 @@
 | [FND-AI-047](../findings/FND-AI-047.md) | The resolver lowers the target's attitude toward its attacker after every attack, evaded or not, and the loser's toward the winner of a Control takeover |
 | [FND-AI-048](../findings/FND-AI-048.md) | The family-0 handler, read from its jump table, groups previous Chaos with Equip and Hide with Heal and Move, and chooses the human pool by the sector owner's attitude |
 | [FND-AI-049](../findings/FND-AI-049.md) | The family-4 handler, read from its jump table, groups previous Chaos with Equip and Hide with Attack and Move, and chooses the human pool by the sector owner's attitude |
+| [FND-AI-050](../findings/FND-AI-050.md) | Each scenario's hire block adjusts the schedule slot by late-turn remaps, a forced hunter slot with a previous-role guard, family quotas and a minimum of family 0 or 4 |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |
@@ -336,6 +338,8 @@
 | [FND-AUDIO-003](../findings/FND-AUDIO-003.md) | The turn-start sound plays at every turn start after the first, and every effect interrupts the one playing |
 | [FND-AUDIO-004](../findings/FND-AUDIO-004.md) | The 28 sound files are two-chunk RIFF WAVE files of 8-bit mono PCM at 22,050 Hz |
 | [FND-AUDIO-005](../findings/FND-AUDIO-005.md) | The eight music tracks are Ogg files of one Vorbis stream each, stereo at 44,100 Hz |
+| [FND-AUDIO-006](../findings/FND-AUDIO-006.md) | The effect slots are 48 records of 276 bytes holding a path and a loaded copy, one play channel serves every effect, and the turn-start flags belong to network sessions |
+| [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | CD music opens a shareable cdaudio device in TMSF format, a timer poll restarts a stopped program, and the MCI notification changes nothing |
 | [FND-AUDIO-010](../findings/FND-AUDIO-010.md) | Slot 2 is the sound of pressing a push-button control, and setup plays slots 3 and 4 for accepted and refused choices |
 | [FND-AUDIO-011](../findings/FND-AUDIO-011.md) | Panels play slot 3 for an accepted choice and slot 4 for a refused one, and the pagers stop at both ends |
 | [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read |
@@ -412,6 +416,8 @@
 | [FND-GFX-001](../findings/FND-GFX-001.md) | Every PX16 file is a 16-bit BMP whose width and height are 0 and whose plane count is 255 |
 | [FND-GFX-002](../findings/FND-GFX-002.md) | Every PX08 file is an 8-bit BMP with a 256-colour palette, RLE8 in 207 files and uncompressed in 7 |
 | [FND-GFX-003](../findings/FND-GFX-003.md) | The PX08 line geometry gives every image's width and height, and the PX16 rows are padded to four bytes |
+| [FND-GFX-004](../findings/FND-GFX-004.md) | The display layer draws with GDI into twelve surface slots, copies the 640-by-460 backing surface to the window's client origin, and uses DirectDraw only to take the screen in full screen |
+| [FND-GFX-005](../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | The Give panel handler lists the giver's sector mates, accepts a recipient only when its Tech Level covers every selected item, and stores the order in the target bytes |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art |
 | [FND-HEAL-001](../findings/FND-HEAL-001.md) | The Heal case rolls Heal plus 4 dice without testing Force first, caps Force at 10 and records no report |
@@ -440,6 +446,8 @@
 | [FND-MOVE-005](../findings/FND-MOVE-005.md) | The Move panel marks the chosen neighbour with one of eight 32-by-32 keyed arrows from PX00129 placed around the centre cell |
 | [FND-NET-001](../findings/FND-NET-001.md) | The network packet dispatcher reads 16-byte headers and handles sixteen packet types, one set on the joining side and one on the hosting side |
 | [FND-NET-002](../findings/FND-NET-002.md) | The network progress renderer draws one progress bar per remote player and two lines of status text chosen by a code |
+| [FND-NET-003](../findings/FND-NET-003.md) | The network screens build their button rectangles as top, left, bottom, right, and their progress bars are one pixel per unit up to 100 |
+| [FND-NET-004](../findings/FND-NET-004.md) | 118 functions make up the network code, and every call into them from local code is skipped or does nothing in a local game |
 | [FND-OBJECTIVE-001](../findings/FND-OBJECTIVE-001.md) | The Player Rankings panel draws a portrait on a fixed rail per player, at a height set by the standing, and none for an eliminated player |
 | [FND-OBJECTIVE-002](../findings/FND-OBJECTIVE-002.md) | A local human who has been eliminated sees a private elimination card, in slot order, before the slot is retired |
 | [FND-OBJECTIVE-003](../findings/FND-OBJECTIVE-003.md) | The scenario values run Greed 0 to Armageddon 9 in the order of the string table, and the end evaluator tests each by its own switch arm |
@@ -457,6 +465,7 @@
 | [FND-PLATFORM-008](../findings/FND-PLATFORM-008.md) | Image copies are opaque except for a pattern mask and an exact-white colour key used by two images |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | The program entry allows one instance, picks the image set, sets up the display, sound and menus, runs the title loop, and undoes it all on the way out |
 | [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | Data files are named by the App Paths install directory and length-prefixed names, and four file slots open them with no message on failure |
+| [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | The startup disc check looks for a fixed drive from the string ".\" and always passes, and the CD track search has no callers |
 | [FND-POLICE-001](../findings/FND-POLICE-001.md) | Each sector keeps its last two Crackdown turns; a third within five turns neutralizes the sector, and each Crackdown adds 3 to 5 police turns |
 | [FND-POLICE-002](../findings/FND-POLICE-002.md) | A Crackdown report goes to every player who had a gang in the sector when resolution began, and a control-loss report to the displaced owner |
 | [FND-POLICE-003](../findings/FND-POLICE-003.md) | The police detect a gang on a roll of 1 to 100 against 115 minus 5 Stealth, less 20 for Hide, and attack with 25 minus Defense dice at 5 or better |
@@ -472,6 +481,8 @@
 | [FND-RNG-005](../findings/FND-RNG-005.md) | From an accepted local Begin to the first city, the draws are portraits, reactions, city and headquarters, in that order |
 | [FND-RNG-006](../findings/FND-RNG-006.md) | The 61 bounded draws, call by call, all made on the main thread; no pointer to rand or to any function that reaches it is stored |
 | [FND-SAVE-001](../findings/FND-SAVE-001.md) | A save is a marker, 44 global blocks in a fixed order, an optional network block and the marker again |
+| [FND-SAVE-002](../findings/FND-SAVE-002.md) | Save and Open use the common dialogs on file slot 3, the save dialog truncates the chosen file before anything is written, and nothing writes an M10W file |
+| [FND-SAVE-003](../findings/FND-SAVE-003.md) | What the code does with save blocks 3, 4, 16, 17, 18, 21, 27, 36, 37 and 39, and which preference each preference byte holds |
 | [FND-SEARCH-001](../findings/FND-SEARCH-001.md) | Each player has 22 Search filter bytes, one per site definition, cleared when a new game starts |
 | [FND-SEARCH-002](../findings/FND-SEARCH-002.md) | The Search panel's ALL, NONE and Done controls and its 22 row targets |
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | The city draws a marker for each site the viewer controls and for each other site whose definition the viewer's Search filter selects |
@@ -499,6 +510,7 @@
 | [FND-SNITCH-001](../findings/FND-SNITCH-001.md) | Snitch subtracts 3 from Tolerance with no cash test, and after the instant phase every Tolerance below 1 becomes 1 |
 | [FND-STATE-001](../findings/FND-STATE-001.md) | City generation stores Income and Tolerance in sector bytes 1 and 2, and the refresh before planning rebuilds bytes 3 to 6, 0x0D, 0x0E and 0x16 to 0x23 from them and the completed sites |
 | [FND-STATE-002](../findings/FND-STATE-002.md) | The gang record holds the player at byte 0, the definition at byte 1 and Force at byte 3, its statistics follow the definition's order, and each picker's target bytes are read back by the resolver |
+| [FND-STATE-003](../findings/FND-STATE-003.md) | Save blocks 16, 17, 18, 21, 36 and 37 hold the AI hire limit, an always-zero per-gang table, the takeover flag, an unused hire flag, the reactions and a Homicidal Maniac flag |
 | [FND-STATE-004](../findings/FND-STATE-004.md) | Per-player tables - the active flags at 0x004ABBE0, the length-prefixed names at 0x004A2588, signed research counters at 0x004A2608, and the standings bytes that AI selector 0x2D searches as if they were a player list |
 | [FND-STATE-005](../findings/FND-STATE-005.md) | Each resolution sets byte 9 of all 486 combat records to -1 and rewrites bytes 0 to 8 only for gangs that took part in a fight |
 | [FND-STATE-006](../findings/FND-STATE-006.md) | In the computer players' 16-byte planning record, byte 1 is a flag only selector 0x48 reads, byte 11 is never referenced, and byte 15 is the high byte of the 16-bit field at 14 |
@@ -533,6 +545,8 @@
 | [FND-UI-018](../findings/FND-UI-018.md) | The detailed sector screen enlarges the sector's map cell as its background and composes the owner strip, a nine-sector display, three sites, the cards and the group strip over it |
 | [FND-UI-019](../findings/FND-UI-019.md) | Text, numbers and the panel buttons are drawn from fixed cells of PX00129 by four small helpers |
 | [FND-UI-020](../findings/FND-UI-020.md) | The window procedure turns Windows messages into a four-number input event that two message pumps hand to the screen loops |
+| [FND-UI-021](../findings/FND-UI-021.md) | The menu bar's items are greyed by game state through position and command helpers, table 102 gives six Ctrl accelerators, and menus 1, 2, 3 and 5 are gang order popups |
+| [FND-UI-022](../findings/FND-UI-022.md) | One dialog procedure serves every Windows dialog; a local game can reach seven of them, and six dialog resources are never opened |
 | [FND-UI-031](../findings/FND-UI-031.md) | Copies from the PX00129 sheet use opaque, white-keyed and pattern modes depending on the element |
 | [FND-UI-032](../findings/FND-UI-032.md) | The main console tests eight fixed tiles, splits five of them by the press row, and acts only on release inside |
 | [FND-UI-033](../findings/FND-UI-033.md) | The city map draws the same keyed pylon crop over the six Siege headquarters sectors and the four Big Man centre sectors |
@@ -542,6 +556,7 @@
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file |
+| [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | The intro plays MVLOGOS then MVINTRO at (80,102) through smackw32, each ended by the left button at a 10 Hz tick, at the effects volume |
 
 ## reproduced
 
@@ -596,6 +611,7 @@ Entries whose Open questions section says more than None known.
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | Site slot in a sector record | supported |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | Last Turn report record | supported |
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | supported |
+| [FMT-STATE-008](../formats/FMT-STATE-008.md) | Combat result row of one sector | supported |
 | [FMT-VIDEO-001](../formats/FMT-VIDEO-001.md) | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
@@ -663,10 +679,9 @@ Entries whose Open questions section says more than None known.
 | [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded | supported |
 | [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner | supported |
 | [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player | supported |
-| [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | The Financial panel projects next turn's cash flow for the whole city or one sector | sourced |
+| [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | The Financial panel projects next turn's cash flow for the whole city or one sector | supported |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | supported |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image | supported |
-| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | supported |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player | supported |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | supported |
 | [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | Vacant hire offers are refilled in place at the player's planning entry | supported |
@@ -690,7 +705,6 @@ Entries whose Open questions section says more than None known.
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | supported |
 | [RULE-RNG-001](../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start | supported |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws | supported |
-| [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | supported |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | supported |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | supported |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported |

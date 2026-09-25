@@ -46,7 +46,10 @@ gang's element number (`0x004745CE`), the second is its target's element
 number `target * 81 + target_2` when the gang's `action` is 1, Attack
 (`0x004746B1`), and -1 otherwise (`0x00474728`). The six bytes after the six
 rows, at `0x004A8918 + sector * 0x96 + player`, are the per-player police
-flags.
+flags; the police step sets a player's flag when the police hit one of that
+player's gangs in the sector (`0x00474243`). FND-COMBAT-008 records the rest
+of that step; this finding relies on it only for the entry layout. The
+resolver does not write byte 3 (`force_shown`) of a combat record.
 
 The presentation `fn_0042E040(viewer, automatic)`:
 

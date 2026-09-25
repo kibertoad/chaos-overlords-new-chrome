@@ -63,7 +63,9 @@ write-back.
   site slot of the gang's sector: the site definition byte at sector offset
   `0x07 + slot * 2` (`0x00472D20`) and the progress byte at `0x08 + slot * 2`
   (`0x00472D52`). It writes the new progress to the same byte (`0x00472EBA`)
-  and stores 1 in the sector's entry of `0x00498B78` (`0x00472EC8`).
+  and stores 1 in the sector's entry of `0x00498B78` (`0x00472EC8`). The
+  roll is skipped when the Resistance equals the progress (`JZ` at
+  `0x00472D6C`). The case reads no sector owner byte.
 - Research reads the same record byte `0x08` and uses it as the item number:
   the element `item * 6 + player` of `0x004A2608` (`0x00472EE4`), written back
   at `0x0047303A`.

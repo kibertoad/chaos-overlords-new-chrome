@@ -29,6 +29,12 @@ locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0046439A..0x00464782
+  - build: BLD-GOG-EN-1.1
+    file: Chaos Overlords.exe
+    address: 0x00410016..0x0041012C
+  - build: BLD-GOG-EN-1.1
+    file: Chaos Overlords.exe
+    address: 0x0040E0A0..0x0040EB5E
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -104,6 +110,22 @@ no slot holds (it scans 14 down to 0 and keeps the last free one; its result
 is undefined when none is free). `0x00468BBC` returns the lowest slot whose
 type is -1, or -1.
 
+Roster. `0x00410016`, called once from the title loop's start-up
+(`0x004614A3`) and at the start of the two network lobbies, fills the saved
+roster: slot 0 type 0 with portrait 0, slots 1 to 5 type -1 with portrait 15,
+each slot's name string resource 61 cut or padded to eight characters followed
+by the digit `slot + 1`, and the selected card `0x004854C4` 0. The full local
+setup copies the saved roster in when it opens. Add (`0x0040E5FB`) takes the
+lowest slot of type -1 (`0x00468BBC`), refusing with sound slot 4 when there is
+none, gives it the lowest free portrait (`0x00468C0E`) and type 0, selects it,
+and leaves its name as it was. Remove (`0x0040E6F4`) is refused with sound
+slot 4 when fewer than two slots have type 0; otherwise the selected slot gets
+portrait 15 and type -1, keeps its name, and the selection moves to the
+highest slot from 5 down to 1 whose portrait is not 15, or to 0. Begin copies
+the roster back to the saved roster before the empty slots are filled with
+computer players (`0x0040E9E5`); Cancel sets the selected card to 0 and saves
+nothing.
+
 Preference loader. `0x0046439A` opens `HKEY_LOCAL_MACHINE` key
 `SOFTWARE\Stick Man Games\Chaos Overlords\1.0` for reading. When the key
 opens, it reads thirteen values in a fixed order (`prefsDiff`, `prefsTimeLimit`
@@ -127,6 +149,10 @@ was. With no `prefsObjective` stored, `preferred_scenario` becomes whatever
 `prefsTimeLimit` (or an earlier value) holds, truncated to a byte. A fresh
 setup therefore starts on Greed only when the key is absent or no earlier
 value is stored.
+
+The setup screen reopens with the humans, portraits and names of the last
+Begin in the session, not with a fresh single player. A name left behind by a
+removed player comes back when Add reuses that slot.
 
 The portrait arrows skip the portraits other slots hold, wrap at both ends,
 and include empty slots in the test; an empty slot's byte is 15 (FND-SETUP-002

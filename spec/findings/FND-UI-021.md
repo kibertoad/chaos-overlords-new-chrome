@@ -25,7 +25,7 @@ locations:
     address: 0x0041462F..0x00414D8B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00414D8C..0x00415BD4
+    address: 0x00414D8C..0x004169B2
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004B0D00..0x004B15BB
@@ -101,7 +101,7 @@ Menu states found:
 | Game over, back to the title | Save, End, Disconnect | New Game, Open, the Comm menu | `0x0046F99C..0x0046F9FA` |
 | A panel open | the File menu | | `fn_004120A7` |
 | About screen (`fn_00464D53`) | File, Edit, Options, Comm, Help | File, Options, Comm, Help again on leaving | `0x00464D72..0x0046506D` |
-| Network setup screens `fn_0040E0A0`, `fn_0040B9C0`, `fn_004677F0`, `fn_00456F80`, `fn_0042B9E0` | New Game, Open, Save, End, Host, Join while they run | the same on leaving, then Save and End greyed | their calls to `fn_0042548A` and `fn_0042533F` |
+| Setup `fn_0040E0A0` and the network screens `fn_0040B9C0`, `fn_004677F0`, `fn_00456F80` and `fn_0042B9E0` | New Game, Open, Save, End, Host and Join while they run; Save and End stay greyed after | New Game, Open, Host and Join when the first four return | their calls to `fn_0042548A` and `fn_0042533F` |
 
 The popups, `fn_0042566D(menu, slot, point)`: it takes the first popup of loaded
 menu `menu`, converts `point` from client to screen coordinates, and calls
@@ -132,11 +132,15 @@ menu `menu`, converts `point` from client to screen coordinates, and calls
 - The group bar, `fn_0041462F(defaults)`, called from `fn_00470E24` for a press
   inside top 61, left 253, bottom 77, right 405 while `0x004ABC4C` is set: x
   more than 367 opens menu 5 (defaults), otherwise menu 3 (orders), both at
-  client point (290, 65). The same greying applies. The choice is written to
-  every gang of the active player in the selected sector: Attack only after the
-  Attack picker `fn_0043B290` accepts, Influence after `fn_0043F692`, Move after
-  `fn_004413EF`. For Heal only gangs whose `force` is below 10 are changed. A
-  group default also sets `repeat_action` to the code.
+  client point (290, 65). Before the popup it greys Control when the active
+  player owns the sector and Influence otherwise, both while `crackdown_turns`
+  is above 0, and in menu 3 Attack unless another player's byte `0x10 + p` of
+  the sector record is nonzero. The choice is written to every gang of the
+  active player in the selected sector (`action` and its targets, from the
+  picker's scratch record in roster slot 80): Attack only after the Attack
+  picker `fn_0043B290` accepts, Influence after `fn_0043F692`, Move after
+  `fn_004413EF`. For Heal only gangs whose `force` is below 10 are changed.
+  Group orders set `repeat_action` to 0; group defaults set it to the code.
 
 ## Interpretation
 

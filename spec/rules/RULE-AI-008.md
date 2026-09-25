@@ -28,7 +28,7 @@ None.
 
 ## Inputs
 
-`hire_offers`, `gang_definitions` (`force`, `upkeep`, `combat`, `heal`,
+`hire_offers`, `gang_definitions` (`hire_cost`, `upkeep`, `combat`, `heal`,
 `research`, `stealth`, `detect`, `control`, `strength`, `blade`, `range`,
 `fighting`, `martial_arts`), `cash` and `scenario`.
 
@@ -78,7 +78,7 @@ define rank_offer(player, mode):
                 choice = k
     if choice == -1:
         return -1
-    if gang_definitions[hire_offers[player * 3 + choice]].force > cash[player]:
+    if gang_definitions[hire_offers[player * 3 + choice]].hire_cost > cash[player]:
         return -1
     return choice
 ```

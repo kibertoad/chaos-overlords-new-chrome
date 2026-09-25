@@ -11,6 +11,9 @@ locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0044D1C7..0x0044E280
+  - build: BLD-GOG-EN-1.1
+    file: Chaos Overlords.exe
+    address: 0x00471BB2..0x00471BE6
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -68,6 +71,12 @@ plus `sector % 8` and a row digit `1` plus `sector / 8` at buffer
 - the tax and protection sums are taken from this sector only, when the
   player owns it (`0x0044DF2E`, `0x0044DFA7`).
 
+The only caller, `fn_004718EE`, calls it with `active_player`
+(`0x004ABC84`) and, when the comparison at `0x00471BB2` finds the pointer
+more than 32 pixels past the corner of the pressed control, the selected sector at `0x004ABC80`
+(`0x00471BD1`); otherwise with -1 (`0x00471BE6`). In the panel's input loop a
+key event with code `0x2B` or `0x0D` (`0x0044E317`) presses the close control.
+
 Both variants then draw, at buffer x `0x262` (screen x 394), with width 4:
 
 | Buffer y | Screen y | Sum |
@@ -102,12 +111,16 @@ rows are:
   halved outside the player's own sectors.
 - Cash Adjustment: the sum of the seven rows.
 
-The Sector variant is picked by the caller passing a sector instead of -1. It
-counts the gangs standing in the sector and those moving into it, and gives
+The Sector variant shows the sector selected on the map and is picked by
+pressing the lower part of the Financial control; the upper part opens the City
+variant. It counts the gangs standing in the sector and those moving into it, and gives
 back the Upkeep of gangs moving out.
 
 ## Alternatives
 
+- That the comparison at `0x00471BB2` is on the vertical axis, so that the
+  lower part of the control opens the Sector variant, is inferred from the
+  local's position in the pointer record, not checked.
 - The row labels are in the template images, which were not read; the
   pairing with the manual's order rests on the eight rows being drawn from top
   to bottom in that order.

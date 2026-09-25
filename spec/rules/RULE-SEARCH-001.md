@@ -4,7 +4,7 @@ title: Each player's Search filter starts empty and is changed by ALL, NONE and 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SEARCH-001, FND-SEARCH-002]
+evidence: [FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-SEARCH-005, FND-COMLINK-006]
 conflicting: []
 split_with: []
 related: []
@@ -18,9 +18,11 @@ type, NONE clears them, and clicking a row switches that one type on or off.
 
 ## When it runs
 
-The procedure's last loop runs once, when a new game is set up. The functions
-run in the Search panel: `search_set_all(1)` for ALL, `search_set_all(0)` for
-NONE and `search_toggle(n)` for a single click on row `n`.
+The procedure's last loop runs each time the outer match function starts,
+before anything else it does [FND-COMLINK-006]. The functions run in the
+Search panel: `search_set_all(1)` when ALL is released inside itself,
+`search_set_all(0)` when NONE is, and `search_toggle(n)` when row `n` is
+pressed, including the first press of a double-click [FND-SEARCH-004].
 
 ## Parameters
 
@@ -43,7 +45,7 @@ define search_toggle(definition):
     search_filters[i] = search_filters[i] == 0
     return
 
-# new game
+# the match loop starts
 for i in 0..132:
     search_filters[i] = 0
 ```
@@ -56,8 +58,15 @@ whole table at a new game. The city's site markers change accordingly
 
 ## Edge cases
 
-Each player's filter is separate, so in a hot-seat game each player sees the
-markers they chose.
+- Each player's filter is separate, so in a hot-seat game each player sees the
+  markers they chose.
+- The filter is not saved: a save file has no block for it [FND-SEARCH-004].
+  The match function empties it on entry before it chooses between a new
+  match and the state already loaded, and the shell enters every match, new
+  or loaded, through it, so a loaded match starts with every filter empty
+  [FND-SEARCH-005].
+- A double-click on a row flips it once, on its first press, and opens Site
+  Information without flipping it back.
 
 ## What the sources say
 
@@ -69,7 +78,4 @@ None known.
 
 ## Open questions
 
-- Whether `search_filters` is written to the save file, and so survives saving
-  and loading, is not recorded.
-- Whether the flip stores exactly 1 and 0 is not recorded; the finding says
-  only that a click toggles the byte.
+None known.

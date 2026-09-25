@@ -57,10 +57,10 @@ Every call to selector `0x5B` passes the player, a sector and 0:
 |---|---|---|---|---|
 | `0x0045939C` | planning pass | above 1 | the duplicate cleanup of FND-AI-019 | nothing |
 | `0x00428FD9` | family 0, previous None | 0 | Chaos (3), `0x00428FFB` | Move through mode 5 (`0x00429083`) |
-| `0x0042A419` | family 0, previous Heal, Snitch or Move | below 1 | Chaos (3), `0x0042A4F4` | Move through mode 5 (`0x0042A467`) |
+| `0x0042A419` | family 0, previous Heal, Hide or Move | below 1 | Chaos (3), `0x0042A4F4` | Move through mode 5 (`0x0042A467`) |
 | `0x004010E9` | family 4, previous None, Control or Heal | below 1 | Chaos (3), `0x0040110C` | Move through mode 2 (`0x00401194`) |
-| `0x00401D7B` | family 4, previous Attack, Snitch or Move, owned sector | below 1 | Chaos (3), `0x00401D9E` | Move through mode 2 (`0x00401E26`) |
-| `0x0040179A` | family 4, previous Hide or Equip, owned sector | below 2 | Chaos (3), `0x00401852` | Move through mode 2 (`0x004018DA`) |
+| `0x00401D7B` | family 4, previous Attack, Hide or Move, owned sector | below 1 | Chaos (3), `0x00401D9E` | Move through mode 2 (`0x00401E26`) |
+| `0x0040179A` | family 4, previous Chaos or Equip, owned sector | below 2 | Chaos (3), `0x00401852` | Move through mode 2 (`0x004018DA`) |
 | `0x0042AAB0` | family 10 | 0 | Chaos (3), `0x0042AAD2` | Hide (8), `0x0042AB2F` |
 
 At `0x0040179A` the Chaos store is reached through a second owner test

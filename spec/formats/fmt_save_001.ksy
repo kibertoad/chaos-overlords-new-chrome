@@ -83,21 +83,21 @@ seq:
     repeat: expr
     repeat-expr: 6
     doc: Block 15, copied from 0x00482108.
-  - id: unknown_block_16
+  - id: ai_hire_limits
     type: s4
     repeat: expr
     repeat-expr: 6
-    doc: Block 16, copied from 0x00482110.
-  - id: unknown_block_17
+    doc: Block 16, copied from 0x00482110. Per player, the AI hire limit.
+  - id: ai_unused_gang_values
     type: s4
     repeat: expr
     repeat-expr: 486
-    doc: Block 17, copied from 0x0048DB48.
-  - id: unknown_block_18
+    doc: Block 17, copied from 0x0048DB48. Per gang, a value only AI selector 0x5D reads; always 0.
+  - id: ai_takeover_flags
     type: u1
     repeat: expr
     repeat-expr: 6
-    doc: Block 18, copied from 0x00482158.
+    doc: Block 18, copied from 0x00482158. Per player, the takeover flag.
   - id: ai_hire_anchors
     type: s4
     repeat: expr
@@ -108,11 +108,11 @@ seq:
     repeat: expr
     repeat-expr: 6
     doc: Block 20, copied from 0x00482128.
-  - id: unknown_block_21
+  - id: ai_unused_hire_flags
     type: s4
     repeat: expr
     repeat-expr: 6
-    doc: Block 21, copied from 0x00482140.
+    doc: Block 21, copied from 0x00482140. Per player, a flag written with the hire role and never read.
   - id: scenario_score
     type: s4
     repeat: expr
@@ -175,16 +175,16 @@ seq:
     repeat: expr
     repeat-expr: 36
     doc: Block 35, copied from 0x004AB590.
-  - id: unknown_block_36
+  - id: reactions
     type: s4
     repeat: expr
     repeat-expr: 6
-    doc: Block 36, copied from 0x004AB650.
-  - id: unknown_block_37
+    doc: Block 36, copied from 0x004AB650. Per player, the reaction value.
+  - id: homicidal_maniac_flags
     type: u1
     repeat: expr
     repeat-expr: 6
-    doc: Block 37, copied from 0x004A2600.
+    doc: Block 37, copied from 0x004A2600. Per player, 1 when the match was set up under Homicidal Maniac.
   - id: difficulty_bands
     type: s4
     repeat: expr

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EQUIP-004, FND-SELL-001, FND-SELL-002, FND-OPTIONS-001, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-004, FND-EXE-004, FND-SELL-001, FND-SELL-002, FND-OPTIONS-001, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-SELL-001, RULE-UI-003, SCR-GANG-001, SCR-UI-006]

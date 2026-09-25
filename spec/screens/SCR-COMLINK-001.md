@@ -33,7 +33,7 @@ related: [RULE-COMLINK-004, RULE-COMLINK-005]
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Panel | (104, 124, 344, 209) | Always | Pointer releases outside are moved to the nearest point inside before the controls are tested | FND-COMLINK-002 |
+| Outside the panel | Anything outside (104, 124, 344, 209) | Always | A press or double-click plays the rejected-input sound | FND-COMLINK-007 |
 | Previous | (135, 157, 26, 23) | Always | Subtracts 1 from `comlink_cursor` and shows the message through RULE-COMLINK-005; at the first message, changes nothing and plays the rejected-input sound | FND-COMLINK-002, FND-AUDIO-011 |
 | Next | (163, 157, 26, 23) | Always | Adds 1 to `comlink_cursor` and shows the message through RULE-COMLINK-005; at the last message, changes nothing and plays the rejected-input sound | FND-COMLINK-002, FND-AUDIO-011 |
 | Dismiss | (137, 293, 49, 22) | Always | Closes the panel | FND-COMLINK-002 |
@@ -56,7 +56,7 @@ None.
 | Sound | Resource | Played when | Evidence |
 |---|---|---|---|
 | Accepted input | `DATA/SND00203` | A step to another message, before the pressed arrow is drawn | FND-AUDIO-011 |
-| Rejected input | `DATA/SND00204` | Previous at the first message or Next at the last; also when the View half of the Comlink control is pressed with no messages, and the panel then does not open | FND-COMLINK-002, FND-AUDIO-011 |
+| Rejected input | `DATA/SND00204` | Previous at the first message or Next at the last; a press outside the panel; also when the View half of the Comlink control is pressed with no messages, and the panel then does not open | FND-COMLINK-002, FND-COMLINK-007, FND-AUDIO-011 |
 
 ## States
 

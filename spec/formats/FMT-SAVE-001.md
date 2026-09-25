@@ -9,7 +9,7 @@ byte_order: little
 size: null
 text: false
 definition: fmt_save_001.ksy
-evidence: [FND-SAVE-001, SRC-RECHAOS-3561D41, FND-AI-001, FND-AI-002, FND-AI-004, FND-UI-003, FND-TURN-005, FND-AI-005, FND-AI-006, FND-AI-007, FND-AI-009, FND-AI-010, FND-AI-019, FND-AUDIO-011, FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, FND-COMBAT-004, FND-CONTROL-001, FND-EVENT-001, FND-HIDE-001, FND-HIRE-001, FND-HIRE-004, FND-HIRE-005, FND-POLICE-001, FND-RESEARCH-001, FND-RESEARCH-002, FND-SETUP-001, FND-SETUP-002, FND-SETUP-009, FND-SETUP-011, FND-TURN-002, FND-UPKEEP-001, FND-PLATFORM-003]
+evidence: [FND-SAVE-001, SRC-RECHAOS-3561D41, FND-STATE-003, FND-AI-041, FND-AI-042, FND-AI-043, FND-SETUP-015, FND-AI-012, FND-AI-001, FND-AI-002, FND-AI-004, FND-UI-003, FND-TURN-005, FND-AI-005, FND-AI-006, FND-AI-007, FND-AI-009, FND-AI-010, FND-AI-019, FND-AUDIO-011, FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, FND-COMBAT-004, FND-CONTROL-001, FND-EVENT-001, FND-HIDE-001, FND-HIRE-001, FND-HIRE-004, FND-HIRE-005, FND-POLICE-001, FND-RESEARCH-001, FND-RESEARCH-002, FND-SETUP-001, FND-SETUP-002, FND-SETUP-009, FND-SETUP-011, FND-TURN-002, FND-UPKEEP-001, FND-PLATFORM-003]
 conflicting: []
 split_with: []
 related: []
@@ -48,12 +48,12 @@ The game ships no save files, so `files` is empty.
 | `0x47C2` | 6 | `UINT8[6]` | `player_active` | Block 13, a copy of `0x004ABBE0`. Per player, whether the player is still in the match; the glossary's `player_active`, whose address no finding has yet recorded. | sourced | FND-SAVE-001, SRC-RECHAOS-3561D41 |
 | `0x47C8` | 7776 | `BYTE[7776]` | `ai_plans` | Block 14, a copy of `0x0048A250`. The computer players' planning records, 16 bytes per player and roster slot at `player * 0x510 + slot * 0x10`. | supported | FND-SAVE-001, FND-AI-001, FND-AI-019 |
 | `0x6628` | 6 | `UINT8[6]` | `ai_first_plan_flags` | Block 15, a copy of `0x00482108`. Per player, the first-plan flag of the planning records. | supported | FND-SAVE-001, FND-AI-019 |
-| `0x662E` | 24 | `INT32LE[6]` | `unknown_block_16` | Block 16, a copy of `0x00482110`. Not identified. | supported | FND-SAVE-001 |
-| `0x6646` | 1944 | `INT32LE[486]` | `unknown_block_17` | Block 17, a copy of `0x0048DB48`. Not identified. The size fits one 32-bit value per player and roster slot. | supported | FND-SAVE-001 |
-| `0x6DDE` | 6 | `UINT8[6]` | `unknown_block_18` | Block 18, a copy of `0x00482158`. Not identified. | supported | FND-SAVE-001 |
+| `0x662E` | 24 | `INT32LE[6]` | `ai_hire_limits` | Block 16, a copy of `0x00482110`. Per player, the gang count below which the computer player hires; every planning pass recomputes it before use. | supported | FND-SAVE-001, FND-STATE-003, FND-AI-012 |
+| `0x6646` | 1944 | `INT32LE[486]` | `ai_unused_gang_values` | Block 17, a copy of `0x0048DB48`. Per player and roster slot, a value only AI selector `0x5D` reads; the only store writes 0, so it is 0 in every match. | supported | FND-SAVE-001, FND-STATE-003, FND-AI-041 |
+| `0x6DDE` | 6 | `UINT8[6]` | `ai_takeover_flags` | Block 18, a copy of `0x00482158`. Per player, set when a computer player takes over a network player; every gang of that player is then planned as a raider. | supported | FND-SAVE-001, FND-STATE-003, FND-AI-043 |
 | `0x6DE4` | 24 | `INT32LE[6]` | `ai_hire_anchors` | Block 19, a copy of `0x0048E2F8`. Per player, the encoded hire placement anchor. | supported | FND-SAVE-001, FND-AI-010 |
 | `0x6DFC` | 24 | `INT32LE[6]` | `ai_hire_roles` | Block 20, a copy of `0x00482128`. Per player, the hire role the planner chose. | supported | FND-SAVE-001, FND-AI-002, FND-AI-009 |
-| `0x6E14` | 24 | `INT32LE[6]` | `unknown_block_21` | Block 21, a copy of `0x00482140`. Not identified. | supported | FND-SAVE-001 |
+| `0x6E14` | 24 | `INT32LE[6]` | `ai_unused_hire_flags` | Block 21, a copy of `0x00482140`. Per player, 0 or 1, written with each hire-role choice and never read. | supported | FND-SAVE-001, FND-STATE-003, FND-AI-042 |
 | `0x6E2C` | 24 | `INT32LE[6]` | `scenario_score` | Block 22, a copy of `0x004A2790`. The glossary's `scenario_score`. | supported | FND-SAVE-001, FND-AI-005 |
 | `0x6E44` | 256 | `INT16LE[128]` | `crackdown_history` | Block 23, a copy of `0x004ABCC0`. Per sector, the last two Crackdown turns, at `sector * 4` and `sector * 4 + 2`. | supported | FND-SAVE-001, FND-POLICE-001 |
 | `0x6F44` | 1920 | `BYTE[1920]` | `reports` | Block 24, a copy of `0x004AAE08`. The Last Turn reports: 32 records of 10 bytes per player. | supported | FND-SAVE-001, FND-EVENT-001 |
@@ -68,8 +68,8 @@ The game ships no save files, so `files` is empty.
 | `0xAFEA` | 24 | `INT32LE[6]` | `casualties` | Block 33, a copy of `0x004AB620`. Per player, the casualties. | sourced | FND-SAVE-001, SRC-RECHAOS-3561D41 |
 | `0xB002` | 24 | `INT32LE[6]` | `cash_earned` | Block 34, a copy of `0x004A27E0`. Per player, the cash earned. | supported | FND-SAVE-001, FND-UPKEEP-001 |
 | `0xB01A` | 144 | `INT32LE[36]` | `attitudes` | Block 35, a copy of `0x004AB590`. The six-by-six attitude matrix of signed values. | supported | FND-SAVE-001, FND-AI-006 |
-| `0xB0AA` | 24 | `INT32LE[6]` | `unknown_block_36` | Block 36, a copy of `0x004AB650`. Not identified. | supported | FND-SAVE-001 |
-| `0xB0C2` | 6 | `UINT8[6]` | `unknown_block_37` | Block 37, a copy of `0x004A2600`. Not identified. | supported | FND-SAVE-001 |
+| `0xB0AA` | 24 | `INT32LE[6]` | `reactions` | Block 36, a copy of `0x004AB650`. Per player, the reaction value that scales the attitude drops. | supported | FND-SAVE-001, FND-STATE-003, FND-AI-006 |
+| `0xB0C2` | 6 | `UINT8[6]` | `homicidal_maniac_flags` | Block 37, a copy of `0x004A2600`. Per player, 1 when the match was set up under the Homicidal Maniac Mentality, else 0; never read. | supported | FND-SAVE-001, FND-STATE-003, FND-SETUP-015 |
 | `0xB0C8` | 24 | `INT32LE[6]` | `difficulty_bands` | Block 38, a copy of `0x004A2570`. Per player, the difficulty band set from the Mentality. | supported | FND-SAVE-001, FND-AI-007 |
 | `0xB0E0` | 6 | `UINT8[6]` | `players_human` | Block 39, a copy of `0x004ABC58`. Per player, whether the player is human. | sourced | FND-SAVE-001, SRC-RECHAOS-3561D41 |
 | `0xB0E6` | 1 | `UINT8` | `preference_1` | Block 40. The first preference byte, from `0x00487850`. Copied to the live preferences only after the closing marker matches. | supported | FND-SAVE-001 |
@@ -105,8 +105,7 @@ save.
 
 ## Open questions
 
-- Blocks 16, 17, 18, 21, 36 and 37 are not identified, and the meanings of
-  blocks 3, 4, 8, 13, 27, 33 and 39 rest on the source alone.
+- The meanings of blocks 3, 4, 8, 13, 27, 33 and 39 rest on the source alone.
 - Which of the three preferences each preference byte is (the source names
   them difficulty, time limit and objective) has not been traced here; the
   options findings own the preference globals.

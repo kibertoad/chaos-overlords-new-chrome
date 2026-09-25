@@ -41,7 +41,9 @@ A function, defined by RULE-AI-005.
 How each player regards each other player, from -10 to +10; a negative value
 makes the observer treat the other player as hostile. Any other value the game
 keeps: `INT32LE[36]` at `0x004AB590`, element `observer * 6 + other`
-[FND-AI-006].
+[FND-AI-006]. The resolver `fn_00472775` writes it in three places: the
+recovery at `0x0047280B`, the decrement after an attack at `0x00473F7D` and the
+decrement at a Control takeover at `0x00475781` [FND-AI-047].
 
 ## aux_records
 
@@ -172,10 +174,14 @@ at `0x004A11E8` [FND-COMBAT-004, FND-AI-010, FND-PLATFORM-003].
 
 For each sector, which gangs of each player fought there in the last combat
 phase, and whether the police attacked each player there. A list the game
-keeps, of the combat result row (a FMT-STATE entry requested from the
-core-state task: six players' rows of six four-byte entries, then six police
-flag bytes, 150 bytes in all), 64 elements in ascending sector order, at
-`0x004A8888 + sector * 0x96` [FND-AUDIO-002, FND-COMBAT-004]. The rows are
+keeps, of the combat result row (six players' rows of six four-byte entries,
+then six police flag bytes, 150 bytes in all), 64 elements in ascending sector
+order, at `0x004A8888 + sector * 0x96` [FND-AUDIO-002, FND-COMBAT-004]. An
+entry is two `INT16LE` gang indices, `player * 81 + roster_slot`: the gang,
+or -1 for an empty entry, and the gang's Attack target, or -1 when its action
+was not Attack; only the first is cleared each phase. A gang is listed in its
+own player's row of its own sector. The police flag of a player is set when
+the police find one of its gangs there [FND-COMBAT-008]. The rows are
 written in `turn_order` and roster slot order [FND-COMBAT-004].
 
 ## CombatClip
@@ -243,6 +249,8 @@ The messages in each player's Comlink inbox. A list the game keeps, of
 FMT-STATE-005, 16 elements per player at `0x0049CA90 + player * 0xA60`, kept
 in the order they arrived, oldest first. When all 16 are in use, a new message
 drops the oldest and the rest move down [FND-COMLINK-001, FND-COMLINK-004].
+Emptied when the match loop starts, and cut at the front of its read messages
+when its player finishes planning (RULE-COMLINK-007) [FND-COMLINK-006].
 
 ## comlink_pending
 
@@ -320,7 +328,8 @@ once [FND-POLICE-002, FND-EVENT-001].
 The turns of the last two Crackdown occurrences in each sector. A list the
 game keeps, one element per sector in ascending sector order, each element
 `INT16LE[2]` holding a turn number or -100 for an empty slot, at
-`0x004ABCC0 + sector * 4` [FND-POLICE-001, FND-PLATFORM-003].
+`0x004ABCC0 + sector * 4` [FND-POLICE-001, FND-PLATFORM-003]. The turn stored
+and the window test both use `elapsed_turns` [FND-CHAOS-002].
 
 ## crackdown_in_force
 
@@ -461,33 +470,20 @@ lights the Events control. Any other value the game keeps: `UINT8` at
 Whether each gang took part in a gang fight in the current combat phase. Any
 other value the game keeps: one value per gang, element
 `player * 81 + roster_slot`, written by the attack block and never read as a
-condition for an attack [FND-COMBAT-006]; its type and address are not
-recorded (unknown).
+condition for an attack [FND-COMBAT-006]: a local byte of the resolver, set
+for every attacker, every attack's target and every gang the police find, and
+copied at the record fill into the `UINT8[486]` at `0x00498BC0`
+[FND-COMBAT-008].
 
 ## fight_or_hold
 
 `fight_or_hold(player, idx, kind, tries)` writes an Attack, Heal or Control
 for a gang on an objective. A function, defined by RULE-AI-031.
 
-## finance_equipment
+## finance_rows
 
-A function, defined by RULE-FINANCE-001: the projected cost of a player's
-queued Equips, for the whole city or one sector.
-
-## finance_sector_tax
-
-A function, defined by RULE-FINANCE-001: the projected Sector Tax, 1 for each
-sector the player owns, for the whole city or one sector.
-
-## finance_site_protection
-
-A function, defined by RULE-FINANCE-001: the projected Cash of the completed
-sites in the player's sectors, for the whole city or one sector.
-
-## finance_upkeep
-
-A function, defined by RULE-FINANCE-001: the projected Upkeep of a player's
-active gangs, for the whole city or one sector.
+A function, defined by RULE-FINANCE-001: the eight amounts of the Financial
+panel and its gang count, for the whole city or one sector [FND-FINANCE-002].
 
 ## first_visible_definition_zero
 
@@ -574,8 +570,8 @@ equipment and completed sites added.
 ## gang_definitions
 
 The gang types, read from `DATA/Gangs`. A list the game keeps, of
-FMT-DATA-002, 90 elements in file order, indexed by a gang's `definition`;
-where the game keeps it has not been recorded (unknown).
+FMT-DATA-002, 90 elements in file order, indexed by a gang's `definition`,
+at `0x004A2800` [FND-HIRE-006].
 
 ## gangs
 
@@ -620,7 +616,8 @@ at `0x004A5EF0`; nonzero when set. Set at new-game setup and kept in the save
 ## hire_limit
 
 `hire_limit(player)` is the gang count below which a computer player tries to
-hire. A function, defined by RULE-AI-011.
+hire. A function, defined by RULE-AI-011. Each planning pass stores its result
+in `INT32LE[6]` at `0x00482110`, save block 16 [FND-STATE-003].
 
 ## hire_offers
 
@@ -801,32 +798,35 @@ RULE-UI-004.
 ## modifier_name_cash
 
 The fixed upper-case string in the executable that a player's name must equal
-to start with $1,500. A string the game keeps [FND-SETUP-001]; its address is
-not recorded (unknown).
+to start with $1,500. A string the game keeps, at `0x00487BD8`; a match sets
+the flag at `0x0049CA70 + player` [FND-SETUP-001, FND-SETUP-015].
 
 ## modifier_name_elite
 
 The fixed upper-case string in the executable that a player's name must equal
-to start with five extra equipped gangs. A string the game keeps
-[FND-SETUP-004]; its address is not recorded (unknown).
+to start with five extra equipped gangs. A string the game keeps, at
+`0x00487BC0`; a match sets the flag at `0x004A2788 + player` [FND-SETUP-004,
+FND-SETUP-015].
 
 ## modifier_name_islands
 
 The fixed upper-case string in the executable that a player's name must equal
-to give every unowned sector a permanent Crackdown. A string the game keeps
-[FND-SETUP-003]; its address is not recorded (unknown).
+to give every unowned sector a permanent Crackdown. A string the game keeps,
+at `0x00487BCC`; a match sets the flag at `0x004ABC10 + player`
+[FND-SETUP-003, FND-SETUP-015].
 
 ## modifier_name_right_hands
 
 The fixed upper-case string in the executable that a player's name must equal
-to start with five extra unequipped gangs. A string the game keeps
-[FND-SETUP-004]; its address is not recorded (unknown).
+to start with five extra unequipped gangs. A string the game keeps, at
+`0x00487B9C`; a match sets the flag at `0x004ABBD8 + player` [FND-SETUP-004,
+FND-SETUP-015].
 
 ## modifier_name_visibility
 
 The fixed upper-case string in the executable that a player's name must equal
-to see every opposing gang. A string the game keeps [FND-SETUP-011]; its
-address is not recorded (unknown).
+to see every opposing gang. A string the game keeps, at `0x00487BA8`
+[FND-SETUP-011, FND-SETUP-015].
 
 ## modifier_visibility
 
@@ -1004,13 +1004,13 @@ human's slot the human handler, and an eliminated slot is skipped
 
 The computer players' per-gang planning state. A list the game keeps, one
 16-byte record per player and roster slot, element `player * 81 +
-roster_slot`, at `0x0048A250` [FND-AI-019, FND-AI-001]; its layout is
-requested as a new format (see format-requests.md). Fields the rules use:
-`family` (+0), `unk_01` (+1), `older_action`, `older_target`, `older_target_2`
-(+2..+5), `previous_action`, `previous_target`, `previous_target_2` (+5..+8),
-`planned_action`, `planned_target`, `planned_target_2` (+8..+11), `unk_0B`
-(+11), `weapon_cooldown` (`INT16`, +12) and `armor_cooldown` (`INT16`, +14)
-[FND-AI-019, FND-AI-021].
+roster_slot`, at `0x0048A250` [FND-AI-019, FND-AI-001]; its element format is
+FMT-STATE-007. Fields: `family` (+0), `unk_01` (+1), `older_action`,
+`older_target`, `older_target_2` (+2..+4), `previous_action`,
+`previous_target`, `previous_target_2` (+5..+7), `planned_action`,
+`planned_target`, `planned_target_2` (+8..+10), `unk_0B` (+11, never
+addressed), `weapon_cooldown` (`INT16`, +12) and `armor_cooldown` (`INT16`,
++14) [FND-AI-019, FND-AI-021, FND-STATE-006].
 
 ## planning_start_ms
 
@@ -1048,8 +1048,10 @@ value is an array of its own indexed by the slot, such as `cash`,
 
 Whether a player is still in the match. Any other value the game keeps:
 `UINT8[6]`, indexed by player slot, at `0x004ABBE0` [FND-TURN-003,
-FND-OBJECTIVE-003]. It is cleared only near the end of `resolution`, for a player who
-owns no sector and has no gang [FND-TURN-003].
+FND-OBJECTIVE-003, FND-STATE-004]. It is set for all six slots when a new
+match starts and saved with the match [FND-STATE-004]. It is cleared only near
+the end of `resolution`, for a player who owns no sector and has no gang
+[FND-TURN-003, FND-STATE-004].
 
 ## player_awards
 
@@ -1061,8 +1063,9 @@ its address and the codes it stores are not recorded (unknown).
 ## player_names
 
 The players' names. Any other value the game keeps: six 12-byte records at
-`0x004A2588 + player * 12`, with the name's characters starting at each
-record's second byte [FND-UI-003, FND-PLATFORM-003].
+`0x004A2588 + player * 12` [FND-UI-003, FND-PLATFORM-003]. Byte 0 holds the
+name's length, 1 to 10; the characters follow from byte 1, each from `0x20`
+(space) to `0x5A` (`Z`), with a NUL after the last [FND-STATE-004].
 
 
 ## player_retired
@@ -1217,7 +1220,8 @@ function, defined by RULE-AI-008.
 A player's reaction value, drawn at new-game setup and not written again,
 which scales how the computer players respond to attacks. Any other value the
 game keeps: `INT32LE[6]`, indexed by player slot, at `0x004AB650`; the setup
-draw stores 3 to 6 there [FND-AI-006, FND-RNG-005, FND-RNG-006].
+draw stores 3 to 6 there, and save block 36 copies it [FND-AI-006,
+FND-RNG-005, FND-RNG-006, FND-STATE-003].
 
 ## refresh_anchor
 
@@ -1246,9 +1250,9 @@ RULE-AI-026.
 ## research_remaining
 
 How much research each player still needs for each item; 0 means the item is
-researched. Any other value the game keeps: `UINT8[384]`, element
-`item * 6 + player`, at `0x004A2608` [FND-RESEARCH-001, FND-RESEARCH-002,
-FND-PLATFORM-003].
+researched. Any other value the game keeps: `INT8[384]`, element
+`item * 6 + player`, at `0x004A2608`; every read loads it signed
+[FND-RESEARCH-001, FND-RESEARCH-002, FND-PLATFORM-003, FND-STATE-004].
 
 ## research_score
 
@@ -1278,6 +1282,14 @@ Before `instant_phase` it clears each player's report count and notes where
 each player has gangs, player by player, and then moves each sector's
 Tolerance one step toward normal [FND-TURN-008]. Just before resolution
 starts, the previous turn's Last Turn reports are cleared [FND-EVENT-001].
+
+## retaliation_damage
+
+The retaliation damage each attacking gang took in the current combat phase,
+copied into `retaliation_taken` of its combat record. Any other value the game
+keeps: a local 32-bit value per gang of the resolver, element
+`player * 81 + roster_slot`, set to 0 and then written only for gangs whose
+action is Attack [FND-COMBAT-008].
 
 ## rng
 
@@ -1357,7 +1369,9 @@ slot, at `0x004A2790` [FND-AI-005, FND-TURN-003, FND-PLATFORM-003].
 For each active player, the number of players with a strictly greater
 `scenario_score`; 0xFF for an inactive player. Any other value the game
 keeps: `UINT8[6]`, indexed by player slot, at `0x004ABC08` [FND-AI-005,
-FND-AI-009].
+FND-AI-009]. Selector `0x2D` of the computer players searches these bytes for
+player slot numbers, as if the table listed players in ranking order
+[FND-STATE-004].
 
 ## search_filters
 
@@ -1365,6 +1379,8 @@ The Search panel's site selection: for each player and each of the 22 site
 definitions, whether the city shows the uncontrolled sites of that definition.
 Any other value the game keeps: `UINT8[132]`, element
 `player * 22 + definition`, at `0x004A24E8` [FND-SEARCH-001, FND-SEARCH-003].
+Each element is 0 or 1; the table is emptied when the match loop starts and is
+not saved [FND-SEARCH-004, FND-COMLINK-006].
 
 ## search_set_all
 

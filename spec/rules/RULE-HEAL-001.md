@@ -49,7 +49,8 @@ gang.force = min(gang.force + successes, 10)
 No return value. Raises the gang's `force` by its successes, to at most 10.
 Makes one `roll(6)`, three draws from `rng`, for each die of the pool of
 `heal + 4`, even when the gang is already at Force 10, and none for a pool of
-0 or less.
+0 or less. Records no report, and marks the gang for the network update
+(FND-HEAL-001).
 
 ## Edge cases
 
@@ -75,6 +76,4 @@ None known.
 
 ## Open questions
 
-None known. The case reads no Force before its dice call, makes no report, and
-marks the gang for the network update (FND-HEAL-001); its instructions are
-listed in FND-TURN-007.
+None known.
