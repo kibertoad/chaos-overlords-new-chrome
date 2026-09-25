@@ -18,6 +18,25 @@ public enum TickedPresentationKind
     SectorDisplayCellFlash
 }
 
+/// <summary>What a flash's lit copy is made of, in the order it is drawn (FND-UI-037).</summary>
+public enum FlashLayer
+{
+    /// <summary>The cell or site image the flash copies, with what that image already holds.</summary>
+    Image,
+
+    /// <summary>White through bitmap 143 over the lit area.</summary>
+    Lightening,
+
+    /// <summary>The frame keyed over a site image or the nine-sector display.</summary>
+    Frame,
+
+    /// <summary>The edge tabs or labels with the column letter and row digit.</summary>
+    Labels,
+
+    /// <summary>A site's progress meter, drawn when the sector's owner is the active player.</summary>
+    Meter
+}
+
 /// <summary>The three pressed faces <c>fn_00418CCC</c> copies from PX00129 (FND-UI-019).</summary>
 public enum PressedKeyFace
 {
@@ -108,6 +127,21 @@ public sealed class TickedPresentation
         TickedPresentationKind.CityCellFlash or TickedPresentationKind.SectorDisplayCellFlash =>
             new Rectangle(area.X + 1, area.Y + 1, 52, 50),
         TickedPresentationKind.SiteFlash => area,
+        _ => throw new ArgumentOutOfRangeException(nameof(kind))
+    };
+
+    /// <summary>
+    /// FND-UI-037: the order each flash builds its lit copy in. The image is lightened first and
+    /// the labels, frame and meter are drawn over it afterwards, so they show unlit.
+    /// </summary>
+    public static IReadOnlyList<FlashLayer> Layers(TickedPresentationKind kind) => kind switch
+    {
+        TickedPresentationKind.CityCellFlash =>
+            [FlashLayer.Image, FlashLayer.Lightening, FlashLayer.Labels],
+        TickedPresentationKind.SiteFlash =>
+            [FlashLayer.Image, FlashLayer.Lightening, FlashLayer.Frame, FlashLayer.Meter],
+        TickedPresentationKind.SectorDisplayCellFlash =>
+            [FlashLayer.Image, FlashLayer.Lightening, FlashLayer.Frame, FlashLayer.Labels],
         _ => throw new ArgumentOutOfRangeException(nameof(kind))
     };
 

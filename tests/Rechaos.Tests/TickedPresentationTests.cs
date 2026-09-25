@@ -110,4 +110,21 @@ public sealed class TickedPresentationTests
         Assert.Equal(new Rectangle(83, 226, 120, 64),
             TickedPresentation.LitArea(TickedPresentationKind.SiteFlash, new Rectangle(83, 226, 120, 64)));
     }
+
+    /// <summary>
+    /// FND-UI-037, RULE-TIMER-004: each flash lightens its image first and draws the labels, frame
+    /// and meter over the lit copy afterwards, so they show unlit.
+    /// </summary>
+    [Fact]
+    public void FlashesDrawLabelsFrameAndMeterOverTheLightening()
+    {
+        Assert.Equal([FlashLayer.Image, FlashLayer.Lightening, FlashLayer.Labels],
+            TickedPresentation.Layers(TickedPresentationKind.CityCellFlash));
+        Assert.Equal([FlashLayer.Image, FlashLayer.Lightening, FlashLayer.Frame, FlashLayer.Meter],
+            TickedPresentation.Layers(TickedPresentationKind.SiteFlash));
+        Assert.Equal([FlashLayer.Image, FlashLayer.Lightening, FlashLayer.Frame, FlashLayer.Labels],
+            TickedPresentation.Layers(TickedPresentationKind.SectorDisplayCellFlash));
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => TickedPresentation.Layers(TickedPresentationKind.KeyFace));
+    }
 }
