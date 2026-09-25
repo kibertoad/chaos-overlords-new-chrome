@@ -150,6 +150,7 @@ public sealed class FinanceUiTests
             || line.StartsWith("  SITE CASH", StringComparison.Ordinal));
     }
 
+    // FND-FINANCE-002: a third of Income + Chaos + Force, halved outside the player's sectors.
     [Fact]
     public void SectorProjectionExcludesOtherSectorsAndEstimatesQueuedChaos()
     {
@@ -161,12 +162,11 @@ public sealed class FinanceUiTests
 
         var local = FinanceProjection.Project(state, player, gang.SectorId);
         var sector = state.Sectors[gang.SectorId];
-        var pool = sector.Income + gang.Force
-            + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos;
-        var expected = sector.CrackdownActive
-            ? 0
-            : ManualRules.ChaosIncome(pool / 3, sector.Owner == player.Id);
+        var third = (sector.Income + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos
+            + gang.Force) / 3;
+        var expected = sector.Owner == player.Id ? third : third / 2;
         Assert.Equal(expected, local.ChaosEstimate);
+        Assert.Equal(expected, FinanceProjection.Project(state, player, null).ChaosEstimate);
         Assert.Equal(sector.Owner == player.Id ? ManualRules.ControlledSectorTax : 0,
             local.SectorTax);
         Assert.Equal(1, local.ProjectedGangCount);
@@ -179,6 +179,52 @@ public sealed class FinanceUiTests
         Assert.Equal(0, other.ChaosEstimate);
     }
 
+    // FND-FINANCE-002: both variants give back a terminating gang's Upkeep and leave it out of the
+    // count.
+    [Fact]
+    public void TerminatingGangLeavesUpkeepAndCount()
+    {
+        var state = CreatePlanningMatch();
+        var player = state.Players[0];
+        var gang = player.Gangs.Single(candidate => candidate.IsActive);
+        var baseline = FinanceProjection.Project(state, player, null);
+        Assert.True(state.Submit(new GameCommand(
+            player.Id, gang.Id, GangAction.Terminate, CommandTarget.None)).Accepted);
+
+        var upkeep = state.Definitions.Gang(gang.DefinitionId).Upkeep;
+        var city = FinanceProjection.Project(state, player, null);
+        var local = FinanceProjection.Project(state, player, gang.SectorId);
+        Assert.Equal(baseline.GangUpkeep + upkeep, city.GangUpkeep);
+        Assert.Equal(baseline.ProjectedGangCount - 1, city.ProjectedGangCount);
+        Assert.Equal(0, local.GangUpkeep);
+        Assert.Equal(0, local.ProjectedGangCount);
+    }
+
+    // FND-FINANCE-002: the Sector variant charges a moving gang's Upkeep to its destination; the
+    // City variant charges it once.
+    [Fact]
+    public void SectorProjectionChargesMovingGangToItsDestination()
+    {
+        var state = CreatePlanningMatch();
+        var player = state.Players[0];
+        var gang = player.Gangs.Single(candidate => candidate.IsActive);
+        var baseline = FinanceProjection.Project(state, player, null);
+        var destination = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Where(id => id != gang.SectorId)
+            .First(id => state.Submit(new GameCommand(
+                player.Id, gang.Id, GangAction.Move, CommandTarget.Sector(id))).Accepted);
+
+        var upkeep = state.Definitions.Gang(gang.DefinitionId).Upkeep;
+        var origin = FinanceProjection.Project(state, player, gang.SectorId);
+        var target = FinanceProjection.Project(state, player, destination);
+        Assert.Equal(0, origin.GangUpkeep);
+        Assert.Equal(0, origin.ProjectedGangCount);
+        Assert.Equal(-upkeep, target.GangUpkeep);
+        Assert.Equal(1, target.ProjectedGangCount);
+        Assert.Equal(baseline.GangUpkeep, FinanceProjection.Project(state, player, null).GangUpkeep);
+    }
+
+    // DEV-FINANCE-001: a Sell order is credited with the one item the resolver pays for.
     [Fact]
     public void ProjectionUsesOriginalLastSlotPayoutForQueuedMultiSell()
     {

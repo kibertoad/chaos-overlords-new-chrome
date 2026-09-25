@@ -46,7 +46,7 @@ public static class OriginalSelectionLightLayout
     public static Rectangle Scenario(int button)
     {
         if (button is < 0 or >= 10) throw new ArgumentOutOfRangeException(nameof(button));
-        return new Rectangle(183 + button % 2 * 112, ScenarioRows[button / 2], 3, 11);
+        return new Rectangle(183 + button % 2 * 114, ScenarioRows[button / 2], 3, 11);
     }
 
     public static Rectangle Duration(int duration)

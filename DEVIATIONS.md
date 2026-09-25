@@ -78,19 +78,18 @@ Decided 2026-09-13.
 ## DEV-VIDEO-003
 
 - Departs from: RULE-VIDEO-001
-- Reason: The rebuild plays the two movies unattended only until it has recorded a showing: its
-  preferences file keeps `IntroMoviesSeen`, set once the queue drains after at least one movie
-  opened, and every later start goes straight to the title screen. The title screen gains an INTRO
-  button that plays the movies again on request. The original plays both movies at every start
-  that does not load a saved game.
-- Setting: Intro only once (not yet in the rebuild, which has no switch for it and always behaves
-  as if it were on)
+- Reason: With Intro only once switched on, the rebuild plays the two movies unattended only until
+  it has recorded a showing: its preferences file keeps `IntroMoviesSeen`, set once the queue
+  drains after at least one movie opened, and every later start goes straight to the title screen.
+  The title screen gains an INTRO button that plays the movies again on request. The original plays
+  both movies at every start that does not load a saved game.
+- Setting: Intro only once
 - Default: off
 - Dropped: no
 
 Showing the movies once is a convenience some players will want, but a player who expects the
 intro at every start, as the original gives it, is not better served, so the original's behaviour
-is the default. Until the setting exists the rebuild departs from its own default.
+is the default.
 
 ## DEV-AUDIO-001
 
@@ -199,16 +198,16 @@ The reasoning is in `docs/MULTIPLAYER.md`.
 
 - Departs from: RULE-HIRE-001
 - Reason: The rebuild lets a hire whose cost is 0 through while the player's cash is negative.
-  The original fails a hire when its cost is greater than cash, which refuses that hire.
+  The original was read as failing a hire when its cost is greater than cash, which would refuse
+  that hire. The Dropped item corrects that reading.
 - Setting: None
 - Default: mandatory
 - Justification: A hire that costs nothing takes nothing from cash, so refusing it because cash is
   already negative protects nothing and only keeps a player in debt from rebuilding. It adds an
   option and removes none.
 - Dropped: 2026-09-25, the original also lets a zero-cost hire through while cash is negative: it
-  skips the cash test when the cost is 0 (FND-HIRE-006, RULE-HIRE-001)
-
-The Reason above rested on reading the cash test without the zero-cost branch in front of it.
+  skips the cash test when the cost is 0 (FND-HIRE-006, RULE-HIRE-001). The earlier reading
+  missed the zero-cost branch in front of the cash test.
 
 ## DEV-RESEARCH-001
 
@@ -328,16 +327,16 @@ The fix changes which player owns the sector when the case arises.
 ## DEV-FINANCE-001
 
 - Departs from: SCR-FINANCE-001, RULE-FINANCE-001
-- Reason: The Finance projection lists sector tax, site Cash and gang Upkeep as separate
-  components where the original draws its eight rows.
+- Reason: The Equipment row credits a Sell order with half the Cost of the one item the resolver
+  pays for (RULE-SELL-001, BUG-SELL-001). The original adds half the Cost of every item the order
+  selects (FND-FINANCE-002). The other seven rows follow FND-FINANCE-002.
 - Setting: None
 - Default: mandatory
-- Justification: The amounts are the ones the rules compute, and no order depends on how the
-  projection is broken down. Listing each component shows the player where the money comes from.
+- Justification: The panel is a forecast of next turn's cash, and on a multi-item Sell the
+  original's forecast names cash the resolver never pays. Showing the amount that will arrive adds
+  information and changes no order or result. A setting would only bring back a figure known to be
+  wrong.
 - Dropped: no
-
-Which of the original's rows holds which amount is not recorded, so how far the two differ is not
-known yet; the static check is in `static_validation_plan.md`.
 
 ## DEV-ATTACK-001
 

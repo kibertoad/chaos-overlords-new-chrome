@@ -101,12 +101,18 @@ used by the shared template. What the original does now lives only in
   sector takes two turns; counting gangs ordered out of the destination, as
   DEV-HIRE-001 does, would remove that), DEV-CONTROL-001 and DEV-AI-001
   (player reliance on the original is unknown rather than ruled out) and
-  DEV-AI-002 (the resolved action can differ). DEV-HIRE-003 is dropped if the
-  original lets the hire through as well.
-- RULE-AI-007, RULE-AI-019 and RULE-AI-023 are `disputed`; the static plan
-  says what settles each. The scenario numbering (which value is Kill 'Em All,
-  Greed and Eliminate) conflicts between FND-SETUP-009, FND-SETUP-012 and
-  FND-AI-005, and the rules use numeric literals until it is settled.
+  DEV-AI-002 (the resolved action can differ). DEV-HIRE-003 was dropped on
+  2026-09-25: the original also lets a zero-cost hire through (FND-HIRE-006).
+- No rule is `disputed`. RULE-AI-007, RULE-AI-019 and RULE-AI-023 are
+  `supported`, and the static plan has nothing left to read for the computer
+  players.
+  FND-OBJECTIVE-003 settles the scenario numbering: Greed is 0 and Kill 'Em
+  All 4, and it explains why FND-SETUP-009 and FND-SETUP-012 read 0 as Kill
+  'Em All.
+- RULE-OBJECTIVE-005 is `partial`: the rebuild keeps the gameplay music over
+  the hot-seat elimination card, plays the computers on when every local human
+  is eliminated, and shows the awards where the original returns to the title
+  (see its PARITY row).
 - Copy the setup capture
   `artifacts/reference-captures/smoke/20260913-211908-368-checkpoint/frame-01.png`
   to `GAME_DIR/captures/a83f82a2aab84d9a1e0e9de626409149.png` once `GAME_DIR`
@@ -707,11 +713,11 @@ status of each spec entry is in [PARITY.md](../PARITY.md).
   next movie or title. A bounded Windows run completed the logo and began the
   intro without diagnostics; no ambient codec is required.
 
-- The movies are no longer an unattended toll on every launch. Completing the
-  queue records `IntroMoviesSeen` in preferences (introduced in format v8 and
-  retained through the current v11 migrations; the v7 migration leaves the
-  intro owed once), so only an installation that has not shown
-  them yet streams them at startup. The title screen carries an `INTRO` button that replays the queue at
+- The movies play at every start, as in the original, unless the Intro only
+  once option (DEV-VIDEO-003, off by default, preferences format v12) is on.
+  Completing the queue records `IntroMoviesSeen` in preferences (introduced in
+  format v8; the v7 migration leaves the intro owed once), and with the option
+  on only an installation that has not shown them yet streams them at startup. The title screen carries an `INTRO` button that replays the queue at
   any time, reports an unreadable pack instead of stalling, and hands the menu
   music back when the last movie ends.
 

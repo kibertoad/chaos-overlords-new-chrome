@@ -129,7 +129,8 @@ of each site definition, which the sector bonus rebuild adds to the gangs in
 a site's sector, and the player-pair flag the computer players compute and
 read. The rest belongs to the movie, file, sound and drawing layers, whose
 records FND-STATE-008 already names, or to the modem, socket and serial code
-that DEV-NET-001 leaves out.
+that the spec's scope leaves out beyond the lobby screens and file
+transfers.
 
 ## Alternatives
 

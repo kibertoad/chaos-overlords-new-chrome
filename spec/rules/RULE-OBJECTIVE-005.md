@@ -4,7 +4,7 @@ title: An eliminated local human sees the elimination card at that player's plac
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-004, FND-OBJECTIVE-002, FND-SETUP-010, SRC-MANUAL-GOG]
+evidence: [FND-OBJECTIVE-004, FND-OBJECTIVE-002, FND-SETUP-010, FND-AUDIO-001, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-002, SCR-OBJECTIVE-002, RULE-AUDIO-001]
@@ -53,7 +53,9 @@ for player in 0..6:
         if handoff:
             show SCR-SETUP-002
         active_player = player
+        # the card starts the endgame music on entry (FND-AUDIO-001) and
         # blocks until Done is released inside its rectangle
+        call RULE-AUDIO-001(1)
         show SCR-OBJECTIVE-002
         # retired: the value of an empty slot
         controller[player] = -1
@@ -74,8 +76,10 @@ each later local human after each card. Makes no draws.
 With one local human the Ready card is skipped, but the elimination card still
 appears when that human is eliminated. A human counted as -2 still counts
 toward `handoff`, so the Ready card comes before the elimination card when one
-other local human remains. An eliminated human who is last among the local
-humans in slot order hears no music request. The round in which the last local
+other local human remains. The card starts the endgame music, and only a later
+local human in slot order asks for the gameplay music again, so after the card
+of the last local human in slot order the endgame music keeps playing for the
+humans before it until another card or a new game changes it. The round in which the last local
 human retires still lets later computer players plan; the next round finds no
 local human and the game ends.
 

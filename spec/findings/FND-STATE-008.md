@@ -138,8 +138,8 @@ hire orders, and the network block of a save (`0x00498968`).
 
 Several small regions are named only by the functions that use them
 (`0x004854C8`, `0x00487348`, `0x004906A8`, `0x00498BB8`). They belong to the
-modem and network code, which DEV-NET-001 leaves out, and were not read
-further.
+modem and network code, which the spec's scope leaves out beyond the lobby
+screens and file transfers, and were not read further.
 
 ## How to reproduce
 

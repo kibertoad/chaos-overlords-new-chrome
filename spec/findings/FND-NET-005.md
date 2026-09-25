@@ -110,8 +110,9 @@ the second table are outside its list, which with them counts 124 functions and
 73,353 bytes. Four of them are left over from an earlier connection
 design: a per-connection line callback, a number formatter for North American
 numbers and two connection scans that nothing calls. None runs in a local
-game, and none touches match state, so they stay out of scope under
-DEV-NET-001.
+game, and none touches match state, so they stay outside the spec's scope,
+which describes network play only as far as its lobby screens and file
+transfers.
 
 ## Alternatives
 

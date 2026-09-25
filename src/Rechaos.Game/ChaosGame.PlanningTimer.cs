@@ -62,11 +62,7 @@ public static class PlanningTimerPolicy
 public static class PlanningTimerLayout
 {
     public static Rectangle Bar => new(520, 336, PlanningTimerPolicy.BarWidth, 3);
-    public static IReadOnlyList<Rectangle> SetupChoices { get; } =
-    [
-        new(192, 330, 108, 27), new(192, 359, 108, 27),
-        new(192, 388, 108, 27), new(192, 417, 108, 27)
-    ];
+    public static IReadOnlyList<Rectangle> SetupChoices => SetupPanelLayout.PlanningTimes;
 }
 
 public enum PlanningTimerSignal

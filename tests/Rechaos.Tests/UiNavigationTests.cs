@@ -170,13 +170,14 @@ public sealed class UiNavigationTests
         Assert.Empty(InformationEffectTooltips.GangAt(Point.Zero));
     }
 
+    // SCR-SETUP-001, FND-SETUP-013: the right column of the left panel.
     [Fact]
     public void SetupPlanningTimerButtonsMatchOriginalArtworkRows()
     {
         Assert.Equal(
         [
-            new Rectangle(192, 330, 108, 27), new Rectangle(192, 359, 108, 27),
-            new Rectangle(192, 388, 108, 27), new Rectangle(192, 417, 108, 27)
+            new Rectangle(194, 337, 110, 24), new Rectangle(194, 364, 110, 24),
+            new Rectangle(194, 391, 110, 24), new Rectangle(194, 418, 110, 24)
         ], PlanningTimerLayout.SetupChoices);
         Assert.Equal(new Rectangle(520, 336, 60, 3), PlanningTimerLayout.Bar);
     }
@@ -192,7 +193,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(192, 418, 108, 23), SetupSelectionLayout.PlanningTime(3));
         Assert.Equal(new Rectangle(183, 112, 3, 11),
             OriginalSelectionLightLayout.Scenario(0));
-        Assert.Equal(new Rectangle(295, 253, 3, 11),
+        Assert.Equal(new Rectangle(297, 253, 3, 11),
             OriginalSelectionLightLayout.Scenario(9));
         Assert.Equal(new Rectangle(126, 288, 3, 11),
             OriginalSelectionLightLayout.Duration(0));
@@ -435,6 +436,7 @@ public sealed class UiNavigationTests
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.SlidePanels));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.AdvancedAi));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.IntroOnlyOnce));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ExportDiagnostics));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
@@ -453,6 +455,7 @@ public sealed class UiNavigationTests
             OptionsLayout.WarnIfIdleGangs,
             OptionsLayout.EventSiteImages,
             OptionsLayout.AdvancedAi,
+            OptionsLayout.IntroOnlyOnce,
             OptionsLayout.ExportDiagnostics,
             OptionsLayout.ColorDepth,
             OptionsLayout.Done

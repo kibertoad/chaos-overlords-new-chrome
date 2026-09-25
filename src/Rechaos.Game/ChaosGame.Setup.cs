@@ -87,27 +87,6 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
-    private void SelectSetupScenarioButton(int button)
-    {
-        var scenario = SetupScenarioButtons.ScenarioForButton(button);
-        if (_selectedScenario != scenario) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _selectedScenario = scenario;
-        _message = string.Empty;
-    }
-
-    private void SelectSetupDurationButton(int button)
-    {
-        if (!ScenarioCatalog.Get(_selectedScenario).IsTimed)
-        {
-            RejectInput(ObjectiveDurationWarning);
-            return;
-        }
-        if (_selectedDuration != Durations[button])
-            PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _selectedDuration = Durations[button];
-        _message = string.Empty;
-    }
-
     private void ChangePlayerCount(int delta, bool pointerButton = false)
     {
         var changed = delta switch
@@ -134,6 +113,42 @@ public sealed partial class ChaosGame
         if (_editingPlayerName == removed) FinishSetupNameEdit(cancel: true);
         _selectedSetupPlayerSlot = _localSetupRoster.HumanSlots.Max();
         return true;
+    }
+
+    /// <summary>SCR-SETUP-001, FND-SETUP-013: a left-panel press shows the pressed image and plays
+    /// the push cue; the choice is taken only when the button is released inside the control.</summary>
+    private void BeginSetupPanelControl(SetupPanelControl control)
+    {
+        _pressedSetupPanelControl = control;
+        PlayGeneralSound(GeneralSoundSlot.ButtonPress);
+        _message = string.Empty;
+    }
+
+    private void CompleteSetupPanelControl(Point point)
+    {
+        var pressed = _pressedSetupPanelControl;
+        _pressedSetupPanelControl = null;
+        if (_screens.Current != ClientScreen.Setup
+            || pressed is not { } control
+            || !SetupPanelLayout.Destination(control).Contains(point))
+            return;
+        switch (control.Kind)
+        {
+            case SetupPanelControlKind.Scenario:
+                _selectedScenario = SetupScenarioButtons.ScenarioForButton(control.Index);
+                break;
+            case SetupPanelControlKind.Duration:
+                _selectedDuration = Durations[control.Index];
+                break;
+            case SetupPanelControlKind.AiMentality:
+                _selectedAiMentality = (AiDifficulty)control.Index;
+                break;
+            case SetupPanelControlKind.PlanningTime:
+                _selectedPlanningTimeLimit = (PlanningTimeLimit)control.Index;
+                SavePreferences();
+                break;
+        }
+        _message = string.Empty;
     }
 
     private void BeginSetupButton(SetupPushButton button)
@@ -229,14 +244,6 @@ public sealed partial class ChaosGame
         _selectedAiMentality = values[Mod(
             Array.IndexOf(values, _selectedAiMentality) + 1, values.Length)];
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = string.Empty;
-    }
-
-    private void SelectDifficulty(AiDifficulty difficulty)
-    {
-        if (_selectedAiMentality != difficulty)
-            PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _selectedAiMentality = difficulty;
         _message = string.Empty;
     }
 
@@ -421,6 +428,19 @@ public sealed partial class ChaosGame
                 new Color(185, 195, 195), 1);
     }
 
+    /// <summary>
+    /// SCR-SETUP-001, FND-SETUP-013: the setup lights are the 8x16 light of the controls sheet; the
+    /// lit rectangle is its 3x11 core, one pixel right and three down from the sprite's corner.
+    /// </summary>
+    private void DrawSetupLight(SpriteBatch batch, Texture2D pixel, Rectangle lit)
+    {
+        if (_setupControls is not null)
+            batch.Draw(_setupControls, new Rectangle(lit.X - 1, lit.Y - 3,
+                SetupPanelLayout.LightSource.Width, SetupPanelLayout.LightSource.Height),
+                SetupPanelLayout.LightSource, Color.White);
+        else DrawSelectionLight(batch, pixel, lit);
+    }
+
     private void DrawSetup(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         if (_setupBackground is not null)
@@ -433,10 +453,10 @@ public sealed partial class ChaosGame
             && SetupButtonLayout.HitTest(buttonHover) == pressed)
             batch.Draw(_setupControls, SetupButtonLayout.Destination(pressed),
                 SetupButtonLayout.PressedSource(pressed), Color.White);
-        DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.Scenario(
+        DrawSetupLight(batch, pixel, OriginalSelectionLightLayout.Scenario(
             SetupScenarioButtons.ButtonForScenario(_selectedScenario)));
         if (ScenarioCatalog.Get(_selectedScenario).IsTimed)
-            DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.Duration(
+            DrawSetupLight(batch, pixel, OriginalSelectionLightLayout.Duration(
                 Array.IndexOf(Durations, _selectedDuration)));
         var onlinePlayers = _configuringOnlineLobby
             ? _online.Match?.Players.Where(player => player.Status == Rechaos.Multiplayer.Generated.PlayerStatus.Active)
@@ -503,10 +523,17 @@ public sealed partial class ChaosGame
                 && target >= 0)
                 DrawBorder(batch, pixel, PlayerPortraitLayout.SetupLarge(target), Color.Lime, 2);
         }
-        DrawSelectionLight(batch, pixel,
+        DrawSetupLight(batch, pixel,
             OriginalSelectionLightLayout.AiMentality((int)_selectedAiMentality));
-        DrawSelectionLight(batch, pixel,
+        DrawSetupLight(batch, pixel,
             OriginalSelectionLightLayout.PlanningTime((int)_selectedPlanningTimeLimit));
+        // FND-SETUP-013: while held, the pressed image covers the control, its light included.
+        if (_setupControls is not null
+            && _pressedSetupPanelControl is { } pressedControl
+            && _hoverPoint is { } controlHover
+            && SetupPanelLayout.Destination(pressedControl).Contains(controlHover))
+            batch.Draw(_setupControls, SetupPanelLayout.Destination(pressedControl),
+                SetupPanelLayout.PressedSource(pressedControl), Color.White);
         if (_configuringOnlineLobby)
         {
             // The seats belong to the lobby, so the two roster buttons and START are covered over
@@ -519,20 +546,18 @@ public sealed partial class ChaosGame
         if (_message == ObjectiveDurationWarning)
             DrawHoverTooltip(batch, pixel, font, _hoverPoint ?? new Point(300, 280),
                 ["TIME LIMIT DISABLED", "OBJECTIVE SCENARIOS RUN UNTIL THEIR GOAL IS MET."]);
-        else if (_hoverPoint is { } hover)
+        else if (_hoverPoint is { } hover && _pressedSetupPanelControl is null)
         {
-            var scenario = Array.FindIndex(SetupScenarios, rectangle => rectangle.Contains(hover));
-            var duration = Array.FindIndex(SetupDurations, rectangle => rectangle.Contains(hover));
-            var difficulty = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(hover));
-            if (scenario >= 0)
+            var control = SetupPanelLayout.HitTest(hover, timed: true);
+            if (control is { Kind: SetupPanelControlKind.Scenario } scenario)
                 DrawHoverTooltip(batch, pixel, font, hover,
                     ScenarioSetupTooltip.Lines(
-                        SetupScenarioButtons.ScenarioForButton(scenario), _selectedDuration));
-            else if (duration >= 0)
+                        SetupScenarioButtons.ScenarioForButton(scenario.Index), _selectedDuration));
+            else if (control is { Kind: SetupPanelControlKind.Duration } duration)
                 DrawHoverTooltip(batch, pixel, font, hover,
-                    DurationSetupTooltip.Lines(Durations[duration]));
-            else if (difficulty >= 0)
-                DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)difficulty);
+                    DurationSetupTooltip.Lines(Durations[duration.Index]));
+            else if (control is { Kind: SetupPanelControlKind.AiMentality } difficulty)
+                DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)difficulty.Index);
         }
     }
 

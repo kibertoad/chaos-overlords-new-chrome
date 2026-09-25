@@ -1844,6 +1844,7 @@ None.
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | evidence |
 | [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | evidence |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | evidence |
+| [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body, evidence |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-009](../screens/SCR-UI-009.md) | body, evidence |

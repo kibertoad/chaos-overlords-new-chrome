@@ -43,6 +43,12 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
+        if (_pressedSetupPanelControl is not null)
+        {
+            _pressedSetupPanelControl = null;
+            _message = string.Empty;
+            return;
+        }
         if (_pressedCityConsoleControl is not null)
         {
             CancelCityConsolePress();

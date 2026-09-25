@@ -12,6 +12,9 @@ public static class OriginalOptionsPolicy
     public const bool FullscreenByDefault = false;
     public const bool SmoothEventSiteImagesByDefault = false;
     public const AiPolicyMode AiPolicyByDefault = AiPolicyMode.Original;
+
+    /// <summary>DEV-VIDEO-003: the original plays the intro at every start.</summary>
+    public const bool IntroOnlyOnceByDefault = false;
 }
 
 /// <summary>Which coordination service the Online screen uses.</summary>
@@ -43,13 +46,14 @@ public sealed record GamePreferences(
     AiPolicyMode DefaultAiPolicy,
     OnlineServiceMode OnlineService,
     string CustomMultiplayerServer,
-    OnlineLobbyPresentation LobbyPresentation = OnlineLobbyPresentation.Modern)
+    OnlineLobbyPresentation LobbyPresentation = OnlineLobbyPresentation.Modern,
+    bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault)
 {
-    public const int CurrentFormatVersion = 11;
+    public const int CurrentFormatVersion = 12;
     public const string DefaultCustomMultiplayerServer = "http://localhost:8787";
 
     /// <summary>Preferences that have never recorded a showing leave the intro owed, so the
-    /// first run streams it; the title screen replays it on request from then on.</summary>
+    /// first run streams it even with Intro only once switched on.</summary>
     public const bool IntroMoviesSeenByDefault = false;
 
     public static GamePreferences Default { get; } =
@@ -99,9 +103,10 @@ public static class GamePreferencesStore
                 8 => Read<VersionEightPreferences>(bytes),
                 9 => Read<VersionNinePreferences>(bytes),
                 10 => Read<VersionTenPreferences>(bytes),
+                11 => Read<VersionElevenPreferences>(bytes),
                 _ => null
             };
-            if (formatVersion is >= 4 and <= 10)
+            if (formatVersion is >= 4 and <= 11)
             {
                 return legacy is not null && legacy.IsValid(formatVersion)
                     ? legacy.Upgrade()
@@ -299,7 +304,7 @@ public static class GamePreferencesStore
             base.Upgrade() with { DefaultAiPolicy = DefaultAiPolicy };
     }
 
-    private sealed record VersionTenPreferences(
+    private record VersionTenPreferences(
         int FormatVersion,
         int MusicVolumeLevel,
         int SoundEffectVolumeLevel,
@@ -329,5 +334,33 @@ public static class GamePreferencesStore
             OnlineService = OnlineService,
             CustomMultiplayerServer = CustomMultiplayerServer
         };
+    }
+
+    private sealed record VersionElevenPreferences(
+        int FormatVersion,
+        int MusicVolumeLevel,
+        int SoundEffectVolumeLevel,
+        bool WarnIfIdleGangs,
+        PlanningTimeLimit PlanningTimeLimit,
+        bool ShowBaseStatistics,
+        bool DetailedCombat,
+        bool SlidePanels,
+        bool Fullscreen,
+        bool SmoothEventSiteImages,
+        bool IntroMoviesSeen,
+        AiPolicyMode DefaultAiPolicy,
+        OnlineServiceMode OnlineService,
+        string CustomMultiplayerServer,
+        OnlineLobbyPresentation LobbyPresentation)
+        : VersionTenPreferences(
+            FormatVersion, MusicVolumeLevel, SoundEffectVolumeLevel, WarnIfIdleGangs, PlanningTimeLimit,
+            ShowBaseStatistics, DetailedCombat, SlidePanels, Fullscreen, SmoothEventSiteImages,
+            IntroMoviesSeen, DefaultAiPolicy, OnlineService, CustomMultiplayerServer)
+    {
+        public override bool IsValid(int formatVersion) =>
+            base.IsValid(formatVersion) && Enum.IsDefined(LobbyPresentation);
+
+        public override GamePreferences Upgrade() =>
+            base.Upgrade() with { LobbyPresentation = LobbyPresentation };
     }
 }

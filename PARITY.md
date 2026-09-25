@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 105 |
+| `supported` | 104 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 116 |
+| `implemented` | 117 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 20 |
-| `partial` | 86 |
-| `complete` | 116 |
+| `partial` | 85 |
+| `complete` | 117 |
 
 ## DATA
 
@@ -67,7 +67,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `FMT-VIDEO-001` | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported | complete | None | `DEV-VIDEO-001` | implemented | The rebuild decodes only the subset the two shipped movies use. |
-| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | supported | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; showing the movies only once is DEV-VIDEO-003, whose setting does not exist yet, so the rebuild departs from its default. The movie sound follows the Sound Effects level; the level-to-volume curve was not compared. |
+| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | supported | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; with Intro only once off, its default, the movies play at every start; switching it on gives DEV-VIDEO-003. The movie sound follows the Sound Effects level; the level-to-volume curve was not compared. |
 
 ## HELP
 
@@ -123,14 +123,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-SETUP-001` | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-002` | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported | partial | None | None | supported | The rebuild starts every setup on Kill 'Em All and keeps no scenario preference; value 0 is Greed (FND-SETUP-013, FND-OBJECTIVE-003). The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
 | `RULE-SETUP-003` | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | supported | complete | None | None | implemented | None |
-| `RULE-SETUP-004` | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported | complete | None | None | implemented | The initial-state fixture from the original that would confirm the draw order is still pending. |
+| `RULE-SETUP-004` | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported | complete | None | None | implemented | Reactions for all six slots, then the city, headquarters and Right Hands. Research is set after the city, which changes nothing because it makes no draw and neither step reads what the other writes. The initial-state fixture from the original that would confirm the draw order is still pending. |
 | `RULE-SETUP-005` | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-006` | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-007` | A player named with the visibility modifier sees every opposing gang for the whole match | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | partial | None | None | supported | The handoff order is Combat, Events, planning; whether the once-only Game Information panel and the Comlink scan follow the entry's order was not checked. |
 | `RULE-SETUP-009` | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported | partial | None | None | supported | The rebuild's portrait arrows step through every portrait instead of skipping the ones other slots hold (FND-SETUP-013). |
 | `RULE-SETUP-010` | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported | partial | None | None | supported | Add does not give the new human the lowest free portrait, and whether the rebuild reopens setup with the roster of the last Begin was not checked (FND-SETUP-013). |
-| `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | None | `DEV-SETUP-002` | implemented | The rebuild's measured rectangles for the scenario, time limit, mentality and timer controls were not compared with those FND-SETUP-013 records. |
+| `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | None | `DEV-SETUP-002` | implemented | The left panel follows FND-SETUP-013: its rectangles, the refusal area of the time limit, the pressed images and push cue, the commit on release inside, and the light sprite. The stored scenario preference belongs to RULE-SETUP-002. |
 | `SCR-SETUP-002` | Hot-seat handoff card that waits for the next local player to press Ready | supported | complete | None | `DEV-SETUP-002` | implemented | None |
 
 ## CITY
@@ -210,7 +210,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported | complete | None | `DEV-MOVE-001` | implemented | None |
-| `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002`, `DEV-MOVE-002` | implemented | The mode-0 fallback follows the rebuild's reading of the selector; RULE-AI-007 now settles it as a random neighbour, and the rebuild has not been checked against that. |
+| `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002`, `DEV-MOVE-002` | implemented | The fallback for a mover already sent back draws a random neighbour (RULE-AI-007); after 256 of them DEV-MOVE-002 applies. |
 | `SCR-MOVE-001` | Move panel | supported | partial | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | supported | Panel resource and neighborhood cells are the original's; the controls, keys and destination marker are not pinned by findings. |
 
 ## CONTROL
@@ -268,8 +268,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-FINANCE-001` | The Financial panel projects next turn's cash flow for the whole city or one sector | supported | partial | None | `DEV-FINANCE-001` | supported | The rebuild's projection has its own components; FND-FINANCE-002 now gives the original's rows and has not been compared with it. |
-| `SCR-FINANCE-001` | Financial panel, City and Sector | supported | partial | None | `DEV-FINANCE-001`, `DEV-UI-006` | supported | Panel, close control and field positions follow the original; the row assignment of FND-FINANCE-002 has not been compared with the rebuild. |
+| `RULE-FINANCE-001` | The Financial panel projects next turn's cash flow for the whole city or one sector | supported | complete | None | `DEV-FINANCE-001` | implemented | Each row follows FND-FINANCE-002 except the Sell credit of DEV-FINANCE-001: terminating gangs give back their Upkeep, the Sector variant charges a moving gang to its destination, and the Chaos row is a third of Income + Chaos + Force, halved outside the player's sectors. |
+| `SCR-FINANCE-001` | Financial panel, City and Sector | supported | partial | None | `DEV-FINANCE-001`, `DEV-UI-006` | supported | Panel, close control, field positions and the row assignment of FND-FINANCE-002 follow the original; the row labels in the template images were not read. |
 
 ## ATTACK
 
@@ -319,10 +319,10 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | partial | None | `DEV-AI-003` | supported | The rebuild submits commands in roster slot order and keeps the history rollover, but applies the family table at every pass without needs_family (FND-AI-042); the takeover's raider_mode is not checked. |
 | `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The rebuild applies the family table to every active gang at every pass, without the needs_family gate, the record reset, the family 99 of a blank cell or the Big Man first-turn hire role (FND-AI-041). |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | None |
-| `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | Whether the rebuild reproduces the out-of-row attitude reads of hostile_owner for a neutral sector or one under police presence (FND-AI-048) is not checked. |
+| `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | hostile_owner reads the attitude cell of owner_query, with the out-of-row reads of FND-AI-048 for a neutral sector and one under police presence. |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | partial | None | None | supported | FND-AI-055 changes the reading: the weapon choice starts from the equipped weapon, family 10's armor is chosen by Stealth, and the miscellaneous upgrades compare Detect (families 11 and 12) or Control (13 and 14). The rebuild chooses family 12's item by Chaos; the other choices are not checked against it. |
 | `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported | partial | None | None | supported | Mode 4 is now written out (FND-AI-056); no call reaches it, and the rebuild's version is not checked against it. |
-| `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | partial | None | None | supported | FND-MOVE-003 settles mode 0 as the neighbour draw; whether the rebuild's reading matches it has not been checked. |
+| `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | complete | None | None | implemented | Mode 0 draws one of the eight neighbours with roll(8) and draws again off the map, with no capacity test. |
 | `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | supported | complete | None | None | implemented | None |
 | `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | None | None | implemented | None |
 | `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | partial | None | `DEV-AI-001` | supported | The rebuild deliberately compares the previous hire role with role 4 in the hunter guards (BUG-AI-001). The per-scenario slot adjustments and the hunter reversion of FND-AI-050 are not checked against the rebuild. |
@@ -398,7 +398,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-OBJECTIVE-002` | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-003` | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | supported | partial | None | None | supported | The rebuild tests Big 40, Siege, Big Man and Armageddon for living players only where the original counts every slot, and gives Kill 'Em All and Eliminate tests of their own where the original has none (FND-OBJECTIVE-003). The timed test was not compared. The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
-| `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | complete | None | None | implemented | Whether the rebuild repeats the music request once per later local human and ends a local game with no local human left without the awards (FND-OBJECTIVE-004) was not checked. |
+| `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | partial | None | None | supported | The card and its place in slot order match. The rebuild keeps the gameplay music over the card, where the original starts the endgame music and only a later local human's request brings the gameplay music back. With two or more local humans all eliminated, the rebuild plays the computers on to the end and shows the awards where the original returns to the title without them, and it shows the Ready card before the last human's card. A lone local human's elimination ends the match at resolution, which skips the awards the original shows when the match would have ended that turn anyway. |
 | `SCR-OBJECTIVE-001` | Player Rankings panel with one vertical rail per player and portraits placed by score | supported | partial | None | None | supported | The rebuild places each portrait 28 pixels lower per standing where the original places it in proportion to the score's distance from the leader, over 140 pixels (FND-OBJECTIVE-005). |
 | `SCR-OBJECTIVE-002` | Private elimination card shown to an eliminated local human over the city screen | supported | complete | None | `DEV-SETUP-002` | implemented | None |
 

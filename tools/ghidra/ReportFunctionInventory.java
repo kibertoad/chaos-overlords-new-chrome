@@ -1,13 +1,18 @@
 // Writes a function inventory of the current program to a tab-separated file outside the repository.
 // One row per function: entry, last byte of the body, body size, caller count, callee entries,
-// imported API names, and the initialized-data addresses the function reads and writes.
-// No instruction text is written. Input for tools/spec-coverage.mjs.
+// imported functions as LIBRARY::name, and the initialized-data addresses the function reads and
+// writes. No instruction text is written. Input for tools/spec-coverage.mjs.
+//
+// The output path is refused when it resolves into this repository: either the checkout this script
+// was loaded from, or any directory that holds tools/ghidra/ReportFunctionInventory.java, so a copy
+// of the script run from elsewhere still refuses to write into a checkout.
 // @category Rechaos
 
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.symbol.ExternalLocation;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.Reference;
@@ -28,10 +33,8 @@ public class ReportFunctionInventory extends GhidraScript {
             printerr("Supply the output file path (outside the repository).");
             return;
         }
-        File output = new File(arguments[0]).getAbsoluteFile();
-        String sourceDir = getSourceFile() == null ? null
-            : new File(getSourceFile().getAbsolutePath()).getParentFile().getParentFile().getParentFile().getAbsolutePath();
-        if (sourceDir != null && output.getPath().toLowerCase().startsWith(sourceDir.toLowerCase() + File.separator)) {
+        File output = new File(arguments[0]).getCanonicalFile();
+        if (insideRepository(output)) {
             printerr("Refusing to write the inventory inside the repository: " + output);
             return;
         }
@@ -47,7 +50,9 @@ public class ReportFunctionInventory extends GhidraScript {
                 for (Function callee : function.getCalledFunctions(monitor)) {
                     Function target = callee.isThunk() ? callee.getThunkedFunction(true) : callee;
                     if (target != null && target.isExternal()) {
-                        imports.add(target.getName());
+                        ExternalLocation location = target.getExternalLocation();
+                        String library = location == null ? "" : location.getLibraryName();
+                        imports.add(library.toUpperCase() + "::" + target.getName());
                     }
                     else {
                         callees.add(callee.getEntryPoint().toString());
@@ -82,5 +87,25 @@ public class ReportFunctionInventory extends GhidraScript {
             }
         }
         println("Wrote " + count + " functions to " + output);
+    }
+
+    // Whether the canonical output path lies in the checkout this script came from or in any
+    // directory that holds this script at its repository path.
+    private boolean insideRepository(File output) throws Exception {
+        String path = output.getPath().toLowerCase();
+        if (getSourceFile() != null) {
+            File script = new File(getSourceFile().getAbsolutePath()).getCanonicalFile();
+            File root = script.getParentFile().getParentFile().getParentFile();
+            if (root != null && path.startsWith(root.getPath().toLowerCase() + File.separator)) {
+                return true;
+            }
+        }
+        for (File parent = output.getParentFile(); parent != null; parent = parent.getParentFile()) {
+            if (new File(parent, "tools" + File.separator + "ghidra" + File.separator
+                    + "ReportFunctionInventory.java").isFile()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-25 | [Play the intro at every start unless Intro only once is on](#2026-09-25--play-the-intro-at-every-start-unless-intro-only-once-is-on) |
 | 2026-09-24 | [Record the gangs that fought in each combat event](#2026-09-24--record-the-gangs-that-fought-in-each-combat-event) |
 | 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
 | 2026-09-24 | [Mark objective sectors on the detailed-sector minimap](#2026-09-24--mark-objective-sectors-on-the-detailed-sector-minimap) |
@@ -35,6 +36,22 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-25 — Play the intro at every start unless Intro only once is on
+
+- Decision: the logo and intro movies play at every start, as in the original.
+  The 2026-09-13 behaviour, playing them only until one run has shown them,
+  moves behind an Intro only once option, off by default (DEV-VIDEO-003). The
+  option is stored in client preferences format v12; a v11 file migrates with
+  it off and keeps its `IntroMoviesSeen` record, so switching the option on
+  later does not replay the movies once more. The title screen's `INTRO`
+  button stays in both modes.
+- Reason: the deviation log starts a setting at the original's behaviour unless
+  the rebuild's is strictly better, and a player who expects the intro at every
+  start is not better served by losing it. The 2026-09-13 entry below made the
+  departure without a setting.
+- Boundary: as before, the option and the record are presentation preferences
+  only and never enter saves, replays, phase hashes or multiplayer state.
 
 ## 2026-09-24 — Record the gangs that fought in each combat event
 

@@ -108,9 +108,10 @@ The send routine `0x00423749` is reached from local code only through
 The network code is the 118 functions listed, 71,050 bytes of game code. A
 local game enters none of them except the startup initializer, the shutdown
 cleanup and the connection closer, which touch only the network's own state
-when no connection was opened. None of the local rules depends on them, so
-they are out of scope under DEV-NET-001 and do not need a spec entry of their
-own beyond the network screens already described.
+when no connection was opened. None of the local rules depends on them, and
+the spec's scope describes network play only as far as its lobby screens and
+file transfers, so they need no spec entry of their own beyond the network
+screens already described.
 
 ## Alternatives
 

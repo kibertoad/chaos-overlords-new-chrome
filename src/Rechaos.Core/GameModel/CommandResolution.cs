@@ -502,33 +502,19 @@ public static partial class CommandResolver
             var replacement = selectedGang.SectorId;
             if (selected.Command.Target.Id == replacement && ++passes > MaximumMoveRerouteDraws)
             {
-                // The reroute draw can hand back the source sector, which changes nothing and sends
-                // the loop round again on the same RNG stream. Fall back to the lowest-numbered
-                // sector with room. The board holds 64 x 6 gangs against a roster of 80, so one
-                // always exists, and it cannot be the overcrowded sector.
+                // DEV-MOVE-002: a drawn neighbour can itself be crowded and send the same mover back
+                // again, and some order sets repeat that for ever (FND-MOVE-006). Fall back to the
+                // lowest-numbered sector with room. The board holds 64 x 6 gangs against a roster of
+                // 80, so one always exists, and it cannot be the overcrowded sector.
                 replacement = Array.FindIndex(
                     projectedCounts, count => count < MatchLimits.FriendlyGangsPerSector);
             }
             else if (selected.Command.Target.Id == replacement)
             {
-                var currentCounts = Enumerable.Range(0, MatchLimits.SectorCount)
-                    .Select(sectorId => player.Gangs.Count(gang =>
-                        gang.IsActive && gang.SectorId == sectorId))
-                    .ToArray();
-                replacement = OriginalAiSectorSelectionRules.Select(
-                    mode: 0,
-                    sourceSectorId: selectedGang.SectorId,
-                    player: player.Id,
-                    family: AiPlanningState.UnusedFamily,
-                    state.Sectors.Select(sector => sector.Owner?.Value ?? -1).ToArray(),
-                    state.Sectors.Select(sector => sector.CrackdownActive).ToArray(),
-                    currentCounts,
-                    canSoloControl: _ => true,
-                    hasPriorChaos: _ => false,
-                    isHostileOwner: _ => false,
-                    isHumanOwner: _ => false,
-                    Enumerable.Range(0, MatchLimits.PlayerCount).ToArray(),
-                    state.Random);
+                // RULE-MOVE-002, RULE-AI-007: a mover already sent back draws a random neighbour
+                // with no capacity test; a later round repairs it if the neighbour overfills.
+                replacement = OriginalAiSectorSelectionRules.RandomNeighbour(
+                    selectedGang.SectorId, state.Random);
             }
             normalized[moveIndex] = selected with
             {
