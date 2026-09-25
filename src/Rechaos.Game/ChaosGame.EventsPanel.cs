@@ -144,6 +144,7 @@ public sealed partial class ChaosGame
         _eventCursor = 0;
         _eventViewedPages.Clear();
         if (count > 0) _eventViewedPages.Add(0);
+        _eventPageShownAt = _inputTime;
     }
 
     private void HandleEventsClick(Point point)
@@ -166,6 +167,7 @@ public sealed partial class ChaosGame
             {
                 _eventCursor = next;
                 _eventViewedPages.Add(_eventCursor);
+                _eventPageShownAt = _inputTime;
             }
         }
     }
@@ -254,24 +256,44 @@ public sealed partial class ChaosGame
 
         var playerId = ViewingPlayer(state);
         var reportCount = ReviewableReports(state, playerId).Count;
-        font.Draw(batch, $"{_eventCursor + 1:00} OF {reportCount:00}",
-            new Vector2(SharedPanelLayout.X(34), SharedPanelLayout.Y(13)), Color.Lime, 1);
+        // SCR-EVENT-001: page number and count as two digits each, with the panel art's OF
+        // between them, and the arrow faces, greyed on the first and last page. A black cell
+        // stands for the opaque copy of each digit cell.
+        DrawDigitCells(batch, pixel, font, $"{Math.Min(_eventCursor + 1, 99):00}",
+            LastTurnEventsLayout.PageNumber);
+        DrawDigitCells(batch, pixel, font, $"{Math.Min(reportCount, 99):00}",
+            LastTurnEventsLayout.PageCount);
+        if (_uiSprites is not null)
+        {
+            batch.Draw(_uiSprites, LastTurnEventsLayout.Previous,
+                LastTurnEventsLayout.PreviousSource(firstPage: _eventCursor == 0), Color.White);
+            batch.Draw(_uiSprites, LastTurnEventsLayout.Next,
+                LastTurnEventsLayout.NextSource(lastPage: _eventCursor == reportCount - 1),
+                Color.White);
+        }
         DrawEventArtworkForeground(batch, state, notification);
-        font.Draw(batch, MatchDate(notification.Turn),
-            new Vector2(LastTurnEventsLayout.DateValue.X, LastTurnEventsLayout.DateValue.Y),
-            Color.Lime, 1);
-        var eventObject = EventObject(state, notification);
-        var objectColumns = LastTurnEventsLayout.ObjectValue.Width / OriginalFontLayout.CellWidth;
-        if (eventObject.Length > objectColumns) eventObject = eventObject[..objectColumns];
-        font.Draw(batch, eventObject,
-            new Vector2(LastTurnEventsLayout.ObjectValue.X, LastTurnEventsLayout.ObjectValue.Y),
-            Color.Lime, 1);
+        // SCR-EVENT-001: the date is elapsed_turns (turns completed) as year and week, drawn
+        // over the panel art's 0000.00 and left out at 0.
+        if (LastTurnEventsLayout.Date(state.Coordinator.Turn - 1) is var (year, week))
+        {
+            DrawDigitCells(batch, pixel, font, year, LastTurnEventsLayout.Year);
+            DrawDigitCells(batch, pixel, font, week, LastTurnEventsLayout.Week);
+        }
+        // SCR-EVENT-001: the subject is not cut; only a cash report's gang name is, to 20
+        // characters, inside LastTurnEventPresentation.Subject.
+        font.Draw(batch, EventObject(state, notification),
+            LastTurnEventsLayout.Subject.ToVector2(), Color.Lime, 1);
         var status = NotificationPresentation.LastTurnStatus(notification, RelatedEvent(state, notification));
-        var statusColumns = LastTurnEventsLayout.StatusValue.Width / OriginalFontLayout.CellWidth;
-        if (status.Length > statusColumns) status = status[..statusColumns];
-        font.Draw(batch, status,
-            new Vector2(LastTurnEventsLayout.StatusValue.X, LastTurnEventsLayout.StatusValue.Y),
-            Color.Lime, 1);
+        if (status.Length > LastTurnEventsLayout.CaptionColumns)
+            status = status[..LastTurnEventsLayout.CaptionColumns];
+        font.Draw(batch, status, LastTurnEventsLayout.Caption.ToVector2(), Color.Lime, 1);
+    }
+
+    private static void DrawDigitCells(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, string digits, Rectangle cells)
+    {
+        batch.Draw(pixel, cells, Color.Black);
+        font.Draw(batch, digits, cells.Location.ToVector2(), Color.Lime, 1);
     }
 
     private bool DrawInfluenceSiteBackground(
@@ -298,12 +320,25 @@ public sealed partial class ChaosGame
         var artworkIndex = LastTurnEventPresentation.ArtworkIndex(notification, related);
         if (artworkIndex > 0 && _lastTurnEventArtwork[artworkIndex] is { } artwork)
             batch.Draw(artwork, LastTurnEventsLayout.Artwork, Color.White);
+        // SCR-EVENT-001: the researched item starts at frame 0 when the panel opens and after
+        // each page change.
         if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId
             && itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, LastTurnEventsLayout.ResearchItem,
-                ItemRotationPresentation.Frame(_inputTime), Color.White);
+                ItemRotationPresentation.Frame(
+                    _inputTime > _eventPageShownAt ? _inputTime - _eventPageShownAt : TimeSpan.Zero),
+                Color.White);
+        // SCR-EVENT-001: an elimination report adds the eliminated player's 32-by-32 portrait,
+        // stretched to 48 by 48 over its illustration.
+        var record = LastTurnEventPresentation.Record(state, notification, related);
+        if (record.Type == LastTurnReportRecord.Elimination && _uiSprites is not null
+            && state.FindPlayer(new PlayerId(record.Arg1)) is { } eliminated)
+            batch.Draw(_uiSprites, LastTurnEventsLayout.EliminatedPortrait,
+                OriginalSpriteLayout.OverlordPortrait(eliminated.Setup.PortraitId), Color.White);
     }
+
+    private TimeSpan _eventPageShownAt;
 
     private static string EventObject(MatchState state, GameNotification notification)
     {
@@ -384,10 +419,9 @@ public sealed partial class ChaosGame
 
     private static void ClearLastTurnEventFields(SpriteBatch batch, Texture2D pixel)
     {
-        batch.Draw(pixel, LastTurnEventsLayout.Page, Color.Black);
-        batch.Draw(pixel, LastTurnEventsLayout.DateValue, Color.Black);
-        batch.Draw(pixel, LastTurnEventsLayout.ObjectValue, Color.Black);
-        batch.Draw(pixel, LastTurnEventsLayout.StatusValue, Color.Black);
+        // SCR-EVENT-001: the compositor's two black fills behind the subject and the caption.
+        batch.Draw(pixel, LastTurnEventsLayout.SubjectBacking, Color.Black);
+        batch.Draw(pixel, LastTurnEventsLayout.CaptionBacking, Color.Black);
     }
 }
 
