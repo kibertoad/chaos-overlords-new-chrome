@@ -894,9 +894,9 @@ const deviations = new Map();
       if (deviations.has(s.title)) problem(path, `${s.title} is used twice`);
       if (!areas.includes(areaOf(s.title))) problem(path, `${s.title}: area is not in the area list`);
       const items = [...s.text.matchAll(/^- ([A-Za-z ]+): (.*)$/gm)].map((m) => [m[1], m[2]]);
-      const order = ["Departs from", "Reason", "Setting", "Default", "Dropped"];
-      if (items.slice(0, 5).map((x) => x[0]).join("|") !== order.join("|")) problem(path, `${s.title}: items must be ${order.join(", ")} in that order`);
       const item = Object.fromEntries(items);
+      const order = ["Departs from", "Reason", "Setting", "Default", ...("Justification" in item ? ["Justification"] : []), "Dropped"];
+      if (items.slice(0, order.length).map((x) => x[0]).join("|") !== order.join("|")) problem(path, `${s.title}: items must be ${order.join(", ")} in that order`);
       const departs = idsIn(item["Departs from"]);
       const dropped = item.Dropped && item.Dropped !== "no";
       if (dropped && !/^\d{4}-\d{2}-\d{2}\b/.test(item.Dropped)) problem(path, `${s.title}: Dropped gives the date, YYYY-MM-DD, and the reason`);
@@ -904,18 +904,27 @@ const deviations = new Map();
       if (!dropped) {
         if (!departs.some((x) => ["RULE", "FMT", "SCR"].includes(kindOf(x)))) problem(path, `${s.title}: Departs from names at least one rule, format or screen`);
         for (const x of departs) if (isSuperseded(x)) problem(path, `${s.title} departs from ${x}, which is superseded`);
-        const setting = item.Setting;
-        const dflt = item.Default;
-        if (setting === "None" && dflt !== "always on") problem(path, `${s.title}: Default is always on when Setting is None`);
-        if (setting !== "None") {
-          const bugs = departs.filter((x) => kindOf(x) === "BUG").map((x) => entries.get(x)).filter(Boolean);
-          const on = bugs.length > 0 && bugs.every((b) => b.meta.intent === "unintended" && b.meta.player_reliance === "not-relied-on");
-          if (dflt !== (on ? "on" : "off")) problem(path, `${s.title}: Default must be ${on ? "on" : "off"}`);
-        }
+        checkDeviationDefault(path, s.title, item, departs);
       }
       deviations.set(s.title, { departs, dropped });
     }
   }
+}
+
+// Default is off, on or mandatory. Only the fix of an unintended, not-relied-on bug is on by right;
+// mandatory, and on for anything else, carry a Justification that the rebuild is strictly better.
+function checkDeviationDefault(path, title, item, departs) {
+  const defaults = ["off", "on", "mandatory"];
+  const dflt = item.Default;
+  if (!defaults.includes(dflt)) return problem(path, `${title}: Default is one of ${defaults.join(", ")}`);
+  if ((item.Setting === "None") !== (dflt === "mandatory")) return problem(path, `${title}: Default is mandatory exactly when Setting is None`);
+  const bugs = departs.filter((x) => kindOf(x) === "BUG").map((x) => entries.get(x)).filter(Boolean);
+  const bugFix = bugs.length > 0 && bugs.every((b) => b.meta.intent === "unintended" && b.meta.player_reliance === "not-relied-on");
+  if (bugFix && dflt === "off") problem(path, `${title}: Default is on or mandatory for the fix of an unintended, not-relied-on bug`);
+  const needsJustification = dflt === "mandatory" || (dflt === "on" && !bugFix);
+  const hasJustification = "Justification" in item;
+  if (needsJustification && !hasJustification) problem(path, `${title}: is ${dflt} but has no Justification saying why the rebuild's behaviour is strictly better`);
+  if (!needsJustification && hasJustification) problem(path, `${title}: has a Justification, which only a mandatory deviation or one that is on without fixing an unintended, not-relied-on bug has`);
 }
 
 const parityRows = new Map();

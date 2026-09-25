@@ -79,10 +79,12 @@ used by the shared template. What the original does now lives only in
   Manual work waits for the maintainer to schedule a session with the original.
 - `tools/check-spec.mjs` runs the standard's checks and writes `spec/index/`.
   The fast gate runs it with `--check`. It compiles the `.ksy` files when
-  `kaitai-struct-compiler` (0.11, which needs Java 21) is on the path; it is
+  `kaitai-struct-compiler` (0.11) is on the path or named by `KSC`; it is
   installed for this user under
-  `%LOCALAPPDATA%/Programs/kaitai-struct-compiler-0.11/bin`. The script is
-  meant to move into the shared template.
+  `%LOCALAPPDATA%/Programs/kaitai-struct-compiler-0.11/bin`, and the CI fast
+  gate installs the pinned release (kibertoad/refurbished-dinosaurs-toolkit#1
+  moves that into a shared action). The script is meant to move into the
+  shared template.
 - `tests/Rechaos.Tests/OriginalGameFiles.cs` resolves `GAME_DIR` as the standard
   lays it out and checks every file against its xxh3 hash, and `SpecHash.cs`
   computes the hash. `GAME_DIR` is not set on the maintainer's machine yet; tests
@@ -92,19 +94,17 @@ used by the shared template. What the original does now lives only in
 
 ### Open conformance work
 
-- Deviations that change game state need a setting that the validation suite
-  switches off, and these have none: DEV-RNG-001, DEV-HIRE-001, DEV-HIRE-003,
-  DEV-MOVE-001, DEV-CONTROL-001, DEV-EQUIP-001, DEV-AI-001, DEV-AI-002,
-  DEV-UI-001 and DEV-OPTIONS-001. Each entry says so in a paragraph starting
-  "Needs a setting". Adding one is code work, and a setting that is off by
-  default changes play for everyone who has not chosen it, so each needs the
-  maintainer's decision.
-- DEV-OPTIONS-002 (Slide Panels starts off) and DEV-OPTIONS-003 (the rebuild
-  starts in a window) have settings, but the rebuild's defaults are the
-  opposite of the original's, and the standard requires such a deviation to be
-  off by default. `check-spec.mjs` reports both until the maintainer either
-  changes `OriginalOptionsPolicy` to the original's defaults or decides
-  otherwise.
+- A deviation's Default is `off`, `on` or `mandatory`, and one that is
+  `mandatory`, or `on` without fixing an unintended bug nobody relies on,
+  carries a Justification that the rebuild's behaviour is strictly better.
+  Five have no setting and no such case, because the rebuild takes away an
+  outcome the original allows, changes a quirk players may rely on, or waits on
+  evidence: DEV-HIRE-003, DEV-MOVE-001, DEV-CONTROL-001, DEV-AI-001 and
+  DEV-AI-002. Each says so in a paragraph starting "Needs a setting", and
+  `check-spec.mjs` reports all five until each gets a setting, a Justification
+  the maintainer accepts, or is dropped. DEV-HIRE-003 is dropped if the
+  original lets the hire through as well; DEV-MOVE-001 would qualify if it
+  counted gangs ordered out of the destination, as DEV-HIRE-001 does.
 - RULE-AI-007, RULE-AI-019 and RULE-AI-023 are `disputed`; the static plan
   says what settles each. The scenario numbering (which value is Kill 'Em All,
   Greed and Eliminate) conflicts between FND-SETUP-009, FND-SETUP-012 and

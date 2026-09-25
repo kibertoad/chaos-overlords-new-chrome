@@ -322,7 +322,10 @@ evidence from the original: decoding every file a format entry lists, replaying
 an experiment fixture, or matching a capture. Decoder tests on synthetic files
 and tests that compare the rebuild with an earlier version of itself are still
 required but are left out of that column. Manual play never counts, and listed
-tests run with every deviation that has a setting switched off.
+tests run with every deviation that has a setting switched off. A `mandatory`
+deviation cannot be switched off, so a listed test that reaches the behaviour it
+changes cites the deviation's ID and leaves that case out or compares with the
+original's result as the deviation changes it.
 
 ## Fixture classes
 

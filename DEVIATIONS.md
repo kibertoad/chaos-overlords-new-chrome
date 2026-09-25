@@ -6,10 +6,17 @@ the log. Each entry names the rule, format, screen or bug it departs from, so it
 entry's row of [PARITY.md](PARITY.md). IDs are never reused or renumbered; an entry that is
 dropped keeps its heading and gives the date and reason in its Dropped item.
 
-A deviation that changes game state, or anything a test compares with the original, needs a
-setting that the validation suite switches off. Where the rebuild has no such setting yet, the
-entry says so in a paragraph starting "Needs a setting". Those entries are the open conformance
-work listed in [docs/HANDOVER.md](docs/HANDOVER.md).
+Default is `off`, `on` or `mandatory`, as the standard defines them. A setting starts `off`, with
+the original's behaviour, unless the entry's Justification argues that the rebuild's behaviour is
+strictly better; then it starts `on`, and a player who wants the original switches it off. A
+deviation with no setting is `mandatory`, and its Justification also says why the original's
+behaviour is not worth a setting. The validation suite runs with every setting switched off, and a
+test that reaches a mandatory deviation cites its ID and allows for it.
+
+A few entries have no setting and no case for being mandatory, because the rebuild takes away an
+outcome the original allows or changes a quirk players may rely on. Each says so in a paragraph
+starting "Needs a setting", `tools/check-spec.mjs` reports it until the setting exists, and they
+are the open conformance work listed in [docs/HANDOVER.md](docs/HANDOVER.md).
 
 Dated product decisions behind many of these entries, with their full reasoning, are in
 [docs/DECISIONS.md](docs/DECISIONS.md).
@@ -21,7 +28,10 @@ Dated product decisions behind many of these entries, with their full reasoning,
   in place of the Windows help program. It reads the player's own help file and approximates the
   help program's typography.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The help program the original starts is no longer part of Windows, so the
+  original's behaviour cannot be had on a current system. The topics, links and popups are the
+  player's own file.
 - Dropped: no
 
 ## DEV-HELP-002
@@ -31,7 +41,9 @@ Dated product decisions behind many of these entries, with their full reasoning,
   attacker's current Force minus the target's Defense, and that every attack uses the Force the
   gang had at the start of the phase. The shipped help and manual leave out the Force term.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The note is labelled as the rebuild's and changes no text of the shipped help. The
+  shipped topic leaves out a term the attack roll uses, and no player gains from not knowing it.
 - Dropped: no
 
 ## DEV-VIDEO-001
@@ -41,11 +53,12 @@ Dated product decisions behind many of these entries, with their full reasoning,
   format they use. A file that is malformed or uses anything outside that subset is skipped and
   play goes on to the title screen.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It changes only what happens where the original would fail to play the file, so
+  there is nothing after that point to keep or compare.
 - Dropped: no
 
-This changes only what happens where the original would fail to play the file (decided
-2026-09-13).
+Decided 2026-09-13.
 
 ## DEV-SAVE-001
 
@@ -53,7 +66,10 @@ This changes only what happens where the original would fail to play the file (d
 - Reason: The rebuild neither reads nor writes the original's save files. It keeps its own save
   format, with a version number and bounded readers.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: What a player can do in a match is the same whichever format holds it, and the
+  rebuild's format adds a version number and bounded readers. A setting would need a reader and
+  writer for the original's format, which is a separate scope decision (2026-09-10).
 - Dropped: no
 
 Decided 2026-09-10 ("Save compatibility scope").
@@ -66,11 +82,13 @@ Decided 2026-09-10 ("Save compatibility scope").
   matches take an explicit seed of full width. The rebuild never makes the options loader's two
   `serialNum` draws, so an installation-wide value cannot shift a match's random sequence.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: A player cannot tell one random sequence from another, and leaving out the draws
+  stops an installation-wide value from shifting a match, so a seed reproduces its match on any
+  installation. The original's seed, the time since Windows started, cannot be reproduced anyway. A
+  test that replays a fixture from its seed rather than a recorded generator state makes the
+  original's six draws itself and cites this entry.
 - Dropped: no
-
-Needs a setting. Leaving out the six draws changes the random sequence a fixture compares, so the
-validation suite has to be able to make them.
 
 ## DEV-TURN-001
 
@@ -79,10 +97,10 @@ validation suite has to be able to make them.
   human menus never store one, and its turn-start cleanup would keep one forever if one were
   stored another way.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: No input the original accepts reaches the refused case, so no player can tell the
+  difference. It closes a path that only the network or a replay could use.
 - Dropped: no
-
-No input the original accepts reaches the refused case.
 
 ## DEV-SETUP-001
 
@@ -92,11 +110,12 @@ No input the original accepts reaches the refused case.
   ten-character form is a modifier with the seat's derived name. Hot-seat and single-player
   matches keep the original behaviour.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The original's network play is not reproduced (DEV-NET-001), so there is no
+  original online behaviour to keep, and hot-seat and single-player matches are unchanged.
 - Dropped: no
 
-The original's network play is not reproduced (DEV-NET-001), so there is no original online
-match to compare with. The reasoning is in `docs/MULTIPLAYER.md`.
+The reasoning is in `docs/MULTIPLAYER.md`.
 
 ## DEV-SETUP-002
 
@@ -104,7 +123,8 @@ match to compare with. The reasoning is in `docs/MULTIPLAYER.md`.
 - Reason: The setup, handoff and endgame screens accept keyboard navigation in addition to the
   original's mouse input.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds keyboard input beside the original's mouse input, which works as before.
 - Dropped: no
 
 ## DEV-HIRE-001
@@ -114,12 +134,11 @@ match to compare with. The reasoning is in `docs/MULTIPLAYER.md`.
   gangs, counting gangs already ordered to Move away or Terminate as gone. The original accepts
   the order and fails the hire at resolution.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The player learns at once that the hire cannot happen, where the original lets it
+  fail silently at resolution. Every outcome stays reachable: ordering the gang out of the sector
+  before dropping the hire lets the hire through, as in the original.
 - Dropped: no
-
-Needs a setting. In the original a player can order the hire first and then order a gang out of
-the sector, and the hire succeeds; in the rebuild the result depends on the order the player
-gives them in. Decided 2026-09-24.
 
 ## DEV-HIRE-002
 
@@ -127,7 +146,8 @@ gives them in. Decided 2026-09-24.
 - Reason: The Hire panel warns when the cash projected at the hire, after the Finance projection
   through the execution phase, would not cover the contract.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds a warning and refuses nothing.
 - Dropped: no
 
 ## DEV-HIRE-003
@@ -136,7 +156,7 @@ gives them in. Decided 2026-09-24.
 - Reason: The rebuild lets a hire whose cost is 0 through while the player's cash is negative.
   The original fails a hire when its cost is greater than cash, which refuses that hire.
 - Setting: None
-- Default: always on
+- Default: mandatory
 - Dropped: no
 
 Needs a setting, if the static reading of the original's comparison is confirmed; the check is
@@ -148,7 +168,8 @@ dropped.
 - Departs from: SCR-RESEARCH-001
 - Reason: The Research panel shows the research accumulated so far beside each item's total.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds information to the panel and changes nothing else.
 - Dropped: no
 
 ## DEV-MOVE-001
@@ -158,7 +179,7 @@ dropped.
   of the player's gangs. Whether the original's panel refuses it too is not recorded; if it does
   not, the original accepts the order and RULE-MOVE-002 sends the gang back at resolution.
 - Setting: None
-- Default: always on
+- Default: mandatory
 - Dropped: no
 
 Needs a setting, unless the original's panel is found to refuse the order as well
@@ -171,7 +192,7 @@ Needs a setting, unless the original's panel is found to refuse the order as wel
   arithmetic and tie draw among them. In the original a player with no Control order can take a
   sector when its defence sum is negative.
 - Setting: None
-- Default: always on
+- Default: mandatory
 - Dropped: no
 
 Needs a setting. The fix changes which player owns the sector.
@@ -183,7 +204,8 @@ Needs a setting. The fix changes which player owns the sector.
   original leaves the sector out of Control without a word. The rebuild records a failed Control
   result for it. The owner does not change in either case.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds a report of what happened. The owner of the sector is the same in both.
 - Dropped: no
 
 ## DEV-GANG-001
@@ -192,7 +214,8 @@ Needs a setting. The fix changes which player owns the sector.
 - Reason: Hovering one of a live gang's fourteen statistics shows its base value and one signed
   line for each item and site that changes it.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds information on hover and changes nothing else.
 - Dropped: no
 
 ## DEV-EQUIP-001
@@ -204,10 +227,11 @@ Needs a setting. The fix changes which player owns the sector.
   orders, a replaced order moving to the end. Players still resolve by slot, Give keeps its
   deferred deliveries in roster order, and a buyer whose cash exactly equals the price still buys.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The original's result depends on roster slots the player cannot see while giving
+  orders; the rebuild's follows the order the player gave. Every outcome of the original stays
+  reachable, since giving Sell and Equip in slot order reproduces the original's scan.
 - Dropped: no
-
-Needs a setting. This changes turn outcomes. Decided 2026-09-24.
 
 ## DEV-EQUIP-002
 
@@ -216,7 +240,9 @@ Needs a setting. This changes turn outcomes. Decided 2026-09-24.
   portrait, and a double-click on the portrait opens the gang information panel and returns to
   the same selection.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds a display of the items the gang holds and a shortcut, and takes nothing
+  away.
 - Dropped: no
 
 ## DEV-GIVE-001
@@ -224,7 +250,8 @@ Needs a setting. This changes turn outcomes. Decided 2026-09-24.
 - Departs from: SCR-GIVE-001
 - Reason: Up and Down cycle the Give recipient.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds keys, and the mouse works as before.
 - Dropped: no
 
 ## DEV-FINANCE-001
@@ -233,7 +260,9 @@ Needs a setting. This changes turn outcomes. Decided 2026-09-24.
 - Reason: The Finance projection lists sector tax, site Cash and gang Upkeep as separate
   components where the original draws its eight rows.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The amounts are the ones the rules compute, and no order depends on how the
+  projection is broken down. Listing each component shows the player where the money comes from.
 - Dropped: no
 
 Which of the original's rows holds which amount is not recorded, so how far the two differ is not
@@ -245,7 +274,8 @@ known yet; the static check is in `static_validation_plan.md`.
 - Reason: A double-click on a target cell, without moving, opens the enemy gang's information
   panel and returns to the picker.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds a shortcut to a panel the player can already open.
 - Dropped: no
 
 ## DEV-ATTACK-002
@@ -255,10 +285,10 @@ known yet; the static check is in `static_validation_plan.md`.
   is submitted, so an order from the network or a replay cannot target one. The original only
   offers detected gangs in the picker.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: No input the original accepts reaches the refused case, so no player can tell the
+  difference. It closes a path that only the network or a replay could use.
 - Dropped: no
-
-No input the original accepts reaches the refused case.
 
 ## DEV-COMBAT-001
 
@@ -267,7 +297,9 @@ No input the original accepts reaches the refused case.
   presentation always ends, Escape, Cancel or a right-button press clears the queue of clips, and
   playback never changes match state.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The original is reported to stop responding here, so nothing after that point can
+  be played or compared. Playback never changes match state.
 - Dropped: no
 
 ## DEV-COMBAT-002
@@ -277,7 +309,9 @@ No input the original accepts reaches the refused case.
   selected fight, and the Detailed Combat option governs only the automatic presentation. The
   original's Combat Results panel has no control that opens Detailed Combat.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds a control, and the Detailed Combat option still decides the automatic
+  presentation as in the original.
 - Dropped: no
 
 ## DEV-AI-001
@@ -288,7 +322,7 @@ No input the original accepts reaches the refused case.
   number (6, 5, 2 or 10), which never matches a family-6 hire and in Dominance never matches
   anything. Schedule tables, quotas, ranking and draws are unchanged.
 - Setting: None
-- Default: always on
+- Default: mandatory
 - Dropped: no
 
 Needs a setting, which would start off since whether players rely on the original comparison is
@@ -303,7 +337,7 @@ not known. The correction applies under the Original AI policy as well. Decided 
   case is a Move to the gang's own sector, which the sector selector returns when capacity blocks
   every step. The gang's planning history is the same; its resolved action can differ.
 - Setting: None
-- Default: always on
+- Default: mandatory
 - Dropped: no
 
 Needs a setting. The resolved action changes the match. Decided 2026-09-17.
@@ -337,7 +371,9 @@ started with.
 - Reason: The rebuild records which report pages the player has visited and keeps the Events
   indicator blinking until every page has been seen.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It keeps a reminder on until the player has read every page. Nothing in the match
+  depends on it.
 - Dropped: no
 
 The original's mechanism for the blinking light has no finding yet, so this may turn out to match
@@ -349,7 +385,8 @@ it.
 - Reason: Escape and the right mouse button close Comlink View, as they close the rebuild's other
   panels.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds ways to close the panel; the original's still work.
 - Dropped: no
 
 ## DEV-SEARCH-001
@@ -358,7 +395,8 @@ it.
 - Reason: The keyboard moves between Search rows and toggles them. The original's handler reacts
   only to Enter and Execute.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds keys, and Enter and Execute work as before.
 - Dropped: no
 
 ## DEV-UI-001
@@ -368,11 +406,11 @@ it.
   original's closing slide holds input for about a quarter of a second, and without it the close
   cue and the next cue start in the same frame, so the next cue cuts the close cue off.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The closing slide holds input for about a quarter of a second and makes the next
+  sound cue cut off the close cue. A panel's closing animation has no effect on play, and the
+  opening slide is kept for a player who wants the motion.
 - Dropped: no
-
-Needs a setting. Frames captured while a panel closes differ from the original's. Decided
-2026-09-23.
 
 ## DEV-UI-002
 
@@ -381,7 +419,8 @@ Needs a setting. Frames captured while a panel closes differ from the original's
   scaled, so the player can see neighbouring objective sectors. The original draws them only on
   the city map.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds information to the minimap and changes nothing else.
 - Dropped: no
 
 ## DEV-UI-003
@@ -391,7 +430,9 @@ Needs a setting. Frames captured while a panel closes differ from the original's
   Move is then given to all of them at once. Each gang is validated on its own, and a bulk Move
   counts the whole selection against the destination's room before queueing.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: Each gang receives the order the player could give it on its own, validated on its
+  own, so the selection only saves clicks.
 - Dropped: no
 
 ## DEV-UI-004
@@ -400,7 +441,9 @@ Needs a setting. Frames captured while a panel closes differ from the original's
 - Reason: After one complete unattended run of the logo and intro movies, the rebuild opens at
   the title screen, which gains a button that plays them again.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The movies stay available from the title screen, and a player who has already
+  watched them is not made to sit through them again.
 - Dropped: no
 
 When the original plays the movies is not yet recorded (`manual_validation_plan.md`).
@@ -411,7 +454,8 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 - Reason: Hover tooltips explain statistics, attributes, modifiers, modes, options and ranking
   scores, and a two-second rest on a command explains the order.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds information on hover and changes nothing else.
 - Dropped: no
 
 ## DEV-UI-006
@@ -421,7 +465,9 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   `CASH 20 [18] (+1)`: cash, the cash left after queued Bribe and Equip prices, and the change
   over the whole cycle, with a breakdown on hover.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds a projection the player could work out from the Finance panel, and changes
+  nothing else.
 - Dropped: no
 
 ## DEV-UI-007
@@ -430,7 +476,9 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 - Reason: Hovering the Tolerance value shows the range the player's queued Chaos can reach, and
   the value turns orange when that range can set off a Crackdown.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds information the player could work out from the queued orders, and changes
+  nothing else.
 - Dropped: no
 
 ## DEV-UI-008
@@ -439,7 +487,9 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 - Reason: The command pickers name valid targets, and hovering a gang with a queued Move,
   Influence or Attack highlights its target on the board.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds information about orders the player has already given, and changes nothing
+  else.
 - Dropped: no
 
 ## DEV-UI-009
@@ -448,7 +498,8 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 - Reason: A double-click on an equipped item in the gang information panel opens Item Information
   and returns to the same gang.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds a shortcut to a panel the player can already open.
 - Dropped: no
 
 ## DEV-UI-010
@@ -457,7 +508,8 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 - Reason: Panels accept keyboard navigation, and Escape and the right mouse button cancel them.
   The original's panels take Enter and Execute and, on the idle-gang warning, Escape.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds keys and ways to cancel; the original's Enter and Execute work as before.
 - Dropped: no
 
 ## DEV-UI-011
@@ -466,7 +518,9 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 - Reason: Saving and loading use nine named slots, and Escape opens a pause menu. The original
   saves and loads from its menu bar.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: Saving and loading stay available wherever the original allows them, and slots with
+  names replace a file dialog that the original's menu bar opens.
 - Dropped: no
 
 ## DEV-UI-012
@@ -474,7 +528,8 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 - Departs from: SCR-UI-001
 - Reason: The title screen shows the build version and a Report Bug control.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds a version label and a way to report a bug, and changes nothing else.
 - Dropped: no
 
 ## DEV-UI-013
@@ -484,17 +539,20 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   the sector, and the player can page that opponent's detected gangs on the cards. The original
   lists only the viewer's own gangs.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: Only gangs the player has detected are shown, so what the player can know is
+  unchanged; it saves looking them up elsewhere.
 - Dropped: no
 
-What a player can see is unchanged, since only detected gangs are shown. Decided 2026-09-18.
+Decided 2026-09-18.
 
 ## DEV-UI-014
 
 - Departs from: SCR-UI-004
 - Reason: The detailed-sector screen shows how many police turns remain in the sector.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: It adds information and changes nothing else.
 - Dropped: no
 
 Whether the original shows the count is not recorded.
@@ -507,10 +565,10 @@ Whether the original shows the count is not recorded.
   rebuild writes a checked per-user file in one step and falls back to the default for each
   missing field.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The Options menu was written to keep the player's choices, and the original loses
+  them only because of the two bugs. Nobody gains from choosing the options again at every launch.
 - Dropped: no
-
-Needs a setting. Options that persist change what the next launch starts with. Decided 2026-09-17.
 
 ## DEV-OPTIONS-002
 
@@ -519,11 +577,9 @@ Needs a setting. Options that persist change what the next launch starts with. D
   input for about a quarter of a second on every panel change.
 - Setting: Slide Panels
 - Default: on
+- Justification: Panel motion holds input for about a quarter of a second on every panel change and
+  changes nothing in the match. A player who wants the original's motion switches Slide Panels on.
 - Dropped: no
-
-The standard makes the default `off` for anything but the fix of an unintended bug, which would
-mean starting with panels sliding as the original does. The rebuild's default is a product
-decision waiting on the maintainer (`docs/HANDOVER.md`).
 
 ## DEV-OPTIONS-003
 
@@ -532,10 +588,10 @@ decision waiting on the maintainer (`docs/HANDOVER.md`).
   from any screen; the choice is kept for every match. The original initializes full screen to on.
 - Setting: Full screen (F11)
 - Default: on
+- Justification: A window leaves the player's other programs reachable, full screen is one key away
+  from any screen, and nothing in the match depends on it. A player who wants the original's start
+  switches to full screen, and the choice is kept.
 - Dropped: no
-
-The same question as DEV-OPTIONS-002: the standard makes the default `off`, which would mean
-starting in full screen.
 
 ## DEV-NET-001
 
@@ -545,7 +601,10 @@ starting in full screen.
   sent to or received from another computer in the original's form, and the network form of the
   save file has no counterpart.
 - Setting: None
-- Default: always on
+- Default: mandatory
+- Justification: The original's WinSock, TAPI and serial paths cannot reach anything a current
+  player can connect to, so there is nothing to keep, and the coordination server is what makes
+  online play possible at all.
 - Dropped: no
 
 Decided 2026-09-10 ("Networking scope").

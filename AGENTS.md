@@ -78,9 +78,16 @@ the repository. Tool procedure is in `docs/GHIDRA.md`.
 ### The rebuild's ledgers
 
 - `DEVIATIONS.md` lists every place the rebuild departs from the spec on
-  purpose, as `DEV-AREA-NNN` entries. One that changes game state or anything a
-  test compares with the original has a setting, and the validation suite runs
-  with every such setting switched off.
+  purpose, as `DEV-AREA-NNN` entries with a Default of `off`, `on` or
+  `mandatory`. A setting starts `off`, with the original's behaviour, unless the
+  entry's Justification argues that the rebuild's behaviour is strictly better:
+  then it starts `on`, and a player who wants the original switches it off. A
+  deviation with no setting is `mandatory`, and its Justification also says why
+  the original's behaviour is not worth a setting. The fix of an unintended bug
+  that players do not rely on is `on` without one. A quirk that may be
+  deliberate or that players rely on is never strictly better, so its deviation
+  starts `off`. The validation suite runs with every setting switched off, and a
+  test that reaches a mandatory deviation cites its ID and allows for it.
 - `PARITY.md` has one row per rule, format and screen entry that is not
   superseded, with how much of it the rebuild does and which tests compare the
   rebuild with evidence from the original. Behaviour without a spec entry gets
@@ -98,7 +105,8 @@ comment, and that row of `PARITY.md` cannot be `complete` while it does.
 `PARITY.md` and `DEVIATIONS.md`, checks that every spec and deviation ID cited
 in the code resolves, and rewrites the generated indexes in `spec/index/`;
 `--check` fails on a stale index instead of writing it. It compiles the Kaitai
-definitions when `kaitai-struct-compiler` (or the path in `KSC`) is available.
+definitions when `kaitai-struct-compiler` (or the path in `KSC`) is available;
+the CI fast gate installs a pinned release, so there they always compile.
 The script is written to move into the shared toolkit.
 
 `docs/README.md` catalogs the other documents. Their tables of contents and the
