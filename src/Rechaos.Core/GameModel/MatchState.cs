@@ -395,11 +395,11 @@ public sealed partial class MatchState
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         _comlinkInboxes = Players.ToDictionary(player => player.Id, _ => new ComlinkInbox());
         if (restore is not null) RestoreRuntime(restore);
-        // RULE-GANG-001 runs before the first planning phase; a new match stores the values now so
-        // resolution never meets a gang without them. A restored match keeps what it saved.
-        else
-            foreach (var gang in Players.SelectMany(player => player.Gangs))
-                gang.StoredStatistics ??= EffectiveStatisticsCalculator.Rebuilt(this, gang);
+        // RULE-GANG-001 runs before the first planning phase; a gang joining without stored values
+        // (a new match, including the generator's, which passes a synthetic restore) stores them
+        // now so resolution never meets a gang without them. A saved gang keeps what it saved.
+        foreach (var gang in Players.SelectMany(player => player.Gangs))
+            gang.StoredStatistics ??= EffectiveStatisticsCalculator.Rebuilt(this, gang);
     }
     internal MatchState(
         OriginalData definitions,

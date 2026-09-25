@@ -67,25 +67,8 @@ public static partial class CommandResolver
         // RULE-TOLERANCE-001: resolution opens by moving every base Tolerance one point back.
         ToleranceResolver.StepTowardNormal(state);
         var ordered = InRosterOrder(state, commands);
-        var statistics = ordered
-            .Select(queued => queued.Command.Gang)
-            .Distinct()
-            .ToDictionary(gangId => gangId,
-                gangId => EffectiveStatisticsCalculator.ForGang(state, state.FindGang(gangId)!));
         var results = new List<CommandResolutionResult>(ordered.Length);
-        foreach (var queued in ordered)
-        {
-            results.Add(queued.Command.Action switch
-            {
-                GangAction.Heal => ResolveHeal(
-                    state, queued.Command, statistics[queued.Command.Gang]),
-                GangAction.Influence => ResolveInfluence(
-                    state, queued.Command, statistics[queued.Command.Gang]),
-                GangAction.Research => ResolveResearch(
-                    state, queued.Command, statistics[queued.Command.Gang]),
-                _ => Resolve(state, queued)
-            });
-        }
+        foreach (var queued in ordered) results.Add(Resolve(state, queued));
         ToleranceResolver.ClampAfterInstant(state);
         return results;
     }
@@ -696,13 +679,10 @@ public static partial class CommandResolver
             rolls, OriginalResolutionRules.SuccessThreshold(band, action)));
     }
 
-    private static CommandResolutionResult ResolveHeal(
-        MatchState state,
-        GameCommand command,
-        EffectiveStatistics? phaseStatistics = null)
+    private static CommandResolutionResult ResolveHeal(MatchState state, GameCommand command)
     {
         var gang = state.FindGang(command.Gang)!;
-        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var (rolls, successes) = RollAction(
             state, band, GangAction.Heal, ManualRules.HealDiceCount(statistics.Heal));
@@ -722,10 +702,7 @@ public static partial class CommandResolver
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before ? 1 : 0, 1));
     }
 
-    private static CommandResolutionResult ResolveInfluence(
-        MatchState state,
-        GameCommand command,
-        EffectiveStatistics? phaseStatistics = null)
+    private static CommandResolutionResult ResolveInfluence(MatchState state, GameCommand command)
     {
         var site = state.FindSite(command.Target.Id)!;
         var before = site.Resistance;
@@ -735,7 +712,7 @@ public static partial class CommandResolver
                 GameNotificationKind.Influence);
 
         var gang = state.FindGang(command.Gang)!;
-        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var pool = OriginalResolutionRules.ActionPool(
             band, GangAction.Influence,
@@ -760,10 +737,7 @@ public static partial class CommandResolver
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after));
     }
 
-    private static CommandResolutionResult ResolveResearch(
-        MatchState state,
-        GameCommand command,
-        EffectiveStatistics? phaseStatistics = null)
+    private static CommandResolutionResult ResolveResearch(MatchState state, GameCommand command)
     {
         var gang = state.FindGang(command.Gang)!;
         var player = state.FindPlayer(command.Player)!;
@@ -776,7 +750,7 @@ public static partial class CommandResolver
                 GameNotificationKind.Research);
         }
 
-        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var pool = OriginalResolutionRules.ActionPool(
             band, GangAction.Research,

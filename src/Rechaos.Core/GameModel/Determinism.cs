@@ -438,7 +438,7 @@ public static class MatchStateHasher
             WriteNullableShort(writer, gang.WeaponItemId); WriteNullableShort(writer, gang.ArmorItemId); WriteNullableShort(writer, gang.MiscellaneousItemId);
             writer.Write(gang.StoredStatistics.HasValue);
             if (gang.StoredStatistics is { } statistics)
-                foreach (var value in NativeStatistics.ToArray(statistics)) writer.Write(value);
+                NativeStatistics.Write(writer, statistics);
         }
         foreach (var slot in player.HireOfferSlots)
         {

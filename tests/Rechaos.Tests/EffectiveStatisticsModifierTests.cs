@@ -74,8 +74,9 @@ public sealed class EffectiveStatisticsModifierTests
             EffectiveStatisticsCalculator.ForGang(match, gang).Combat);
     }
 
+    // RULE-GANG-001: the completed sites of a sector another player owns add nothing.
     [Fact]
-    public void SitesInfluencedByOtherPlayersDoNotModifyTheGang()
+    public void CompletedSitesOfASectorAnotherPlayerOwnsDoNotModifyTheGang()
     {
         var data = BundledOriginalData.Load();
         var match = CreateMatch(data, weaponItemId: null,
@@ -84,6 +85,55 @@ public sealed class EffectiveStatisticsModifierTests
 
         Assert.DoesNotContain(EffectiveStatisticsCalculator.ModifiersForGang(match, gang),
             modifier => modifier.Source == GangModifierSource.Site);
+    }
+
+    // RULE-GANG-001: in a sector its player owns, a gang takes every completed site, whoever
+    // completed it.
+    [Fact]
+    public void CompletedSitesOfAnOwnedSectorModifyTheGangWhoeverCompletedThem()
+    {
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(data, weaponItemId: null,
+            influencedSiteSlots: [0], influencedBy: new PlayerId(1));
+        // Player 0 takes the sector with the site player 1 completed.
+        match.Sectors[0].Owner = new PlayerId(0);
+        var gang = match.FindGang(new GangId(10))!;
+
+        Assert.Equal([(GangModifierSource.Site, SiteName(data, match, 0))],
+            EffectiveStatisticsCalculator.ModifiersForGang(match, gang)
+                .Where(modifier => modifier.Source == GangModifierSource.Site)
+                .Select(modifier => (modifier.Source, modifier.Name)));
+    }
+
+    // RULE-GANG-001: a generated match, which is built through a synthetic restore, stores every
+    // gang's values before the first planning phase, as a bootstrapped one does.
+    [Fact]
+    public void AGeneratedMatchStoresEveryGangsStatistics()
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(1), "TWO", PlayerController.Computer)
+        ];
+        var match = OriginalMatchFactory.Create(
+            data, new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups));
+
+        Assert.All(match.Players.SelectMany(player => player.Gangs), gang =>
+            Assert.Equal(EffectiveStatisticsCalculator.Rebuilt(match, gang), gang.StoredStatistics));
+    }
+
+    // RULE-GANG-001: every gang joins a match with stored values, so a gang without them is refused
+    // rather than read live.
+    [Fact]
+    public void AGangWithoutStoredStatisticsIsRefused()
+    {
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(data, weaponItemId: null, influencedSiteSlots: []);
+        var detached = new MatchGangState(new GangId(99), new PlayerId(0), data.Gangs[0].Id, 0, 5);
+
+        Assert.Throws<InvalidOperationException>(
+            () => EffectiveStatisticsCalculator.ForGang(match, detached));
     }
 
     private static string SiteName(OriginalData data, MatchState match, int slot) =>

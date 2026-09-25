@@ -69,12 +69,14 @@ public static class EffectiveStatisticsCalculator
     /// <summary>
     /// The statistics the gang has now: the values stored at the last rebuild, which resolution
     /// reads, so an item bought or a site completed during a turn counts from the next rebuild.
+    /// Every gang joins a match with stored values, so a gang without them is a construction bug.
     /// </summary>
     public static EffectiveStatistics ForGang(MatchState state, MatchGangState gang)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gang);
-        return gang.StoredStatistics ?? Rebuilt(state, gang);
+        return gang.StoredStatistics ?? throw new InvalidOperationException(
+            $"Gang {gang.Id.Value} has no stored statistics; every gang stores them when it joins a match.");
     }
 
     /// <summary>The values RULE-GANG-001 writes for the gang from the state as it stands.</summary>
@@ -82,11 +84,7 @@ public static class EffectiveStatisticsCalculator
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gang);
-        var definition = state.Definitions.Gang(gang.DefinitionId);
-        var result = EffectiveStatistics.From(definition.Stats);
-        foreach (var modifier in SourceModifiers(state, gang))
-            result = result.Add(modifier.Stats);
-        return result with { Combat = checked(result.Combat + WeaponSkills(state, gang, result)) };
+        return Build(state, gang, modifiers: null);
     }
 
     /// <summary>
@@ -110,16 +108,33 @@ public static class EffectiveStatisticsCalculator
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gang);
-        var modifiers = SourceModifiers(state, gang).ToList();
-        var summed = modifiers.Aggregate(
-            EffectiveStatistics.From(state.Definitions.Gang(gang.DefinitionId).Stats),
-            (result, modifier) => result.Add(modifier.Stats));
-        var skills = WeaponSkills(state, gang, summed);
+        var modifiers = new List<GangStatisticsModifier>();
+        Build(state, gang, modifiers);
+        return modifiers;
+    }
+
+    /// <summary>
+    /// The one RULE-GANG-001 aggregation: definition, then each source, then the weapon skills in
+    /// Combat (RULE-COMBAT-001). The rebuild passes no list; the interface collects the
+    /// contributions it names.
+    /// </summary>
+    private static EffectiveStatistics Build(
+        MatchState state,
+        MatchGangState gang,
+        List<GangStatisticsModifier>? modifiers)
+    {
+        var result = EffectiveStatistics.From(state.Definitions.Gang(gang.DefinitionId).Stats);
+        foreach (var modifier in SourceModifiers(state, gang))
+        {
+            result = result.Add(modifier.Stats);
+            modifiers?.Add(modifier);
+        }
+        var skills = WeaponSkills(state, gang, result);
         if (skills != 0)
-            modifiers.Add(new GangStatisticsModifier(
+            modifiers?.Add(new GangStatisticsModifier(
                 GangModifierSource.WeaponSkills, "WEAPON SKILLS",
                 new Statistics(checked((short)skills), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)));
-        return modifiers;
+        return result with { Combat = checked(result.Combat + skills) };
     }
 
     private static IEnumerable<GangStatisticsModifier> SourceModifiers(
@@ -185,6 +200,16 @@ public static class DiceRoller
 /// <summary>The fourteen statistics in record order, as the hash and the native save write them.</summary>
 internal static class NativeStatistics
 {
+    /// <summary>Writes the fourteen values in record order without allocating.</summary>
+    public static void Write(BinaryWriter writer, EffectiveStatistics value)
+    {
+        writer.Write(value.Combat); writer.Write(value.Defense); writer.Write(value.Stealth);
+        writer.Write(value.Detect); writer.Write(value.Chaos); writer.Write(value.Control);
+        writer.Write(value.Heal); writer.Write(value.Influence); writer.Write(value.Research);
+        writer.Write(value.Strength); writer.Write(value.Blade); writer.Write(value.Range);
+        writer.Write(value.Fighting); writer.Write(value.MartialArts);
+    }
+
     public static int[] ToArray(EffectiveStatistics value) =>
     [
         value.Combat, value.Defense, value.Stealth, value.Detect, value.Chaos, value.Control,

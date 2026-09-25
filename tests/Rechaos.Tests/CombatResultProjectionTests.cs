@@ -367,7 +367,8 @@ public sealed class CombatResultProjectionTests
         var owner = match.FindPlayer(gang.Owner)!;
         var slot = owner.Gangs.ToList().IndexOf(gang);
         owner.ReplaceGang(slot, new MatchGangState(
-            match.NextGangId(), gang.Owner, definitionId: 2, gang.SectorId, force: 7));
+            match.NextGangId(), gang.Owner, definitionId: 2, gang.SectorId, force: 7,
+            statistics: EffectiveStatistics.From(match.Definitions.Gang(2).Stats)));
     }
 
     private static CombatResultEntry Attack(
