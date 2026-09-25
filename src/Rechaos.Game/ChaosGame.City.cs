@@ -346,7 +346,8 @@ public sealed partial class ChaosGame
         const int maxRowsPerColumn = 40;
         var spends = StatusConsolePresentation.QueuedCashSpends(state, player);
         var header = StatusConsolePresentation.CashTooltip(
-            player.Cash, spends, FinanceProjection.Project(state, player, sectorId: null));
+            player.Cash, spends, FinanceProjection.Project(state, player, sectorId: null),
+            state.Setup.Revises(RuleRevisions.TransactionsInOrderGiven));
         string[] rows = spends.Count == 0
             ? ["NONE"]
             : spends.Select(entry =>

@@ -54,14 +54,68 @@ public sealed class TransactionResolutionTests
         Assert.Equal(GameEventKind.CommandFailed, match.LastPhaseResolutions[0].Event!.Kind);
     }
 
+    // RULE-EQUIP-002: the pass scans roster slots, so gang 10's Sell pays for gang 11's Equip
+    // although the Equip was ordered first (FND-EQUIP-006).
     [Fact]
-    public void SellQueuedAfterEquipCannotFundItDespiteEarlierRoster()
+    public void AnEarlierSlotsSellFundsALaterSlotsEquipWhateverTheOrderGiven()
     {
         var data = BundledOriginalData.Load();
         var purchase = ResearchedWeapon(data);
         var sale = data.Items.First(item => item.Type is >= 0 and <= 2 && item.Cost >= 2).Id;
         var match = CreateMatch(cash: data.Items[purchase].Cost - 1,
             actorWeapon: sale, researchedItems: new HashSet<short> { purchase });
+        EnterCommand(match);
+        Assert.True(match.Submit(new GameCommand(new PlayerId(0), new GangId(11),
+            GangAction.Equip, CommandTarget.Item(purchase))).Accepted);
+        Assert.True(match.Submit(new GameCommand(new PlayerId(0), new GangId(10),
+            GangAction.Sell, CommandTarget.Item(sale))).Accepted);
+        EnterTransaction(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([GangAction.Sell, GangAction.Equip],
+            match.LastPhaseResolutions.Select(result => result.Command.Action).ToArray());
+        Assert.All(match.LastPhaseResolutions, result => Assert.True(result.Succeeded));
+        Assert.Equal(purchase, match.FindGang(new GangId(11))!.WeaponItemId);
+        Assert.Equal(data.Items[sale].Cost / 2 - 1, match.Players[0].Cash);
+    }
+
+    // RULE-EQUIP-002: a later slot's Sell cannot fund an earlier slot's Equip, even when the Sell
+    // was ordered first (FND-EQUIP-006).
+    [Fact]
+    public void ALaterSlotsSellCannotFundAnEarlierSlotsEquipWhateverTheOrderGiven()
+    {
+        var data = BundledOriginalData.Load();
+        var purchase = ResearchedWeapon(data);
+        var sale = data.Items.First(item => item.Type is >= 0 and <= 2 && item.Cost >= 2).Id;
+        var match = CreateMatch(cash: data.Items[purchase].Cost - 1,
+            targetWeapon: sale, researchedItems: new HashSet<short> { purchase });
+        EnterCommand(match);
+        Assert.True(match.Submit(new GameCommand(new PlayerId(0), new GangId(11),
+            GangAction.Sell, CommandTarget.Item(sale))).Accepted);
+        Assert.True(match.Submit(new GameCommand(new PlayerId(0), new GangId(10),
+            GangAction.Equip, CommandTarget.Item(purchase))).Accepted);
+        EnterTransaction(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([GangAction.Equip, GangAction.Sell],
+            match.LastPhaseResolutions.Select(result => result.Command.Action).ToArray());
+        Assert.Equal(CommandResolutionCode.InsufficientCash, match.LastPhaseResolutions[0].Code);
+        Assert.True(match.LastPhaseResolutions[1].Succeeded);
+        Assert.Null(match.FindGang(new GangId(10))!.WeaponItemId);
+    }
+
+    // DEV-EQUIP-001
+    [Fact]
+    public void UnderDevEquip001ASellQueuedAfterEquipCannotFundItDespiteEarlierRoster()
+    {
+        var data = BundledOriginalData.Load();
+        var purchase = ResearchedWeapon(data);
+        var sale = data.Items.First(item => item.Type is >= 0 and <= 2 && item.Cost >= 2).Id;
+        var match = CreateMatch(cash: data.Items[purchase].Cost - 1,
+            actorWeapon: sale, researchedItems: new HashSet<short> { purchase },
+            ruleRevisions: RuleRevisions.TransactionsInOrderGiven);
         EnterCommand(match);
         Assert.True(match.Submit(new GameCommand(new PlayerId(0), new GangId(11),
             GangAction.Equip, CommandTarget.Item(purchase))).Accepted);
@@ -80,14 +134,16 @@ public sealed class TransactionResolutionTests
             match.Players[0].Cash);
     }
 
+    // DEV-EQUIP-001
     [Fact]
-    public void SellQueuedBeforeEquipFundsItDespiteLaterRoster()
+    public void UnderDevEquip001ASellQueuedBeforeEquipFundsItDespiteLaterRoster()
     {
         var data = BundledOriginalData.Load();
         var purchase = ResearchedWeapon(data);
         var sale = data.Items.First(item => item.Type is >= 0 and <= 2 && item.Cost >= 2).Id;
         var match = CreateMatch(cash: data.Items[purchase].Cost - 1,
-            targetWeapon: sale, researchedItems: new HashSet<short> { purchase });
+            targetWeapon: sale, researchedItems: new HashSet<short> { purchase },
+            ruleRevisions: RuleRevisions.TransactionsInOrderGiven);
         EnterCommand(match);
         Assert.True(match.Submit(new GameCommand(new PlayerId(0), new GangId(11),
             GangAction.Sell, CommandTarget.Item(sale))).Accepted);
@@ -281,7 +337,8 @@ public sealed class TransactionResolutionTests
 
         Assert.Null(source.WeaponItemId);
         Assert.Equal(weapons[0], target.WeaponItemId);
-        Assert.Equal([target.Id, source.Id],
+        // RULE-EQUIP-002 reports the pass in roster-slot order.
+        Assert.Equal([source.Id, target.Id],
             match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
         var equip = match.LastPhaseResolutions.Single(result =>
             result.Command.Action == GangAction.Equip).Event!.Resolution!;
@@ -291,12 +348,39 @@ public sealed class TransactionResolutionTests
         Assert.Equal(weapons[2], give.ReplacedItemId);
     }
 
+    // RULE-EQUIP-002
     [Fact]
-    public void TransactionsResolveBySubmissionOrderWithinEachPlayer()
+    public void TransactionsResolveByRosterSlotWithinEachPlayer()
     {
         var data = BundledOriginalData.Load();
         var item = ResearchedWeapon(data);
         var match = CreateMatch(cash: 100, researchedItems: new HashSet<short> { item });
+        EnterCommand(match);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(11), GangAction.Equip, CommandTarget.Item(item))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Equip, CommandTarget.Item(item))).Accepted);
+        EnterTransaction(match);
+        match.Players[0].Cash = data.Items[item].Cost;
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([new GangId(10), new GangId(11)],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+        Assert.True(match.LastPhaseResolutions[0].Succeeded);
+        Assert.Equal(CommandResolutionCode.InsufficientCash, match.LastPhaseResolutions[1].Code);
+        Assert.Equal(item, match.FindGang(new GangId(10))!.WeaponItemId);
+        Assert.Null(match.FindGang(new GangId(11))!.WeaponItemId);
+    }
+
+    // DEV-EQUIP-001
+    [Fact]
+    public void UnderDevEquip001TransactionsResolveBySubmissionOrderWithinEachPlayer()
+    {
+        var data = BundledOriginalData.Load();
+        var item = ResearchedWeapon(data);
+        var match = CreateMatch(cash: 100, researchedItems: new HashSet<short> { item },
+            ruleRevisions: RuleRevisions.TransactionsInOrderGiven);
         EnterCommand(match);
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(11), GangAction.Equip, CommandTarget.Item(item))).Accepted);
@@ -518,7 +602,8 @@ public sealed class TransactionResolutionTests
         bool useLowTechGangs = false,
         IReadOnlyDictionary<short, int>? inventory = null,
         bool influencedFactory = false,
-        bool availableFactory = false)
+        bool availableFactory = false,
+        RuleRevisions ruleRevisions = RuleRevisions.None)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -526,7 +611,8 @@ public sealed class TransactionResolutionTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups,
+            ruleRevisions: ruleRevisions);
         var gangDefinition = useLowTechGangs
             ? data.Gangs.OrderBy(gang => gang.TechLevel).First()
             : data.Gangs.OrderByDescending(gang => gang.TechLevel).First();

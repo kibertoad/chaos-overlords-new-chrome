@@ -31,24 +31,9 @@ Most gameplay steps change how a turn resolves, so they bump `MULTIPLAYER_SESSIO
 To retire live matches once instead of once per step, land steps 2 to 9 on one branch and release
 them together with a single session bump, or accept one bump per release.
 
-## Step 1: Settle the open decisions
-
-These decide the shape of later steps, so they come first.
-
-- Four `mandatory` deviations change rule or AI results, where the Fidelity rules ask for a
-  setting that starts `off`: DEV-EQUIP-001 (cash in submission order), DEV-CONTROL-001 (only
-  players with a Control order compete), DEV-AI-001 (corrected hunter guard) and DEV-AI-002
-  (unplayable AI actions dropped). Decide for each whether it becomes a setting with the
-  original's behaviour as the default. Turning one into a setting adds the original's path to
-  the code and lets the validation suite reach it. Record the outcome in `docs/DECISIONS.md`.
-- Decide how the in-memory layouts FMT-STATE-001 to FMT-STATE-009 count as `complete`: either a
-  documented field-by-field equivalence in the row's notes, or a deviation for each place the
-  rebuild stores something different (the Force-0 marker for an empty roster slot where the
-  original writes sector 100 is one, RULE-GANG-002).
-
-Tooltips: the Equip tooltip already says purchases follow the player's click order. If
-DEV-EQUIP-001 becomes a setting, the text follows the setting, and with the setting off it
-describes the scan by player slot and roster slot.
+The Revised rules setting (the 2026-09-25 decision in `docs/DECISIONS.md`) holds the rebuild's
+corrections of rule and AI results. A step that adds the original's path for such a correction
+adds a `RuleRevisions` flag for it and keeps the correction behind the setting.
 
 ## Step 2: Split Tolerance into base and site parts
 
@@ -82,7 +67,9 @@ Crackdown test reads the new Tolerance.
 - Chaos pays in a sector under police presence unless that sector cracked down this turn
   (FND-CHAOS-002). Check whether gangs killed in this turn's combat are skipped, and match it.
 - Control settles only contested sectors without police, and adds the owner's defense to the
-  owner's own pool (FND-CONTROL-003). DEV-CONTROL-001 and DEV-CONTROL-002 stay as step 1 decides.
+  owner's own pool (FND-CONTROL-003). With Revised rules off every player enters the scan, as
+  BUG-CONTROL-001 describes; DEV-CONTROL-001 moves behind Revised rules (the 2026-09-25 decision
+  in `docs/DECISIONS.md`). DEV-CONTROL-002 stays mandatory.
 
 Tooltips: Chaos (when it pays and when a Crackdown follows), Control (which sectors are settled,
 how the owner's defense is pooled, the tie rule), and the Control statistic in
@@ -167,6 +154,10 @@ steps change.
   five contested draws and the unset Support threshold of FND-AI-062 and BUG-AI-006).
 - Sector selector mode 4 (FND-AI-056) against the rebuild's version.
 
+- DEV-AI-002 moves behind Revised rules (the 2026-09-25 decision in `docs/DECISIONS.md`): with
+  the setting off, a planned action that has no legal command is stored and resolved as the
+  original resolves it, the usual case being a Move to the gang's own sector.
+
 Both AI policies are affected; DEV-AI-003's Advanced AI keeps the original planner's commands.
 
 Tooltips: the Game Information panel's AI policy label and any hover text that describes how
@@ -179,8 +170,10 @@ computer players choose orders.
 - RULE-AUDIO-006: the turn-start sound plays only where the original plays it; check it with
   effects off (BUG-AUDIO-001).
 - RULE-RNG-001, RULE-TERMINATE-001 and RULE-GANG-002: their differences are covered by
-  deviations or by step 1's representation decision; confirm nothing else differs and mark them
-  `complete`.
+  deviations or by the representation decision of 2026-09-25; confirm nothing else differs and
+  mark them `complete`.
+- FMT-STATE-001 to FMT-STATE-009: map every field a rule reads or writes to the rebuild state
+  that holds it, as the 2026-09-25 decision asks, and mark each row by what the mapping shows.
 
 ## Step 10: Screens
 

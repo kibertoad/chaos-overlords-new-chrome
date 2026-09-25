@@ -8,7 +8,7 @@ namespace Rechaos.Game;
 public static class OptionsLayout
 {
     public static Rectangle Panel => new(80, 24, 480, 412);
-    public static Rectangle Done => new(264, 400, 112, 28);
+    public static Rectangle Done => new(264, 404, 112, 28);
     public static Rectangle Music => new(120, 52, 400, 58);
     public static Rectangle SoundEffects => new(120, 114, 400, 58);
     public static IReadOnlyList<Rectangle> MusicLevels { get; } =
@@ -19,15 +19,19 @@ public static class OptionsLayout
         Enumerable.Range(0, AudioRouting.MaximumEffectVolumeLevel + 1)
             .Select(level => new Rectangle(132 + level * 34, 140, 28, 28))
             .ToArray();
-    public static Rectangle BaseStatistics => new(150, 174, 340, 22);
-    public static Rectangle DetailedCombat => new(150, 198, 340, 22);
-    public static Rectangle SlidePanels => new(150, 222, 340, 22);
-    public static Rectangle WarnIfIdleGangs => new(150, 246, 340, 22);
-    public static Rectangle EventSiteImages => new(150, 270, 340, 22);
-    public static Rectangle AdvancedAi => new(150, 294, 340, 22);
-    public static Rectangle IntroOnlyOnce => new(150, 318, 340, 22);
-    public static Rectangle ExportDiagnostics => new(150, 342, 340, 22);
-    public static Rectangle ColorDepth => new(150, 368, 340, 16);
+    public static Rectangle BaseStatistics => new(150, 174, 340, 20);
+    public static Rectangle DetailedCombat => new(150, 196, 340, 20);
+    public static Rectangle SlidePanels => new(150, 218, 340, 20);
+    public static Rectangle WarnIfIdleGangs => new(150, 240, 340, 20);
+    public static Rectangle EventSiteImages => new(150, 262, 340, 20);
+    public static Rectangle AdvancedAi => new(150, 284, 340, 20);
+    public static Rectangle RevisedRules => new(150, 306, 340, 20);
+    public static Rectangle IntroOnlyOnce => new(150, 328, 340, 20);
+    public static Rectangle ExportDiagnostics => new(150, 350, 340, 20);
+    public static Rectangle ColorDepth => new(150, 372, 340, 16);
+
+    /// <summary>The top of the status line between the last toggle and Done.</summary>
+    public const int StatusY = 392;
     public static Rectangle OnlineLobbyPresentation => ColorDepth;
 
     /// <summary>The first row below the two volume sliders.</summary>
@@ -37,7 +41,7 @@ public static class OptionsLayout
     public static IReadOnlyList<Rectangle> ToggleRows { get; } =
     [
         BaseStatistics, DetailedCombat, SlidePanels, WarnIfIdleGangs, EventSiteImages, AdvancedAi,
-        IntroOnlyOnce, ExportDiagnostics, OnlineLobbyPresentation
+        RevisedRules, IntroOnlyOnce, ExportDiagnostics, OnlineLobbyPresentation
     ];
 }
 
@@ -69,6 +73,19 @@ public static class OptionsTooltip
                 "ADDS USEFUL FALLBACK COMMANDS FOR GANGS ORIGINAL AI LEAVES IDLE.",
                 "AT HIGHER DIFFICULTIES, HEALTHY GANGS MAY ALSO EXPAND.",
                 "SETS THE INITIAL AI POLICY FOR FUTURE NEW MATCHES.",
+                "IT DOES NOT CHANGE A MATCH ALREADY IN PROGRESS OR A LOADED SAVE."
+            ];
+        // DEV-EQUIP-001, DEV-AI-001: what the setting changes, as RULE-EQUIP-002 and BUG-AI-001
+        // describe the original.
+        if (OptionsLayout.RevisedRules.Contains(point))
+            return [
+                "REVISED RULES",
+                "OFF PLAYS THE ORIGINAL'S RULES. ON CHANGES TWO OF THEM:",
+                "EQUIP AND SELL CHANGE CASH IN THE ORDER YOU GAVE THEM,",
+                "WHERE THE ORIGINAL TAKES YOUR GANGS IN ROSTER-SLOT ORDER;",
+                "COMPUTER PLAYERS SKIP A HUNTER HIRE RIGHT AFTER ANOTHER,",
+                "WHERE THE ORIGINAL'S CHECK COMPARES THE WRONG NUMBER.",
+                "SETS THE RULES FOR FUTURE NEW MATCHES.",
                 "IT DOES NOT CHANGE A MATCH ALREADY IN PROGRESS OR A LOADED SAVE."
             ];
         if (OptionsLayout.IntroOnlyOnce.Contains(point))
@@ -150,11 +167,11 @@ public sealed partial class ChaosGame
     private void UpdateOptions(KeyboardState keyboard)
     {
         if (Pressed(keyboard, Keys.Up)) _optionsRow = Math.Max(0, _optionsRow - 1);
-        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(10, _optionsRow + 1);
+        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(11, _optionsRow + 1);
         if (Pressed(keyboard, Keys.Left)) ChangeSelectedVolume(-1);
         if (Pressed(keyboard, Keys.Right)) ChangeSelectedVolume(1);
         if (_optionsRow >= 2 && Pressed(keyboard, Keys.Space)) ToggleSelectedOption();
-        if (Pressed(keyboard, Keys.Enter) && _optionsRow == 9)
+        if (Pressed(keyboard, Keys.Enter) && _optionsRow == 10)
             ExportDiagnostics();
         else if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Back)
                  || Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.O))
@@ -198,7 +215,7 @@ public sealed partial class ChaosGame
                 _soundEffectVolumeLevel + delta,
                 AudioRouting.MinimumEffectVolumeLevel,
                 AudioRouting.MaximumEffectVolumeLevel));
-        else if (_optionsRow <= 10) ToggleSelectedOption();
+        else if (_optionsRow <= 11) ToggleSelectedOption();
     }
 
     private void ToggleSelectedOption()
@@ -209,9 +226,10 @@ public sealed partial class ChaosGame
         else if (_optionsRow == 5) ToggleIdleGangWarning();
         else if (_optionsRow == 6) ToggleEventSiteImageFilter();
         else if (_optionsRow == 7) ToggleAdvancedAi();
-        else if (_optionsRow == 8) ToggleIntroOnlyOnce();
-        else if (_optionsRow == 9) ExportDiagnostics();
-        else if (_optionsRow == 10) ToggleOnlineLobbyPresentation();
+        else if (_optionsRow == 8) ToggleRevisedRules();
+        else if (_optionsRow == 9) ToggleIntroOnlyOnce();
+        else if (_optionsRow == 10) ExportDiagnostics();
+        else if (_optionsRow == 11) ToggleOnlineLobbyPresentation();
     }
 
     private void ToggleBaseStatistics()
@@ -307,6 +325,17 @@ public sealed partial class ChaosGame
             : "APPLIES TO THE NEXT NEW GAME ONLY";
     }
 
+    private void ToggleRevisedRules()
+    {
+        _revisedRules = !_revisedRules;
+        SavePreferences();
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _message = string.Empty;
+        _optionsStatus = _state is null
+            ? string.Empty
+            : "APPLIES TO THE NEXT NEW GAME ONLY";
+    }
+
     private void ToggleOnlineLobbyPresentation()
     {
         _onlineLobbyPresentation = _onlineLobbyPresentation == OnlineLobbyPresentation.Modern
@@ -355,7 +384,8 @@ public sealed partial class ChaosGame
                 _online.Service,
                 _online.Server.Value,
                 _onlineLobbyPresentation,
-                _introOnlyOnce));
+                _introOnlyOnce,
+                _localSetupBeforeLobby?.RevisedRules ?? _revisedRules));
 
     private void ToggleFullscreen()
     {
@@ -411,18 +441,20 @@ public sealed partial class ChaosGame
             $"EVENT SITE IMAGES: {(_smoothEventSiteImages ? "SMOOTH" : "ORIGINAL")}", 6);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.AdvancedAi,
             $"ADVANCED AI: {(_defaultAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 7);
+        DrawOptionToggle(batch, pixel, font, OptionsLayout.RevisedRules,
+            $"REVISED RULES: {(_revisedRules ? "ON" : "OFF")}", 8);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.IntroOnlyOnce,
-            $"INTRO ONLY ONCE: {(_introOnlyOnce ? "ON" : "OFF")}", 8);
+            $"INTRO ONLY ONCE: {(_introOnlyOnce ? "ON" : "OFF")}", 9);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ExportDiagnostics,
-            "EXPORT DIAGNOSTICS", 9);
+            "EXPORT DIAGNOSTICS", 10);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.OnlineLobbyPresentation,
-            $"ONLINE LOBBY: {(_onlineLobbyPresentation == OnlineLobbyPresentation.Classic ? "CLASSIC" : "MODERN")}", 10);
+            $"ONLINE LOBBY: {(_onlineLobbyPresentation == OnlineLobbyPresentation.Classic ? "CLASSIC" : "MODERN")}", 11);
 
         DrawCentered(font, batch,
             string.IsNullOrEmpty(_optionsStatus)
                 ? "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS"
                 : _optionsStatus,
-            388,
+            OptionsLayout.StatusY,
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
         if (_hoverPoint is { } hover)

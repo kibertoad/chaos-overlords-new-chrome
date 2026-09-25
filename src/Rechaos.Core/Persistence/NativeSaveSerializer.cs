@@ -14,7 +14,7 @@ public static class NativeSaveSerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
-    public const int CurrentFormatVersion = 28;
+    public const int CurrentFormatVersion = 29;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -151,7 +151,8 @@ public static class NativeSaveSerializer
                 new PlayerId(player.Id), player.Name, player.Controller, player.PortraitId)).ToArray(),
             document.Setup.AiMentality,
             aiPolicy: document.Setup.AiPolicy
-                ?? throw new InvalidDataException("Native save AI policy is missing."));
+                ?? throw new InvalidDataException("Native save AI policy is missing."),
+            ruleRevisions: document.Setup.RuleRevisions);
         var players = document.Players
             .Select(player => RestorePlayer(setup, player))
             .ToArray();
@@ -260,7 +261,8 @@ public static class NativeSaveSerializer
             state.Setup.Players.Select(player => new PlayerSetupDocument(
                 player.Id.Value, player.Name, player.Controller, player.PortraitId)).ToArray(),
             state.Setup.AiMentality,
-            state.Setup.AiPolicy),
+            state.Setup.AiPolicy,
+            state.Setup.RuleRevisions),
         state.Players.Select(CapturePlayer).ToArray(),
         state.Sectors.Select(CaptureSector).ToArray(),
         new RuntimeDocument(
@@ -503,7 +505,8 @@ internal sealed record MatchSetupDocument(
     int InitialSeed,
     IReadOnlyList<PlayerSetupDocument> Players,
     AiDifficulty AiMentality = AiDifficulty.Criminal,
-    AiPolicyMode? AiPolicy = null);
+    AiPolicyMode? AiPolicy = null,
+    RuleRevisions RuleRevisions = RuleRevisions.None);
 
 internal sealed record PlayerSetupDocument(
     int Id,

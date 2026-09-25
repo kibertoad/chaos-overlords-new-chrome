@@ -436,6 +436,7 @@ public sealed class UiNavigationTests
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.SlidePanels));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.AdvancedAi));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.RevisedRules));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.IntroOnlyOnce));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ExportDiagnostics));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
@@ -455,6 +456,7 @@ public sealed class UiNavigationTests
             OptionsLayout.WarnIfIdleGangs,
             OptionsLayout.EventSiteImages,
             OptionsLayout.AdvancedAi,
+            OptionsLayout.RevisedRules,
             OptionsLayout.IntroOnlyOnce,
             OptionsLayout.ExportDiagnostics,
             OptionsLayout.ColorDepth,

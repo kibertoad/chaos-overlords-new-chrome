@@ -151,6 +151,11 @@ presentation-only conveniences that make the original systems easier to read:
   remains the compatibility default. Game Information retains the native AI
   Mentality field and appends the stored `ORIGINAL` or `ADVANCED` policy label
   so that this deliberate gameplay choice is visible during a match.
+- Revised rules is an Options choice, off by default, that a new match keeps for
+  its whole life. Off plays the original's rules. On makes Equip and Sell change
+  cash in the order the player gave them instead of the order of the gang
+  roster, and corrects the computer players' check against hiring two hunter
+  gangs in a row (DEV-EQUIP-001, DEV-AI-001).
 - Online lobbies retain modern display names, while a started match uses the
   original game's deterministic ten-character, upper-case name record. Names
   that would become a native cheat code under that projection are refused and

@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 104 |
+| `supported` | 102 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 117 |
+| `implemented` | 119 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 20 |
-| `partial` | 85 |
-| `complete` | 117 |
+| `partial` | 83 |
+| `complete` | 119 |
 
 ## DATA
 
@@ -232,8 +232,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-EQUIP-001` | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | supported | partial | None | `DEV-EQUIP-001` | supported | Cash is tested in the player's submission order instead of roster order (see deviations). |
-| `RULE-EQUIP-002` | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported | partial | None | `DEV-EQUIP-001` | supported | Equip and Sell resolve in submission order instead of the roster scan; Give keeps the deferred roster-ordered deliveries. |
+| `RULE-EQUIP-001` | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | supported | complete | None | `DEV-EQUIP-001` | implemented | Cash is tested at the gang's place in the roster scan; the Revised rules setting tests it in submission order instead. The failed-Equip report is compared under RULE-EVENT-014. |
+| `RULE-EQUIP-002` | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported | complete | None | `DEV-EQUIP-001` | implemented | The rebuild empties every giver's slots before the scan and delivers after all players' scans; no Equip or Sell reads a giver's or recipient's slot in between, so the result is the same. The Revised rules setting resolves Equip and Sell in submission order. |
 | `RULE-EQUIP-003` | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported | complete | None | None | implemented | None |
 | `RULE-EQUIP-004` | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported | complete | None | None | implemented | None |
 | `SCR-EQUIP-001` | Equip panel | supported | partial | None | `DEV-EQUIP-002` | supported | Category cells and list area follow the original; the controls, fonts and keys are not pinned, and the rebuild adds a held-items row. |
@@ -325,7 +325,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | complete | None | None | implemented | Mode 0 draws one of the eight neighbours with roll(8) and draws again off the map, with no capacity test. |
 | `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | supported | complete | None | None | implemented | None |
 | `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | None | None | implemented | None |
-| `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | partial | None | `DEV-AI-001` | supported | The rebuild deliberately compares the previous hire role with role 4 in the hunter guards (BUG-AI-001). The per-scenario slot adjustments and the hunter reversion of FND-AI-050 are not checked against the rebuild. |
+| `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | partial | None | `DEV-AI-001` | supported | The hunter guards compare the previous hire role with the schedule slot number, as the original does (BUG-AI-001); the Revised rules setting compares it with role 4. The per-scenario slot adjustments and the hunter reversion of FND-AI-050 are not checked against the rebuild. |
 | `RULE-AI-011` | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported | complete | None | None | implemented | None |
 | `RULE-AI-012` | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported | complete | None | None | implemented | None |
 | `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | partial | None | None | supported | Placement is carried out in the Hire phase. The rebuild always replaces an anchor of 63, where the original keeps it for player 0 while sector 0, 6, 7 or 8 is free land (FND-AI-051). |

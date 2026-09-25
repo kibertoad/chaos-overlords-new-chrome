@@ -15,6 +15,9 @@ public static class OriginalOptionsPolicy
 
     /// <summary>DEV-VIDEO-003: the original plays the intro at every start.</summary>
     public const bool IntroOnlyOnceByDefault = false;
+
+    /// <summary>DEV-EQUIP-001, DEV-AI-001: a new match follows the original's rules.</summary>
+    public const bool RevisedRulesByDefault = false;
 }
 
 /// <summary>Which coordination service the Online screen uses.</summary>
@@ -47,7 +50,8 @@ public sealed record GamePreferences(
     OnlineServiceMode OnlineService,
     string CustomMultiplayerServer,
     OnlineLobbyPresentation LobbyPresentation = OnlineLobbyPresentation.Modern,
-    bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault)
+    bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault,
+    bool RevisedRules = OriginalOptionsPolicy.RevisedRulesByDefault)
 {
     public const int CurrentFormatVersion = 12;
     public const string DefaultCustomMultiplayerServer = "http://localhost:8787";

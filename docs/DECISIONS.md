@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-25 | [Put rule and AI corrections behind a Revised rules setting](#2026-09-25--put-rule-and-ai-corrections-behind-a-revised-rules-setting) |
 | 2026-09-25 | [Play the intro at every start unless Intro only once is on](#2026-09-25--play-the-intro-at-every-start-unless-intro-only-once-is-on) |
 | 2026-09-24 | [Record the gangs that fought in each combat event](#2026-09-24--record-the-gangs-that-fought-in-each-combat-event) |
 | 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
@@ -36,6 +37,40 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-25 — Put rule and AI corrections behind a Revised rules setting
+
+- Decision: four deviations that were `mandatory` change what a rule or a computer player
+  produces, so each becomes part of one match setting, Revised rules, that starts off and plays
+  the original's behaviour. DEV-EQUIP-001 (Equip and Sell in the order given) and DEV-AI-001
+  (the corrected hunter guard) move behind it now. DEV-CONTROL-001 (only players with a Control
+  order compete) joins it when Control is brought in line with FND-CONTROL-003, and DEV-AI-002
+  (planned actions with no legal command are dropped) when the computer players' handlers are,
+  since both rewrite the code the original's path runs in. DEV-CONTROL-002 stays mandatory: it
+  adds a report and the owner of the sector is the same either way.
+- Reason: the Fidelity rules keep the original's rules and AI, and let a fix start on only when
+  the original's behaviour is an unintended bug that players do not rely on. None of the four
+  meets that bar. DEV-EQUIP-001 changes a design, not a bug. BUG-AI-001 and BUG-CONTROL-001 are
+  unintended, but their player reliance is unknown, and BUG-AI-001 leaves open a reading under
+  which the comparison is deliberate. DEV-AI-002 changes which action a computer gang resolves.
+  A setting also puts the original's path in the code, where the validation suite, which runs
+  with every setting off, can reach it.
+- One setting instead of four: the Options panel has room for one more row, and a player
+  choosing between the original and the rebuild's corrections has no use for picking them
+  apart. Each deviation still names the setting, and the code tests one flag per deviation
+  (`RuleRevisions`), so they can be split later without changing a stored match.
+- Storage: the setting is chosen for a new match from the client preference and kept by the
+  match. It enters the match setup, the state fingerprint, the native save and the online
+  game settings, so the fingerprint encoding (v4), native saves (v29), replays (v33) and the
+  multiplayer session version (14) move together. The client preference is an optional field of
+  preferences format v12 that an older file reads as off.
+- In-memory layouts: a FMT-STATE entry counts as `complete` when its row's notes, or a document
+  they link, map every field a rule reads or writes to the rebuild state that holds the same
+  value at the same point. A difference of representation that no rule result can observe, such
+  as the Force-0 marker of an empty roster slot where the original writes sector 100
+  (RULE-GANG-002), needs no deviation. A field the rebuild holds with a different value, or
+  does not hold where a rule reads it, keeps the row `partial` until the rule is fixed or a
+  deviation covers it.
 
 ## 2026-09-25 — Play the intro at every start unless Intro only once is on
 

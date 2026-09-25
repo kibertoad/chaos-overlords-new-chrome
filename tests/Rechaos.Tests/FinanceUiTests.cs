@@ -60,10 +60,33 @@ public sealed class FinanceUiTests
         Assert.Equal(baseline.GangUpkeep - recruit.Upkeep, projected.GangUpkeep);
     }
 
+    // RULE-EQUIP-002: the list follows the resolver, which takes Equips in roster-slot order.
     [Fact]
-    public void UnspentCashListsEveryPurchaseInSubmissionOrder()
+    public void UnspentCashListsEveryPurchaseInRosterSlotOrder()
     {
         var state = CreatePlanningMatch();
+        var player = state.Players[0];
+        var first = player.Gangs.Single(gang => gang.IsActive);
+        var second = new MatchGangState(new GangId(900), player.Id,
+            first.DefinitionId, first.SectorId, 5);
+        player.AddGang(second);
+        var item = state.Definitions.Items[0];
+
+        Assert.True(state.Submit(new GameCommand(player.Id, second.Id,
+            GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
+        Assert.True(state.Submit(new GameCommand(player.Id, first.Id,
+            GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
+
+        var spends = StatusConsolePresentation.QueuedCashSpends(state, player);
+        Assert.Equal([first.Id, second.Id], spends.Select(spend => spend.Gang).ToArray());
+        Assert.Equal([1, 2], spends.Select(spend => spend.Position).ToArray());
+    }
+
+    // DEV-EQUIP-001
+    [Fact]
+    public void UnderDevEquip001UnspentCashListsEveryPurchaseInSubmissionOrder()
+    {
+        var state = CreatePlanningMatch(RuleRevisions.TransactionsInOrderGiven);
         var player = state.Players[0];
         var first = player.Gangs.Single(gang => gang.IsActive);
         var second = new MatchGangState(new GangId(900), player.Id,
@@ -250,14 +273,15 @@ public sealed class FinanceUiTests
         Assert.Equal(EquipmentRules.SaleValue(miscellaneous), projection.Equipment);
     }
 
-    private static MatchState CreatePlanningMatch()
+    private static MatchState CreatePlanningMatch(RuleRevisions ruleRevisions = RuleRevisions.None)
     {
         var definitions = BundledOriginalData.Load();
         var setup = new MatchSetup(
             ScenarioId.Greed,
             GameDuration.SixMonths,
             1996,
-            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]);
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)],
+            ruleRevisions: ruleRevisions);
         var state = OriginalMatchFactory.Create(definitions, setup);
         GameplayTurnFlow.AdvanceToPlanning(new MatchReplayRecorder(state));
         return state;

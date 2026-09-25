@@ -214,7 +214,7 @@ public sealed partial class ChaosGame
         if (!TryBeginLobby() || !RequireUsableName()) return;
         var settings = new MultiplayerGameSettings(
             _selectedScenario, _selectedDuration, _selectedAiMentality, _playerPortraits,
-            _defaultAiPolicy, _online.AllowLateJoin);
+            _defaultAiPolicy, _online.AllowLateJoin, SelectedRuleRevisions);
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "HOSTING";
         _online.JoinedInProgress = false;

@@ -128,7 +128,7 @@ public sealed record QueuedCommand(long Sequence, GameCommand Command)
 /// Deterministic command storage for a turn. Replacement receives a new sequence
 /// number to preserve submission chronology in replays and persisted state.
 /// Each mutating phase resolver chooses its action-specific order before it consumes RNG or
-/// changes match state. Cash transactions use submission order by deliberate deviation.
+/// changes match state. Cash transactions use submission order only under DEV-EQUIP-001.
 /// </summary>
 public sealed class TurnCommandQueue
 {

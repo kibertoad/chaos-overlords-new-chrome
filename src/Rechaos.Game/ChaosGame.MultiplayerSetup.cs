@@ -61,7 +61,7 @@ public sealed partial class ChaosGame
         if (!CanConfigureOnlineLobby() || _lobby is null || _online.Match is not { } match) return;
         var game = new MultiplayerGameSettings(
             _selectedScenario, _selectedDuration, _selectedAiMentality, _playerPortraits,
-            _defaultAiPolicy, _online.AllowLateJoin);
+            _defaultAiPolicy, _online.AllowLateJoin, SelectedRuleRevisions);
         _lobby.UpdateSettings(new MatchSettings(
             SessionNameOrDefault(),
             match.Settings.MaxPlayers,
@@ -104,6 +104,7 @@ public sealed partial class ChaosGame
         _selectedDuration = settings.Duration;
         _selectedAiMentality = settings.AiMentality;
         _defaultAiPolicy = settings.AiPolicy;
+        _revisedRules = settings.RuleRevisions != RuleRevisions.None;
         _online.AllowLateJoin = settings.AllowLateJoin;
         for (var slot = 0; slot < _playerPortraits.Length; slot++)
             _playerPortraits[slot] = settings.Portraits[slot];
@@ -133,7 +134,8 @@ public sealed partial class ChaosGame
             _selectedAiMentality,
             _selectedPlanningTimeLimit,
             _defaultAiPolicy,
-            _playerPortraits.ToArray());
+            _playerPortraits.ToArray(),
+            _revisedRules);
     }
 
     /// <summary>Gives the player their own setup back when the online match is over.</summary>
@@ -146,6 +148,7 @@ public sealed partial class ChaosGame
         _selectedAiMentality = local.AiMentality;
         _selectedPlanningTimeLimit = local.PlanningTimeLimit;
         _defaultAiPolicy = local.AiPolicy;
+        _revisedRules = local.RevisedRules;
         for (var slot = 0; slot < _playerPortraits.Length; slot++)
             _playerPortraits[slot] = local.Portraits[slot];
         SavePreferences();
@@ -203,4 +206,5 @@ internal sealed record LocalSetupChoices(
     AiDifficulty AiMentality,
     PlanningTimeLimit PlanningTimeLimit,
     AiPolicyMode AiPolicy,
-    short[] Portraits);
+    short[] Portraits,
+    bool RevisedRules);

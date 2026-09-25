@@ -631,7 +631,7 @@ public sealed class OriginalAiHireRoleRulesTests
     [InlineData(ScenarioId.Acceptance, 0, 0, 1)]
     [InlineData(ScenarioId.Dominance, 0, 0, 1)]
     [InlineData(ScenarioId.Armageddon, 0, 0, 0)]
-    public void PriorFamilySixRoleSuppressesTheScenarioSpecificFamilySixSlot(
+    public void UnderDevAi001APriorFamilySixRoleSuppressesTheFamilySixSlot(
         ScenarioId scenario,
         int turn,
         int expectedMode,
@@ -642,11 +642,72 @@ public sealed class OriginalAiHireRoleRulesTests
             hasFamily6CoveringFirstHostileSector: false,
             family2Count: 1,
             family3Count: 1,
-            previousRole: 4);
+            previousRole: 4) with { CorrectedHunterGuard = true };
 
         Assert.Equal(
             new OriginalAiHireRoleSelection(expectedMode, expectedRole),
             OriginalAiHireRoleRules.SelectAdjusted(scenario, turn, inputs));
+    }
+
+    // BUG-AI-001: the original guard compares the previous hire role with the slot number, so a
+    // family-6 hire (role 4) never suppresses the next one.
+    [Theory]
+    [InlineData(ScenarioId.Greed)]
+    [InlineData(ScenarioId.Power)]
+    [InlineData(ScenarioId.Acceptance)]
+    [InlineData(ScenarioId.Dominance)]
+    [InlineData(ScenarioId.Armageddon)]
+    public void TheOriginalGuardLetsAFamilySixHireFollowAnother(ScenarioId scenario)
+    {
+        var inputs = PowerInputs(
+            hasVisibleHostileSector: true,
+            hasFamily6CoveringFirstHostileSector: false,
+            family2Count: 1,
+            family3Count: 1,
+            previousRole: 4);
+
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(3, 4),
+            OriginalAiHireRoleRules.SelectAdjusted(scenario, turn: 0, inputs));
+    }
+
+    // BUG-AI-001: the original guard fires on a previous role equal to the scenario's slot number.
+    [Theory]
+    [InlineData(ScenarioId.Greed, 5, 0, 1)]
+    [InlineData(ScenarioId.Power, 6, 0, 0)]
+    [InlineData(ScenarioId.Acceptance, 2, 0, 1)]
+    [InlineData(ScenarioId.Armageddon, 5, 0, 0)]
+    public void TheOriginalGuardFiresOnAPreviousRoleEqualToTheSlotNumber(
+        ScenarioId scenario,
+        int previousRole,
+        int expectedMode,
+        int expectedRole)
+    {
+        var inputs = PowerInputs(
+            hasVisibleHostileSector: true,
+            hasFamily6CoveringFirstHostileSector: false,
+            family2Count: 1,
+            family3Count: 1,
+            previousRole: previousRole);
+
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(expectedMode, expectedRole),
+            OriginalAiHireRoleRules.SelectAdjusted(scenario, turn: 0, inputs));
+    }
+
+    [Fact]
+    public void UnderDevAi001APreviousRoleEqualToTheSlotNumberNoLongerSuppresses()
+    {
+        var inputs = PowerInputs(
+            hasVisibleHostileSector: true,
+            hasFamily6CoveringFirstHostileSector: false,
+            family2Count: 1,
+            family3Count: 1,
+            previousRole: 5) with { CorrectedHunterGuard = true };
+
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(3, 4),
+            OriginalAiHireRoleRules.SelectAdjusted(ScenarioId.Greed, turn: 0, inputs));
     }
 
     [Theory]
