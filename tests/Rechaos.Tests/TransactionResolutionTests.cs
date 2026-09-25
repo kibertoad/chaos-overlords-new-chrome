@@ -368,6 +368,60 @@ public sealed class TransactionResolutionTests
         Assert.Equal(proceeds, Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.CashDelta);
     }
 
+    // RULE-SELL-001, BUG-SELL-001, FMT-STATE-001: the mask is handled weapon, armor, then
+    // miscellaneous, and each selected slot overwrites the value, so a weapon and armor sold
+    // together pay only for the armor, whichever order the panel listed them in.
+    [Fact]
+    public void SellOfWeaponAndArmorPaysOnlyTheArmor()
+    {
+        var data = BundledOriginalData.Load();
+        var weapon = data.Items.First(item => item.Type is >= 0 and <= 2 && item.Cost > 1).Id;
+        var armor = data.Items.First(item => item.Type == 3 && item.Cost > 1).Id;
+        var match = CreateMatch(cash: 100, actorWeapon: weapon);
+        var gang = match.FindGang(new GangId(10))!;
+        gang.ArmorItemId = armor;
+        EnterCommand(match);
+        Assert.True(match.Submit(new GameCommand(new PlayerId(0), gang.Id, GangAction.Sell,
+            CommandTarget.Item(armor), SecondaryTarget: CommandTarget.Item(weapon))).Accepted);
+        EnterTransaction(match);
+        var cashBefore = match.Players[0].Cash;
+
+        match.FinishExecutionPhase();
+
+        Assert.Null(gang.WeaponItemId);
+        Assert.Null(gang.ArmorItemId);
+        Assert.Equal(cashBefore + EquipmentRules.SaleValue(data.Items[armor]), match.Players[0].Cash);
+    }
+
+    // RULE-GIVE-001, RULE-EQUIP-002, FMT-STATE-001: two gangs that give a weapon to the same
+    // recipient write the same pending slot in roster order, so the later slot's weapon arrives
+    // and the earlier giver's weapon is lost. Both givers are emptied.
+    [Fact]
+    public void LaterRosterSlotsGiveToTheSameRecipientReplacesTheEarlierOne()
+    {
+        var data = BundledOriginalData.Load();
+        var weapons = data.Items.Where(item => item.Type is >= 0 and <= 2)
+            .Take(2).Select(item => item.Id).ToArray();
+        var match = CreateMatch(cash: 100, actorWeapon: weapons[0], thirdGangWeapon: weapons[1]);
+        var first = match.FindGang(new GangId(10))!;
+        var recipient = match.FindGang(new GangId(11))!;
+        var third = match.FindGang(new GangId(12))!;
+        EnterCommand(match);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), third.Id, GangAction.Give, CommandTarget.Gang(recipient.Id),
+            SecondaryTarget: CommandTarget.Item(weapons[1]))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), first.Id, GangAction.Give, CommandTarget.Gang(recipient.Id),
+            SecondaryTarget: CommandTarget.Item(weapons[0]))).Accepted);
+        EnterTransaction(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Null(first.WeaponItemId);
+        Assert.Null(third.WeaponItemId);
+        Assert.Equal(weapons[1], recipient.WeaponItemId);
+    }
+
     [Fact]
     public void SellRejectsDuplicateOrGappedAdditionalTargets()
     {
@@ -518,7 +572,8 @@ public sealed class TransactionResolutionTests
         bool useLowTechGangs = false,
         IReadOnlyDictionary<short, int>? inventory = null,
         bool influencedFactory = false,
-        bool availableFactory = false)
+        bool availableFactory = false,
+        short? thirdGangWeapon = null)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -550,7 +605,11 @@ public sealed class TransactionResolutionTests
                 new MatchGangState(new GangId(10), new PlayerId(0), gangDefinition.Id, 0, 5,
                     actorWeapon, actorArmor, actorMiscellaneous),
                 new MatchGangState(new GangId(11), new PlayerId(0), gangDefinition.Id, 0, 5,
-                    weaponItemId: targetWeapon)
+                    weaponItemId: targetWeapon),
+                .. thirdGangWeapon is { } third
+                    ? [new MatchGangState(new GangId(12), new PlayerId(0), gangDefinition.Id, 0, 5,
+                        weaponItemId: third)]
+                    : Array.Empty<MatchGangState>()
             ], researchedItems: researchedItems, inventory: inventory),
             new(setup.Players[1], 500,
                 [new MatchGangState(new GangId(20), new PlayerId(1), gangDefinition.Id, 0, 5)])

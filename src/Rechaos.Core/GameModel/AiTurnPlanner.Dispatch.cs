@@ -18,7 +18,7 @@ public static partial class AiTurnPlanner
             MatchState state,
             MatchPlayerState player) => new(
             state.Sectors.Select(sector => sector.Owner?.Value ?? -1).ToArray(),
-            state.Sectors.Select(sector => sector.CrackdownActive).ToArray(),
+            state.Sectors.Select(sector => sector.HasCrackdownTurns).ToArray(),
             Enumerable.Range(0, MatchLimits.SectorCount)
                 .Select(sectorId => player.Gangs.Count(gang =>
                     gang.IsActive && gang.SectorId == sectorId))

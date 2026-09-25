@@ -308,19 +308,8 @@ public sealed partial class ChaosGame
     private static string EventObject(MatchState state, GameNotification notification)
     {
         var related = RelatedEvent(state, notification);
-        if (related?.Elimination is { } elimination)
-            return state.FindPlayer(elimination.EliminatedPlayer)?.Setup.Name.ToUpperInvariant()
-                ?? $"PLAYER {elimination.EliminatedPlayer.Value + 1}";
-        if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId)
-            return state.Definitions.Items[itemId].Name;
-        if (LastTurnEventPresentation.InfluenceSiteObject(state, notification, related) is { } site)
-            return site;
-        if (related?.Hire is { } hire)
-            return state.Definitions.Gang(hire.GangDefinitionId).Name;
-        if (notification.Gang is { } gangId && state.FindCombatant(related, gangId) is { } gang)
-            return state.Definitions.Gang(gang.DefinitionId).Name;
-        if (notification.SectorId is { } sectorId) return SectorCode(sectorId);
-        return notification.Kind.ToString().ToUpperInvariant();
+        return LastTurnEventPresentation.Subject(
+            state, LastTurnEventPresentation.Record(state, notification, related));
     }
 
     /// <summary>
@@ -513,34 +502,166 @@ public sealed class LastTurnEventArchive
         IReadOnlyList<GameNotification> Reports);
 }
 
+/// <summary>
+/// One FMT-STATE-006 Last Turn report record: `report_type` and its three arguments.
+/// </summary>
+public readonly record struct LastTurnReportRecord(int Type, int Arg1, int Arg2, int Arg3)
+{
+    public const int Crackdown = 1;
+    public const int ControlGained = 2;
+    public const int ControlLost = 3;
+    public const int SiteCompleted = 4;
+    public const int ResearchCompleted = 5;
+    public const int CashShort = 6;
+    public const int HireSectorFull = 7;
+    public const int HireRosterFull = 8;
+    public const int Elimination = 9;
+
+    /// <summary>`arg1` of a cash report: the order that failed.</summary>
+    public const int CashShortBribe = 1;
+    public const int CashShortEquip = 2;
+    public const int CashShortHire = 4;
+}
+
 public static class LastTurnEventPresentation
 {
     public const int NativeDitherPatternSize = 8;
 
-    public static int ArtworkIndex(GameNotification notification, GameEvent? relatedEvent)
+    /// <summary>
+    /// SCR-EVENT-001: the illustration is resource 6000 plus the report type, for every type from
+    /// 1 to 9 (FMT-STATE-006). Types 4 and 5 draw theirs over the site picture and under the
+    /// researched item.
+    /// </summary>
+    public static int ArtworkIndex(GameNotification notification, GameEvent? relatedEvent) =>
+        ReportType(notification, relatedEvent);
+
+    /// <summary>
+    /// FMT-STATE-006 `report_type` of a report, or 0 for a notification the original does not
+    /// record (RULE-EVENT-002).
+    /// </summary>
+    public static int ReportType(GameNotification notification, GameEvent? relatedEvent)
     {
         ArgumentNullException.ThrowIfNull(notification);
-        if (relatedEvent is
-            {
-                Kind: GameEventKind.CommandFailed,
-                Action: GangAction.Bribe or GangAction.Equip,
-                Resolution.Code: CommandResolutionCode.InsufficientCash
-            })
-            return 6;
+        if (IsCashShortCommand(relatedEvent)) return LastTurnReportRecord.CashShort;
         return notification.Kind switch
         {
-            GameNotificationKind.Crackdown => 1,
-            GameNotificationKind.Control => 2,
-            GameNotificationKind.ControlLost => 3,
-            GameNotificationKind.Elimination when relatedEvent?.Kind == GameEventKind.PlayerEliminated => 9,
-            GameNotificationKind.Elimination => 4,
-            GameNotificationKind.Research => 5,
-            GameNotificationKind.Influence => 4,
-            GameNotificationKind.HireInsufficientCash => 6,
-            GameNotificationKind.Objective => 7,
+            GameNotificationKind.Crackdown => LastTurnReportRecord.Crackdown,
+            GameNotificationKind.Control => LastTurnReportRecord.ControlGained,
+            GameNotificationKind.ControlLost => LastTurnReportRecord.ControlLost,
+            GameNotificationKind.Influence => LastTurnReportRecord.SiteCompleted,
+            GameNotificationKind.Research => LastTurnReportRecord.ResearchCompleted,
+            GameNotificationKind.HireInsufficientCash => LastTurnReportRecord.CashShort,
+            GameNotificationKind.HireSectorFull => LastTurnReportRecord.HireSectorFull,
+            GameNotificationKind.HireGangLimit => LastTurnReportRecord.HireRosterFull,
+            GameNotificationKind.Elimination when relatedEvent?.Kind == GameEventKind.PlayerEliminated =>
+                LastTurnReportRecord.Elimination,
             _ => 0
         };
     }
+
+    /// <summary>
+    /// The FMT-STATE-006 record the original stores for a report, rebuilt from the notification
+    /// and its event. The recording rules fill the arguments: RULE-EVENT-004 (Crackdown),
+    /// RULE-EVENT-012 and RULE-EVENT-013 (Control), RULE-EVENT-006 (site), RULE-EVENT-007
+    /// (Research), RULE-EVENT-008, RULE-EVENT-014 and RULE-EVENT-009 (cash), RULE-EVENT-010 and
+    /// RULE-EVENT-011 (hire) and RULE-EVENT-003 (elimination). The `arg2` of both Control reports
+    /// names the other player, which the panel never reads; the rebuild fills it only where its
+    /// event carries it and writes -1 otherwise.
+    /// </summary>
+    public static LastTurnReportRecord Record(
+        MatchState state,
+        GameNotification notification,
+        GameEvent? relatedEvent)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var type = ReportType(notification, relatedEvent);
+        var sector = notification.SectorId ?? -1;
+        if (IsCashShortCommand(relatedEvent))
+        {
+            if (relatedEvent!.Action == GangAction.Bribe)
+                return new(type, LastTurnReportRecord.CashShortBribe, sector, 0);
+            var definition = relatedEvent.Gang is { } gangId
+                && state.FindCombatant(relatedEvent, gangId) is { } gang
+                    ? gang.DefinitionId
+                    : -1;
+            return new(type, LastTurnReportRecord.CashShortEquip, sector, definition);
+        }
+        return type switch
+        {
+            LastTurnReportRecord.Crackdown or LastTurnReportRecord.HireSectorFull =>
+                new(type, sector, 0, 0),
+            LastTurnReportRecord.ControlGained =>
+                new(type, sector, relatedEvent?.Resolution?.PreviousValue ?? -1, 0),
+            LastTurnReportRecord.ControlLost => new(type, sector, -1, 0),
+            LastTurnReportRecord.SiteCompleted
+                when InfluenceSiteId(notification, relatedEvent) is { } site =>
+                new(type, site / MatchLimits.SitesPerSector, site % MatchLimits.SitesPerSector, 0),
+            LastTurnReportRecord.ResearchCompleted
+                when ResearchItemId(notification, relatedEvent) is { } item =>
+                new(type, item, 0, 0),
+            LastTurnReportRecord.CashShort when relatedEvent?.Hire is { } hire =>
+                new(type, LastTurnReportRecord.CashShortHire, hire.GangDefinitionId, 0),
+            LastTurnReportRecord.HireRosterFull when relatedEvent?.Hire is { } hire =>
+                new(type, hire.GangDefinitionId, 0, 0),
+            LastTurnReportRecord.Elimination when relatedEvent?.Elimination is { } elimination =>
+                new(type, elimination.EliminatedPlayer.Value, 0, 0),
+            _ => new(0, 0, 0, 0)
+        };
+    }
+
+    /// <summary>
+    /// SCR-EVENT-001: the subject line of a report, from its FMT-STATE-006 arguments. A sector is
+    /// shown by its label, a site report adds the name of the site now in slot `arg2`, and a cash
+    /// report for Equip adds the gang's definition name cut to 20 characters.
+    /// </summary>
+    public static string Subject(MatchState state, LastTurnReportRecord record)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return record.Type switch
+        {
+            LastTurnReportRecord.Crackdown or LastTurnReportRecord.ControlGained
+                or LastTurnReportRecord.ControlLost or LastTurnReportRecord.HireSectorFull =>
+                SectorLabel(record.Arg1),
+            LastTurnReportRecord.SiteCompleted =>
+                $"{SectorLabel(record.Arg1)}:{SiteName(state, record.Arg1, record.Arg2)}",
+            LastTurnReportRecord.ResearchCompleted => state.Definitions.Items[record.Arg1].Name,
+            LastTurnReportRecord.CashShort => record.Arg1 switch
+            {
+                LastTurnReportRecord.CashShortBribe => SectorLabel(record.Arg2),
+                LastTurnReportRecord.CashShortEquip when record.Arg3 >= 0 =>
+                    $"{SectorLabel(record.Arg2)}:{Cut(GangName(state, record.Arg3), 20)}",
+                LastTurnReportRecord.CashShortEquip => SectorLabel(record.Arg2),
+                LastTurnReportRecord.CashShortHire => GangName(state, record.Arg2),
+                _ => string.Empty
+            },
+            LastTurnReportRecord.HireRosterFull => GangName(state, record.Arg1),
+            LastTurnReportRecord.Elimination =>
+                state.FindPlayer(new PlayerId(record.Arg1))?.Setup.Name.ToUpperInvariant()
+                    ?? $"PLAYER {record.Arg1 + 1}",
+            _ => string.Empty
+        };
+
+        static string SectorLabel(int sector) =>
+            sector is >= 0 and < MatchLimits.SectorCount
+                ? SectorGangsLayout.SectorCodeText(sector)
+                : string.Empty;
+
+        static string SiteName(MatchState state, int sector, int slot) =>
+            state.Definitions.Site(state.Sectors[sector].Sites[slot].DefinitionId).Name;
+
+        static string GangName(MatchState state, int definition) =>
+            state.Definitions.Gang(checked((short)definition)).Name;
+
+        static string Cut(string value, int length) => value.Length > length ? value[..length] : value;
+    }
+
+    private static bool IsCashShortCommand(GameEvent? relatedEvent) =>
+        relatedEvent is
+        {
+            Kind: GameEventKind.CommandFailed,
+            Action: GangAction.Bribe or GangAction.Equip,
+            Resolution.Code: CommandResolutionCode.InsufficientCash
+        };
 
     public static int? ResearchItemId(GameNotification notification, GameEvent? relatedEvent)
     {
@@ -560,19 +681,6 @@ public static class LastTurnEventPresentation
             && relatedEvent.Target.Kind == CommandTargetKind.Site
                 ? relatedEvent.Target.Id
                 : null;
-    }
-
-    public static string? InfluenceSiteObject(
-        MatchState state,
-        GameNotification notification,
-        GameEvent? relatedEvent)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        if (InfluenceSiteId(notification, relatedEvent) is not { } siteId
-            || state.FindSite(siteId) is not { } site)
-            return null;
-        var definition = state.Definitions.Site(site.DefinitionId);
-        return $"{siteId:00}:{definition.Name}";
     }
 
     public static Rectangle SiteBackgroundSource(short definitionId)

@@ -438,7 +438,7 @@ public static partial class AiTurnPlanner
                 new RecoveredFamilyChoice(OriginalAiFamilyOneRules.SelectNoActionOrChaosContinuation(
                     gang.Force,
                     effectiveHeal,
-                    state.Sectors[gang.SectorId].CrackdownActive,
+                    state.Sectors[gang.SectorId].HasCrackdownTurns,
                     state.AiPlanning.OlderAction(player.Id, gangSlot))),
             GangAction.Heal => new RecoveredFamilyChoice(OriginalAiFamilyOneRules.SelectHealContinuation(
                 gang.Force,
@@ -542,7 +542,7 @@ public static partial class AiTurnPlanner
         if (sectorId is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sectorId));
         var sector = state.Sectors[sectorId];
-        if (sector.Owner == playerId || sector.CrackdownActive) return false;
+        if (sector.Owner == playerId || sector.HasCrackdownTurns) return false;
 
         var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var attack = ManualRules.ControlStrength([(gang.Force, statistics.Control)]);

@@ -554,9 +554,10 @@ public static partial class CommandResolver
                     .ToArray())
                 .ToArray();
             var sector = state.Sectors[sectorCommands.Key];
-            // DEV-CONTROL-002: the original leaves a sector under police out of the pass without
-            // a word; the rebuild records a failed result for each participant.
-            results.AddRange(sector.CrackdownActive
+            // RULE-CONTROL-001 skips a sector whose `crackdown_turns` is not 0, including a value
+            // wrapped below 0. DEV-CONTROL-002: the original leaves such a sector out of the pass
+            // without a word; the rebuild records a failed result for each participant.
+            results.AddRange(sector.HasCrackdownTurns
                 ? RefuseForCrackdown(state, sector, groups.SelectMany(group => group))
                 : SettleControl(state, sector, groups));
         }
