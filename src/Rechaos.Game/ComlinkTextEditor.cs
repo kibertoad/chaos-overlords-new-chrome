@@ -19,6 +19,17 @@ public sealed class ComlinkTextEditor
     public int Row { get; private set; }
     public char CharacterAtCursor => _cells[CellIndex];
     public bool IsFull => _cells.All(character => character != ' ');
+
+    /// <summary>
+    /// Every cell is a space, the test RULE-COMLINK-003 makes before storing a message.
+    /// </summary>
+    public bool IsBlank => _cells.All(character => character == ' ');
+
+    /// <summary>
+    /// The draft with its trailing spaces removed. FMT-STATE-005 `text` is the 160 cells padded
+    /// with spaces; padding this string back to 160 gives the same bytes, since a cell is never
+    /// anything below a space (RULE-COMLINK-006).
+    /// </summary>
     public string Text => new string(_cells).TrimEnd();
 
     public bool TryAppend(char character)

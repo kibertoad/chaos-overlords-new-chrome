@@ -65,8 +65,10 @@ public sealed class EventReviewProgressTests
             value.Id == state.FindSite(siteId)!.DefinitionId);
 
         Assert.Equal(siteId, LastTurnEventPresentation.InfluenceSiteId(notification, related));
-        Assert.Equal($"04:{definition.Name}",
-            LastTurnEventPresentation.InfluenceSiteObject(state, notification, related));
+        // FMT-STATE-006, SCR-EVENT-001: site 4 is slot 1 of sector 1, labelled B1.
+        var record = LastTurnEventPresentation.Record(state, notification, related);
+        Assert.Equal(new LastTurnReportRecord(4, 1, 1, 0), record);
+        Assert.Equal($"B1:{definition.Name}", LastTurnEventPresentation.Subject(state, record));
         Assert.Equal(4, LastTurnEventPresentation.ArtworkIndex(notification, related));
         Assert.Equal("SITE COOPERATION ACHIEVED.",
             NotificationPresentation.LastTurnStatus(notification));
