@@ -64,12 +64,6 @@ order of priority, unless a group says otherwise.
 ## Screens, options, planning timer and sound
 
 Gaps more reading of `Chaos Overlords.exe` or the data files could close.
-- RULE-OPTIONS-003: the byte `0x004ABC9C` also suppresses the idle-gang
-  warning (FND-OPTIONS-003). Read its writers (`0x004614AF`, `fn_0046E766`) and
-  say what it marks.
-- FND-UI-031: the scaled copy ignores the copy mode (FND-UI-023). List which of
-  the 32 callers of `fn_00427864` pass rectangles of different sizes with a
-  keyed or patterned mode, to say whether any visible draw loses its key.
 - Needs a run of the original, not static reading: what `RegQueryValueExA`
   writes when an option value is longer than four bytes (RULE-OPTIONS-001), and
   whether the incoming-hire marker of RULE-UI-006 really disappears from all
