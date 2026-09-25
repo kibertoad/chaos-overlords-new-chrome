@@ -371,7 +371,7 @@ Kept mandatory on 2026-09-26, after a proposal to put it behind a setting that s
 - Setting: None
 - Default: mandatory
 - Justification: It adds a shortcut to a panel the player can already open.
-- Dropped: no
+- Dropped: 2026-09-25, the original opens the same panels on a double-click (FND-ATTACK-004).
 
 ## DEV-ATTACK-002
 

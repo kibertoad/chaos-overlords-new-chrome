@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 52 |
+| `supported` | 51 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 169 |
+| `implemented` | 170 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 17 |
-| `partial` | 36 |
-| `complete` | 169 |
+| `partial` | 35 |
+| `complete` | 170 |
 
 ## DATA
 
@@ -277,7 +277,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | supported | complete | None | `DEV-HELP-002` | implemented | None |
 | `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
-| `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | partial | None | `DEV-ATTACK-001`, `DEV-UI-008` | supported | Opponent and target hit maps are the original's. FND-ATTACK-003 now records the panel origin, the Confirm and Cancel faces, Enter, plus and Escape, the acting gang's portrait and equipment and the initial selection, and FND-ATTACK-004 the double-click information panels; the rebuild was not compared with them. |
+| `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | complete | None | `DEV-UI-008` | implemented | Layout, marks, faces, keys, initial selection and double-click panels follow FND-ATTACK-003 and FND-ATTACK-004. The target cards' art and when the Confirm face is first drawn are not recorded, so the target cards are drawn like the acting gang's. |
 
 ## COMBAT
 
