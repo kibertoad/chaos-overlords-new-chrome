@@ -316,6 +316,7 @@ public sealed class AiTurnPlannerTests
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 1);
+        match.AiPlanning.SetFamily(player, 0, 1);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
         match.Sectors[1].Owner = new PlayerId(1);
         var recorder = new MatchReplayRecorder(match);
@@ -375,6 +376,7 @@ public sealed class AiTurnPlannerTests
         match.Players[0].Gangs[0].WeaponItemId = 23;
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 1);
+        match.AiPlanning.SetFamily(player, 0, 1);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
         match.Sectors[1].Owner = new PlayerId(1);
         var recorder = new MatchReplayRecorder(match);
@@ -418,6 +420,7 @@ public sealed class AiTurnPlannerTests
             ownsStartingSector: false,
             startingSector: startingSector);
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, hireRole);
         var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
@@ -461,6 +464,7 @@ public sealed class AiTurnPlannerTests
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 2);
+        match.AiPlanning.SetFamily(player, 0, 14);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
         var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
@@ -600,6 +604,7 @@ public sealed class AiTurnPlannerTests
         var controller = data.Gangs.MaxBy(candidate => candidate.Stats.Control)!.Id;
         var match = CreateMatch(definitionId: controller, force: 8, data: data);
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 1);
         match.Sectors[8].CrackdownActive = true;
         match.Sectors[9].CrackdownActive = true;
@@ -640,6 +645,7 @@ public sealed class AiTurnPlannerTests
         var controller = data.Gangs.MaxBy(candidate => candidate.Stats.Control)!.Id;
         var match = CreateMatch(definitionId: controller, force: 8, data: data);
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 1);
         var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
@@ -701,6 +707,7 @@ public sealed class AiTurnPlannerTests
     {
         var match = CreateMatch(scenario: ScenarioId.BigMan);
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 6);
         match.FinishUpkeep();
         match.PrepareAiPlanning(player);
@@ -718,6 +725,7 @@ public sealed class AiTurnPlannerTests
             scenario: ScenarioId.Greed,
             ownsStartingSector: false);
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 6);
         match.FinishUpkeep();
         match.PrepareAiPlanning(player);

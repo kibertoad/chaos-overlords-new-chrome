@@ -176,6 +176,8 @@ public sealed class AiFamilyFiveTurnPlannerTests
         Assert.Equal(GangAction.Terminate, command.Action);
         Assert.Equal(GangAction.Terminate,
             match.AiPlanning.PlannedAction(player, 0));
+        // RULE-AI-001: the Greed Terminate flags the record for a family at the next dispatch.
+        Assert.True(match.AiPlanning.NeedsFamily(player, 0));
     }
 
     private static void BeginFamilyFiveTurn(MatchState match, PlayerId player)

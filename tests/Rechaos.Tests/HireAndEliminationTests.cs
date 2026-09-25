@@ -329,7 +329,7 @@ public sealed class HireAndEliminationTests
     }
 
     [Fact]
-    public void SuccessfulHireReusesFirstInactiveGangAndPlanningSlot()
+    public void SuccessfulHireReusesFirstInactiveGangAndKeepsItsPlanningRecord()
     {
         var playerId = new PlayerId(0);
         MatchGangState[] gangs =
@@ -351,8 +351,10 @@ public sealed class HireAndEliminationTests
         Assert.Equal((short)2, match.Players[0].Gangs[1].DefinitionId);
         Assert.True(match.Players[0].Gangs[1].IsActive);
         Assert.Equal(new GangId(12), match.Players[0].Gangs[2].Id);
-        Assert.Equal(AiPlanningState.UnusedFamily, match.AiPlanning.Family(playerId, 1));
-        Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(playerId, 1));
+        // RULE-AI-001: the hire leaves the slot's record alone; the slot was flagged while its gang
+        // was inactive, and the new gang's first dispatch wipes the record.
+        Assert.Equal(11, match.AiPlanning.Family(playerId, 1));
+        Assert.Equal(GangAction.Attack, match.AiPlanning.PlannedAction(playerId, 1));
     }
 
     [Fact]

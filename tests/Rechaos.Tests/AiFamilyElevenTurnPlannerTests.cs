@@ -110,6 +110,8 @@ public sealed class AiFamilyElevenTurnPlannerTests
             cpuGangCount: 2);
         var player = new PlayerId(0);
         BeginFamilyElevenTurn(match, player);
+        // RULE-AI-001: the first pass flags only slot 0; a gang hired since is flagged too.
+        match.AiPlanning.SetNeedsFamily(player, 1);
         var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
 

@@ -30,24 +30,15 @@ public sealed class OriginalAiFamilyRulesTests
         Assert.Equal(7, expected.Length);
 
         for (var hireRole = 0; hireRole < expected.Length; hireRole++)
-        {
-            var selection = OriginalAiFamilyRules.Select(scenario, hireRole, Preserved);
-
-            Assert.Equal(expected[hireRole], selection.Family);
-            Assert.Equal(hireRole == 4 && expected[hireRole] != Preserved,
-                selection.CopiesProjectedGangValue);
-        }
+            Assert.Equal(expected[hireRole] == Preserved ? null : expected[hireRole],
+                OriginalAiFamilyRules.FamilyFor(scenario, hireRole));
     }
 
+    // RULE-AI-002: a hire role outside 0 to 6 assigns nothing.
     [Theory]
     [InlineData(-1)]
     [InlineData(7)]
     [InlineData(100)]
-    public void UnknownHireRolePreservesCurrentFamily(int strategicMode)
-    {
-        var selection = OriginalAiFamilyRules.Select(ScenarioId.Power, strategicMode, 11);
-
-        Assert.Equal(11, selection.Family);
-        Assert.False(selection.CopiesProjectedGangValue);
-    }
+    public void UnknownHireRoleAssignsNoFamily(int hireRole) =>
+        Assert.Null(OriginalAiFamilyRules.FamilyFor(ScenarioId.Power, hireRole));
 }
