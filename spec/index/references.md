@@ -1671,7 +1671,7 @@ None.
 | [FND-AI-049](../findings/FND-AI-049.md) | body |
 | [FND-AI-052](../findings/FND-AI-052.md) | body |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
-| [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
+| [RULE-AI-019](../rules/RULE-AI-019.md) | body, evidence |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 
 ## FND-AI-049
@@ -4200,6 +4200,7 @@ None.
 | [FND-SETUP-015](../findings/FND-SETUP-015.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: modifier_name_islands | glossary |
+| [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | body, evidence |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | evidence |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
 | [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | evidence |
@@ -6172,6 +6173,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | body |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | body |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, related |
 

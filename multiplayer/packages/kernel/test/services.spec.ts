@@ -253,6 +253,34 @@ describe('the lobby, the roster and the turn barrier', () => {
     expect(h.notifier.events.at(-1)?.type).toBe('match.latePlayerJoined')
   })
 
+  it('normalises a typed join code at the late-join door the way the lobby door does', async () => {
+    const host = await h.kernel.lobby.createMatch({
+      settings: {
+        name: 'Code Only',
+        maxPlayers: 6,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: { allowLateJoin: true },
+      },
+      hostDisplayName: 'Host',
+    })
+    await h.kernel.lobby.start(await h.principalOf(host.token))
+    await h.kernel.snapshots.upload(await h.principalOf(host.token), {
+      turn: 0,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [{ slot: 3, gangs: 4, sites: 5, sectors: 6 }],
+    })
+    // Read off a chat message and typed back in lower case, with the space a paste brings along.
+    const joined = await h.kernel.lobby.joinRunning({
+      match: ` ${host.joinCode.toLowerCase()} `,
+      displayName: 'Late',
+      slot: 3,
+    })
+    expect(joined.match.id).toBe(host.match.id)
+  })
+
   async function lateJoinableMatch() {
     return (await lateJoinableHost()).match.id
   }

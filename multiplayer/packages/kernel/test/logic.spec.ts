@@ -81,6 +81,22 @@ describe('canonicalJson', () => {
     expect(canonicalJson({ Z: 1, a: 2, A: 3, é: 4, Ä: 5 })).toBe('{"A":3,"Z":1,"a":2,"Ä":5,"é":4}')
   })
 
+  /**
+   * A JS object enumerates every key that reads as an array index first and numerically, whatever
+   * order it was built in, so sorting into a fresh object and stringifying it wrote `9` before `10`.
+   * Ordinal order puts `10` first, and so does the C# mirror.
+   */
+  it('keeps code-unit order for keys that read as array indices', () => {
+    expect(canonicalJson({ 9: 'a', 10: 'b', 2: 'c', x: 'd', '01': 'e', '-1': 'f' })).toBe(
+      '{"-1":"f","01":"e","10":"b","2":"c","9":"a","x":"d"}',
+    )
+    expect(canonicalJson([{ 10: 1, 9: 2 }])).toBe('[{"10":1,"9":2}]')
+    // Written as a key, never taken for the prototype.
+    expect(canonicalJson(JSON.parse('{"__proto__":{"b":1},"a":2}'))).toBe(
+      '{"__proto__":{"b":1},"a":2}',
+    )
+  })
+
   it('refuses values whose text another language would write differently', () => {
     expect(() => canonicalJson({ x: 1.5 })).toThrow(/not a safe/)
     expect(() => canonicalJson({ x: 1e21 })).toThrow(/not a safe/)

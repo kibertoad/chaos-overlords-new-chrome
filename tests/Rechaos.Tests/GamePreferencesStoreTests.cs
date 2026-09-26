@@ -231,6 +231,19 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(GamePreferences.Default, GamePreferencesStore.LoadOrDefault(Path()));
     }
 
+    /// <summary>A newer build's preferences read as defaults here and are never overwritten.</summary>
+    [Fact]
+    public void PreferencesFromANewerBuildAreNotOverwritten()
+    {
+        var newer = $$"""{"FormatVersion":{{GamePreferences.CurrentFormatVersion + 1}},"MusicVolumeLevel":2}""";
+        File.WriteAllText(Path(), newer);
+
+        Assert.Equal(GamePreferences.Default, GamePreferencesStore.LoadOrDefault(Path()));
+        Assert.False(GamePreferencesStore.TrySave(
+            Path(), GamePreferences.Default with { IntroMoviesSeen = true }));
+        Assert.Equal(newer, File.ReadAllText(Path()));
+    }
+
     [Fact]
     public void InvalidPreferencesAreNotWritten()
     {

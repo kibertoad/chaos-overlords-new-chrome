@@ -268,7 +268,10 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     const set = this.listeners.get(matchId)
     if (set) {
       const mine = [...set].filter((subscription) => subscription.playerId === playerId)
-      for (const stale of mine.slice(0, mine.length - this.limits.perPlayer + 1)) {
+      // Clamped: under the cap the difference is negative, and `slice` would count a negative end
+      // back from the last stream, closing live ones a player is entitled to.
+      const excess = Math.max(0, mine.length - this.limits.perPlayer + 1)
+      for (const stale of mine.slice(0, excess)) {
         stale.close('replaced')
       }
     }

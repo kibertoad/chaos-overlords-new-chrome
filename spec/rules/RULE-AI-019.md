@@ -82,9 +82,9 @@ else if prev == ACTION_CHAOS or prev == ACTION_EQUIP:
             plan(idx, ACTION_EQUIP, ar, 0)
             r.armor_cooldown = item_definitions[ar].cost * 3
     if r.planned_action != ACTION_EQUIP and r.planned_action != ACTION_ATTACK:
-        if sectors[s].owner == player and heal_ok:
+        if owner_query(s) == player and heal_ok:
             plan(idx, ACTION_HEAL, 0, 0)
-        else if sectors[s].owner == player:
+        else if owner_query(s) == player:
             plan(idx, ACTION_CHAOS, 0, 0)
         else:
             # a weight of 10 has already produced an Attack above
@@ -142,7 +142,8 @@ different gang from the one attacked (BUG-AI-003). After Heal, Hide or Move a
 failed single draw leaves the gang doing nothing this turn. The Chaos count
 includes the gang itself, so a gang that raised Chaos last turn moves on unless
 it is injured or sees an enemy, and after previous Chaos in its own sector it
-heals or raises Chaos again. After Bribe, Give, Influence, Research or Sell the
+heals or raises Chaos again, unless police are present there: the owner query
+then reads -2 and the gang moves on. After Bribe, Give, Influence, Research or Sell the
 gang plans nothing. The family change tests the older action, so Move, then
 anything, then Move is enough.
 
@@ -162,3 +163,7 @@ None known.
 
 - Whether the final family change reads the new action from the planning
   record or from a local value is not recorded; the effect is the same.
+- FND-AI-048 records the owner query (selector `0x21`) for the owned-sector
+  test after Chaos or Equip, but not which owner read the tests after Control
+  and after Heal, Hide or Move make; the procedure reads `sectors[s].owner`
+  there until a reading settles it.
