@@ -711,9 +711,14 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
                 : []),
             ),
           )
-          // Ordered by the recency the window is taken on, so a match that keeps throwing cannot pin
-          // the head of the page and hide every other stall behind it.
-          .orderBy(desc(matches.updatedAt), asc(matches.id))
+          // Ordered by the recency the window is taken on — the later of the two stamps, or a match
+          // admitted by its seal alone sorted behind every recently updated one and fell off the
+          // page — so a match that keeps throwing cannot pin the head of the page and hide every
+          // other stall behind it. `max` is null when either argument is, hence the coalesce.
+          .orderBy(
+            desc(sql`max(${matches.updatedAt}, coalesce(${turns.sealedAt}, ${matches.updatedAt}))`),
+            asc(matches.id),
+          )
           .limit(limit)
       )
     },

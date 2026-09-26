@@ -890,6 +890,40 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
     })
 
     /**
+     * A match admitted by its seal alone used to sort by its stale `updatedAt`, behind every match
+     * updated in the window, and a bounded page cut it off on every pass.
+     */
+    it('pages a bounded stalled-seal scan by the later of the two stamps', async () => {
+      const since = new Date('2030-01-01T00:00:00.000Z')
+      const updated = matchFixture({
+        status: 'running',
+        currentTurn: 2,
+        updatedAt: new Date('2030-01-01T00:10:00.000Z'),
+      })
+      const sealed = matchFixture({
+        status: 'running',
+        currentTurn: 2,
+        updatedAt: new Date('2026-03-01T08:00:00.000Z'),
+      })
+      for (const match of [updated, sealed]) await storage.matches.create(match)
+      await storage.turns.open(turnFixture(updated, 2, { status: 'sealed', sealedAt: null }), [])
+      await storage.turns.open(
+        turnFixture(sealed, 2, {
+          status: 'sealed',
+          sealedAt: new Date('2030-01-01T00:20:00.000Z'),
+        }),
+        [],
+      )
+      expect(await storage.turns.listStalledSeals(1, since)).toEqual([
+        { matchId: sealed.id, number: 2 },
+      ])
+      expect(await storage.turns.listStalledSeals(2, since)).toEqual([
+        { matchId: sealed.id, number: 2 },
+        { matchId: updated.id, number: 2 },
+      ])
+    })
+
+    /**
      * The other way a match is left with nothing to play: `start` changed the status and died
      * before turn 1 existed. Driving this from `matches` rather than from `turns` is what lets the
      * repair see it at all; an inner join never would.
@@ -1303,6 +1337,34 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         'seq',
         'type',
       ])
+    })
+
+    it('finds the latest event of a type, and nothing for a type the log does not carry', async () => {
+      const match = matchFixture()
+      const other = matchFixture()
+      for (const row of [match, other]) await storage.matches.create(row)
+      const status = (matchId: string, value: 'desynced' | 'running') =>
+        ({
+          matchId,
+          type: 'match.statusChanged',
+          payload: { status: value },
+          createdAt: '2026-03-01T16:00:00.000Z',
+        }) as const
+      await storage.events.append(status(match.id, 'desynced'))
+      await storage.events.append({
+        matchId: match.id,
+        type: 'turn.sealed',
+        payload: { turn: 1, orderSetHash: 'a'.repeat(64) },
+        createdAt: '2026-03-01T16:00:00.000Z',
+      })
+      await storage.events.append(status(match.id, 'running'))
+      await storage.events.append(status(other.id, 'desynced'))
+
+      expect(await storage.events.latestOfType(match.id, 'match.statusChanged')).toMatchObject({
+        seq: 3,
+        payload: { status: 'running' },
+      })
+      expect(await storage.events.latestOfType(match.id, 'turn.desynced')).toBeNull()
     })
   })
 }

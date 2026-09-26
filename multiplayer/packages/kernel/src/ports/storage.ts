@@ -389,6 +389,11 @@ export interface EventRepository {
     dedupeKey: string,
   ): Promise<PersistedEvent | null>
   listAfter(matchId: string, afterSeq: number, limit: number): Promise<PersistedEvent[]>
+  /**
+   * The match's most recent event of `type`, or null when it has none. An indexed read, for the
+   * one question the log answers better than any row: what clients were last told about a status.
+   */
+  latestOfType(matchId: string, type: string): Promise<PersistedEvent | null>
   /** Highest sequence number persisted for the match, or 0 when the log is empty. */
   lastSeq(matchId: string): Promise<number>
 }

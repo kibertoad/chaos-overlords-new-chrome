@@ -406,9 +406,15 @@ export class InMemoryStorage implements MultiplayerStorage {
             (current?.sealedAt != null && current.sealedAt >= touchedSince)
           )
         })
-        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime() || a.id.localeCompare(b.id))
+        // By the later of the two stamps, as the window is taken on either.
+        .map((match) => {
+          const sealedAt = this.turnRows.get(turnKey(match.id, match.currentTurn))?.sealedAt
+          const touched = Math.max(match.updatedAt.getTime(), sealedAt?.getTime() ?? 0)
+          return { match, touched }
+        })
+        .sort((a, b) => b.touched - a.touched || a.match.id.localeCompare(b.match.id))
         .slice(0, limit)
-        .map((match) => ({ matchId: match.id, number: match.currentTurn })),
+        .map(({ match }) => ({ matchId: match.id, number: match.currentTurn })),
   }
 
   readonly snapshots: SnapshotRepository = {
@@ -519,13 +525,27 @@ export class InMemoryStorage implements MultiplayerStorage {
       if (this.eventKeys.has(key)) return null
       // Taken before the first await, as the unique index takes it inside the insert.
       this.eventKeys.add(key)
-      return this.events.append(event)
+      try {
+        return await this.events.append(event)
+      } catch (error) {
+        // A failed insert rolls its key back with it, so a retry of the announcement can log it.
+        this.eventKeys.delete(key)
+        throw error
+      }
     },
     listAfter: async (matchId, afterSeq, limit) =>
       (this.eventRows.get(matchId) ?? [])
         .filter((event) => event.seq > afterSeq)
         .slice(0, limit)
         .map((event) => ({ ...event })),
+    latestOfType: async (matchId, type) => {
+      const log = this.eventRows.get(matchId) ?? []
+      for (let index = log.length - 1; index >= 0; index -= 1) {
+        const event = log[index]
+        if (event?.type === type) return { ...event }
+      }
+      return null
+    },
     lastSeq: async (matchId) => this.eventRows.get(matchId)?.at(-1)?.seq ?? 0,
   }
 

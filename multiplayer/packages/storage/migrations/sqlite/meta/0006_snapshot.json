@@ -58,6 +58,15 @@
             "dedupe_key"
           ],
           "isUnique": true
+        },
+        "match_events_type_idx": {
+          "name": "match_events_type_idx",
+          "columns": [
+            "match_id",
+            "type",
+            "seq"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {

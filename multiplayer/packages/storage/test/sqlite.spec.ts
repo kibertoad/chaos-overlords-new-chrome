@@ -1,6 +1,6 @@
 import { defineStorageConformance } from '@chaos-overlords/conformance'
 import type { Match, Player } from '@chaos-overlords/kernel'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import BetterSqlite3 from 'better-sqlite3'
@@ -78,5 +78,57 @@ it('discards an orphan vote before a later prompt reuses the seat', async () => 
     raw.close()
     await opened.close()
     rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+/**
+ * Events logged before `dedupe_key` existed are announcements a repeat must recognise, or the first
+ * repeat after the upgrade logs them a second time. The earliest copy of each fact takes the key.
+ */
+it('keys the announcements logged before the dedupe column existed', () => {
+  const folder = resolve(import.meta.dirname, '../migrations/sqlite')
+  const migrations = readdirSync(folder)
+    .filter((name) => name.endsWith('.sql'))
+    .sort()
+  const run = (db: BetterSqlite3.Database, name: string) => {
+    for (const statement of readFileSync(join(folder, name), 'utf8').split(
+      '--> statement-breakpoint',
+    )) {
+      if (statement.trim() !== '') db.exec(statement)
+    }
+  }
+  const db = new BetterSqlite3(':memory:')
+  try {
+    const upgrade = migrations.findIndex((name) => name.startsWith('0006_'))
+    for (const name of migrations.slice(0, upgrade)) run(db, name)
+    db.prepare(
+      `insert into matches (id, status, name, visibility, max_players, settings, host_player_id,
+        join_code, created_at, updated_at)
+        values ('m', 'running', 'm', 'private', 2, '{}', 'h', 'CODE0001', 0, 0)`,
+    ).run()
+    const insert = db.prepare(
+      'insert into match_events (match_id, seq, type, payload, created_at) values (?, ?, ?, ?, 0)',
+    )
+    insert.run('m', 1, 'turn.sealed', JSON.stringify({ turn: 1, orderSetHash: 'x' }))
+    insert.run('m', 2, 'turn.sealed', JSON.stringify({ turn: 1, orderSetHash: 'x' }))
+    insert.run('m', 3, 'turn.sealed', JSON.stringify({ turn: 2, orderSetHash: 'y' }))
+    insert.run('m', 4, 'turn.opened', JSON.stringify({ turn: 3, deadlineAt: null }))
+    insert.run('m', 5, 'match.statusChanged', JSON.stringify({ status: 'desynced' }))
+    insert.run('m', 6, 'match.statusChanged', JSON.stringify({ status: 'finished' }))
+    for (const name of migrations.slice(upgrade)) run(db, name)
+
+    const keys = db
+      .prepare('select seq, dedupe_key as key from match_events order by seq')
+      .all() as Array<{ seq: number; key: string | null }>
+    expect(keys).toEqual([
+      { seq: 1, key: 'turn.sealed:1' },
+      { seq: 2, key: null },
+      { seq: 3, key: 'turn.sealed:2' },
+      { seq: 4, key: null },
+      { seq: 5, key: null },
+      { seq: 6, key: 'match.statusChanged:finished' },
+    ])
+  } finally {
+    db.close()
   }
 })

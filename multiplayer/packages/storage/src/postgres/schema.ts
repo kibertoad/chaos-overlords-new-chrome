@@ -176,6 +176,8 @@ export const matchEvents = pgTable(
     primaryKey({ columns: [table.matchId, table.seq] }),
     // Nulls are distinct in a unique index on both dialects, so only keyed events are constrained.
     uniqueIndex('match_events_dedupe_idx').on(table.matchId, table.dedupeKey),
+    // `latestOfType`: the last status announcement of a match, found without walking its log.
+    index('match_events_type_idx').on(table.matchId, table.type, table.seq),
   ],
 )
 

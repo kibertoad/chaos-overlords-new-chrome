@@ -11,6 +11,7 @@ const emptyEvents: EventRepository = {
     throw new Error('not used')
   },
   listAfter: async (): Promise<PersistedEvent[]> => [],
+  latestOfType: async () => null,
   lastSeq: async () => 0,
 }
 
@@ -395,6 +396,9 @@ function countingLog(events: PersistedEvent[]) {
     listAfter: async (_matchId, afterSeq, limit) => {
       reads.push(afterSeq)
       return events.filter((event) => event.seq > afterSeq).slice(0, limit)
+    },
+    latestOfType: async () => {
+      throw new Error('not used')
     },
     lastSeq: async () => events.at(-1)?.seq ?? 0,
   }

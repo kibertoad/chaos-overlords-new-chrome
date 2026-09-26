@@ -60,6 +60,9 @@ export interface BugReportService {
   collect(): Promise<number>
 }
 
+/** The rolling window the byte budget is spent over. */
+const DAY_MS = 24 * 60 * 60 * 1000
+
 /**
  * Intake for one bug report.
  *
@@ -79,9 +82,6 @@ export interface BugReportService {
  * Nothing here decompresses or parses an archive. It is opaque bytes with a digest, and keeping it
  * that way is what makes accepting one from an unauthenticated stranger safe.
  */
-/** The rolling window the byte budget is spent over. */
-const DAY_MS = 24 * 60 * 60 * 1000
-
 export function createBugReportService(deps: BugReportServiceDeps): BugReportService {
   const { repository, clock, logger, blobs } = deps
   const retention = deps.retention ?? DEFAULT_BUG_REPORT_RETENTION

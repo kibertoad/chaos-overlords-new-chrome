@@ -715,8 +715,9 @@ function postgresTurnRepository(db: PostgresDatabase): TurnRepository {
                 : []),
             ),
           )
-          // Ordered by the recency the window is taken on; see the SQLite twin.
-          .orderBy(desc(matches.updatedAt), asc(matches.id))
+          // Ordered by the recency the window is taken on, the later of the two stamps; see the
+          // SQLite twin. `greatest` skips a null argument.
+          .orderBy(desc(sql`greatest(${matches.updatedAt}, ${turns.sealedAt})`), asc(matches.id))
           .limit(limit)
       )
     },

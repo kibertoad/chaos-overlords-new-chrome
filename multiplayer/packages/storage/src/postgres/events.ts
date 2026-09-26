@@ -69,6 +69,15 @@ export function postgresEventRepository(db: PostgresDatabase): EventRepository {
         .limit(limit)
       return rows.map(toEvent)
     },
+    async latestOfType(matchId, type) {
+      const rows = await db
+        .select()
+        .from(matchEvents)
+        .where(and(eq(matchEvents.matchId, matchId), eq(matchEvents.type, type)))
+        .orderBy(desc(matchEvents.seq))
+        .limit(1)
+      return rows[0] ? toEvent(rows[0]) : null
+    },
     async lastSeq(matchId) {
       const rows = await db
         .select({ seq: matchEvents.seq })
