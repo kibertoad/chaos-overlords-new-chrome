@@ -1,0 +1,35 @@
+# Installs the pinned Kaitai Struct compiler and points `KSC` at it, so `tools/check-spec.mjs`
+# compiles every `.ksy` definition in spec/formats/. AGENTS.md promises that in CI the definitions
+# always compile, and check-spec now fails when CI is set and no compiler is found, so every
+# workflow that runs `tools/Invoke-Validation.ps1` uses this action first.
+#
+# No maintained action installs the compiler, so the pinned release is fetched and checked against
+# its SHA-256 here. The release runs on the runner's preinstalled Java.
+# kibertoad/refurbished-dinosaurs-toolkit#1 moves this into a shared action.
+name: Install the Kaitai Struct compiler
+description: Downloads the pinned Kaitai Struct compiler release, verifies it, and sets KSC.
+
+runs:
+  using: composite
+  steps:
+    - name: Install the Kaitai Struct compiler
+      shell: bash
+      env:
+        KSC_VERSION: "0.11"
+        KSC_SHA256: ff89389d9dc9e770d78a24af328763cb1f8e7b31ce7766c9edf10669a060f2a2
+      run: |
+        set -euo pipefail
+        tmp="$RUNNER_TEMP"
+        if [ "$RUNNER_OS" = Windows ]; then tmp="$(cygpath -u "$tmp")"; fi
+        zip="$tmp/kaitai-struct-compiler.zip"
+        curl -fsSL --retry 3 -o "$zip" \
+          "https://github.com/kaitai-io/kaitai_struct_compiler/releases/download/$KSC_VERSION/kaitai-struct-compiler-$KSC_VERSION.zip"
+        # macOS runners ship shasum rather than GNU sha256sum.
+        if command -v sha256sum >/dev/null; then sum=(sha256sum); else sum=(shasum -a 256); fi
+        echo "$KSC_SHA256  $zip" | "${sum[@]}" --check --strict
+        unzip -q -o "$zip" -d "$tmp"
+        bin="$tmp/kaitai-struct-compiler-$KSC_VERSION/bin/kaitai-struct-compiler"
+        if [ "$RUNNER_OS" = Windows ]; then bin="$bin.bat"; fi
+        "$bin" --version
+        if [ "$RUNNER_OS" = Windows ]; then bin="$(cygpath -w "$bin")"; fi
+        echo "KSC=$bin" >> "$GITHUB_ENV"
