@@ -48,7 +48,8 @@ public sealed record GamePreferences(
     OnlineServiceMode OnlineService,
     string CustomMultiplayerServer,
     OnlineLobbyPresentation LobbyPresentation = OnlineLobbyPresentation.Modern,
-    bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault)
+    bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault,
+    ScenarioId PreferredScenario = ScenarioId.Greed)
 {
     public const int CurrentFormatVersion = 12;
     public const string DefaultCustomMultiplayerServer = "http://localhost:8787";
@@ -166,6 +167,7 @@ public static class GamePreferencesStore
         && Enum.IsDefined(preferences.DefaultAiPolicy)
         && Enum.IsDefined(preferences.OnlineService)
         && Enum.IsDefined(preferences.LobbyPresentation)
+        && Enum.IsDefined(preferences.PreferredScenario)
         && IsServerAddress(preferences.CustomMultiplayerServer);
 
     private static bool LevelsAreValid(int music, int effects, PlanningTimeLimit limit) =>

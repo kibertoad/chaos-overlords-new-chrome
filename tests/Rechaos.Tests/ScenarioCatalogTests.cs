@@ -33,10 +33,11 @@ public sealed class ScenarioCatalogTests
         Assert.Equal(new DominanceWeights(cash, support, sector), ScenarioCatalog.Weights(duration));
     }
 
+    // RULE-OBJECTIVE-004: Kill 'Em All and Eliminate have no test of their own (FND-OBJECTIVE-003).
     [Theory]
-    [InlineData(ScenarioId.KillEmAll, 0, 0, 0, 0, true)]
+    [InlineData(ScenarioId.KillEmAll, 0, 0, 0, 0, false)]
     [InlineData(ScenarioId.Big40, 40, 0, 0, 0, true)]
-    [InlineData(ScenarioId.Eliminate, 0, 0, 0, 0, true)]
+    [InlineData(ScenarioId.Eliminate, 0, 0, 0, 0, false)]
     [InlineData(ScenarioId.Siege, 0, 6, 0, 1, true)]
     [InlineData(ScenarioId.BigMan, 0, 0, 40, 1, true)]
     [InlineData(ScenarioId.Armageddon, 64, 0, 0, 1, true)]
@@ -53,14 +54,13 @@ public sealed class ScenarioCatalogTests
         Assert.Equal(expected, ScenarioCatalog.HasObjectiveVictory(scenario, state));
     }
 
+    // RULE-OBJECTIVE-004: the test runs for every slot, active or not.
     [Theory]
-    [InlineData(ScenarioId.KillEmAll, 0, 0, 0, 0)]
     [InlineData(ScenarioId.Big40, 40, 0, 0, 1)]
-    [InlineData(ScenarioId.Eliminate, 0, 0, 0, 0)]
     [InlineData(ScenarioId.Siege, 0, 6, 0, 1)]
     [InlineData(ScenarioId.BigMan, 0, 0, 40, 1)]
     [InlineData(ScenarioId.Armageddon, 64, 0, 0, 1)]
-    public void EliminatedPlayerCannotCompleteObjectiveFromRetainedProgress(
+    public void ObjectiveTestCountsEliminatedSlotsToo(
         ScenarioId scenario,
         int sectors,
         int important,
@@ -70,7 +70,7 @@ public sealed class ScenarioCatalogTests
         var state = new PlayerScoreState(0, 0, sectors, false, opponentsAlive,
             OpposingRightHandsAlive: opponentsAlive, important, bigManPoints);
 
-        Assert.False(ScenarioCatalog.HasObjectiveVictory(scenario, state));
+        Assert.True(ScenarioCatalog.HasObjectiveVictory(scenario, state));
     }
 
     [Theory]

@@ -85,8 +85,10 @@ public sealed class MatchOutcomeTests
         Assert.Equal(PlayerStatus.Eliminated, match.Players[1].Status);
     }
 
+    // RULE-OBJECTIVE-005: a lone human's elimination on the turn the match ends anyway leaves
+    // the awards to be shown.
     [Fact]
-    public void SinglePlayerMatchEndsImmediatelyWhenHumanIsEliminated()
+    public void LoneHumanEliminatedAsTheMatchEndsGetsTheOrdinaryEnd()
     {
         var match = CreateMatch(ScenarioId.Big40, playerZeroForce: 0);
 
@@ -110,6 +112,56 @@ public sealed class MatchOutcomeTests
         Assert.Equal(PlayerStatus.Eliminated, match.Players[0].Status);
         Assert.Equal(MatchEndReason.PlayerEliminated, match.Outcome!.Reason);
         Assert.Equal([new PlayerId(1)], match.Outcome.Winners);
+    }
+
+    // RULE-OBJECTIVE-005: with the last human out in an earlier turn and two computers still
+    // playing, the next turn ends the local game without the awards.
+    [Fact]
+    public void MatchEndsWithNoHumansLeftTheTurnAfterTheLastHumanIsEliminated()
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(1), "TWO", PlayerController.Computer),
+            new(new PlayerId(2), "THREE", PlayerController.Computer)
+        ];
+        var setup = new MatchSetup(ScenarioId.Big40, GameDuration.SixMonths, 1996, setups);
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 500, [new MatchGangState(new GangId(10), new PlayerId(0), 0, 0, 0)]),
+            new(setups[1], 500, [new MatchGangState(new GangId(20), new PlayerId(1), 0, 1, 10)]),
+            new(setups[2], 500, [new MatchGangState(new GangId(30), new PlayerId(2), 0, 2, 10)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 4)
+            ]))
+            .ToArray();
+        var match = new MatchState(data, setup, players, sectors);
+
+        FinishTurn(match);
+        Assert.Equal(PlayerStatus.Eliminated, match.Players[0].Status);
+        Assert.Null(match.Outcome);
+
+        FinishTurn(match);
+        Assert.Equal(MatchEndReason.NoHumansLeft, match.Outcome!.Reason);
+        Assert.Equal(2, match.Outcome.Turn);
+        Assert.Empty(match.Outcome.Winners);
+    }
+
+    // RULE-OBJECTIVE-004: Kill 'Em All has no test of its own, so two players left keep playing.
+    [Fact]
+    public void KillEmAllDoesNotEndWhileTwoPlayersAreLeft()
+    {
+        var match = CreateMatch(ScenarioId.KillEmAll);
+
+        FinishTurn(match);
+
+        Assert.Null(match.Outcome);
     }
 
     [Theory]

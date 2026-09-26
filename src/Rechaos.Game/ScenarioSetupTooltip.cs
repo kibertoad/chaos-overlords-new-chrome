@@ -4,27 +4,30 @@ namespace Rechaos.Game;
 
 public static class ScenarioSetupTooltip
 {
+    // RULE-OBJECTIVE-004: each scenario's end condition as the original tests it; RULE-OBJECTIVE-001:
+    // every scenario also ends when one Overlord is left.
     public static IReadOnlyList<string> Lines(ScenarioId scenario, GameDuration duration)
     {
         var definition = ScenarioCatalog.Get(scenario);
+        var turns = ScenarioCatalog.Turns(duration);
         var rules = scenario switch
         {
             ScenarioId.Greed => new[]
             {
-                "TIMED: THE HIGHEST CASH TOTAL WINS.",
+                $"ENDS AFTER TURN {turns}: THE HIGHEST CASH WINS.",
                 "SPENDING NOW MUST PAY OFF BEFORE TIME EXPIRES."
             },
             ScenarioId.Power => new[]
             {
-                "TIMED: THE MOST CONTROLLED SECTORS WINS.",
+                $"ENDS AFTER TURN {turns}: THE MOST SECTORS WINS.",
                 "EXPANSION MATTERS; CASH AND SUPPORT DO NOT SCORE."
             },
             ScenarioId.Acceptance => new[]
             {
-                "TIMED: THE HIGHEST SUPPORT TOTAL WINS.",
+                $"ENDS AFTER TURN {turns}: THE MOST SUPPORT WINS.",
                 "CASH AND CONTROLLED SECTORS DO NOT SCORE."
             },
-            ScenarioId.Dominance => DominanceRules(duration),
+            ScenarioId.Dominance => DominanceRules(duration, turns),
             ScenarioId.KillEmAll => new[]
             {
                 "NO TIME LIMIT: BE THE LAST ACTIVE OVERLORD.",
@@ -33,41 +36,45 @@ public static class ScenarioSetupTooltip
             },
             ScenarioId.Big40 => new[]
             {
-                "NO TIME LIMIT: FIRST TO CONTROL 40 SECTORS WINS.",
+                "NO TIME LIMIT: ENDS WHEN AN OVERLORD HOLDS 40 SECTORS.",
                 "SECTOR CONTROL IS THE ONLY OBJECTIVE."
             },
             ScenarioId.Eliminate => new[]
             {
-                "NO TIME LIMIT: KILL EVERY OPPOSING RIGHT HANDS.",
+                "NO TIME LIMIT: ENDS WHEN ONE OVERLORD IS LEFT.",
                 "LOSING A RIGHT HANDS ELIMINATES THAT PLAYER."
             },
             ScenarioId.Siege => new[]
             {
-                "NO TIME LIMIT: CONTROL ALL SIX HQ SECTORS AT ONCE.",
+                "NO TIME LIMIT: ENDS WHEN ONE OVERLORD HOLDS ALL SIX HQS.",
                 "THE OBJECTIVE SECTORS ARE MARKED WITH GRAY PYLONS."
             },
             ScenarioId.BigMan => new[]
             {
-                "NO TIME LIMIT: FIRST TO 40 BIG MAN POINTS WINS.",
+                "NO TIME LIMIT: ENDS AT 40 BIG MAN POINTS.",
                 "EACH CENTRAL SECTOR YOU CONTROL ADDS 1 POINT PER TURN."
             },
             ScenarioId.Armageddon => new[]
             {
-                "NO TIME LIMIT: CONTROL ALL 64 SECTORS.",
+                "NO TIME LIMIT: ENDS WHEN AN OVERLORD HOLDS ALL 64 SECTORS.",
                 "EVERY PLAYER STARTS WITH $500 AND ALL ITEMS RESEARCHED."
             },
             _ => throw new ArgumentOutOfRangeException(nameof(scenario))
         };
         return new[] { definition.Name, definition.Objective.ToUpperInvariant() }
-            .Concat(rules).ToArray();
+            .Concat(rules)
+            .Append(scenario is ScenarioId.KillEmAll or ScenarioId.Eliminate
+                ? "IT HAS NO OTHER END TEST."
+                : "IT ALSO ENDS WHEN ONE OVERLORD IS LEFT.")
+            .ToArray();
     }
 
-    private static string[] DominanceRules(GameDuration duration)
+    private static string[] DominanceRules(GameDuration duration, int turns)
     {
         var weights = ScenarioCatalog.Weights(duration);
         return
         [
-            "TIMED: CASH, SUPPORT, AND SECTOR CONTROL ALL SCORE.",
+            $"ENDS AFTER TURN {turns}: CASH, SUPPORT, AND SECTORS SCORE.",
             $"WEIGHTS: CASH {weights.Cash}, SUPPORT {weights.Support}, SECTOR {weights.ControlledSector}."
         ];
     }

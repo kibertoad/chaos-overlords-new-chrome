@@ -18,6 +18,51 @@ public sealed class LocalSetupUiTests
         Assert.Equal(16, PlayerPortraitLayout.Count);
     }
 
+    // RULE-SETUP-009: the arrows skip the portraits any human slot holds, wrapping at both ends.
+    [Fact]
+    public void PortraitArrowsSkipPortraitsOtherHumansHold()
+    {
+        short[] portraits = [0, 1, 2, 3, 4, 5];
+        int[] humans = [0, 1, 2];
+
+        Assert.Equal(3, LocalSetupPolicy.StepPortrait(portraits, humans, 0, 1));
+        Assert.Equal(14, LocalSetupPolicy.StepPortrait(portraits, humans, 0, -1));
+        Assert.Equal(3, LocalSetupPolicy.StepPortrait(portraits, humans, 2, 1));
+        portraits[0] = 14;
+        Assert.Equal(3, LocalSetupPolicy.StepPortrait(portraits, humans, 1, 1));
+        Assert.Equal(0, LocalSetupPolicy.StepPortrait(portraits, humans, 0, 1));
+        // Slots 3 to 5 are empty, so their portraits are free.
+        Assert.Equal(13, LocalSetupPolicy.StepPortrait(portraits, humans, 0, -1));
+    }
+
+    // RULE-SETUP-010: Add gives the lowest portrait no human holds.
+    [Fact]
+    public void AddGivesTheLowestFreePortrait()
+    {
+        short[] portraits = [1, 0, 2, 3, 4, 5];
+
+        Assert.Equal(0, LocalSetupPolicy.LowestFreePortrait(portraits, [0]));
+        Assert.Equal(2, LocalSetupPolicy.LowestFreePortrait(portraits, [0, 1]));
+        Assert.Equal(3, LocalSetupPolicy.LowestFreePortrait(portraits, [0, 1, 2]));
+    }
+
+    // RULE-SETUP-010: the first setup has one human in slot 0 with portrait 0, and a reopened setup
+    // takes the saved humans.
+    [Fact]
+    public void RosterRestoresTheSavedHumans()
+    {
+        Assert.Equal([0], LocalSetupSnapshot.Initial.HumanSlots);
+        Assert.Equal(0, LocalSetupSnapshot.Initial.Portraits[0]);
+        Assert.Equal("PLAYER#3", LocalSetupSnapshot.Initial.Names[2]);
+
+        var roster = new LocalSetupRoster();
+        roster.Restore([4, 1]);
+
+        Assert.Equal([4, 1], roster.HumanSlots);
+        Assert.Throws<ArgumentOutOfRangeException>(() => roster.Restore([]));
+        Assert.Throws<ArgumentOutOfRangeException>(() => roster.Restore([6]));
+    }
+
     [Fact]
     public void NameEditorUsesOriginalTenCharacterUppercaseField()
     {

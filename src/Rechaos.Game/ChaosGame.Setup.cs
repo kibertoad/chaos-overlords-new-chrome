@@ -41,9 +41,32 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false, fromTitle: true);
     }
 
+    /// <summary>
+    /// RULE-SETUP-002: the stored scenario and a one-year limit. RULE-SETUP-010: the roster of the
+    /// last Begin of the session, or one human in slot 0 before the first.
+    /// </summary>
     private void OpenNewGameSetup()
     {
+        _selectedScenario = _preferredScenario;
+        _selectedDuration = GameDuration.OneYear;
+        var roster = _begunLocalSetup ?? LocalSetupSnapshot.Initial;
+        _localSetupRoster.Restore(roster.HumanSlots);
+        for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
+        {
+            _playerPortraits[slot] = roster.Portraits[slot];
+            _playerNames[slot] = roster.Names[slot];
+        }
+        _selectedSetupPlayerSlot = roster.HumanSlots.Min();
         _screens.Show(ClientScreen.Setup);
+    }
+
+    /// <summary>RULE-SETUP-002: a committed scenario choice on the local setup is stored.</summary>
+    private void CommitScenario(ScenarioId scenario)
+    {
+        _selectedScenario = scenario;
+        if (_configuringOnlineLobby) return;
+        _preferredScenario = scenario;
+        SavePreferences();
     }
 
     private void UpdateSetup(KeyboardState keyboard)
@@ -69,8 +92,8 @@ public sealed partial class ChaosGame
     private void ChangeScenario(int delta)
     {
         var currentButton = SetupScenarioButtons.ButtonForScenario(_selectedScenario);
-        _selectedScenario = SetupScenarioButtons.ScenarioForButton(
-            Mod(currentButton + delta, SetupScenarioButtons.VisualOrder.Count));
+        CommitScenario(SetupScenarioButtons.ScenarioForButton(
+            Mod(currentButton + delta, SetupScenarioButtons.VisualOrder.Count)));
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
     }
@@ -102,7 +125,10 @@ public sealed partial class ChaosGame
 
     private bool AddSetupHuman()
     {
+        // RULE-SETUP-010: the lowest portrait no other human holds; the name stays as it was.
+        var portrait = LocalSetupPolicy.LowestFreePortrait(_playerPortraits, _localSetupRoster.HumanSlots);
         if (_localSetupRoster.AddHuman() is not { } added) return false;
+        _playerPortraits[added] = portrait;
         _selectedSetupPlayerSlot = added;
         return true;
     }
@@ -135,7 +161,7 @@ public sealed partial class ChaosGame
         switch (control.Kind)
         {
             case SetupPanelControlKind.Scenario:
-                _selectedScenario = SetupScenarioButtons.ScenarioForButton(control.Index);
+                CommitScenario(SetupScenarioButtons.ScenarioForButton(control.Index));
                 break;
             case SetupPanelControlKind.Duration:
                 _selectedDuration = Durations[control.Index];
@@ -251,8 +277,8 @@ public sealed partial class ChaosGame
     {
         if (_configuringOnlineLobby) return;
         if (!_localSetupRoster.IsHuman(player)) return;
-        _playerPortraits[player] = checked((short)Mod(
-            _playerPortraits[player] + delta, PlayerPortraitLayout.SelectableCount));
+        _playerPortraits[player] = LocalSetupPolicy.StepPortrait(
+            _playerPortraits, _localSetupRoster.HumanSlots, player, delta);
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
     }
@@ -332,6 +358,9 @@ public sealed partial class ChaosGame
     private void StartMatch()
     {
         if (_definitions is null) return;
+        // RULE-SETUP-010: Begin saves the roster for the next local setup; Cancel saves nothing.
+        _begunLocalSetup = new LocalSetupSnapshot(
+            _localSetupRoster.HumanSlots.ToArray(), _playerPortraits.ToArray(), _playerNames.ToArray());
         var players = _localSetupRoster.HumanSlots.Order()
             .Select(slot => new MatchPlayerSetup(
                 new PlayerId(slot), _playerNames[slot],
@@ -365,9 +394,8 @@ public sealed partial class ChaosGame
         _siteSearchSelections.Reset();
         _lastTurnEventArchive.Clear();
         _managementReturnScreen = ClientScreen.City;
-        // The original's outer local-player loop shows the privacy card before it enters the
-        // first planner. The planner itself owns the one-time Game Information presentation.
-        _showGameInfoAtPlanningEntry = GameInformationPresentation.OpensAtNewGame(_state.Setup);
+        // RULE-SETUP-008: a new game never opens Game Information; only a loaded one does.
+        _resumedMatchTurn = null;
         _continuePlanningEntryAfterGameInfo = false;
         _deferComlinkAlertUntilPlanningVisible = false;
         PresentHotSeatPlanningEntry();
@@ -550,14 +578,24 @@ public sealed partial class ChaosGame
         {
             var control = SetupPanelLayout.HitTest(hover, timed: true);
             if (control is { Kind: SetupPanelControlKind.Scenario } scenario)
-                DrawHoverTooltip(batch, pixel, font, hover,
-                    ScenarioSetupTooltip.Lines(
-                        SetupScenarioButtons.ScenarioForButton(scenario.Index), _selectedDuration));
+            {
+                var lines = ScenarioSetupTooltip.Lines(
+                    SetupScenarioButtons.ScenarioForButton(scenario.Index), _selectedDuration);
+                DrawHoverTooltip(batch, pixel, font, hover, _configuringOnlineLobby
+                    ? lines
+                    : lines.Append(SetupRosterTooltip.ScenarioRemembered).ToArray());
+            }
             else if (control is { Kind: SetupPanelControlKind.Duration } duration)
                 DrawHoverTooltip(batch, pixel, font, hover,
                     DurationSetupTooltip.Lines(Durations[duration.Index]));
             else if (control is { Kind: SetupPanelControlKind.AiMentality } difficulty)
                 DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)difficulty.Index);
+            else if (!_configuringOnlineLobby && SetupButtonLayout.HitTest(hover) == SetupPushButton.AddPlayer)
+                DrawHoverTooltip(batch, pixel, font, hover, SetupRosterTooltip.AddPlayer);
+            else if (!_configuringOnlineLobby && _localSetupRoster.IsHuman(_selectedSetupPlayerSlot)
+                     && (PlayerPortraitLayout.PreviousHit(_selectedSetupPlayerSlot).Contains(hover)
+                         || PlayerPortraitLayout.NextHit(_selectedSetupPlayerSlot).Contains(hover)))
+                DrawHoverTooltip(batch, pixel, font, hover, SetupRosterTooltip.PortraitArrow);
         }
     }
 

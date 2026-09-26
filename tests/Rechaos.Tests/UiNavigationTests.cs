@@ -225,9 +225,7 @@ public sealed class UiNavigationTests
                 ScenarioId.Acceptance, ScenarioId.Dominance
             ],
             SetupScenarioButtons.VisualOrder);
-        Assert.Equal(ScenarioId.KillEmAll, SetupScenarioButtons.DefaultScenario);
-        Assert.Equal(0, SetupScenarioButtons.ButtonForScenario(
-            SetupScenarioButtons.DefaultScenario));
+        Assert.Equal(0, SetupScenarioButtons.ButtonForScenario(ScenarioId.KillEmAll));
         Assert.Equal(6, SetupScenarioButtons.ButtonForScenario(ScenarioId.Greed));
     }
 
