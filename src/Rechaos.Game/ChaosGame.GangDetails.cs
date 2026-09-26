@@ -240,7 +240,8 @@ public sealed partial class ChaosGame
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.GangAt(hover,
                 gang is null
                     ? null
-                    : effect => GangStatisticModifierTooltip.Lines(effect, state, gang)));
+                    : effect => GangStatisticModifierTooltip.Lines(effect, state, gang, _showBaseStatistics),
+                showsRebuiltValues: gang is not null && !_showBaseStatistics));
     }
 
     /// <summary>

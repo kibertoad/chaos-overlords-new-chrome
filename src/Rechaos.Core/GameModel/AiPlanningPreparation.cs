@@ -27,9 +27,11 @@ internal static class AiPlanningPreparation
     /// player's hire role stands for in this scenario; every other gang keeps its family. In Big
     /// Man the first turn forces hire role 1.
     /// </summary>
-    public static void AssignFamilyIfNeeded(MatchState state, PlayerId player, int gangSlot)
+    public static void AssignFamilyIfNeeded(
+        MatchState state, PlayerId player, MatchGangState gang, int gangSlot)
     {
         ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(gang);
         if (!state.AiPlanning.NeedsFamily(player, gangSlot)) return;
         state.AiPlanning.ResetForNewFamily(player, gangSlot);
         if (state.Setup.Scenario == ScenarioId.BigMan && state.Coordinator.Turn == 1)
@@ -38,8 +40,7 @@ internal static class AiPlanningPreparation
         if (OriginalAiFamilyRules.FamilyFor(state.Setup.Scenario, role) is not { } family) return;
         state.AiPlanning.SetFamily(player, gangSlot, family);
         if (role == 4)
-            state.AiPlanning.SetCoverageSector(
-                player, gangSlot, state.FindPlayer(player)!.Gangs[gangSlot].SectorId);
+            state.AiPlanning.SetCoverageSector(player, gangSlot, gang.SectorId);
     }
 
     public static OriginalAiHireRoleSelection? SelectHireRole(MatchState state, PlayerId player)

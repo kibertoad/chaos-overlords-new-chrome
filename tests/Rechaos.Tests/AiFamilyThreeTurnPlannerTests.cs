@@ -79,7 +79,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
         var match = CreateMatch(data, definitionId: 4, force: 10, ownsSource: true);
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 3);
+        match.AiPlanning.SeedFamily(player, 0, 3);
         match.AiPlanning.SetPlannedAction(
             player, 0, GangAction.Influence, new AiActionTarget(0, 0));
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
@@ -105,7 +105,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
         var match = CreateOpponentMatch(data, attacker.Id, seed);
         var player = new PlayerId(0);
         BeginFamilyThreeTurn(match, player);
-        match.AiPlanning.SetFamily(player, 0, 3);
+        match.AiPlanning.SeedFamily(player, 0, 3);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Move);
         var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
@@ -141,7 +141,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
             ownsSource: false, ownedCashSector: 18, scenario: scenario);
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 3);
+        match.AiPlanning.SeedFamily(player, 0, 3);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Move);
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Move);
@@ -162,7 +162,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
         var player = new PlayerId(0);
         AdvanceCoordinatorToTurn(match.Coordinator, 24, match.Players.Count);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 3);
+        match.AiPlanning.SeedFamily(player, 0, 3);
         match.Coordinator.FinishUpkeep();
 
         AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
@@ -203,7 +203,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
         GangAction action)
     {
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 3);
+        match.AiPlanning.SeedFamily(player, 0, 3);
         match.AiPlanning.SetPlannedAction(player, 0, action);
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
     }

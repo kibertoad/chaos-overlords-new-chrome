@@ -223,7 +223,7 @@ public sealed class AiPolicyTests
         match.AiPlanning.BeginPlanning(setups[0].Id);
         for (var slot = 0; slot < gangCount; slot++)
         {
-            match.AiPlanning.SetFamily(setups[0].Id, slot, 0);
+            match.AiPlanning.SeedFamily(setups[0].Id, slot, 0);
             match.AiPlanning.SetPlannedAction(setups[0].Id, slot, GangAction.None);
         }
         return match;
