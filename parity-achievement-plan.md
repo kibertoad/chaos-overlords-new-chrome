@@ -57,8 +57,6 @@ steps change.
     its computer players hire family-6 gangs at all.
   Run the paired simulations of the 2026-09-26 decision again after the fix, with the harness
   kept this time, to see whether the hunter guard then matters.
-- Families 0 and 4 count previous Chaos where the rebuild counts Hide, and group the previous
-  actions as the jump table does (FND-AI-046, FND-AI-048, FND-AI-049).
 - Upgrades follow FND-AI-055: the weapon choice starts from the equipped weapon, family 10's
   armor is chosen by Stealth, families 11 and 12 compare Detect and families 13 and 14 compare
   Control.

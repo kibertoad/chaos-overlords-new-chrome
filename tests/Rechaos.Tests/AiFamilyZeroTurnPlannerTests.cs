@@ -23,8 +23,10 @@ public sealed class AiFamilyZeroTurnPlannerTests
             match.AiPlanning.FocusValue(player, 0));
     }
 
+    // RULE-AI-019, FND-AI-046: a healthy gang raises Chaos where none of its player's gangs did
+    // last turn.
     [Fact]
-    public void FirstHealthyGangHidesWhenSectorHasNoPreviousHide()
+    public void FirstHealthyGangRaisesChaosWhenSectorHasNoPreviousChaos()
     {
         var match = CreateMatch();
         var player = new PlayerId(0);
@@ -33,8 +35,48 @@ public sealed class AiFamilyZeroTurnPlannerTests
 
         match.PrepareAiPlanning(player);
 
-        Assert.Equal(GangAction.Hide,
+        Assert.Equal(GangAction.Chaos,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
+    }
+
+    // RULE-AI-019, FND-AI-046: after Heal, Hide or Move a gang moves on when another of its
+    // player's gangs raised Chaos in the sector last turn. (The planning gang's own previous
+    // Chaos is counted too, but family 0 never counts after Chaos; AiFamilyFourTurnPlannerTests
+    // covers that.)
+    [Fact]
+    public void PreviousChaosOfAnotherGangInTheSectorSendsTheGangOn()
+    {
+        var match = CreateMatch();
+        var player = new PlayerId(0);
+        BeginFamilyZeroTurn(match, player);
+        match.Players[0].AddGang(new MatchGangState(new GangId(11), player, 1, 0, 10));
+        match.AiPlanning.SetFamily(player, 1, 0);
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Hide);
+        match.AiPlanning.SetPlannedAction(player, 1, GangAction.Chaos);
+        match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
+        match.FinishUpkeep();
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Equal(GangAction.Move, match.AiPlanning.PlannedAction(player, 0));
+    }
+
+    // RULE-AI-019, FND-AI-048: previous Research plans nothing and previous Snitch moves.
+    [Theory]
+    [InlineData(GangAction.Research, GangAction.None)]
+    [InlineData(GangAction.Influence, GangAction.None)]
+    [InlineData(GangAction.Snitch, GangAction.Move)]
+    public void JumpTableGroupsTheQuietActions(GangAction previous, GangAction expected)
+    {
+        var match = CreateMatch();
+        var player = new PlayerId(0);
+        BeginFamilyZeroTurn(match, player);
+        SetPreviousAction(match, player, previous);
+        match.FinishUpkeep();
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
     }
 
     [Fact]
@@ -103,13 +145,13 @@ public sealed class AiFamilyZeroTurnPlannerTests
     }
 
     [Fact]
-    public void PreviousHideRetriesFiveFailedDrawsThenAttacksFinalTarget()
+    public void PreviousChaosRetriesFiveFailedDrawsThenAttacksFinalTarget()
     {
         var match = CreateMatch(
             targetSector: 0, force: 8, targetForce: 10, weakAttacker: true);
         var player = new PlayerId(0);
         BeginFamilyZeroTurn(match, player);
-        SetPreviousAction(match, player, GangAction.Hide);
+        SetPreviousAction(match, player, GangAction.Chaos);
         match.FinishUpkeep();
         var randomBefore = match.Random.ConsumptionCount;
 
@@ -122,12 +164,12 @@ public sealed class AiFamilyZeroTurnPlannerTests
     }
 
     [Fact]
-    public void PreviousHideUsesNearbyDangerWeaponBeforeArmorOpportunity()
+    public void PreviousChaosUsesNearbyDangerWeaponBeforeArmorOpportunity()
     {
         var match = CreateMatch(equipmentOpportunity: true);
         var player = new PlayerId(0);
         BeginFamilyZeroTurn(match, player);
-        SetPreviousAction(match, player, GangAction.Hide);
+        SetPreviousAction(match, player, GangAction.Chaos);
         var expected = Assert.IsType<OriginalAiEquipmentRules.Upgrade>(
             OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                 match, match.Players[0], match.Players[0].Gangs[0], 0));

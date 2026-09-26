@@ -17,6 +17,29 @@ public static partial class AiTurnPlanner
     internal static bool IsHostileOwner(MatchState state, PlayerId playerId, int sectorId) =>
         state.AiStrategy.IsHostileToOwnerQuery(playerId, OwnerQuery(state, sectorId));
 
+    /// <summary>
+    /// FND-AI-046: selector 0x5B counts the player's active gangs in the sector whose previous
+    /// action was Chaos, the planning gang included. Callers compare the count with the threshold
+    /// the FND-AI-046 table gives for their call site (0, below 1 or below 2).
+    /// </summary>
+    internal static int CountPreviousChaosInSector(
+        MatchState state,
+        PlayerId playerId,
+        int sectorId)
+    {
+        var gangs = state.FindPlayer(playerId)!.Gangs;
+        var count = 0;
+        for (var slot = 0; slot < gangs.Count; slot++)
+        {
+            var gang = gangs[slot];
+            if (gang.IsActive
+                && gang.SectorId == sectorId
+                && state.AiPlanning.PreviousAction(playerId, slot) == GangAction.Chaos)
+                count++;
+        }
+        return count;
+    }
+
     private static IReadOnlyList<ObjectiveTarget> SelectHumanWeightedTargetPool(
         MatchState state,
         PlayerId playerId,

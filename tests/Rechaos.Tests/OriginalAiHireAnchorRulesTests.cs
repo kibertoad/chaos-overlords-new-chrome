@@ -195,6 +195,8 @@ public sealed class OriginalAiHireAnchorRulesTests
         Assert.False(facts.Keeps(ScenarioId.Greed, -1));
     }
 
+    // RULE-AI-013, FND-AI-051: for the failed anchor only sectors 0, 6, 7 and 8 lie in the
+    // neighbourhood, so free land elsewhere in the top rows does not keep it.
     [Fact]
     public void FailedAnchorIgnoresOtherFreeCellsOfTheTopRows()
     {
@@ -204,6 +206,21 @@ public sealed class OriginalAiHireAnchorRulesTests
         facts.Owners[15] = -1;
 
         Assert.False(facts.Keeps(ScenarioId.Greed, -1));
+    }
+
+    // RULE-AI-013, FND-AI-051: the keep test stops at the first failure, so an anchor without
+    // free land never reads its occupancy.
+    [Fact]
+    public void KeepTestReadsOccupancyOnlyAfterFreeLand()
+    {
+        var facts = new Facts();
+        facts.Owners[27] = 0;
+        var occupancyReads = 0;
+
+        Assert.False(OriginalAiHireAnchorRules.KeepsAnchor(
+            new PlayerId(0), ScenarioId.Greed, 27, facts.Owners, facts.Availability,
+            _ => ++occupancyReads));
+        Assert.Equal(0, occupancyReads);
     }
 
     private sealed class Facts

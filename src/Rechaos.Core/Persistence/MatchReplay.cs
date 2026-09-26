@@ -332,7 +332,7 @@ public static class MatchReplaySerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: a journal is verified step
     // by step against the fingerprint of its day, so a journal from format 31 would diverge on its
     // first step and be reported as damage rather than as an older format.
-    public const int CurrentFormatVersion = 41;
+    public const int CurrentFormatVersion = 42;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
