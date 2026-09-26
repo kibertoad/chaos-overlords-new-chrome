@@ -174,8 +174,11 @@ failure. Ordinary pushes do not dispatch this workflow.
 
 `Verify-Repository.ps1` applies `tools/repository-policy.json` to Git-tracked
 files. It rejects extracted/imported roots, original-media extensions outside
-explicit clean-room or synthetic fixture roots, and unreviewed files larger
-than 1 MiB. The Windows publisher invokes the same check before deleting or
+explicit clean-room or synthetic fixture roots, decompiler, disassembly and
+analysis-database artifacts anywhere (Ghidra `.gpr` projects, `.rep`
+directories and `.lock` files, `.gzf`/`.gar`/`.gdt` archives, IDA
+`.idb`/`.i64`/`.id0`-`.id2`/`.nam`/`.til` databases, Binary Ninja `.bndb`, and
+`.lst`/`.asm` listings), and unreviewed files larger than 1 MiB. The Windows publisher invokes the same check before deleting or
 creating package output.
 
 Runtime-diagnostics tests open an isolated log directory, deserialize the
