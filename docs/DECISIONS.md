@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-26 | [Keep a replay load's random state and inboxes](#2026-09-26--keep-a-replay-loads-random-state-and-inboxes) |
 | 2026-09-26 | [Keep the original hunter guard and drop DEV-AI-001](#2026-09-26--keep-the-original-hunter-guard-and-drop-dev-ai-001) |
 | 2026-09-26 | [Keep the rule and AI corrections mandatory](#2026-09-26--keep-the-rule-and-ai-corrections-mandatory) |
 | 2026-09-25 | [Play the intro at every start unless Intro only once is on](#2026-09-25--play-the-intro-at-every-start-unless-intro-only-once-is-on) |
@@ -38,6 +39,24 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-26 — Keep a replay load's random state and inboxes
+
+- Decision: F10 rebuilds the match from the F6 journal and plays on with the
+  random state and Comlink inboxes the journal reached. It does not do what a
+  save load does: draw on from the run's sequence (RULE-RNG-001) and empty every
+  inbox (RULE-COMLINK-004).
+- Reason: a replay exists to reproduce a session exactly. Reseeding would make
+  the turn after the load differ from the recorded one, and emptying the inboxes
+  would throw away part of the state being reproduced, so a bug seen after the
+  load could no longer be followed. RULE-RNG-001 and RULE-COMLINK-004 describe
+  how the original enters a loaded game; the original has no replay load, so
+  they do not govern this one.
+- Open: F6 and F10 are available to players in every local match. Together they
+  act as a quick save and quick load that keeps the luck, which is exactly what
+  RULE-RNG-001's reload behaviour prevents for F5 and F9. The keys should later
+  move behind a debug setting. Players lose nothing by that, since F5 and F9
+  already save and load, and the replay stays a reproduction tool.
 
 ## 2026-09-26 — Keep the original hunter guard and drop DEV-AI-001
 
