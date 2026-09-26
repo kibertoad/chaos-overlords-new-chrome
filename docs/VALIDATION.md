@@ -114,6 +114,31 @@ The final JSON includes deterministic hashes and territory, defended-territory,
 gang, combat, replay, and timing metrics. Run the same matrix with `--policy
 advanced` for a paired comparison.
 
+### Simulated human seats
+
+Several AI paths react only to human players: the hunters pick their targets
+among human gangs, many families treat a human owner differently, and a match
+ends when its only human is eliminated. A match of computer players never
+reaches them. A simulation that needs them seats a simulated human: the seat
+registers as `PlayerController.Human`, so every rule and AI query sees a
+person, and the computer planner plays it.
+
+```csharp
+var result = HeadlessMatchRunner.Run(definitions, new HeadlessMatchOptions(
+    ScenarioId.Dominance, GameDuration.FourYears, seed,
+    SimulatedHumans: [new PlayerId(0)]));
+```
+
+The named seats are set up as human and the others as computer players;
+seats the options do not reach are filled with computer players as in any
+match. A test that drives a `MatchState` itself calls `SimulateHuman` on a
+human seat before the first planning step; the planner refuses a human seat
+that is not marked. The mark lives only in that `MatchState`: a save, a clone
+and a replay journal do not carry it, so the runner refuses `VerifyReplay` for
+a match with simulated humans. A simulated human plays like a computer player,
+so it provokes less than a person would; read results about aggression with
+that in mind. The `ai-tournament` command does not expose the option.
+
 A small, stable worker pool is expected. If a prior interrupted run left stale
 workers, perform validation and then stop all .NET build servers owned by the
 current user:
