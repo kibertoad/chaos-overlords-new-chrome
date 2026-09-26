@@ -35,11 +35,11 @@ them together with a single session bump, or accept one bump per release.
 
 These decide the shape of later steps, so they come first.
 
-- Four `mandatory` deviations change rule or AI results, where the Fidelity rules ask for a
+- Three `mandatory` deviations change rule or AI results, where the Fidelity rules ask for a
   setting that starts `off`: DEV-EQUIP-001 (cash in submission order), DEV-CONTROL-001 (only
-  players with a Control order compete), DEV-AI-001 (corrected hunter guard) and DEV-AI-002
-  (unplayable AI actions dropped). Decide for each whether it becomes a setting with the
-  original's behaviour as the default. Turning one into a setting adds the original's path to
+  players with a Control order compete) and DEV-AI-002 (unplayable AI actions dropped). Decide
+  for each whether it becomes a setting with the original's behaviour as the default. DEV-AI-001
+  (corrected hunter guard) was dropped on 2026-09-26, when simulations showed it changed nothing. Turning one into a setting adds the original's path to
   the code and lets the validation suite reach it. Record the outcome in `docs/DECISIONS.md`.
 - Decide how the in-memory layouts FMT-STATE-001 to FMT-STATE-009 count as `complete`: either a
   documented field-by-field equivalence in the row's notes, or a deviation for each place the
@@ -157,6 +157,22 @@ steps change.
   Big Man first-turn hire role (FND-AI-041, FND-AI-042).
 - Hire placement keeps anchor 63 for player 0 while sector 0, 6, 7 or 8 is free land
   (FND-AI-051); check the per-scenario slot adjustments and the hunter reversion (FND-AI-050).
+- Hunter hires (open claim on RULE-AI-010, 2026-09-26): in 2,688 simulated four-year matches
+  with a simulated human, no computer player of the rebuild hired role 4 in any scenario, and the
+  hunter force reached its guard only in Armageddon. Find out why and whether the original does
+  the same:
+  - compare the rebuild's first hostile sector with `first_hostile` of RULE-AI-010, which reads
+    `sector_weight` 10 from `visible_weight` in RULE-AI-004: the rebuild takes any sector with
+    any detectable gang of any hostile player, human or computer, where the spec takes the first
+    visible gang only and counts it only for a hostile human;
+  - check the family counts the hunter test and the later adjustments read (family 0 or 4,
+    3, 5, 6 or 12, 7) against the spec, since a later adjustment that always fires would explain
+    the missing hunters, and the scheduled hunter slot of each scenario, which is flattened in
+    the same way;
+  - settle with the original: the BUG-AI-001 item of manual_validation_plan.md records whether
+    its computer players hire family-6 gangs at all.
+  Run the paired simulations of the 2026-09-26 decision again after the fix, with the harness
+  kept this time, to see whether the hunter guard then matters.
 - Families 0 and 4 count previous Chaos where the rebuild counts Hide, and group the previous
   actions as the jump table does (FND-AI-046, FND-AI-048, FND-AI-049).
 - Upgrades follow FND-AI-055: the weapon choice starts from the equipped weapon, family 10's

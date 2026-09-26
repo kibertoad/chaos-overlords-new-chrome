@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-26 | [Keep the original hunter guard and drop DEV-AI-001](#2026-09-26--keep-the-original-hunter-guard-and-drop-dev-ai-001) |
 | 2026-09-25 | [Play the intro at every start unless Intro only once is on](#2026-09-25--play-the-intro-at-every-start-unless-intro-only-once-is-on) |
 | 2026-09-24 | [Record the gangs that fought in each combat event](#2026-09-24--record-the-gangs-that-fought-in-each-combat-event) |
 | 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
@@ -36,6 +37,50 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-26 — Keep the original hunter guard and drop DEV-AI-001
+
+- Decision: the computer players' hunter guards compare the previous hire role
+  with the scenario's hunter slot number, as the original does (BUG-AI-001,
+  RULE-AI-010). DEV-AI-001, which compared with role 4 in every scenario, is
+  dropped. The rule change moves the multiplayer session version to 14; the
+  protocol version and the state fingerprint encoding do not change.
+- Reason: DEV-AI-001 was mandatory on the argument that the original compares
+  with a number that never matches, so the correction restores the author's
+  intent. That argument shows the original is a defect. It does not show that
+  the correction is better for the player, which a mandatory deviation must.
+  The question that decides it is whether the correction changes how strong the
+  computer players are, and headless simulations of the rebuild answer that it
+  does not.
+- Method: a throwaway harness, not kept in the repository, switched the guard
+  per player between the two comparisons. Seat 0 was a simulated human (see
+  [VALIDATION.md](VALIDATION.md#simulated-human-seats)) that always used the
+  corrected comparison; the five computer players used the original comparison
+  in one arm and the corrected one in the other, on the same seeds. It ran the
+  seven scenarios that have a hunter guard (Greed, Power, Acceptance,
+  Dominance, Kill 'Em All, Big 40 and Armageddon), 24 seeds each, four-year
+  matches, at each of the four Mentality levels and under both AI policies:
+  1,344 pairs, 2,688 matches.
+- Findings: every pair finished identical: same end turn, standings, scores,
+  hires, attacks and eliminations. Mentality changed the matches a great deal
+  (the simulated human was eliminated in 1 of 168 matches against Goon under
+  the Original policy and in 131 of 168 against Homicidal Maniac under the
+  Advanced policy), so the sample covers passive and aggressive computer
+  players. The hunter force reached its guard only in Armageddon, 1,052 times
+  in all, and the two comparisons disagreed every time; the scenario's later
+  adjustments, which set the slot to 0 while the player has fewer than four
+  family-0 or family-4 gangs or enough family-6 and family-12 gangs, overwrote
+  each of those slots before a hire. In the other six scenarios the guard was
+  never reached, because a visible hostile sector, no covering hunter and the
+  family-3, family-5 or family-7 gangs the test needs never came together.
+  None of the roughly 175,000 computer hires across all matches was a hunter
+  (role 4).
+- Limits: the simulations measure the rebuild's hire logic, and RULE-AI-010 is
+  `partial` in [PARITY.md](../PARITY.md). A simulated human plays like a
+  computer player and provokes less than a person would. The absence of hunter
+  hires is itself suspect and is recorded as an open claim on RULE-AI-010,
+  with its follow-up in step 8 of
+  [parity-achievement-plan.md](../parity-achievement-plan.md).
 
 ## 2026-09-25 — Play the intro at every start unless Intro only once is on
 

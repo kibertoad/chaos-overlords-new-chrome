@@ -302,7 +302,9 @@ finding or experiment is in the spec.
   next hire goes.
 - BUG-AI-001: in Dominance, does a computer player hire family-6 gangs on
   consecutive hires? Record `0x00482128` and `0x00482160` and the hired gang's
-  family each turn for fifty turns.
+  family each turn for fifty turns. Also record whether any computer player
+  hires a family-6 gang at all, in Dominance and in Armageddon, with a human
+  gang visible to it: the rebuild hires none (the open claim on RULE-AI-010).
 
 ## Screens, options, planning timer and sound
 
