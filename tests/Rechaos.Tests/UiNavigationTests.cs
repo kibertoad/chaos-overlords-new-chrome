@@ -830,7 +830,8 @@ public sealed class UiNavigationTests
         Assert.False(NotificationPresentation.IsLastTurnReport(economy, null));
         Assert.False(NotificationPresentation.IsLastTurnReport(movement, null));
         Assert.True(NotificationPresentation.IsLastTurnReport(control, capture));
-        Assert.Equal("SECTOR CONTROL ATTAINED.", NotificationPresentation.LastTurnStatus(control));
+        Assert.Equal("SECTOR CONTROL ATTAINED.", LastTurnEventPresentation.Caption(
+            new LastTurnReportRecord(LastTurnEventPresentation.ReportType(control, capture), 7, 0, 0)));
     }
 
     [Theory]
@@ -848,7 +849,9 @@ public sealed class UiNavigationTests
             kind, SectorId: 7, RelatedEventSequence: 42);
 
         Assert.True(NotificationPresentation.IsLastTurnReport(notification, gameEvent));
-        Assert.Equal(expectedStatus, NotificationPresentation.LastTurnStatus(notification));
+        // SCR-EVENT-001: a cash report for a hire has arg1 4; types 7 and 8 do not read it.
+        Assert.Equal(expectedStatus, LastTurnEventPresentation.Caption(new(LastTurnEventPresentation
+            .ReportType(notification, gameEvent), LastTurnReportRecord.CashShortHire, 0, 0)));
     }
 
     [Theory]
@@ -869,8 +872,9 @@ public sealed class UiNavigationTests
             ExecutionPhase.Instant, notificationKind, new GangId(10), 7, 42);
 
         Assert.True(NotificationPresentation.IsLastTurnReport(notification, gameEvent));
-        Assert.Equal(expectedStatus,
-            NotificationPresentation.LastTurnStatus(notification, gameEvent));
+        var arg1 = action == GangAction.Bribe ? LastTurnReportRecord.CashShortBribe : LastTurnReportRecord.CashShortEquip;
+        Assert.Equal(expectedStatus, LastTurnEventPresentation.Caption(new(
+            LastTurnEventPresentation.ReportType(notification, gameEvent), arg1, 7, 0)));
     }
 
     [Theory]
@@ -927,8 +931,8 @@ public sealed class UiNavigationTests
 
         Assert.False(NotificationPresentation.IsLastTurnReport(notification, gangLoss));
         Assert.True(NotificationPresentation.IsLastTurnReport(notification, playerLoss));
-        Assert.Equal("PLAYER HAS BEEN ELIMINATED.",
-            NotificationPresentation.LastTurnStatus(notification));
+        Assert.Equal("PLAYER HAS BEEN ELIMINATED.", LastTurnEventPresentation.Caption(
+            new LastTurnReportRecord(LastTurnEventPresentation.ReportType(notification, playerLoss), 1, 0, 0)));
     }
 
     [Fact]

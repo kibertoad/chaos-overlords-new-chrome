@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 17 |
+| `supported` | 14 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 196 |
-| `validated` | 9 |
+| `implemented` | 198 |
+| `validated` | 10 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 1 |
-| `partial` | 16 |
-| `complete` | 205 |
+| `partial` | 13 |
+| `complete` | 208 |
 
 ## DATA
 
@@ -366,7 +366,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EVENT-012` | Taking control of a sector is reported to the new owner | supported | complete | None | None | implemented | The report is the rebuild's Control notification; a winner without a Control order (BUG-CONTROL-001) gets one with no event. |
 | `RULE-EVENT-013` | Losing control of a sector is reported to the previous owner | supported | complete | None | None | implemented | The report is the rebuild's Control lost notification, sent on a takeover by Control and on a third Crackdown. |
 | `RULE-EVENT-014` | An Equip that fails for lack of cash is reported to its player | supported | complete | None | None | implemented | The report is the rebuild's failed Equip result, which names the gang and its sector; like the original it does not name the item. |
-| `SCR-EVENT-001` | Last Turn Events panel | supported | partial | None | `DEV-EVENT-001`, `DEV-EVENT-002` | supported | Every element sits at the position SCR-EVENT-001 records, with its pressed faces and act-on-release input. The captions are the rebuild's own text, because the rebuild does not load the executable's STRING/33 to STRING/44. |
+| `SCR-EVENT-001` | Last Turn Events panel | supported | complete | None | `DEV-EVENT-001`, `DEV-EVENT-002` | implemented | Every element sits at the position SCR-EVENT-001 records, with its pressed faces and act-on-release input. The caption is chosen by the record's type and arg1 from strings 33 to 44, which a test compares with the executable's string table. |
 
 ## COMLINK
 
@@ -432,7 +432,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-006` | Choosing a sector's gang-status marker | supported | complete | None | None | implemented | Frames and the one saved cell that loses frame 8 follow the rule. Enemy sight and presence come from a snapshot kept for each planning entry, and the idle test and incoming hires are read live. |
 | `RULE-UI-007` | The pointer shape | supported | complete | None | None | implemented | The stock arrow shows at all times, and the hourglass while a city is set up, a game is loaded or a turn is resolved. |
 | `RULE-UI-008` | The presentation timer | supported | complete | None | `DEV-TIMER-001` | implemented | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). |
-| `RULE-UI-009` | The texts of the Game Information panel | supported | partial | None | `DEV-AI-003` | supported | Game Information appends the AI policy label after Mentality (deviation); the other fields follow the original. |
+| `RULE-UI-009` | The texts of the Game Information panel | supported | complete | tests/Rechaos.Tests/ExecutableStringTableTests.cs | `DEV-AI-003` | validated | Every text is the executable's string the rule names, compared with BLD-GOG-EN-1.1's string table. With Advanced AI on, the Mentality field adds the AI policy (DEV-AI-003). |
 | `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | complete | None | None | implemented | The cards list the viewed player's visible gangs and Gangs in Sector the active player's gangs, both in roster slot order, checked by SectorOpponentGangsTests and GangInformationRosterTests. |
 | `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | Income for all and Support and Cash for the owner are shown. |
 | `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | `DEV-UI-002` | implemented | The rebuild also draws the pylons on the detailed-sector minimap (deviation). |
@@ -445,7 +445,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `SCR-UI-005` | Gangs in Sector panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | The sector cell, code, portraits and the sixteen rows follow the original in roster order, with Upkeep negated and Base Statistics ignored. A seventh gang is not drawn where the original draws it past the panel's right edge. |
 | `SCR-UI-006` | Item Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-009`, `DEV-UI-010` | implemented | Item Information uses PX05001 with the 15-frame rotation; it can also be opened from Gang Information. |
 | `SCR-UI-007` | Site Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | None |
-| `SCR-UI-008` | Game Information panel | supported | partial | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | supported | Appends the AI policy label. |
+| `SCR-UI-008` | Game Information panel | supported | complete | None | `DEV-AI-003`, `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | Fields, positions, the OK face, Enter or Execute, and the refused press outside the panel follow the entry. With Advanced AI on, the Mentality field adds the AI policy (DEV-AI-003). |
 | `SCR-UI-009` | Application menu bar | supported | complete | None | `DEV-HELP-001`, `DEV-OPTIONS-003`, `DEV-UI-011`, `DEV-UI-016`, `DEV-UI-019` | implemented | The rebuild has no menu bar, and every command on it is reached another way (DEV-UI-019). |
 
 ## OPTIONS

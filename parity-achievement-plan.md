@@ -76,9 +76,6 @@ needs static reads or captures of the original:
 - RULE-TIMER-004: how much lighter a flash copy is and the order of the city-cell copies
   (FND-UI-017); the pressed faces of Influence's Escape, Move and Research, which no finding
   records.
-- SCR-EVENT-001: the captions come from `Chaos Overlords.exe#STRING/33` to `STRING/44`, and the
-  rebuild has no loader for the executable's string resources; the extractor needs one, and the
-  panel then draws them.
 
 ## Step 12: Close the research plans
 

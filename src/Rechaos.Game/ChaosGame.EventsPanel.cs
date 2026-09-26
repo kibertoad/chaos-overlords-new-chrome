@@ -366,13 +366,14 @@ public sealed partial class ChaosGame
         // characters, inside LastTurnEventPresentation.Subject.
         font.Draw(batch, LastTurnEventPresentation.Subject(state, record),
             LastTurnEventsLayout.Subject.ToVector2(), Color.Lime, 1);
-        // SCR-EVENT-001 draws the caption from STRING/33 to STRING/44 of the executable, cut to
-        // 35 characters (FND-EVENT-005). The rebuild reads no string resources from the
-        // executable, so the text is its own wording until it does.
-        var status = NotificationPresentation.LastTurnStatus(notification, related);
-        if (status.Length > LastTurnEventsLayout.CaptionColumns)
-            status = status[..LastTurnEventsLayout.CaptionColumns];
-        font.Draw(batch, status, LastTurnEventsLayout.Caption.ToVector2(), Color.Lime, 1);
+        // SCR-EVENT-001: the caption is STRING/33 to STRING/44 by the record's type and arg1, cut
+        // to 35 characters (FND-EVENT-005).
+        if (LastTurnEventPresentation.Caption(record) is { } caption)
+        {
+            if (caption.Length > LastTurnEventsLayout.CaptionColumns)
+                caption = caption[..LastTurnEventsLayout.CaptionColumns];
+            font.Draw(batch, caption, LastTurnEventsLayout.Caption.ToVector2(), Color.Lime, 1);
+        }
     }
 
     private static void DrawDigitCells(
@@ -720,6 +721,31 @@ public static class LastTurnEventPresentation
                 new(type, elimination.EliminatedPlayer.Value, 0, 0),
             _ => new(0, 0, 0, 0)
         };
+    }
+
+    /// <summary>
+    /// SCR-EVENT-001: the caption of a report, the executable's string 33 plus the record's type
+    /// for types 0 to 5, 39, 40 or 41 for a cash report whose arg1 is 1, 2 or 4, and 42 to 44 for
+    /// types 7 to 9. A cash report with any other arg1 has no caption.
+    /// </summary>
+    public static string? Caption(LastTurnReportRecord record)
+    {
+        var id = record.Type switch
+        {
+            >= 0 and <= LastTurnReportRecord.ResearchCompleted => 0x21 + record.Type,
+            LastTurnReportRecord.CashShort => record.Arg1 switch
+            {
+                LastTurnReportRecord.CashShortBribe => 0x27,
+                LastTurnReportRecord.CashShortEquip => 0x28,
+                LastTurnReportRecord.CashShortHire => 0x29,
+                _ => 0
+            },
+            LastTurnReportRecord.HireSectorFull => 0x2A,
+            LastTurnReportRecord.HireRosterFull => 0x2B,
+            LastTurnReportRecord.Elimination => 0x2C,
+            _ => 0
+        };
+        return id == 0 ? null : ExecutableStrings.Get(id);
     }
 
     /// <summary>
