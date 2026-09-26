@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 79 |
+| `supported` | 75 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 142 |
+| `implemented` | 146 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 19 |
-| `partial` | 61 |
-| `complete` | 142 |
+| `partial` | 57 |
+| `complete` | 146 |
 
 ## DATA
 
@@ -121,15 +121,15 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-SETUP-001` | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported | complete | None | `DEV-SETUP-001` | implemented | None |
-| `RULE-SETUP-002` | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported | partial | None | None | supported | The rebuild starts every setup on Kill 'Em All and keeps no scenario preference; value 0 is Greed (FND-SETUP-013, FND-OBJECTIVE-003). The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
+| `RULE-SETUP-002` | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported | complete | None | None | implemented | The preference lives in the rebuild's own preferences file, so the original's fallback to a stray registry byte when the value is missing does not arise. The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
 | `RULE-SETUP-003` | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | supported | complete | None | None | implemented | None |
 | `RULE-SETUP-004` | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported | complete | None | None | implemented | Reactions for all six slots, then the city, headquarters and Right Hands. Research is set after the city, which changes nothing because it makes no draw and neither step reads what the other writes. The initial-state fixture from the original that would confirm the draw order is still pending. |
 | `RULE-SETUP-005` | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-006` | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | supported | complete | None | `DEV-SETUP-001` | implemented | None |
 | `RULE-SETUP-007` | A player named with the visibility modifier sees every opposing gang for the whole match | supported | complete | None | `DEV-SETUP-001` | implemented | None |
-| `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | partial | None | None | supported | The handoff order is Combat, Events, planning; whether the once-only Game Information panel and the Comlink scan follow the entry's order was not checked. |
-| `RULE-SETUP-009` | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported | partial | None | None | supported | The rebuild's portrait arrows step through every portrait instead of skipping the ones other slots hold (FND-SETUP-013). |
-| `RULE-SETUP-010` | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported | partial | None | None | supported | Add does not give the new human the lowest free portrait, and whether the rebuild reopens setup with the roster of the last Begin was not checked (FND-SETUP-013). |
+| `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | complete | None | None | implemented | None |
+| `RULE-SETUP-009` | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported | complete | None | None | implemented | None |
+| `RULE-SETUP-010` | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported | complete | None | None | implemented | The rebuild's online lobby keeps its own seats and does not edit the local roster; entering one still resets the local roster to one human, as the original's lobby reset does. |
 | `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | None | `DEV-SETUP-002` | implemented | The left panel follows FND-SETUP-013: its rectangles, the refusal area of the time limit, the pressed images and push cue, the commit on release inside, and the light sprite. The stored scenario preference belongs to RULE-SETUP-002. |
 | `SCR-SETUP-002` | Hot-seat handoff card that waits for the next local player to press Ready | supported | complete | None | `DEV-SETUP-002` | implemented | None |
 

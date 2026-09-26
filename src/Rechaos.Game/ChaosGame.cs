@@ -119,8 +119,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _selectedSetupPlayerSlot;
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
-    private ScenarioId _selectedScenario = SetupScenarioButtons.DefaultScenario;
-    private GameDuration _selectedDuration = GameDuration.SixMonths;
+    private ScenarioId _selectedScenario = ScenarioId.Greed;
+    private GameDuration _selectedDuration = GameDuration.OneYear;
+    // RULE-SETUP-002: the scenario a fresh local setup selects, Greed when nothing is stored.
+    private ScenarioId _preferredScenario = ScenarioId.Greed;
+    // RULE-SETUP-010: the roster of the last Begin of this session.
+    private LocalSetupSnapshot? _begunLocalSetup;
     private int _cursor;
     private int _selectedGangIndex;
     private IReadOnlyList<GameCommand> _commandOptions = [];
@@ -139,7 +143,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private PlayerId? _combatSummaryOpponent;
     private bool _openEventsAfterCombat;
     private bool _automaticDetailedCombatPresentation;
-    private bool _showGameInfoAtPlanningEntry;
+    // RULE-SETUP-008: the turn a loaded match resumed on; each local human who plans in it sees
+    // Game Information once, after the Ready card.
+    private int? _resumedMatchTurn;
+    private readonly HashSet<PlayerId> _resumedGameInfoShown = [];
     private bool _continuePlanningEntryAfterGameInfo;
     private bool _deferComlinkAlertUntilPlanningVisible;
     private readonly Queue<PlayerId> _pendingHotSeatEliminations = [];
@@ -263,6 +270,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _introMoviesSeen = preferences.IntroMoviesSeen;
         _introOnlyOnce = preferences.IntroOnlyOnce;
         _defaultAiPolicy = preferences.DefaultAiPolicy;
+        _preferredScenario = preferences.PreferredScenario;
         _online.Service = preferences.OnlineService;
         _online.Server.Set(preferences.CustomMultiplayerServer);
         _onlineLobbyPresentation = preferences.LobbyPresentation;
