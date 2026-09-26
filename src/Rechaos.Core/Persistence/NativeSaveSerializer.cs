@@ -205,7 +205,9 @@ public static class NativeSaveSerializer
                 savedPlanning.CoverageSectors
                     ?? throw new InvalidDataException("Native save AI coverage sectors are missing."),
                 savedPlanning.NeedsFamily
-                    ?? throw new InvalidDataException("Native save AI family flags are missing."))
+                    ?? throw new InvalidDataException("Native save AI family flags are missing."),
+                savedPlanning.RaiderMode
+                    ?? throw new InvalidDataException("Native save AI raider flags are missing."))
             : throw new InvalidDataException("Native save AI planning state is missing.");
         var runtime = new MatchRuntimeRestore(
             document.Runtime.Turn,
@@ -301,7 +303,8 @@ public static class NativeSaveSerializer
                 state.AiPlanning.CaptureArmorCooldowns(),
                 state.AiPlanning.CaptureFormationSectors(),
                 state.AiPlanning.CaptureCoverageSectors(),
-                state.AiPlanning.CaptureNeedsFamily()),
+                state.AiPlanning.CaptureNeedsFamily(),
+                state.AiPlanning.CaptureRaiderMode()),
             state.Players.Select(player => new PlayerComlinkDocument(
                 player.Id.Value,
                 state.ComlinkFor(player.Id).NextSequence,
@@ -614,7 +617,8 @@ internal sealed record AiPlanningDocument(
     IReadOnlyList<short>? ArmorCooldowns = null,
     IReadOnlyList<short>? FormationSectors = null,
     IReadOnlyList<short>? CoverageSectors = null,
-    IReadOnlyList<bool>? NeedsFamily = null);
+    IReadOnlyList<bool>? NeedsFamily = null,
+    IReadOnlyList<bool>? RaiderMode = null);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,

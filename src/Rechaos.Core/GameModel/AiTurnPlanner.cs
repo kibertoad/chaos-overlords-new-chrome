@@ -45,7 +45,7 @@ public static partial class AiTurnPlanner
             var choice = SelectRecoveredFamilyCommand(
                 state, player, gang, entry.slot, options);
             if (choice is null
-                && PreservesRecoveredPreparation(state, playerId, entry.slot))
+                && PreservesRecoveredPreparation(state, playerId))
                 continue;
             choice ??= SelectProvisionalFallbackCommand(
                 state, player, gang, options);
@@ -87,12 +87,13 @@ public static partial class AiTurnPlanner
             .FirstOrDefault();
     }
 
-    private static bool PreservesRecoveredPreparation(
-        MatchState state,
-        PlayerId playerId,
-        int gangSlot) =>
-        state.AiPlanning.HasPlanned(playerId)
-        && state.AiPlanning.Family(playerId, gangSlot) != AiPlanningState.UnusedFamily;
+    /// <summary>
+    /// Once a player has a planning pass behind it, its records decide every gang's order. A gang
+    /// its handler left without an action, and a gang left in family 99, which has no handler,
+    /// plans nothing (RULE-AI-002) instead of reaching the provisional fallback.
+    /// </summary>
+    private static bool PreservesRecoveredPreparation(MatchState state, PlayerId playerId) =>
+        state.AiPlanning.HasPlanned(playerId);
 
     private static void PrepareFamilyElevenCommand(
         MatchState state,
@@ -147,10 +148,7 @@ public static partial class AiTurnPlanner
         // The families as they stand when this gang plans: earlier gangs have been dispatched,
         // later ones not yet (RULE-AI-002).
         var leaderSlot = OriginalAiFamilyElevenRules.FormationLeaderSlot(
-            Enumerable.Range(0, AiPlanningState.GangSlotsPerPlayer)
-                .Select(slot => state.AiPlanning.Family(playerId, slot))
-                .ToArray(),
-            gangSlot);
+            state.AiPlanning.Families(playerId), gangSlot);
         var isLeader = leaderSlot == gangSlot;
         PrepareFamilyElevenMove(
             state, playerId, gang, gangSlot, isLeader ? 10 : 16,
