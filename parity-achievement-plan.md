@@ -31,24 +31,8 @@ Most gameplay steps change how a turn resolves, so they bump `MULTIPLAYER_SESSIO
 To retire live matches once instead of once per step, land steps 2 to 9 on one branch and release
 them together with a single session bump, or accept one bump per release.
 
-## Step 1: Settle the open decisions
-
-These decide the shape of later steps, so they come first.
-
-- Four `mandatory` deviations change rule or AI results, where the Fidelity rules ask for a
-  setting that starts `off`: DEV-EQUIP-001 (cash in submission order), DEV-CONTROL-001 (only
-  players with a Control order compete), DEV-AI-001 (corrected hunter guard) and DEV-AI-002
-  (unplayable AI actions dropped). Decide for each whether it becomes a setting with the
-  original's behaviour as the default. Turning one into a setting adds the original's path to
-  the code and lets the validation suite reach it. Record the outcome in `docs/DECISIONS.md`.
-- Decide how the in-memory layouts FMT-STATE-001 to FMT-STATE-009 count as `complete`: either a
-  documented field-by-field equivalence in the row's notes, or a deviation for each place the
-  rebuild stores something different (the Force-0 marker for an empty roster slot where the
-  original writes sector 100 is one, RULE-GANG-002).
-
-Tooltips: the Equip tooltip already says purchases follow the player's click order. If
-DEV-EQUIP-001 becomes a setting, the text follows the setting, and with the setting off it
-describes the scan by player slot and roster slot.
+DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay so (the
+2026-09-26 decision in `docs/DECISIONS.md`); no step adds the original's path for them.
 
 ## Step 2: Split Tolerance into base and site parts
 
@@ -82,7 +66,8 @@ Crackdown test reads the new Tolerance.
 - Chaos pays in a sector under police presence unless that sector cracked down this turn
   (FND-CHAOS-002). Check whether gangs killed in this turn's combat are skipped, and match it.
 - Control settles only contested sectors without police, and adds the owner's defense to the
-  owner's own pool (FND-CONTROL-003). DEV-CONTROL-001 and DEV-CONTROL-002 stay as step 1 decides.
+  owner's own pool (FND-CONTROL-003). Only players with a Control order compete, as the
+  mandatory DEV-CONTROL-001 requires, and DEV-CONTROL-002 stays mandatory.
 
 Tooltips: Chaos (when it pays and when a Crackdown follows), Control (which sectors are settled,
 how the owner's defense is pooled, the tie rule), and the Control statistic in
@@ -179,8 +164,10 @@ computer players choose orders.
 - RULE-AUDIO-006: the turn-start sound plays only where the original plays it; check it with
   effects off (BUG-AUDIO-001).
 - RULE-RNG-001, RULE-TERMINATE-001 and RULE-GANG-002: their differences are covered by
-  deviations or by step 1's representation decision; confirm nothing else differs and mark them
-  `complete`.
+  deviations or by the representation decision of 2026-09-26; confirm nothing else differs and
+  mark them `complete`.
+- FMT-STATE-001 to FMT-STATE-009: map every field a rule reads or writes to the rebuild state
+  that holds it, as the 2026-09-26 decision asks, and mark each row by what the mapping shows.
 
 ## Step 10: Screens
 

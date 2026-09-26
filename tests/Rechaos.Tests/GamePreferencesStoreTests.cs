@@ -41,7 +41,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
             GamePreferences.CurrentFormatVersion, 8, 3, false,
             PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true,
             AiPolicyMode.Advanced, OnlineServiceMode.Custom, "https://games.example.test",
-            OnlineLobbyPresentation.Classic, IntroOnlyOnce: true);
+            OnlineLobbyPresentation.Classic, IntroOnlyOnce: false);
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -191,8 +191,9 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(OnlineLobbyPresentation.Modern, preferences.LobbyPresentation);
     }
 
+    // DEV-VIDEO-003: a file from before the option takes its default, on.
     [Fact]
-    public void VersionElevenPreferencesMigrateWithTheIntroAtEveryStart()
+    public void VersionElevenPreferencesMigrateWithIntroOnlyOnceOn()
     {
         File.WriteAllText(Path(), """
             {"FormatVersion":11,"MusicVolumeLevel":8,"SoundEffectVolumeLevel":3,
@@ -208,7 +209,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
         Assert.Equal(OnlineLobbyPresentation.Classic, preferences.LobbyPresentation);
         Assert.True(preferences.IntroMoviesSeen);
-        Assert.False(preferences.IntroOnlyOnce);
+        Assert.True(preferences.IntroOnlyOnce);
     }
 
     [Theory]

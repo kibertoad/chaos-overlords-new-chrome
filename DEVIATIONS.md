@@ -77,19 +77,22 @@ Decided 2026-09-13.
 
 ## DEV-VIDEO-003
 
-- Departs from: RULE-VIDEO-001
+- Departs from: RULE-VIDEO-001, SCR-UI-001
 - Reason: With Intro only once switched on, the rebuild plays the two movies unattended only until
   it has recorded a showing: its preferences file keeps `IntroMoviesSeen`, set once the queue
   drains after at least one movie opened, and every later start goes straight to the title screen.
   The title screen gains an INTRO button that plays the movies again on request. The original plays
   both movies at every start that does not load a saved game.
 - Setting: Intro only once
-- Default: off
+- Default: on
+- Justification: Players rarely want to watch the intro again and again; one showing is plenty.
+  Playing it at every start makes the player wait through or click past the same two movies each
+  time before reaching the title screen, and nothing in a match depends on it. The INTRO button
+  plays the movies whenever the player asks, and a player who wants the original's intro at every
+  start switches Intro only once off.
 - Dropped: no
 
-Showing the movies once is a convenience some players will want, but a player who expects the
-intro at every start, as the original gives it, is not better served, so the original's behaviour
-is the default.
+Made a setting that starts off on 2026-09-25, and switched to start on on 2026-09-26.
 
 ## DEV-AUDIO-001
 
@@ -215,7 +218,11 @@ The reasoning is in `docs/MULTIPLAYER.md`.
 - Reason: The Research panel shows the research accumulated so far beside each item's total.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information to the panel and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. The original shows only
+  each item's total, so a player choosing what to fund cannot tell how close an item is to
+  completion without writing it down turn by turn. The figure is the progress the game already
+  keeps, it is shown only to the player who owns it, and it removes no control and changes no
+  rule, so a player loses nothing by seeing it.
 - Dropped: no
 
 ## DEV-MOVE-001
@@ -259,13 +266,19 @@ destination, as DEV-HIRE-001 does, would remove that difference.
   sector when its defence sum is negative.
 - Setting: None
 - Default: mandatory
-- Justification: A sector goes only to a player who ordered Control of it, as the manual describes
-  the rule. In the original, a player with no order there is handed the sector when negative Support
-  drags its sum below zero, and ties with a real challenger who would otherwise win. No player
-  source relies on it, and a player who wants the sector can still order Control.
+- Justification: The original's behaviour is a bug (BUG-CONTROL-001). The pass gives every player
+  slot a pool, and a player with no order there starts at 0, so when the sector's Income plus
+  Support is negative that player's margin comes out positive. The player is then handed a sector
+  they never tried to take, or ties with and can beat a challenger who would otherwise win alone.
+  Nothing about it reads as design: the manual describes the comparison only among players who
+  try to control the sector, the case needs completed sites with negative Support and no police,
+  the player gets no cue that it can happen, and no player source relies on it. Restoring it
+  would only hand sectors to bystanders by accident, so it gets no setting. A player who wants
+  the sector can still order Control.
 - Dropped: no
 
-The fix changes which player owns the sector when the case arises.
+The fix changes which player owns the sector when the case arises. Decided as mandatory on
+2026-09-26.
 
 ## DEV-CONTROL-002
 
@@ -298,10 +311,16 @@ The fix changes which player owns the sector when the case arises.
   deferred deliveries in roster order, and a buyer whose cash exactly equals the price still buys.
 - Setting: None
 - Default: mandatory
-- Justification: The original's result depends on roster slots the player cannot see while giving
-  orders; the rebuild's follows the order the player gave. Every outcome of the original stays
-  reachable, since giving Sell and Equip in slot order reproduces the original's scan.
+- Justification: The roster-slot order has no meaning in play. The player never sees a gang's
+  roster slot while giving orders, so whether a Sell pays for an Equip is decided by a number the
+  player cannot read, and an order that looks affordable fails for no visible reason. The rebuild
+  resolves Equip and Sell in the order the player scheduled them, which the player controls and
+  the cash row of the console shows, so this is strictly better and needs no setting to restore
+  the original. Every outcome of the original stays reachable, since giving Sell and Equip in slot
+  order reproduces the original's scan.
 - Dropped: no
+
+Kept mandatory on 2026-09-26, after a proposal to put it behind a setting that starts off.
 
 ## DEV-EQUIP-002
 
@@ -311,8 +330,11 @@ The fix changes which player owns the sector when the case arises.
   the same selection.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a display of the items the gang holds and a shortcut, and takes nothing
-  away.
+- Justification: A quality-of-life improvement that is strictly better. Buying an item replaces
+  and destroys the one the gang holds in that slot, and the boxes keep the held items in sight
+  while the player chooses, so a better item is not thrown away by accident. They show the gang's
+  own items, which the gang information panel already shows, and the double-click only opens that
+  panel and comes back. Every original control works as before and no rule changes.
 - Dropped: no
 
 ## DEV-GIVE-001
@@ -499,7 +521,10 @@ it.
   the city map.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information to the minimap and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. The Siege and Big Man
+  sectors are already marked on the city map, so the minimap tells the player nothing new; it
+  saves leaving the sector view to find out whether a neighbour is an objective. It is drawn only
+  from what the city map shows, removes no control and changes no rule.
 - Dropped: no
 
 ## DEV-UI-003
@@ -523,9 +548,8 @@ it.
 - Default: mandatory
 - Justification: The movies stay available from the title screen, and a player who has already
   watched them is not made to sit through them again.
-- Dropped: no
-
-When the original plays the movies is not yet recorded (`manual_validation_plan.md`).
+- Dropped: 2026-09-26, DEV-VIDEO-003 covers the same behaviour and the INTRO button as a setting
+  that starts on (the 2026-09-25 and 2026-09-26 decisions in `docs/DECISIONS.md`).
 
 ## DEV-UI-005
 
@@ -545,8 +569,11 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   over the whole cycle, with a breakdown on hover.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a projection the player could work out from the Finance panel, and changes
-  nothing else.
+- Justification: A quality-of-life improvement that is strictly better. Every figure is one the
+  player could work out from the Finance panel and the orders already queued, and the original makes
+  the player do that sum by hand before each purchase. Showing it at a glance helps the player avoid
+  Equips that fail for lack of cash, and it is the display that makes the order of purchases
+  (DEV-EQUIP-001) readable. It removes no control and changes no rule.
 - Dropped: no
 
 ## DEV-UI-007
@@ -556,8 +583,11 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   the value turns orange when that range can set off a Crackdown.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information the player could work out from the queued orders, and changes
-  nothing else.
+- Justification: A quality-of-life improvement that is strictly better. A Crackdown follows from
+  Tolerance and the Chaos the player queued, both known to the player, but the original leaves the
+  player to work out the range by hand, and a miscalculation sets off a Crackdown the player did not
+  intend. The warning only states that result in advance, removes no control and changes no rule;
+  the player can still order the Chaos.
 - Dropped: no
 
 ## DEV-UI-008
@@ -567,8 +597,10 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   Influence or Attack highlights its target on the board.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information about orders the player has already given, and changes nothing
-  else.
+- Justification: A quality-of-life improvement that is strictly better. In the original a queued
+  order's target is not drawn on the board, so checking a turn's plan means recalling or reopening
+  each gang's order. The pickers and highlights show only orders the player has given and targets
+  the player may choose, remove no control and change no rule.
 - Dropped: no
 
 ## DEV-UI-009
@@ -608,7 +640,11 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 - Reason: The title screen shows the build version and a Report Bug control.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a version label and a way to report a bug, and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. A bug report is useful only
+  when it names the build it came from, and the original gives the player no way to report a
+  problem from inside the game. The label and the control sit on the title screen, before any
+  match, so they touch no rule and nothing a match starts from, and every original control works
+  as before.
 - Dropped: no
 
 ## DEV-UI-013
@@ -619,8 +655,10 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   lists only the viewer's own gangs.
 - Setting: None
 - Default: mandatory
-- Justification: Only gangs the player has detected are shown, so what the player can know is
-  unchanged; it saves looking them up elsewhere.
+- Justification: A quality-of-life improvement that is strictly better. Only gangs the player has
+  already detected are shown, so what the player can know is unchanged; the original makes the
+  player leave the sector view to look them up before ordering an Attack or a Move. It removes no
+  control and changes no rule.
 - Dropped: no
 
 Decided 2026-09-18.
@@ -631,7 +669,10 @@ Decided 2026-09-18.
 - Reason: The detailed-sector screen shows how many police turns remain in the sector.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. Control does not settle a
+  sector while police are there (RULE-CONTROL-001), so how long they stay decides when a Control
+  order there can succeed; without the count the player has to track the turns by hand. The count
+  is the value the game already keeps for the sector. It removes no control and changes no rule.
 - Dropped: no
 
 Whether the original shows the count is not recorded.

@@ -713,8 +713,9 @@ status of each spec entry is in [PARITY.md](../PARITY.md).
   next movie or title. A bounded Windows run completed the logo and began the
   intro without diagnostics; no ambient codec is required.
 
-- The movies play at every start, as in the original, unless the Intro only
-  once option (DEV-VIDEO-003, off by default, preferences format v12) is on.
+- The movies play until one showing is recorded while the Intro only once
+  option (DEV-VIDEO-003, on by default, preferences format v12) is on, and at
+  every start, as in the original, when it is off.
   Completing the queue records `IntroMoviesSeen` in preferences (introduced in
   format v8; the v7 migration leaves the intro owed once), and with the option
   on only an installation that has not shown them yet streams them at startup. The title screen carries an `INTRO` button that replays the queue at

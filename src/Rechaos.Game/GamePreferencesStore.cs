@@ -13,8 +13,9 @@ public static class OriginalOptionsPolicy
     public const bool SmoothEventSiteImagesByDefault = false;
     public const AiPolicyMode AiPolicyByDefault = AiPolicyMode.Original;
 
-    /// <summary>DEV-VIDEO-003: the original plays the intro at every start.</summary>
-    public const bool IntroOnlyOnceByDefault = false;
+    /// <summary>DEV-VIDEO-003: the intro plays on the first start only. The original plays it at
+    /// every start.</summary>
+    public const bool IntroOnlyOnceByDefault = true;
 }
 
 /// <summary>Which coordination service the Online screen uses.</summary>
