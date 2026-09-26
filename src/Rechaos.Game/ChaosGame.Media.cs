@@ -255,6 +255,7 @@ public sealed partial class ChaosGame
         // Do not let the process exit between a completed turn and its rolling snapshot reaching
         // disk. This runs only during shutdown; frame-time work remains on the background worker.
         FlushAutoSaves();
+        FlushScenarioPreference(force: true);
         DisposeIntroMovie();
         DisposeSoundtrack();
         StopEffectVoice();
