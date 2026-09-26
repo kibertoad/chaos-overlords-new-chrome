@@ -1,0 +1,75 @@
+---
+id: RULE-UI-011
+title: The sector values on the main console
+status: supported
+builds: [BLD-GOG-EN-1.1]
+superseded_by: []
+evidence: [FND-UI-035, FND-UI-027, FND-STATE-001, FND-UI-024, FND-UPKEEP-001, FND-EXE-004, SRC-MANUAL-GOG]
+conflicting: []
+split_with: []
+related: [FMT-STATE-002]
+---
+
+## Summary
+
+For the selected sector the console shows Income and Tolerance to everyone, and
+Support and Cash only to the sector's owner; other players see 0 there.
+
+## When it runs
+
+When the city screen or the detailed sector screen draws the selected sector's
+values.
+
+## Parameters
+
+- `sector_number` (`INT32`): the selected sector.
+
+## Inputs
+
+`sectors`, `active_player`.
+
+## Procedure
+
+```text
+let record = sectors[sector_number]
+let values: INT32[4] = [record.income, record.tolerance, 0, 0]
+if record.owner == active_player:
+    values[2] = record.support
+    values[3] = record.cash_yield
+return values
+```
+
+## Outputs
+
+Returns the Income, Tolerance, Support and Cash values in that order.
+
+## Edge cases
+
+- A neutral sector's owner is -1, which is never the active player, so its
+  Support and Cash show 0.
+- Income and Tolerance are shown to every player: the renderer tests the owner
+  only for Support and Cash [FND-UI-027].
+- The Income row shows `income` (byte 4), which the refresh before planning
+  copies from `base_income` (FND-STATE-001, RULE-SITE-001). FND-UI-035 read the
+  refresh as leaving byte 4 unchanged; the store at `0x004782D9` rewrites it
+  each time with the same value, so the row always shows the generated Income.
+- The Income row is drawn as text: the string resource `0x11 + income`, cut to
+  two characters. Tolerance, Support and Cash are drawn by `number_cells` with
+  width 2 (RULE-UI-004), so a negative value shows in red.
+- The sector code, a column letter A to H and a row digit 1 to 8, is drawn
+  above the four rows at `(568,60)`; the rows follow at y 69, 78, 87 and 96.
+
+## What the sources say
+
+SRC-MANUAL-GOG, pages 17 and 18 (Game Info Screen), describes the sector
+values shown at the top of the control panel for the selected sector, among
+them its Income, Tolerance and Support. How it defines Income has not been
+compared closely with the two fields of FMT-STATE-002.
+
+## Differences between builds
+
+None known.
+
+## Open questions
+
+None known.

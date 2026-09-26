@@ -68,8 +68,8 @@ C:\GOG Games\chaos_overlords_manual\Chaos Overlords - Manual.pdf
 - Layout: 30 PDF pages containing 56 numbered scan pages
 
 The copy at `C:\GOG Games\Chaos Overlords\Chaos Overlords - Manual.pdf` has
-the same length and SHA-256 and is therefore byte-identical. Rule evidence
-should cite `MANUAL-GOG-1` in `GAME-RULES.md`; local absolute paths are setup
+the same length and SHA-256 and is therefore byte-identical. Spec entries cite it
+as SRC-MANUAL-GOG; local absolute paths are setup
 metadata, not runtime dependencies.
 
 ## Headless workflow
@@ -168,15 +168,35 @@ limits. Use it to rule a known helper in or out of a narrow transitive call
 chain; it is not a substitute for control-flow inspection of the relevant call
 sites.
 
+`ReportFunctionInventory.java` takes one output path outside the repository and
+writes one tab-separated row per function: entry, last byte, body size, caller
+count, callee entries, imported functions written `LIBRARY::name`, and the
+initialized-data addresses the function reads and writes. It writes no
+instruction text, and it refuses an output path that resolves into a checkout
+of this repository. Its output feeds the coverage report:
+
+```powershell
+node tools/spec-coverage.mjs --inventory "$env:TEMP\rechaos-inventory.tsv"
+```
+
+The report counts the game functions (the table of FND-EXE-004) that no spec
+entry cites, separates those that belong to network play (they import from
+WinSock or TAPI or call a KERNEL32 serial-port function, or only such functions
+call them), lists the large
+functions only one or two entries cite, and lists the most used `.data`
+addresses no entry cites. Without `--inventory`, `tools/spec-coverage.mjs`
+only rewrites the function index `spec/index/functions.md`; `--check` fails
+when that index is stale.
+
 ## Evidence discipline
 
 - Record executable hash, Ghidra version, virtual address, call relationship,
   observed constants, and an independent behavioral description.
 - Never copy decompiled implementation into production. Reimplement factual
   behavior independently using project naming and structure.
-- Store stable findings in the `original-internals/` document for their
-  subsystem, and rules in `GAME-RULES.md`.
-- Mark an interpretation Provisional until static evidence and a controlled
-  observation agree.
+- Record each reading as a static finding in `spec/findings/` and cite it from
+  the rules, formats and screens it supports (see `AGENTS.md`, The spec).
+- An entry resting on static findings alone is `supported`; it becomes
+  `established` only when a run of the original agrees.
 - Do not commit temporary Ghidra projects, proprietary resources, executable
   bytes, full disassemblies, or decompiler dumps.

@@ -378,6 +378,41 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(listing.some((entry) => entry.id === abandoned.id)).toBe(false)
     })
 
+    /**
+     * A reader that names its session version is shown only the matches stored under it, and the
+     * filter runs before the limit: a page of matches the reader cannot play would otherwise push a
+     * playable one off the end of it.
+     */
+    it('narrows the public listing to one session version before the limit', async () => {
+      const current = matchFixture({ createdAt: new Date('2026-03-01T09:00:00.000Z') })
+      // Newer than anything another test stores, so it heads the unfiltered page.
+      const newer = matchFixture({
+        sessionVersion: 2,
+        createdAt: new Date('2099-03-01T12:00:00.000Z'),
+      })
+      for (const match of [current, newer]) {
+        await storage.matches.create(match)
+        await storage.players.create(playerFixture(match, { id: match.hostPlayerId }))
+      }
+      const mine = new Set([current.id, newer.id])
+      const all = (await storage.matches.listPublicLobbies(100)).filter((entry) =>
+        mine.has(entry.id),
+      )
+      expect(all.map((entry) => [entry.id, entry.sessionVersion])).toEqual([
+        [newer.id, 2],
+        [current.id, 1],
+      ])
+      const onlyNewer = (await storage.matches.listPublicLobbies(100, 2)).filter((entry) =>
+        mine.has(entry.id),
+      )
+      expect(onlyNewer.map((entry) => entry.id)).toEqual([newer.id])
+      // Filtered after the limit, the one place on the page would go to `newer` and then be
+      // dropped, leaving nothing; filtered before it, a version-1 match takes that place.
+      const onePage = await storage.matches.listPublicLobbies(1, 1)
+      expect(onePage).toHaveLength(1)
+      expect(onePage[0]?.sessionVersion).toBe(1)
+    })
+
     it('finds players by token hash, orders them by slot then join order, and updates status/slots', async () => {
       const match = matchFixture()
       await storage.matches.create(match)
@@ -488,6 +523,14 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       }
       expect(await storage.turns.submitOrders(match.id, 1, a.id, submission)).toBe(true)
       expect(await storage.turns.submitOrders(match.id, 1, 'stranger', submission)).toBe(false)
+      // A draft never replaces a ready document: it can only be one that arrived late.
+      expect(
+        await storage.turns.submitOrders(match.id, 1, a.id, {
+          ...submission,
+          ordersHash: 'd'.repeat(64),
+          ready: false,
+        }),
+      ).toBe(false)
       expect(await storage.turns.getOrders(match.id, 1, a.id)).toEqual({
         matchId: match.id,
         turn: 1,
@@ -865,6 +908,36 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         updatedAt: new Date(),
       })
       expect(await storage.matches.updateSettings(match.id, settings, new Date())).toBe(false)
+    })
+
+    it('updates an active player profile only while the match is in the lobby', async () => {
+      const match = matchFixture()
+      await storage.matches.create(match)
+      const player = playerFixture(match)
+      await storage.players.create(player)
+      const profile = { displayName: 'Renamed', portraitId: 9 }
+      expect(await storage.players.updateProfile(player.id, profile)).toBe(true)
+      expect(await storage.players.get(player.id)).toMatchObject(profile)
+      expect(await storage.players.updateProfile(uid('missing'), profile)).toBe(false)
+      await storage.matches.transition(match.id, ['lobby'], {
+        status: 'running',
+        updatedAt: new Date(),
+      })
+      expect(
+        await storage.players.updateProfile(player.id, { displayName: 'Late', portraitId: 1 }),
+      ).toBe(false)
+      expect(await storage.players.get(player.id)).toMatchObject(profile)
+    })
+
+    it('does not update the profile of a player who is no longer active', async () => {
+      const match = matchFixture()
+      await storage.matches.create(match)
+      const player = playerFixture(match)
+      await storage.players.create(player)
+      await storage.players.setStatus(player.id, 'left')
+      expect(
+        await storage.players.updateProfile(player.id, { displayName: 'Gone', portraitId: 1 }),
+      ).toBe(false)
     })
 
     it('summarises order rows without their documents', async () => {

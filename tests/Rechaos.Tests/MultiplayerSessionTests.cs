@@ -951,6 +951,8 @@ public sealed partial class MultiplayerSessionTests
 
         Assert.Equal(1, refused.Turn);
         Assert.Contains("sealed", refused.Reason, StringComparison.OrdinalIgnoreCase);
+        // The turn itself was refused, so there is nothing to hand back to the player.
+        Assert.False(refused.ReadinessWithdrawn);
 
         // And the session is still driving the match.
         server.Events.Write(SealedFrame(8, 1));

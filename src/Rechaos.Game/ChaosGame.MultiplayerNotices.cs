@@ -29,9 +29,15 @@ public sealed partial class ChaosGame
     private void UpdateOnlineSession()
     {
         PumpOnlineNotices();
+        if (_online.UpdateReconnectPopup(MonotonicClock.Now)) _message = ReconnectingMessage();
         SendOnlineDraft();
         UpdateOnlineDeadlineWarnings();
     }
+
+    /// <summary>What the message line says while the reconnect modal is up.</summary>
+    private string ReconnectingMessage() => _online.IsRateLimited
+        ? "THE SERVER IS LIMITING REQUESTS  AUTOMATICALLY RETRYING"
+        : "CONNECTION LOST  AUTOMATICALLY RECONNECTING";
 
     /// <summary>
     /// Drains what the sessions have to say, on the game thread.
@@ -44,7 +50,9 @@ public sealed partial class ChaosGame
     {
         while (_lobby?.TryDequeueNotice(out var lobbyNotice) == true) Apply(lobbyNotice);
         while (_session?.TryDequeueNotice(out var notice) == true) Apply(notice);
-        CheckOnlineResolutionWatchdog();
+        // The overdue check goes first and the resolution watchdog defers to it: an all-ready turn
+        // past its deadline trips both on one frame, and the status names the one cause asked about.
+        CheckOnlineResolutionWatchdog(resyncRequested: CheckOnlineOverdueSeal());
     }
 
     private void Apply(LobbyNotice notice)
@@ -55,6 +63,7 @@ public sealed partial class ChaosGame
                 _online.IsHost = seated.Membership.Player.IsHost;
                 _online.JoinCodeShown = seated.Membership.JoinCode;
                 _online.Match = seated.Membership.Match;
+                AdoptOwnProfile(seated.Membership.Player);
                 AdoptLobbySettings(seated.Membership.Match);
                 RememberOnlineMembership(seated.Membership);
                 if (seated.Membership.Match.Status is MatchStatus.Finished or MatchStatus.Abandoned)
@@ -63,15 +72,9 @@ public sealed partial class ChaosGame
                     EndOnlineMatch("THE SAVED ONLINE MATCH HAS ALREADY ENDED");
                     return;
                 }
-                if (seated.Membership.Match.Status is MatchStatus.Running or MatchStatus.Desynced)
-                {
-                    _online.JoinedInProgress = true;
-                    _online.Stage = MultiplayerStage.Busy;
-                    _online.Status = "RESTORING THE MATCH";
-                    _screens.Show(ClientScreen.Online);
-                    StartOnlineMatch(seated.Membership.Match);
-                    return;
-                }
+                // A seat resumed while the server is still starting the match waits in the lobby,
+                // where the poll brings the finished match to the start below.
+                if (TryStartOnlineMatch(seated.Membership.Match, resumingSeat: true)) return;
                 _online.Stage = MultiplayerStage.Lobby;
                 // The lobby says what it is waiting for on its own standing line, so the status is
                 // left clear for what happens next: a settings change, or a refusal of one.
@@ -96,8 +99,10 @@ public sealed partial class ChaosGame
                 // Not while the host is editing them: the poll that carries a settings change back
                 // is the same poll that would type over the name being written next to it.
                 if (!_online.IsHost) AdoptLobbySettings(updated.Match);
-                if (_session is null && updated.Match.Status == MatchStatus.Running)
-                    StartOnlineMatch(updated.Match);
+                if (updated.Match.Status == MatchStatus.Lobby) RememberOwnLobbyName(updated.Match);
+                // A running or desynced match both count as started, as they do for a resumed seat;
+                // one the server is still starting is left for a later poll.
+                if (_session is null) TryStartOnlineMatch(updated.Match);
                 return;
             case LobbyNotice.Listed listed:
                 _online.Listings = Describe(listed.Matches);
@@ -125,6 +130,13 @@ public sealed partial class ChaosGame
                     ["apiReason"] = lobbyApi?.Reason,
                     ["requestId"] = lobbyApi?.RequestId,
                 });
+                // A refused name or face leaves the seat exactly as it was, so it is said on the lobby
+                // rather than treated as the connection failing.
+                if (failed.Operation == nameof(MultiplayerLobbySession.UpdateProfile))
+                {
+                    RejectLobbyProfile(failed);
+                    return;
+                }
                 RememberOnlineFailure(failed.Error, failed.Operation, lastEventSequence: null);
                 if (_online.Stage == MultiplayerStage.Busy)
                 {
@@ -187,13 +199,16 @@ public sealed partial class ChaosGame
                 var cutOff = _online.Stage == MultiplayerStage.Playing;
                 if (AdoptOnlineState(resolved.State, restored: resolved.Planning))
                 {
+                    RewindOnlineCombatPresentation(presentCompletedTurn: true);
                     _message = cutOff
                         ? resolved.IncludedOwnOrders
                             ? "TIME UP  THE TURN SEALED WITH THE ORDERS YOU HAD SENT"
                             : "TIME UP  YOUR SEAT GAVE NO ORDERS THIS TURN"
-                        : "NEW TURN READY  PLAY AGAIN";
+                        : "NEW TURN STARTED";
                     PlayGeneralSound(AudioRouting.OnlineTurnReadySound());
-                    ShowTurnReportsOrCity();
+                    // The next-player card marks the new turn, and Ready on it enters planning the
+                    // way a local turn does: hire offers prepared, then combat and turn reports.
+                    _screens.Show(ClientScreen.Handoff);
                 }
                 return;
             case MultiplayerNotice.TakeoverVoteFailed failedVote:
@@ -210,8 +225,13 @@ public sealed partial class ChaosGame
                     });
                 return;
             case MultiplayerNotice.Resynced resynced:
+                // Read before the adopt, which moves it: a repair that lands on a later turn than
+                // the one on screen carries a sealed turn whose combat this player has not seen.
+                var turnBeforeRepair = _online.PlanningTurn;
                 if (AdoptOnlineState(resynced.State, restored: resynced.Planning))
                 {
+                    RewindOnlineCombatPresentation(
+                        presentCompletedTurn: _online.PlanningTurn != turnBeforeRepair);
                     _message = string.Empty;
                     _screens.Show(ClientScreen.City);
                 }
@@ -272,14 +292,28 @@ public sealed partial class ChaosGame
                 _online.AwaitedSlots = readiness.AwaitedSlots;
                 UpdateOnlineResolutionExpectation();
                 return;
+            case MultiplayerNotice.DraftDelayed delayed:
+                _diagnostics?.Write("multiplayer.orders.draft_delayed",
+                    new Dictionary<string, string?>
+                    {
+                        ["turn"] = delayed.Turn.ToString(CultureInfo.InvariantCulture),
+                        ["detail"] = delayed.Detail,
+                    });
+                // Quietly: the draft is retried on its own and superseded by the next change, and
+                // the player can go on planning. The footer says so while it is the turn on screen;
+                // see `OnlineTurnStatus`.
+                _online.DelayedDraftTurn = delayed.Turn;
+                return;
             case MultiplayerNotice.OrdersAccepted accepted:
                 // A draft needs no announcement; the submission that ends a turn already said so.
                 _online.TurnSyncError = string.Empty;
+                if (_online.DelayedDraftTurn is { } delayedTurn && accepted.Turn >= delayedTurn)
+                    _online.DelayedDraftTurn = null;
                 if (accepted.Ready && accepted.Turn == _online.PlanningTurn)
                 {
                     _online.ReadySubmissionPending = false;
                     _online.ReadySubmissionAcknowledged = true;
-                    _message = "SERVER ACKNOWLEDGED FINISHED TURN";
+                    _message = string.Empty;
                     _diagnostics?.Write("multiplayer.orders.acknowledged",
                         new Dictionary<string, string?>
                         {
@@ -307,26 +341,37 @@ public sealed partial class ChaosGame
                 _online.TurnSyncError = refused.Reason.ToUpperInvariant();
                 _online.ReadySubmissionPending = false;
                 _online.ResolutionExpectedSince = null;
-                if (_online.Stage == MultiplayerStage.WaitingForSeal)
+                if (refused.ReadinessWithdrawn && ReopenRefusedTurn(refused.Turn))
+                    _online.Status = "FINISHED TURN REFUSED  CHANGE IT AND END THE TURN AGAIN";
+                else if (_online.Stage == MultiplayerStage.WaitingForSeal)
                     _online.Status = refused.Reason.ToUpperInvariant();
                 return;
             case MultiplayerNotice.ConnectionChanged connection:
                 _online.IsConnected = connection.IsConnected;
                 if (connection.IsConnected)
                 {
+                    // Only a modal that was up said anything on the message line to take back; a
+                    // blip that recovered within the grace leaves whatever the player was reading.
+                    var wasShown = _online.ReconnectPopupShown;
+                    _online.DisconnectedSince = null;
+                    _online.UpdateReconnectPopup(MonotonicClock.Now);
                     _online.ReconnectLog.Clear();
+                    _online.ReconnectCopyStatus = string.Empty;
                     _online.ReconnectAttempt = 0;
-                    _message = string.Empty;
+                    if (wasShown) _message = string.Empty;
                     UpdateOnlineResolutionExpectation();
                 }
-                else if (connection.Detail is { } detail)
+                else if (connection.Detail is not null)
                 {
+                    _online.DisconnectedSince ??= MonotonicClock.Now;
                     _online.ResolutionExpectedSince = null;
                     _online.ReconnectAttempt = Math.Max(1, connection.Attempt);
-                    var entry = $"ATTEMPT {Math.Max(1, connection.Attempt)}  {detail}";
-                    _online.ReconnectLog.Add(entry.ToUpperInvariant());
-                    while (_online.ReconnectLog.Count > 6) _online.ReconnectLog.RemoveAt(0);
-                    _message = "CONNECTION LOST  AUTOMATICALLY RECONNECTING";
+                    _online.ReconnectLog.Add(ReconnectAttemptEntry.From(connection, DateTimeOffset.Now));
+                    while (_online.ReconnectLog.Count > ReconnectPopupLayout.MaxRows)
+                        _online.ReconnectLog.RemoveAt(0);
+                    // The modal, and the message line with it, wait out the grace; see
+                    // `MultiplayerUiState.ReconnectPopupGrace`. Once it is up, say which it is.
+                    if (_online.ReconnectPopupShown) _message = ReconnectingMessage();
                 }
                 return;
             case MultiplayerNotice.MatchFinished:

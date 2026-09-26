@@ -139,14 +139,31 @@ public sealed partial class ChaosGame
     private void TryPlaySound(SoundEffect sound)
     {
         if (_soundEffectVolumeLevel == 0) return;
+        SoundEffectInstance? next = null;
         try
         {
-            sound.Play(AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel), 0, 0);
+            next = sound.CreateInstance();
+            next.Volume = AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel);
+            // Native effects go through PlaySoundA without SND_NOSTOP. Its next sound
+            // interrupts the preceding one, while MCI music is a separate path.
+            StopEffectVoice();
+            next.Play();
+            _activeEffectVoice = next;
         }
         catch
         {
+            try { next?.Dispose(); } catch { }
             // Optional presentation audio must never interrupt gameplay.
         }
+    }
+
+    private void StopEffectVoice()
+    {
+        var voice = _activeEffectVoice;
+        _activeEffectVoice = null;
+        if (voice is null) return;
+        try { voice.Stop(); } catch { }
+        try { voice.Dispose(); } catch { }
     }
 
     private void CaptureNewCombatAnimations()
@@ -160,17 +177,21 @@ public sealed partial class ChaosGame
         var events = _state.Events;
         var first = events.Count;
         while (first > 0 && events[first - 1].Sequence > lastSeen) first--;
-        for (var index = first; index < events.Count; index++)
+        if (first == events.Count) return;
+        if (_detailedCombat && _combatAnimationTextures.Count > 0)
         {
-            var gameEvent = events[index];
-            if (_detailedCombat && _combatAnimationTextures.Count > 0
-                && CombatResultProjection.IsFromLastCompletedTurn(
-                    gameEvent.Turn, _state.Coordinator.Turn)
-                && IsVisibleCombatEvent(_state, viewer, gameEvent))
-                foreach (var clip in CombatAnimationRouting.ForEvent(_state, gameEvent))
-                    _combatAnimationPlayer.Enqueue(clip);
-            _combatPresentationProgress.MarkSeen(viewer, gameEvent.Sequence);
+            var presented = new List<GameEvent>();
+            for (var index = first; index < events.Count; index++)
+            {
+                var gameEvent = events[index];
+                if (CombatResultProjection.IsFromLastCompletedTurn(gameEvent.Turn, _state.Coordinator.Turn)
+                    && IsVisibleCombatEvent(_state, viewer, gameEvent))
+                    presented.Add(gameEvent);
+            }
+            foreach (var clip in CombatAnimationRouting.ForPresentation(_state, presented, viewer))
+                _combatAnimationPlayer.Enqueue(clip);
         }
+        _combatPresentationProgress.MarkSeen(viewer, events[^1].Sequence);
     }
 
     private void ValidateAssetPack()

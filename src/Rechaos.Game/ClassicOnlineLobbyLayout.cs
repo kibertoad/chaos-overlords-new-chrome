@@ -25,4 +25,7 @@ public static class ClassicOnlineLobbyLayout
 
     public static Rectangle Roster => new(385, 111, 160, 130);
     public static Rectangle RosterPortrait(int row) => new(390, 119 + row * 19, 16, 16);
+
+    /// <summary>The name beside one roster row, which its own player clicks to change.</summary>
+    public static Rectangle RosterName(int row) => new(410, 119 + row * 19, 132, 16);
 }

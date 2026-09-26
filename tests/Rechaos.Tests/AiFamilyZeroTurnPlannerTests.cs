@@ -198,6 +198,28 @@ public sealed class AiFamilyZeroTurnPlannerTests
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
     }
 
+    // RULE-AI-004 owner_query, FND-AI-048: police presence queries -2 and a neutral sector -1,
+    // whatever the owner. The fixture is Homicidal: every attitude toward the human player 1 is
+    // -10 and every other attitude 10.
+    [Fact]
+    public void HostileOwnerUsesOwnerQueryForNeutralAndPoliceSectors()
+    {
+        var match = CreateMatch(targetSector: 0);
+        var computer = new PlayerId(0);
+        var human = new PlayerId(1);
+        Assert.True(AiTurnPlanner.IsHostileOwner(match, computer, 0));
+        Assert.True(AiTurnPlanner.IsHostileOwner(match, human, 0));
+
+        match.Sectors[0].CrackdownActive = true;
+        Assert.False(AiTurnPlanner.IsHostileOwner(match, computer, 0));
+        Assert.False(AiTurnPlanner.IsHostileOwner(match, human, 0));
+
+        match.Sectors[0].CrackdownActive = false;
+        match.Sectors[0].Owner = null;
+        Assert.False(AiTurnPlanner.IsHostileOwner(match, computer, 0));
+        Assert.False(AiTurnPlanner.IsHostileOwner(match, human, 0));
+    }
+
     private static MatchState CreateMatch(
         int targetSector = 63,
         int force = 10,

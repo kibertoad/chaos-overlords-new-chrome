@@ -109,9 +109,9 @@ public sealed partial class ChaosGame
     /// </summary>
     /// <remarks>
     /// The same fifteen faces the local setup screen offers, cycled the same way. The sixteenth is
-    /// the one drawn for a seat nobody is in, so it is not a face anybody plays under. The choice is
-    /// only live while the form is, because it rides the request that claims the seat: once the
-    /// seat is claimed the roster is what every client generates its city from.
+    /// the one drawn for a seat nobody is in, so it is not a face anybody plays under. It rides the
+    /// request that claims the seat; once seated, the lobby changes it instead — see
+    /// <see cref="CycleLobbyPortrait"/>.
     /// </remarks>
     private void CycleOnlinePortrait(int delta)
     {

@@ -1,10 +1,13 @@
 # Development handover
 
 Status: active at a validated local checkpoint
-Last updated: 2026-09-20
 
 <!-- doc-index:begin toc depth=3 -->
 - [Repository state](#repository-state)
+- [Documentation standard](#documentation-standard)
+  - [What exists](#what-exists)
+  - [Open conformance work](#open-conformance-work)
+  - [Working with the spec](#working-with-the-spec)
 - [Latest playable work](#latest-playable-work)
   - [Online play and multiplayer](#online-play-and-multiplayer)
   - [New-game setup, local players, and startup randomness](#new-game-setup-local-players-and-startup-randomness)
@@ -40,17 +43,101 @@ Last updated: 2026-09-20
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v24, replays are v28, canonical hashes are v27, asset
+- Native saves are format v27, replays are v31, canonical fingerprint encoding is v2, asset
   manifests are v6, extracted help is v3, and client preferences are v11. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
+
+## Documentation standard
+
+On 2026-09-25 the documentation was converted to version 1 of the
+[documentation standard](https://dinorefurb.com/documentation-standard/)
+used by the shared template. What the original does now lives only in
+[spec/](../spec/README.md); the research logs it replaced (`GAME-RULES.md`,
+`ORIGINAL-INTERNALS.md` with `original-internals/`, `ORIGINAL-FILE-FORMATS.md`,
+`UI-ATLAS.md` and `PARITY-MATRIX.md`) are deleted, and
+[SPEC-ID-MAP.md](SPEC-ID-MAP.md) gives the spec entry for every `BIN-*` and
+`RULE-*` ID they used. Git history keeps their text.
+
+### What exists
+
+- `spec/`: one build (BLD-GOG-EN-1.1, every file hashed with xxh3-128), three
+  sources, 177 findings (two of them dynamic, from window captures), 20 formats
+  (17 binary ones with Kaitai definitions that all compile), 151 rules in
+  pseudocode, 14 bugs and 39 screens, with the glossary and the generated
+  indexes in `spec/index/`. Only static evidence exists for nearly everything, so
+  `supported` is the highest status reached, apart from RULE-SETUP-002, which a
+  window capture made `established`.
+- [PARITY.md](../PARITY.md) and [DEVIATIONS.md](../DEVIATIONS.md) at the root.
+  The Code column of PARITY.md was carried over from the old parity matrix and
+  the conversion notes, not re-read from `src/`; treat `complete` rows as claims
+  to check when their area is next touched. No row lists a test yet, because no
+  test compares the rebuild with evidence from the original.
+- [static_validation_plan.md](../static_validation_plan.md) and
+  [manual_validation_plan.md](../manual_validation_plan.md) at the root: every
+  open question found during the conversion, grouped by part of the game.
+  Manual work waits for the maintainer to schedule a session with the original.
+- `tools/check-spec.mjs` runs the standard's checks and writes `spec/index/`.
+  The fast gate runs it with `--check`. It compiles the `.ksy` files when
+  `kaitai-struct-compiler` (0.11) is on the path or named by `KSC`; it is
+  installed for this user under
+  `%LOCALAPPDATA%/Programs/kaitai-struct-compiler-0.11/bin`, and the CI fast
+  gate installs the pinned release (kibertoad/refurbished-dinosaurs-toolkit#1
+  moves that into a shared action). The script is meant to move into the
+  shared template.
+- `tests/Rechaos.Tests/OriginalGameFiles.cs` resolves `GAME_DIR` as the standard
+  lays it out and checks every file against its xxh3 hash, and `SpecHash.cs`
+  computes the hash. `GAME_DIR` is not set on the maintainer's machine yet; tests
+  that need it report themselves as skipped.
+- Licences: the rebuild's code is MIT (`LICENSE`); `spec/LICENSE` puts the
+  spec's Markdown under CC BY 4.0 and its machine-readable parts under MIT.
+
+### Open conformance work
+
+- A deviation's Default is `off`, `on` or `mandatory`, and one that is
+  `mandatory`, or `on` without fixing an unintended bug nobody relies on,
+  carries a Justification that the rebuild's behaviour is strictly better.
+  Every entry now has one. The weakest are DEV-MOVE-001 (a swap into a full
+  sector takes two turns; counting gangs ordered out of the destination, as
+  DEV-HIRE-001 does, would remove that), DEV-CONTROL-001 (player reliance on
+  the original is unknown rather than ruled out) and DEV-AI-002 (the resolved
+  action can differ). DEV-HIRE-003 was dropped on 2026-09-25: the original also
+  lets a zero-cost hire through (FND-HIRE-006). DEV-AI-001 was dropped on
+  2026-09-26: paired simulations showed the corrected hunter guard changed no
+  match, so the rebuild keeps the original comparison. The same simulations
+  found no hunter hire by any computer player, an open claim on RULE-AI-010
+  followed up in step 8 of parity-achievement-plan.md.
+- No rule is `disputed`. RULE-AI-007, RULE-AI-019 and RULE-AI-023 are
+  `supported`, and the static plan has nothing left to read for the computer
+  players.
+  FND-OBJECTIVE-003 settles the scenario numbering: Greed is 0 and Kill 'Em
+  All 4, and it explains why FND-SETUP-009 and FND-SETUP-012 read 0 as Kill
+  'Em All.
+- RULE-OBJECTIVE-005 is `partial`: the rebuild keeps the gameplay music over
+  the hot-seat elimination card, plays the computers on when every local human
+  is eliminated, and shows the awards where the original returns to the title
+  (see its PARITY row).
+- Copy the setup capture
+  `artifacts/reference-captures/smoke/20260913-211908-368-checkpoint/frame-01.png`
+  to `GAME_DIR/captures/a83f82a2aab84d9a1e0e9de626409149.png` once `GAME_DIR`
+  exists; FND-SETUP-012 names it by that hash.
+
+### Working with the spec
+
+Read [AGENTS.md](../AGENTS.md#documentation) first. A static reading of the
+executable is a new `FND-*` entry; cite it from the rules, formats and screens
+it supports and raise their status. A change to the rebuild that departs from
+the spec is a `DEV-*` entry before it is code. Run `node tools/check-spec.mjs`
+until it reports nothing but the two option defaults above, then
+`node tools/update-doc-indexes.mjs`. Close items in the two plan files as the
+work lands.
 
 ## Latest playable work
 
 Entries are grouped by area. Within a group they keep the order in which
 they were recorded, most recent first, so a later entry can be corrected by
 an earlier one in the same group. Nothing here is a parity claim; the parity
-status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
+status of each spec entry is in [PARITY.md](../PARITY.md).
 
 ### Online play and multiplayer
 
@@ -195,8 +282,8 @@ status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
   therefore costs $8 only with a previously active Factory. Manual-backed
   match validation rejects influenced sites
   in neutral sectors or sites influenced by anyone other than the sector owner;
-  binary addresses and operation order are recorded in the original-internals
-  research log.
+  binary addresses and operation order are recorded in FND-EQUIP-001 and
+  FND-TURN-001.
 
 - Instant resolution now snapshots acting gangs' effective statistics before
   applying any command. Same-phase Influence can still acquire a site, but its
@@ -546,8 +633,9 @@ status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
 
 - Give now uses the original `PX05015` Equipment to Give panel before its
   compatible same-sector recipient list. One command can carry any combination
-  of the source gang's exact three equipped items. Transactions now scan fixed
-  player and roster slots, reserve outgoing items, and apply incoming gifts only
+  of the source gang's exact three equipped items. Cash-affecting transactions
+  now use player submission order as a documented deviation. Give reserves
+  outgoing items in roster order and applies incoming gifts only
   after recipient transactions, allowing swaps and overwriting same-turn buys
   exactly as the resolver does. Native saves are v22, replays are v24 and canonical hashes
   are v25; the immediately previous formats
@@ -629,11 +717,11 @@ status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
   next movie or title. A bounded Windows run completed the logo and began the
   intro without diagnostics; no ambient codec is required.
 
-- The movies are no longer an unattended toll on every launch. Completing the
-  queue records `IntroMoviesSeen` in preferences (introduced in format v8 and
-  retained through the current v11 migrations; the v7 migration leaves the
-  intro owed once), so only an installation that has not shown
-  them yet streams them at startup. The title screen carries an `INTRO` button that replays the queue at
+- The movies play at every start, as in the original, unless the Intro only
+  once option (DEV-VIDEO-003, off by default, preferences format v12) is on.
+  Completing the queue records `IntroMoviesSeen` in preferences (introduced in
+  format v8; the v7 migration leaves the intro owed once), and with the option
+  on only an installation that has not shown them yet streams them at startup. The title screen carries an `INTRO` button that replays the queue at
   any time, reports an unreadable pack instead of stalling, and hands the menu
   music back when the last movie ends.
 
@@ -672,8 +760,9 @@ status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
   confirmation/cancellation controls use slot 3 through the original shared
   helpers. Events, Combat Results,
   and incoming-Comlink paging is bounded rather than wrapping, with slot 3 on
-  a legal step and slot 4 at the first/last-page boundary. General slot 9 is loaded
-  by the original but has no call through its gated effect wrapper. Detailed Combat cues start with
+  a legal step and slot 4 at the first/last-page boundary. General slot 9 is the
+  later-turn cue, called directly through the lower effect helper. A new effect
+  interrupts the preceding effect voice. Detailed Combat cues start with
   their corresponding animation clips rather than at resolution time.
 
 ### Saves, replays, and canonical hashing
@@ -756,27 +845,15 @@ status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
 
 ## Recommended next evidence batches
 
-1. Capture the original planning countdown to settle wall-clock warning cadence,
-   modal behavior, and deactivation timing; adjust presentation only
-   where the capture contradicts the current bounded implementation.
-2. Capture the original panel/combat cadence, identify the adjacent-buffer
-   320-pixel panel form and close behavior, then adjust presentation where
-   the reference contradicts it.
-3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
-   compare the bounded recreation cadence with a controlled original capture.
-4. Validate the recovered per-record Comlink acknowledgement and slot-6 cadence
-   at runtime, then validate effect overlap/interruption and complete native
-   audio/music validation. The four-second repeat, slot-2 inventory, and
-   Combat-selection slot-3 call are statically classified and routed.
-5. Capture original startup-movie trigger/skip behavior and validate native
-   video color/audio fidelity on each supported platform; capture native WinHelp
-   typography/paragraph geometry only where pixel-viewer fidelity materially
-   benefits from it.
+The open research questions are in
+[static_validation_plan.md](../static_validation_plan.md), for work in Ghidra
+and on the data files, and
+[manual_validation_plan.md](../manual_validation_plan.md), for runs of the
+original that need a person. The largest gains in status come from the manual
+plan: one controlled run of the original next to an existing static finding
+makes an entry `established`. The conformance work listed under
+[Documentation standard](#documentation-standard) is the rebuild's side of the
+same goal.
 
-For authoritative scope and parity status, continue with
-[IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) and
-[PARITY-MATRIX.md](PARITY-MATRIX.md). Record new static findings in the
-subsystem document [ORIGINAL-INTERNALS.md](ORIGINAL-INTERNALS.md#finding-documents)
-lists for them, intended mechanics in
-[GAME-RULES.md](GAME-RULES.md), and player-visible AI behavior in
-[AI-SPEC.md](AI-SPEC.md).
+For scope and the roadmap, continue with
+[IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md).

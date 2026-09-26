@@ -7,9 +7,10 @@ public static class IntroMoviePolicy
     public static IReadOnlyList<string> FileNames { get; } =
         ["MVLOGOS.smk", "MVINTRO.smk"];
 
-    /// <summary>The intro streams unattended only until these preferences have recorded a
-    /// showing; the title screen replays it on demand afterwards.</summary>
-    public static bool PlaysAtStartup(bool introMoviesSeen) => !introMoviesSeen;
+    /// <summary>The intro streams unattended at every start, as in the original, unless Intro
+    /// only once is switched on and a showing has been recorded (DEV-VIDEO-003).</summary>
+    public static bool PlaysAtStartup(bool introOnlyOnce, bool introMoviesSeen) =>
+        !introOnlyOnce || !introMoviesSeen;
 
     public static Rectangle Destination(int width, int height) =>
         new((VirtualInput.Width - width) / 2, (VirtualInput.Height - height) / 2, width, height);

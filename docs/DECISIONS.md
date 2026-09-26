@@ -1,15 +1,14 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-23
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
 
 Entries are ordered newest first. Each records the decision, the evidence or
-reasoning behind it, and what it rules in or out; a decision that changes a
-parity row is also reflected in [PARITY-MATRIX.md](PARITY-MATRIX.md) with the
-`Intentional deviation` status.
+reasoning behind it, and what it rules in or out. A decision that departs from
+the original is also recorded as an entry of [DEVIATIONS.md](../DEVIATIONS.md),
+which names the spec entries it departs from.
 
 ## Decision index
 
@@ -18,7 +17,14 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-26 | [Keep the original hunter guard and drop DEV-AI-001](#2026-09-26--keep-the-original-hunter-guard-and-drop-dev-ai-001) |
+| 2026-09-25 | [Play the intro at every start unless Intro only once is on](#2026-09-25--play-the-intro-at-every-start-unless-intro-only-once-is-on) |
+| 2026-09-24 | [Record the gangs that fought in each combat event](#2026-09-24--record-the-gangs-that-fought-in-each-combat-event) |
+| 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
+| 2026-09-24 | [Mark objective sectors on the detailed-sector minimap](#2026-09-24--mark-objective-sectors-on-the-detailed-sector-minimap) |
+| 2026-09-24 | [Resolve cash transactions in player order](#2026-09-24--resolve-cash-transactions-in-player-order) |
 | 2026-09-23 | [Render WinHelp geometry on the cross-platform pixel grid](#2026-09-23--render-winhelp-geometry-on-the-cross-platform-pixel-grid) |
+| 2026-09-23 | [Do not animate the panel slide-out](#2026-09-23--do-not-animate-the-panel-slide-out) |
 | 2026-09-22 | [Fold the definition set into a fingerprint as a digest](#2026-09-22--fold-the-definition-set-into-a-fingerprint-as-a-digest) |
 | 2026-09-21 | [Fingerprint match state with XxHash128, not SHA-256](#2026-09-21--fingerprint-match-state-with-xxhash128-not-sha-256) |
 | 2026-09-19 | [Order a ctrl-picked selection of gangs at once](#2026-09-19--order-a-ctrl-picked-selection-of-gangs-at-once) |
@@ -32,6 +38,162 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-26 — Keep the original hunter guard and drop DEV-AI-001
+
+- Decision: the computer players' hunter guards compare the previous hire role
+  with the scenario's hunter slot number, as the original does (BUG-AI-001,
+  RULE-AI-010). DEV-AI-001, which compared with role 4 in every scenario, is
+  dropped. The rule change moves the multiplayer session version to 14; the
+  protocol version and the state fingerprint encoding do not change.
+- Reason: DEV-AI-001 was mandatory on the argument that the original compares
+  with a number that never matches, so the correction restores the author's
+  intent. That argument shows the original is a defect. It does not show that
+  the correction is better for the player, which a mandatory deviation must.
+  The question that decides it is whether the correction changes how strong the
+  computer players are, and headless simulations of the rebuild answer that it
+  does not.
+- Method: a throwaway harness, not kept in the repository, switched the guard
+  per player between the two comparisons. Seat 0 was a simulated human (see
+  [VALIDATION.md](VALIDATION.md#simulated-human-seats)) that always used the
+  corrected comparison; the five computer players used the original comparison
+  in one arm and the corrected one in the other, on the same seeds. It ran the
+  seven scenarios that have a hunter guard (Greed, Power, Acceptance,
+  Dominance, Kill 'Em All, Big 40 and Armageddon), 24 seeds each, four-year
+  matches, at each of the four Mentality levels and under both AI policies:
+  1,344 pairs, 2,688 matches.
+- Findings: every pair finished identical: same end turn, standings, scores,
+  hires, attacks and eliminations. Mentality changed the matches a great deal
+  (the simulated human was eliminated in 1 of 168 matches against Goon under
+  the Original policy and in 131 of 168 against Homicidal Maniac under the
+  Advanced policy), so the sample covers passive and aggressive computer
+  players. The hunter force reached its guard only in Armageddon, 1,052 times
+  in all, and the two comparisons disagreed every time; the scenario's later
+  adjustments, which set the slot to 0 while the player has fewer than four
+  family-0 or family-4 gangs or enough family-6 and family-12 gangs, overwrote
+  each of those slots before a hire. In the other six scenarios the guard was
+  never reached, because a visible hostile sector, no covering hunter and the
+  family-3, family-5 or family-7 gangs the test needs never came together.
+  None of the roughly 175,000 computer hires across all matches was a hunter
+  (role 4).
+- Limits: the simulations measure the rebuild's hire logic, and RULE-AI-010 is
+  `partial` in [PARITY.md](../PARITY.md). A simulated human plays like a
+  computer player and provokes less than a person would. The absence of hunter
+  hires is itself suspect and is recorded as an open claim on RULE-AI-010,
+  with its follow-up in step 8 of
+  [parity-achievement-plan.md](../parity-achievement-plan.md).
+
+## 2026-09-25 — Play the intro at every start unless Intro only once is on
+
+- Decision: the logo and intro movies play at every start, as in the original.
+  The 2026-09-13 behaviour, playing them only until one run has shown them,
+  moves behind an Intro only once option, off by default (DEV-VIDEO-003). The
+  option is stored in client preferences format v12; a v11 file migrates with
+  it off and keeps its `IntroMoviesSeen` record, so switching the option on
+  later does not replay the movies once more. The title screen's `INTRO`
+  button stays in both modes.
+- Reason: the deviation log starts a setting at the original's behaviour unless
+  the rebuild's is strictly better, and a player who expects the intro at every
+  start is not better served by losing it. The 2026-09-13 entry below made the
+  departure without a setting.
+- Boundary: as before, the option and the record are presentation preferences
+  only and never enter saves, replays, phase hashes or multiplayer state.
+
+## 2026-09-24 — Record the gangs that fought in each combat event
+
+**Decision.** A gang-on-gang combat event records both combatants, and a police
+attack records its target, as a `CombatantDetails` (owner, gang definition,
+sector and equipment) taken when the fight resolved. The combat reports read a
+gang that has left the roster from its event instead of dropping the fight. The
+records are part of the canonical event encoding, so the state-hash format moves
+to 3, native save format to 28, replay format to 32 and the multiplayer session
+version to 10, under
+[State fingerprint format](../AGENTS.md#state-fingerprint-format).
+
+**Reasoning.** A gang wiped out in Combat keeps its roster slot only until the
+Hire phase of the same turn: the first hire its owner resolves reuses the slot,
+and the dead gang's id stops resolving. The events carried only ids, so Combat
+Summary, Combat Detail and the automatic presentation left out exactly the
+battles that eliminated a gang, which online, where every seat hires on most
+turns, was the common case. A presentation-side memory of every gang the client
+had seen covered only turns this client had watched being planned: the turn a
+match was loaded on, and a turn that sealed while an online client was away,
+stayed unlisted. The event is the one record every client, save and replay
+already shares.
+
+**Compatibility.** The game has not been released, so no player's file is
+stranded. Older saves and journals are refused as older formats before their
+fingerprint is compared, and the session bump retires in-progress online
+matches, as [AGENTS.md](../AGENTS.md) requires when a state hash changes. The
+protocol version does not move: the server stores sessions as opaque history and
+never reads an event.
+
+## 2026-09-24 — Refuse a hire drop on a sector already holding six friendly gangs
+
+**Decision.** Dropping a Hire offer on a sector where the player already has
+six active gangs is refused on the spot with "Sector gang limit reached." The
+offer stays unselected instead of being reserved as a hire. The count is the
+current friendly count a Move into that sector is validated against, less any
+gang the player has already ordered to Move away or Terminate: both resolve in
+the Execution phase, before hires, so the room they leave is there when the
+hire is placed.
+
+**Original behavior.** `FND-HIRE-001` establishes that the shipped drop handler
+writes the destination without any capacity check, and the resolver only
+counts the gangs in the target sector at resolution, where six fail the hire.
+The recreation keeps that resolver check unchanged.
+
+**Reasoning and compatibility.** A reserved hire into a full sector showed as
+hired for the rest of the planning turn and could only fail. The refusal lives
+in the client's drop handling, not in `HireRules`, so AI hiring, replay
+validation and turn resolution are untouched; no session, save, replay or
+fingerprint version moves.
+
+## 2026-09-24 — Mark objective sectors on the detailed-sector minimap
+
+**Decision.** The detailed-sector screen's 3-by-3 neighborhood minimap draws
+the same exact-white-keyed `PX00129` objective pylons `(344,15,54,52)` that the
+whole-city map draws, over every visible Siege landmark and Big Man center
+sector 27, 28, 35, or 36. The crop is scaled into the minimap cell exactly as
+the cell's city artwork is, so the pylons keep their city-map placement.
+
+**Original behavior.** The recovered evidence places the pylon overlay only on
+the whole-city map; no native copy of that crop into the detailed-sector
+neighborhood has been identified.
+
+**Reasoning and compatibility.** Big Man points accrue only in the center
+sectors, and Siege landmarks decide that scenario, so a player working in the
+detailed view should not have to return to the city to see which neighboring
+sectors are objectives. The change is presentation only: rules, orders, saves,
+replays, fingerprints, and the multiplayer protocol and session versions are
+unaffected.
+
+## 2026-09-24 — Resolve cash transactions in player order
+
+**Decision.** Equip and Sell debit or credit cash in the order the player last
+submitted those orders. Replacing an order moves it to the end. Transactions
+still resolve by player slot, and Give retains its deferred roster-ordered
+recipient writes. The city console shows current cash, the whole-cycle Delta,
+and `UNSPENT = cash - sum(queued Bribe and Equip prices)` on one row as
+`CASH 20 [18] (+1)`: cash, unspent cash in brackets, and the delta in
+parentheses. Hovering the row explains each figure in its own section, breaks
+the delta down by component, and shows every queued Bribe and Equip, numbered in resolution
+order with its price: Instant Bribes first, then Equips in submission order.
+
+**Original behavior.** `FND-EQUIP-002` and `FND-EQUIP-006` establish that the
+shipped resolver instead scans fixed gang roster slots. An earlier-slot Sell
+can fund a later-slot Equip regardless of which was queued first. The original
+picker neither hides unaffordable researched items nor checks cash when an
+item is chosen. The later Equip comparison is signed `cash < adjusted price`,
+with equality permitted.
+
+**Reasoning and compatibility.** A player can see and control submission order,
+while the fixed roster index is hidden. Cash timing remains execution-time:
+an earlier submitted Sell can fund Equip, but a later Sell, Chaos payout, or
+next Upkeep income cannot. This deliberate rule deviation changes deterministic
+turn outcomes, so multiplayer session version 9 retires sessions started under
+version 8. Native saves and replay journals retain their format gates because
+their schema and fingerprint encoding have not changed.
 
 ## 2026-09-23 — Render WinHelp geometry on the cross-platform pixel grid
 
@@ -48,6 +210,40 @@ fields without running WinHelp. The native font rasterization and exact
 paragraph-to-pixel conversion cannot be established from those records alone.
 The extracted schema keeps the original values so a later renderer can use
 them without decoding the source again.
+
+## 2026-09-23 — Do not animate the panel slide-out
+
+**Decision.** With Slide Panels enabled, a panel slides in over the recovered
+344- or 320-pixel travel, but the recreation does not animate the matching
+slide-out. A closing panel disappears in the frame it closes. This is the only
+panel-motion or audio behavior where the recreation deliberately departs from
+the original. Every other effect cue keeps its recovered trigger, order and
+interruption: one effect voice, and each new cue stops the one before it
+(`FND-AUDIO-003`). Slide Panels stays off by default, a separate modern choice
+recorded in the Options parity row.
+
+**Reasoning.** The original's close helper `0x004196f5` plays slot 1 and then
+runs a blocking copy loop of about a quarter second before the next handler can
+open anything (see the interface-and-options panel slide evidence and
+`FND-AUDIO-002`). That delay adds no information and holds input on every panel
+change, including nested panel hops, and the entrance alone already shows where
+the panel came from.
+
+**Audio consequence.** The slide-out was also the gap between cues, so without
+it a cue that the original separated in time now starts in the same frame and
+cuts off the one before it. This is accepted rather than covered with delays or
+with overlapping voices, which would add behavior the original never had.
+Only the Slide Panels-gated cues are affected:
+
+- a panel-to-panel change plays slot 1 and then slot 0, and the slot-1 close cue
+  is not heard;
+- confirming the idle-gang warning plays slot 1 and then the turn-start slot 9.
+
+With Slide Panels off, the original plays neither slot 0 nor slot 1, and the
+recreation matches it exactly.
+
+**Rules out.** Adding a slide-out animation or a timed gap between cues to make
+up for it, and letting effects overlap. Each would need its own decision.
 
 ## 2026-09-22 — Fold the definition set into a fingerprint as a digest
 
@@ -195,7 +391,7 @@ reason, as [AGENTS.md](../AGENTS.md) requires when a state hash changes.
   evidence for recreation defaults, except for separately documented modern
   choices such as Slide Panels off. Preference writes are reliable and bounded;
   malformed data falls back per field. The obsolete `serialNum` side effect is
-  excluded from authoritative RNG, as documented in `BIN-RNG-001`.
+  excluded from authoritative RNG, as documented in `FND-RNG-001`.
 
 ## 2026-09-17 — Correct the original AI hire slot/role indexing defect
 

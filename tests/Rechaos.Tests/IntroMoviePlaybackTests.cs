@@ -14,11 +14,16 @@ public sealed class IntroMoviePlaybackTests
         Assert.Equal(new Rectangle(80, 102, 480, 256), IntroMoviePolicy.Destination(480, 256));
     }
 
+    // RULE-VIDEO-001: the original plays the intro at every start. DEV-VIDEO-003: Intro only once
+    // skips it after a recorded showing.
     [Fact]
-    public void OnlyAnUnseenIntroStreamsAtStartup()
+    public void IntroStreamsAtEveryStartUnlessIntroOnlyOnceHasRecordedAShowing()
     {
-        Assert.True(IntroMoviePolicy.PlaysAtStartup(introMoviesSeen: false));
-        Assert.False(IntroMoviePolicy.PlaysAtStartup(introMoviesSeen: true));
+        Assert.False(OriginalOptionsPolicy.IntroOnlyOnceByDefault);
+        Assert.True(IntroMoviePolicy.PlaysAtStartup(introOnlyOnce: false, introMoviesSeen: false));
+        Assert.True(IntroMoviePolicy.PlaysAtStartup(introOnlyOnce: false, introMoviesSeen: true));
+        Assert.True(IntroMoviePolicy.PlaysAtStartup(introOnlyOnce: true, introMoviesSeen: false));
+        Assert.False(IntroMoviePolicy.PlaysAtStartup(introOnlyOnce: true, introMoviesSeen: true));
     }
 
     [Fact]

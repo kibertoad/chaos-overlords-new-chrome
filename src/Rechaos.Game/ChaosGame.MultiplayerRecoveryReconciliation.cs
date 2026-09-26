@@ -5,14 +5,15 @@ public sealed partial class ChaosGame
     /// <summary>
     /// Reconciles the local recovery browser with the servers that own those matches.  This runs
     /// separately from the selected-server health probe because a player can have recoveries on
-    /// more than one server.
+    /// more than one server. Only memberships this build can resume are checked: the others are
+    /// never shown here, and a build of their session version reconciles them itself.
     /// </summary>
     private void BeginRecoveryReconciliation()
     {
         _recoveryReconciliationCancellation?.Cancel();
         _recoveryReconciliationCancellation?.Dispose();
         _recoveryReconciliationCancellation = new CancellationTokenSource();
-        var saved = _multiplayerRecoveries.Where(recovery => recovery.CanReconnect).ToArray();
+        var saved = _multiplayerRecoveries.Where(recovery => recovery.CanResume).ToArray();
         _recoveryReconciliation = MultiplayerRecoveryReconciliation.FindUnavailableAsync(
             _http, saved, _recoveryReconciliationCancellation.Token);
     }

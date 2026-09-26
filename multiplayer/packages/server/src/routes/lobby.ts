@@ -10,6 +10,7 @@ import {
   startMatchContract,
   takeoverVoteContract,
   updateMatchSettingsContract,
+  updatePlayerProfileContract,
 } from '@chaos-overlords/contracts'
 import { NotFoundError } from '@chaos-overlords/kernel'
 import type { Hono } from 'hono'
@@ -33,7 +34,11 @@ export function registerPublicLobbyRoutes(api: Hono<AppEnv>): void {
         reason: 'listing_disabled',
       })
     }
-    return c.json(answering(c, { matches: await kernel.query.listPublicLobbies(50) }), 200)
+    const { sessionVersion } = c.req.valid('query')
+    return c.json(
+      answering(c, { matches: await kernel.query.listPublicLobbies(50, sessionVersion) }),
+      200,
+    )
   })
 
   buildHonoRoute(api, createMatchContract, async (c) => {
@@ -66,7 +71,11 @@ export function registerPublicLobbyRoutes(api: Hono<AppEnv>): void {
 export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
   buildHonoRoute(api, getMatchContract, async (c) => {
     const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
-    const view = await c.get('container').kernel.query.view(principal.match)
+    const { kernel } = c.get('container')
+    // A client reads the view to resynchronise, and one that is doing so because its countdown ran
+    // out with no seal is owed the seal rather than the same stuck turn; see `sealIfOverdue`.
+    const match = await kernel.turns.sealIfOverdue(principal.match)
+    const view = await kernel.query.view(match)
     return c.json(
       answering(c, {
         match: view,
@@ -88,6 +97,16 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
     await c
       .get('container')
       .kernel.lobby.updateSettings(
+        requireMember(c.get('principal'), c.req.valid('param').matchId),
+        c.req.valid('json'),
+      )
+    return c.body(null, 204)
+  })
+
+  buildHonoRoute(api, updatePlayerProfileContract, async (c) => {
+    await c
+      .get('container')
+      .kernel.lobby.updateProfile(
         requireMember(c.get('principal'), c.req.valid('param').matchId),
         c.req.valid('json'),
       )

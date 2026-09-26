@@ -84,6 +84,20 @@ internal static class CanonicalEventWriter
         WriteNullableShort(writer, value.RetaliationItemId);
         WriteNullableShorts(writer, value.ItemIds);
         WriteNullableShorts(writer, value.ReplacedItemIds);
+        WriteCombatant(writer, value.Attacker);
+        WriteCombatant(writer, value.Defender);
+    }
+
+    private static void WriteCombatant(BinaryWriter writer, CombatantDetails? value)
+    {
+        writer.Write(value is not null);
+        if (value is null) return;
+        writer.Write(value.Owner.Value);
+        writer.Write(value.DefinitionId);
+        writer.Write(value.SectorId);
+        WriteNullableShort(writer, value.WeaponItemId);
+        WriteNullableShort(writer, value.ArmorItemId);
+        WriteNullableShort(writer, value.MiscellaneousItemId);
     }
 
     private static void WriteEconomy(BinaryWriter writer, EconomyResolutionDetails? value)
@@ -140,6 +154,7 @@ internal static class CanonicalEventWriter
         writer.Write(value.Damage);
         writer.Write(value.PreviousForce);
         writer.Write(value.ResultForce);
+        WriteCombatant(writer, value.Target);
     }
 
     private static void WriteBigManPoints(BinaryWriter writer, BigManPointDetails? value)

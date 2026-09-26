@@ -49,6 +49,8 @@ public sealed class CommandActionTooltipTests
     [InlineData(GangAction.Heal, "RESTORES FORCE TO 10")]
     [InlineData(GangAction.Move, "SIX")]
     [InlineData(GangAction.Terminate, "UPKEEP")]
+    [InlineData(GangAction.Equip, "CLICK ORDER")]
+    [InlineData(GangAction.Equip, "CASH >= PRICE")]
     public void TooltipsQuoteTheRuleValuesThatDriveTheCommand(GangAction action, string expected)
     {
         Assert.Contains(CommandActionTooltips.Lines(action), line => line.Contains(expected));

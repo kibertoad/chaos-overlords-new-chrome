@@ -284,8 +284,8 @@ public sealed class HireAndEliminationTests
     {
         var match = CreateMatch();
         foreach (var index in Enumerable.Range(0, MatchLimits.FriendlyGangsPerSector - 1))
-            match.Players[1].AddGang(new MatchGangState(
-                new GangId(20 + index), new PlayerId(1), 4, 0, 5));
+            match.Players[0].AddGang(new MatchGangState(
+                new GangId(20 + index), new PlayerId(0), 4, 0, 5));
         AdvanceToHire(match);
         var player = match.Players[0];
         var cashBefore = player.Cash;
@@ -300,12 +300,32 @@ public sealed class HireAndEliminationTests
         Assert.Equal(0, player.Statistics.CashSpent);
         Assert.Equal(randomBefore, match.Random.ConsumptionCount);
         Assert.Equal(HireOfferSlotState.Available(2), player.HireOfferSlots[1]);
-        Assert.Single(player.Gangs);
-        Assert.Equal(MatchLimits.FriendlyGangsPerSector,
-            match.Players.SelectMany(candidate => candidate.Gangs)
-                .Count(gang => gang.IsActive && gang.SectorId == 0));
+        Assert.Equal(MatchLimits.FriendlyGangsPerSector, player.Gangs.Count);
         Assert.Equal(GameNotificationKind.HireSectorFull,
             Assert.Single(match.NotificationsFor(new PlayerId(0))).Kind);
+    }
+
+    [Fact]
+    public void OpponentGangsDoNotTakeTheHiringPlayersSectorPlaces()
+    {
+        var match = CreateMatch(keepOpponentActive: true);
+        foreach (var index in Enumerable.Range(0, MatchLimits.FriendlyGangsPerSector - 2))
+            match.Players[0].AddGang(new MatchGangState(
+                new GangId(20 + index), new PlayerId(0), 4, 0, 5));
+        foreach (var index in Enumerable.Range(0, MatchLimits.FriendlyGangsPerSector))
+            match.Players[1].AddGang(new MatchGangState(
+                new GangId(30 + index), new PlayerId(1), 4, 0, 5));
+        AdvanceToHire(match);
+        var player = match.Players[0];
+
+        Assert.True(match.QueueHire(new PlayerId(0), 2, 0).Accepted);
+        match.FinishHire(new PlayerId(0));
+
+        Assert.Single(match.LastHireResolutions);
+        Assert.Equal(MatchLimits.FriendlyGangsPerSector,
+            player.Gangs.Count(gang => gang.IsActive && gang.SectorId == 0));
+        Assert.DoesNotContain(match.NotificationsFor(new PlayerId(0)),
+            notice => notice.Kind == GameNotificationKind.HireSectorFull);
     }
 
     [Fact]

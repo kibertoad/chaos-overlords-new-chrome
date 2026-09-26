@@ -157,10 +157,26 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
     publicListing: configFlag(env.PUBLIC_LISTING, true),
     logLevel: level(env.LOG_LEVEL),
     sweepIntervalMs: configInteger(env.SWEEP_INTERVAL_MS, 15_000, MIN_SWEEP_INTERVAL_MS),
-    rateLimitPerMinute: configInteger(env.RATE_LIMIT_PER_MINUTE, 30, 1),
-    memberRateLimitPerMinute: configInteger(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240, 1),
-    uploadRateLimitPerMinute: configInteger(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10, 1),
-    bugReportRateLimitPerMinute: configInteger(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5, 1),
+    rateLimitPerMinute: configInteger(
+      env.RATE_LIMIT_PER_MINUTE,
+      DEFAULT_RATE_LIMITS.anonymousPerMinute,
+      1,
+    ),
+    memberRateLimitPerMinute: configInteger(
+      env.MEMBER_RATE_LIMIT_PER_MINUTE,
+      DEFAULT_RATE_LIMITS.memberPerMinute,
+      1,
+    ),
+    uploadRateLimitPerMinute: configInteger(
+      env.UPLOAD_RATE_LIMIT_PER_MINUTE,
+      DEFAULT_RATE_LIMITS.uploadPerMinute,
+      1,
+    ),
+    bugReportRateLimitPerMinute: configInteger(
+      env.BUG_REPORT_RATE_LIMIT_PER_MINUTE,
+      DEFAULT_RATE_LIMITS.bugReportPerMinute,
+      1,
+    ),
     matchCreationRateLimitPerMinute: configInteger(
       env.MATCH_CREATION_RATE_LIMIT_PER_MINUTE,
       DEFAULT_RATE_LIMITS.matchCreationPerMinute,

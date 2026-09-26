@@ -154,21 +154,13 @@ public static partial class CommandResolver
         var snapshots = state.Players.SelectMany(player => player.Gangs)
             .ToDictionary(gang => gang.Id, gang => CombatSnapshot.For(state, gang));
         var outcomes = new List<CombatOutcome>(orderedCommands.Length);
-        var commandsByGang = orderedCommands.ToDictionary(queued => queued.Command.Gang);
-        var resolvedReciprocalEncounters = new HashSet<(int First, int Second)>();
+        // Every Attack order rolls its own attack and retaliation, including two gangs that attack
+        // each other: the original resolver has no branch that merges such a pair
+        // (RULE-ATTACK-001, FND-COMBAT-006).
         foreach (var queued in orderedCommands)
         {
             var attacker = snapshots[queued.Command.Gang];
-            var targetId = new GangId(queued.Command.Target.Id);
-            var target = snapshots[targetId];
-            if (commandsByGang.TryGetValue(targetId, out var reverse)
-                && reverse.Command.Target == CommandTarget.Gang(attacker.Id))
-            {
-                var encounter = attacker.Id.Value < target.Id.Value
-                    ? (attacker.Id.Value, target.Id.Value)
-                    : (target.Id.Value, attacker.Id.Value);
-                if (!resolvedReciprocalEncounters.Add(encounter)) continue;
-            }
+            var target = snapshots[new GangId(queued.Command.Target.Id)];
             int? detectionRoll = null;
             int? detectionChance = null;
             if (target.Hidden)
@@ -267,7 +259,9 @@ public static partial class CommandResolver
                     RetaliationDamage: outcome.RetaliationDamage,
                     DetectionRoll: outcome.DetectionRoll,
                     DetectionChance: outcome.DetectionChance,
-                    RetaliationItemId: outcome.Target.WeaponItemId),
+                    RetaliationItemId: outcome.Target.WeaponItemId,
+                    Attacker: outcome.Attacker.Details,
+                    Defender: outcome.Target.Details),
                 GameNotificationKind.Combat);
             results.Add(result);
             firstEventByGang.TryAdd(outcome.Target.Id, result.Event!.Sequence);
@@ -289,7 +283,8 @@ public static partial class CommandResolver
                 outcome.Successes,
                 Math.Min(outcome.Successes, outcome.Target.Force),
                 outcome.Target.Force,
-                gang.Force);
+                gang.Force,
+                outcome.Target.Details);
             var gameEvent = state.AppendPoliceAttackEvent(outcome.Target.Owner, outcome.Target.Id, details);
             state.QueueNotification(
                 outcome.Target.Owner, GameNotificationKind.Police, outcome.Target.Id,
@@ -373,13 +368,15 @@ public static partial class CommandResolver
         bool Hidden,
         EffectiveStatistics Statistics,
         short? WeaponType,
-        short? WeaponItemId)
+        short? WeaponItemId,
+        CombatantDetails Details)
     {
         public static CombatSnapshot For(MatchState state, MatchGangState gang) => new(
             gang.Id, gang.Owner, gang.SectorId, gang.Force, gang.Hidden,
             EffectiveStatisticsCalculator.ForGang(state, gang),
             gang.WeaponItemId is { } weapon ? state.Definitions.Items[weapon].Type : null,
-            gang.WeaponItemId);
+            gang.WeaponItemId,
+            CombatantDetails.Of(gang));
     }
 
     private sealed record CombatOutcome(
@@ -425,7 +422,7 @@ public static partial class CommandResolver
     /// destination and everyone else where they stand. Re-testing per move measured the sector
     /// mid-phase instead, so a move into a sector a later-slotted gang was about to leave failed
     /// with <see cref="CommandResolutionCode.DestinationFull"/> purely because of roster order, and a
-    /// move rewritten back to its own full sector failed where RULE-MOVE-001 asks for a successful
+    /// move rewritten back to its own full sector failed where RULE-MOVE-001 and RULE-MOVE-002 ask for a successful
     /// no-op.
     /// </remarks>
     private static CommandResolutionResult ResolveMove(MatchState state, GameCommand command)
@@ -505,33 +502,19 @@ public static partial class CommandResolver
             var replacement = selectedGang.SectorId;
             if (selected.Command.Target.Id == replacement && ++passes > MaximumMoveRerouteDraws)
             {
-                // The reroute draw can hand back the source sector, which changes nothing and sends
-                // the loop round again on the same RNG stream. Fall back to the lowest-numbered
-                // sector with room. The board holds 64 x 6 gangs against a roster of 80, so one
-                // always exists, and it cannot be the overcrowded sector.
+                // DEV-MOVE-002: a drawn neighbour can itself be crowded and send the same mover back
+                // again, and some order sets repeat that for ever (FND-MOVE-006). Fall back to the
+                // lowest-numbered sector with room. The board holds 64 x 6 gangs against a roster of
+                // 80, so one always exists, and it cannot be the overcrowded sector.
                 replacement = Array.FindIndex(
                     projectedCounts, count => count < MatchLimits.FriendlyGangsPerSector);
             }
             else if (selected.Command.Target.Id == replacement)
             {
-                var currentCounts = Enumerable.Range(0, MatchLimits.SectorCount)
-                    .Select(sectorId => player.Gangs.Count(gang =>
-                        gang.IsActive && gang.SectorId == sectorId))
-                    .ToArray();
-                replacement = OriginalAiSectorSelectionRules.Select(
-                    mode: 0,
-                    sourceSectorId: selectedGang.SectorId,
-                    player: player.Id,
-                    family: AiPlanningState.UnusedFamily,
-                    state.Sectors.Select(sector => sector.Owner?.Value ?? -1).ToArray(),
-                    state.Sectors.Select(sector => sector.CrackdownActive).ToArray(),
-                    currentCounts,
-                    canSoloControl: _ => true,
-                    hasPriorChaos: _ => false,
-                    isHostileOwner: _ => false,
-                    isHumanOwner: _ => false,
-                    Enumerable.Range(0, MatchLimits.PlayerCount).ToArray(),
-                    state.Random);
+                // RULE-MOVE-002, RULE-AI-007: a mover already sent back draws a random neighbour
+                // with no capacity test; a later round repairs it if the neighbour overfills.
+                replacement = OriginalAiSectorSelectionRules.RandomNeighbour(
+                    selectedGang.SectorId, state.Random);
             }
             normalized[moveIndex] = selected with
             {

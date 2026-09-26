@@ -15,7 +15,13 @@ import {
   RecordingScheduler,
 } from '@chaos-overlords/kernel/testing'
 import { describe, expect, it } from 'vitest'
-import { createApp, DEFAULT_SERVER_CONFIG, LocalEventHub, type ServerContainer } from '../src'
+import {
+  createApp,
+  DEFAULT_RATE_LIMITS,
+  DEFAULT_SERVER_CONFIG,
+  LocalEventHub,
+  type ServerContainer,
+} from '../src'
 
 /** The repository contract without a database; the bug report placement rules are tested in its own package. */
 function inMemoryBugReports(): BugReportRepository & { rows: StoredBugReport[] } {
@@ -165,6 +171,45 @@ describe('server app over in-memory storage', () => {
     })
   })
 
+  /**
+   * The game names the session version it plays, and a public match stored under another one is
+   * left out: that client could neither join nor carry it on. A caller that names none sees all.
+   */
+  it('narrows the public list to the session version the caller names', async () => {
+    const server = build({ publicListing: true })
+    const host = (sessionVersion: number) =>
+      server.app.request('/api/v1/matches', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          settings: {
+            name: `v${sessionVersion}`,
+            maxPlayers: 2,
+            turnTimerSeconds: 0,
+            visibility: 'public',
+            gameSettings: {},
+          },
+          hostDisplayName: 'h',
+          sessionVersion,
+        }),
+      })
+    expect((await host(1)).status).toBe(201)
+    expect((await host(2)).status).toBe(201)
+    const names = async (query: string) =>
+      (
+        (await (await server.app.request(`/api/v1/matches${query}`)).json()) as {
+          matches: { name: string; sessionVersion: number }[]
+        }
+      ).matches.map((listing) => [listing.name, listing.sessionVersion])
+
+    expect(await names('?sessionVersion=2')).toEqual([['v2', 2]])
+    expect((await names('')).sort()).toEqual([
+      ['v1', 1],
+      ['v2', 2],
+    ])
+    expect((await server.app.request('/api/v1/matches?sessionVersion=x')).status).toBe(422)
+  })
+
   it('rate-limits the unauthenticated doors per client address', async () => {
     const limited = build({}, { anonymous: { limit: 2, windowMs: 60_000 } })
     const body = JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'x' })
@@ -195,6 +240,51 @@ describe('server app over in-memory storage', () => {
       headers: { ...headers, 'x-forwarded-for': '198.51.100.1' },
     })
     expect(otherClient.status).toBe(404)
+  })
+
+  /**
+   * The default budget has to cover ordinary play from one address, which is often several people
+   * behind one NAT. Each lobby costs a handshake and a create, so four hosts each opening and
+   * cancelling ten lobbies inside a minute is eighty calls; the old budget of thirty refused the
+   * fourth lobby a single player opened and cancelled while a friend on the same network did too.
+   */
+  it('lets several hosts on one address open and cancel lobbies within the default budget', async () => {
+    const limited = build(
+      {},
+      { anonymous: { limit: DEFAULT_RATE_LIMITS.anonymousPerMinute, windowMs: 60_000 } },
+    )
+    const headers = { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.9' }
+    const create = JSON.stringify({
+      settings: {
+        name: 'Churn',
+        maxPlayers: 3,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Ada',
+    })
+    for (let lobby = 0; lobby < 40; lobby += 1) {
+      const handshake = await limited.app.request('/api/v1/handshake', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ protocolVersion: MULTIPLAYER_PROTOCOL_VERSION }),
+      })
+      expect(handshake.status).toBe(200)
+      const created = await limited.app.request('/api/v1/matches', {
+        method: 'POST',
+        headers,
+        body: create,
+      })
+      expect(created.status).toBe(201)
+      const { token, match } = (await created.json()) as { token: string; match: { id: string } }
+      const left = await limited.app.request(`/api/v1/matches/${match.id}/leave`, {
+        method: 'POST',
+        headers: { ...headers, authorization: `Bearer ${token}` },
+        body: '{}',
+      })
+      expect(left.status).toBe(204)
+    }
   })
 
   /**
@@ -415,6 +505,11 @@ describe('server app over in-memory storage', () => {
             gameSettings: { padding },
           },
         },
+      },
+      {
+        path: `/api/v1/matches/${match.id}/profile`,
+        method: 'PUT',
+        body: { displayName: 'h', portraitId: 1, padding },
       },
       {
         path: `/api/v1/matches/${match.id}/players/${player.id}/takeover-vote`,

@@ -22,6 +22,7 @@ import {
   defaultClientAddress,
   isActiveMember,
   LocalEventHub,
+  logStreamClosed,
   type ServerContainer,
 } from '@chaos-overlords/server'
 import { type OpenedStorage, openStorage, parseStorageTarget } from '@chaos-overlords/storage/node'
@@ -86,6 +87,7 @@ export async function buildNodeRuntime(
       abandoned: (matchId, playerId) =>
         logger.info('answered an already abandoned event stream', { matchId, playerId }),
       revalidate: (matchId, playerId) => isActiveMember(opened.storage.players, matchId, playerId),
+      closed: logStreamClosed(logger),
     },
   )
 

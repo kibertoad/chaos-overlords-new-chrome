@@ -3,7 +3,18 @@ using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
-public sealed record HireDockEntry(short GangDefinitionId, bool Hired);
+/// <summary>The planning action a dock slot currently carries, drawn over its portrait.</summary>
+public enum HireDockMark
+{
+    None,
+    Hired,
+    Snubbed
+}
+
+public sealed record HireDockEntry(short GangDefinitionId, HireDockMark Mark)
+{
+    public bool Hired => Mark == HireDockMark.Hired;
+}
 
 public static class HireDockLayout
 {
@@ -19,6 +30,13 @@ public static class HireDockLayout
     {
         ValidateSlot(slot);
         return new Rectangle(439 + slot * 66, 371, 64, 64);
+    }
+
+    /// <summary>The 60-by-60 stamp aperture inset two pixels into the slot's portrait.</summary>
+    public static Rectangle Stamp(int slot)
+    {
+        var portrait = Portrait(slot);
+        return new Rectangle(portrait.X + 2, portrait.Y + 2, 60, 60);
     }
 
     public static Rectangle Reject(int slot)
@@ -50,7 +68,8 @@ public static class HireDockLayout
 
     public static IReadOnlyList<HireDockEntry?> Project(
         IReadOnlyList<HireOfferSlotState> offers,
-        PendingHireState? pending)
+        PendingHireState? pending,
+        int? snubbedSlot)
     {
         ArgumentNullException.ThrowIfNull(offers);
         if (offers.Count != SlotCount)
@@ -58,8 +77,7 @@ public static class HireDockLayout
         var result = new HireDockEntry?[SlotCount];
         for (var slot = 0; slot < SlotCount; slot++)
             if (offers[slot].GangDefinitionId is { } definitionId)
-                result[slot] = new HireDockEntry(
-                    definitionId, pending?.OfferSlot == slot);
+                result[slot] = new HireDockEntry(definitionId, MarkFor(slot, pending, snubbedSlot));
         return result;
     }
 
@@ -81,6 +99,12 @@ public static class HireDockLayout
         if (index < 0) return delta < 0 ? available[^1] : available[0];
         return available[(index + delta % available.Length + available.Length) % available.Length];
     }
+
+    // Hire and snub are mutually exclusive selections, so at most one slot carries either mark.
+    private static HireDockMark MarkFor(int slot, PendingHireState? pending, int? snubbedSlot) =>
+        pending?.OfferSlot == slot ? HireDockMark.Hired
+        : snubbedSlot == slot ? HireDockMark.Snubbed
+        : HireDockMark.None;
 
     private static void ValidateSlot(int slot)
     {

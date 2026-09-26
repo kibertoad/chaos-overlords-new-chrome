@@ -33,6 +33,13 @@ public sealed class MatchHandle
         _client.SendAsync<Unit>(
             HttpMethod.Put, ApiRoutes.UpdateMatchSettings(MatchId), settings, cancellationToken);
 
+    /// <summary>Changes this player's own name and portrait; refused once the match has started.</summary>
+    public Task<Unit> UpdateProfileAsync(
+        UpdatePlayerProfileRequest request,
+        CancellationToken cancellationToken) =>
+        _client.SendAsync<Unit>(
+            HttpMethod.Put, ApiRoutes.UpdatePlayerProfile(MatchId), request, cancellationToken);
+
     /// <summary>
     /// Leaves the active roster while retaining the durable membership needed to rejoin.
     /// </summary>
@@ -68,7 +75,10 @@ public sealed class MatchHandle
     /// </summary>
     /// <remarks>
     /// The write is refused once the turn has sealed (<c>409 turn_not_open</c>) rather than folded
-    /// in late, so a caller that loses this race has to re-plan against the next turn.
+    /// in late, so a caller that loses this race has to re-plan against the next turn. Readiness is
+    /// never taken back: a <c>ready: false</c> document for a seat that is already ready is
+    /// treated as a draft that arrived late, left unapplied, and answered with the document that
+    /// stands, so the returned view is not always an echo of <paramref name="request"/>.
     /// </remarks>
     public Task<OwnSubmissionView> SubmitOrdersAsync(
         int turn,

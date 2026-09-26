@@ -35,9 +35,7 @@ public static partial class AiTurnPlanner
         int gangSlot,
         IReadOnlyList<ObjectiveTarget> visible)
     {
-        var owner = state.Sectors[gang.SectorId].Owner;
-        var targetPool = owner is { } sectorOwner
-            && state.AiStrategy.IsHostile(playerId, sectorOwner)
+        var targetPool = IsHostileOwner(state, playerId, gang.SectorId)
                 ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
                         .Setup.Controller == PlayerController.Human)
                     .ToArray()

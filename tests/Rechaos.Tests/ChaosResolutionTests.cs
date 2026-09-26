@@ -349,6 +349,58 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
+    public void CrackdownReportGoesToSectorOccupantsEvenWithoutTheirChaosOrder()
+    {
+        var match = CreateMatch(secondPlayerSector: 0, tolerance: 0);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+
+        match.FinishExecutionPhase();
+
+        Assert.All(match.Players, player => Assert.Contains(
+            match.NotificationsFor(player.Id),
+            notification => notification.Kind == GameNotificationKind.Crackdown
+                && notification.SectorId == 0));
+    }
+
+    [Fact]
+    public void CrackdownReportDoesNotGoToPlayersOutsideSector()
+    {
+        var match = CreateMatch(tolerance: 0);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+
+        match.FinishExecutionPhase();
+
+        Assert.Contains(match.NotificationsFor(new PlayerId(0)),
+            notification => notification.Kind == GameNotificationKind.Crackdown
+                && notification.SectorId == 0);
+        Assert.DoesNotContain(match.NotificationsFor(new PlayerId(1)),
+            notification => notification.Kind == GameNotificationKind.Crackdown
+                && notification.SectorId == 0);
+    }
+
+    [Fact]
+    public void ThirdCrackdownReportsControlLossAfterLocalCrackdown()
+    {
+        var owner = new PlayerId(0);
+        var match = CreateMatch(owner: owner, tolerance: 0);
+        CrackdownResolver.Trigger(match, match.Sectors[0]);
+        AdvanceCoordinatorTurn(match);
+        CrackdownResolver.Trigger(match, match.Sectors[0]);
+        AdvanceCoordinatorTurn(match);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+
+        match.FinishExecutionPhase();
+
+        Assert.Null(match.Sectors[0].Owner);
+        var reports = match.NotificationsFor(owner)
+            .Where(notification => notification.SectorId == 0
+                && notification.Kind is GameNotificationKind.Crackdown or GameNotificationKind.ControlLost)
+            .ToArray();
+        Assert.Equal([GameNotificationKind.Crackdown, GameNotificationKind.ControlLost],
+            reports.Select(notification => notification.Kind));
+    }
+
+    [Fact]
     public void ExistingCrackdownSuppressesIncomeWhileChaosStillRolls()
     {
         var match = CreateMatch(tolerance: 40, crackdownActive: true);

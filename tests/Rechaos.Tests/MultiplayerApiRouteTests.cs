@@ -21,7 +21,7 @@ public sealed class MultiplayerApiRouteTests
     private static readonly (string Template, string Built)[] Routes =
     [
         (RouteTemplates.Handshake, $"POST {ApiRoutes.Handshake}"),
-        (RouteTemplates.ListLobbies, $"GET {ApiRoutes.Matches}"),
+        (RouteTemplates.ListLobbies, $"GET {ApiRoutes.Lobbies(3)}"),
         (RouteTemplates.CreateMatch, $"POST {ApiRoutes.Matches}"),
         (RouteTemplates.JoinMatch, $"POST {ApiRoutes.JoinMatch}"),
         (RouteTemplates.JoinRunningMatch, $"POST {ApiRoutes.JoinRunningMatch}"),
@@ -30,6 +30,7 @@ public sealed class MultiplayerApiRouteTests
         (RouteTemplates.LeaveMatch, $"POST {ApiRoutes.LeaveMatch(MatchId)}"),
         (RouteTemplates.RejoinMatch, $"POST {ApiRoutes.RejoinMatch(MatchId)}"),
         (RouteTemplates.UpdateMatchSettings, $"PUT {ApiRoutes.UpdateMatchSettings(MatchId)}"),
+        (RouteTemplates.UpdatePlayerProfile, $"PUT {ApiRoutes.UpdatePlayerProfile(MatchId)}"),
         (RouteTemplates.KickPlayer, $"POST {ApiRoutes.KickPlayer(MatchId, PlayerId)}"),
         (RouteTemplates.TakeoverVote, $"POST {ApiRoutes.TakeoverVote(MatchId, PlayerId)}"),
         (RouteTemplates.SubmitOrders, $"PUT {ApiRoutes.Orders(MatchId, 7)}"),
@@ -104,5 +105,6 @@ public sealed class MultiplayerApiRouteTests
         .Replace($"/{PlayerId}/", "/:playerId/", StringComparison.Ordinal)
         .Replace("/turns/7/", "/turns/:turn/", StringComparison.Ordinal)
         .Replace("/snapshots/7", "/snapshots/:turn", StringComparison.Ordinal)
-        .Replace("/events?after=0&limit=200", "/events", StringComparison.Ordinal);
+        .Replace("/events?after=0&limit=200", "/events", StringComparison.Ordinal)
+        .Replace("/matches?sessionVersion=3", "/matches", StringComparison.Ordinal);
 }
