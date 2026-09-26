@@ -85,12 +85,13 @@ public sealed partial class ChaosGame
                 ? summary.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
                 : string.Empty;
             ResetMatchPresentation(_state);
-            _showGameInfoAtPlanningEntry = false;
+            _resumedMatchTurn = _state.Coordinator.Turn;
+            _resumedGameInfoShown.Clear();
             _continuePlanningEntryAfterGameInfo = false;
             _deferComlinkAlertUntilPlanningVisible = false;
             _managementReturnScreen = ClientScreen.City;
-            _screens.Show(_state.Outcome is null ? ClientScreen.GameInfo : ClientScreen.Endgame);
-            if (_state.Outcome is null) StartPlanningTimer(_inputTime);
+            if (_state.Outcome is not null) _screens.Show(ClientScreen.Endgame);
+            else PresentHotSeatPlanningEntry();
             return true;
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)

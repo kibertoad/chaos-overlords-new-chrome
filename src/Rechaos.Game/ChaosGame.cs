@@ -119,8 +119,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _selectedSetupPlayerSlot;
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
-    private ScenarioId _selectedScenario = SetupScenarioButtons.DefaultScenario;
-    private GameDuration _selectedDuration = GameDuration.SixMonths;
+    private ScenarioId _selectedScenario = ScenarioId.Greed;
+    private GameDuration _selectedDuration = GameDuration.OneYear;
+    // RULE-SETUP-002: the scenario a fresh local setup selects, Greed when nothing is stored.
+    private ScenarioId _preferredScenario = ScenarioId.Greed;
+    // RULE-SETUP-010: the roster of the last Begin of this session.
+    private LocalSetupSnapshot? _begunLocalSetup;
     private int _cursor;
     private int _selectedGangIndex;
     private IReadOnlyList<GameCommand> _commandOptions = [];
@@ -139,12 +143,18 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private PlayerId? _combatSummaryOpponent;
     private bool _openEventsAfterCombat;
     private bool _automaticDetailedCombatPresentation;
-    private bool _showGameInfoAtPlanningEntry;
+    // RULE-SETUP-008: the turn a loaded match resumed on; each local human who plans in it sees
+    // Game Information once, after the Ready card.
+    private int? _resumedMatchTurn;
+    private readonly HashSet<PlayerId> _resumedGameInfoShown = [];
     private bool _continuePlanningEntryAfterGameInfo;
     private bool _deferComlinkAlertUntilPlanningVisible;
     private readonly Queue<PlayerId> _pendingHotSeatEliminations = [];
     private readonly HashSet<PlayerId> _presentedHotSeatEliminations = [];
     private PlayerId? _eliminationHandoffPlayer;
+    // RULE-OBJECTIVE-005: set after an elimination card with no local human playing after it in
+    // slot order, which leaves the endgame music on where the gameplay music would play.
+    private bool _eliminationMusicHeld;
     private int _eventCursor;
     private readonly HashSet<int> _eventViewedPages = [];
     private readonly LastTurnEventArchive _lastTurnEventArchive = new();
@@ -232,11 +242,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (_slidePanels) _panelSlideTransition.Begin(previous, current, _inputTime);
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
                 PlayGeneralSound(slot);
+            // RULE-AWARDS-002: the endgame opens on its Awards tab.
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
-            {
-                _showEndgameNotice = EndgameNoticePresentation.For(_state) is not null;
                 _showEndgameStats = false;
-            }
         };
         var userDataRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -262,6 +270,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _introMoviesSeen = preferences.IntroMoviesSeen;
         _introOnlyOnce = preferences.IntroOnlyOnce;
         _defaultAiPolicy = preferences.DefaultAiPolicy;
+        _preferredScenario = preferences.PreferredScenario;
         _online.Service = preferences.OnlineService;
         _online.Server.Set(preferences.CustomMultiplayerServer);
         _onlineLobbyPresentation = preferences.LobbyPresentation;
@@ -526,9 +535,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     UpdateCity(keyboard);
                     break;
                 case ClientScreen.Endgame:
-                    if (!_showEndgameNotice && Pressed(keyboard, Keys.A)) _showEndgameStats = false;
-                    if (!_showEndgameNotice && Pressed(keyboard, Keys.S)) _showEndgameStats = true;
-                    if (Pressed(keyboard, Keys.Enter)) AdvanceEndgamePresentation();
+                    if (Pressed(keyboard, Keys.A)) _showEndgameStats = false;
+                    if (Pressed(keyboard, Keys.S)) _showEndgameStats = true;
+                    if (Pressed(keyboard, Keys.Enter)) LeaveEndgame();
                     break;
                 case ClientScreen.Handoff:
                     if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))

@@ -8,15 +8,26 @@ namespace Rechaos.Tests;
 
 public sealed class PlayerRankingUiTests
 {
+    // SCR-OBJECTIVE-001: panel-local (98 + 40 * p, 18 + offset).
     [Fact]
-    public void PortraitsFollowSixOriginalColorRailsAndStandingHeights()
+    public void PortraitsFollowSixOriginalColorRailsAndScoreOffsets()
     {
         Assert.Equal(new Rectangle(104, 124, 344, 209), PlayerRankingLayout.Panel);
         Assert.Equal(new Rectangle(202, 142, 32, 32), PlayerRankingLayout.Portrait(0, 0));
-        Assert.Equal(new Rectangle(402, 282, 32, 32), PlayerRankingLayout.Portrait(5, 5));
+        Assert.Equal(new Rectangle(402, 282, 32, 32), PlayerRankingLayout.Portrait(5, 140));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerRankingLayout.Portrait(6, 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => PlayerRankingLayout.Portrait(0, 6));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PlayerRankingLayout.Portrait(0, 141));
     }
+
+    // SCR-OBJECTIVE-001, FND-OBJECTIVE-005: (hi - score) * (140 / (hi - lo + 1)), cut toward zero.
+    [Theory]
+    [InlineData(200, 200, 50, 0)]
+    [InlineData(100, 200, 50, 92)]
+    [InlineData(50, 200, 50, 139)]
+    [InlineData(7, 7, 7, 70)]
+    [InlineData(0, 1, 0, 70)]
+    public void RailOffsetScalesTheDistanceFromTheLeader(long score, long high, long low, int expected) =>
+        Assert.Equal(expected, PlayerRankingPresentation.RailOffset(score, high, low));
 
     [Fact]
     public void TimedRankingUsesCompetitionTiesOnCanonicalScenarioScore()
@@ -25,10 +36,10 @@ public sealed class PlayerRankingUiTests
 
         Assert.Equal(
         [
-            new PlayerRankingEntry(new PlayerId(0), 2, 100),
-            new PlayerRankingEntry(new PlayerId(1), 0, 200),
-            new PlayerRankingEntry(new PlayerId(2), 0, 200),
-            new PlayerRankingEntry(new PlayerId(3), 3, 50)
+            new PlayerRankingEntry(new PlayerId(0), 2, 100, 92),
+            new PlayerRankingEntry(new PlayerId(1), 0, 200, 0),
+            new PlayerRankingEntry(new PlayerId(2), 0, 200, 0),
+            new PlayerRankingEntry(new PlayerId(3), 3, 50, 139)
         ], PlayerRankingPresentation.Project(state));
     }
 
@@ -43,8 +54,8 @@ public sealed class PlayerRankingUiTests
 
         Assert.Equal(
         [
-            new PlayerRankingEntry(new PlayerId(0), 0, 2),
-            new PlayerRankingEntry(new PlayerId(1), 1, 1)
+            new PlayerRankingEntry(new PlayerId(0), 0, 2, 0),
+            new PlayerRankingEntry(new PlayerId(1), 1, 1, 70)
         ], PlayerRankingPresentation.Project(state));
     }
 
@@ -57,8 +68,8 @@ public sealed class PlayerRankingUiTests
 
         Assert.Equal(
         [
-            new PlayerRankingEntry(new PlayerId(0), 0, 39),
-            new PlayerRankingEntry(new PlayerId(1), 1, 0)
+            new PlayerRankingEntry(new PlayerId(0), 0, 39, 0),
+            new PlayerRankingEntry(new PlayerId(1), 1, 0, 136)
         ], PlayerRankingPresentation.Project(state));
     }
 
@@ -105,7 +116,11 @@ public sealed class PlayerRankingUiTests
             "> 1. PLAYER 2              2,500",
             "  1. PLAYER 3              2,500",
             "  3. PLAYER 1                100",
-            "  4. PLAYER 4                 50"
+            "  4. PLAYER 4                 50",
+            "",
+            "THE LEADER TOPS ITS RAIL. EACH OTHER",
+            "PORTRAIT SITS LOWER BY HOW FAR ITS",
+            "SCORE TRAILS; EQUAL SCORES, EQUAL HEIGHT."
         ], lines);
     }
 
@@ -144,6 +159,7 @@ public sealed class PlayerRankingUiTests
     {
         var state = CreateMatch(ScenarioId.Power, [0, 0], sectorOwners: [1]);
         var portrait = PlayerRankingLayout.Portrait(1, 0);
+        Assert.Equal(0, PlayerRankingPresentation.Project(state)[1].Offset);
 
         Assert.Equal("PLAYER 2", PlayerRankingTooltip.At(portrait.Center, state)[0]);
         Assert.Empty(PlayerRankingTooltip.At(new Point(0, 0), state));

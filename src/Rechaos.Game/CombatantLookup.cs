@@ -30,9 +30,7 @@ internal static class CombatantLookup
         if (gameEvent is null || Recorded(gameEvent, id) is not { } recorded) return null;
         if (!Retired.TryGetValue(recorded, out var retired))
         {
-            retired = new MatchGangState(
-                id, recorded.Owner, recorded.DefinitionId, recorded.SectorId, force: 0,
-                recorded.WeaponItemId, recorded.ArmorItemId, recorded.MiscellaneousItemId);
+            retired = recorded.ToRetiredGang(state, id);
             Retired.AddOrUpdate(recorded, retired);
         }
         return retired;

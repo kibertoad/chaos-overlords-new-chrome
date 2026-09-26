@@ -244,7 +244,9 @@ internal static class HireResolver
             }
             var gang = new MatchGangState(
                 state.NextGangId(), player.Id, pending.GangDefinitionId,
-                pending.TargetSectorId, initialForce)
+                pending.TargetSectorId, initialForce,
+                // A new gang has its definition's values until the next rebuild [FND-GANG-007].
+                statistics: EffectiveStatistics.From(definition.Stats))
             {
                 HiredThisTurn = true
             };

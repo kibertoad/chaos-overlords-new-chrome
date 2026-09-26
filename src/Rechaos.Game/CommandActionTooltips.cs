@@ -77,10 +77,13 @@ public static class CommandActionTooltips
 
     private static string[] Effect(GangAction action) => action switch
     {
+        // RULE-ATTACK-001
         GangAction.Attack =>
         [
             "ROLLS FORCE PLUS COMBAT AGAINST A VISIBLE ENEMY GANG HERE.",
-            "THE DEFENDER STRIKES BACK FOR HALF DAMAGE."
+            "THE DEFENDER STRIKES BACK FOR HALF DAMAGE, UNLESS IT IS HIDING",
+            "OR YOUR GANG IS UNARMED WITH MARTIAL ARTS NOT 0 AND THE",
+            "DEFENDER IS NOT AN UNARMED MARTIAL ARTIST."
         ],
         GangAction.Bribe =>
         [

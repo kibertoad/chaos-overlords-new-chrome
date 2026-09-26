@@ -35,65 +35,6 @@ DEV-EQUIP-001, DEV-CONTROL-001 and DEV-AI-002 are mandatory and stay so (the 202
 decision in `docs/DECISIONS.md`); no step adds the original's path for them. DEV-AI-001 was
 dropped on 2026-09-26, and the rebuild keeps the original hunter guard.
 
-## Step 4: Attack and the Combat statistic
-
-Closes RULE-ATTACK-001, RULE-AI-016, RULE-COMBAT-001 and RULE-GANG-001.
-
-- An evaded attack still lowers the target player's attitude toward the attacker by the reaction
-  (FND-AI-047).
-- The attacker's Martial Arts test is `== 0`, not `> 0` (FND-COMBAT-008).
-- Store the weapon skills in Combat when a gang's statistics are rebuilt, not when an attack is
-  computed (FND-GANG-007), so every reader of the stored Combat sees the same value.
-
-Stored Combat changes the state encoding: bump all four versions.
-
-Tooltips: Attack (retaliation and the Martial Arts case), the Combat, Strength, Blade, Range,
-Fighting and Martial Arts statistics, and the Combat line of the statistic breakdown, which must
-show the weapon skills as part of the stored value.
-
-## Step 5: Comlink and events
-
-Closes RULE-COMLINK-007 and the unchecked parts of RULE-EVENT-003, RULE-EVENT-004,
-RULE-EVENT-012, RULE-EVENT-013, RULE-EVENT-014 and FMT-STATE-006.
-
-- When a player finishes planning, drop the read messages at the front of the inbox.
-- Compare each report's recipients, type and arguments with the entries: the elimination report
-  to all six slots, Crackdown recipients by gang presence at the start of resolution, and the
-  control and failed-Equip reports. Fix what differs.
-
-Tooltips: the Comlink inbox's hover text says when read messages are dropped.
-
-## Step 6: Objectives, endgame and awards
-
-Closes RULE-OBJECTIVE-004, RULE-OBJECTIVE-005, RULE-AWARDS-002, SCR-AWARDS-002 and
-SCR-OBJECTIVE-001.
-
-- Big 40, Siege, Big Man and Armageddon count every slot, not only living players. Remove the
-  rebuild's own Kill 'Em All and Eliminate end tests (FND-OBJECTIVE-003). Compare the timed test.
-- Elimination: start the endgame music over the card; when every local human is eliminated,
-  return to the title as the original does; show the Ready card in the original's order; show the
-  awards when a lone human's elimination comes on the turn the match would have ended.
-- The victory splash goes to the lone active player, computer included, on the Awards tab
-  (FND-AWARDS-004).
-- Player Rankings places each portrait in proportion to its score's distance from the leader,
-  over 140 pixels (FND-OBJECTIVE-005).
-
-Tooltips: the scenario descriptions in `ScenarioSetupTooltip` (each scenario's end condition as
-the original tests it) and `PlayerRankingTooltip` (what the rail position means).
-
-## Step 7: Setup
-
-Closes RULE-SETUP-002, RULE-SETUP-009, RULE-SETUP-010 and the unchecked order of
-RULE-SETUP-008.
-
-- Keep a stored scenario preference, Greed when nothing is stored.
-- Portrait arrows skip the portraits other slots hold; Add gives the new human the lowest free
-  portrait; a later setup reopens with the roster of the last Begin (FND-SETUP-013).
-- Check the order of the Ready card, Game Information, combat results and Last Turn Events at the
-  start of planning.
-
-Tooltips: the setup tooltips for the portrait arrows, Add and the scenario selector.
-
 ## Step 8: Computer players
 
 Closes RULE-AI-001, RULE-AI-002, RULE-AI-005, RULE-AI-006, RULE-AI-010, RULE-AI-013 and

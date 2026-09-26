@@ -291,7 +291,18 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.OverlordPortrait(sender.Setup.PortraitId), Color.White);
         DrawComlinkLines(batch, font, ComlinkTextEditor.DisplayLines(message.Text),
             ComlinkViewLayout.Message.Location, Color.Lime);
+        if (_hoverPoint is { } hover && ComlinkViewLayout.Page.Contains(hover))
+            DrawHoverTooltip(batch, pixel, font, hover, ComlinkInboxTooltip);
     }
+
+    // RULE-COMLINK-007
+    internal static readonly IReadOnlyList<string> ComlinkInboxTooltip =
+    [
+        "INBOX",
+        "WHEN YOU END PLANNING, THE READ MESSAGES",
+        "AT THE FRONT OF THE INBOX ARE REMOVED.",
+        "THE FIRST UNREAD MESSAGE AND ALL AFTER IT STAY."
+    ];
 
     private void DrawComlinkSend(
         SpriteBatch batch,

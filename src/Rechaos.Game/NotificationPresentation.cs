@@ -12,7 +12,8 @@ public static class NotificationPresentation
                 && relatedEvent.Action is GangAction.Bribe or GangAction.Equip;
         return notification.Kind switch
         {
-            GameNotificationKind.Control => relatedEvent?.Resolution?.Successes > 0,
+            // RULE-EVENT-012: a winner with no Control order has a report without an event.
+            GameNotificationKind.Control => relatedEvent is null || relatedEvent.Resolution?.Successes > 0,
             GameNotificationKind.Influence or GameNotificationKind.Research =>
                 relatedEvent?.Resolution is { PreviousValue: > 0, ResultValue: 0 },
             GameNotificationKind.Elimination => relatedEvent?.Kind == GameEventKind.PlayerEliminated,

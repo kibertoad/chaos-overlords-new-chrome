@@ -182,7 +182,8 @@ public static class InformationEffectTooltips
 
     private static string Effect(InformationEffect effect) => effect switch
     {
-        InformationEffect.Combat => "ADDS TO FORCE WHEN ROLLING ATTACK DICE.",
+        // RULE-GANG-001, RULE-COMBAT-001: rebuilt before planning, with the weapon skills inside.
+        InformationEffect.Combat => "ADDS TO FORCE FOR ATTACK DICE; INCLUDES THE WEAPON SKILLS.",
         InformationEffect.Defense => "SUBTRACTED FROM AN ENEMY'S ATTACK DICE.",
         InformationEffect.Chaos => "ADDS TO FORCE FOR THE CHAOS ACTION'S DICE.",
         InformationEffect.Control => "ADDS ITS VALUE TO FORCE FOR CONTROL AND THE OWNER'S DEFENSE.",
@@ -191,11 +192,12 @@ public static class InformationEffectTooltips
         InformationEffect.Research => "ADDS TO FORCE WHEN RESEARCHING AN ITEM.",
         InformationEffect.Stealth => "OPPOSES DETECT AND MAKES HIDDEN GANGS HARDER TO HIT.",
         InformationEffect.Detect => "HELPS REVEAL GANGS AND HIT HIDDEN TARGETS.",
-        InformationEffect.Strength => "ADDS TO ATTACK DICE UNARMED OR WITH STRENGTH/BLADE TYPES.",
-        InformationEffect.Blade => "ADDS ITS VALUE TO ATTACK DICE WITH A BLADE-TYPE WEAPON.",
-        InformationEffect.Range => "ADDS ITS VALUE TO ATTACK DICE WITH A RANGE-TYPE WEAPON.",
-        InformationEffect.Fighting => "ADDS ITS VALUE TO ATTACK DICE WHILE UNARMED.",
-        InformationEffect.MartialArts => "ADDS UNARMED ATTACK DICE AND MAY BLOCK RETALIATION.",
+        InformationEffect.Strength => "ADDED TO COMBAT UNARMED OR WITH STRENGTH/BLADE TYPES.",
+        InformationEffect.Blade => "ADDED TO COMBAT WITH A BLADE-TYPE WEAPON.",
+        InformationEffect.Range => "ADDED TO COMBAT WITH A RANGE-TYPE WEAPON.",
+        InformationEffect.Fighting => "ADDED TO COMBAT WHILE UNARMED.",
+        // RULE-ATTACK-001: any value but 0 blocks retaliation for an unarmed attacker.
+        InformationEffect.MartialArts => "ADDED TO COMBAT UNARMED; IF NOT 0, MAY BLOCK RETALIATION.",
         _ => throw new ArgumentOutOfRangeException(nameof(effect))
     };
 }

@@ -83,8 +83,10 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   digests so a fingerprint costs the same on turn 200 as on turn 1. Its
   authoritative stream intentionally excludes the original first-run registry
   serial-number side effect, which coupled gameplay to installation history.
-- `GameModel/EffectiveStatistics.cs`: definition/equipment/influenced-site stat
-  aggregation and deterministic six-sided dice rolls.
+- `GameModel/EffectiveStatistics.cs`: the RULE-GANG-001 rebuild of a gang's
+  fourteen stored statistics (definition, items, the completed sites of a sector
+  its player owns, then the weapon skills in Combat), the stored values that
+  resolution reads, and deterministic six-sided dice rolls.
 - `GameModel/Equipment.cs`: item-type slot mapping, replacement/unequip
   mutations, and manual half-price sale calculation.
 - `GameModel/AiTurnPlanner.Dispatch.cs`: recovered family dispatch and the
@@ -390,11 +392,13 @@ before every tied player. An owned sector can therefore be overthrown at most
 once per phase, and an execution-time Crackdown rejects every group. Sectors
 resolve in ascending board order, fixing the order of independent tie-break draws.
 
-Instant resolution snapshots every acting gang's effective statistics before
-any command mutates site influence. Heal, Research, and per-gang Influence rolls
-therefore share the phase-opening view of equipment and local sites; acquiring a
-Science Center or Research Lab cannot retroactively improve a concurrent roll.
-Mutation and event emission follow the binary player/roster-slot scan.
+Every gang stores its statistics at the rebuild before planning
+(RULE-GANG-001), and resolution reads only those stored values. An item equipped,
+a move, or a site completed during the turn counts from the next rebuild, so
+Heal, Research, and per-gang Influence rolls in the Instant phase need no
+snapshot of their own; acquiring a Science Center or Research Lab cannot
+improve a concurrent roll. Mutation and event emission follow the binary
+player/roster-slot scan.
 
 Chaos is resolved across the entire subphase: gangs roll individually in binary
 player/roster-slot order, one player's same-sector gangs share the aggregate

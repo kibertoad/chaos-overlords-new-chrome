@@ -169,7 +169,7 @@ public sealed partial class ChaosGame
         {
             var player = state.FindPlayer(entry.Player)!;
             batch.Draw(_uiSprites,
-                PlayerRankingLayout.Portrait(entry.Player.Value, entry.Standing),
+                PlayerRankingLayout.Portrait(entry),
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         }
         if (_hoverPoint is { } hover)

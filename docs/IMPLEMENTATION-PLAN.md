@@ -338,9 +338,9 @@ the exact RNG consumption order.
   storage, and may trigger a crackdown. Owner Cash remains a separate Upkeep/UI
   value computed from the controlled-sector tax and influenced sites.
 - Attack is simultaneous. Contrary to the original manual's abbreviated
-  description, the attack pool is `current Force + CombatRating - Defense`,
-  where CombatRating includes the applicable weapon skill and Defense includes
-  item defense. This correction is corroborated by the
+  description, the attack pool is `current Force + Combat - Defense`, where
+  Combat is the stored value that already holds the applicable weapon skills
+  (RULE-COMBAT-001) and Defense includes item defense. This correction is corroborated by the
   [1997 Russell Webb et al. FAQ](https://gamefaqs.gamespot.com/pc/196900-chaos-overlords/faqs/1684)
   and the recovered executable formula. Both the opening attack and retaliation
   use start-of-round Force snapshots, so a gang eliminated by the opening roll

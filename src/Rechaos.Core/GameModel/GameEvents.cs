@@ -65,6 +65,21 @@ public sealed record CombatantDetails(
         return new(gang.Owner, gang.DefinitionId, gang.SectorId,
             gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId);
     }
+
+    /// <summary>
+    /// A detached gang <paramref name="id"/> for the reports to draw, with no Force left. The event
+    /// does not record statistics, so it stores the values a rebuild would write for it now
+    /// (RULE-GANG-001), as every gang must hold stored values.
+    /// </summary>
+    public MatchGangState ToRetiredGang(MatchState state, GangId id)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var gang = new MatchGangState(
+            id, Owner, DefinitionId, SectorId, force: 0,
+            WeaponItemId, ArmorItemId, MiscellaneousItemId);
+        gang.StoredStatistics = EffectiveStatisticsCalculator.Rebuilt(state, gang);
+        return gang;
+    }
 }
 
 public sealed record EconomyResolutionDetails(

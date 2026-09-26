@@ -48,6 +48,48 @@ public sealed class GangStatisticModifierTooltipTests
         Assert.Empty(lines);
     }
 
+    // RULE-GANG-001: the panel shows the stored value; a change since the last rebuild shows as the
+    // next turn's total, followed by the value that holds now.
+    [Fact]
+    public void ABreakdownThatDiffersFromTheStoredValueShowsBoth()
+    {
+        var lines = GangStatisticModifierTooltip.Lines(InformationEffect.Defense, Stats(defense: 1),
+            [new GangStatisticsModifier(GangModifierSource.Armor, "Flak Jacket", Stats(defense: 4))],
+            current: 1);
+
+        Assert.Equal(["BASE 1", "+4 FLAK JACKET (ARMOR)", "NEXT TURN 5", "NOW 1"], lines);
+    }
+
+    [Fact]
+    public void AStoredValueThatMatchesTheBreakdownEndsWithTheTotal()
+    {
+        var lines = GangStatisticModifierTooltip.Lines(InformationEffect.Defense, Stats(defense: 1),
+            [new GangStatisticsModifier(GangModifierSource.Armor, "Flak Jacket", Stats(defense: 4))],
+            current: 5);
+
+        Assert.Equal(["BASE 1", "+4 FLAK JACKET (ARMOR)", "TOTAL 5"], lines);
+    }
+
+    [Fact]
+    public void AStoredValueLeftFromARemovedSourceStillExplainsItself()
+    {
+        var lines = GangStatisticModifierTooltip.Lines(InformationEffect.Defense, Stats(defense: 1),
+            [], current: 5);
+
+        Assert.Equal(["BASE 1", "NEXT TURN 1", "NOW 5"], lines);
+    }
+
+    // RULE-COMBAT-001: the skills row names skills, not a weapon, so a bare-handed gang's row does
+    // not read as an equipped weapon.
+    [Fact]
+    public void WeaponSkillsAreLabelledAsSkills()
+    {
+        var lines = GangStatisticModifierTooltip.Lines(InformationEffect.Combat, Stats(combat: 3),
+            [new GangStatisticsModifier(GangModifierSource.WeaponSkills, "WEAPON SKILLS", Stats(combat: 4))]);
+
+        Assert.Equal(["BASE 3", "+4 WEAPON SKILLS (SKILLS)", "TOTAL 7"], lines);
+    }
+
     [Fact]
     public void BreakdownLinesStayInsideTheHoverPanel()
     {

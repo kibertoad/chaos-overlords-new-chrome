@@ -4,7 +4,12 @@ public enum MatchEndReason : byte
 {
     TimeLimit,
     ObjectiveCompleted,
-    PlayerEliminated
+    PlayerEliminated,
+    /// <summary>
+    /// RULE-OBJECTIVE-005: every human was eliminated in an earlier turn, so the round that would
+    /// come next finds no human to plan and the game returns to the title without the awards.
+    /// </summary>
+    NoHumansLeft
 }
 
 public sealed record MatchOutcome(
@@ -75,21 +80,28 @@ public static class MatchOutcomeEvaluator
 {
     private const short RightHandsDefinitionId = 0;
 
-    public static MatchOutcome? Evaluate(MatchState state)
+    /// <param name="humanActiveAtTurnStart">
+    /// Whether a human was still playing before this turn's eliminations. When none was and none is
+    /// now, and nothing else ends the match, the match ends as <see cref="MatchEndReason.NoHumansLeft"/>
+    /// (RULE-OBJECTIVE-005).
+    /// </param>
+    public static MatchOutcome? Evaluate(MatchState state, bool humanActiveAtTurnStart = true) =>
+        EvaluateEnd(state) ?? (humanActiveAtTurnStart || !AllHumansEliminated(state)
+            ? null
+            : Conclude(state, MatchEndReason.NoHumansLeft, []));
+
+    private static bool AllHumansEliminated(MatchState state)
     {
-        ArgumentNullException.ThrowIfNull(state);
         var humans = state.Players
             .Where(player => player.Setup.Controller == PlayerController.Human).ToArray();
-        if (humans is [{ Status: PlayerStatus.Eliminated }])
-        {
-            var survivingOpponents = state.Players
-                .Where(player => player.Id != humans[0].Id && player.Status == PlayerStatus.Active)
-                .Select(player => player.Id)
-                .OrderBy(player => player.Value)
-                .ToArray();
-            if (survivingOpponents.Length > 0)
-                return Conclude(state, MatchEndReason.PlayerEliminated, survivingOpponents);
-        }
+        return humans.Length > 0 && humans.All(player => player.Status == PlayerStatus.Eliminated);
+    }
+
+    // RULE-OBJECTIVE-001: one player left ends every scenario, and the scenario's own test
+    // (RULE-OBJECTIVE-004) runs after it.
+    private static MatchOutcome? EvaluateEnd(MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
         var activePlayers = state.Players
             .Where(player => player.Status == PlayerStatus.Active)
             .ToArray();
@@ -105,7 +117,9 @@ public static class MatchOutcomeEvaluator
         var definition = ScenarioCatalog.Get(state.Setup.Scenario);
         if (definition.IsTimed)
         {
-            if (state.Coordinator.Turn < ScenarioCatalog.Turns(state.Setup.Duration)) return null;
+            // RULE-OBJECTIVE-004: the match ends with the resolution of the turn numbered with the
+            // limit. The turn only counts up and the match stops there, so the test is an equality.
+            if (state.Coordinator.Turn != ScenarioCatalog.Turns(state.Setup.Duration)) return null;
             var standings = EndgameRankingEvaluator.Evaluate(state);
             return Conclude(
                 state,

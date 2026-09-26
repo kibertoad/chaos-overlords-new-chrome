@@ -19,10 +19,11 @@ public sealed class CombatResolutionTests
         var targetForce = target.Force;
         var attackerStats = EffectiveStatisticsCalculator.ForGang(match, attacker);
         var targetStats = EffectiveStatisticsCalculator.ForGang(match, target);
+        // RULE-COMBAT-001: the stored Combat already holds the weapon skills.
         var attackDice = ManualRules.AttackDiceCount(
-            attackerForce, ManualRules.CombatRating(attackerStats, WeaponType(match, attacker)), targetStats.Defense);
+            attackerForce, attackerStats.Combat, targetStats.Defense);
         var retaliationDice = ManualRules.AttackDiceCount(
-            targetForce, ManualRules.CombatRating(targetStats, WeaponType(match, target)), attackerStats.Defense);
+            targetForce, targetStats.Combat, attackerStats.Defense);
 
         match.FinishExecutionPhase();
 
@@ -241,6 +242,10 @@ public sealed class CombatResolutionTests
         Assert.Equal(0, result.Event.Resolution.DetectionChance);
         Assert.InRange(result.Event.Resolution.DetectionRoll!.Value, 1, 100);
         Assert.Equal(3, match.Random.ConsumptionCount);
+        // RULE-AI-016: an evaded attack still lowers the target player's attitude by its reaction.
+        Assert.Equal(
+            Math.Max(AiStrategicState.MinimumAttitude, 1 - match.AiStrategy.Reaction(new PlayerId(1))),
+            match.AiStrategy.Attitude(new PlayerId(1), new PlayerId(0)));
     }
 
     [Fact]
@@ -327,7 +332,7 @@ public sealed class CombatResolutionTests
         var targetStats = EffectiveStatisticsCalculator.ForGang(match, target);
         var retaliationDice = ManualRules.AttackDiceCount(
             target.Force,
-            ManualRules.CombatRating(targetStats, WeaponType(match, target)),
+            targetStats.Combat,
             attackerStats.Defense);
         Assert.True(retaliationDice > 0);
 

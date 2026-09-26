@@ -174,10 +174,11 @@ public static class HelpContentAugmentation
             + "An idle fallback is used only to Heal an injured gang, Attack a detectable rival in its sector, or Control its current uncontrolled sector, in that exact order; if none is legal, the gang remains idle. Attack ties prefer the rival with lower current Force, then lower target ID. No other fallback action is used. "
             + "Advanced fallback planning consumes no random numbers, sees no hidden gangs, and receives no extra cash, statistics, discounts, damage, or success chance. AI Mentality remains a separate setting and controls the same resolution odds in either policy. "
             + "The selected policy is fixed in the match setup and authenticated by saves, replays, deterministic hashes, and online game settings."),
-        ("ATTACK", "Attack…", "For a human gang, attack dice = max(0, current Force + modified Combat - effective Defense). "
+        ("ATTACK", "Attack…", "For a human gang, attack dice = max(0, current Force + Combat - effective Defense). "
             + "Each 5 or 6 is a success. A positive pool causes damage equal to the greater of its successes and trunc(pool / 4). "
-            + "Strength adds to bare-handed, melee, and blade attacks; Blade adds only to blade weapons; Range adds only to ranged weapons; Fighting and Martial Arts add only while bare-handed. "
-            + "Eligible retaliation also succeeds on 5 or 6, then halves successes with truncation."),
+            + "Combat is worked out before each planning phase and already holds the weapon skills: Strength, Fighting and Martial Arts bare-handed, Strength with a strength-type weapon, Strength and Blade with a blade-type weapon, Range with a range-type weapon. An item bought during the turn counts from the next planning phase. "
+            + "The target strikes back unless it is hiding, or the attacker is bare-handed with a Martial Arts other than 0 and the target is not bare-handed with a Martial Arts above 0. "
+            + "Retaliation also succeeds on 5 or 6, then halves successes with truncation. Every attack, evaded or not, angers the target's player."),
         ("BRIBE", "Bribe", "The shipped game charges $3, not the manual's printed $5. Bribe adds 3 to the sector's base Tolerance. Each turn's orders start by moving the base one point toward 17 minus the sector's Income, and after all Instant commands every base below 1 is raised to 1 and every base above 40 lowered to 40. The Tolerance the Chaos test reads is the base plus the completed sites' Tolerance, set before planning, so a Bribe first protects the sector in the next turn's test."),
         ("CHAOS", "Chaos", "Each human gang separately rolls max(0, sector Income + Force + effective Chaos) dice at 5+. "
             + "Crackdown requires total sector Chaos to be strictly greater than Tolerance, and a sector that cracks down pays no Chaos cash that turn. "

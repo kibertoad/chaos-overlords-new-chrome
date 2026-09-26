@@ -162,46 +162,6 @@ public sealed partial class MatchPlayerState
     }
 }
 
-public sealed class MatchGangState
-{
-    public MatchGangState(
-        GangId id,
-        PlayerId owner,
-        short definitionId,
-        int sectorId,
-        int force,
-        short? weaponItemId = null,
-        short? armorItemId = null,
-        short? miscellaneousItemId = null)
-    {
-        if (sectorId is < 0 or >= MatchLimits.SectorCount)
-            throw new ArgumentOutOfRangeException(nameof(sectorId));
-        if (force is < 0 or > ManualRules.MaximumForce)
-            throw new ArgumentOutOfRangeException(nameof(force));
-        Id = id;
-        Owner = owner;
-        DefinitionId = definitionId;
-        SectorId = sectorId;
-        Force = force;
-        WeaponItemId = weaponItemId;
-        ArmorItemId = armorItemId;
-        MiscellaneousItemId = miscellaneousItemId;
-    }
-
-    public GangId Id { get; }
-    public PlayerId Owner { get; }
-    public short DefinitionId { get; }
-    public int SectorId { get; internal set; }
-    public int Force { get; internal set; }
-    public bool Hidden { get; internal set; }
-    public bool HiredThisTurn { get; internal set; }
-    public short? WeaponItemId { get; internal set; }
-    public short? ArmorItemId { get; internal set; }
-    public short? MiscellaneousItemId { get; internal set; }
-    public QueuedCommand? QueuedCommand { get; internal set; }
-    public bool IsActive => Force > 0;
-}
-
 public sealed record PendingHireState(
     short GangDefinitionId,
     int TargetSectorId,
@@ -435,6 +395,11 @@ public sealed partial class MatchState
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         _comlinkInboxes = Players.ToDictionary(player => player.Id, _ => new ComlinkInbox());
         if (restore is not null) RestoreRuntime(restore);
+        // RULE-GANG-001 runs before the first planning phase; a gang joining without stored values
+        // (a new match, including the generator's, which passes a synthetic restore) stores them
+        // now so resolution never meets a gang without them. A saved gang keeps what it saved.
+        foreach (var gang in Players.SelectMany(player => player.Gangs))
+            gang.StoredStatistics ??= EffectiveStatisticsCalculator.Rebuilt(this, gang);
     }
     internal MatchState(
         OriginalData definitions,
@@ -553,10 +518,13 @@ public sealed partial class MatchState
         LastUpkeepResolutions = Coordinator.Turn == 1 ? [] : EconomyResolver.ResolveUpkeep(this);
         SectorBenefitResolver.ActivatePending(this);
         ToleranceResolver.RebuildBeforePlanning(this);
+        EffectiveStatisticsCalculator.RebuildBeforePlanning(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }
     public TurnTransition FinishCommand(PlayerId player)
     {
+        if (Coordinator.Phase == TurnPhase.Command && Coordinator.ActivePlayer == player)
+            GetComlinkInbox(player).DropLeadingRead();
         var transition = Coordinator.FinishCommand(player);
         if (transition.Phase == TurnPhase.Execution
             && Setup.AiMentality != AiDifficulty.HomicidalManiac)
@@ -634,9 +602,11 @@ public sealed partial class MatchState
     {
         if (Coordinator.Phase != TurnPhase.PlayerElimination)
             return CaptureBoundary(Coordinator.FinishPlayerElimination());
+        var humanActiveAtTurnStart = Players.Any(player =>
+            player.Setup.Controller == PlayerController.Human && player.Status == PlayerStatus.Active);
         ResolvePlayerEliminations();
         AwardBigManPoints();
-        if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this) is { } outcome)
+        if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this, humanActiveAtTurnStart) is { } outcome)
         {
             Outcome = MatchOutcomeValidator.Freeze(outcome);
             AppendMatchEndedEvent(Outcome);
@@ -912,7 +882,8 @@ public sealed partial class MatchState
                 player.Id,
                 Players.Count(candidate => candidate.Status == PlayerStatus.Active));
             var gameEvent = AppendEliminationEvent(player.Id, details);
-            foreach (var recipient in Players.Where(candidate => candidate.Status == PlayerStatus.Active || candidate.Id == player.Id))
+            // RULE-EVENT-003: every slot is told, the eliminated player and earlier losers included.
+            foreach (var recipient in Players)
                 QueueNotification(recipient.Id, GameNotificationKind.Elimination,
                     relatedEventSequence: gameEvent.Sequence);
         }

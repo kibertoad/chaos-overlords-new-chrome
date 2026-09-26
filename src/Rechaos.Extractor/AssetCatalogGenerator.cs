@@ -107,7 +107,7 @@ public static class AssetCatalogGenerator
         "PX00150" => ("City site-marker sheet", "Search and city marker renderer"),
         "PX00200" => ("Endgame awards/statistics frame", "Endgame"),
         "PX00201" => ("Endgame award and statistics sprites", "Endgame"),
-        "PX00202" => ("Single-human victory splash", "Endgame"),
+        "PX00202" => ("Last-player victory splash", "Endgame"),
         "PX00203" => ("Private elimination splash", "Endgame and hot-seat elimination"),
         "PX00300" => ("Police combat sprite sheet", "Combat compositor"),
         "PX02000" => ("Site portrait strip", "Site, sector, Search, and event panels"),

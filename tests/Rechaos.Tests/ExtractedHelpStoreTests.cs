@@ -170,7 +170,7 @@ public sealed class ExtractedHelpStoreTests : IDisposable
 
         var augmented = HelpContentAugmentation.AddExecutableNotes(document);
 
-        Assert.Contains("current Force + modified Combat", augmented.Topics[0].Text,
+        Assert.Contains("current Force + Combat", augmented.Topics[0].Text,
             StringComparison.Ordinal);
         Assert.Contains("115 - 5 x effective Stealth", augmented.Topics[1].Text,
             StringComparison.Ordinal);

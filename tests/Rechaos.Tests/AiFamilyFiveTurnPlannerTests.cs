@@ -59,7 +59,8 @@ public sealed class AiFamilyFiveTurnPlannerTests
         match.Sectors[16].Owner = player;
         match.Sectors[18].Owner = player;
         match.Players[0].AddGang(
-            new MatchGangState(new GangId(11), player, 4, 18, 10));
+            new MatchGangState(new GangId(11), player, 4, 18, 10,
+                statistics: EffectiveStatistics.From(data.Gang(4).Stats)));
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetFamily(player, 0, 5);
         match.AiPlanning.SetFamily(player, 1, 5);
