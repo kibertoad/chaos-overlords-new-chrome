@@ -39,7 +39,17 @@ public static class SectorMapGangDrop
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gang);
-        if (dropSectorId != gang.SectorId) return "MOVE REQUIRES NEIGHBOR SECTOR";
+        if (dropSectorId != gang.SectorId)
+        {
+            var move = new GameCommand(
+                gang.Owner, gang.Id, GangAction.Move, CommandTarget.Sector(dropSectorId));
+            return CommandValidator.Validate(state, move).Code switch
+            {
+                CommandValidationCode.DestinationAtCapacity => "SECTOR IS FULL",
+                CommandValidationCode.DestinationNotAdjacent => "MOVE REQUIRES NEIGHBOR SECTOR",
+                _ => "MOVE IS NOT AVAILABLE"
+            };
+        }
         var control = new GameCommand(gang.Owner, gang.Id, GangAction.Control, CommandTarget.None);
         return CommandValidator.Validate(state, control).Code switch
         {

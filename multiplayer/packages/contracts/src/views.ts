@@ -103,6 +103,8 @@ export const lobbyListingSchema = strictObject({
   maxPlayers: playerCountSchema,
   passwordProtected: boolean(),
   status: matchStatusSchema,
+  /** The session version the match was created under; see `MULTIPLAYER_SESSION_VERSION`. */
+  sessionVersion: sessionVersionSchema,
   settings: matchSettingsSchema,
   availableSlots: array(slotSchema),
   availableSeatSummaries: array(aiSeatSummarySchema),

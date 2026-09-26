@@ -10,12 +10,11 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    // 27 moves with the state-fingerprint encoding, which now folds the definition set in as a
-    // digest rather than inline (MatchStateHasher.FormatVersion 2), and drops every older format:
-    // the fingerprint and the phase-hash history a save carries are written in the encoding of
-    // their day, so a save from format 26 could only be restored on trust. There is no build in
-    // players' hands whose saves this would strand.
-    public const int CurrentFormatVersion = 27;
+    // 28 moves with the state-fingerprint encoding, whose events now record the gangs that fought
+    // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
+    // phase-hash history a save carries are written in the encoding of their day, so a save from
+    // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
+    public const int CurrentFormatVersion = 28;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();

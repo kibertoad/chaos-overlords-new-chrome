@@ -69,17 +69,35 @@ public sealed record FinanceProjection(
         if (sectorId is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sectorId));
 
+        // FND-FINANCE-002: the City variant counts every active gang and queued hire; the Sector
+        // variant counts the gangs standing in the sector and those moving into it, and gives back
+        // the Upkeep of gangs moving out. Both give back the Upkeep of a terminating gang.
         bool Includes(int candidate) => sectorId is null || sectorId == candidate;
-        var activeGangs = player.Gangs.Where(gang => gang.IsActive && Includes(gang.SectorId)).ToArray();
+        var orders = state.Commands.ExecutionPlan()
+            .Where(queued => queued.Command.Player == player.Id)
+            .Select(queued => queued.Command)
+            .ToDictionary(command => command.Gang);
+        GangAction ActionOf(MatchGangState gang) =>
+            orders.TryGetValue(gang.Id, out var command) ? command.Action : GangAction.None;
+        bool MovesInto(MatchGangState gang) => sectorId is { } sector
+            && orders.TryGetValue(gang.Id, out var command)
+            && command.Action == GangAction.Move
+            && command.Target.Id == sector;
+        bool LeavesUpkeep(MatchGangState gang) => ActionOf(gang) == GangAction.Terminate
+            || (sectorId is not null && ActionOf(gang) == GangAction.Move);
+
+        var activeGangs = player.Gangs.Where(gang => gang.IsActive).ToArray();
+        var counted = activeGangs
+            .Where(gang => MovesInto(gang) || (Includes(gang.SectorId) && !LeavesUpkeep(gang)))
+            .ToArray();
         var pendingHires = player.PendingHires.Where(hire => Includes(hire.TargetSectorId)).ToArray();
-        var gangUpkeep = -activeGangs.Sum(gang => state.Definitions.Gang(gang.DefinitionId).Upkeep)
+        var gangUpkeep = -counted.Sum(gang => state.Definitions.Gang(gang.DefinitionId).Upkeep)
             - pendingHires.Sum(hire => state.Definitions.Gang(hire.GangDefinitionId).Upkeep);
         var newContracts = -pendingHires.Sum(hire =>
             HireRules.InitialCost(state.Definitions.Gang(hire.GangDefinitionId)));
-        var commands = state.Commands.ExecutionPlan()
-            .Where(queued => queued.Command.Player == player.Id)
-            .Where(queued => state.FindGang(queued.Command.Gang) is { } gang && Includes(gang.SectorId))
-            .Select(queued => queued.Command)
+        var commands = activeGangs
+            .Where(gang => Includes(gang.SectorId) && orders.ContainsKey(gang.Id))
+            .Select(gang => orders[gang.Id])
             .ToArray();
         var equipment = commands.Sum(command => EquipmentAdjustment(state, command));
         var cityOfficials = -commands.Count(command => command.Action == GangAction.Bribe)
@@ -90,11 +108,13 @@ public sealed record FinanceProjection(
         var siteProtection = sectors.SelectMany(sector => sector.Sites)
             .Where(site => site.InfluencedBy == player.Id)
             .Sum(site => state.Definitions.Site(site.DefinitionId).Cash);
-        var chaosEstimate = EstimateChaos(state, player, commands);
+        var chaosEstimate = commands
+            .Where(command => command.Action == GangAction.Chaos)
+            .Sum(command => EstimateChaos(state, player, state.FindGang(command.Gang)!, sectorId is null));
         var adjustment = checked(gangUpkeep + newContracts + equipment + cityOfficials
             + sectorTax + siteProtection + chaosEstimate);
         return new FinanceProjection(
-            gangUpkeep, newContracts, activeGangs.Length + pendingHires.Length,
+            gangUpkeep, newContracts, counted.Length + pendingHires.Length,
             equipment, cityOfficials, sectorTax, siteProtection, chaosEstimate, adjustment);
     }
 
@@ -121,31 +141,19 @@ public sealed record FinanceProjection(
         return EquipmentRules.SaleValue(credited);
     }
 
+    // FND-FINANCE-002: a third of Income + Chaos + Force for each Chaos gang, halved outside the
+    // player's sectors; both divisions truncate toward zero. The City variant drops an estimate
+    // that is not above 0 and the Sector variant adds it as it is.
     private static int EstimateChaos(
         MatchState state,
         MatchPlayerState player,
-        IReadOnlyList<GameCommand> commands) => commands
-        .Where(command => command.Action == GangAction.Chaos)
-        .GroupBy(command => state.FindGang(command.Gang)!.SectorId)
-        .Sum(group =>
-        {
-            var sector = state.Sectors[group.Key];
-            if (sector.CrackdownActive) return 0;
-            var dice = group.Sum(command =>
-            {
-                var gang = state.FindGang(command.Gang)!;
-                var pool = sector.Income + gang.Force
-                    + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos;
-                return player.Setup.Controller == PlayerController.Computer
-                    && state.Setup.AiMentality == AiDifficulty.Goon
-                    ? pool - pool / 5
-                    : pool;
-            });
-            var successFaces = player.Setup.Controller == PlayerController.Computer
-                && state.Setup.AiMentality is AiDifficulty.CrimeLord or AiDifficulty.HomicidalManiac
-                ? 3
-                : 2;
-            var expectedSuccesses = dice * successFaces / 6;
-            return ManualRules.ChaosIncome(expectedSuccesses, sector.Owner == player.Id);
-        });
+        MatchGangState gang,
+        bool city)
+    {
+        var sector = state.Sectors[gang.SectorId];
+        var estimate = (sector.Income + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos
+            + gang.Force) / 3;
+        if (city && estimate <= 0) return 0;
+        return sector.Owner == player.Id ? estimate : estimate / 2;
+    }
 }

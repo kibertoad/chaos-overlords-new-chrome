@@ -116,6 +116,15 @@ public sealed class GangMultiSelectionTests
     }
 
     [Fact]
+    public void GangDetailsOpenedOverTheCommandOverlayKeepTheSelection()
+    {
+        // The equipment picker opens the ordered gang's information on a portrait double-click.
+        var returns = OverTheWorkspace with { GangDetails = ClientScreen.Commands };
+
+        Assert.True(GangSelectionScreens.Keeps(ClientScreen.Gang, returns));
+    }
+
+    [Fact]
     public void SiteDetailsOpenedOverAnotherScreenForgetTheSelection()
     {
         Assert.False(GangSelectionScreens.Keeps(

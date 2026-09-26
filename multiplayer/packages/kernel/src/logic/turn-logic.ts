@@ -1,22 +1,43 @@
 import {
   activePlayers,
   humanParticipants,
+  isHumanParticipant,
   type Player,
   type Turn,
   type TurnOrders,
   type TurnReport,
 } from '../domain/entities'
 
-/** Every human seat still being waited on has marked ready. An empty roster is never "ready". */
-export function allActiveReady(
+/**
+ * The seats a turn waits on: every human participant, and a seat that left while the absence vote
+ * on it is still open.
+ *
+ * Leaving does not decide a seat; the vote does. A departed player's turn used to seal the moment
+ * everyone present was ready, before anybody had answered the prompt — or after they had voted to
+ * `wait` — so the player came back a turn later than the one they left on, having given no orders
+ * for it. Until the vote hands the seat to the computer, the turn is theirs too. A kicked seat is
+ * never waited on: its token is revoked, so its player cannot come back to finish the turn.
+ */
+export function awaitedSeats(
   players: readonly Player[],
+  openPrompts: ReadonlySet<string>,
+): Player[] {
+  return players.filter(
+    (player) =>
+      isHumanParticipant(player) || (player.status === 'left' && openPrompts.has(player.id)),
+  )
+}
+
+/** Every awaited seat that was asked for orders has marked ready. An empty roster is never "ready". */
+export function allAwaitedReady(
+  awaited: readonly Player[],
   orders: ReadonlyArray<Pick<TurnOrders, 'playerId' | 'ready'>>,
 ): boolean {
   const asked = new Set(orders.map((row) => row.playerId))
-  const active = humanParticipants(players).filter((player) => asked.has(player.id))
-  if (active.length === 0) return false
+  const seats = awaited.filter((player) => asked.has(player.id))
+  if (seats.length === 0) return false
   const readyIds = new Set(orders.filter((row) => row.ready).map((row) => row.playerId))
-  return active.every((player) => readyIds.has(player.id))
+  return seats.every((player) => readyIds.has(player.id))
 }
 
 /**

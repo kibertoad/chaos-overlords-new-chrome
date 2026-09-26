@@ -37,4 +37,17 @@ public sealed class ClassicOnlineLobbyLayoutTests
         Assert.All(rows, row => Assert.True(ClassicOnlineLobbyLayout.Roster.Contains(row)));
         Assert.All(rows.Zip(rows.Skip(1)), pair => Assert.True(pair.First.Bottom <= pair.Second.Y));
     }
+
+    [Fact]
+    public void EachRosterNameSitsBesideItsFaceInsideTheWell()
+    {
+        for (var row = 0; row < 6; row++)
+        {
+            var name = ClassicOnlineLobbyLayout.RosterName(row);
+            var face = ClassicOnlineLobbyLayout.RosterPortrait(row);
+            Assert.True(ClassicOnlineLobbyLayout.Roster.Contains(name));
+            Assert.False(name.Intersects(face));
+            Assert.Equal(face.Y, name.Y);
+        }
+    }
 }

@@ -134,6 +134,48 @@ describe('MultiplayerClient stream connect phase', () => {
   })
 })
 
+describe('MultiplayerClient stream reconnects', () => {
+  /** The attempt numbers `stream` reports across `rounds` connections that each deliver `body`. */
+  async function attemptsAgainst(body: string, rounds: number): Promise<number[]> {
+    const controller = new AbortController()
+    const attempts: number[] = []
+    const client = new MultiplayerClient({
+      baseUrl: 'https://example.invalid',
+      token: 'token',
+      fetch: async () =>
+        new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+    })
+    const events = client.match('m').stream({
+      signal: controller.signal,
+      reconnectDelayMs: 1,
+      maxReconnectDelayMs: 1,
+      maxOutageMs: 0,
+      onReconnect: (_error, attempt) => {
+        attempts.push(attempt)
+        if (attempts.length >= rounds) controller.abort()
+      },
+    })
+    for await (const _event of events) {
+      // Neither body carries an event.
+    }
+    return attempts
+  }
+
+  /** A proxy that passes the opening comment and drops is an outage, and is backed off from. */
+  it('keeps counting attempts against connections that end after the opening comment', async () => {
+    expect(await attemptsAgainst(': connected\n\n', 3)).toEqual([1, 2, 3])
+  })
+
+  /**
+   * The first keepalive after the opening comment proves the connection, however soon it arrives.
+   * The server's heartbeat timer starts before the client has the headers, so a timed threshold
+   * missed that keepalive whenever the headers were slow.
+   */
+  it('resets the attempt counter once a keepalive follows the opening comment', async () => {
+    expect(await attemptsAgainst(': connected\n\n: keepalive\n\n', 3)).toEqual([1, 1, 1])
+  })
+})
+
 /**
  * A stream response that stays open until its request signal aborts, the way a real one does.
  *

@@ -35,6 +35,28 @@ public sealed record RetryPolicy(
             MaxElapsed: TimeSpan.FromMinutes(5));
 
     /// <summary>
+    /// Work nothing waits on, such as a checkpoint snapshot: a few attempts, then let it go.
+    /// </summary>
+    /// <remarks>
+    /// Long enough to outlast one rate-limit window, which is a minute on the server, and short
+    /// enough that a checkpoint that cannot land is given up well before the next one is due. The
+    /// cost of giving up is a reconnect that replays from an older snapshot.
+    /// </remarks>
+    public static RetryPolicy Background { get; } =
+        new(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(30), MaxAttempts: 4,
+            MaxElapsed: TimeSpan.FromMinutes(2));
+
+    /// <summary>
+    /// The longest <c>Retry-After</c> that is honoured as given.
+    /// </summary>
+    /// <remarks>
+    /// The server's limiter windows are a minute long, so it never asks for more. Something between
+    /// the client and the server can, and a proxy asking for an hour must not park a retry loop
+    /// that long; past this the loop's own schedule decides again.
+    /// </remarks>
+    public static readonly TimeSpan MaxHonouredRetryAfter = TimeSpan.FromMinutes(1);
+
+    /// <summary>
     /// Exponential with full jitter, so every client of a restarting server picks a different
     /// moment to come back rather than all of them arriving together.
     /// </summary>
@@ -45,10 +67,40 @@ public sealed record RetryPolicy(
         return TimeSpan.FromMilliseconds(window * (0.5 + Random.Shared.NextDouble() / 2));
     }
 
-    /// <summary>Whether <paramref name="attempt"/> may be followed by another one.</summary>
-    internal bool AllowsAnother(int attempt, TimeSpan elapsed) =>
-        (MaxAttempts <= 0 || attempt < MaxAttempts)
-        && (MaxElapsed is null || elapsed < MaxElapsed.Value);
+    /// <summary>
+    /// How long to wait after <paramref name="failure"/> before attempt <paramref name="attempt"/>
+    /// + 1: the backoff, or longer when the server said when to come back.
+    /// </summary>
+    /// <remarks>
+    /// A rate limit is refused until its window turns over, so retrying on the backoff alone spent
+    /// several attempts — and put several lines in the reconnect log — on answers already known.
+    /// </remarks>
+    public TimeSpan DelayAfter(Exception? failure, int attempt)
+    {
+        var backoff = Backoff(attempt);
+        if (MultiplayerApiException.AnswerIn(failure)?.RetryAfter is not { } asked) return backoff;
+        var honoured = asked < MaxHonouredRetryAfter ? asked : MaxHonouredRetryAfter;
+        return honoured > backoff ? honoured : backoff;
+    }
+
+    /// <summary>
+    /// How long to wait before the attempt after <paramref name="attempt"/>, or null when there is
+    /// to be none.
+    /// </summary>
+    /// <remarks>
+    /// There is none once the attempts are spent, or when the wait itself would end past
+    /// <see cref="MaxElapsed"/>. The wait is never cut short to fit: an attempt made before the
+    /// <c>Retry-After</c> a server asked for is refused again for nothing. Giving up at once is what
+    /// keeps a window closing when it says it does; a 429 asking for a minute used to carry the
+    /// two-minute <see cref="Background"/> window to three.
+    /// </remarks>
+    /// <param name="elapsed">How long this window has been open, first failure included.</param>
+    public TimeSpan? NextDelay(Exception? failure, int attempt, TimeSpan elapsed)
+    {
+        if (MaxAttempts > 0 && attempt >= MaxAttempts) return null;
+        var delay = DelayAfter(failure, attempt);
+        return MaxElapsed is { } window && elapsed + delay > window ? null : delay;
+    }
 }
 
 /// <summary>
@@ -135,10 +187,10 @@ public static class TransientFailure
             }
             catch (Exception exception) when (IsTransient(exception))
             {
-                if (!policy.AllowsAnother(attempt, started.Elapsed))
+                if (policy.NextDelay(exception, attempt, started.Elapsed) is not { } delay)
                     throw new RetryExhaustedException(attempt, started.Elapsed, exception);
                 onRetry?.Invoke(exception, attempt);
-                await Task.Delay(policy.Backoff(attempt), cancellationToken).ConfigureAwait(false);
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
             }
         }
     }

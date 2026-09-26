@@ -3,9 +3,9 @@ namespace Rechaos.Core.GameModel;
 /// <summary>
 /// Pure implementation of the original weighted sector selector at 0x00408642
 /// for its fully recovered modes 1 through 10, 12 through 16,
-/// and encoded fixed-sector modes 0x40 through 0x7f. Planner-specific
-/// queries remain explicit inputs so this kernel does not guess at unrecovered
-/// outer policy.
+/// and encoded fixed-sector modes 0x40 through 0x7f, and of its mode 0 random
+/// neighbour (RULE-AI-007). Planner-specific queries remain explicit inputs so
+/// this kernel does not guess at unrecovered outer policy.
 /// </summary>
 internal static class OriginalAiSectorSelectionRules
 {
@@ -41,6 +41,7 @@ internal static class OriginalAiSectorSelectionRules
             isHostileOwner, isHumanOwner, playerOrderValues, random,
             hasHumanPlayers, formationSectorId, scenarioStandings, unfinishedSiteScore,
             hasPriorInfluence, completedSiteScore);
+        if (mode == 0) return RandomNeighbour(sourceSectorId, random);
 
         var scores = new int[MatchLimits.SectorCount];
         var sourceX = sourceSectorId % MatchLimits.BoardWidth;
@@ -118,6 +119,29 @@ internal static class OriginalAiSectorSelectionRules
                 <= MaximumDestinationGangCount)
             result -= MatchLimits.BoardWidth;
         return result;
+    }
+
+    private static readonly int[] NeighbourOffsets = [-9, -8, -7, -1, 1, 7, 8, 9];
+
+    /// <summary>
+    /// RULE-AI-007, FND-MOVE-003: mode 0 builds no score map. It draws one of the eight offsets with
+    /// roll(8) and draws again while the neighbour would leave the city or wrap a row. The owner
+    /// test of the original rejects only an owner byte below -1, which no sector holds, and no
+    /// capacity test is made.
+    /// </summary>
+    internal static int RandomNeighbour(int sourceSectorId, DeterministicRandom random)
+    {
+        if (sourceSectorId is < 0 or >= MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(sourceSectorId));
+        ArgumentNullException.ThrowIfNull(random);
+        var column = sourceSectorId % MatchLimits.BoardWidth;
+        while (true)
+        {
+            var candidate = sourceSectorId + NeighbourOffsets[random.NextInclusive(NeighbourOffsets.Length) - 1];
+            if (candidate is >= 0 and < MatchLimits.SectorCount
+                && Math.Abs(candidate % MatchLimits.BoardWidth - column) <= 1)
+                return candidate;
+        }
     }
 
     internal static bool LiteralPlayerOrderAccepts(

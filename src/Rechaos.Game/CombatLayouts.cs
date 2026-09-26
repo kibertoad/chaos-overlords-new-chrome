@@ -8,7 +8,7 @@ public static class CombatPanelLayout
     public const int ForceBarHeight = 3;
 
     /// <summary>
-    /// The paired beveled force tracks BIN-UI-001 records at local y=114 and y=121.
+    /// The paired beveled force tracks of SCR-COMBAT-002 (FND-UI-010) at local y=114 and y=121.
     /// </summary>
     public const int ForceBarTracks = 2;
 

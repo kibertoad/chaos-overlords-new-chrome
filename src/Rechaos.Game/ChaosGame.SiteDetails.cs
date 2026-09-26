@@ -98,7 +98,7 @@ public sealed partial class ChaosGame
             DrawNativeTwoCellValue(font, batch, right[row], SiteInformationLayout.RightValueLeft, y);
         }
         if (_hoverPoint is { } hover)
-            DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.SiteAt(hover));
+            DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.SiteAt(hover, definition.Special));
     }
 
     private static void ClearSiteInformationFields(SpriteBatch batch, Texture2D pixel)

@@ -36,8 +36,9 @@ primarily original-runtime corroboration, golden-screen and input comparison,
 release hardening, and optional online experience rather than missing basic
 match flow.
 This is not yet a claim of pixel-perfect or rule-perfect parity with the shipped
-1996 executable. The detailed evidence and next proof gate for each system are
-tracked in the [parity matrix](docs/PARITY-MATRIX.md).
+1996 executable. What the original does is written down in the [spec](spec/README.md),
+and how much of each spec entry the rebuild does, and which tests prove it, is
+tracked in the [parity matrix](PARITY.md).
 The technical documentation is cataloged and indexed in
 [docs/README.md](docs/README.md).
 
@@ -58,8 +59,8 @@ objective/police edges, and native visual/input/media comparisons remain open.
 Consequently, the implementation should be regarded as a broad, deterministic,
 evidence-led recreation with high-confidence static coverage in many areas,
 not as a rule-perfect replica. Intentional deviations and quality-of-life
-extensions are separately recorded in [DECISIONS.md](docs/DECISIONS.md) and
-the [parity matrix](docs/PARITY-MATRIX.md).
+extensions are recorded in the [deviation log](DEVIATIONS.md), and the product
+decisions behind them in [DECISIONS.md](docs/DECISIONS.md).
 
 ### Implemented
 
@@ -85,11 +86,11 @@ Tracking issues are linked from each area below.
 
 | Area | Remaining work |
 |---|---|
-| [Exact gameplay parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/135) | Capture native launch/setup/city fixtures that correlate the uptime-derived seed, startup `serialNum` state, and resulting RNG stream. Add runtime corroboration for the recovered transaction flow and the remaining Crackdown notification and special-objective edges that currently rely on static or manual evidence. |
+| [Exact gameplay parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/135) | Capture native launch/setup/city fixtures that correlate the uptime-derived seed, startup `serialNum` state, and resulting RNG stream. Add runtime corroboration for the recovered transaction flow, Crackdown report timing, and special-objective edges that currently rely on static or manual evidence. |
 | [Original AI parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136) | Compare full native AI decisions and RNG consumption against fixed reference traces, expand multi-seed tournament coverage, and establish reliable evidence-led completion behavior for Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon. Current AI is playable and deterministic, but complete outer-planner parity is not proven. |
 | [Visual and input parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137) | Complete the remaining management-workflow hit maps and golden-screen comparisons, especially Search and the city view; validate the remaining offsets, transparency/color keys, bare-hand style, endgame/hot-seat sequencing, and per-screen right-click behavior against native captures. Single-key shortcuts can be rebound in Options; broader accessibility work remains. |
 | [Online experience](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138) | Late joining is limited to eligible AI seats that have never belonged to a human. Spectating, lobby chat, and online Comlink integration are not implemented. A desync still depends on the host supplying a snapshot, and live-runtime recovery coverage will grow as more failure modes are identified. Security and deployment limitations are documented in [Multiplayer](docs/MULTIPLAYER.md). |
-| [Media and platform polish](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139) | Original movie trigger/skip capture, broader native A/V validation, the remaining interface/impact sound triggers, and sound overlap/interruption behavior remain. Windows releases can be Authenticode-signed through SSL.com eSigner and Linux `.deb` releases can carry a verified detached OpenPGP signature; macOS signing and notarization, native interactive installer validation, and wider platform QA remain. |
+| [Media and platform polish](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139) | Static analysis recovered the later-turn cue and interrupting effect playback. Original movie trigger/skip capture, broader native A/V validation, any remaining interface/impact sound triggers, and audible effect timing remain. Windows releases can be Authenticode-signed through SSL.com eSigner and Linux `.deb` releases can carry a verified detached OpenPGP signature; macOS signing and notarization, native interactive installer validation, and wider platform QA remain. |
 | [Help fidelity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140) | Help content and navigation are functional, but exact native WinHelp typography and paragraph geometry are intentionally approximated by the cross-platform viewer. Unsafe legacy macro/external-file execution remains disabled. |
 | [Compatibility and replay UX](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141) | Recreation save/replay formats may change before 1.0.0. Post-1.0 migration guarantees still need a release policy. Replays can be recorded and deterministically verified, but user-facing animated playback controls are not implemented. Importing or exporting original 1996 save files is not planned. |
 
@@ -114,8 +115,9 @@ presentation-only conveniences that make the original systems easier to read:
   compatible help pack receives a clearly named listed subject for any missing one.
 - Hover tooltips explain the practical effects of city statistics, gang and
   site attributes, item modifiers, every game mode and duration, setup
-  difficulty, and every Options entry. Resting the pointer on a gang command
-  for two seconds explains what that order does before it is queued.
+  difficulty, every Options entry, and how each overlord's Ranking score is
+  built. Resting the pointer on a gang command for two seconds explains what
+  that order does before it is queued.
 - The city console shows projected turn cashflow beside current Cash, with
   finance panels breaking down upkeep, purchases, taxes, site income, Chaos,
   and the resulting adjustment.
@@ -233,8 +235,6 @@ asynchronously, but every client still applies them in the same sealed order.
 | Scenario information | J | Click Game Info |
 | Presentation and audio options | O | Click Options, then adjust the available gameplay-presentation, display, and audio choices |
 | Key bindings | K from Options | Click Keys in Options. Select a shortcut with Up/Down, the mouse wheel, or a row click; then press Enter or Change and the new key. An occupied key swaps its other shortcut. Reset restores defaults; right-click or Cancel stops key capture. Choices are saved locally. |
-| Key bindings | K from Options | Click Keys in Options. Select a shortcut with Up/Down or the mouse, then press Enter or Change and the new key. An occupied key swaps its other shortcut. Reset restores defaults; right-click or Cancel stops key capture. Choices are saved locally. |
-| Key bindings | K from Options | Click Keys in Options. Select a shortcut with Up/Down or the mouse, then press Enter or Change and the new key. An occupied key swaps its other shortcut. Reset restores defaults; right-click or Cancel stops key capture. Choices are saved locally. |
 | Windowed/fullscreen display | F11 or Alt+Enter | Use either shortcut from any screen; the choice is remembered between launches |
 | Save a screenshot | F12 | Writes the finished native window backbuffer as a PNG to the game-local `screenshots` folder |
 | Planning timer (setup) | L | Click None, 30 Seconds, 2 Minutes, or 5 Minutes |
@@ -261,11 +261,11 @@ and indexes them by game subsystem. The most-used entry points:
 | If you want to… | Read |
 |---|---|
 | Build, run, and test from source | [Development guide](docs/DEVELOPMENT.md), [Validation procedure](docs/VALIDATION.md) |
-| Resume development at the current checkpoint | [Handover](docs/HANDOVER.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md) |
-| Know how faithful each system is | [Parity matrix](docs/PARITY-MATRIX.md), [Project decisions](docs/DECISIONS.md) |
+| Resume development at the current checkpoint | [Handover](docs/HANDOVER.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Static validation plan](static_validation_plan.md), [Manual validation plan](manual_validation_plan.md) |
+| Know how faithful each system is | [Parity matrix](PARITY.md), [Deviation log](DEVIATIONS.md), [Project decisions](docs/DECISIONS.md) |
 | Understand the code layout | [Architecture](docs/ARCHITECTURE.md) |
-| Look up a game rule or an executable finding | [Game rules](docs/GAME-RULES.md), [Original executable internals](docs/ORIGINAL-INTERNALS.md), [AI specification](docs/AI-SPEC.md) |
-| Work on the original file formats or assets | [Original file formats](docs/ORIGINAL-FILE-FORMATS.md), [Asset catalog](docs/ASSET-CATALOG.md), [UI atlas](docs/UI-ATLAS.md), [Audio and video](docs/AUDIO-VIDEO.md) |
+| Look up a game rule or an executable finding | [Spec](spec/README.md) and its [indexes](spec/index/by-area.md), [AI specification](docs/AI-SPEC.md) |
+| Work on the original file formats or assets | `FMT-*` and `SCR-*` entries in the [spec](spec/README.md), [Asset pack](docs/ASSET-PACK.md), [Asset catalog](docs/ASSET-CATALOG.md), [Audio and video](docs/AUDIO-VIDEO.md) |
 | Host or extend online play | [Multiplayer](docs/MULTIPLAYER.md), [Server operator manual](multiplayer/README.md) |
 | Cut a release | [Building and releasing installers](docs/RELEASING.md) |
 
@@ -296,7 +296,9 @@ its assets locally during installation.
 
 Copyright (C) 2026 kibertoad.
 
-The original code in this repository is licensed under the
-[GNU General Public License v3.0](LICENSE). The license does not cover or grant
-rights to the original *Chaos Overlords* assets, which are not distributed by
-this project.
+The original code in this repository is licensed under the [MIT License](LICENSE).
+The documentation of the original game in `spec/` is licensed under
+[Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/),
+and its machine-readable files under the MIT License; `spec/LICENSE` says which
+files each covers. Neither license covers or grants rights to the original
+*Chaos Overlords* assets, which are not distributed by this project.

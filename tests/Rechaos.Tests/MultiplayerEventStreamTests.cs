@@ -345,6 +345,36 @@ public sealed class MultiplayerEventStreamTests
     }
 
     /// <summary>
+    /// The first keepalive after the opening comment proves a quiet connection, however soon it
+    /// arrives on the client's clock.
+    /// </summary>
+    /// <remarks>
+    /// The server's heartbeat timer starts before this side has the response headers, so the first
+    /// keepalive lands short of a full heartbeat by however long the headers took. A timed threshold
+    /// missed it and held the "connection lost" dialog up for a second heartbeat, some forty
+    /// seconds, over a stream that was already working. Here the two frames arrive back to back.
+    /// </remarks>
+    [Fact]
+    public async Task ProvesAQuietConnectionOnItsFirstKeepalive()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        var connected = 0;
+        var stream = new MatchEventStream(
+            Handle(http), onConnected: () => Interlocked.Increment(ref connected));
+        await using var read = PendingRead.Start(stream);
+
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") == 1);
+        server.Events.Write(": connected\n\n");
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+        Assert.Equal(0, Volatile.Read(ref connected));
+        server.Events.Write(": keepalive\n\n");
+
+        await Until(() => Volatile.Read(ref connected) == 1);
+        Assert.False(read.Step.IsCompleted);
+    }
+
+    /// <summary>
     /// A server that accepts, writes a keepalive and drops is an outage, and is backed off from.
     /// </summary>
     /// <remarks>

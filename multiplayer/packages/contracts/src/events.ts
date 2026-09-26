@@ -69,6 +69,13 @@ export const lobbyPlayerLeftEventSchema = strictObject({
   }),
 })
 
+/** A lobby member changed their own name or portrait; the view is the one they now carry. */
+export const lobbyPlayerUpdatedEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('lobby.playerUpdated'),
+  payload: strictObject({ player: playerViewSchema }),
+})
+
 export const lobbyHostChangedEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('lobby.hostChanged'),
@@ -190,6 +197,7 @@ export const snapshotAvailableEventSchema = strictObject({
 export const matchEventSchema = variant('type', [
   lobbyPlayerJoinedEventSchema,
   lobbyPlayerLeftEventSchema,
+  lobbyPlayerUpdatedEventSchema,
   lobbyHostChangedEventSchema,
   matchStartedEventSchema,
   matchStatusChangedEventSchema,

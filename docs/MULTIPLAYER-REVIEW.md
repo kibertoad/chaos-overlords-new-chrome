@@ -1,7 +1,6 @@
 # Multiplayer implementation review: open items
 
 Status: open items only
-Last updated: 2026-09-23
 
 What remains of the robustness and efficiency review of online play: the coordination server
 under [`multiplayer/`](../multiplayer/README.md) and the game's client in

@@ -160,6 +160,32 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         Assert.All(MultiplayerRecoveryStore.LoadAll(Path()), item => Assert.True(item.CanReconnect));
     }
 
+    /// <summary>
+    /// Seats from another session version are never shown, so they must not use up the slots of
+    /// seats this build can resume.
+    /// </summary>
+    [Fact]
+    public void OtherVersionMembershipsDoNotCountAgainstTheResumableCap()
+    {
+        var template = Recovery(CleanExit: true, Completed: false);
+        var older = Enumerable.Range(0, 10).Select(index => template with
+        {
+            MatchId = $"older-{index}",
+            SessionVersion = MultiplayerSessionVersion.Current - 1
+        });
+        var current = Enumerable.Range(0, 10).Select(index => template with { MatchId = $"current-{index}" });
+
+        Assert.True(MultiplayerRecoveryStore.TrySaveAll(Path(), older.Concat(current)));
+
+        var loaded = MultiplayerRecoveryStore.LoadAll(Path());
+        Assert.Equal(
+            Enumerable.Range(0, 8).Select(index => $"current-{index}"),
+            loaded.Where(item => item.CanResume).Select(item => item.MatchId));
+        Assert.Equal(
+            Enumerable.Range(0, 8).Select(index => $"older-{index}"),
+            loaded.Where(item => !item.IsCompatible).Select(item => item.MatchId));
+    }
+
     [Fact]
     public void ReadsTheLegacySingleMembershipFormat()
     {

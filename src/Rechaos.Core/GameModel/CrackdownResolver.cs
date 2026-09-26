@@ -24,7 +24,8 @@ public static class CrackdownResolver
     public static CrackdownTriggerResult Trigger(
         MatchState state,
         MatchSectorState sector,
-        ExecutionPhase? notificationPhase = null)
+        ExecutionPhase? notificationPhase = null,
+        bool emitControlLostNotification = true)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);
@@ -35,11 +36,12 @@ public static class CrackdownResolver
         if (controlLost)
         {
             SectorControlResolver.Neutralize(state, sector);
-            state.QueueNotification(
-                previousOwner!.Value,
-                GameNotificationKind.ControlLost,
-                sectorId: sector.Id,
-                executionPhase: notificationPhase);
+            if (emitControlLostNotification)
+                state.QueueNotification(
+                    previousOwner!.Value,
+                    GameNotificationKind.ControlLost,
+                    sectorId: sector.Id,
+                    executionPhase: notificationPhase);
         }
         var duration = state.Random.NextInclusive(
             ManualRules.MaximumCrackdownTurns - ManualRules.MinimumCrackdownTurns + 1)

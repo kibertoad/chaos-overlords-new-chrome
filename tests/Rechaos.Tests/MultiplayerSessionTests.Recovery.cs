@@ -382,18 +382,74 @@ public sealed partial class MultiplayerSessionTests
         server.AnswerOnce(HttpMethod.Put, "/orders", null, HttpStatusCode.BadGateway);
         var seen = new List<MultiplayerNotice>();
 
-        session.QueueOrders(1, EmptyOrders, ready: false);
+        // A finished turn, since a draft's retries are quiet; see the draft test below.
+        session.QueueOrders(1, EmptyOrders, ready: true);
         var down = await WaitFor<MultiplayerNotice.ConnectionChanged>(session, seen);
         Assert.False(down.IsConnected);
 
         var block = server.BlockOnce(HttpMethod.Put, "/orders");
-        session.QueueOrders(1, EmptyOrders, ready: false);
+        session.QueueOrders(1, EmptyOrders, ready: true);
         var up = await WaitFor<MultiplayerNotice.ConnectionChanged>(session, seen);
 
         Assert.True(up.IsConnected);
         Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.OrdersAccepted);
         block.SetResult();
         await WaitFor<MultiplayerNotice.OrdersAccepted>(session, seen);
+    }
+
+    /// <summary>
+    /// A draft that fails an attempt is retried quietly: no reconnect report, one quiet notice.
+    /// </summary>
+    /// <remarks>
+    /// A draft is sent on every change and superseded by the next, so the reconnect modal it used to
+    /// raise blocked a player mid-turn over work the next change resends anyway. It still retries.
+    /// </remarks>
+    [Fact]
+    public async Task ADraftsFailedAttemptIsRetriedWithoutReportingADisconnect()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+        server.AnswerOnce(HttpMethod.Put, "/orders", null, HttpStatusCode.BadGateway);
+        var seen = new List<MultiplayerNotice>();
+
+        session.QueueOrders(1, EmptyOrders, ready: false);
+        var delayed = await WaitFor<MultiplayerNotice.DraftDelayed>(session, seen);
+        var accepted = await WaitFor<MultiplayerNotice.OrdersAccepted>(session, seen);
+
+        Assert.Equal(1, delayed.Turn);
+        Assert.False(accepted.Ready);
+        Assert.Equal(2, server.CallsTo(HttpMethod.Put, "/orders"));
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.ConnectionChanged);
+    }
+
+    /// <summary>
+    /// A draft still being retried when its turn seals is given up: it has nothing left to protect.
+    /// </summary>
+    /// <remarks>
+    /// A newer draft cancels an older one, but a player who changes nothing on the next turn sends
+    /// no newer draft, and the stale one went on retrying for its whole window and then another.
+    /// </remarks>
+    [Fact]
+    public async Task ADraftStillRetryingWhenItsTurnSealsIsGivenUp()
+    {
+        var (session, server, http) = Running(callRetryPolicy: new RetryPolicy(
+            TimeSpan.FromMilliseconds(5), TimeSpan.FromMilliseconds(5), MaxAttempts: 0,
+            MaxElapsed: TimeSpan.FromMinutes(1)));
+        using var _ = http;
+        await using var __ = session;
+        server.Answer(HttpMethod.Put, "/orders", null, HttpStatusCode.BadGateway);
+        server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+        var seen = new List<MultiplayerNotice>();
+
+        session.QueueOrders(1, EmptyOrders, ready: false);
+        await WaitFor<MultiplayerNotice.DraftDelayed>(session, seen);
+        server.Events.Write(SealedFrame(8, 1));
+        await WaitFor<MultiplayerNotice.TurnResolved>(session, seen);
+
+        var settled = server.CallsTo(HttpMethod.Put, "/orders");
+        await Task.Delay(150, TestContext.Current.CancellationToken);
+        Assert.Equal(settled, server.CallsTo(HttpMethod.Put, "/orders"));
     }
 
     /// <summary>A vote fired after the session stopped is cancelled rather than sent.</summary>

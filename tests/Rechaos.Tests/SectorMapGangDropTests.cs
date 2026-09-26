@@ -81,29 +81,34 @@ public sealed class SectorMapGangDropTests
         var gang = match.Players[0].Gangs[0];
         var crackdown = CreateMatch(ownedByPlayer: false);
         crackdown.Sectors[GangSector].CrackdownActive = true;
+        var full = CreateMatch(ownedByPlayer: false, gangsInNeighbor: MatchLimits.FriendlyGangsPerSector);
 
         string[] messages =
         [
             SectorMapGangDrop.Rejection(match, gang, GangSector),
             SectorMapGangDrop.Rejection(match, gang, GangSector + 2),
-            SectorMapGangDrop.Rejection(crackdown, crackdown.Players[0].Gangs[0], GangSector)
+            SectorMapGangDrop.Rejection(crackdown, crackdown.Players[0].Gangs[0], GangSector),
+            SectorMapGangDrop.Rejection(full, full.Players[0].Gangs[0], GangSector + 1)
         ];
 
         Assert.Equal(
             ["SECTOR ALREADY CONTROLLED", "MOVE REQUIRES NEIGHBOR SECTOR",
-                "POLICE BLOCK CONTROL ATTEMPT"],
+                "POLICE BLOCK CONTROL ATTEMPT", "SECTOR IS FULL"],
             messages);
         Assert.All(messages, message => Assert.True(CityStatusMessage.Fits(message), message));
     }
 
-    private static MatchState CreateMatch(bool ownedByPlayer)
+    private static MatchState CreateMatch(bool ownedByPlayer, int gangsInNeighbor = 0)
     {
         var data = BundledOriginalData.Load();
         var setupPlayer = new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human);
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer]);
         var definition = data.Gangs.OrderByDescending(gang => gang.TechLevel).First();
         var gang = new MatchGangState(new GangId(10), setupPlayer.Id, definition.Id, GangSector, 10);
-        var player = new MatchPlayerState(setupPlayer, 500, [gang]);
+        var neighbors = Enumerable.Range(0, gangsInNeighbor)
+            .Select(index => new MatchGangState(
+                new GangId(20 + index), setupPlayer.Id, definition.Id, GangSector + 1, 10));
+        var player = new MatchPlayerState(setupPlayer, 500, [gang, .. neighbors]);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [

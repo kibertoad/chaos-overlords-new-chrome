@@ -12,7 +12,7 @@ public static class GeneralSoundSlot
     public const int IncomingMessageAlert = 6;
     public const int CountdownWarning = 7;
     public const int FinalSecondWarning = 8;
-    public const int LoadedWithoutCallSite = 9;
+    public const int TurnStartCue = 9;
 }
 
 public static class AudioRouting
@@ -35,7 +35,7 @@ public static class AudioRouting
             [GeneralSoundSlot.IncomingMessageAlert] = 205,
             [GeneralSoundSlot.CountdownWarning] = 206,
             [GeneralSoundSlot.FinalSecondWarning] = 207,
-            [GeneralSoundSlot.LoadedWithoutCallSite] = 208
+            [GeneralSoundSlot.TurnStartCue] = 208
         };
 
     public static IReadOnlyList<int> GeneralSoundSlots { get; } =
@@ -57,6 +57,21 @@ public static class AudioRouting
         hasUnread ? GeneralSoundSlot.IncomingMessageAlert : null;
 
     public static int OnlineTurnReadySound() => GeneralSoundSlot.IncomingMessageAlert;
+
+    /// <summary>The later-turn cue for a local turn advance (<c>RULE-AUDIO-006</c>).</summary>
+    /// <remarks>
+    /// Only an advanced turn counter plays it, so the first turn stays silent as in the original,
+    /// and an ended match goes straight to its endgame. Turns no local human remains to plan are
+    /// silent too: the recreation plays those at one per frame.
+    /// </remarks>
+    public static int? TurnStartSound(
+        int previousTurn,
+        int currentTurn,
+        bool matchOver,
+        bool humanPlaying) =>
+        currentTurn != previousTurn && !matchOver && humanPlaying
+            ? GeneralSoundSlot.TurnStartCue
+            : null;
 
     public static int InputResultSound(bool accepted) =>
         accepted ? GeneralSoundSlot.AcceptedSelection : GeneralSoundSlot.RejectedInput;
@@ -81,16 +96,27 @@ public static class AudioRouting
     public static short GangAttackSound(MatchState state, GangId gangId, short? itemId)
     {
         ArgumentNullException.ThrowIfNull(state);
-        if (itemId is { } weapon)
-        {
-            if (weapon < 0 || weapon >= state.Definitions.Items.Count)
-                throw new ArgumentOutOfRangeException(nameof(itemId));
-            return state.Definitions.Items[weapon].Sound;
-        }
+        if (itemId is { } weapon) return ItemSound(state, weapon);
         var gang = state.FindGang(gangId)
             ?? throw new ArgumentOutOfRangeException(nameof(gangId));
+        return GangAttackSound(state, gang, itemId: null);
+    }
+
+    /// <summary>The attack cue of <paramref name="gang"/>, which need not be in the roster any more.</summary>
+    public static short GangAttackSound(MatchState state, MatchGangState gang, short? itemId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(gang);
+        if (itemId is { } weapon) return ItemSound(state, weapon);
         var definition = state.Definitions.Gang(gang.DefinitionId);
         return definition.Stats.MartialArts > 0 ? MartialArtsSound : UnarmedSound;
+    }
+
+    private static short ItemSound(MatchState state, short weapon)
+    {
+        if (weapon < 0 || weapon >= state.Definitions.Items.Count)
+            throw new ArgumentOutOfRangeException("itemId");
+        return state.Definitions.Items[weapon].Sound;
     }
 
     public static string SoundFile(short index)

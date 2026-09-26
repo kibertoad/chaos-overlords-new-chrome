@@ -62,11 +62,7 @@ public static class PlanningTimerPolicy
 public static class PlanningTimerLayout
 {
     public static Rectangle Bar => new(520, 336, PlanningTimerPolicy.BarWidth, 3);
-    public static IReadOnlyList<Rectangle> SetupChoices { get; } =
-    [
-        new(192, 330, 108, 27), new(192, 359, 108, 27),
-        new(192, 388, 108, 27), new(192, 417, 108, 27)
-    ];
+    public static IReadOnlyList<Rectangle> SetupChoices => SetupPanelLayout.PlanningTimes;
 }
 
 public enum PlanningTimerSignal
@@ -302,7 +298,7 @@ public sealed partial class ChaosGame
             return;
         }
         switch (_onlineDeadlineWarnings.Advance(
-            _online.PlanningTurn, _online.DeadlineAt, DateTimeOffset.UtcNow))
+            _online.PlanningTurn, _online.DeadlineAt, OnlineServerNow()))
         {
             case PlanningTimerSignal.LongWarning:
                 PlayGeneralSound(GeneralSoundSlot.CountdownWarning);
@@ -330,7 +326,7 @@ public sealed partial class ChaosGame
         var seconds = _online.Match?.Settings.TurnTimerSeconds ?? 0;
         if (seconds <= 0) return null;
         return PlanningTimerPolicy.VisibleBarWidth(
-            TimeSpan.FromSeconds(seconds), deadline - DateTimeOffset.UtcNow);
+            TimeSpan.FromSeconds(seconds), deadline - OnlineServerNow());
     }
 
     private void DrawPlanningTimer(SpriteBatch batch, Texture2D pixel)

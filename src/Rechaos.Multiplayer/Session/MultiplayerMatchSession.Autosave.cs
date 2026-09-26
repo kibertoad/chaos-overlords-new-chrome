@@ -32,6 +32,14 @@ public sealed partial class MultiplayerMatchSession
     private const int CheckpointEveryTurns = 10;
 
     /// <summary>
+    /// The checkpoint or bootstrap upload running behind the pump, if any.
+    /// </summary>
+    /// <remarks>
+    /// Written only by the pump, which is the only thing that starts one; awaited by the disposal.
+    /// </remarks>
+    private Task _backgroundUpload = Task.CompletedTask;
+
+    /// <summary>
     /// Writes the host's turn-0 bootstrap snapshot, if this client still owes one.
     /// </summary>
     /// <remarks>
@@ -48,14 +56,16 @@ public sealed partial class MultiplayerMatchSession
     /// and once it is not, a checkpoint is what late join and the next reconnect read instead.
     /// </para>
     /// </remarks>
-    private async Task UploadBootstrapSnapshotIfDueAsync(CancellationToken cancellationToken)
+    private void UploadBootstrapSnapshotIfDue()
     {
         if (!_uploadInitialSnapshot) return;
-        _uploadInitialSnapshot = false;
-        // See above: a bootstrap nobody is waiting on.
-        await TryUploadSnapshotAsync(
-                0, MatchStateHasher.ComputeFingerprint(_replay.State), cancellationToken)
-            .ConfigureAwait(false);
+        // See above: a bootstrap nobody is waiting on. Owed until one actually starts: a restore
+        // re-arms this while the first upload may still be retrying behind the pump, and that one
+        // can yet give up, so a re-arm met by a busy upload is kept for the next offer rather than
+        // spent on nothing. An offer that comes after turn 1 has sealed is refused `unknown_turn`
+        // and dropped like any other refusal.
+        _uploadInitialSnapshot = !StartBackgroundUpload(
+            0, MatchStateHasher.ComputeFingerprint(_replay.State));
     }
 
     /// <summary>
@@ -73,10 +83,7 @@ public sealed partial class MultiplayerMatchSession
     /// simply replays from an older one, which is what every reconnect did before they existed.
     /// </para>
     /// </remarks>
-    private async Task CheckpointIfDueAsync(
-        int confirmedTurn,
-        string stateHash,
-        CancellationToken cancellationToken)
+    private void CheckpointIfDue(int confirmedTurn, string stateHash)
     {
         if (!IsHost || confirmedTurn <= 0 || confirmedTurn % CheckpointEveryTurns != 0) return;
         if (_replay.State.Coordinator.Turn != confirmedTurn + 1) return;
@@ -86,41 +93,70 @@ public sealed partial class MultiplayerMatchSession
             return;
         }
         // A checkpoint nobody is waiting for. The next reconnect replays from an older one.
-        await TryUploadSnapshotAsync(confirmedTurn, stateHash, cancellationToken)
-            .ConfigureAwait(false);
+        _ = StartBackgroundUpload(confirmedTurn, stateHash);
+    }
+
+    /// <summary>
+    /// Uploads a snapshot nothing on this client waits for, behind the pump and off the lanes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The upload used to run inside the pump, on the pump's lane and the five-minute call window.
+    /// A checkpoint met by a rate limit or a server hiccup therefore put the reconnect modal in
+    /// front of the host while they planned the next turn, and held every event behind it —
+    /// readiness, the next seal — for as long as the window lasted, over a stream that was fine.
+    /// </para>
+    /// <para>
+    /// The request is built here, on the pump, because the state it serialises is the pump's and
+    /// moves on with the next event. Only the round trip leaves. One upload at a time: a checkpoint
+    /// is due every ten turns and gives up within minutes, so one still running when the next is
+    /// due is a server that is not taking them, and a second would only queue behind it.
+    /// </para>
+    /// </remarks>
+    /// <returns>Whether the upload started; false while an earlier one is still running.</returns>
+    private bool StartBackgroundUpload(int turn, string stateHash)
+    {
+        if (!_backgroundUpload.IsCompleted) return false;
+        var request = new UploadSnapshotRequest(
+            turn,
+            NativeSaveSerializer.CurrentFormatVersion,
+            MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current,
+            stateHash,
+            MatchStateClone.ToBase64(_replay.State),
+            SummarizeSeats(_replay.State));
+        var cancellationToken = _stoppingToken;
+        _backgroundUpload = Task.Run(
+            () => TryUploadSnapshotAsync(request, cancellationToken), cancellationToken);
+        return true;
     }
 
     /// <summary>Uploads a snapshot nothing on this client waits for, so a refusal is dropped.</summary>
     private async Task TryUploadSnapshotAsync(
-        int turn,
-        string stateHash,
+        UploadSnapshotRequest request,
         CancellationToken cancellationToken)
     {
         try
         {
-            await UploadSnapshotAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
+            await CallAsync(
+                token => _match.UploadSnapshotAsync(request, token),
+                lane: null,
+                cancellationToken,
+                retryPolicy: _backgroundRetryPolicy).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is MultiplayerApiException
             or MultiplayerProtocolException or RetryExhaustedException)
         {
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The session is stopping.
+        }
+        catch (Exception exception)
+        {
+            // Not a refusal and not an outage: something this build did not expect, which the
+            // pump used to end the session over when the upload ran on it. It still does.
+            Fail(exception, "upload_snapshot");
+        }
     }
-
-    private Task UploadSnapshotAsync(
-        int turn,
-        string stateHash,
-        CancellationToken cancellationToken) =>
-        CallAsync(
-            token => _match.UploadSnapshotAsync(
-                new UploadSnapshotRequest(
-                    turn,
-                    NativeSaveSerializer.CurrentFormatVersion,
-                    MultiplayerProtocolVersion.Current,
-                    MultiplayerSessionVersion.Current,
-                    stateHash,
-                    MatchStateClone.ToBase64(_replay.State),
-                    SummarizeSeats(_replay.State)),
-                token),
-            _pumpLane,
-            cancellationToken);
 }
