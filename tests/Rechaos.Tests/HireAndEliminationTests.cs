@@ -329,7 +329,7 @@ public sealed class HireAndEliminationTests
     }
 
     [Fact]
-    public void SuccessfulHireReusesFirstInactiveGangAndPlanningSlot()
+    public void SuccessfulHireReusesFirstInactiveGangAndKeepsItsPlanningRecord()
     {
         var playerId = new PlayerId(0);
         MatchGangState[] gangs =
@@ -351,8 +351,79 @@ public sealed class HireAndEliminationTests
         Assert.Equal((short)2, match.Players[0].Gangs[1].DefinitionId);
         Assert.True(match.Players[0].Gangs[1].IsActive);
         Assert.Equal(new GangId(12), match.Players[0].Gangs[2].Id);
-        Assert.Equal(AiPlanningState.UnusedFamily, match.AiPlanning.Family(playerId, 1));
+        // RULE-AI-001: the hire leaves the slot's record alone; the slot was flagged while its gang
+        // was inactive, and the new gang's first dispatch wipes the record.
+        Assert.Equal(11, match.AiPlanning.Family(playerId, 1));
+        Assert.Equal(GangAction.Attack, match.AiPlanning.PlannedAction(playerId, 1));
+    }
+
+    [Fact]
+    public void HireIntoASlotAPassSawEmptyTakesAFreshRecordAtItsFirstDispatch()
+    {
+        var playerId = new PlayerId(0);
+        MatchGangState[] gangs =
+        [
+            new(new GangId(10), playerId, 1, 0, 5),
+            new(new GangId(11), playerId, 1, 0, 0),
+            new(new GangId(12), playerId, 1, 0, 0)
+        ];
+        var match = CreateMatch(gangs: gangs);
+        // RULE-AI-001: the pass sees slot 1 empty and flags it; the dead gang's record stays.
+        AiPlanningPreparation.ApplyFamilyAssignments(match, playerId);
+        match.AiPlanning.SetFamily(playerId, 1, 11);
+        match.AiPlanning.SetPlannedAction(playerId, 1, GangAction.Attack);
+        match.AiPlanning.SetFocusValue(playerId, 1, 4);
+        match.AiPlanning.SetCoverageSector(playerId, 1, 4);
+        Assert.True(match.AiPlanning.NeedsFamily(playerId, 1));
+        AdvanceToHire(match);
+        Assert.True(match.QueueHire(playerId, 2, 0).Accepted);
+        match.FinishHire(playerId);
+
+        AiPlanningPreparation.ApplyFamilyAssignments(match, playerId);
+        // RULE-AI-003: the flagged gang loses both auxiliary values in the pass.
+        Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(playerId, 1));
+        Assert.Equal(AiPlanningState.InactiveCoverageSector,
+            match.AiPlanning.CoverageSector(playerId, 1));
+        match.AiPlanning.SetCurrentHireRole(playerId, 3);
+        AiPlanningPreparation.AssignFamilyIfNeeded(
+            match, playerId, match.Players[0].Gangs[1], 1);
+
+        // RULE-AI-002: the dispatch wipes the record and gives Greed hire role 3's family.
+        Assert.Equal(2, match.AiPlanning.Family(playerId, 1));
+        Assert.False(match.AiPlanning.NeedsFamily(playerId, 1));
+        Assert.Equal(GangAction.None, match.AiPlanning.PreviousAction(playerId, 1));
         Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(playerId, 1));
+    }
+
+    [Fact]
+    public void HireIntoASlotEmptiedInTheSameTurnKeepsTheDeadGangsFamily()
+    {
+        var playerId = new PlayerId(0);
+        MatchGangState[] gangs =
+        [
+            new(new GangId(10), playerId, 1, 0, 5),
+            new(new GangId(11), playerId, 1, 0, 5)
+        ];
+        var match = CreateMatch(gangs: gangs);
+        AiPlanningPreparation.ApplyFamilyAssignments(match, playerId);
+        match.AiPlanning.SeedFamily(playerId, 1, 11);
+        match.AiPlanning.SetPlannedAction(playerId, 1, GangAction.Attack);
+        AdvanceToHire(match);
+        // The gang dies in the turn's combat, after the pass saw it active.
+        match.Players[0].Gangs[1].Force = 0;
+        Assert.True(match.QueueHire(playerId, 2, 0).Accepted);
+        match.FinishHire(playerId);
+        Assert.Equal((short)2, match.Players[0].Gangs[1].DefinitionId);
+
+        AiPlanningPreparation.ApplyFamilyAssignments(match, playerId);
+        match.AiPlanning.SetCurrentHireRole(playerId, 3);
+        AiPlanningPreparation.AssignFamilyIfNeeded(
+            match, playerId, match.Players[0].Gangs[1], 1);
+
+        // RULE-AI-001: the slot was never seen empty, so the new gang keeps the family and history.
+        Assert.False(match.AiPlanning.NeedsFamily(playerId, 1));
+        Assert.Equal(11, match.AiPlanning.Family(playerId, 1));
+        Assert.Equal(GangAction.Attack, match.AiPlanning.PreviousAction(playerId, 1));
     }
 
     [Fact]

@@ -261,8 +261,10 @@ internal static class HireResolver
                 // its id has to let go first: an order left in the queue would resolve next turn
                 // against a gang `FindGang` can no longer find.
                 state.Commands.Cancel(player.Gangs[reusableGangSlot].Id);
+                // RULE-AI-001: the planning record is left alone. A slot a pass saw empty is flagged
+                // and wiped at the new gang's first dispatch; one emptied and refilled in the same
+                // turn keeps the dead gang's family and history.
                 player.ReplaceGang(reusableGangSlot, gang);
-                state.AiPlanning.ResetGangSlot(player.Id, reusableGangSlot);
             }
             else
             {
