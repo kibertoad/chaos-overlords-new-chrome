@@ -44,6 +44,17 @@ public sealed partial class MultiplayerMatchSession
     private readonly List<TurnReport> _unreportedSeals = [];
 
     /// <summary>
+    /// The turn the event log is on at the event being replayed: one past the last turn it sealed.
+    /// </summary>
+    /// <remarks>
+    /// A handover or a late join carries no turn, and the state is no guide to it once a snapshot
+    /// has been adopted — the replay still walks the log from its start, past handovers the
+    /// snapshot already holds. This is the turn such an event took effect before, and the one it is
+    /// judged against exactly as a seal is; see <see cref="HandOverSeat"/>.
+    /// </remarks>
+    private int _historyTurn = 1;
+
+    /// <summary>
     /// Fetches the match, adopts the newest snapshot the local state is behind, replays the log
     /// gaplessly to the view's sequence, and hands the interface the result.
     /// </summary>
@@ -73,6 +84,10 @@ public sealed partial class MultiplayerMatchSession
     /// <returns>False when the match is over and there is nothing left to pump.</returns>
     private async Task<bool> RebuildFromHistoryAsync(int replayFromSeq, CancellationToken cancellationToken)
     {
+        // Where the log stands at the sequence the replay starts after, read BEFORE a snapshot can
+        // move the state past it: a match starts on turn 1, and a resync starts where the live
+        // state is. See `_historyTurn`.
+        _historyTurn = replayFromSeq == 0 ? 1 : _replay.State.Coordinator.Turn;
         var (view, snapshot) = await ReadViewAndLatestSnapshotAsync(cancellationToken).ConfigureAwait(false);
         if (view.Status == MatchStatus.Abandoned)
         {
@@ -156,8 +171,11 @@ public sealed partial class MultiplayerMatchSession
         foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
             PublishTakeoverVote(vote);
         // The interface counts the seats from the roster alone, which cannot see a departed seat the
-        // server is still holding the turn for while the vote on it is open.
-        if (_takeoverVotes.Keys.Any(_departedPlayerIds.Contains)) PublishReadiness();
+        // server is still holding the turn for while the vote on it is open — nor, without being
+        // told, which seats finished the open turn while this client was away. The view is the
+        // authority on the latter, read at the same sequence the replay stopped at.
+        if (SeedReadiness(view) | _takeoverVotes.Keys.Any(_departedPlayerIds.Contains))
+            PublishReadiness();
         // Last, on a state that is now caught up, the caller resolves a pause the history carried
         // — adopt a repair somebody posted while this client was away, or post one if this client
         // turns out to be holding the state the others agreed on. Until that existed, every
@@ -362,17 +380,27 @@ public sealed partial class MultiplayerMatchSession
                 return;
             case MatchPlayerTakenOverEvent takenOver:
                 _takeoverVotes.Remove(takenOver.Payload.PlayerId);
-                TransferPlayerToComputer(takenOver.Payload.PlayerId);
+                HandOverSeat(takenOver.Payload.PlayerId, PlayerController.Computer, _historyTurn);
                 return;
             case MatchPlayerReturnedEvent returned:
                 _takeoverVotes.Remove(returned.Payload.PlayerId);
                 if (returned.Payload.ReplacedComputer)
-                    TransferPlayerToHuman(returned.Payload.PlayerId);
+                    HandOverSeat(returned.Payload.PlayerId, PlayerController.Human, _historyTurn);
                 return;
             case MatchLatePlayerJoinedEvent joined:
-                AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot);
+                AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot, _historyTurn);
+                return;
+            case TurnOpenedEvent opened:
+                _historyTurn = Math.Max(_historyTurn, opened.Payload.Turn);
+                return;
+            // Kept, not announced: the replay says readiness once, after `Resumed`.
+            case TurnReadinessEvent readiness:
+                RecordReadiness(
+                    readiness.Payload.Turn, readiness.Payload.PlayerId, readiness.Payload.Ready);
                 return;
             case TurnSealedEvent sealedTurn:
+                // Whether or not the state already holds it, the log has moved past this turn.
+                _historyTurn = Math.Max(_historyTurn, sealedTurn.Payload.Turn + 1);
                 if (sealedTurn.Payload.Turn < _replay.State.Coordinator.Turn) return;
                 if (sealedTurn.Payload.Turn > _replay.State.Coordinator.Turn)
                 {

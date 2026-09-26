@@ -567,7 +567,7 @@ public sealed partial class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
-        server.Answer(HttpMethod.Get, "/turns/1/orders", Envelope("revoked"), HttpStatusCode.Unauthorized);
+        server.Answer(HttpMethod.Get, "/turns/1/orders", Envelope("invalid_token"), HttpStatusCode.Unauthorized);
 
         server.Events.Write(SealedFrame(8, 1));
         var failed = await WaitFor<MultiplayerNotice.Failed>(session);
