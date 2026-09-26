@@ -136,8 +136,11 @@ public static partial class CommandResolver
             throw new ArgumentException("Every command must belong to Combat.", nameof(commands));
 
         var orderedCommands = InRosterOrder(state, commands);
-        var snapshots = state.Players.SelectMany(player => player.Gangs)
-            .ToDictionary(gang => gang.Id, gang => CombatSnapshot.For(state, gang));
+        // The rosters are enumerated in slot order, so each gang's index is its roster slot.
+        var snapshots = state.Players
+            .SelectMany(player => player.Gangs.Select((gang, slot) => (gang, slot)))
+            .ToDictionary(
+                entry => entry.gang.Id, entry => CombatSnapshot.For(state, entry.gang, entry.slot));
         var outcomes = new List<CombatOutcome>(orderedCommands.Length);
         // Every Attack order rolls its own attack and retaliation, including two gangs that attack
         // each other: the original resolver has no branch that merges such a pair
@@ -203,7 +206,7 @@ public static partial class CommandResolver
         var policeOutcomes = snapshots.Values
             .Where(snapshot => snapshot.Force > 0 && state.Sectors[snapshot.SectorId].CrackdownActive)
             .OrderBy(snapshot => snapshot.Owner.Value)
-            .ThenBy(snapshot => GangSlot(state, snapshot.Owner, snapshot.Id))
+            .ThenBy(snapshot => snapshot.RosterSlot)
             .Select(snapshot => RollPoliceAttack(state, snapshot))
             .ToArray();
 
@@ -220,6 +223,7 @@ public static partial class CommandResolver
         }
         foreach (var outcome in policeOutcomes.Where(outcome => outcome.Detected))
             AddDamage(incomingDamage, outcome.Target.Id, outcome.Successes);
+        RecordFirstCombatRecord(state, snapshots, outcomes, policeOutcomes);
 
         foreach (var (gangId, damage) in incomingDamage)
         {
@@ -297,6 +301,26 @@ public static partial class CommandResolver
         return new CombatPhaseResolution(results, policeResults);
     }
 
+    /// <summary>
+    /// RULE-COMBAT-002 writes byte 0 of the combat record of every gang that fought: an attacker,
+    /// an attack's target (evaded or not) or a gang the police found. Only the first record,
+    /// player 0's roster slot 0, is kept, because the computer players read its byte as the owner
+    /// of sector index 64 (RULE-AI-005, RULE-AI-013, FMT-STATE-003).
+    /// </summary>
+    private static void RecordFirstCombatRecord(
+        MatchState state,
+        IReadOnlyDictionary<GangId, CombatSnapshot> snapshots,
+        IReadOnlyList<CombatOutcome> outcomes,
+        IReadOnlyList<PoliceCombatOutcome> policeOutcomes)
+    {
+        if (state.FindPlayer(new PlayerId(0)) is not { Gangs.Count: > 0 } firstPlayer) return;
+        var gang = firstPlayer.Gangs[0].Id;
+        var fought = outcomes.Any(outcome => outcome.Attacker.Id == gang || outcome.Target.Id == gang)
+            || policeOutcomes.Any(outcome => outcome.Detected && outcome.Target.Id == gang);
+        if (fought)
+            state.AiPlanning.RecordFirstCombatRecordDefinition(snapshots[gang].Details.DefinitionId);
+    }
+
     private static PoliceCombatOutcome RollPoliceAttack(MatchState state, CombatSnapshot target)
     {
         var detectionChance = ManualRules.PoliceDetectionPercent(
@@ -360,12 +384,14 @@ public static partial class CommandResolver
         short? WeaponItemId,
         CombatantDetails Details)
     {
-        public static CombatSnapshot For(MatchState state, MatchGangState gang) => new(
+        public static CombatSnapshot For(MatchState state, MatchGangState gang, int rosterSlot) => new(
             gang.Id, gang.Owner, gang.SectorId, gang.Force, gang.Hidden,
             EffectiveStatisticsCalculator.ForGang(state, gang),
             gang.WeaponItemId is { } weapon ? state.Definitions.Items[weapon].Type : null,
             gang.WeaponItemId,
-            CombatantDetails.Of(gang));
+            CombatantDetails.Of(gang, rosterSlot));
+
+        public int RosterSlot => Details.RosterSlot!.Value;
     }
 
     private sealed record CombatOutcome(
@@ -533,9 +559,10 @@ public static partial class CommandResolver
                     .ToArray())
                 .ToArray();
             var sector = state.Sectors[sectorCommands.Key];
-            // DEV-CONTROL-002: the original leaves a sector under police out of the pass without
-            // a word; the rebuild records a failed result for each participant.
-            results.AddRange(sector.CrackdownActive
+            // RULE-CONTROL-001 skips a sector whose `crackdown_turns` is not 0, including a value
+            // wrapped below 0. DEV-CONTROL-002: the original leaves such a sector out of the pass
+            // without a word; the rebuild records a failed result for each participant.
+            results.AddRange(sector.HasCrackdownTurns
                 ? RefuseForCrackdown(state, sector, groups.SelectMany(group => group))
                 : SettleControl(state, sector, groups));
         }

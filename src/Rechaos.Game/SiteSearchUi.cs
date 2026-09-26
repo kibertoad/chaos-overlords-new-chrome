@@ -108,7 +108,8 @@ public static class CitySiteMarkerProjection
             for (var siteIndex = 0; siteIndex < sector.Sites.Count; siteIndex++)
             {
                 var site = sector.Sites[siteIndex];
-                var controlled = SiteControlRules.Controller(sector, site) == player;
+                var controlled = SiteControlRules.Controller(
+                    sector, site, state.Definitions.Site(site.DefinitionId)) == player;
                 if (!controlled && !selectedSiteIds.Contains(site.DefinitionId)) continue;
                 result.Add(new CitySiteMarker(
                     sector.Id, site.DefinitionId, visibleSlot++, controlled));

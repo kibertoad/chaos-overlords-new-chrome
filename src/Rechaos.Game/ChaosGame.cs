@@ -584,8 +584,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 case ClientScreen.Events:
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveEventCursor(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveEventCursor(1);
-                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)
-                        || Pressed(keyboard, Keys.Back))
+                    // A step started this frame holds its key face; input during the wait is
+                    // dropped (RULE-TIMER-004), so the panel does not close under it.
+                    if (!_tickedPresentation.Active
+                        && (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)
+                            || Pressed(keyboard, Keys.Back)))
                         AcceptAndInvoke(CloseEvents);
                     break;
                 case ClientScreen.ComlinkView:

@@ -16,7 +16,9 @@ public readonly record struct PresentedCombatEvent(GameEvent Event, bool HandsOf
 /// <remarks>
 /// The original walks only the viewer's gangs that fought, by sector and then by the slot each
 /// gang took in its sector's combat table. The resolver hands those slots out in roster order, so
-/// the roster order within a sector is the slot order. For each gang it plays the gang's own
+/// the roster order within a sector is the slot order: the slot the gang held when it fought, as
+/// the event records it, since a hire before the presentation can reuse the slot of a gang the
+/// fight wiped out (FMT-STATE-008). For each gang it plays the gang's own
 /// attack, then its target's attack on it when the two attacked each other, then every other
 /// attack on it in player and roster order (the event order), then the police.
 /// </remarks>
@@ -34,17 +36,14 @@ public static class CombatPresentationOrder
         var focalSectors = new Dictionary<GangId, int>();
         foreach (var gameEvent in phase)
             foreach (var (gang, owner, sector) in Combatants(state, gameEvent))
-                if (owner == viewer) focalSectors.TryAdd(gang, sector);
+                if (owner == viewer)
+                    focalSectors.TryAdd(gang, sector);
 
-        var roster = state.FindPlayer(viewer)?.Gangs ?? [];
-        // A gang the fight wiped out can have lost its roster slot to a hire in the same turn; it
-        // has no slot left to order by, so it follows the gangs that still hold theirs.
-        int RosterSlot(GangId gang)
-        {
-            for (var index = 0; index < roster.Count; index++)
-                if (roster[index].Id == gang) return index;
-            return int.MaxValue;
-        }
+        // An event recorded before the slot was kept leaves only the current roster to go by. A gang
+        // the fight wiped out can then have lost its slot to a hire in the same turn, so it follows
+        // the gangs that still hold theirs.
+        var rosterSlot = CombatRosterSlots.Resolver(
+            CombatRosterSlots.Recorded(phase), state.FindPlayer(viewer)?.Gangs ?? []);
 
         var presented = new List<PresentedCombatEvent>(phase.Count);
         var emitted = new HashSet<long>();
@@ -55,7 +54,7 @@ public static class CombatPresentationOrder
 
         foreach (var focal in focalSectors
                      .OrderBy(entry => entry.Value)
-                     .ThenBy(entry => RosterSlot(entry.Key))
+                     .ThenBy(entry => rosterSlot(entry.Key))
                      .ThenBy(entry => entry.Key.Value)
                      .Select(entry => entry.Key))
         {
@@ -81,7 +80,9 @@ public static class CombatPresentationOrder
         return presented;
     }
 
-    /// <summary>The gangs <paramref name="gameEvent"/> puts in the fight, with owner and sector.</summary>
+    /// <summary>
+    /// The gangs <paramref name="gameEvent"/> puts in the fight, with owner and sector.
+    /// </summary>
     private static IEnumerable<(GangId Gang, PlayerId Owner, int Sector)> Combatants(
         MatchState state,
         GameEvent gameEvent)

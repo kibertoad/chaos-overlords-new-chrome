@@ -492,8 +492,8 @@ public sealed partial class ChaosGame
 
     private static string MatchDate(int turn)
     {
-        var week = Math.Max(0, turn - 1);
-        return $"{2050 + week / 52}.{week % 52 + 1:00}";
+        var (year, week) = MatchCalendar.Of(Math.Max(0, turn - 1));
+        return $"{year}.{week:00}";
     }
 
 }

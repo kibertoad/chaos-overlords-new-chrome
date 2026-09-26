@@ -11,19 +11,19 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Status | Rows |
 |---|---|
-| `unknown` | 1 |
+| `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 24 |
+| `supported` | 19 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 188 |
+| `implemented` | 194 |
 | `validated` | 9 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 1 |
-| `partial` | 24 |
-| `complete` | 197 |
+| `partial` | 18 |
+| `complete` | 203 |
 
 ## DATA
 
@@ -33,7 +33,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-DATA-002` | Gang definition records in DATA/Gangs | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
 | `FMT-DATA-003` | Item definition records in DATA/ITEMS | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
 | `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | complete | None | `DEV-UI-016` | implemented | The rebuild draws only the 16-bit image set, for which the original never loads this palette either (DEV-UI-016); the extractor copies the file unread. |
-| `FMT-DATA-005` | Compressed archive DATA/DATA.Z | unknown | missing | None | None | unknown | The game never reads the file (FND-DATA-008), and the rebuild copies it unread into its asset pack. FND-DATA-009 reads its tables, but header and entry bytes it does not interpret keep the entry unknown. |
+| `FMT-DATA-005` | Compressed archive DATA/DATA.Z | supported | missing | None | None | supported | The game never reads the file (FND-DATA-008), and the rebuild copies it unread into its asset pack. FND-DATA-009 and FND-DATA-010 read every byte and expand every block. |
 
 ## GFX
 
@@ -88,14 +88,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-001-gang-record). `repeat_action` differs: a recurring Heal is cancelled once Force reaches 10 after the instant phase, where the original tests Force at the next turn start. |
-| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-002-sector-record). `cash_yield` after a Control takeover, the headquarters' Tolerance bonus in a neutral sector, `research_level` for the computer's tech cap and the permanent crackdown value 100 differ. |
-| `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-003-per-gang-combat-record). Record 0's `definition`, which the computer players read as an owner, and `force_start` for an attacker killed by a larger retaliation differ. |
+| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-001-gang-record); every field is held with the same value or a representation no rule can tell apart, and the Give and Sell mask order is pinned by tests. |
+| `FMT-STATE-002` | Sector record, one per city sector | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-002-sector-record); `crackdown_turns` is held as a signed byte and wraps past 127 as in the original. |
+| `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-003-per-gang-combat-record); every field a rule reads is held with the same value. |
 | `FMT-STATE-004` | Site slot in a sector record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-004-site-slot): `progress` is held as the Resistance still needed, a representation no rule result can tell apart. |
-| `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-005-comlink-message-record). The original empties every inbox when a match is entered; the rebuild keeps the inbox across a load. |
-| `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record). Two sites completed in one sector in one resolution give one Influence report where the original gives two. |
-| `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-007-computer-player-planning-record). `needs_family` differs when RULE-AI-010 reverts a surplus hunter after a Greed Terminate of the same pass set the flag. |
-| `FMT-STATE-008` | Combat result row of one sector | supported | partial | None | None | supported | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-008-combat-result-row-of-one-sector). The gang entries were not checked against RULE-COMBAT-004. |
+| `FMT-STATE-005` | Comlink message record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-005-comlink-message-record); the text is stored without its trailing spaces, and a message of spaces only is dropped as RULE-COMLINK-003 records. |
+| `FMT-STATE-006` | Last Turn report record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record); every report carries the type and arguments SCR-EVENT-001 reads. |
+| `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-007-computer-player-planning-record); every field is held with the same value or a representation no rule can tell apart. |
+| `FMT-STATE-008` | Combat result row of one sector | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-008-combat-result-row-of-one-sector); the gang entries follow RULE-COMBAT-004. |
 | `FMT-STATE-009` | Input event record | supported | complete | None | `DEV-UI-018` | implemented | The rebuild polls input once per frame and keeps no event record (DEV-UI-018); only RULE-UI-014 reads the record ([docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-009-input-event-record)). |
 
 ## RNG
@@ -366,7 +366,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EVENT-012` | Taking control of a sector is reported to the new owner | supported | complete | None | None | implemented | The report is the rebuild's Control notification; a winner without a Control order (BUG-CONTROL-001) gets one with no event. |
 | `RULE-EVENT-013` | Losing control of a sector is reported to the previous owner | supported | complete | None | None | implemented | The report is the rebuild's Control lost notification, sent on a takeover by Control and on a third Crackdown. |
 | `RULE-EVENT-014` | An Equip that fails for lack of cash is reported to its player | supported | complete | None | None | implemented | The report is the rebuild's failed Equip result, which names the gang and its sector; like the original it does not name the item. |
-| `SCR-EVENT-001` | Last Turn Events panel | supported | complete | None | `DEV-EVENT-001`, `DEV-EVENT-002` | implemented | Positions of the status line, illustration and footer come from the rebuild's own measurements, not from findings. |
+| `SCR-EVENT-001` | Last Turn Events panel | supported | partial | None | `DEV-EVENT-001`, `DEV-EVENT-002` | supported | Every element sits at the position SCR-EVENT-001 records, with its pressed faces and act-on-release input. The captions are the rebuild's own text, because the rebuild does not load the executable's STRING/33 to STRING/44. |
 
 ## COMLINK
 

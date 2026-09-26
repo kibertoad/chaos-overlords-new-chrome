@@ -121,6 +121,18 @@ public sealed class ComlinkInbox
     public bool IsRead(long sequence) => _readSequences.Contains(sequence);
 
     /// <summary>
+    /// FMT-STATE-005: empties every record, as the original does when a match is entered. The
+    /// sequence keeps counting, so a message received later never takes an old message's number.
+    /// </summary>
+    internal bool Clear()
+    {
+        if (_messages.Count == 0) return false;
+        _messages.Clear();
+        _readSequences.Clear();
+        return true;
+    }
+
+    /// <summary>
     /// RULE-COMLINK-007: removes the read messages at the front of the inbox, up to the first
     /// unread one, when the player's planning ends. Returns how many were removed.
     /// </summary>

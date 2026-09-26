@@ -295,7 +295,7 @@ public sealed class CombatResultProjectionTests
 
         var attack = Assert.Single(loaded.Events, gameEvent =>
             gameEvent is { Kind: GameEventKind.CommandResolved, Action: GangAction.Attack });
-        Assert.Equal(new CombatantDetails(new PlayerId(2), 1, 0, null, null, null),
+        Assert.Equal(new CombatantDetails(new PlayerId(2), 1, 0, null, null, null, Force: 10, RosterSlot: 0),
             attack.Resolution!.Defender);
         var page = Assert.Single(CombatResultProjection.Pages(loaded, new PlayerId(2)));
         Assert.Equal(new GangId(30), Assert.Single(page.ForcesFor(new PlayerId(2))).Gang);
@@ -308,9 +308,9 @@ public sealed class CombatResultProjectionTests
     {
         var (_, attack) = ResolveAttackThenRehireTheDefendersSlot();
 
-        Assert.Equal(new CombatantDetails(new PlayerId(1), 1, 0, null, null, null),
+        Assert.Equal(new CombatantDetails(new PlayerId(1), 1, 0, null, null, null, Force: 10, RosterSlot: 0),
             attack.Resolution!.Attacker);
-        Assert.Equal(new CombatantDetails(new PlayerId(2), 1, 0, null, null, null),
+        Assert.Equal(new CombatantDetails(new PlayerId(2), 1, 0, null, null, null, Force: 10, RosterSlot: 0),
             attack.Resolution.Defender);
     }
 
@@ -338,8 +338,12 @@ public sealed class CombatResultProjectionTests
         var police = Assert.Single(match.Events,
             gameEvent => gameEvent.PoliceAttack is { Detected: true });
         var target = police.Gang!.Value;
-        Assert.Equal(CombatantDetails.Of(match.FindGang(target)!),
-            police.PoliceAttack!.Target);
+        // The record keeps the Force the gang entered the phase with (FMT-STATE-003 force_start).
+        var targetGang = match.FindGang(target)!;
+        var slot = match.FindPlayer(targetGang.Owner)!.Gangs.ToList().IndexOf(targetGang);
+        Assert.Equal(CombatantDetails.Of(targetGang, slot)
+                with { Force = police.PoliceAttack!.PreviousForce },
+            police.PoliceAttack.Target);
         RetireAsHireDoes(match, target);
         match.FinishHire(new PlayerId(0));
         match.FinishPlayerElimination();

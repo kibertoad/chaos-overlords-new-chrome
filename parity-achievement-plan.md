@@ -64,18 +64,9 @@ computer players choose orders.
 
 ## Step 9: Remaining rule details
 
-- Fix the rule differences docs/STATE-MAPPING.md found, verifying each against the spec first:
-  - RULE-TURN-004, RULE-HEAL-001: a recurring Heal stays until the next turn start's Force test.
-  - RULE-UPKEEP-001: after a Control takeover the new owner is paid the old yield once.
-  - RULE-SITE-001, RULE-CHAOS-002: the headquarters' +2 Tolerance applies in a neutral sector.
-  - RULE-AI-005, RULE-AI-026: the computer's local tech cap ignores who owns the sector.
-  - RULE-POLICE-003, RULE-SETUP-005: the permanent crackdown value 100 never counts down.
-  - RULE-AI-005, RULE-AI-013: record 0's `definition` as the owner the computer reads at index 64.
-  - RULE-COMBAT-004: `force_start` of an attacker killed by a retaliation larger than its Force.
-  - RULE-COMLINK-004: every inbox is emptied when a match is entered.
-  - RULE-EVENT-005, RULE-EVENT-006: one Influence report per completed site.
-  - RULE-AI-010: reverting a surplus hunter keeps a `needs_family` flag set earlier in the pass.
-  - FMT-STATE-008: compare the gang entries with RULE-COMBAT-004.
+- RULE-POLICE-002's edge case says a count of 103 to 105 then counts down, while RULE-POLICE-003's
+  procedure never lowers a count of 100 or above. The rebuild follows the procedure; the two
+  entries need reconciling from the executable.
 
 ## Step 10: Screens
 
@@ -85,15 +76,12 @@ needs static reads or captures of the original:
 - RULE-TIMER-004: how much lighter a flash copy is and the order of the city-cell copies
   (FND-UI-017); the pressed faces of Influence's Escape, Move and Research, which no finding
   records.
+- SCR-EVENT-001: the captions come from `Chaos Overlords.exe#STRING/33` to `STRING/44`, and the
+  rebuild has no loader for the executable's string resources; the extractor needs one, and the
+  panel then draws them.
 - SCR-GANG-001's half-tone pattern (its PLACEHOLDER), SCR-GIVE-001's list background and dimming
   pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's police portrait and
   header strips.
-
-## Step 11: Deviations for what the rebuild does not reproduce
-
-FMT-DATA-005 (DATA.Z) stays `unknown` while bytes of its header and file entries are not
-interpreted (FND-DATA-009 lists them); an InstallShield 3 extraction of the blocks would settle
-them and show whether they expand to the installed files.
 
 ## Step 12: Close the research plans
 

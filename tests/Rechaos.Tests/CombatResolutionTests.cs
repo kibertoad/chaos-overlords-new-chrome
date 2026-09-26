@@ -388,6 +388,74 @@ public sealed class CombatResolutionTests
         Assert.Equal(0, match.FindGang(new GangId(20))!.Force);
     }
 
+    // RULE-TURN-004, RULE-HEAL-001: the original tests a recurring Heal only at turn start. A gang
+    // healed to Force 10 in the instant phase and then hurt in Combat keeps its order, starts the
+    // next turn below 10, and heals again.
+    [Fact]
+    public void RecurringHealThatReachesTenAndIsHurtInCombatHealsAgainNextTurn()
+    {
+        var match = CreateMatch(playerOneForce: 9);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(1), new GangId(20), GangAction.Heal, CommandTarget.None,
+            Repeat: true)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        var healer = match.FindGang(new GangId(20))!;
+
+        match.FinishExecutionPhase();
+        Assert.Equal(10, healer.Force);
+        Assert.True(match.Commands.TryGet(healer.Id, out _));
+
+        match.FinishExecutionPhase();
+        Assert.InRange(healer.Force, 1, 9);
+
+        foreach (var _ in TurnStructure.ExecutionOrder.Skip(2)) match.FinishExecutionPhase();
+        match.FinishHire(new PlayerId(0));
+        match.FinishHire(new PlayerId(1));
+        match.FinishPlayerElimination();
+        match.FinishUpkeep();
+
+        Assert.True(match.Commands.TryGet(healer.Id, out var queued));
+        Assert.Equal(GangAction.Heal, queued!.Command.Action);
+        Assert.True(queued.Command.Repeat);
+        var hurt = healer.Force;
+        foreach (var player in match.Players) match.FinishCommand(player.Id);
+        match.FinishExecutionPhase();
+        var heal = Assert.Single(match.LastPhaseResolutions,
+            result => result.Command.Gang == healer.Id);
+        Assert.Equal(GangAction.Heal, heal.Command.Action);
+        Assert.Equal(Math.Min(hurt + heal.Event!.Resolution!.Successes, 10), healer.Force);
+    }
+
+    // RULE-TURN-004: a recurring Heal still at Force 10 when the next turn starts is dropped there.
+    [Fact]
+    public void RecurringHealAtTenWhenTheTurnStartsIsDropped()
+    {
+        var match = CreateMatch(playerOneForce: 9);
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(1), new GangId(20), GangAction.Heal, CommandTarget.None,
+            Repeat: true)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        var healer = match.FindGang(new GangId(20))!;
+
+        foreach (var _ in TurnStructure.ExecutionOrder) match.FinishExecutionPhase();
+        Assert.Equal(10, healer.Force);
+        Assert.True(match.Commands.TryGet(healer.Id, out _));
+        match.FinishHire(new PlayerId(0));
+        match.FinishHire(new PlayerId(1));
+        match.FinishPlayerElimination();
+        match.FinishUpkeep();
+
+        Assert.False(match.Commands.TryGet(healer.Id, out _));
+        Assert.Null(healer.QueuedCommand);
+    }
+
     [Fact]
     public void SimpleAndDetailedPresentationProduceIdenticalOutcomesAndHash()
     {
