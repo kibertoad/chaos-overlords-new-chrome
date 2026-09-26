@@ -57,12 +57,7 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        var priorChaosCount = player.Gangs
-            .Select((candidate, slot) => (candidate, slot))
-            .Count(entry => entry.candidate.IsActive
-                && entry.candidate.SectorId == gang.SectorId
-                && state.AiPlanning.PreviousAction(playerId, entry.slot)
-                    == GangAction.Chaos);
+        var priorChaosCount = CountPreviousChaosInSector(state, playerId, gang.SectorId);
         state.AiPlanning.SetPlannedAction(
             playerId, gangSlot,
             OriginalAiFamilyTenRules.SelectStationaryAction(priorChaosCount));

@@ -39,10 +39,12 @@ public sealed class AiFamilyZeroTurnPlannerTests
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
     }
 
-    // RULE-AI-019, FND-AI-046: the count includes the planning gang, so a gang that raised Chaos
-    // last turn after Heal, Hide or Move moves on.
+    // RULE-AI-019, FND-AI-046: after Heal, Hide or Move a gang moves on when another of its
+    // player's gangs raised Chaos in the sector last turn. (The planning gang's own previous
+    // Chaos is counted too, but family 0 never counts after Chaos; AiFamilyFourTurnPlannerTests
+    // covers that.)
     [Fact]
-    public void PreviousChaosInTheSectorSendsTheGangOn()
+    public void PreviousChaosOfAnotherGangInTheSectorSendsTheGangOn()
     {
         var match = CreateMatch();
         var player = new PlayerId(0);

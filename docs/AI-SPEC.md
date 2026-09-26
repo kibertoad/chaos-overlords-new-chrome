@@ -39,7 +39,9 @@ Original is the default. Advanced currently makes exactly these changes:
   performance.
 - On Crime Lord and Homicidal Maniac only, a gang at Force 8 or higher in a sector
   it controls moves to a neighboring non-controlled sector when Original leaves
-  it idle or repeats Hide, Snitch, or Bribe from its preceding turn. The move uses
+  it idle or repeats Hide, Snitch, or Bribe from its preceding turn. Repeated
+  Chaos, which families 0 and 4 hold owned land with, is left out: it earns, and
+  in the same-seed sample moving those gangs too left more gang-turns idle. The move uses
   the existing objective/income destination score, then lower sector ID. A
   detectable local rival suppresses an Advanced-added move, which may not reduce
   the friendly gangs remaining after already planned outbound moves below one;
@@ -263,35 +265,40 @@ explicit M6 gap rather than an unmeasured claim.
    Three consecutive Moves switch the family to 11 in Siege and 2 otherwise;
    Greed's final three turns overwrite the result with Terminate. Unsupported
    previous-action cases intentionally preserve None, matching the handler.
-   Family 0's complete general-purpose state machine is live. Previous None
-   Heals below Force 8 at effective Heal `-3` or better, otherwise Hides unless
-   another gang in the sector already has previous Hide, then Moves through
-   mode 5. Previous Attack makes one weight-10 opponent draw and attacks only
-   on a passing quarter-strength comparison; failure Controls when strict solo
-   Control succeeds and otherwise Moves. Previous Hide or Equip makes up to
-   five weight-10 draws and attacks the final target even after five failures,
-   then tries the shared nearby-danger weapon/armor opportunity before its
-   owned-sector Heal/Hide or non-owned Move continuation. Previous Control
-   Hides in owned territory and Moves elsewhere. Previous Heal, Snitch, or Move
-   repeats Heal first, makes one weight-10 draw whose failed comparison
+   Family 0's complete general-purpose state machine is live (RULE-AI-019,
+   FND-AI-046, FND-AI-048). Where these branches decide between staying and
+   moving they count the player's gangs in the sector whose previous action was
+   Chaos, the planning gang included. Previous None Heals below Force 8 at
+   effective Heal `-3` or better, otherwise raises Chaos when that count is 0,
+   then Moves through mode 5. Previous Attack makes one weight-10 opponent draw
+   and attacks only on a passing quarter-strength comparison; failure Controls
+   when strict solo Control succeeds and otherwise Moves. Previous Chaos or Equip
+   makes up to five weight-10 draws and attacks the final target even after five
+   failures, then tries the shared nearby-danger weapon/armor opportunity before
+   its owned-sector Heal/Chaos or non-owned Move continuation. Previous Control
+   raises Chaos in owned territory and Moves elsewhere. Previous Heal, Hide, or
+   Move repeats Heal first, makes one weight-10 draw whose failed comparison
    deliberately preserves no action while clearing both auxiliary shorts, or
-   chooses Control/Hide/Move locally. Previous Research always Moves. A newly
-   planned Move paired with an older Move changes the family to 11 in Siege and
-   2 otherwise. Unsupported previous actions preserve None. Exact targets,
-   mode-5 destinations, cooldowns, auxiliary writes, family changes, and RNG
-   consumption are live and replay-recorded.
-   Family 4's complete state machine is live as well. Previous None, Control,
-   or Heal applies the same Force-8/effective-Heal-`-3` gate, then Hides when
-   no gang in the sector has previous Hide and otherwise Moves through mode 2.
-   Previous Attack, Snitch, or Move makes one weight-10 draw whose failed
-   comparison deliberately produces no action and clears both auxiliary
-   shorts. Without weight 10, owned territory uses Hide/Move allocation;
+   chooses Control/Chaos/Move locally, raising Chaos while the count is below 1.
+   Previous Snitch always Moves. Previous Research, Influence, Bribe, Give and
+   Sell plan nothing. A newly planned Move paired with an older Move changes the
+   family to 11 in Siege and 2 otherwise. Exact targets, mode-5 destinations,
+   cooldowns, auxiliary writes, family changes, and RNG consumption are live and
+   replay-recorded.
+   Family 4's complete state machine is live as well (RULE-AI-023, FND-AI-046,
+   FND-AI-049). Previous None, Control, or Heal applies the same
+   Force-8/effective-Heal-`-3` gate, then raises Chaos while the previous-Chaos
+   count is below 1 and otherwise Moves through mode 2. Previous Attack, Hide,
+   or Move makes one weight-10 draw whose failed comparison deliberately
+   produces no action and clears both auxiliary shorts. Without weight 10,
+   owned territory raises Chaos while the count is below 1 and Moves otherwise;
    non-owned territory Controls only when both previous and older actions are
-   Move and strict solo Control succeeds, otherwise it Moves. Previous Hide or
+   Move and strict solo Control succeeds, otherwise it Moves. Previous Chaos or
    Equip makes up to five weight-10 draws and attacks the final target, then
    tries nearby-danger weapon/armor equipment. Its remaining owned-sector path
-   permits Hide while at most one previous Hide already exists, whereas other
-   cases Move through mode 2. The dispatch table does not assign family 4 in a
+   raises Chaos while the count is below 2, so a gang that raised Chaos alone
+   there stays, whereas other cases Move through mode 2. Every other previous
+   action plans nothing. The dispatch table does not assign family 4 in a
    mapped scenario/role cell, but an unmapped role preserves it; that live path
    is replay-tested. Exact targets, cooldowns, auxiliary writes, mode-2 RNG,
    and no-action behavior are integrated.
