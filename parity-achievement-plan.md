@@ -31,8 +31,9 @@ Most gameplay steps change how a turn resolves, so they bump `MULTIPLAYER_SESSIO
 To retire live matches once instead of once per step, land the gameplay steps on one branch and release
 them together with a single session bump, or accept one bump per release.
 
-DEV-EQUIP-001, DEV-CONTROL-001, DEV-AI-001 and DEV-AI-002 are mandatory and stay so (the
-2026-09-26 decision in `docs/DECISIONS.md`); no step adds the original's path for them.
+DEV-EQUIP-001, DEV-CONTROL-001 and DEV-AI-002 are mandatory and stay so (the 2026-09-26
+decision in `docs/DECISIONS.md`); no step adds the original's path for them. DEV-AI-001 was
+dropped on 2026-09-26, and the rebuild keeps the original hunter guard.
 
 ## Step 8: Computer players
 
@@ -42,6 +43,22 @@ steps change.
 
 - Hire placement keeps anchor 63 for player 0 while sector 0, 6, 7 or 8 is free land
   (FND-AI-051); check the per-scenario slot adjustments and the hunter reversion (FND-AI-050).
+- Hunter hires (open claim on RULE-AI-010, 2026-09-26): in 2,688 simulated four-year matches
+  with a simulated human, no computer player of the rebuild hired role 4 in any scenario, and the
+  hunter force reached its guard only in Armageddon. Find out why and whether the original does
+  the same:
+  - compare the rebuild's first hostile sector with `first_hostile` of RULE-AI-010, which reads
+    `sector_weight` 10 from `visible_weight` in RULE-AI-004: the rebuild takes any sector with
+    any detectable gang of any hostile player, human or computer, where the spec takes the first
+    visible gang only and counts it only for a hostile human;
+  - check the family counts the hunter test and the later adjustments read (family 0 or 4,
+    3, 5, 6 or 12, 7) against the spec, since a later adjustment that always fires would explain
+    the missing hunters, and the scheduled hunter slot of each scenario, which is flattened in
+    the same way;
+  - settle with the original: the BUG-AI-001 item of manual_validation_plan.md records whether
+    its computer players hire family-6 gangs at all.
+  Run the paired simulations of the 2026-09-26 decision again after the fix, with the harness
+  kept this time, to see whether the hunter guard then matters.
 - Families 0 and 4 count previous Chaos where the rebuild counts Hide, and group the previous
   actions as the jump table does (FND-AI-046, FND-AI-048, FND-AI-049).
 - Upgrades follow FND-AI-055: the weapon choice starts from the equipped weapon, family 10's
