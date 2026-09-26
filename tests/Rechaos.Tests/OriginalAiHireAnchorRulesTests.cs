@@ -208,6 +208,17 @@ public sealed class OriginalAiHireAnchorRulesTests
         Assert.False(facts.Keeps(ScenarioId.Greed, -1));
     }
 
+    // RULE-AI-013, DEV-AI-004: an anchor of 164 (sector 100) fails the keep test in the rebuild,
+    // where the original reads an owner byte past the sector list.
+    [Fact]
+    public void AnchorPastTheSectorsIsReplaced()
+    {
+        var facts = new Facts(defaultOwner: -1);
+
+        Assert.False(facts.Keeps(ScenarioId.Greed,
+            AiPlanningState.InactiveSectorAnchor - AiPlanningState.SectorAnchorOffset));
+    }
+
     // RULE-AI-013, FND-AI-051: the keep test stops at the first failure, so an anchor without
     // free land never reads its occupancy.
     [Fact]

@@ -13,6 +13,20 @@ public static partial class AiTurnPlanner
         return sector.CrackdownActive ? -2 : sector.Owner?.Value ?? -1;
     }
 
+    /// <summary>
+    /// RULE-AI-004 owner_is_human (selector 0x35, FND-AI-057): the raw owner byte indexes the
+    /// controllers with no range test, so for a neutral sector the read lands on player 5's
+    /// casualty count, and a count of 0 or 3 reads as human.
+    /// </summary>
+    internal static bool OwnerIsHuman(MatchState state, int sectorId)
+    {
+        if (state.Sectors[sectorId].Owner is { } owner)
+            return state.FindPlayer(owner)?.Setup.Controller == PlayerController.Human;
+        var casualties = state.FindPlayer(new PlayerId(MatchLimits.PlayerCount - 1))?
+            .Statistics.Casualties ?? 0;
+        return casualties is 0 or 3;
+    }
+
     /// <summary>RULE-AI-004 hostile_owner, with the original's out-of-row reads (FND-AI-048).</summary>
     internal static bool IsHostileOwner(MatchState state, PlayerId playerId, int sectorId) =>
         state.AiStrategy.IsHostileToOwnerQuery(playerId, OwnerQuery(state, sectorId));
@@ -47,13 +61,29 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> visible,
         int visibleWeight)
     {
-        return IsHostileOwner(state, playerId, sectorId)
-            && visibleWeight == 10
-                ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
-                        .Setup.Controller == PlayerController.Human)
-                    .ToArray()
-                : visible;
+        return UsesHumanTargetPool(state, playerId, sectorId, visibleWeight)
+            ? HumanTargets(state, visible)
+            : visible;
     }
+
+    /// <summary>
+    /// A draw takes only human players' gangs at weight 10 when the player's attitude toward the
+    /// owner query is hostile (FND-AI-048).
+    /// </summary>
+    private static bool UsesHumanTargetPool(
+        MatchState state,
+        PlayerId playerId,
+        int sectorId,
+        int visibleWeight) =>
+        visibleWeight == 10 && IsHostileOwner(state, playerId, sectorId);
+
+    /// <summary>The visible gangs of human players, in the order they were seen.</summary>
+    private static ObjectiveTarget[] HumanTargets(
+        MatchState state,
+        IReadOnlyList<ObjectiveTarget> visible) =>
+        visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
+                .Setup.Controller == PlayerController.Human)
+            .ToArray();
 
     /// <summary>Weight of the first visible opponent's owner, or 0 when nobody is visible.</summary>
     private static int FirstVisibleOpponentWeight(

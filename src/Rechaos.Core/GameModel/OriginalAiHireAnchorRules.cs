@@ -99,9 +99,7 @@ internal static class OriginalAiHireAnchorRules
     {
         ValidateLiteralArrays(literalSectorOwners, literalAvailability);
         ArgumentNullException.ThrowIfNull(activeGangCount);
-        // PLACEHOLDER: RULE-AI-013. An anchor of 164 (sector 100) reads its owner past the sector
-        // list, at an address no finding identifies; it is taken as not the player's, so the
-        // anchor is replaced.
+        // DEV-AI-004: anchor 164 (sector 100) is replaced; the original reads past the sectors.
         if (anchorSectorId != NoSector && anchorSectorId is < 0 or >= MatchLimits.SectorCount)
             return false;
         return CountFreeNeighbours(

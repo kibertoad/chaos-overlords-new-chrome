@@ -65,25 +65,13 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
             OriginalAiObjectiveFamilyRules.ShouldFamilyFourteenTerminalHeal(
                 scenario, sector, plannedAction, previousAction, force, effectiveHeal));
 
+    // RULE-AI-031 heal_ok: Force below 10 and effective Heal above -4.
     [Theory]
-    [InlineData(ScenarioId.BigMan, 27, true, false, 9, -3, true)]
-    [InlineData(ScenarioId.Siege, 54, true, false, 9, -3, true)]
-    [InlineData(ScenarioId.BigMan, 0, true, false, 9, -3, false)]
-    [InlineData(ScenarioId.BigMan, 27, false, false, 9, -3, false)]
-    [InlineData(ScenarioId.BigMan, 27, true, true, 9, -3, false)]
-    [InlineData(ScenarioId.BigMan, 27, true, false, 10, -3, false)]
-    [InlineData(ScenarioId.BigMan, 27, true, false, 9, -4, false)]
-    public void OwnedObjectiveHealPreservesSelectorNinetyAndStatBoundaries(
-        ScenarioId scenario,
-        int sector,
-        bool ownedByActingPlayer,
-        bool hasVisibleOpponent,
-        int force,
-        int effectiveHeal,
-        bool expected) =>
-        Assert.Equal(expected,
-            OriginalAiObjectiveFamilyRules.ShouldHealOwnedObjectiveWithoutVisibleOpponent(
-                scenario, sector, ownedByActingPlayer, hasVisibleOpponent, force, effectiveHeal));
+    [InlineData(9, -3, true)]
+    [InlineData(10, -3, false)]
+    [InlineData(9, -4, false)]
+    public void HealTestPreservesStatBoundaries(int force, int effectiveHeal, bool expected) =>
+        Assert.Equal(expected, OriginalAiObjectiveFamilyRules.CanHeal(force, effectiveHeal));
 
     [Theory]
     [InlineData(26, 1, true)]
@@ -102,8 +90,8 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
     [InlineData(true, 5, -3, GangAction.Attack)]
     [InlineData(true, 4, -3, GangAction.Heal)]
     [InlineData(false, 9, -3, GangAction.Heal)]
-    [InlineData(false, 10, -3, GangAction.Control)]
-    [InlineData(false, 9, -4, GangAction.Control)]
+    [InlineData(false, 10, -3, GangAction.None)]
+    [InlineData(false, 9, -4, GangAction.None)]
     public void ContestedObjectiveResultPreservesAttackAndHealBoundaries(
         bool selectedTarget,
         int force,
@@ -111,7 +99,8 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
         GangAction expected) =>
         Assert.Equal(expected,
             OriginalAiObjectiveFamilyRules.SelectContestedObjectiveResult(
-                selectedTarget, force, effectiveHeal));
+                selectedTarget, force,
+                OriginalAiObjectiveFamilyRules.CanHeal(force, effectiveHeal)));
 
     [Fact]
     public void AttackRetryUsesQuarterTargetAttackAndInclusiveBoundary()

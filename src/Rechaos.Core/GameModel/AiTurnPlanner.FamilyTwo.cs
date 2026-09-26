@@ -22,7 +22,9 @@ public static partial class AiTurnPlanner
                      EffectiveStatisticsCalculator.ForGang(state, gang).Heal,
                      sectorWeight))
             SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
-        else if (state.Sectors[gang.SectorId].Owner == playerId)
+        // FND-AI-058: the owned-sector test reads the owner query, so under police presence a
+        // gang in its own sector goes on to the attack step.
+        else if (OwnerQuery(state, gang.SectorId) == playerId.Value)
             PrepareFamilyTwoMove(
                 state, playerId, gang, gangSlot, snapshot);
         else
@@ -95,19 +97,26 @@ public static partial class AiTurnPlanner
         int gangSlot,
         IReadOnlyList<ObjectiveTarget> visible)
     {
-        if (state.Sectors[gang.SectorId].Owner is not { } owner) return;
-        var ownerState = state.FindPlayer(owner);
-        if (ownerState is null) return;
+        // FND-AI-058: both late gates read the owner query, with the out-of-row attitude read for a
+        // neutral sector or one under police presence, and the human test reads the raw owner.
+        // The combat-advantage flags of other rows are cleared each pass, so a negative query
+        // reads 0.
+        var ownerQuery = OwnerQuery(state, gang.SectorId);
         var visibleHumanCount = visible.Count(target =>
             state.FindPlayer(target.Gang.Owner)?.Setup.Controller == PlayerController.Human);
-        var visibleOwnerCount = visible.Count(target => target.Gang.Owner == owner);
+        var visibleOwnerCount = visible.Count(target => target.Gang.Owner.Value == ownerQuery);
+        var combatAdvantage = ownerQuery >= 0
+            && ownerQuery != playerId.Value
+            && state.FindPlayer(new PlayerId(ownerQuery)) is not null
+            && state.AiStrategy.HasSectorCombatAdvantageHostility(
+                state, playerId, new PlayerId(ownerQuery));
         if (!OriginalAiFamilyTwoRules.ShouldOverrideWithControl(
-                state.AiStrategy.IsHostile(playerId, owner),
-                ownerState.Setup.Controller == PlayerController.Human,
+                IsHostileOwner(state, playerId, gang.SectorId),
+                OwnerIsHuman(state, gang.SectorId),
                 visibleHumanCount,
                 visibleOwnerCount,
                 state.AiPlanning.PreviousAction(playerId, gangSlot),
-                state.AiStrategy.HasSectorCombatAdvantageHostility(state, playerId, owner)))
+                combatAdvantage))
             return;
         SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Control);
     }

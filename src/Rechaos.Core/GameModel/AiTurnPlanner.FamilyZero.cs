@@ -144,7 +144,8 @@ public static partial class AiTurnPlanner
             is GangAction.Attack or GangAction.Equip)
             return;
 
-        if (state.Sectors[gang.SectorId].Owner == playerId)
+        // FND-AI-048: this test reads the owner query, so police presence reads as not owned.
+        if (OwnerQuery(state, gang.SectorId) == playerId.Value)
         {
             if (OriginalAiFamilyZeroRules.ShouldHeal(
                     gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Heal))

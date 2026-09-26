@@ -57,10 +57,6 @@ steps change.
     its computer players hire family-6 gangs at all.
   Run the paired simulations of the 2026-09-26 decision again after the fix, with the harness
   kept this time, to see whether the hunter guard then matters.
-- Families 1, 2, 6, 11, 13 and 14: the details each row lists (family 1's `needs_family`
-  write with the Greed Terminate, the owner queries, the end marker 100 of the guard list, the
-  five contested draws and the unset Support threshold of FND-AI-062 and BUG-AI-006).
-
 Both AI policies are affected; DEV-AI-003's Advanced AI keeps the original planner's commands.
 
 Tooltips: the Game Information panel's AI policy label and any hover text that describes how
