@@ -35,6 +35,12 @@ DEV-EQUIP-001, DEV-CONTROL-001 and DEV-AI-002 are mandatory and stay so (the 202
 decision in `docs/DECISIONS.md`); no step adds the original's path for them. DEV-AI-001 was
 dropped on 2026-09-26, and the rebuild keeps the original hunter guard.
 
+## Step 8: Computer players
+
+Closes RULE-AI-001, RULE-AI-002, RULE-AI-005, RULE-AI-006, RULE-AI-010, RULE-AI-013 and
+RULE-AI-019 to RULE-AI-031. Comes after steps 2 to 7 because the handlers read the rules those
+steps change.
+
 - Hunter hires (open claim on RULE-AI-010, 2026-09-26): in 2,688 simulated four-year matches
   with a simulated human, no computer player of the rebuild hired role 4 in any scenario, and the
   hunter force reached its guard only in Armageddon. Find out why and whether the original does
@@ -51,6 +57,11 @@ dropped on 2026-09-26, and the rebuild keeps the original hunter guard.
     its computer players hire family-6 gangs at all.
   Run the paired simulations of the 2026-09-26 decision again after the fix, with the harness
   kept this time, to see whether the hunter guard then matters.
+Both AI policies are affected; DEV-AI-003's Advanced AI keeps the original planner's commands.
+
+Tooltips: the Game Information panel's AI policy label and any hover text that describes how
+computer players choose orders.
+
 ## Step 9: Remaining rule details
 
 - RULE-POLICE-002's edge case says a count of 103 to 105 then counts down, while RULE-POLICE-003's

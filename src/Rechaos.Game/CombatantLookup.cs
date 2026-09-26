@@ -16,7 +16,8 @@ namespace Rechaos.Game;
 internal static class CombatantLookup
 {
     // Drawn every frame while a fight is on screen, so each retired stand-in is built once. Events
-    // are immutable, and a record belongs to a single gang, so the stand-in can never go stale.
+    // are immutable, a record belongs to a single gang, and the stand-in reads nothing but the
+    // record and the gang definitions, so it can never go stale.
     private static readonly ConditionalWeakTable<CombatantDetails, MatchGangState> Retired = new();
 
     /// <summary>
