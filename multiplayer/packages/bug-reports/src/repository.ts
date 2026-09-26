@@ -20,6 +20,47 @@ export function createBugReportRepository(db: BugReportDatabase): BugReportRepos
       await db.insert(bugReports).values(toRow(report))
     },
 
+    /**
+     * An insert fed by a select with no table, whose `where` is the budget: SQLite (and D1, which
+     * runs one statement at a time) evaluates the sum and writes the row as one step. Values are
+     * encoded by hand, as the column modes would encode them, because a raw select bypasses them.
+     */
+    async insertWithinBudget(report, since, budget) {
+      const row = toRow(report)
+      const values: unknown[] = [
+        row.id,
+        report.receivedAt.getTime(),
+        row.message,
+        row.clientVersion,
+        row.clientPlatform,
+        row.context === null || row.context === undefined ? null : JSON.stringify(row.context),
+        row.stateCodec ?? null,
+        row.stateFormatVersion ?? null,
+        row.stateUncompressedBytes ?? null,
+        row.stateCompressedBytes ?? null,
+        row.stateSha256 ?? null,
+        row.stateAnonymized === null || row.stateAnonymized === undefined
+          ? null
+          : row.stateAnonymized
+            ? 1
+            : 0,
+        row.blobKey ?? null,
+        row.body ?? null,
+      ]
+      const incoming = row.stateCompressedBytes ?? 0
+      const rows = await db
+        .insert(bugReports)
+        .select(
+          sql`select ${sql.join(
+            values.map((value) => sql`${value}`),
+            sql`, `,
+          )} where (select coalesce(sum(${bugReports.stateCompressedBytes}), 0) from ${bugReports}
+            where ${bugReports.receivedAt} >= ${since.getTime()}) + ${incoming} <= ${budget}`,
+        )
+        .returning({ id: bugReports.id })
+      return rows.length === 1
+    },
+
     async get(id) {
       const rows = await db.select().from(bugReports).where(eq(bugReports.id, id)).limit(1)
       const row = rows[0]

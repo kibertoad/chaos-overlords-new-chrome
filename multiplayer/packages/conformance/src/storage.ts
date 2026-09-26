@@ -67,6 +67,7 @@ function turnFixture(match: Match, number: number, overrides: Partial<Turn> = {}
     sealedSlots: null,
     stateHash: null,
     desyncedAt: null,
+    settledAt: null,
     ...overrides,
   }
 }
@@ -180,15 +181,25 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       const match = matchFixture({ status: 'running' })
       await storage.matches.create(match)
       const at = new Date('2026-03-02T01:00:00.000Z')
-      const gameSettings = {
-        ...match.settings.gameSettings,
-        seatSummaries: [{ slot: 3, gangs: 4, sites: 5, sectors: 6 }],
-      }
-      expect(await storage.matches.updateRuntimeGameSettings(match.id, gameSettings, at)).toBe(true)
+      const seatSummaries = [{ slot: 3, gangs: 4, sites: 5, sectors: 6 }]
+      expect(await storage.matches.updateSeatSummaries(match.id, seatSummaries, at)).toBe(true)
       expect(await storage.matches.get(match.id)).toMatchObject({
-        settings: { ...match.settings, gameSettings },
+        settings: {
+          ...match.settings,
+          gameSettings: { ...match.settings.gameSettings, seatSummaries },
+        },
         updatedAt: at,
       })
+      // Replaced, not appended to, and nothing else in the blob moves.
+      const later = [{ slot: 1, gangs: 2, sites: 3, sectors: 4 }]
+      expect(await storage.matches.updateSeatSummaries(match.id, later, at)).toBe(true)
+      expect((await storage.matches.get(match.id))?.settings.gameSettings).toEqual({
+        ...match.settings.gameSettings,
+        seatSummaries: later,
+      })
+      const lobby = matchFixture()
+      await storage.matches.create(lobby)
+      expect(await storage.matches.updateSeatSummaries(lobby.id, later, at)).toBe(false)
     })
 
     it('deletes an inactive match with everything it owns, and leaves live ones alone', async () => {
@@ -719,6 +730,42 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect((await storage.turns.get(match.id, 1))?.desyncedAt).toEqual(at)
     })
 
+    /**
+     * The receipt of a confirmation's follow-ups. A confirmed turn without one is a verdict cut
+     * short, and the sweep is handed it until something stamps it.
+     */
+    it('stamps a settled verdict once and lists the confirmed turns still unstamped', async () => {
+      const live = matchFixture({ status: 'running', currentTurn: 3 })
+      const over = matchFixture({ status: 'finished', currentTurn: 2 })
+      const dead = matchFixture({ status: 'abandoned', currentTurn: 2 })
+      for (const match of [live, over, dead]) await storage.matches.create(match)
+      const at = new Date('2026-03-01T12:00:00.000Z')
+      await storage.turns.open(turnFixture(live, 1, { status: 'confirmed', settledAt: at }), [])
+      await storage.turns.open(turnFixture(live, 2, { status: 'confirmed' }), [])
+      await storage.turns.open(turnFixture(live, 3, { status: 'sealed' }), [])
+      await storage.turns.open(turnFixture(over, 1, { status: 'confirmed' }), [])
+      await storage.turns.open(turnFixture(dead, 1, { status: 'confirmed' }), [])
+      const mine = (rows: Array<{ matchId: string; number: number }>) =>
+        rows.filter((row) => [live.id, over.id, dead.id].includes(row.matchId))
+
+      const pending = mine(await storage.turns.listUnannouncedVerdicts(50))
+      expect(pending).toHaveLength(2)
+      expect(pending).toEqual(
+        expect.arrayContaining([
+          { matchId: live.id, number: 2 },
+          { matchId: over.id, number: 1 },
+        ]),
+      )
+      // Only a confirmed turn is stamped, and only once.
+      expect(await storage.turns.markSettled(live.id, 3, at)).toBe(false)
+      expect(await storage.turns.markSettled(live.id, 2, at)).toBe(true)
+      expect(await storage.turns.markSettled(live.id, 2, new Date())).toBe(false)
+      expect((await storage.turns.get(live.id, 2))?.settledAt).toEqual(at)
+      expect(mine(await storage.turns.listUnannouncedVerdicts(50))).toEqual([
+        { matchId: over.id, number: 1 },
+      ])
+    })
+
     /** The projection `submitOrders` reads on every submission instead of the whole document. */
     it('summarises one player row without its document', async () => {
       const match = matchFixture({ status: 'running', currentTurn: 1 })
@@ -816,6 +863,30 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         { matchId: stalled.id, number: 2 },
       ])
       expect(stalls.filter((t) => t.matchId === healthy.id || t.matchId === over.id)).toEqual([])
+    })
+
+    /**
+     * Sealing writes only the turn row, so a window on the match's `updatedAt` alone never saw a
+     * seal interrupted in a match nothing else had touched lately.
+     */
+    it('counts a recent seal as a touch when the stalled-seal scan is bounded', async () => {
+      const long = new Date('2026-03-01T08:00:00.000Z')
+      const since = new Date('2026-03-01T11:55:00.000Z')
+      const sealedNow = matchFixture({ status: 'running', currentTurn: 4, updatedAt: long })
+      const sealedLong = matchFixture({ status: 'running', currentTurn: 4, updatedAt: long })
+      for (const match of [sealedNow, sealedLong]) await storage.matches.create(match)
+      await storage.turns.open(
+        turnFixture(sealedNow, 4, {
+          status: 'sealed',
+          sealedAt: new Date('2026-03-01T11:59:00.000Z'),
+        }),
+        [],
+      )
+      await storage.turns.open(turnFixture(sealedLong, 4, { status: 'sealed', sealedAt: long }), [])
+      const stalls = (await storage.turns.listStalledSeals(50, since)).filter(
+        (t) => t.matchId === sealedNow.id || t.matchId === sealedLong.id,
+      )
+      expect(stalls).toEqual([{ matchId: sealedNow.id, number: 4 }])
     })
 
     /**
@@ -986,6 +1057,19 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       // A seat the computer already plays is not a human absence; a seat that missed a deadline is.
       expect(await storage.takeovers.openPrompt(match.id, 'robot', 3, at)).toBe(false)
       expect(await storage.takeovers.openPrompt(match.id, 'pending', 3, at)).toBe(true)
+      // The prompt owes its announcement until the stamp; the stamp names the opening it answers.
+      expect(await storage.takeovers.getPrompt(match.id, 'pending')).toEqual({
+        turn: 3,
+        openedAt: at,
+        announcedAt: null,
+      })
+      expect(await storage.takeovers.getPrompt(match.id, 'absent')).toBeNull()
+      expect(
+        await storage.takeovers.markPromptAnnounced(match.id, 'pending', new Date(0), at),
+      ).toBe(false)
+      expect(await storage.takeovers.markPromptAnnounced(match.id, 'pending', at, at)).toBe(true)
+      expect(await storage.takeovers.markPromptAnnounced(match.id, 'pending', at, at)).toBe(false)
+      expect((await storage.takeovers.getPrompt(match.id, 'pending'))?.announcedAt).toEqual(at)
       await storage.takeovers.closePrompt(match.id, 'pending')
       // No prompt, no vote: a choice can never outlive or precede the question it answers.
       expect(
@@ -1179,6 +1263,46 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect((await storage.events.listAfter(match.id, 1, 1)).map((e) => e.seq)).toEqual([2])
       expect(await storage.events.listAfter(match.id, 5, 10)).toEqual([])
       expect(await storage.events.lastSeq('missing')).toBe(0)
+    })
+
+    /**
+     * An announcement that follows a compare-and-swap is repeated by whoever finds it missing, so
+     * the log has to tell a repeat from a new fact — atomically, since two repeats can race.
+     */
+    it('appends a keyed event once, even when the repeats race, without leaving a hole', async () => {
+      const match = matchFixture()
+      const other = matchFixture()
+      for (const row of [match, other]) await storage.matches.create(row)
+      const body = (matchId: string, turn: number) =>
+        ({
+          matchId,
+          type: 'turn.sealed',
+          payload: { turn, orderSetHash: 'a'.repeat(64) },
+          createdAt: '2026-03-01T16:00:00.000Z',
+        }) as const
+
+      const racing = await Promise.all(
+        [1, 2, 3, 4].map(() => storage.events.appendOnce(body(match.id, 1), 'turn.sealed:1')),
+      )
+      expect(racing.filter((event) => event !== null)).toHaveLength(1)
+      expect(racing.find((event) => event !== null)?.seq).toBe(1)
+      // Unkeyed events and other keys are untouched by the constraint, and the key is per match.
+      expect((await storage.events.append(body(match.id, 2))).seq).toBe(2)
+      expect((await storage.events.append(body(match.id, 3))).seq).toBe(3)
+      expect((await storage.events.appendOnce(body(match.id, 2), 'turn.sealed:2'))?.seq).toBe(4)
+      expect(await storage.events.appendOnce(body(match.id, 1), 'turn.sealed:1')).toBeNull()
+      expect((await storage.events.appendOnce(body(other.id, 1), 'turn.sealed:1'))?.seq).toBe(1)
+
+      const log = await storage.events.listAfter(match.id, 0, 10)
+      expect(log.map((event) => event.seq)).toEqual([1, 2, 3, 4])
+      // The key is the server's own bookkeeping and is never part of what a client is served.
+      expect(Object.keys(log[0] ?? {}).sort()).toEqual([
+        'createdAt',
+        'matchId',
+        'payload',
+        'seq',
+        'type',
+      ])
     })
   })
 }
