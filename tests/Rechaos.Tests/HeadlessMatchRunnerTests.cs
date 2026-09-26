@@ -72,6 +72,74 @@ public sealed class HeadlessMatchRunnerTests
         Assert.All(progress, item => Assert.True(item.PhaseBoundaries <= result.PhaseBoundaries));
     }
 
+    /// <summary>
+    /// A simulated human registers as human, so the computer players treat it as one, and the
+    /// computer planner plays it: it issues orders and hires, and the match stays deterministic.
+    /// </summary>
+    [Fact]
+    public void SimulatedHumanRegistersAsHumanAndIsPlayedByTheComputerPlanner()
+    {
+        var definitions = BundledOriginalData.Load();
+        var options = new HeadlessMatchOptions(
+            ScenarioId.Greed, GameDuration.SixMonths, 1984,
+            SimulatedHumans: [new PlayerId(0)]);
+
+        var first = HeadlessMatchRunner.Run(
+            definitions, options, cancellationToken: TestContext.Current.CancellationToken);
+        var second = HeadlessMatchRunner.Run(
+            definitions, options, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.NotNull(first.State.Outcome);
+        Assert.Equal(first.StateHash, second.StateHash);
+        Assert.Equal(PlayerController.Human, first.State.Players[0].Setup.Controller);
+        Assert.All(first.State.Players.Skip(1),
+            player => Assert.Equal(PlayerController.Computer, player.Setup.Controller));
+        Assert.Contains(first.State.Events, gameEvent => gameEvent.Player == new PlayerId(0)
+            && gameEvent.Kind == GameEventKind.CommandResolved);
+        Assert.Contains(first.State.Events, gameEvent => gameEvent.Player == new PlayerId(0)
+            && gameEvent.Kind == GameEventKind.HireResolved);
+    }
+
+    [Fact]
+    public void ComputerPlannerRefusesAHumanSeatThatIsNotSimulated()
+    {
+        var state = OriginalMatchFactory.Create(
+            BundledOriginalData.Load(),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1984,
+                [new MatchPlayerSetup(new PlayerId(0), "HUMAN", PlayerController.Human)]));
+        state.FinishUpkeep();
+
+        Assert.Throws<ArgumentException>(() => state.PrepareAiPlanning(new PlayerId(0)));
+        Assert.Throws<ArgumentException>(() => state.SimulateHuman(new PlayerId(1)));
+        state.SimulateHuman(new PlayerId(0));
+        state.PrepareAiPlanning(new PlayerId(0));
+    }
+
+    [Fact]
+    public void SimulatedHumansRejectReplayVerificationAndInvalidSeats()
+    {
+        var definitions = BundledOriginalData.Load();
+
+        Assert.Throws<ArgumentException>(() => HeadlessMatchRunner.Run(
+            definitions,
+            new HeadlessMatchOptions(
+                ScenarioId.Greed, GameDuration.SixMonths, 1, VerifyReplay: true,
+                SimulatedHumans: [new PlayerId(0)]),
+            cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Throws<ArgumentOutOfRangeException>(() => HeadlessMatchRunner.Run(
+            definitions,
+            new HeadlessMatchOptions(
+                ScenarioId.Greed, GameDuration.SixMonths, 1,
+                SimulatedHumans: [new PlayerId(MatchLimits.PlayerCount)]),
+            cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Throws<ArgumentOutOfRangeException>(() => HeadlessMatchRunner.Run(
+            definitions,
+            new HeadlessMatchOptions(
+                ScenarioId.Greed, GameDuration.SixMonths, 1,
+                SimulatedHumans: [new PlayerId(0), new PlayerId(0)]),
+            cancellationToken: TestContext.Current.CancellationToken));
+    }
+
     [Fact]
     public void InvalidBoundsAreRejectedBeforeSimulation()
     {
