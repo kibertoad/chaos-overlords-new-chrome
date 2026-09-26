@@ -12,6 +12,7 @@ internal static class OriginalAiHireAnchorRules
     private const int InactiveGangSector = 100;
     private const int OriginalNeighborLimit = 65;
 
+    private static readonly int[] FailedAnchorNeighbours = [0, 6, 7, 8];
     private static readonly int[] BigManRadiusOne = [18, 26, 19, 27];
     private static readonly int[] BigManRadiusTwo =
     [
@@ -79,6 +80,48 @@ internal static class OriginalAiHireAnchorRules
             minimumNonOwnedNeighbors = count;
         }
         return selected;
+    }
+
+    /// <summary>
+    /// RULE-AI-013, FND-AI-051: the anchor is kept when it has free land next to it, room in it
+    /// and the scenario is not Big Man, tested in that order. A failed anchor decodes to sector
+    /// -1: its owner read lands on a byte holding 0, so only player 0 passes; the remainder -1
+    /// excludes no column, leaving sectors 0, 6, 7 and 8; and its occupancy read gives 0.
+    /// </summary>
+    public static bool KeepsAnchor(
+        PlayerId player,
+        ScenarioId scenario,
+        int anchorSectorId,
+        IReadOnlyList<int> literalSectorOwners,
+        IReadOnlyList<byte> literalAvailability,
+        Func<int, int> activeGangCount)
+    {
+        ValidateLiteralArrays(literalSectorOwners, literalAvailability);
+        ArgumentNullException.ThrowIfNull(activeGangCount);
+        int freeNeighbours;
+        int occupancy;
+        if (anchorSectorId == NoSector)
+        {
+            if (player.Value != 0) return false;
+            freeNeighbours = FailedAnchorNeighbours.Count(sectorId =>
+                literalSectorOwners[sectorId] == NeutralOwner
+                && literalAvailability[sectorId] == 0);
+            occupancy = 0;
+        }
+        else if (anchorSectorId is >= 0 and < MatchLimits.SectorCount)
+        {
+            freeNeighbours = CountAvailableNeutralNeighbors(
+                player, anchorSectorId, literalSectorOwners, literalAvailability);
+            if (freeNeighbours == 0) return false;
+            occupancy = activeGangCount(anchorSectorId);
+        }
+        else
+        {
+            return false;
+        }
+        return freeNeighbours > 0
+            && occupancy < MatchLimits.FriendlyGangsPerSector
+            && scenario != ScenarioId.BigMan;
     }
 
     public static int CountAvailableNeutralNeighbors(

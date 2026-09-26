@@ -41,8 +41,6 @@ Closes RULE-AI-001, RULE-AI-002, RULE-AI-005, RULE-AI-006, RULE-AI-010, RULE-AI-
 RULE-AI-019 to RULE-AI-031. Comes after steps 2 to 7 because the handlers read the rules those
 steps change.
 
-- Hire placement keeps anchor 63 for player 0 while sector 0, 6, 7 or 8 is free land
-  (FND-AI-051); check the per-scenario slot adjustments and the hunter reversion (FND-AI-050).
 - Hunter hires (open claim on RULE-AI-010, 2026-09-26): in 2,688 simulated four-year matches
   with a simulated human, no computer player of the rebuild hired role 4 in any scenario, and the
   hunter force reached its guard only in Armageddon. Find out why and whether the original does

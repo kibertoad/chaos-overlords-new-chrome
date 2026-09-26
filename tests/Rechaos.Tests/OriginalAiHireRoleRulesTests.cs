@@ -130,16 +130,27 @@ public sealed class OriginalAiHireRoleRulesTests
             OriginalAiHireRoleRules.SelectScheduled(ScenarioId.Greed, -1));
     }
 
+    // FND-AI-050: Power alone remaps slots 4 and 8 late in the match; Kill 'Em All and Big 40
+    // move slot 8 on cash alone.
     [Theory]
-    [InlineData(ScenarioId.Power)]
-    [InlineData(ScenarioId.KillEmAll)]
-    [InlineData(ScenarioId.Big40)]
-    public void PowerFamilyScenariosShareAdjustedBranch(ScenarioId scenario)
+    [InlineData(ScenarioId.Power, 4, 9, 100, 1, 1)]
+    [InlineData(ScenarioId.KillEmAll, 4, 9, 100, 4, 6)]
+    [InlineData(ScenarioId.Big40, 4, 9, 100, 4, 6)]
+    [InlineData(ScenarioId.Power, 8, 9, 100, 1, 1)]
+    [InlineData(ScenarioId.KillEmAll, 8, 9, 100, 3, 3)]
+    [InlineData(ScenarioId.Big40, 8, 52, 99, 1, 1)]
+    public void OnlyPowerRemapsLateSlots(
+        ScenarioId scenario,
+        int turn,
+        int turnsRemaining,
+        int cash,
+        int expectedMode,
+        int expectedRole)
     {
         Assert.Equal(
-            new OriginalAiHireRoleSelection(1, 1),
-            OriginalAiHireRoleRules.SelectPowerAdjusted(scenario, turn: 4,
-                PowerInputs(turnsRemaining: 9)));
+            new OriginalAiHireRoleSelection(expectedMode, expectedRole),
+            OriginalAiHireRoleRules.SelectPowerAdjusted(scenario, turn,
+                PowerInputs(turnsRemaining: turnsRemaining, cash: cash, family7Count: 0)));
     }
 
     [Theory]
@@ -258,6 +269,7 @@ public sealed class OriginalAiHireRoleRulesTests
                 PowerInputs(family3Count: 4, family6Or12Count: 1)));
     }
 
+    // FND-AI-050: slots 5 and 7 reset once the hunters reach ten per 52 turns.
     [Theory]
     [InlineData(5)]
     [InlineData(7)]

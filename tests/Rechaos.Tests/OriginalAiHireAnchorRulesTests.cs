@@ -157,6 +157,55 @@ public sealed class OriginalAiHireAnchorRulesTests
             new PlayerId(0), 27, facts.Owners));
     }
 
+    // RULE-AI-013: an owned anchor with free land and room is kept outside Big Man.
+    [Fact]
+    public void OwnedAnchorWithFreeLandAndRoomIsKeptOutsideBigMan()
+    {
+        var facts = new Facts();
+        facts.Owners[27] = 0;
+        facts.Owners[18] = -1;
+
+        Assert.True(facts.Keeps(ScenarioId.Greed, 27));
+        Assert.False(facts.Keeps(ScenarioId.BigMan, 27));
+        facts.Occupancy[27] = MatchLimits.FriendlyGangsPerSector;
+        Assert.False(facts.Keeps(ScenarioId.Greed, 27));
+        facts.Occupancy[27] = 0;
+        facts.Availability[18] = 1;
+        Assert.False(facts.Keeps(ScenarioId.Greed, 27));
+    }
+
+    // RULE-AI-013, FND-AI-051: player 0 keeps the failed anchor while sector 0, 6, 7 or 8 is free
+    // land; every other player replaces it.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(8)]
+    public void FailedAnchorIsKeptByPlayerZeroWhileOneOfItsFourCellsIsFree(int freeSector)
+    {
+        var facts = new Facts();
+        facts.Owners[freeSector] = -1;
+
+        Assert.True(facts.Keeps(ScenarioId.Greed, -1));
+        Assert.False(facts.Keeps(ScenarioId.BigMan, -1));
+        Assert.False(OriginalAiHireAnchorRules.KeepsAnchor(
+            new PlayerId(1), ScenarioId.Greed, -1, facts.Owners, facts.Availability,
+            sectorId => 0));
+        facts.Availability[freeSector] = 1;
+        Assert.False(facts.Keeps(ScenarioId.Greed, -1));
+    }
+
+    [Fact]
+    public void FailedAnchorIgnoresOtherFreeCellsOfTheTopRows()
+    {
+        var facts = new Facts();
+        facts.Owners[1] = -1;
+        facts.Owners[9] = -1;
+        facts.Owners[15] = -1;
+
+        Assert.False(facts.Keeps(ScenarioId.Greed, -1));
+    }
+
     private sealed class Facts
     {
         public Facts(int defaultOwner = 1, int anchor = 27)
@@ -170,6 +219,11 @@ public sealed class OriginalAiHireAnchorRulesTests
         public byte[] Availability { get; } = new byte[65];
         public int[] Occupancy { get; } = new int[MatchLimits.SectorCount];
         public int[] PriorChaos { get; } = new int[MatchLimits.SectorCount];
+
+        public bool Keeps(ScenarioId scenario, int anchor) =>
+            OriginalAiHireAnchorRules.KeepsAnchor(
+                new PlayerId(0), scenario, anchor, Owners, Availability,
+                sectorId => Occupancy[sectorId]);
 
         public int CountVacancies(int center) =>
             OriginalAiHireAnchorRules.CountAvailableNeutralNeighbors(
