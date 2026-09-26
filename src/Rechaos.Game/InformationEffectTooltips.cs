@@ -77,7 +77,9 @@ public static class InformationEffectTooltips
             return ["RESISTANCE", "INFLUENCE SUCCESSES REDUCE THIS VALUE.",
                 "AT ZERO, THE ACTING PLAYER INFLUENCES THE SITE."];
         if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(1), 122).Contains(point))
-            return ["TOLERANCE", "WHEN INFLUENCED, ADDED TO THE SECTOR'S NORMAL TOLERANCE."];
+            // RULE-SITE-001
+            return ["TOLERANCE", "ONCE COMPLETED, ADDED TO THE SECTOR'S BASE TOLERANCE",
+                "WHEN THE SECTOR IS REBUILT BEFORE PLANNING."];
         if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(2), 122).Contains(point))
             return ["SUPPORT", "WHEN INFLUENCED, ADDED AGAINST HOSTILE CONTROL ATTEMPTS."];
         if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(3), 122).Contains(point))

@@ -222,7 +222,8 @@ public sealed class MatchSectorState
         bool isImportant = false,
         int income = ManualRules.MinimumSectorIncome,
         int crackdownTurnsRemaining = 0,
-        IReadOnlyList<int>? crackdownHistory = null)
+        IReadOnlyList<int>? crackdownHistory = null,
+        int? baseTolerance = null)
     {
         if (id is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(id));
@@ -244,6 +245,7 @@ public sealed class MatchSectorState
         Sites = sites.OrderBy(site => site.Slot).ToArray();
         Owner = owner;
         Tolerance = tolerance;
+        BaseTolerance = baseTolerance ?? tolerance;
         LegacyChaos = chaos;
         // Only a newly activated sector needs the minimum; restores preserve a decayed duration.
         CrackdownTurnsRemaining = crackdownActive
@@ -257,7 +259,19 @@ public sealed class MatchSectorState
     public int Id { get; }
     public IReadOnlyList<MatchSiteState> Sites { get; }
     public PlayerId? Owner { get; internal set; }
+
+    /// <summary>
+    /// The Tolerance the Chaos test compares with: the base plus the completed sites' Tolerance,
+    /// rebuilt before planning and left alone during resolution (RULE-SITE-001).
+    /// </summary>
     public int Tolerance { get; internal set; }
+
+    /// <summary>
+    /// The Tolerance without the sites' part, which Bribe, Snitch, the return toward normal and
+    /// the clamp change during resolution (RULE-TOLERANCE-001, RULE-TOLERANCE-002). FMT-STATE-002
+    /// keeps it as a signed byte.
+    /// </summary>
+    public int BaseTolerance { get; internal set; }
     // Retained only so pre-v24 saves/replays can verify their historical fingerprints.
     // The original executable has no persistent sector-Chaos accumulator.
     internal int LegacyChaos { get; }
@@ -527,9 +541,9 @@ public sealed partial class MatchState
             gang.HiredThisTurn = false;
         }
         CrackdownResolver.ResolveUpkeep(this);
-        ToleranceResolver.ResolveUpkeep(this);
         LastUpkeepResolutions = Coordinator.Turn == 1 ? [] : EconomyResolver.ResolveUpkeep(this);
         SectorBenefitResolver.ActivatePending(this);
+        ToleranceResolver.RebuildBeforePlanning(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }
     public TurnTransition FinishCommand(PlayerId player)
@@ -877,7 +891,7 @@ public sealed partial class MatchState
             foreach (var site in sector.Sites.Where(site => site.InfluencedBy == player.Id))
             {
                 var definition = Definitions.Site(site.DefinitionId);
-                sector.Tolerance = checked(sector.Tolerance - definition.Tolerance);
+                // The sector's Tolerance drops the site's part at the next rebuild (RULE-SITE-001).
                 // As SectorControlResolver.ResetInfluencedSites does when a sector changes hands:
                 // the site stops being influenced, so the Support it granted stops counting.
                 player.Support -= definition.Support;

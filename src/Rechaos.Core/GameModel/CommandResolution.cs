@@ -64,6 +64,8 @@ public static partial class CommandResolver
         MatchState state,
         IReadOnlyList<QueuedCommand> commands)
     {
+        // RULE-TOLERANCE-001: resolution opens by moving every base Tolerance one point back.
+        ToleranceResolver.StepTowardNormal(state);
         var ordered = InRosterOrder(state, commands);
         var statistics = ordered
             .Select(queued => queued.Command.Gang)
@@ -122,7 +124,7 @@ public static partial class CommandResolver
         var cost = CommandRules.ByAction[GangAction.Bribe].CashCost;
         if (player.Cash < cost)
         {
-            var tolerance = state.Sectors[state.FindGang(command.Gang)!.SectorId].Tolerance;
+            var tolerance = state.Sectors[state.FindGang(command.Gang)!.SectorId].BaseTolerance;
             return Complete(state, command, GameEventKind.CommandFailed,
                 new CommandResolutionDetails(CommandResolutionCode.InsufficientCash, [], 0, tolerance, tolerance));
         }
@@ -131,9 +133,9 @@ public static partial class CommandResolver
         var sector = state.Sectors[gang.SectorId];
         player.Cash -= cost;
         player.Statistics.CashSpent += cost;
-        var before = sector.Tolerance;
+        var before = sector.BaseTolerance;
         var after = ToleranceResolver.ApplyBribe(state, sector);
-        sector.Tolerance = after;
+        sector.BaseTolerance = after;
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after, -cost));
     }
@@ -785,9 +787,9 @@ public static partial class CommandResolver
     {
         var gang = state.FindGang(command.Gang)!;
         var sector = state.Sectors[gang.SectorId];
-        var before = sector.Tolerance;
+        var before = sector.BaseTolerance;
         var after = ToleranceResolver.ApplySnitch(state, sector);
-        sector.Tolerance = after;
+        sector.BaseTolerance = after;
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after));
     }
