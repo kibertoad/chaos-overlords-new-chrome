@@ -26,8 +26,19 @@ public static class MultiplayerFailureText
             MultiplayerApiException { Reason: "unknown_match" } => "No match with that code.",
             MultiplayerApiException { Reason: "match_full" } => "That lobby is full.",
             MultiplayerApiException { Reason: "host_only" } => "Only the host can do that.",
-            MultiplayerApiException { Reason: "invalid_password" } => "Wrong password.",
-            MultiplayerApiException { Reason: "match_started" } => "That match has already started.",
+            // The codes below are the kernel's own (`LobbyService`), spelled as it spells them: a
+            // map written against names the server never sends falls through to the raw HTTP line.
+            MultiplayerApiException { Reason: "unknown_join_code" } => "No lobby is open with that code.",
+            MultiplayerApiException { Reason: "password_required" } => "That match needs a password.",
+            MultiplayerApiException { Reason: "wrong_password" } => "Wrong password.",
+            // `match_not_in_lobby` refuses a lobby action on a started match; `match_not_joinable`
+            // is a join that lost the race with the host pressing start.
+            MultiplayerApiException { Reason: "match_not_in_lobby" or "match_not_joinable" } =>
+                "That match has already started.",
+            // Only ever about the player a kick or a takeover vote NAMED, never the caller — whose
+            // own membership going away answers `invalid_token` — so it is not a membership reason.
+            MultiplayerApiException { Reason: "unknown_player" } =>
+                "That player is no longer in this match.",
             // A reserved display name is not in this list because it never reaches the server from
             // this client: the name is refused before a request is built, which is the only way to
             // say which field is wrong. The server refuses it too, as a contract violation like any
@@ -85,10 +96,17 @@ public static class MultiplayerFailureText
     /// and kept the client watching the match: the two paths disagreed about whether the player
     /// was still there.
     /// </para>
+    /// <para>
+    /// Only codes the kernel really sends. <c>revoked</c> was listed and is written nowhere: a
+    /// removed seat's token stops resolving, which is <c>invalid_token</c>. <c>unknown_player</c>
+    /// was listed and names the TARGET of a kick or a takeover vote that is not in the match, so a
+    /// vote on a seat that had just gone ended the voter's own session. <c>kicked</c> is the
+    /// kernel's answer to a rejoin by a kicked player that races the token's revocation.
+    /// </para>
     /// </remarks>
     private static readonly string[] MembershipReasons =
     [
-        "revoked", "invalid_token", "missing_token", "unknown_match", "unknown_player",
+        "invalid_token", "missing_token", "unknown_match", "kicked",
     ];
 
     /// <summary>
