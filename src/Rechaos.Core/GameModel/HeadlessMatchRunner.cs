@@ -4,6 +4,11 @@ using Rechaos.Core.Persistence;
 namespace Rechaos.Core.GameModel;
 
 /// <summary>Configuration for one deterministic, presentation-free match simulation.</summary>
+/// <remarks>
+/// <see cref="SimulatedHumans"/> names seats that register as human but are played by the computer
+/// planner (see <see cref="MatchState.SimulateHuman"/>). The journal cannot carry that mark, so a
+/// match with simulated humans cannot verify its replay.
+/// </remarks>
 public sealed record HeadlessMatchOptions(
     ScenarioId Scenario,
     GameDuration Duration,
@@ -11,7 +16,8 @@ public sealed record HeadlessMatchOptions(
     AiPolicyMode AiPolicy = AiPolicyMode.Original,
     int? ThroughTurn = null,
     bool VerifyReplay = false,
-    int ProgressEveryTurns = 10);
+    int ProgressEveryTurns = 10,
+    IReadOnlyList<PlayerId>? SimulatedHumans = null);
 
 /// <summary>A stable progress point emitted at an upkeep boundary.</summary>
 public sealed record HeadlessMatchProgress(
@@ -47,16 +53,25 @@ public static class HeadlessMatchRunner
             throw new ArgumentOutOfRangeException(nameof(options), "The turn horizon must be positive.");
         if (options.ProgressEveryTurns < 1)
             throw new ArgumentOutOfRangeException(nameof(options), "The progress interval must be positive.");
+        var simulatedHumans = options.SimulatedHumans ?? [];
+        if (simulatedHumans.Any(player => player.Value is < 0 or >= MatchLimits.PlayerCount)
+            || simulatedHumans.Distinct().Count() != simulatedHumans.Count)
+            throw new ArgumentOutOfRangeException(nameof(options), "Simulated human seats must be distinct player slots.");
+        if (simulatedHumans.Count > 0 && options.VerifyReplay)
+            throw new ArgumentException("A match with simulated humans cannot verify its replay.", nameof(options));
 
-        MatchPlayerSetup[] players =
-        [
-            new(new PlayerId(0), "CPU ONE", PlayerController.Computer),
-            new(new PlayerId(1), "CPU TWO", PlayerController.Computer)
-        ];
+        var explicitSeats = Math.Max(2, simulatedHumans.Select(player => player.Value + 1).DefaultIfEmpty(0).Max());
+        var players = Enumerable.Range(0, explicitSeats)
+            .Select(slot => simulatedHumans.Contains(new PlayerId(slot))
+                ? new MatchPlayerSetup(new PlayerId(slot), $"HUMAN {slot + 1}", PlayerController.Human)
+                : new MatchPlayerSetup(new PlayerId(slot), $"CPU {slot + 1}", PlayerController.Computer))
+            .ToArray();
         var setup = new MatchSetup(
             options.Scenario, options.Duration, options.Seed, players,
             aiPolicy: options.AiPolicy);
-        var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(definitions, setup));
+        var initial = OriginalMatchFactory.Create(definitions, setup);
+        foreach (var player in simulatedHumans) initial.SimulateHuman(player);
+        var recorder = new MatchReplayRecorder(initial);
         var boundaries = 0;
         var lastReportedTurn = 0;
         var terminalTurn = options.ThroughTurn ?? ScenarioCatalog.Turns(options.Duration) + 1;

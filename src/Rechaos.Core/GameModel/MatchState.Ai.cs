@@ -7,7 +7,7 @@ public sealed partial class MatchState
         var playerId = command.Player;
         var gangId = command.Gang;
         var player = FindPlayer(playerId)!;
-        if (player.Setup.Controller != PlayerController.Computer) return;
+        if (!IsPlannedByComputer(playerId)) return;
         for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
         {
             if (player.Gangs[gangSlot].Id != gangId) continue;
@@ -25,7 +25,7 @@ public sealed partial class MatchState
     {
         if (Coordinator.Phase != TurnPhase.Command || Coordinator.ActivePlayer != player)
             throw new InvalidOperationException("AI preparation requires that player's active Command phase.");
-        if (FindPlayer(player)?.Setup.Controller != PlayerController.Computer)
+        if (!IsPlannedByComputer(player))
             throw new ArgumentException("AI preparation requires a computer-controlled player.", nameof(player));
         AiPlanningPreparation.ApplyFamilyAssignments(this, player);
         AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
@@ -36,7 +36,7 @@ public sealed partial class MatchState
     {
         if (Coordinator.Phase != TurnPhase.Command || Coordinator.ActivePlayer != player)
             throw new InvalidOperationException("AI hiring preparation requires that player's active Command phase.");
-        if (FindPlayer(player)?.Setup.Controller != PlayerController.Computer)
+        if (!IsPlannedByComputer(player))
             throw new ArgumentException("AI hiring preparation requires a computer-controlled player.", nameof(player));
         if (AiPlanningPreparation.SelectHireRole(this, player) is not { } selection)
             return new AiTurnPlanner.HirePreparation(null);
