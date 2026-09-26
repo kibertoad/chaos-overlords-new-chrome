@@ -6,7 +6,7 @@ import { errorEnvelopeSchema } from './errors'
 import { eventPageSchema, MATCH_EVENT_SSE_NAME, matchEventSchema } from './events'
 import { resourceIdSchema, turnPathParamSchema } from './primitives'
 import { handshakeRequestSchema, handshakeResponseSchema } from './protocol'
-import { eventsQuerySchema } from './queries'
+import { eventsQuerySchema, lobbyListQuerySchema } from './queries'
 import {
   createMatchRequestSchema,
   joinMatchRequestSchema,
@@ -14,6 +14,7 @@ import {
   submitOrdersRequestSchema,
   takeoverVoteRequestSchema,
   turnReportRequestSchema,
+  updatePlayerProfileRequestSchema,
   uploadSnapshotRequestSchema,
 } from './schemas'
 import { matchSettingsSchema } from './settings'
@@ -88,6 +89,7 @@ export const handshakeContract = defineApiContract({
 export const listLobbiesContract = defineApiContract({
   method: 'get',
   pathResolver: () => '/matches',
+  requestQuerySchema: lobbyListQuerySchema,
   responsesByStatusCode: { 200: lobbyListSchema, ...REFUSALS },
   summary: 'Public lobbies, when the server enables listing.',
 })
@@ -140,6 +142,15 @@ export const updateMatchSettingsContract = defineApiContract({
   requestBodySchema: matchSettingsSchema,
   responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
   summary: 'Host-only lobby game configuration.',
+})
+
+export const updatePlayerProfileContract = defineApiContract({
+  method: 'put',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/matches/${matchId}/profile`,
+  requestBodySchema: updatePlayerProfileRequestSchema,
+  responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
+  summary: "Change the caller's own name and portrait while the match is in the lobby.",
 })
 
 export const leaveMatchContract = defineApiContract({
@@ -308,6 +319,7 @@ export const API_CONTRACTS = {
   joinRunningMatch: joinRunningMatchContract,
   getMatch: getMatchContract,
   updateMatchSettings: updateMatchSettingsContract,
+  updatePlayerProfile: updatePlayerProfileContract,
   startMatch: startMatchContract,
   leaveMatch: leaveMatchContract,
   rejoinMatch: rejoinMatchContract,

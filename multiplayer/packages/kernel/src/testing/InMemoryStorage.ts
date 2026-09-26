@@ -49,11 +49,12 @@ export class InMemoryStorage implements MultiplayerStorage {
     get: async (id) => clone(this.matchRows.get(id)),
     getByJoinCode: async (joinCode) =>
       clone([...this.matchRows.values()].find((match) => match.joinCode === joinCode)),
-    listPublicLobbies: async (limit) => {
+    listPublicLobbies: async (limit, sessionVersion) => {
       const lobbies: PublicLobbyRow[] = []
       for (const match of this.matchRows.values()) {
         if (!['lobby', 'running'].includes(match.status) || match.settings.visibility !== 'public')
           continue
+        if (sessionVersion !== undefined && match.sessionVersion !== sessionVersion) continue
         const humanCount = humanParticipants(
           [...this.playerRows.values()].filter((player) => player.matchId === match.id),
         ).length
@@ -70,6 +71,7 @@ export class InMemoryStorage implements MultiplayerStorage {
           maxPlayers: match.settings.maxPlayers,
           passwordProtected: match.passwordHash !== null,
           status: match.status,
+          sessionVersion: match.sessionVersion,
           settings: match.settings,
           availableSlots: [],
           availableSeatSummaries: [],
@@ -219,6 +221,14 @@ export class InMemoryStorage implements MultiplayerStorage {
       player.status = status
       return true
     },
+    updateProfile: async (playerId, profile) => {
+      const player = this.playerRows.get(playerId)
+      if (player?.status !== 'active') return false
+      if (this.matchRows.get(player.matchId)?.status !== 'lobby') return false
+      player.displayName = profile.displayName
+      player.portraitId = profile.portraitId
+      return true
+    },
     revokeToken: async (playerId) => {
       const player = this.playerRows.get(playerId)
       if (player) player.tokenHash = null
@@ -257,6 +267,7 @@ export class InMemoryStorage implements MultiplayerStorage {
       const turn = this.turnRows.get(turnKey(matchId, number))
       const row = this.orderRows.get(orderKey(matchId, number, playerId))
       if (turn?.status !== 'open' || !row) return false
+      if (row.ready && !submission.ready) return false
       Object.assign(row, submission)
       return true
     },

@@ -54,9 +54,10 @@ export interface Player {
   /**
    * The overlord face this player chose when they created or joined the match.
    *
-   * Set once and never changed: every client builds its city from the roster, and the setup a city
-   * is generated from is part of the state hash the turn verdict is taken over, so a face that
-   * moved after the match started would read as a desync on any client that bootstrapped before it.
+   * Changeable in the lobby, and never after the match starts: every client builds its city from
+   * the roster, and the setup a city is generated from is part of the state hash the turn verdict
+   * is taken over, so a face that moved after the start would read as a desync on any client that
+   * bootstrapped before it. The same holds for `displayName`.
    */
   portraitId: number
   /**
@@ -67,6 +68,9 @@ export interface Player {
   status: PlayerStatus
   joinedAt: Date
 }
+
+/** What a lobby member may change about themselves before the match starts. */
+export type PlayerProfile = Pick<Player, 'displayName' | 'portraitId'>
 
 /** One participant of a sealed turn: the slot its orders were hashed under. */
 export interface SealedSlot {

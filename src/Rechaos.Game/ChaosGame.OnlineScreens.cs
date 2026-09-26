@@ -37,9 +37,6 @@ public sealed partial class ChaosGame
     private static readonly Color OnlineRuleColour = new(46, 66, 62);
     private static readonly Color OnlineSelectedRow = new(30, 62, 55);
 
-    /// <summary>The colour of a session this build cannot play.</summary>
-    private static readonly Color IncompatibleSession = new(220, 120, 90);
-
     private void DrawOnline(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         switch (_online.Stage)
@@ -304,26 +301,23 @@ public sealed partial class ChaosGame
                 "NO UNFINISHED SESSION IS WAITING FOR YOU",
                 "A SEAT APPEARS HERE WHEN A MATCH IS LEFT MID-GAME");
         }
-        DrawCentered(font, batch, OnlineHistoryPresentation.Footer(selected),
-            OnlineConnectLayout.HistoryNoteY,
-            selected is { IsCompatible: false } ? IncompatibleSession : OnlineSecondaryText, 1);
+        DrawCentered(font, batch, OnlineHistoryPresentation.Hint,
+            OnlineConnectLayout.HistoryNoteY, OnlineSecondaryText, 1);
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN",
-            selected is { CanResume: true } ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
+            selected is not null ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK",
             ButtonEmphasis.Secondary);
     }
 
-    /// <summary>The membership on one row, with the reason beside it when it cannot be taken.</summary>
+    /// <summary>The membership on one row, with the role it holds beside it.</summary>
     private static void DrawHistoryRow(
         SpriteBatch batch, PixelFont font, Rectangle bounds, MultiplayerRecovery recovery)
     {
-        var roleOrNote = OnlineHistoryPresentation.Note(recovery)
-            ?? (recovery.IsHost ? "HOST" : "PLAYER");
+        var role = OnlineHistoryPresentation.Role(recovery);
         var lastPlayed = LastPlayedLabel(recovery);
-        font.Draw(batch, Fitted(SessionLabel(recovery), RowRoom(bounds, roleOrNote)),
+        font.Draw(batch, Fitted(SessionLabel(recovery), RowRoom(bounds, role)),
             new Vector2(bounds.X + 7, bounds.Y + 8), Color.White, 1);
-        DrawRightAligned(font, batch, roleOrNote, bounds.Right - 7, bounds.Y + 8,
-            recovery.IsCompatible ? OnlineSecondaryText : IncompatibleSession);
+        DrawRightAligned(font, batch, role, bounds.Right - 7, bounds.Y + 8, OnlineSecondaryText);
         font.Draw(batch,
             Fitted($"{recovery.DisplayName}  {recovery.JoinCode}", RowRoom(bounds, lastPlayed)),
             new Vector2(bounds.X + 7, bounds.Y + 21), OnlineSecondaryText, 1);
@@ -387,7 +381,7 @@ public sealed partial class ChaosGame
         DrawLobbyJoinCode(batch, pixel, font);
         if (match is not null)
         {
-            DrawLobbyRoster(batch, font, match);
+            DrawLobbyRoster(batch, pixel, font, match);
             DrawLobbySettings(batch, pixel, font, match);
         }
         DrawCentered(font, batch,
@@ -454,13 +448,21 @@ public sealed partial class ChaosGame
         foreach (var player in match.Players.Where(Seated).Take(MatchLimits.PlayerCount))
         {
             var face = ClassicOnlineLobbyLayout.RosterPortrait(row);
+            var (displayName, portrait) = LobbyRosterEntry(player);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, face,
-                    OriginalSpriteLayout.OverlordPortrait(OnlinePortrait(player)), Color.White);
+                    OriginalSpriteLayout.OverlordPortrait(portrait), Color.White);
             var colour = player.Slot >= 0 && player.Slot < PlayerColors.Length
                 ? PlayerColors[player.Slot]
                 : Color.White;
-            var label = player.IsHost ? $"{player.DisplayName}*" : player.DisplayName;
+            if (EditingLobbyName && player.Id == _lobby?.OwnPlayerId)
+            {
+                DrawFieldBox(batch, pixel, font, ClassicOnlineLobbyLayout.RosterName(row),
+                    _online.DisplayName, string.Empty);
+                row++;
+                continue;
+            }
+            var label = player.IsHost ? $"{displayName}*" : displayName;
             font.Draw(batch, Fitted(label, new Rectangle(face.Right + 4, face.Y + 4, 132, 8)),
                 new Vector2(face.Right + 4, face.Y + 4), colour, 1);
             row++;
@@ -510,7 +512,7 @@ public sealed partial class ChaosGame
     private static int SeatedPlayerCount(MatchView match) => match.Players.Count(Seated);
 
     /// <summary>Who has taken a seat, and how many computer players will fill the rest.</summary>
-    private void DrawLobbyRoster(SpriteBatch batch, PixelFont font, MatchView match)
+    private void DrawLobbyRoster(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchView match)
     {
         var seated = SeatedPlayerCount(match);
         font.Draw(batch, "PLAYERS",
@@ -525,20 +527,31 @@ public sealed partial class ChaosGame
                 ? PlayerColors[player.Slot]
                 : Color.White;
             var suffix = player.IsHost ? "  HOST" : string.Empty;
-            var name = player.DisplayName.Length > OnlineLobbyLayout.RosterNameColumns
-                ? player.DisplayName[..OnlineLobbyLayout.RosterNameColumns]
-                : player.DisplayName;
-            // The face each player chose on their way in, so the roster says who is who by more
-            // than a name: it is the face their overlord wears on every screen once the match runs.
+            var (displayName, portrait) = LobbyRosterEntry(player);
+            var name = displayName.Length > OnlineLobbyLayout.RosterNameColumns
+                ? displayName[..OnlineLobbyLayout.RosterNameColumns]
+                : displayName;
+            // The face each player chose, so the roster says who is who by more than a name: it is
+            // the face their overlord wears on every screen once the match runs.
             var face = OnlineLobbyLayout.RosterPortrait(row);
             if (_uiSprites is not null)
             {
                 batch.Draw(_uiSprites, face,
-                    OriginalSpriteLayout.OverlordPortrait(OnlinePortrait(player)), Color.White);
+                    OriginalSpriteLayout.OverlordPortrait(portrait), Color.White);
             }
-            font.Draw(batch, $"{name}{suffix}",
-                new Vector2(face.Right + 6, face.Y + 5), colour, 1);
+            if (EditingLobbyName && player.Id == _lobby?.OwnPlayerId)
+                DrawFieldBox(batch, pixel, font, OnlineLobbyLayout.RosterName(row), _online.DisplayName,
+                    string.Empty);
+            else
+                font.Draw(batch, $"{name}{suffix}",
+                    new Vector2(face.Right + 6, face.Y + 5), colour, 1);
             row++;
+        }
+        if (CanEditLobbyProfile())
+        {
+            font.Draw(batch, "CLICK YOUR NAME OR FACE",
+                new Vector2(OnlineLobbyLayout.RosterLeft, OnlineLobbyLayout.ProfileHintY),
+                OnlineMutedText, 1);
         }
         // Every unseated slot plays as a computer player, which is worth saying before the start.
         var computers = MatchLimits.PlayerCount - seated;

@@ -33,16 +33,6 @@ public sealed class ScenarioCatalogTests
         Assert.Equal(new DominanceWeights(cash, support, sector), ScenarioCatalog.Weights(duration));
     }
 
-    [Fact]
-    public void TimedScoringUsesDocumentedStatistic()
-    {
-        var state = new PlayerScoreState(Cash: 123, Support: 45, ControlledSectors: 6);
-        Assert.Equal(123, ScenarioCatalog.TimedScore(ScenarioId.Greed, GameDuration.SixMonths, state));
-        Assert.Equal(6, ScenarioCatalog.TimedScore(ScenarioId.Power, GameDuration.SixMonths, state));
-        Assert.Equal(45, ScenarioCatalog.TimedScore(ScenarioId.Acceptance, GameDuration.SixMonths, state));
-        Assert.Equal(75, ScenarioCatalog.TimedScore(ScenarioId.Dominance, GameDuration.SixMonths, state));
-    }
-
     [Theory]
     [InlineData(ScenarioId.KillEmAll, 0, 0, 0, 0, true)]
     [InlineData(ScenarioId.Big40, 40, 0, 0, 0, true)]

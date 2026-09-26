@@ -4,35 +4,24 @@ namespace Rechaos.Game;
 /// What the previous-sessions browser says about a saved membership.
 /// </summary>
 /// <remarks>
-/// Separate from the drawing so the wording and the decision behind it can be asserted without a
-/// graphics device. A session this build cannot play is still listed: the seat is held and the
-/// player is owed the reason, which is what <see cref="Note"/> puts beside the row and
-/// <see cref="Footer"/> spells out under the list once that row is the selected one.
+/// Separate from the drawing so the wording can be asserted without a graphics device. Only
+/// memberships this build can resume reach the browser (see
+/// <see cref="MultiplayerRecovery.CanResume"/>), so a row never has to explain a refusal.
 /// </remarks>
 public static class OnlineHistoryPresentation
 {
-    /// <summary>Beside the row: short, because the row already carries the membership.</summary>
-    public const string IncompatibleNote = "INCOMPATIBLE";
-
-    /// <summary>Under the list, and the refusal when such a row is rejoined anyway.</summary>
-    public const string IncompatibleReason = "INCOMPATIBLE SESSION  IT NEEDS ANOTHER GAME VERSION";
-
     public const string Hint = "UP/DOWN SELECT  ENTER REJOINS";
 
     public static string Row(MultiplayerRecovery recovery)
     {
         ArgumentNullException.ThrowIfNull(recovery);
-        var role = recovery.IsHost ? "HOST" : "PLAYER";
-        return $"{recovery.DisplayName}  {recovery.JoinCode}  {role}";
+        return $"{recovery.DisplayName}  {recovery.JoinCode}  {Role(recovery)}";
     }
 
-    public static string? Note(MultiplayerRecovery recovery)
+    /// <summary>Beside the row: the seat the membership holds.</summary>
+    public static string Role(MultiplayerRecovery recovery)
     {
         ArgumentNullException.ThrowIfNull(recovery);
-        return recovery.IsCompatible ? null : IncompatibleNote;
+        return recovery.IsHost ? "HOST" : "PLAYER";
     }
-
-    /// <summary>The line under the list: the reason when it applies, the keys otherwise.</summary>
-    public static string Footer(MultiplayerRecovery? selected) =>
-        selected is { IsCompatible: false } ? IncompatibleReason : Hint;
 }

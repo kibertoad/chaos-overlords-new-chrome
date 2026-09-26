@@ -172,6 +172,14 @@ public sealed partial class ChaosGame
                     return;
                 }
                 if (_state is null) return;
+                if (EquipmentCommandLayout.Portrait.Contains(point))
+                {
+                    // One target only, so every portrait click registers the same index.
+                    if (_equipmentPortraitClicks.Register(0, _inputTime)
+                        && _state.FindGang(_commandTargetOptions[0].Gang) is { } actor)
+                        OpenGangDetails(actor, ClientScreen.Commands);
+                    return;
+                }
                 var indices = EquipmentCommandIndices(_state);
                 var position = indices.IndexOf(_commandTargetCursor);
                 var itemFirst = EquipmentCommandLayout.FirstVisibleItem(indices.Count, position);
@@ -454,6 +462,7 @@ public sealed partial class ChaosGame
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, EquipmentCommandLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actor.DefinitionId), Color.White);
+        if (action == GangAction.Equip) DrawEquipmentCommandHeldItems(batch, pixel, actor);
 
         var indices = EquipmentCommandIndices(state);
         var position = indices.IndexOf(_commandTargetCursor);
@@ -477,6 +486,21 @@ public sealed partial class ChaosGame
         DrawBorder(batch, pixel, EquipmentCommandLayout.Category(_equipmentCategory), Color.White, 2);
         DrawButton(batch, pixel, font, EquipmentCommandLayout.Ok, "OK",
             EquipmentCommandLayout.CanConfirm(_commandTargetCursor, indices));
+    }
+
+    private void DrawEquipmentCommandHeldItems(SpriteBatch batch, Texture2D pixel, MatchGangState gang)
+    {
+        var itemIds = EquippedItems(gang);
+        if (itemIds.All(itemId => itemId is null)) return;
+        for (var slot = 0; slot < itemIds.Length; slot++)
+        {
+            var destination = EquipmentCommandLayout.EquippedItem(slot);
+            batch.Draw(pixel, destination, Color.Black);
+            DrawBorder(batch, pixel, destination, Color.LightGray, 1);
+            if (_itemPortraits is not null && itemIds[slot] is { } itemId)
+                batch.Draw(_itemPortraits, destination,
+                    OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
+        }
     }
 
     private List<int> EquipmentCommandIndices(MatchState state) => Enumerable.Range(0, _commandTargetOptions.Count)

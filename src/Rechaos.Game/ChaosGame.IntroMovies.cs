@@ -21,11 +21,11 @@ public sealed partial class ChaosGame
     private bool _introMovieReached;
     private bool _introMoviesSeen;
 
-    /// <summary>Streams the movies unattended on the first run only; every later run reaches
-    /// them through the title screen instead.</summary>
+    /// <summary>Streams the movies unattended at startup; with Intro only once switched on, only
+    /// until a showing is recorded, and later runs reach them through the title screen.</summary>
     private void InitializeIntroMovies()
     {
-        if (IntroMoviePolicy.PlaysAtStartup(_introMoviesSeen)) BeginIntroMovies();
+        if (IntroMoviePolicy.PlaysAtStartup(_introOnlyOnce, _introMoviesSeen)) BeginIntroMovies();
     }
 
     private void ReplayIntroMovies()
@@ -182,8 +182,8 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>Hands the loop back and records that the intro no longer owes the player a
-    /// showing, so the next run starts at the title. A pack whose files all failed to open
-    /// showed nothing, and leaves that debt standing.</summary>
+    /// showing, so with Intro only once switched on the next run starts at the title. A pack
+    /// whose files all failed to open showed nothing, and leaves that debt standing.</summary>
     private void CompleteIntroMovies()
     {
         _introMoviesPlaying = false;

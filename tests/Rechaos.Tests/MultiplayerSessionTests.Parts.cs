@@ -37,7 +37,9 @@ public sealed partial class MultiplayerSessionTests
     public void ConnectionIsBackOnlyWhenEveryLaneIs()
     {
         var notices = new List<(bool Connected, string? Detail, int Attempt)>();
-        var health = new ConnectionHealth((connected, detail, attempt) => notices.Add((connected, detail, attempt)));
+        var health = new ConnectionHealth(failure => notices.Add(failure is null
+            ? (true, null, 0)
+            : (false, failure.Detail, failure.Attempt)));
         var stream = health.Open("stream");
         var outbox = health.Open("outbox");
 

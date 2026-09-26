@@ -6,6 +6,17 @@ public static partial class AiTurnPlanner
         ObjectiveTarget Selected,
         bool Accepted);
 
+    /// <summary>RULE-AI-004 owner_query: -2 under police presence, else the owner byte.</summary>
+    internal static int OwnerQuery(MatchState state, int sectorId)
+    {
+        var sector = state.Sectors[sectorId];
+        return sector.CrackdownActive ? -2 : sector.Owner?.Value ?? -1;
+    }
+
+    /// <summary>RULE-AI-004 hostile_owner, with the original's out-of-row reads (FND-AI-048).</summary>
+    internal static bool IsHostileOwner(MatchState state, PlayerId playerId, int sectorId) =>
+        state.AiStrategy.IsHostileToOwnerQuery(playerId, OwnerQuery(state, sectorId));
+
     private static IReadOnlyList<ObjectiveTarget> SelectHumanWeightedTargetPool(
         MatchState state,
         PlayerId playerId,
@@ -13,9 +24,7 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> visible,
         int visibleWeight)
     {
-        var owner = state.Sectors[sectorId].Owner;
-        return owner is { } sectorOwner
-            && state.AiStrategy.IsHostile(playerId, sectorOwner)
+        return IsHostileOwner(state, playerId, sectorId)
             && visibleWeight == 10
                 ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
                         .Setup.Controller == PlayerController.Human)

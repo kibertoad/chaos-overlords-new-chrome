@@ -97,9 +97,10 @@ public static partial class AiTurnPlanner
              attempt++)
         {
             var owner = state.Sectors[gang.SectorId].Owner;
+            // RULE-AI-004 hostile_human_owner: the owner byte, then hostile_owner's query.
             var targetPool = owner is { } sectorOwner
-                && state.AiStrategy.IsHostile(playerId, sectorOwner)
-                && VisibleOpponentWeight(state, playerId, sectorOwner) == 10
+                && IsHostileOwner(state, playerId, gang.SectorId)
+                && state.FindPlayer(sectorOwner)?.Setup.Controller == PlayerController.Human
                     ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
                             .Setup.Controller == PlayerController.Human)
                         .ToArray()

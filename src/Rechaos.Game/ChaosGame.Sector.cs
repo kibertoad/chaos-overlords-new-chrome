@@ -447,7 +447,10 @@ public sealed partial class ChaosGame
         {
             if (SectorDetailLayout.SectorAt(_cursor, column, row) is not { } sectorId
                 || !legalSectors.Contains(sectorId)) continue;
-            DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row), GangDragSectorHighlight, 1);
+            var destination = SectorDetailLayout.Cell(column, row);
+            destination.Inflate(-2, -2);
+            batch.Draw(pixel, destination, GangDragDestinationWash);
+            DrawBorder(batch, pixel, destination, GangDragDestinationOutline, 1);
         }
         for (var siteSlot = 0; siteSlot < MatchLimits.SitesPerSector; siteSlot++)
         {
@@ -604,6 +607,11 @@ public sealed partial class ChaosGame
                 batch.Draw(layer, destination, CityMapLayout.Source(sectorId), Color.White);
             else
                 batch.Draw(pixel, destination, new Color(24, 37, 39));
+            if (_uiKeyedSprites is not null
+                && ObjectiveSectorMarkerPresentation.IsMarked(
+                    state.Setup.Scenario, sectorId, sector.IsImportant))
+                batch.Draw(_uiKeyedSprites, destination,
+                    OriginalSpriteLayout.ObjectiveSectorPylons, Color.White);
             DrawBorder(batch, pixel, destination,
                 column == 1 && row == 1 ? Color.White : new Color(0, 150, 45),
                 column == 1 && row == 1 ? 2 : 1);

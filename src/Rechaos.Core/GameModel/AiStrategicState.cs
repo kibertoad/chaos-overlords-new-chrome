@@ -36,6 +36,20 @@ public sealed class AiStrategicState
 
     public bool IsHostile(PlayerId observer, PlayerId other) => Attitude(observer, other) < 0;
 
+    /// <summary>
+    /// RULE-AI-004 hostile_owner, FND-AI-048: the original reads attitude cell
+    /// observer * 6 + ownerQuery with no range test, where ownerQuery is an owner, -1 for a
+    /// neutral sector or -2 under police presence. For observers 1 to 5 a negative query lands in
+    /// the previous observer's row; for observer 0 it lands on bytes that are never negative.
+    /// </summary>
+    internal bool IsHostileToOwnerQuery(PlayerId observer, int ownerQuery)
+    {
+        if (ownerQuery is < -2 or >= MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(ownerQuery));
+        var index = PlayerIndex(observer) * MatchLimits.PlayerCount + ownerQuery;
+        return index >= 0 && _attitudes[index] < 0;
+    }
+
     internal IReadOnlyList<int> CaptureReactions() => _reactions.ToArray();
     internal IReadOnlyList<int> CaptureAttitudes() => _attitudes.ToArray();
 

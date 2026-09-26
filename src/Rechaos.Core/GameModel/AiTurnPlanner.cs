@@ -28,7 +28,7 @@ public static partial class AiTurnPlanner
         if (state.Coordinator.Phase != TurnPhase.Command || state.Coordinator.ActivePlayer != playerId)
             throw new InvalidOperationException("AI planning requires that player's active Command phase.");
         var player = state.FindPlayer(playerId) ?? throw new ArgumentOutOfRangeException(nameof(playerId));
-        if (player.Setup.Controller != PlayerController.Computer)
+        if (!state.IsPlannedByComputer(playerId))
             throw new ArgumentException("AI planning requires a computer-controlled player.", nameof(playerId));
 
         var cashBudget = Math.Max(0, player.Cash);
@@ -310,8 +310,7 @@ public static partial class AiTurnPlanner
             return new PreparedObjectiveChoice(GangAction.Control, AiActionTarget.None);
 
         var owner = state.Sectors[gang.SectorId].Owner;
-        var targetPool = owner is { } sectorOwner
-            && state.AiStrategy.IsHostile(playerId, sectorOwner)
+        var targetPool = IsHostileOwner(state, playerId, gang.SectorId)
             && visibleWeight == 10
                 ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
                         .Setup.Controller == PlayerController.Human)
@@ -474,7 +473,7 @@ public static partial class AiTurnPlanner
             || state.Coordinator.ActivePlayer != playerId)
             throw new InvalidOperationException("AI hiring requires that player's active planning turn.");
         var player = state.FindPlayer(playerId) ?? throw new ArgumentOutOfRangeException(nameof(playerId));
-        if (player.Setup.Controller != PlayerController.Computer)
+        if (!state.IsPlannedByComputer(playerId))
             throw new ArgumentException("AI hiring requires a computer-controlled player.", nameof(playerId));
 
         if (AiPlanningPreparation.SelectHireRole(state, playerId) is not { } selection)

@@ -1,7 +1,6 @@
 # Architecture
 
 Status: evolving implementation architecture
-Last updated: 2026-09-20
 
 <!-- doc-index:begin toc depth=3 -->
 - [Dependency direction](#dependency-direction)
@@ -216,8 +215,8 @@ loading, title/setup/hot-seat-handoff/city/sector/sector-gangs/gang/finance/rank
 keyboard and inverse-mapped mouse input, including edge-triggered right-click
 cancellation that delegates to each interaction's existing close/back operation,
 an ownership-composited city/sector renderer, and an atlas-backed renderer for the original
-`PX00129` pixel font. `UI-ATLAS.md` records the
-first full-screen resource and hit-region mappings.
+`PX00129` pixel font. The `SCR-*` entries in `spec/screens/` record the
+original's screen resources and hit regions.
 The client shell is a partial class split by responsibility. `ChaosGame.cs`
 retains the loop, shared client state, and top-level input/screen routing.
 `ChaosGame.Assets.cs`, `ChaosGame.Setup.cs`, and `ChaosGame.Persistence.cs`
@@ -255,7 +254,7 @@ The item workflow projects research/equipment state and submits Research,
 Equip, Give, and Sell through the replay recorder and authoritative Core
 validator. Give first uses the original three-slot equipment selection panel,
 then expands only recipients in the same sector who can accept every selected
-item. The transaction resolver uses the binary's player/roster-slot scan,
+item. The transaction resolver uses submission order for cash-affecting Equip/Sell as a documented deviation from the binary's player/roster-slot scan,
 reserves outgoing Give items, processes recipient transactions, and applies
 incoming gifts afterward. This preserves two-gang swaps and the original rule
 that an incoming gift overwrites a recipient's same-turn purchase. Multi-slot
@@ -268,8 +267,9 @@ submit through that same recorder; its policy is not an original-parity claim.
 The audio router consumes newly appended combat-resolution events and maps
 equipped items, unarmed attacks, and detected police attacks to their original
 `SND005xx` cues while leaving evasion silent. Each cue travels with its Detailed
-Combat clip and plays at that clip's first animation tick, including the
-separately queued retaliation clip. It also owns the recovered
+Combat clip and plays at that clip's first animation tick. Each attack has one
+clip carrying its attacker's cue; retaliation lands inside it and has no cue.
+It also owns the recovered
 nine-entry general-effect slot table (`SND00200`-`SND00208`, with no slot 5);
 named slot identities replace presentation magic numbers. Setup uses the
 statically identified slot 3 accepted-input and slot 4 rejected-input cues,
@@ -277,9 +277,10 @@ while full local-setup push buttons use slot 2; an invalid pointer-driven player
 count change follows its press cue with slot 4. The four setup push controls
 retain the pressed identity and act only on release inside that same recovered
 rectangle. Panel confirmation uses slots 0/1, a handoff into an unread Comlink
-inbox uses slot 6, and the planning countdown uses slots 7/8. Slot 9 is loaded by the
-original but has no gated-wrapper call site. None of these routes feeds playback
-state or timing back into the simulation.
+inbox uses slot 6, and the planning countdown uses slots 7/8. Slot 9 is the later-turn
+cue, which the original calls directly through its lower effect helper. General and
+combat effects share one interrupting effect voice, separate from music. None of these
+routes feeds playback state or timing back into the simulation.
 `SoundtrackCatalog` discovers the extracted `Track02`-`Track09` Ogg files and
 encodes the recovered title/setup, gameplay, and endgame track programs, while
 `ChaosGame.Media.cs` owns their optional streaming, screen transition, repeat,

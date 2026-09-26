@@ -95,7 +95,8 @@ public static class GangSelectionScreens
     {
         ClientScreen.Sector => true,
         ClientScreen.Commands or ClientScreen.ItemInformation => ReturnsToSector(returns.Commands),
-        ClientScreen.Gang => ReturnsToSector(returns.GangDetails),
+        ClientScreen.Gang => ReturnsToSector(returns.GangDetails)
+            || (returns.GangDetails == ClientScreen.Commands && ReturnsToSector(returns.Commands)),
         ClientScreen.Site => ReturnsToSector(returns.SiteDetails)
             || (returns.SiteDetails == ClientScreen.Commands && ReturnsToSector(returns.Commands)),
         ClientScreen.SectorGangs => ReturnsToSector(returns.SectorGangs),

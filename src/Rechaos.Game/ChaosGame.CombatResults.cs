@@ -25,7 +25,27 @@ public sealed partial class ChaosGame
     {
         OpenCombatResults(returnScreen);
         if (_screens.Current == ClientScreen.CombatSummary)
-            ReplaySelectedCombatDetail();
+            ReplayAllCombatDetail();
+    }
+
+    /// <summary>Replays every fight the viewer can see from the completed turn, in order.</summary>
+    /// <remarks>
+    /// The console's Combat Detail is the whole turn, as the automatic presentation is; D on the
+    /// open summary (<see cref="ReplaySelectedCombatDetail"/>) replays only the selected fight.
+    /// </remarks>
+    private void ReplayAllCombatDetail()
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        var clips = CombatAnimationRouting.ForPresentation(
+            _state, VisibleCombatEvents(_state, viewer), viewer);
+        if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
+        {
+            RejectInput("COMBAT DETAIL UNAVAILABLE");
+            return;
+        }
+        _combatAnimationPlayer.Clear();
+        foreach (var clip in clips) _combatAnimationPlayer.Enqueue(clip);
+        _message = string.Empty;
     }
 
     private void HandleCombatSummaryClick(Point point)
@@ -67,15 +87,16 @@ public sealed partial class ChaosGame
             RejectInput("NO COMBAT DETAIL AVAILABLE");
             return;
         }
-        IReadOnlyList<CombatAnimationClip> clips;
-        try
-        {
-            clips = CombatAnimationRouting.ForEvent(_state, gameEvent);
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            clips = [];
-        }
+        // A fight of the viewer's keeps the forces it has in the whole turn's presentation; one the
+        // pager shows between other players plays from the phase-start forces. Either plays alone,
+        // so it holds its result instead of handing off to a reply that is not queued.
+        var turn = VisibleCombatEvents(_state, viewer);
+        var clips = CombatAnimationRouting.ForPresentation(
+                _state, turn.Any(visible => visible.Sequence == gameEvent.Sequence) ? turn : [gameEvent],
+                viewer)
+            .Where(clip => clip.EventSequence == gameEvent.Sequence)
+            .Select(clip => clip with { HandsOff = false })
+            .ToList();
         if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
         {
             RejectInput("COMBAT DETAIL UNAVAILABLE");
@@ -85,6 +106,13 @@ public sealed partial class ChaosGame
         foreach (var clip in clips) _combatAnimationPlayer.Enqueue(clip);
         _message = string.Empty;
     }
+
+    /// <summary>The completed turn's fights the viewer can see, in event order.</summary>
+    private IReadOnlyList<GameEvent> VisibleCombatEvents(MatchState state, PlayerId viewer) =>
+        VisibleCombatResults(state, viewer)
+            .Where(gameEvent => IsVisibleCombatEvent(state, viewer, gameEvent))
+            .OrderBy(gameEvent => gameEvent.Sequence)
+            .ToArray();
 
     private void MoveCombatSummary(int delta)
     {
@@ -190,7 +218,7 @@ public sealed partial class ChaosGame
         for (var slot = 0; slot < Math.Min(forces.Count, MatchLimits.FriendlyGangsPerSector); slot++)
         {
             var force = forces[slot];
-            var gang = state.FindGang(force.Gang);
+            var gang = state.FindCombatant(force.Event, force.Gang);
             if (gang is null) continue;
             var cell = CombatResultsLayout.Force(slot, enemy);
             if (_gangPortraits is not null)
@@ -250,17 +278,23 @@ public sealed partial class ChaosGame
         for (var opponentSlot = 0; opponentSlot < opponents.Length; opponentSlot++)
         {
             if (!CombatResultsLayout.Opponent(opponentSlot).Contains(point)) continue;
-            var forces = page.ForcesFor(opponents[opponentSlot]);
-            if (forces.Count == 0 || _combatSummaryOpponent == opponents[opponentSlot]) return;
+            var opponent = opponents[opponentSlot];
+            if (_combatSummaryOpponent == opponent
+                || page.ResultAgainst(viewer, opponent) is not { } selected) return;
             AcceptInput();
-            _combatSummaryOpponent = opponents[opponentSlot];
-            _combatSummaryEventSequence = forces[0].Event.Sequence;
+            // The clicked player, not one derived from the fight: in a fight the viewer is not in,
+            // the other side is whoever happened to be listed first, and that may not be them.
+            SelectCombatResult(selected, opponent);
             return;
         }
         var viewerForces = page.ForcesFor(viewer);
         var forceSlot = CombatResultsLayout.FriendlyForceSlotAt(point);
         if (forceSlot is { } slot && slot < viewerForces.Count)
-            _combatSummaryEventSequence = viewerForces[slot].Event.Sequence;
+        {
+            var selected = page.Results.First(result =>
+                result.Event.Sequence == viewerForces[slot].Event.Sequence);
+            SelectCombatResult(selected, selected.OpponentFor(viewer));
+        }
     }
 
     private void EnsureCombatResultSelection(MatchState state, PlayerId viewer, CombatResultPage page)
@@ -271,16 +305,15 @@ public sealed partial class ChaosGame
 
     private void SelectDefaultCombatResult(MatchState state, PlayerId viewer, CombatResultPage page)
     {
-        _combatSummaryEventSequence = page.ForcesFor(viewer).FirstOrDefault()?.Event.Sequence
-            ?? page.Results[0].Event.Sequence;
-        _combatSummaryOpponent = null;
-        foreach (var player in state.Players.Select(candidate => candidate.Id)
-                     .Where(player => player != viewer).OrderBy(player => player.Value))
-        {
-            if (page.ForcesFor(player).Count == 0) continue;
-            _combatSummaryOpponent = player;
-            break;
-        }
+        var selected = page.Results.FirstOrDefault(result => result.Involves(viewer))
+            ?? page.Results[0];
+        SelectCombatResult(selected, selected.OpponentFor(viewer));
+    }
+
+    private void SelectCombatResult(CombatResultEntry selected, PlayerId? opponent)
+    {
+        _combatSummaryEventSequence = selected.Event.Sequence;
+        _combatSummaryOpponent = opponent;
     }
 
     private GameEvent? SelectedCombatResult(CombatResultPage page) => page.Results
@@ -328,6 +361,22 @@ public static class CombatResultProjection
             .ToArray();
     }
 
+    /// <summary>
+    /// The sequence of the last event recorded before <paramref name="turn"/>, or -1 when the
+    /// history starts at or after it.
+    /// </summary>
+    /// <remarks>
+    /// Walks back from the end, as the list is append-only in turn order, so the cost is the
+    /// events of the turns being skipped rather than the whole match.
+    /// </remarks>
+    public static long LastSequenceBefore(IReadOnlyList<GameEvent> events, int turn)
+    {
+        ArgumentNullException.ThrowIfNull(events);
+        var first = events.Count;
+        while (first > 0 && events[first - 1].Turn >= turn) first--;
+        return first > 0 ? events[first - 1].Sequence : -1;
+    }
+
     public static bool IsFromLastCompletedTurn(int eventTurn, int currentTurn)
     {
         if (eventTurn < 0) throw new ArgumentOutOfRangeException(nameof(eventTurn));
@@ -337,22 +386,33 @@ public static class CombatResultProjection
 
     private static CombatResultEntry? Describe(MatchState state, GameEvent gameEvent)
     {
-        if (gameEvent.Kind == GameEventKind.PoliceAttackResolved
-            && gameEvent.Gang is { } policeTarget
-            && state.FindGang(policeTarget) is { } target
-            && gameEvent.PoliceAttack is { } police)
-            return new CombatResultEntry(
-                gameEvent, police.SectorId, target.Owner, target.Id, null, null, true);
+        if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
+            return DescribePolice(state, gameEvent);
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution is null
             || gameEvent.Gang is not { } attackerId
             || gameEvent.Target.Kind != CommandTargetKind.Gang
-            || state.FindGang(attackerId) is not { } attacker
-            || state.FindGang(new GangId(gameEvent.Target.Id)) is not { } defender)
+            || state.FindCombatant(gameEvent, attackerId) is not { } attacker
+            || state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id)) is not { } defender)
             return null;
         return new CombatResultEntry(
             gameEvent, attacker.SectorId, attacker.Owner, attacker.Id,
             defender.Owner, defender.Id, false);
     }
+
+    /// <summary>The police encounter a detected gang suffered, or nothing for an undetected one.</summary>
+    /// <remarks>
+    /// Every gang in a crackdown sector gets a police detection roll, including a gang that leaves
+    /// in the same turn's Movement. A failed roll is recorded for the simulation, but the police
+    /// never engaged that gang and the original has no presentation for it. Listing it would draw
+    /// the police against a gang they did not attack, give Combat Summary a page with nothing to
+    /// replay, and open the automatic combat presentation for a turn without any combat.
+    /// </remarks>
+    private static CombatResultEntry? DescribePolice(MatchState state, GameEvent gameEvent) =>
+        gameEvent is { Gang: { } policeTarget, PoliceAttack: { Detected: true } police }
+        && state.FindCombatant(gameEvent, policeTarget) is { } target
+            ? new CombatResultEntry(
+                gameEvent, police.SectorId, target.Owner, target.Id, null, null, true)
+            : null;
 }
 
 public sealed record CombatResultEntry(
@@ -366,6 +426,16 @@ public sealed record CombatResultEntry(
 {
     public bool Involves(PlayerId player) => FirstPlayer == player || SecondPlayer == player;
 
+    /// <summary>The side of this result facing <paramref name="player"/>.</summary>
+    /// <remarks>
+    /// For a result <paramref name="player"/> is not in, there is no side facing them, and the
+    /// first-listed player stands in so the page still shows one side of the fight. A caller that
+    /// knows which of the two it wants, such as a click on a portrait, passes that player instead.
+    /// </remarks>
+    public PlayerId? OpponentFor(PlayerId player) => FirstPlayer == player
+        ? SecondPlayer
+        : SecondPlayer == player ? FirstPlayer : FirstPlayer;
+
     public GangId? GangFor(PlayerId player) => FirstPlayer == player
         ? FirstGang
         : SecondPlayer == player ? SecondGang : null;
@@ -375,6 +445,14 @@ public sealed record CombatResultForce(GangId Gang, GameEvent Event);
 
 public sealed record CombatResultPage(int SectorId, IReadOnlyList<CombatResultEntry> Results)
 {
+    /// <summary>
+    /// The fight to show against <paramref name="opponent"/>: the first one they fought
+    /// <paramref name="viewer"/> in, else the first one they fought in at all.
+    /// </summary>
+    public CombatResultEntry? ResultAgainst(PlayerId viewer, PlayerId opponent) =>
+        Results.FirstOrDefault(result => result.Involves(opponent) && result.Involves(viewer))
+        ?? Results.FirstOrDefault(result => result.Involves(opponent));
+
     public IReadOnlyList<CombatResultForce> ForcesFor(PlayerId player) => Results
         .Select(result => (Result: result, Gang: result.GangFor(player)))
         .Where(value => value.Gang is not null)

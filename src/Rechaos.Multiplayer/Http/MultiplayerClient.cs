@@ -125,9 +125,27 @@ public sealed class MultiplayerClient
         return new MultiplayerClient(_http, _options, token, _handshake);
     }
 
-    /// <summary>Public lobbies, when the server enables listing.</summary>
-    public Task<LobbyList> ListLobbiesAsync(CancellationToken cancellationToken) =>
-        SendAsync<LobbyList>(HttpMethod.Get, ApiRoutes.Matches, body: null, cancellationToken);
+    /// <summary>
+    /// Public lobbies this build can play, when the server enables listing.
+    /// </summary>
+    /// <remarks>
+    /// The server leaves out every match stored under another session version before it applies its
+    /// page limit, so an unplayable match neither shows nor takes a playable one's place. The answer
+    /// is filtered again here, so a list that reaches the lobby never offers one either way.
+    /// </remarks>
+    public async Task<LobbyList> ListLobbiesAsync(CancellationToken cancellationToken)
+    {
+        var list = await SendAsync<LobbyList>(
+                HttpMethod.Get, ApiRoutes.Lobbies(MultiplayerSessionVersion.Current), body: null,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return list.Matches.All(IsPlayable)
+            ? list
+            : list with { Matches = list.Matches.Where(IsPlayable).ToArray() };
+
+        static bool IsPlayable(LobbyListing listing) =>
+            MultiplayerSessionVersion.CanResume(listing.SessionVersion);
+    }
 
     /// <summary>Opens a lobby and takes its host seat.</summary>
     public Task<MembershipView> CreateMatchAsync(

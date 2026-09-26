@@ -16,6 +16,7 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(LobbyPlayerJoinedEvent), "lobby.playerJoined")]
 [JsonDerivedType(typeof(LobbyPlayerLeftEvent), "lobby.playerLeft")]
+[JsonDerivedType(typeof(LobbyPlayerUpdatedEvent), "lobby.playerUpdated")]
 [JsonDerivedType(typeof(LobbyHostChangedEvent), "lobby.hostChanged")]
 [JsonDerivedType(typeof(MatchStartedEvent), "match.started")]
 [JsonDerivedType(typeof(MatchStatusChangedEvent), "match.statusChanged")]
@@ -70,6 +71,17 @@ public sealed record LobbyPlayerLeftEvent(
     string CreatedAt,
     [property: JsonPropertyName("payload")] LobbyPlayerLeftEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "lobby.playerLeft");
+
+public sealed record LobbyPlayerUpdatedEventPayload(
+    [property: JsonPropertyName("player")] PlayerView Player
+);
+
+public sealed record LobbyPlayerUpdatedEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] LobbyPlayerUpdatedEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "lobby.playerUpdated");
 
 public sealed record LobbyHostChangedEventPayload(
     [property: JsonPropertyName("hostPlayerId")] string HostPlayerId
@@ -503,6 +515,11 @@ public sealed record JoinRunningMatchRequest(
     [property: JsonPropertyName("slot")] int Slot
 );
 
+public sealed record UpdatePlayerProfileRequest(
+    [property: JsonPropertyName("displayName")] string DisplayName,
+    [property: JsonPropertyName("portraitId")] int PortraitId
+);
+
 public sealed record SubmitOrdersRequest(
     [property: JsonPropertyName("orders")] OrderDocument Orders,
     [property: JsonPropertyName("ready")] bool Ready
@@ -632,6 +649,7 @@ public sealed record LobbyListing(
     [property: JsonPropertyName("maxPlayers")] int MaxPlayers,
     [property: JsonPropertyName("passwordProtected")] bool PasswordProtected,
     [property: JsonPropertyName("status")] MatchStatus Status,
+    [property: JsonPropertyName("sessionVersion")] int SessionVersion,
     [property: JsonPropertyName("settings")] MatchSettings Settings,
     [property: JsonPropertyName("availableSlots")] IReadOnlyList<int> AvailableSlots,
     [property: JsonPropertyName("availableSeatSummaries")] IReadOnlyList<AiSeatSummary> AvailableSeatSummaries,

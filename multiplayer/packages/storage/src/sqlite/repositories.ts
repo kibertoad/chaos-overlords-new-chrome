@@ -112,7 +112,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
      * on them and the takeover vote is what decides otherwise — so counting only `active` hid
      * live matches from the listing and understated the players in the ones it kept.
      */
-    async listPublicLobbies(limit): Promise<PublicLobbyRow[]> {
+    async listPublicLobbies(limit, sessionVersion): Promise<PublicLobbyRow[]> {
       const humanSeats = sql<number>`(select count(*) from ${players} where ${players.matchId} = ${matches.id} and ${players.status} in ('active', 'takeoverPending'))`
       const rows = await db
         .select({
@@ -125,6 +125,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
           maxPlayers: matches.maxPlayers,
           passwordHash: matches.passwordHash,
           status: matches.status,
+          sessionVersion: matches.sessionVersion,
           settings: matches.settings,
           createdAt: matches.createdAt,
           hasSnapshot: exists(
@@ -140,6 +141,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
           and(
             inArray(matches.status, ['lobby', 'running']),
             eq(matches.visibility, 'public'),
+            sessionVersion === undefined ? undefined : eq(matches.sessionVersion, sessionVersion),
             or(ne(matches.status, 'running'), sql`${humanSeats} > 0`),
           ),
         )
@@ -382,6 +384,24 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
         .returning({ id: players.id })
       return rows.length === 1
     },
+    /**
+     * "The match is still in the lobby" is tested by the statement that writes the profile, so an
+     * update racing `start` either lands before the roster is seated or not at all.
+     */
+    async updateProfile(playerId, profile) {
+      const inLobby = exists(
+        db
+          .select({ one: sql`1` })
+          .from(matches)
+          .where(and(eq(matches.id, players.matchId), eq(matches.status, 'lobby'))),
+      )
+      const rows = await db
+        .update(players)
+        .set({ displayName: profile.displayName, portraitId: profile.portraitId })
+        .where(and(eq(players.id, playerId), eq(players.status, 'active'), inLobby))
+        .returning({ id: players.id })
+      return rows.length === 1
+    },
     async revokeToken(playerId) {
       await db.update(players).set({ tokenHash: null }).where(eq(players.id, playerId))
     },
@@ -450,6 +470,8 @@ function sqliteTurnOrderMethods(
             eq(turnOrders.turn, number),
             eq(turnOrders.playerId, playerId),
             turnIsOpen,
+            // A draft never takes back readiness; see the port.
+            submission.ready ? undefined : eq(turnOrders.ready, false),
           ),
         )
         .returning({ playerId: turnOrders.playerId })
