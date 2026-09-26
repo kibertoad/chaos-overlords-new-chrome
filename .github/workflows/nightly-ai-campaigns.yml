@@ -51,12 +51,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Full history, so `check-spec.mjs` can find where this commit forked from main (or its
+          # parent on main) and fail when a spec ID, area or deviation that existed there is gone.
+          fetch-depth: 0
 
       - name: Set up .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.400
 
+      # `check-spec.mjs` (run by Invoke-Validation.ps1) compiles the `.ksy` definitions with it, and
+      # fails when CI is set and no compiler is found.
+      - name: Install the Kaitai Struct compiler
+        id: kaitai
+        uses: $/.github/actions/install-kaitai
+
       - name: Run campaigns with live diagnostics
         shell: pwsh
         run: ./tools/Invoke-Validation.ps1 -LongRunningTestsOnly -TraceTestOutput
+        env:
+          KSC: ${{ steps.kaitai.outputs.ksc }}

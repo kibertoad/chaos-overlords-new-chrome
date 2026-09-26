@@ -4,7 +4,7 @@ title: A Crackdown is recorded in the sector's history, and a third within five 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CHAOS-002, FND-EVENT-004, FND-EXE-004, FND-POLICE-001, FND-POLICE-002, FND-POLICE-004, FND-RNG-003, FND-RNG-006, FND-TURN-006, SRC-MANUAL-GOG]
+evidence: [FND-CHAOS-002, FND-EVENT-004, FND-EXE-004, FND-POLICE-001, FND-POLICE-002, FND-POLICE-004, FND-RNG-003, FND-RNG-006, FND-SETUP-003, FND-TURN-006, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-002, FMT-STATE-004]
@@ -75,8 +75,9 @@ end of the history update skips it whenever a slot was free (FND-POLICE-004).
   until the next `turn_start` rebuild [FND-CHAOS-002, FND-POLICE-004].
 - Police presence therefore always comes with the loss of the sector. The
   added turns extend any police presence already there. A permanent
-  presence of 100 (`CRACKDOWN_PERMANENT`) grows to 103 to 105 and then counts
-  down like any other; whether that can happen is not known.
+  presence of 100 (`CRACKDOWN_PERMANENT`) grows to 103 to 105, and since
+  RULE-POLICE-003 counts down only values below 100, it then stays there for
+  the rest of the match [FND-SETUP-003]; whether that can happen is not known.
 
 ## What the sources say
 

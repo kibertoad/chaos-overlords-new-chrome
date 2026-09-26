@@ -189,11 +189,15 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
         .returning({ id: matches.id })
       return rows.length === 1
     },
-    async updateRuntimeGameSettings(matchId, gameSettings, updatedAt) {
+    /**
+     * Writes the summaries' path inside the stored blob, in the statement, so whatever else the
+     * blob holds is the value it has when the statement runs rather than a caller's older copy.
+     */
+    async updateSeatSummaries(matchId, seatSummaries, updatedAt) {
       const rows = await db
         .update(matches)
         .set({
-          settings: sql`jsonb_set(${matches.settings}, '{gameSettings}', ${JSON.stringify(gameSettings)}::jsonb)`,
+          settings: sql`jsonb_set(${matches.settings}, '{gameSettings,seatSummaries}', ${JSON.stringify(seatSummaries)}::jsonb)`,
           updatedAt,
         })
         .where(and(eq(matches.id, matchId), inArray(matches.status, ['running', 'desynced'])))
@@ -593,6 +597,7 @@ function postgresTurnRepository(db: PostgresDatabase): TurnRepository {
         .returning({ number: turns.number })
       return rows.length === 1
     },
+    ...postgresVerdictReceipts(db),
     async claimDesyncAnnouncement(matchId, number, at) {
       const rows = await db
         .update(turns)
@@ -702,13 +707,62 @@ function postgresTurnRepository(db: PostgresDatabase): TurnRepository {
             and(
               inArray(matches.status, ['running', 'desynced']),
               or(isNull(turns.status), ne(turns.status, 'open')),
-              ...(touchedSince ? [gte(matches.updatedAt, touchedSince)] : []),
+              // Touched means the match row OR the seal: sealing writes only the turn row, so a
+              // window on `updatedAt` alone missed a seal interrupted in any match whose last
+              // status change or turn open was longer ago than the window.
+              ...(touchedSince
+                ? [or(gte(matches.updatedAt, touchedSince), gte(turns.sealedAt, touchedSince))]
+                : []),
             ),
           )
-          // Ordered by the recency the window is taken on; see the SQLite twin.
-          .orderBy(desc(matches.updatedAt), asc(matches.id))
+          // Ordered by the recency the window is taken on, the later of the two stamps; see the
+          // SQLite twin. `greatest` skips a null argument.
+          .orderBy(desc(sql`greatest(${matches.updatedAt}, ${turns.sealedAt})`), asc(matches.id))
           .limit(limit)
       )
+    },
+  }
+}
+
+/**
+ * The receipt a confirmation stamps once its follow-ups are done, and the list of confirmed turns
+ * still without one. Apart from the turn repository only to keep that function a readable length.
+ */
+function postgresVerdictReceipts(
+  db: PostgresDatabase,
+): Pick<TurnRepository, 'markSettled' | 'listUnannouncedVerdicts'> {
+  const { matches, turns } = schema
+  return {
+    async markSettled(matchId, number, at) {
+      const rows = await db
+        .update(turns)
+        .set({ settledAt: at })
+        .where(
+          and(
+            eq(turns.matchId, matchId),
+            eq(turns.number, number),
+            eq(turns.status, 'confirmed'),
+            isNull(turns.settledAt),
+          ),
+        )
+        .returning({ number: turns.number })
+      return rows.length === 1
+    },
+    /** `turns_settled_idx` answers the filter on the turn; the join keeps a dead match's rows out. */
+    async listUnannouncedVerdicts(limit) {
+      return db
+        .select({ matchId: turns.matchId, number: turns.number })
+        .from(turns)
+        .innerJoin(matches, eq(matches.id, turns.matchId))
+        .where(
+          and(
+            eq(turns.status, 'confirmed'),
+            isNull(turns.settledAt),
+            inArray(matches.status, ['running', 'desynced', 'finished']),
+          ),
+        )
+        .orderBy(asc(turns.matchId), asc(turns.number))
+        .limit(limit)
     },
   }
 }
