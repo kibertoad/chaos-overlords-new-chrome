@@ -248,7 +248,7 @@ public sealed class AiFamilyTwelveTurnPlannerTests
         var player = new PlayerId(0);
         AdvanceCoordinatorToTurn(match.Coordinator, 24, match.Players.Count);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 12);
+        match.AiPlanning.SeedFamily(player, 0, 12);
         match.Coordinator.FinishUpkeep();
 
         AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);

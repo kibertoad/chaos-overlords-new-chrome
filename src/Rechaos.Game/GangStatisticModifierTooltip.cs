@@ -11,7 +11,9 @@ namespace Rechaos.Game;
 /// The breakdown is what the next rebuild before planning will write (RULE-GANG-001), built from
 /// the gang's items and sector as they stand. The panel shows the stored value, which resolution
 /// reads until that rebuild; when an item, a move or a hire this turn separates the two, the
-/// total is labelled as the next turn's and the stored value follows as the current one.
+/// total is labelled as the next turn's and the stored value follows as the current one. When
+/// the panel shows the definition's values instead, the breakdown starts from the value shown
+/// and ends with the stored value labelled as the one in play.
 /// </remarks>
 public static class GangStatisticModifierTooltip
 {
@@ -19,27 +21,35 @@ public static class GangStatisticModifierTooltip
     // unusually long name.
     private const int NameColumns = 24;
 
+    /// <param name="panelShowsBase">Whether the panel shows the definition's values.</param>
     public static IReadOnlyList<string> Lines(
         InformationEffect effect,
         MatchState state,
-        MatchGangState gang)
+        MatchGangState gang,
+        bool panelShowsBase = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gang);
         var definition = state.Definitions.Gang(gang.DefinitionId);
         return Lines(effect, definition.Stats,
             EffectiveStatisticsCalculator.ModifiersForGang(state, gang),
-            Value(effect, EffectiveStatisticsCalculator.ForGang(state, gang)));
+            Value(effect, EffectiveStatisticsCalculator.ForGang(state, gang)),
+            panelShowsBase);
     }
 
     /// <param name="current">
-    /// The stored value the panel shows, or null when it is the breakdown's own total.
+    /// The stored value, or null when it is the breakdown's own total.
+    /// </param>
+    /// <param name="panelShowsBase">
+    /// Whether the panel shows the definition's values, so the stored value is not the one on
+    /// screen and is named as the one in play.
     /// </param>
     public static IReadOnlyList<string> Lines(
         InformationEffect effect,
         Statistics baseStats,
         IReadOnlyList<GangStatisticsModifier> modifiers,
-        int? current = null)
+        int? current = null,
+        bool panelShowsBase = false)
     {
         ArgumentNullException.ThrowIfNull(baseStats);
         ArgumentNullException.ThrowIfNull(modifiers);
@@ -55,13 +65,9 @@ public static class GangStatisticModifierTooltip
             var sign = value > 0 ? "+" : string.Empty;
             lines.Add($"{sign}{value} {Name(modifier.Name)} ({SourceLabel(modifier.Source)})");
         }
-        if (!pending)
-        {
-            lines.Add($"TOTAL {total}");
-            return lines;
-        }
-        lines.Add($"NEXT TURN {total}");
-        lines.Add($"NOW {current}");
+        if (pending) lines.Add($"NEXT TURN {total}");
+        if (panelShowsBase) lines.Add($"IN PLAY {current ?? total}");
+        else lines.Add(pending ? $"NOW {current}" : $"TOTAL {total}");
         return lines;
     }
 

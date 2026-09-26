@@ -48,11 +48,16 @@ public static class InformationEffectTooltips
 
     /// <param name="modifiers">
     /// Optional per-statistic breakdown appended to a hovered statistic, used by live gangs to
-    /// name the equipment and influenced sites behind the displayed value.
+    /// name the equipment and completed sites behind the displayed value.
+    /// </param>
+    /// <param name="showsRebuiltValues">
+    /// Whether the panel shows the values stored at the rebuild, whose Combat holds the weapon
+    /// skills, rather than the definition's.
     /// </param>
     public static IReadOnlyList<string> GangAt(
         Point point,
-        Func<InformationEffect, IReadOnlyList<string>>? modifiers = null)
+        Func<InformationEffect, IReadOnlyList<string>>? modifiers = null,
+        bool showsRebuiltValues = false)
     {
         if (Field(SharedPanelLayout.X(94), SharedPanelLayout.Y(92), 90).Contains(point))
             return ["FORCE", "CURRENT HEALTH AND THE BASE FOR MOST ACTION DICE.",
@@ -61,8 +66,10 @@ public static class InformationEffectTooltips
             return ["UPKEEP", "CASH PAID FOR THIS GANG DURING EACH UPKEEP."];
         if (Field(SharedPanelLayout.X(190), SharedPanelLayout.Y(101), 90).Contains(point))
             return ["TECH LEVEL", "LIMITS WHICH ITEMS THIS GANG CAN USE OR RESEARCH."];
+        // RULE-GANG-001: items, and the completed sites of the sector when its player owns it.
         return StatisticAt(point, GangInformationLayout.StatisticY,
-            "GANG STAT; EQUIPMENT AND OWNED LOCAL SITES CAN MODIFY IT.", modifiers);
+            "GANG STAT; ITEMS AND AN OWNED SECTOR'S SITES MODIFY IT.",
+            showsRebuiltValues ? WithWeaponSkillsNote(modifiers) : modifiers);
     }
 
     /// <param name="special">
@@ -86,8 +93,10 @@ public static class InformationEffectTooltips
                 "WHEN THE SECTOR IS REBUILT BEFORE PLANNING."];
         if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(3), 122).Contains(point))
             return ["CASH", "WHEN INFLUENCED, PAID TO THE SITE OWNER EACH UPKEEP."];
+        // RULE-GANG-001: the gangs of the sector's owner, whoever completed the site, from the
+        // rebuild before the next planning phase.
         return StatisticAt(point, SiteInformationLayout.StatisticY,
-            "WHILE INFLUENCED, MODIFIES THE OWNER'S GANGS IN THIS SECTOR.",
+            "ONCE COMPLETED, MODIFIES THE SECTOR OWNER'S GANGS NEXT TURN.",
             leftLabelLeft: SiteInformationLayout.LeftStatisticLabelLeft,
             rightLabelLeft: SiteInformationLayout.RightStatisticLabelLeft);
     }
@@ -172,6 +181,15 @@ public static class InformationEffectTooltips
         return breakdown.Count == 0 ? description : [.. description, .. breakdown];
     }
 
+    // RULE-GANG-001, RULE-COMBAT-001: only the rebuilt Combat holds the weapon skills; the
+    // definition, item and site values the other panels show do not.
+    private static Func<InformationEffect, IReadOnlyList<string>> WithWeaponSkillsNote(
+        Func<InformationEffect, IReadOnlyList<string>>? modifiers) => effect =>
+    {
+        var breakdown = modifiers?.Invoke(effect) ?? [];
+        return effect == InformationEffect.Combat ? ["INCLUDES THE WEAPON SKILLS.", .. breakdown] : breakdown;
+    };
+
     private static Rectangle Field(int x, int y, int width) => new(x, y - 1, width, 9);
 
     private static string Name(InformationEffect effect) => effect switch
@@ -182,8 +200,7 @@ public static class InformationEffectTooltips
 
     private static string Effect(InformationEffect effect) => effect switch
     {
-        // RULE-GANG-001, RULE-COMBAT-001: rebuilt before planning, with the weapon skills inside.
-        InformationEffect.Combat => "ADDS TO FORCE FOR ATTACK DICE; INCLUDES THE WEAPON SKILLS.",
+        InformationEffect.Combat => "ADDS TO FORCE FOR ATTACK DICE.",
         InformationEffect.Defense => "SUBTRACTED FROM AN ENEMY'S ATTACK DICE.",
         InformationEffect.Chaos => "ADDS TO FORCE FOR THE CHAOS ACTION'S DICE.",
         InformationEffect.Control => "ADDS ITS VALUE TO FORCE FOR CONTROL AND THE OWNER'S DEFENSE.",

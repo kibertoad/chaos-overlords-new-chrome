@@ -21,8 +21,8 @@ public sealed class AdvancedAiPlaytestTests
     public void ExpertExpansionImprovesSameSeedPowerCampaignSample()
     {
         var (original, advanced) = Compare(
-            AiDifficulty.CrimeLord, AiTurnPlanner.AdvancedFeature.ExpertExpansion);
-        Report("EXPERT EXPANSION", original, advanced);
+            ScenarioId.Power, AiDifficulty.CrimeLord, AiTurnPlanner.AdvancedFeature.ExpertExpansion);
+        Report("Power", "EXPERT EXPANSION", original, advanced);
 
         Assert.True(advanced.IdleGangTurns < original.IdleGangTurns);
         Assert.True(advanced.ExpansionMoves > original.ExpansionMoves);
@@ -30,21 +30,20 @@ public sealed class AdvancedAiPlaytestTests
     }
 
     [Fact]
-    public void IdleRecoveryImprovesSameSeedPowerCampaignSample()
+    public void IdleRecoveryImprovesSameSeedKillEmAllCampaignSample()
     {
+        // With the ported dispatcher (RULE-AI-002) the Original planner leaves a Power campaign
+        // almost no idle gang-turns to recover; Kill 'Em All leaves enough to measure the feature.
         var (original, advanced) = Compare(
-            AiDifficulty.Criminal, AiTurnPlanner.AdvancedFeature.IdleRecovery);
-        Report("IDLE RECOVERY", original, advanced);
+            ScenarioId.KillEmAll, AiDifficulty.Criminal, AiTurnPlanner.AdvancedFeature.IdleRecovery);
+        Report("Kill 'Em All", "IDLE RECOVERY", original, advanced);
 
         Assert.True(advanced.IdleGangTurns < original.IdleGangTurns);
-        // The ported dispatcher (RULE-AI-002) leaves few idle turns to recover, so the territory
-        // gain is within noise of the original; the sample may lose at most 1% of it.
-        AssertTerritoryImproves(original, advanced,
-            minimumDefendedRetentionPercent: 99, minimumControlledRetentionPercent: 99,
-            minimumFinalRetentionPercent: 99);
+        AssertTerritoryImproves(original, advanced);
     }
 
     private static (CampaignMetrics Original, CampaignMetrics Advanced) Compare(
+        ScenarioId scenario,
         AiDifficulty difficulty,
         AiTurnPlanner.AdvancedFeature feature)
     {
@@ -52,8 +51,8 @@ public sealed class AdvancedAiPlaytestTests
         Parallel.ForEach(Seeds, new ParallelOptions { MaxDegreeOfParallelism = 2 }, seed =>
         {
             samples.Add((
-                Drive(seed, difficulty, AiTurnPlanner.AdvancedFeature.None),
-                Drive(seed, difficulty, feature)));
+                Drive(seed, scenario, difficulty, AiTurnPlanner.AdvancedFeature.None),
+                Drive(seed, scenario, difficulty, feature)));
         });
         return (
             CampaignMetrics.Sum(samples.Select(sample => sample.Original)),
@@ -61,13 +60,14 @@ public sealed class AdvancedAiPlaytestTests
     }
 
     private void Report(
+        string scenario,
         string feature,
         CampaignMetrics original,
         CampaignMetrics advanced)
     {
         _output.WriteLine(
-            "Power {0} A/B ({1} seeds x 15 turns): Original idle={2}, expansion={3}, controlled-turns={4}, final-controlled={5}, undefended-turns={6}, elapsed={7}; Advanced idle={8}, expansion={9}, controlled-turns={10}, final-controlled={11}, undefended-turns={12}, elapsed={13}.",
-            feature, Seeds.Length,
+            "{0} {1} A/B ({2} seeds x 15 turns): Original idle={3}, expansion={4}, controlled-turns={5}, final-controlled={6}, undefended-turns={7}, elapsed={8}; Advanced idle={9}, expansion={10}, controlled-turns={11}, final-controlled={12}, undefended-turns={13}, elapsed={14}.",
+            scenario, feature, Seeds.Length,
             original.IdleGangTurns, original.ExpansionMoves,
             original.ControlledSectorTurns, original.FinalControlledSectors,
             original.UndefendedSectorTurns, original.Elapsed,
@@ -79,14 +79,10 @@ public sealed class AdvancedAiPlaytestTests
     private static void AssertTerritoryImproves(
         CampaignMetrics original,
         CampaignMetrics advanced,
-        int minimumDefendedRetentionPercent = 100,
-        int minimumControlledRetentionPercent = 100,
-        int minimumFinalRetentionPercent = 100)
+        int minimumDefendedRetentionPercent = 100)
     {
-        Assert.True(advanced.ControlledSectorTurns * 100
-            >= original.ControlledSectorTurns * minimumControlledRetentionPercent);
-        Assert.True(advanced.FinalControlledSectors * 100
-            >= original.FinalControlledSectors * minimumFinalRetentionPercent);
+        Assert.True(advanced.ControlledSectorTurns >= original.ControlledSectorTurns);
+        Assert.True(advanced.FinalControlledSectors >= original.FinalControlledSectors);
         var originalDefended = original.ControlledSectorTurns - original.UndefendedSectorTurns;
         var advancedDefended = advanced.ControlledSectorTurns - advanced.UndefendedSectorTurns;
         Assert.True(
@@ -96,6 +92,7 @@ public sealed class AdvancedAiPlaytestTests
 
     private static CampaignMetrics Drive(
         int seed,
+        ScenarioId scenario,
         AiDifficulty difficulty,
         AiTurnPlanner.AdvancedFeature feature)
     {
@@ -107,7 +104,7 @@ public sealed class AdvancedAiPlaytestTests
             new(new PlayerId(1), "CPU TWO", PlayerController.Computer)
         ];
         var state = OriginalMatchFactory.Create(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.FourYears, seed, setups,
+            scenario, GameDuration.FourYears, seed, setups,
             difficulty,
             aiPolicy: feature == AiTurnPlanner.AdvancedFeature.None
                 ? AiPolicyMode.Original
