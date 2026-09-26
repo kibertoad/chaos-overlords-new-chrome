@@ -369,6 +369,50 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         Assert.Equal("not-json", File.ReadAllText(Path() + ".corrupt"));
     }
 
+    /// <summary>A history from a newer build is kept in place and never written over.</summary>
+    /// <remarks>
+    /// This build cannot read that build's seats, and it used to return none and then replace the
+    /// file — and its <c>.bak</c> — at the next save, so a quick look with an older build wiped
+    /// every online seat the newer one held.
+    /// </remarks>
+    [Fact]
+    public void AHistoryFromANewerBuildIsNeitherSetAsideNorOverwritten()
+    {
+        var newer = $$"""{"FormatVersion":{{MultiplayerRecoveryHistory.CurrentFormatVersion + 1}},"Sessions":[{"Future":true}]}""";
+        File.WriteAllText(Path(), newer);
+        File.WriteAllText(Path() + ".bak", newer);
+
+        Assert.Empty(MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.False(MultiplayerRecoveryStore.TrySave(Path(), Recovery(CleanExit: false, Completed: false)));
+
+        Assert.Equal(newer, File.ReadAllText(Path()));
+        Assert.Equal(newer, File.ReadAllText(Path() + ".bak"));
+        Assert.False(File.Exists(Path() + ".corrupt"));
+    }
+
+    /// <summary>An empty or broken primary falls back to the previous generation.</summary>
+    /// <remarks>
+    /// The per-turn stamp is written without an fsync, so a power loss can leave a renamed-in empty
+    /// file; the <c>.bak</c> beside it still holds every seat.
+    /// </remarks>
+    [Theory]
+    [InlineData("")]
+    [InlineData("{\"Sessions\":")]
+    public void AnEmptyOrBrokenHistoryFallsBackToTheBackup(string broken)
+    {
+        var first = Recovery(CleanExit: false, Completed: false);
+        var second = first with { MatchId = "match-2" };
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), first));
+        Assert.True(MultiplayerRecoveryStore.TrySaveAll(Path(), [second, first]));
+        File.WriteAllText(Path(), broken);
+
+        Assert.Equal([first], MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Equal(broken, File.ReadAllText(Path() + ".corrupt"));
+        // The next save keeps the backup it recovered from, since there is no primary to copy.
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), second));
+        Assert.Equal([first], MultiplayerRecoveryStore.LoadAll(Path() + ".bak"));
+    }
+
     /// <summary>
     /// A file that could not be READ is left exactly where it is.
     /// </summary>

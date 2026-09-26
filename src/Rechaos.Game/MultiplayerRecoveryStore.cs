@@ -190,10 +190,9 @@ public static class MultiplayerRecoveryStore
     /// <para>
     /// A file whose CONTENTS this cannot read is MOVED ASIDE rather than left where the next save
     /// will overwrite it. It holds live seats in running matches, and "the parse threw" is not the
-    /// same fact as "there are no seats": a partial write from a build that crashed, a file
-    /// half-synced by a backup tool, or a format from a build newer than this one all arrive here,
-    /// and a player who updates the game again would get their matches back — if the file still
-    /// existed. It is kept beside the original with a <c>.corrupt</c> suffix, and the last good file
+    /// same fact as "there are no seats": a partial write from a build that crashed or a file
+    /// half-synced by a backup tool arrive here, and a hand repair can get the matches back — if
+    /// the file still exists. It is kept beside the original with a <c>.corrupt</c> suffix, and the last good file
     /// this writes is kept as <c>.bak</c>, so both are there for a later build or for a hand repair.
     /// </para>
     /// <para>
@@ -204,34 +203,104 @@ public static class MultiplayerRecoveryStore
     /// <c>.corrupt</c> over a transient lock took a player's live seats off the previous-sessions
     /// screen and out of the only file that knew about them.
     /// </para>
+    /// <para>
+    /// A history written by a build NEWER than this one is neither of those, and is left exactly
+    /// where it is: it is well formed, it holds that build's seats, and the player who goes back to
+    /// that build expects to find them. This build shows no seats from it, and
+    /// <see cref="TrySaveAll"/> refuses to write over it (or over its <c>.bak</c>), so a quick look
+    /// with an older build no longer wipes the newer one's online seats.
+    /// </para>
+    /// <para>
+    /// A primary that is empty or unreadable falls back to the <c>.bak</c> generation. The per-turn
+    /// stamp is written without an fsync, so a power loss can leave a renamed-in but empty file,
+    /// and the previous generation beside it still holds every seat.
+    /// </para>
     /// </remarks>
     public static IReadOnlyList<MultiplayerRecovery> LoadAll(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        if (ReadBytesOrNull(path) is not { } bytes) return [];
+        var primary = Read(path, setAsideWhenCorrupt: true);
+        if (primary.Kind != ReadKind.Corrupt) return primary.Recoveries;
+        // The backup is only read, never set aside: it is the last copy there is.
+        var backup = Read(path + ".bak", setAsideWhenCorrupt: false);
+        return backup.Kind == ReadKind.Read ? backup.Recoveries : [];
+    }
+
+    private enum ReadKind
+    {
+        /// <summary>No file, or one that could not be opened just now.</summary>
+        Absent,
+        Read,
+        /// <summary>A history from a newer build; kept, and not written over.</summary>
+        Newer,
+        Corrupt
+    }
+
+    private readonly record struct ReadResult(ReadKind Kind, IReadOnlyList<MultiplayerRecovery> Recoveries)
+    {
+        public static ReadResult Of(ReadKind kind) => new(kind, []);
+    }
+
+    private static ReadResult Read(string path, bool setAsideWhenCorrupt)
+    {
+        var (kind, bytes) = ReadBytes(path, setAsideWhenCorrupt);
+        if (bytes is null) return ReadResult.Of(kind);
         try
         {
             using var document = JsonDocument.Parse(bytes);
             if (document.RootElement.TryGetProperty("Sessions", out _))
             {
+                if (StoredFormatVersion(document) > MultiplayerRecoveryHistory.CurrentFormatVersion)
+                {
+                    return ReadResult.Of(ReadKind.Newer);
+                }
                 var history = JsonSerializer.Deserialize<MultiplayerRecoveryHistory>(bytes, JsonOptions);
                 if (history is null
-                    || history.FormatVersion < MultiplayerRecoveryHistory.OldestReadableFormatVersion
-                    || history.FormatVersion > MultiplayerRecoveryHistory.CurrentFormatVersion)
+                    || history.FormatVersion < MultiplayerRecoveryHistory.OldestReadableFormatVersion)
                 {
-                    return [];
+                    throw new JsonException("Not a readable recovery history.");
                 }
-                return Keepable(history.Sessions.Select(Revive));
+                return new ReadResult(ReadKind.Read, Keepable(history.Sessions.Select(Revive)));
             }
             // Version 1 contained one bare membership. Reading it here makes the upgrade lossless.
             var recovery = JsonSerializer.Deserialize<MultiplayerRecovery>(bytes, JsonOptions);
-            return Keepable([recovery]);
+            return new ReadResult(ReadKind.Read, Keepable([recovery]));
         }
         catch
         {
             // The bytes are here and they are not a history this build can make sense of.
-            SetAside(path);
-            return [];
+            if (setAsideWhenCorrupt) SetAside(path);
+            return ReadResult.Of(ReadKind.Corrupt);
+        }
+    }
+
+    /// <summary>The history's <c>FormatVersion</c>, or null when it has no numeric one.</summary>
+    private static int? StoredFormatVersion(JsonDocument document) =>
+        document.RootElement.TryGetProperty("FormatVersion", out var version)
+        && version.ValueKind == JsonValueKind.Number
+        && version.TryGetInt32(out var number)
+            ? number
+            : null;
+
+    /// <summary>Whether the file at <paramref name="path"/> is a history from a newer build.</summary>
+    /// <remarks>
+    /// Asked before every save rather than remembered from the load, because the newer build may
+    /// have written the file since. Anything short of a clearly newer history — no file, a lock,
+    /// bytes that do not parse — is not a reason to refuse the save.
+    /// </remarks>
+    private static bool IsNewerHistory(string path)
+    {
+        try
+        {
+            var file = new FileInfo(path);
+            if (!file.Exists || file.Length > MaximumFileBytes) return false;
+            using var document = JsonDocument.Parse(File.ReadAllBytes(path));
+            return document.RootElement.TryGetProperty("Sessions", out _)
+                && StoredFormatVersion(document) > MultiplayerRecoveryHistory.CurrentFormatVersion;
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -243,24 +312,24 @@ public static class MultiplayerRecoveryStore
     /// no file, the file is far too large to be one of these — set aside here, where its size was
     /// measured — or the read itself would not go through, which is retried and then left alone.
     /// </remarks>
-    private static byte[]? ReadBytesOrNull(string path)
+    private static (ReadKind Kind, byte[]? Bytes) ReadBytes(string path, bool setAsideWhenCorrupt)
     {
         for (var attempt = 1; ; attempt++)
         {
             try
             {
                 var file = new FileInfo(path);
-                if (!file.Exists) return null;
+                if (!file.Exists) return (ReadKind.Absent, null);
                 if (file.Length > MaximumFileBytes)
                 {
-                    SetAside(path);
-                    return null;
+                    if (setAsideWhenCorrupt) SetAside(path);
+                    return (ReadKind.Corrupt, null);
                 }
-                return File.ReadAllBytes(path);
+                return (ReadKind.Read, File.ReadAllBytes(path));
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                if (attempt >= ReadAttempts) return null;
+                if (attempt >= ReadAttempts) return (ReadKind.Absent, null);
                 Thread.Sleep(ReadRetryDelay);
             }
         }
@@ -295,7 +364,9 @@ public static class MultiplayerRecoveryStore
     /// <remarks>
     /// <para>
     /// The rename is what makes the file never torn, and it does that whether or not the write was
-    /// flushed: a reader sees either the old file or the new one. <paramref name="durable"/> adds
+    /// flushed: a reader sees either the old file or the new one (or, after a power loss without
+    /// <paramref name="durable"/>, an empty one, which <see cref="LoadAll"/> reads past to the
+    /// <c>.bak</c>). <paramref name="durable"/> adds
     /// the guarantee that the new one survives losing power, and that costs an fsync.
     /// </para>
     /// <para>
@@ -316,6 +387,9 @@ public static class MultiplayerRecoveryStore
         ArgumentNullException.ThrowIfNull(recoveries);
         var sessions = Keepable(recoveries).Select(Persist).ToArray();
         var temporaryPath = path + ".tmp";
+        // A newer build's history is not this build's to replace: neither it nor the .bak copy of
+        // it would survive the write below, and this build could not have read its seats back.
+        if (IsNewerHistory(path)) return false;
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
