@@ -170,6 +170,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-DATA-007](../findings/FND-DATA-007.md) | builds, locations |
 | [FND-DATA-008](../findings/FND-DATA-008.md) | builds, locations |
 | [FND-DATA-009](../findings/FND-DATA-009.md) | builds, locations |
+| [FND-DATA-010](../findings/FND-DATA-010.md) | builds, locations |
 | [FND-DETECT-001](../findings/FND-DETECT-001.md) | builds, locations |
 | [FND-DETECT-002](../findings/FND-DETECT-002.md) | builds, locations |
 | [FND-EQUIP-001](../findings/FND-EQUIP-001.md) | builds, locations |
@@ -2498,6 +2499,7 @@ None.
 |---|---|
 | [FMT-DATA-005](../formats/FMT-DATA-005.md) | body, evidence |
 | [FND-DATA-008](../findings/FND-DATA-008.md) | body |
+| [FND-DATA-010](../findings/FND-DATA-010.md) | body |
 
 ## FND-DATA-006
 
@@ -2534,9 +2536,17 @@ None.
 |---|---|
 | [FMT-DATA-005](../formats/FMT-DATA-005.md) | body, evidence |
 | [FND-DATA-009](../findings/FND-DATA-009.md) | body |
+| [FND-DATA-010](../findings/FND-DATA-010.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 
 ## FND-DATA-009
+
+| Cited by | In |
+|---|---|
+| [FMT-DATA-005](../formats/FMT-DATA-005.md) | body, evidence |
+| [FND-DATA-010](../findings/FND-DATA-010.md) | body |
+
+## FND-DATA-010
 
 | Cited by | In |
 |---|---|
