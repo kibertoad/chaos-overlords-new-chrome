@@ -129,7 +129,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
     }
 
     [Theory]
-    [InlineData(ScenarioId.Siege, 11)]
+    [InlineData(ScenarioId.Eliminate, 11)]
     [InlineData(ScenarioId.Power, 2)]
     public void ThirdConsecutiveMoveChangesToScenarioSpecificFamily(
         ScenarioId scenario,

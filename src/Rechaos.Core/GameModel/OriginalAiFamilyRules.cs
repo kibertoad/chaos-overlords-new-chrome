@@ -36,11 +36,11 @@ internal static class OriginalAiFamilyRules
             {
                 0 => 0, 1 => 1, 2 => 3, 3 => 2, 4 => 6, 5 => 5, 6 => 7, _ => null
             },
-            ScenarioId.Eliminate => hireRole switch
+            ScenarioId.Siege => hireRole switch
             {
                 0 => 0, 1 => 13, 2 => 14, 4 => 6, 5 => 5, 6 => 7, _ => null
             },
-            ScenarioId.Siege => hireRole switch
+            ScenarioId.Eliminate => hireRole switch
             {
                 0 => 10, 1 => 0, 2 => 3, 3 => 11, 4 => 12, 6 => 7, _ => null
             },

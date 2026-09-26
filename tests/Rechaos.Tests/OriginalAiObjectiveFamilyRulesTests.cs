@@ -7,9 +7,9 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
 {
     [Theory]
     [InlineData(ScenarioId.BigMan, 13, 12)]
-    [InlineData(ScenarioId.Eliminate, 13, 13)]
+    [InlineData(ScenarioId.Siege, 13, 13)]
     [InlineData(ScenarioId.BigMan, 14, 14)]
-    [InlineData(ScenarioId.Eliminate, 14, 15)]
+    [InlineData(ScenarioId.Siege, 14, 15)]
     public void FamiliesMapToTheirExactObjectiveModes(
         ScenarioId scenario,
         int family,
@@ -21,9 +21,9 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
     [InlineData(ScenarioId.BigMan, 27, true)]
     [InlineData(ScenarioId.BigMan, 36, true)]
     [InlineData(ScenarioId.BigMan, 9, false)]
-    [InlineData(ScenarioId.Eliminate, 9, true)]
-    [InlineData(ScenarioId.Eliminate, 54, true)]
-    [InlineData(ScenarioId.Eliminate, 27, false)]
+    [InlineData(ScenarioId.Siege, 9, true)]
+    [InlineData(ScenarioId.Siege, 54, true)]
+    [InlineData(ScenarioId.Siege, 27, false)]
     [InlineData(ScenarioId.Power, 27, false)]
     public void SelectorOneFRecognizesOnlyScenarioObjectives(
         ScenarioId scenario,
@@ -38,7 +38,7 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
         Assert.True(OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
             ScenarioId.BigMan, 0, GangAction.Attack));
         Assert.True(OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
-            ScenarioId.Eliminate, 0, GangAction.None));
+            ScenarioId.Siege, 0, GangAction.None));
         Assert.False(OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
             ScenarioId.BigMan, 0, GangAction.Equip));
         Assert.False(OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
@@ -47,7 +47,7 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
 
     [Theory]
     [InlineData(ScenarioId.BigMan, 27, GangAction.None, GangAction.Control, 9, -3, true)]
-    [InlineData(ScenarioId.Eliminate, 9, GangAction.None, GangAction.Control, 9, -3, true)]
+    [InlineData(ScenarioId.Siege, 9, GangAction.None, GangAction.Control, 9, -3, true)]
     [InlineData(ScenarioId.BigMan, 0, GangAction.Equip, GangAction.Control, 9, -3, true)]
     [InlineData(ScenarioId.BigMan, 0, GangAction.None, GangAction.Control, 9, -3, false)]
     [InlineData(ScenarioId.BigMan, 27, GangAction.None, GangAction.Attack, 9, -3, false)]
@@ -67,7 +67,7 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
 
     [Theory]
     [InlineData(ScenarioId.BigMan, 27, true, false, 9, -3, true)]
-    [InlineData(ScenarioId.Eliminate, 54, true, false, 9, -3, true)]
+    [InlineData(ScenarioId.Siege, 54, true, false, 9, -3, true)]
     [InlineData(ScenarioId.BigMan, 0, true, false, 9, -3, false)]
     [InlineData(ScenarioId.BigMan, 27, false, false, 9, -3, false)]
     [InlineData(ScenarioId.BigMan, 27, true, true, 9, -3, false)]

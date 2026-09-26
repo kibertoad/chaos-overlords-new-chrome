@@ -15,8 +15,8 @@ public sealed class OriginalAiFamilyRulesTests
         { ScenarioId.Dominance,   [0, 0, 5, 2, 6, 3, 7] },
         { ScenarioId.KillEmAll,   [0, 1, 3, 2, 6, 5, 7] },
         { ScenarioId.Big40,       [0, 1, 3, 2, 6, 5, 7] },
-        { ScenarioId.Eliminate,   [0, 13, 14, Preserved, 6, 5, 7] },
-        { ScenarioId.Siege,       [10, 0, 3, 11, 12, Preserved, 7] },
+        { ScenarioId.Siege,   [0, 13, 14, Preserved, 6, 5, 7] },
+        { ScenarioId.Eliminate,       [10, 0, 3, 11, 12, Preserved, 7] },
         { ScenarioId.BigMan,      [0, 13, 14, 3, Preserved, Preserved, Preserved] },
         { ScenarioId.Armageddon,  [0, 1, 3, 2, 6, 3, Preserved] }
     };

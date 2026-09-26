@@ -405,7 +405,7 @@ public sealed class AiTurnPlannerTests
 
     [Theory]
     [InlineData(ScenarioId.BigMan, 1, 13, 0, 9)]
-    [InlineData(ScenarioId.Eliminate, 2, 14, 20, 12)]
+    [InlineData(ScenarioId.Siege, 2, 14, 20, 12)]
     public void ObjectiveFamilyTerminalMoveIsPreparedAndResolved(
         ScenarioId scenario,
         int hireRole,
@@ -490,7 +490,7 @@ public sealed class AiTurnPlannerTests
 
     [Theory]
     [InlineData(ScenarioId.BigMan, 27)]
-    [InlineData(ScenarioId.Eliminate, 9)]
+    [InlineData(ScenarioId.Siege, 9)]
     public void FamilyThirteenOwnedObjectiveWithoutVisibleOpponentHealsAndReplays(
         ScenarioId scenario,
         int objectiveSector)
@@ -665,17 +665,19 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
-    public void EliminateMovementPrefersRecoveredHeadquartersCandidateSet()
+    public void EliminateMovementGivesHeadquartersCandidatesNoObjectiveBonus()
     {
-        var match = CreateMatch();
+        // The six headquarters sectors are scenario 6's (Siege) objective list
+        // (RULE-AI-031); Eliminate (scenario 7) has no objective sectors.
+        var match = CreateMatch(scenario: ScenarioId.Eliminate);
         const int ordinarySector = 10;
 
         foreach (var headquarters in OriginalCityGenerator.HeadquartersCandidates)
-            Assert.True(
+            Assert.Equal(
                 AiTurnPlanner.DestinationValue(
-                    match, new PlayerId(0), headquarters, ScenarioId.Eliminate)
-                > AiTurnPlanner.DestinationValue(
-                    match, new PlayerId(0), ordinarySector, ScenarioId.Eliminate));
+                    match, new PlayerId(0), ordinarySector, ScenarioId.Eliminate),
+                AiTurnPlanner.DestinationValue(
+                    match, new PlayerId(0), headquarters, ScenarioId.Eliminate));
     }
 
     [Fact]

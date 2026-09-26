@@ -140,10 +140,11 @@ public sealed class PlayerRankingUiTests
         Assert.Equal("  TOTAL 490 / 10 = SCORE", lines[7]);
     }
 
+    // RULE-OBJECTIVE-002: Eliminate (7) scores the inactive seats, Siege (6) the headquarters held.
     [Fact]
-    public void SiegeTooltipCountsTheMatchsSiegeSectorsAndEmptySeats()
+    public void EliminateTooltipCountsTheEmptySeats()
     {
-        var state = CreateMatch(ScenarioId.Siege, [0, 0, 0, 0], eliminatedPlayer: 3);
+        var state = CreateMatch(ScenarioId.Eliminate, [0, 0, 0, 0], eliminatedPlayer: 3);
         var entries = PlayerRankingPresentation.Project(state);
 
         var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
@@ -151,7 +152,18 @@ public sealed class PlayerRankingUiTests
         Assert.Equal("SCORE: 3", lines[3]);
         Assert.Equal("  6 SEATS - 3 ACTIVE OVERLORDS", lines[4]);
         Assert.Equal("  SHARED BY EVERY SURVIVING OVERLORD", lines[5]);
-        Assert.Equal("  SIEGE SECTORS HELD: 0 OF 6 (GOAL)", lines[6]);
+    }
+
+    [Fact]
+    public void SiegeTooltipCountsTheHeadquartersHeld()
+    {
+        var state = CreateMatch(ScenarioId.Siege, [0, 0]);
+        var entries = PlayerRankingPresentation.Project(state);
+
+        var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
+
+        Assert.Equal("SCORE: 0", lines[3]);
+        Assert.Equal("  HQ SECTORS HELD: 0 OF 6 (GOAL)", lines[4]);
     }
 
     [Fact]

@@ -57,7 +57,7 @@ public sealed class OriginalAiFamilyThreeRulesTests
             targetForce, targetCombat, targetDefense));
 
     [Theory]
-    [InlineData(ScenarioId.Siege, 11)]
+    [InlineData(ScenarioId.Eliminate, 11)]
     [InlineData(ScenarioId.Greed, 2)]
     public void ThreeMovesTransitionToScenarioSpecificFamily(
         ScenarioId scenario,
@@ -69,11 +69,11 @@ public sealed class OriginalAiFamilyThreeRulesTests
     public void ThreeMoveTransitionRequiresAllThreeMoveActions()
     {
         Assert.Null(OriginalAiFamilyThreeRules.ThreeMoveTransitionFamily(
-            ScenarioId.Siege, GangAction.Control, GangAction.Move, GangAction.Move));
+            ScenarioId.Eliminate, GangAction.Control, GangAction.Move, GangAction.Move));
         Assert.Null(OriginalAiFamilyThreeRules.ThreeMoveTransitionFamily(
-            ScenarioId.Siege, GangAction.Move, GangAction.Heal, GangAction.Move));
+            ScenarioId.Eliminate, GangAction.Move, GangAction.Heal, GangAction.Move));
         Assert.Null(OriginalAiFamilyThreeRules.ThreeMoveTransitionFamily(
-            ScenarioId.Siege, GangAction.Move, GangAction.Move, GangAction.None));
+            ScenarioId.Eliminate, GangAction.Move, GangAction.Move, GangAction.None));
     }
 
     [Theory]

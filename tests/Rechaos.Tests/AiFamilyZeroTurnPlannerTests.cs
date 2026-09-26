@@ -171,7 +171,7 @@ public sealed class AiFamilyZeroTurnPlannerTests
 
     [Theory]
     [InlineData(ScenarioId.Power, GangAction.Move, GangAction.Move, 2)]
-    [InlineData(ScenarioId.Siege, GangAction.Move, GangAction.Move, 11)]
+    [InlineData(ScenarioId.Eliminate, GangAction.Move, GangAction.Move, 11)]
     [InlineData(ScenarioId.Power, GangAction.Move, GangAction.Attack, null)]
     [InlineData(ScenarioId.Power, GangAction.Hide, GangAction.Move, null)]
     public void FamilyTransitionUsesPlannedAndOlderActions(
