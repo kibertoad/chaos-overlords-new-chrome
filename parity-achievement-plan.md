@@ -57,13 +57,9 @@ steps change.
     its computer players hire family-6 gangs at all.
   Run the paired simulations of the 2026-09-26 decision again after the fix, with the harness
   kept this time, to see whether the hunter guard then matters.
-- Upgrades follow FND-AI-055: the weapon choice starts from the equipped weapon, family 10's
-  armor is chosen by Stealth, families 11 and 12 compare Detect and families 13 and 14 compare
-  Control.
 - Families 1, 2, 6, 11, 13 and 14: the details each row lists (family 1's `needs_family`
   write with the Greed Terminate, the owner queries, the end marker 100 of the guard list, the
   five contested draws and the unset Support threshold of FND-AI-062 and BUG-AI-006).
-- Sector selector mode 4 (FND-AI-056) against the rebuild's version.
 
 Both AI policies are affected; DEV-AI-003's Advanced AI keeps the original planner's commands.
 

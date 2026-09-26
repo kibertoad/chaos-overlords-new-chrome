@@ -82,7 +82,6 @@ public static partial class AiTurnPlanner
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random,
             completedSiteScore: sectorId =>
                 OriginalAiFamilyTenRules.CompletedStealthScore(state, sectorId));

@@ -228,8 +228,8 @@ explicit M6 gap rather than an unmeasured claim.
    Control; odd parity or no visible opponent selects Control directly. The
    owned-objective opponent path uses the full visible pool and up to five
    draws without the turn-parity gate. With no visible opponent and no Heal,
-   both families try weapon, armor, and maximum-Chaos miscellaneous upgrades
-   in order, then Influence the unfinished local site with the highest positive
+   both families try weapon, armor, and maximum-Control miscellaneous upgrades
+   (selector 0x75, FND-AI-055) in order, then Influence the unfinished local site with the highest positive
    Support. Exact item/site targets and the objective handlers' fixed two-turn
    weapon/armor cooldown are live and replay-safe. These observations complete
    the family-13/14 command handlers; neither contains a Research assignment.
@@ -340,8 +340,9 @@ explicit M6 gap rather than an unmeasured claim.
    territory at weight 10, moves after a previous Control, and otherwise
    Controls. Exact actions, targets, cooldowns, and RNG consumption are live
    and replay-recorded.
-   Family 10's complete recovered handler prioritizes a strict-Defense armor
-   upgrade with a literal two-turn cooldown, then a special researched Smoke
+   Family 10's complete recovered handler prioritizes a strict-Stealth armor
+   upgrade (selector 0x72, FND-AI-055: from the equipped armor or item 1, with
+   no cost test) with a literal two-turn cooldown, then a special researched Smoke
    Bombs Equip, then Heal below Force 10 only with no visible local opponent.
    Otherwise it probes mode 9 for a strictly stronger sum of completed positive
    site Stealth and calls mode 9 again for the Move destination; without an
@@ -349,8 +350,8 @@ explicit M6 gap rather than an unmeasured claim.
    Chaos, in which case it Hides. The intentional second selector call and its
    independent tie RNG are replay-recorded.
    Family 12's complete handler branches first on current-sector visibility.
-   With no visible opponent it prefers weapon, armor, and maximum-Chaos
-   miscellaneous upgrades, using raw-cost weapon/armor cooldowns, then Heals
+   With no visible opponent it prefers weapon, armor, and maximum-Detect
+   miscellaneous upgrades (selector 0x74, FND-AI-055), using raw-cost weapon/armor cooldowns, then Heals
    below Force 10 at effective Heal `-3` or better, and otherwise uses its
    encoded-current-sector zero-maximum random Move. With visible opponents it
    makes up to five bounded target draws, preserves the human-pool/full-pool

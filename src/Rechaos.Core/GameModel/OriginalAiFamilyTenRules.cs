@@ -11,6 +11,10 @@ internal static class OriginalAiFamilyTenRules
     public const short SmokeBombItemId = 44;
     private const int UnequippedArmorBaselineItem = 1;
 
+    /// <summary>
+    /// Selector 0x72 (FND-AI-055): from the equipped armor, or item 1, the researched armor within
+    /// the gang's Tech Level with the most Stealth, with no cost test.
+    /// </summary>
     public static int? SelectArmorUpgrade(
         MatchState state,
         MatchPlayerState player,
@@ -23,29 +27,11 @@ internal static class OriginalAiFamilyTenRules
             || gang.Owner != player.Id
             || !player.Gangs.Contains(gang))
             throw new ArgumentException("Gang and player must belong to the match.");
-        if (state.Definitions.Items.Count < 64)
-            throw new InvalidOperationException(
-                "Original family-10 armor selection requires the 64-item table.");
-
-        var selected = gang.ArmorItemId is { } equipped
-            ? checked((int)equipped)
-            : UnequippedArmorBaselineItem;
-        var gangTech = state.Definitions.Gang(gang.DefinitionId).TechLevel;
-        for (var index = 0; index < 64; index++)
-        {
-            var item = state.Definitions.Items[index];
-            if (item.Type != 3
-                || !player.ResearchedItems.Contains(checked((short)index))
-                || item.TechLevel > gangTech
-                || item.Stats.Defense <= state.Definitions.Items[selected].Stats.Defense)
-                continue;
-            selected = index;
-        }
-
-        return selected == UnequippedArmorBaselineItem
-            || selected == gang.ArmorItemId
-                ? null
-                : selected;
+        return OriginalAiEquipmentRules.SelectUpgradeOfType(
+            state, player, gang,
+            OriginalAiEquipmentRules.ArmorItemType, gang.ArmorItemId, UnequippedArmorBaselineItem,
+            item => item.Stats.Stealth,
+            _ => true);
     }
 
     public static bool CanEquipArmor(int cooldown, int itemCost, int cash)

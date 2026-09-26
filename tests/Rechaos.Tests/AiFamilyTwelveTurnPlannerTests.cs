@@ -72,12 +72,19 @@ public sealed class AiFamilyTwelveTurnPlannerTests
             match.AiPlanning.ArmorCooldown(player, 0));
     }
 
+    // RULE-AI-005, FND-AI-055: family 12 compares Detect (selector 0x74).
     [Fact]
-    public void MiscellaneousChaosUpgradeFollowsUnavailableEquipmentSlots()
+    public void MiscellaneousDetectUpgradeFollowsUnavailableEquipmentSlots()
     {
         var data = BundledOriginalData.Load();
+        const short attacker = 0;
+        var tech = data.Gang(attacker).TechLevel;
+        var detectItem = checked((short)Enumerable.Range(0, 64).First(id =>
+            data.Items[id].Type == 4
+            && data.Items[id].TechLevel <= tech
+            && data.Items[id].Stats.Detect > data.Items[0].Stats.Detect));
         var match = CreateMatch(data, cash: 500, force: 10,
-            researched: [40], attackerDefinitionId: 5);
+            researched: [detectItem], attackerDefinitionId: attacker);
         var player = new PlayerId(0);
         BeginFamilyTwelveTurn(match, player);
         match.FinishUpkeep();
@@ -86,7 +93,7 @@ public sealed class AiFamilyTwelveTurnPlannerTests
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Equip, command.Action);
-        Assert.Equal(CommandTarget.Item(40), command.Target);
+        Assert.Equal(CommandTarget.Item(detectItem), command.Target);
         Assert.Equal(0, match.AiPlanning.WeaponCooldown(player, 0));
         Assert.Equal(0, match.AiPlanning.ArmorCooldown(player, 0));
     }

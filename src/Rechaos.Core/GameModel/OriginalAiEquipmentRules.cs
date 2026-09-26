@@ -3,13 +3,17 @@ using Rechaos.Core.Assets;
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Equipment-choice rules recovered from selectors 0x61, 0x64, 0x6c, 0x74, and 0x75.
+/// Equipment-choice rules recovered from selectors 0x61, 0x64, 0x6c, 0x74 and 0x75 (FND-AI-055).
+/// Family 10's Stealth armor choice (selector 0x72) is in OriginalAiFamilyTenRules.
 /// </summary>
 internal static class OriginalAiEquipmentRules
 {
     private const int UnequippedWeaponBaselineItem = 24;
     private const int UnequippedArmorBaselineItem = 0;
     private const int UnequippedMiscellaneousBaselineItem = 0;
+    private const int OriginalItemCount = 64;
+    internal const int ArmorItemType = 3;
+    private const int MiscellaneousItemType = 4;
 
     internal readonly record struct Upgrade(short ItemId, EquipmentSlot Slot);
 
@@ -110,7 +114,8 @@ internal static class OriginalAiEquipmentRules
             && armor is { } armorId)
             return new Upgrade(checked((short)armorId), EquipmentSlot.Armor);
 
-        var miscellaneous = SelectMiscellaneousChaosUpgrade(state, player, gang);
+        // FND-AI-055: families 13 and 14 compare Control (selector 0x75).
+        var miscellaneous = SelectMiscellaneousControlUpgrade(state, player, gang);
         return miscellaneous is { } miscellaneousId
             && state.Definitions.Items[miscellaneousId].Cost <= player.Cash
                 ? new Upgrade(checked((short)miscellaneousId), EquipmentSlot.Miscellaneous)
@@ -213,35 +218,21 @@ internal static class OriginalAiEquipmentRules
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(gang);
         ValidateGang(state, player, gang);
-        if (state.Definitions.Items.Count < 64)
-            throw new InvalidOperationException("Original AI armor selection requires the 64-item table.");
-
-        var selected = gang.ArmorItemId is { } equipped
-            ? checked((int)equipped)
-            : UnequippedArmorBaselineItem;
-        var gangTech = state.Definitions.Gang(gang.DefinitionId).TechLevel;
-        for (var index = 0; index < 64; index++)
-        {
-            var item = state.Definitions.Items[index];
-            if (item.Type != 3
-                || !player.ResearchedItems.Contains(checked((short)index))
-                || item.TechLevel > gangTech
-                || item.Stats.Defense <= state.Definitions.Items[selected].Stats.Defense
-                || item.Cost >= availableCash) continue;
-            selected = index;
-        }
-
-        return selected == UnequippedArmorBaselineItem || selected == gang.ArmorItemId
-            ? null
-            : selected;
+        return SelectUpgradeOfType(
+            state, player, gang,
+            ArmorItemType, gang.ArmorItemId, UnequippedArmorBaselineItem,
+            item => item.Stats.Defense,
+            item => item.Cost < availableCash);
     }
 
-    public static int? SelectMiscellaneousChaosUpgrade(
+    /// <summary>Selector 0x75: the miscellaneous item with the most Control (FND-AI-055).</summary>
+    public static int? SelectMiscellaneousControlUpgrade(
         MatchState state,
         MatchPlayerState player,
         MatchGangState gang) =>
-        SelectMiscellaneousUpgrade(state, player, gang, item => item.Stats.Chaos);
+        SelectMiscellaneousUpgrade(state, player, gang, item => item.Stats.Control);
 
+    /// <summary>Selector 0x74: the miscellaneous item with the most Detect (FND-AI-055).</summary>
     public static int? SelectMiscellaneousDetectUpgrade(
         MatchState state,
         MatchPlayerState player,
@@ -252,34 +243,57 @@ internal static class OriginalAiEquipmentRules
         MatchState state,
         MatchPlayerState player,
         MatchGangState gang,
-        Func<ItemDefinition, short> score)
+        Func<ItemDefinition, int> score)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(gang);
-        ArgumentNullException.ThrowIfNull(score);
         ValidateGang(state, player, gang);
-        if (state.Definitions.Items.Count < 64)
-            throw new InvalidOperationException("Original AI miscellaneous selection requires the 64-item table.");
+        return SelectUpgradeOfType(
+            state, player, gang,
+            MiscellaneousItemType, gang.MiscellaneousItemId, UnequippedMiscellaneousBaselineItem,
+            score,
+            _ => true);
+    }
 
-        var selected = gang.MiscellaneousItemId is { } equipped
-            ? checked((int)equipped)
-            : UnequippedMiscellaneousBaselineItem;
+    /// <summary>
+    /// The loop shared by the armor and miscellaneous selectors 0x64, 0x72, 0x74 and 0x75
+    /// (FND-AI-055): from the equipped item, or the baseline item, each of the 64 items of the given
+    /// type that the player has researched, that is within the gang's Tech Level and that passes
+    /// the selector's cost test replaces the choice when its statistic is strictly greater. The
+    /// choice is dropped when it is still the baseline or the equipped item.
+    /// </summary>
+    internal static int? SelectUpgradeOfType(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int itemType,
+        short? equippedItemId,
+        int baselineItem,
+        Func<ItemDefinition, int> score,
+        Func<ItemDefinition, bool> passesCostTest)
+    {
+        if (state.Definitions.Items.Count < OriginalItemCount)
+            throw new InvalidOperationException("Original AI equipment selection requires the 64-item table.");
+
+        var selected = equippedItemId is { } equipped ? checked((int)equipped) : baselineItem;
+        var selectedScore = score(state.Definitions.Items[selected]);
         var gangTech = state.Definitions.Gang(gang.DefinitionId).TechLevel;
-        for (var index = 0; index < 64; index++)
+        for (var index = 0; index < OriginalItemCount; index++)
         {
             var item = state.Definitions.Items[index];
-            if (item.Type != 4
+            if (item.Type != itemType
                 || !player.ResearchedItems.Contains(checked((short)index))
                 || item.TechLevel > gangTech
-                || score(item) <= score(state.Definitions.Items[selected])) continue;
+                || score(item) <= selectedScore
+                || !passesCostTest(item)) continue;
             selected = index;
+            selectedScore = score(item);
         }
 
-        return selected == UnequippedMiscellaneousBaselineItem
-            || selected == gang.MiscellaneousItemId
-                ? null
-                : selected;
+        return selected == baselineItem || selected == equippedItemId
+            ? null
+            : selected;
     }
 
     public static bool NeedsFamilyOneEquipment(
