@@ -38,6 +38,12 @@ public sealed class DeterministicRandom
     public static int SeedFromTimerMilliseconds(uint timerMilliseconds) =>
         checked((int)(timerMilliseconds & ushort.MaxValue));
 
+    /// <summary>
+    /// RULE-RNG-001: moves the generator to another point of the run's one sequence, keeping the
+    /// count of draws this match has made.
+    /// </summary>
+    internal void Continue(uint state) => _state = state;
+
     public int NextRaw()
     {
         _state = unchecked(_state * Multiplier + Addend);

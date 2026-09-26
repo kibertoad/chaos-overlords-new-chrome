@@ -492,9 +492,8 @@ public sealed partial class ChaosGame
             return false;
         }
         var turn = restored ?? SpeculativeTurn.For(authoritative, _definitions, _session.Slot);
-        _actions = new MatchActions(turn);
+        ReplaceMatch(turn.State, new MatchActions(turn));
         _submittedPlanning = null;
-        _state = turn.State;
         if (authoritative.Coordinator.Turn != _online.PlanningTurn) SetAsideSealedTurnDeadline();
         _online.PlanningTurn = authoritative.Coordinator.Turn;
         _online.Stage = submission?.Ready == true
@@ -561,7 +560,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ConcludeOnlineMatch(MatchState final)
     {
-        _state = final;
+        ReplaceMatchState(final);
         _online.ConcludeMatch();
         CloseOnlinePlanning();
         ResetTransientMatchUi();
@@ -637,7 +636,7 @@ public sealed partial class ChaosGame
         {
             CloseOnlinePlanning();
             ResetTransientMatchUi();
-            _state = null;
+            ClearMatchState();
         }
         Forget(_session?.StopAsync(), "multiplayer.session.stop.failed");
         Forget(_lobby?.StopAsync(), "multiplayer.lobby.stop.failed");

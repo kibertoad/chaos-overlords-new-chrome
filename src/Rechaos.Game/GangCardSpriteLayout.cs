@@ -5,6 +5,9 @@ namespace Rechaos.Game;
 
 public static partial class OriginalSpriteLayout
 {
+    /// <summary>SCR-UI-004, FND-UI-018: the group order strip.</summary>
+    public static Rectangle GroupOrderStrip => new(190, 425, 152, 16);
+
     private const int GangCardSourceLeft = 162;
     private const int GangCardSourceTop = 15;
     private const int GangCardWidth = 74;

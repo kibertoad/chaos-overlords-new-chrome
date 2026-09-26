@@ -428,6 +428,12 @@ public sealed partial class MatchState
     public IReadOnlyList<MatchSectorState> Sectors { get; }
     public TurnCoordinator Coordinator { get; }
     public DeterministicRandom Random { get; }
+
+    /// <summary>
+    /// RULE-RNG-001: the original never reseeds, so a match loaded from a save draws on from
+    /// wherever the run's sequence stands, and the generator state in the save is not used.
+    /// </summary>
+    public void ContinueRandomStream(uint state) => Random.Continue(state);
     public TurnCommandQueue Commands { get; }
     public AiStrategicState AiStrategy { get; }
     public AiPlanningState AiPlanning { get; }

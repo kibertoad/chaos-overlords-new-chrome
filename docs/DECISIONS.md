@@ -260,11 +260,11 @@ the panel came from.
 it a cue that the original separated in time now starts in the same frame and
 cuts off the one before it. This is accepted rather than covered with delays or
 with overlapping voices, which would add behavior the original never had.
-Only the Slide Panels-gated cues are affected:
-
-- a panel-to-panel change plays slot 1 and then slot 0, and the slot-1 close cue
-  is not heard;
-- confirming the idle-gang warning plays slot 1 and then the turn-start slot 9.
+Only the Slide Panels-gated cues are affected: a panel-to-panel change plays slot 1
+and then slot 0, and the slot-1 close cue is not heard. Confirming the idle-gang
+warning used to play slot 1 and then the turn-start slot 9; slot 9 now plays only
+in an online match, when the server seals the turn (RULE-AUDIO-006), so nothing
+follows slot 1 on confirm.
 
 With Slide Panels off, the original plays neither slot 0 nor slot 1, and the
 recreation matches it exactly.

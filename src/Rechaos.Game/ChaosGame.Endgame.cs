@@ -180,8 +180,7 @@ public sealed partial class ChaosGame
         }
         ResetTransientMatchUi();
         StopPlanningTimer();
-        _state = null;
-        _actions = null;
+        ClearMatch();
         _screens.Show(ClientScreen.Title);
     }
 }

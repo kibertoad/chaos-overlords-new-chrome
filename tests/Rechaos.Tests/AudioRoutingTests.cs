@@ -31,15 +31,11 @@ public sealed class AudioRoutingTests
         Assert.Equal(GeneralSoundSlot.IncomingMessageAlert,
             AudioRouting.IncomingMessageSound(hasUnread: true));
         Assert.Null(AudioRouting.IncomingMessageSound(hasUnread: false));
-        Assert.Equal(GeneralSoundSlot.IncomingMessageAlert,
-            AudioRouting.OnlineTurnReadySound());
         Assert.Equal("SND00208.wav",
             AudioRouting.GeneralSoundFile(GeneralSoundSlot.TurnStartCue));
-        Assert.Equal(GeneralSoundSlot.TurnStartCue,
-            AudioRouting.TurnStartSound(1, 2, matchOver: false, humanPlaying: true));
-        Assert.Null(AudioRouting.TurnStartSound(2, 2, matchOver: false, humanPlaying: true));
-        Assert.Null(AudioRouting.TurnStartSound(1, 2, matchOver: true, humanPlaying: true));
-        Assert.Null(AudioRouting.TurnStartSound(1, 2, matchOver: false, humanPlaying: false));
+        // RULE-AUDIO-006: only a network game plays the turn-start cue.
+        Assert.Equal(GeneralSoundSlot.TurnStartCue, AudioRouting.TurnStartSound(networkGame: true));
+        Assert.Null(AudioRouting.TurnStartSound(networkGame: false));
         Assert.Throws<ArgumentOutOfRangeException>(() => AudioRouting.GeneralSoundFile(5));
         Assert.Equal(GeneralSoundSlot.AcceptedSelection,
             AudioRouting.PlayerCountResultSound(changed: true, pointerButton: false));

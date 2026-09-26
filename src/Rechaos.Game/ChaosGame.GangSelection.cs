@@ -13,6 +13,12 @@ public sealed partial class ChaosGame
     private bool _bulkCommand;
 
     /// <summary>
+    /// Whether that selection is the sector's gangs, picked by the group order strip, which lists
+    /// the original's group menus.
+    /// </summary>
+    private bool _groupCommand;
+
+    /// <summary>
     /// Whether the ctrl-picked selection survives the screen now showing, which
     /// <see cref="GangSelectionScreens"/> decides from the panels standing open.
     /// </summary>
@@ -46,12 +52,16 @@ public sealed partial class ChaosGame
     /// Puts one order to every picked gang, keeping the gangs the rules allow and leaving the
     /// rest as they were, and reports how much of the selection took it.
     /// </summary>
+    /// <param name="group">Whether the selection is a group order's, checked against the group
+    /// menus' allowlist rather than the ctrl-pick one.</param>
     /// <returns>Whether any gang took the order.</returns>
-    private bool ApplyBulkCommand(PlayerId player, BulkCommandIntent intent, string rejection)
+    private bool ApplyBulkCommand(
+        PlayerId player, BulkCommandIntent intent, string rejection, bool group = false)
     {
         if (_state is null || _actions is null) return false;
         var selected = _gangSelection.Count;
-        var plan = BulkGangCommands.Plan(_state, player, _gangSelection.Gangs, intent);
+        var plan = BulkGangCommands.Plan(
+            _state, player, _gangSelection.Gangs, intent, group);
         var ordered = 0;
         foreach (var command in plan.Commands)
             if (_actions.Submit(command).Accepted) ordered++;

@@ -35,6 +35,27 @@ public sealed partial class ChaosGame
         ShowCommandOverlay(repeat, ClientScreen.Sector, bulk: true);
     }
 
+    /// <summary>
+    /// RULE-TURN-005, SCR-UI-004: the group order strip gives one order to every one of the
+    /// player's gangs in the sector, hiding or not, from the original's group menus.
+    /// </summary>
+    private void OpenGroupCommands(MatchState state, PlayerId playerId, bool repeat)
+    {
+        if (!CanOpenCommands(out _)) return;
+        _gangSelection.Clear();
+        foreach (var gang in GroupOrderGangs(state, playerId))
+            _gangSelection.Toggle(gang.Id, gang.SectorId);
+        _commandOptions = BulkGangCommands.Options(
+            state, playerId, _gangSelection.Gangs, repeat, group: true);
+        ShowCommandOverlay(repeat, ClientScreen.Sector, bulk: true, group: true);
+    }
+
+    /// <summary>FND-TURN-009: every one of the player's gangs in the sector, in roster order.</summary>
+    private IReadOnlyList<MatchGangState> GroupOrderGangs(MatchState state, PlayerId playerId) =>
+        state.FindPlayer(playerId)!.Gangs
+            .Where(gang => gang.IsActive && gang.SectorId == _cursor)
+            .ToArray();
+
     private bool CanOpenCommands(out PlayerId playerId)
     {
         if (_state is not null && _state.Coordinator.Phase == TurnPhase.Command
@@ -48,7 +69,8 @@ public sealed partial class ChaosGame
         return false;
     }
 
-    private void ShowCommandOverlay(bool repeat, ClientScreen returnScreen, bool bulk)
+    private void ShowCommandOverlay(
+        bool repeat, ClientScreen returnScreen, bool bulk, bool group = false)
     {
         _commandCursor = 0;
         _commandTargetOptions = [];
@@ -56,14 +78,17 @@ public sealed partial class ChaosGame
         _choosingCommandTarget = false;
         _commandRepeats = repeat;
         _bulkCommand = bulk;
+        _groupCommand = group;
         _commandReturnScreen = returnScreen;
         _screens.Show(ClientScreen.Commands);
     }
 
     /// <summary>The orders the overlay lists, which a bulk order shortens to its allowlist.</summary>
-    private IReadOnlyList<GangAction> CommandOverlayActions => _bulkCommand
-        ? BulkGangCommands.ActionsFor(_commandRepeats)
-        : CommandOverlayLayout.ActionsFor(_commandRepeats);
+    private IReadOnlyList<GangAction> CommandOverlayActions => _groupCommand
+        ? BulkGangCommands.GroupActionsFor(_commandRepeats)
+        : _bulkCommand
+            ? BulkGangCommands.ActionsFor(_commandRepeats)
+            : CommandOverlayLayout.ActionsFor(_commandRepeats);
 
     /// <summary>
     /// Feeds the hovered action row to the dwell tracker so the command overlay can explain
@@ -290,18 +315,44 @@ public sealed partial class ChaosGame
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
         var intent = new BulkCommandIntent(action, target, _commandRepeats);
-        if (ApplyBulkCommand(playerId, intent, BulkGangCommands.Rejection(action)))
+        if (ApplyBulkCommand(playerId, intent, BulkGangCommands.Rejection(action), _groupCommand))
             _screens.Show(_commandReturnScreen);
     }
 
     private void CancelSelectedCommand()
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
+        if (_groupCommand)
+        {
+            CancelGroupCommands(playerId);
+            return;
+        }
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null) return;
         var result = _actions.Cancel(playerId, gang.Id);
         ReportInputResult(result.Accepted, result.Validation.Message);
         if (result.Accepted) _screens.Show(_commandReturnScreen);
+    }
+
+    /// <summary>
+    /// RULE-TURN-005: None from a group menu clears the order of every gang in the sector.
+    /// </summary>
+    private void CancelGroupCommands(PlayerId playerId)
+    {
+        var cancelled = 0;
+        foreach (var gang in _gangSelection.Gangs)
+            if (_state!.FindGang(gang)?.QueuedCommand is not null
+                && _actions!.Cancel(playerId, gang).Accepted)
+                cancelled++;
+        if (cancelled == 0)
+        {
+            RejectInput("NO ORDERS TO CANCEL");
+            return;
+        }
+        AcceptInput();
+        _message = CityStatusMessage.RequireFit($"ORDERS CANCELLED FOR {cancelled}");
+        _gangSelection.Clear();
+        _screens.Show(_commandReturnScreen);
     }
 
     private void BackFromCommands()
@@ -312,19 +363,26 @@ public sealed partial class ChaosGame
             _commandTargetOptions = [];
             return;
         }
+        // The group order picked the sector's gangs for itself; backing out leaves no pick behind.
+        if (_groupCommand) _gangSelection.Clear();
         _screens.Show(_commandReturnScreen);
     }
 
     private void DrawCommands(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         DrawMapBackdrop(batch, pixel, font, state, _commandReturnScreen);
-        var playerId = ViewingPlayer(state);
-        var gang = SelectedGang(state.FindPlayer(playerId)!);
         if (_choosingCommandTarget)
         {
             DrawCommandTargets(batch, pixel, font, state);
             return;
         }
+        // RULE-TURN-005: a group order speaks for the sector's gangs, not the roster's selection.
+        var gang = _groupCommand
+            ? _gangSelection.Gangs.Select(state.FindGang).FirstOrDefault(found => found is not null)
+            : SelectedGang(state.FindPlayer(ViewingPlayer(state))!);
+        var canCancel = _groupCommand
+            ? _gangSelection.Gangs.Any(id => state.FindGang(id)?.QueuedCommand is not null)
+            : gang?.QueuedCommand is not null;
 
         var panel = CommandOverlayLayout.Panel;
         batch.Draw(pixel, panel, new Color(12, 18, 18, 246));
@@ -338,7 +396,7 @@ public sealed partial class ChaosGame
             var action = actions[index];
             var row = CommandOverlayLayout.ActionRow(index);
             var available = action == GangAction.None
-                ? gang?.QueuedCommand is not null
+                ? canCancel
                 : _commandOptions.Any(command => command.Action == action);
             if (index == _commandCursor)
                 batch.Draw(pixel, row, new Color(65, 35, 25));

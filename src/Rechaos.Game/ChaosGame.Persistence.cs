@@ -81,7 +81,8 @@ public sealed partial class ChaosGame
                 journal(loaded) ?? new MatchReplayRecorder(loaded),
                 summary?.RecoveredFromBackup == true
                     ? summary.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
-                    : string.Empty);
+                    : string.Empty,
+                continueRunSequence: true);
             return true;
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -100,10 +101,17 @@ public sealed partial class ChaosGame
     /// a replay of a finished match opened the city instead of the endgame, and the gang selection,
     /// management return screen and planning-entry flags of the previous match leaked into it.
     /// </remarks>
-    private void AdoptMatch(MatchState loaded, MatchReplayRecorder recorder, string message)
+    /// <param name="continueRunSequence">
+    /// RULE-RNG-001: whether the loaded match draws on from the run's sequence, so reloading a save
+    /// does not replay its luck. The journal records the move, and replays it. A replay load keeps
+    /// the sequence the journal reached.
+    /// </param>
+    private void AdoptMatch(
+        MatchState loaded, MatchReplayRecorder recorder, string message,
+        bool continueRunSequence = false)
     {
-        _state = loaded;
-        _actions = new MatchActions(recorder);
+        ReplaceMatch(loaded, new MatchActions(recorder));
+        if (continueRunSequence) _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
         if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();
