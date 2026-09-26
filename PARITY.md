@@ -11,39 +11,39 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Status | Rows |
 |---|---|
-| `unknown` | 1 |
+| `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 57 |
+| `supported` | 20 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 164 |
-| `validated` | 0 |
+| `implemented` | 193 |
+| `validated` | 9 |
 
 | Code | Rows |
 |---|---|
-| `missing` | 19 |
-| `partial` | 39 |
-| `complete` | 164 |
+| `missing` | 1 |
+| `partial` | 19 |
+| `complete` | 202 |
 
 ## DATA
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-DATA-001` | Site definition records in DATA/SITES | supported | complete | None | None | implemented | None |
-| `FMT-DATA-002` | Gang definition records in DATA/Gangs | supported | complete | None | None | implemented | None |
-| `FMT-DATA-003` | Item definition records in DATA/ITEMS | supported | complete | None | None | implemented | None |
-| `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | missing | None | None | supported | The rebuild copies CLT00002 unread into its asset pack. |
-| `FMT-DATA-005` | Compressed archive DATA/DATA.Z | unknown | missing | None | None | unknown | The rebuild copies DATA.Z unread into its asset pack. |
+| `FMT-DATA-001` | Site definition records in DATA/SITES | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
+| `FMT-DATA-002` | Gang definition records in DATA/Gangs | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
+| `FMT-DATA-003` | Item definition records in DATA/ITEMS | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
+| `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | complete | None | `DEV-UI-016` | implemented | The rebuild draws only the 16-bit image set, for which the original never loads this palette either (DEV-UI-016); the extractor copies the file unread. |
+| `FMT-DATA-005` | Compressed archive DATA/DATA.Z | supported | missing | None | None | supported | The game never reads the file (FND-DATA-008), and the rebuild copies it unread into its asset pack. FND-DATA-009 and FND-DATA-010 read every byte and expand every block. |
 
 ## GFX
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-GFX-001` | 16-bit image files in DATA/PX16 | supported | complete | None | None | implemented | The rebuild supplies the missing header fields itself; the widths it uses for PX00202, PX00203 and PX06008 should be checked against the 311 and 241 the files give. |
-| `FMT-GFX-002` | 8-bit image files in DATA/PX08 | supported | complete | None | None | implemented | None |
-| `FMT-GFX-003` | Palette entry in a PX08 image file | supported | complete | None | None | implemented | None |
+| `FMT-GFX-001` | 16-bit image files in DATA/PX16 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | The rebuild supplies the missing header fields itself. PX00202 and PX00203 are 311 wide as FND-GFX-005 records; PX06008 is decoded as 242 by 157 where the file is 241 wide and the executable reads 242 by 158, which the test allows for. |
+| `FMT-GFX-002` | 8-bit image files in DATA/PX08 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
+| `FMT-GFX-003` | Palette entry in a PX08 image file | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
 | `RULE-GFX-001` | Decoding the RLE8 pixel data of a PX08 image | supported | complete | None | None | implemented | None |
-| `RULE-GFX-002` | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported | missing | None | None | supported | Not yet compared with the rebuild. |
+| `RULE-GFX-002` | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported | complete | None | `DEV-GFX-001` | implemented | The drawing area is the original's 640 by 460, scaled into a window or a borderless full screen (DEV-GFX-001). |
 
 ## AUDIO
 
@@ -60,43 +60,43 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AUDIO-007` | The Comlink alert plays slot 6 through the effects gate | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | None | None | implemented | The repeat is paced by the rebuild's presentation clock at four seconds. |
 | `RULE-AUDIO-009` | The sound of an attack in Detailed Combat | supported | complete | None | None | implemented | None |
-| `RULE-AUDIO-010` | The startup drive check always passes and the game never looks for its disc | supported | missing | None | `DEV-AUDIO-001` | supported | The rebuild plays the music files and never checks a drive (deviation). |
+| `RULE-AUDIO-010` | The startup drive check always passes and the game never looks for its disc | supported | complete | None | `DEV-AUDIO-001` | implemented | The rebuild plays the music files and never checks a drive or looks for the disc (DEV-AUDIO-001); nothing else in the rule reaches a game result. |
 
 ## VIDEO
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-VIDEO-001` | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported | complete | None | `DEV-VIDEO-001` | implemented | The rebuild decodes only the subset the two shipped movies use. |
-| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | supported | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; with Intro only once on, its default, they play until one showing is recorded (DEV-VIDEO-003); switched off, they play at every start. The movie sound follows the Sound Effects level; the level-to-volume curve was not compared. |
+| `FMT-VIDEO-001` | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported | complete | tests/Rechaos.Tests/OriginalMovieFileTests.cs | `DEV-VIDEO-001` | validated | The rebuild decodes only the subset the two shipped movies use. |
+| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | supported | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; with Intro only once off, its default, the movies play at every start; switching it on gives DEV-VIDEO-003. The movie sound follows the Sound Effects level; the level-to-volume curve was not compared. |
 
 ## HELP
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-HELP-001` | WinHelp container HELP/Chaos.hlp | supported | complete | None | `DEV-HELP-001`, `DEV-HELP-002` | implemented | None |
-| `FMT-HELP-002` | Help contents file HELP/CHAOS.CNT | supported | complete | None | None | implemented | None |
-| `RULE-HELP-001` | Help Topics does nothing, and no key opens the help file | supported | missing | None | `DEV-HELP-001` | supported | The rebuild opens its own help viewer where the original does nothing (deviation). |
+| `FMT-HELP-001` | WinHelp container HELP/Chaos.hlp | supported | complete | tests/Rechaos.Tests/OriginalHelpFileTests.cs | `DEV-HELP-001`, `DEV-HELP-002` | validated | None |
+| `FMT-HELP-002` | Help contents file HELP/CHAOS.CNT | supported | complete | tests/Rechaos.Tests/OriginalHelpFileTests.cs | None | validated | None |
+| `RULE-HELP-001` | Help Topics does nothing, and no key opens the help file | supported | complete | None | `DEV-HELP-001` | implemented | F1 and the Escape menu open the rebuild's own help viewer on the player's help file, where the original's Help Topics does nothing (DEV-HELP-001). |
 
 ## SAVE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-SAVE-001` | Full save file | supported | missing | None | `DEV-NET-001`, `DEV-SAVE-001` | supported | Reading or writing original saves is a declared non-goal; the rebuild has its own save format. |
-| `FMT-SAVE-002` | Short M10W save file | supported | missing | None | `DEV-SAVE-001` | supported | Reading or writing original saves is a declared non-goal. |
+| `FMT-SAVE-001` | Full save file | supported | complete | None | `DEV-NET-001`, `DEV-SAVE-001` | implemented | The rebuild neither reads nor writes this file; its own save format holds the same match (DEV-SAVE-001), and the network form has no counterpart (DEV-NET-001). |
+| `FMT-SAVE-002` | Short M10W save file | supported | complete | None | `DEV-SAVE-001` | implemented | The rebuild neither reads nor writes this file; its own save format holds the same match (DEV-SAVE-001). |
 
 ## STATE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | partial | None | None | supported | The rebuild keeps each gang's fields as named state rather than this 32-byte layout, and marks an empty roster slot with Force 0 rather than sector 100. |
-| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | The rebuild keeps sector owner, Income, the base Tolerance, the rebuilt Tolerance, the rebuilt Support, sites and site benefits as named state rather than this 36-byte layout; the research level and the seen-gang bytes are not yet mapped (see the 2026-09-26 decision in docs/DECISIONS.md). |
-| `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | partial | None | None | supported | The rebuild derives combat presentation from combat events and clip forces rather than keeping these 10-byte records. |
-| `FMT-STATE-004` | Site slot in a sector record | supported | partial | None | None | supported | The rebuild keeps remaining Resistance per site plus an explicit influencer identity that the original does not store. |
-| `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | The rebuild keeps the Comlink inbox with the same occupied, read, turn, sender and text content, not this 166-byte layout. |
-| `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | The rebuild keeps its own notification history and derives the Last Turn reports from it, not this 10-byte layout. The recipients and the report of each type follow RULE-EVENT-003, RULE-EVENT-004 and RULE-EVENT-012 to RULE-EVENT-014. |
-| `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | missing | None | None | supported | The rebuild's computer players keep their own planning state; it was not compared with this 16-byte layout. |
-| `FMT-STATE-008` | Combat result row of one sector | supported | missing | None | None | supported | The rebuild keeps combat events with combatant details instead of these per-sector rows of gang and target indices. |
-| `FMT-STATE-009` | Input event record | supported | missing | None | None | supported | Not yet compared with the rebuild. |
+| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-001-gang-record); every field is held with the same value or a representation no rule can tell apart, and the Give and Sell mask order is pinned by tests. |
+| `FMT-STATE-002` | Sector record, one per city sector | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-002-sector-record); `crackdown_turns` is held as a signed byte and wraps past 127 as in the original. |
+| `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-003-per-gang-combat-record); every field a rule reads is held with the same value. |
+| `FMT-STATE-004` | Site slot in a sector record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-004-site-slot): `progress` is held as the Resistance still needed, a representation no rule result can tell apart. |
+| `FMT-STATE-005` | Comlink message record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-005-comlink-message-record); the text is stored without its trailing spaces, and a message of spaces only is dropped as RULE-COMLINK-003 records. |
+| `FMT-STATE-006` | Last Turn report record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record); every report carries the type and arguments SCR-EVENT-001 reads. |
+| `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-007-computer-player-planning-record); every field is held with the same value or a representation no rule can tell apart. |
+| `FMT-STATE-008` | Combat result row of one sector | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-008-combat-result-row-of-one-sector); the gang entries follow RULE-COMBAT-004. |
+| `FMT-STATE-009` | Input event record | supported | complete | None | `DEV-UI-018` | implemented | The rebuild polls input once per frame and keeps no event record (DEV-UI-018); only RULE-UI-014 reads the record ([docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-009-input-event-record)). |
 
 ## RNG
 
@@ -151,7 +151,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-HIRE-003` | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported | complete | None | `DEV-HIRE-001` | implemented | The rebuild refuses a drop on a sector already holding six friendly gangs, which the original accepts (see deviations). |
 | `RULE-HIRE-004` | A new match starts with every hire offer vacant and no hire order | supported | complete | None | None | implemented | None |
 | `SCR-HIRE-001` | Hire comparison panel showing the three offers side by side | supported | complete | None | None | implemented | The positions the rebuild took from captures match the ones the spec now records. |
-| `SCR-HIRE-002` | Hire offers on the main console, with drag-to-hire and Reject | supported | partial | None | `DEV-HIRE-001`, `DEV-HIRE-002` | supported | Adds a hire-shortfall warning and refuses drops on full sectors (see deviations). The rebuild draws the portraits one pixel left of and two pixels above the recorded cells, and crops the hire and snub marks from other rectangles of the image. |
+| `SCR-HIRE-002` | Hire offers on the main console, with drag-to-hire and Reject | supported | complete | None | `DEV-HIRE-001`, `DEV-HIRE-002` | implemented | Adds a hire-shortfall warning and refuses drops on full sectors (see deviations). Portraits sit at (440 + 66s, 373) with the 64-by-64 hire and snub marks over them, and the press regions meet as FND-HIRE-008 records. |
 
 ## HIDE
 
@@ -178,7 +178,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-RESEARCH-001` | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported | complete | None | None | implemented | None |
 | `RULE-RESEARCH-002` | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | supported | complete | None | None | implemented | The rebuild leaves the item table's padding records out of the researched set (see deviations). |
-| `SCR-RESEARCH-001` | Research panel with item categories and a fixed sixteen-row item list | supported | partial | None | `DEV-RESEARCH-001` | supported | The list filter follows FND-RESEARCH-003: category from item type (types 0 and 1 together), item order, only unfinished items, Tech Level at most the gang type's and at most 5 or 8 by the research-site level of a sector the player owns. The category cells match. A press on the list is taken from panel y 19 where the original's press region starts at y 26. |
+| `SCR-RESEARCH-001` | Research panel with item categories and a fixed sixteen-row item list | supported | complete | None | `DEV-RESEARCH-001` | implemented | The list filter follows FND-RESEARCH-003: category from item type (types 0 and 1 together), item order, only unfinished items, Tech Level at most the gang type's and at most 5 or 8 by the research-site level of a sector the player owns. The category cells match. A press selects from panel y 26 and a double-click opens from panel y 19, rows truncating toward zero. |
 
 ## BRIBE
 
@@ -211,7 +211,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported | complete | None | `DEV-MOVE-001` | implemented | None |
 | `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002`, `DEV-MOVE-002` | implemented | The fallback for a mover already sent back draws a random neighbour (RULE-AI-007); after 256 of them DEV-MOVE-002 applies. |
-| `SCR-MOVE-001` | Move panel | supported | partial | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | supported | Panel resource and neighborhood cells are the original's; the controls, keys and destination marker are not pinned by findings. |
+| `SCR-MOVE-001` | Move panel | supported | partial | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | supported | The map crop, off-city bands, arrow, faces and keys follow the original. The table that disables cells is not read, so the rebuild enables the cells it can legally order (DEV-MOVE-001). |
 
 ## CONTROL
 
@@ -225,8 +225,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | Each rebuilt field keeps its low eight bits, as the original's INT8 fields do; no shipped combination reaches the wrap. |
 | `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | complete | None | None | implemented | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-26 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. |
-| `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | partial | None | None | supported | Field columns and rows follow the original; which statistic sits on which row is not recorded. |
-| `SCR-GANG-002` | Gang information panel for a hired gang | supported | partial | None | `DEV-GANG-001` | supported | Value columns follow the original; the rows, equipment and portrait positions are not recorded, and the rebuild adds breakdown tooltips. |
+| `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | partial | None | `DEV-UI-010` | supported | Opened from the order panels' portraits with the gang's values, the Force question marks and the recorded positions. The base values are dimmed through a stand-in pattern (PLACEHOLDER), as the original's half-tone is not read. |
+| `SCR-GANG-002` | Gang information panel for a hired gang | supported | complete | None | `DEV-GANG-001`, `DEV-UI-013` | implemented | Opened for hired gangs and hire offers, with every recorded position, rotating items, base values 18 pixels to the left, and the close face acting on release. |
 
 ## EQUIP
 
@@ -236,21 +236,21 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EQUIP-002` | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported | complete | None | `DEV-EQUIP-001` | implemented | Players resolve by slot. Equip and Sell resolve in the order the player gave them, where the original scans roster slots (DEV-EQUIP-001). Give keeps the roster order: the rebuild empties every giver's slots before the pass and delivers after all players' scans, and no Equip or Sell reads a giver's or recipient's slot in between, so the result is the same as delivering after each player's scan. |
 | `RULE-EQUIP-003` | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported | complete | None | None | implemented | None |
 | `RULE-EQUIP-004` | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported | complete | None | None | implemented | None |
-| `SCR-EQUIP-001` | Equip panel | supported | partial | None | `DEV-EQUIP-002` | supported | Category cells and list area follow the original; the controls, fonts and keys are not pinned, and the rebuild adds a held-items row. |
+| `SCR-EQUIP-001` | Equip panel | supported | complete | None | `None` | implemented | Category cells, held item icons, list columns, row mark, frame, faces and keys follow the original, and the portrait double-click opens the compact gang panel. The rebuild's extra keys are DEV-UI-010. |
 
 ## GIVE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-GIVE-001` | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | supported | complete | None | None | implemented | None |
-| `SCR-GIVE-001` | Give panel | supported | partial | None | `DEV-GIVE-001` | supported | Item cells, recipients and keys follow the original; the Cancel control and markers are not pinned, and the rebuild adds Up/Down cycling. |
+| `SCR-GIVE-001` | Give panel | supported | partial | None | `DEV-GIVE-001` | supported | The recipient cards, eligibility, marks, faces and keys follow the original. The list's background colour and the dimming pattern are not recorded, so a sparse mask stands in. |
 
 ## SELL
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-SELL-001` | Sell removes every selected item but pays half the Cost of only the last selected slot | supported | complete | None | `DEV-EQUIP-001` | implemented | Keeps BUG-SELL-001: a multi-item Sell pays only the last selected slot, so no deviation covers it. |
-| `SCR-SELL-001` | Sell panel | supported | partial | None | None | supported | Row targets follow the original; the OK and Cancel controls and the drawn prices are not pinned. |
+| `SCR-SELL-001` | Sell panel | supported | complete | None | None | implemented | Pictures, names, half prices, highlight, faces and keys follow the original; the rebuild's extra keys are DEV-UI-010. |
 
 ## TERMINATE
 
@@ -269,7 +269,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-FINANCE-001` | The Financial panel projects next turn's cash flow for the whole city or one sector | supported | complete | None | `DEV-FINANCE-001` | implemented | Each row follows FND-FINANCE-002 except the Sell credit of DEV-FINANCE-001: terminating gangs give back their Upkeep, the Sector variant charges a moving gang to its destination, and the Chaos row is a third of Income + Chaos + Force, halved outside the player's sectors. |
-| `SCR-FINANCE-001` | Financial panel, City and Sector | supported | partial | None | `DEV-FINANCE-001`, `DEV-UI-006` | supported | Panel, close control, field positions and the row assignment of FND-FINANCE-002 follow the original; the row labels in the template images were not read. |
+| `SCR-FINANCE-001` | Financial panel, City and Sector | supported | complete | None | `DEV-FINANCE-001`, `DEV-UI-006` | implemented | Panel, portrait, close control, row labels, fields, gang count and the Sector variant's sector code follow the original, and Enter or Execute closes it. What the Sector variant draws in the portrait box is not recorded. |
 
 ## ATTACK
 
@@ -277,7 +277,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | supported | complete | None | `DEV-HELP-002` | implemented | None |
 | `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
-| `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | partial | None | `DEV-ATTACK-001`, `DEV-UI-008` | supported | Opponent and target hit maps are the original's. FND-ATTACK-003 now records the panel origin, the Confirm and Cancel faces, Enter, plus and Escape, the acting gang's portrait and equipment and the initial selection, and FND-ATTACK-004 the double-click information panels; the rebuild was not compared with them. |
+| `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | complete | None | `DEV-UI-008` | implemented | Layout, marks, faces, keys, initial selection and double-click panels follow FND-ATTACK-003 and FND-ATTACK-004. The target cards' art and when the Confirm face is first drawn are not recorded, so the target cards are drawn like the acting gang's. |
 
 ## COMBAT
 
@@ -287,8 +287,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | partial | None | None | supported | Damage, deaths and order follow the rule, but the rebuild keeps combat events with combatant details instead of the per-gang combat records and per-sector result rows. |
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
-| `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | partial | None | `DEV-COMBAT-002` | supported | Paging, opponent strip and exit follow the original. FND-COMBAT-012 now records the arrow and Enter/plus keys (Escape is not handled), the force selector's focus and its outlines, and the grid cells' portraits and tracks; the rebuild was not compared with them. |
-| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips and 166 ms cadence are implemented. FND-COMBAT-010 now records the track positions, the portrait cells, the Exit face and Escape, which end the whole presentation; the rebuild was not compared with them. The portraits come from `PX03000` (FND-COMBAT-013). |
+| `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | complete | None | `DEV-COMBAT-002` | implemented | Paging, keys, the opponent and police strips, grid cells with portraits, force_start and force_final tracks and the focus outlines follow FND-COMBAT-007 and FND-COMBAT-012. The pressed Exit face on Enter is not drawn as the panel closes at once, and the pressed arrows are not recorded. |
+| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips, 166 ms cadence, the tracks at local y 116 and 123, the Exit face on release, the refused press outside the panel and Escape follow FND-COMBAT-009 and FND-COMBAT-010. The police portrait and the header strips are not recorded, and the entry's open question still gives y 114 and 121 for the tracks. |
 
 ## DETECT
 
@@ -366,7 +366,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EVENT-012` | Taking control of a sector is reported to the new owner | supported | complete | None | None | implemented | The report is the rebuild's Control notification; a winner without a Control order (BUG-CONTROL-001) gets one with no event. |
 | `RULE-EVENT-013` | Losing control of a sector is reported to the previous owner | supported | complete | None | None | implemented | The report is the rebuild's Control lost notification, sent on a takeover by Control and on a third Crackdown. |
 | `RULE-EVENT-014` | An Equip that fails for lack of cash is reported to its player | supported | complete | None | None | implemented | The report is the rebuild's failed Equip result, which names the gang and its sector; like the original it does not name the item. |
-| `SCR-EVENT-001` | Last Turn Events panel | supported | complete | None | `DEV-EVENT-001`, `DEV-EVENT-002` | implemented | Positions of the status line, illustration and footer come from the rebuild's own measurements, not from findings. |
+| `SCR-EVENT-001` | Last Turn Events panel | supported | partial | None | `DEV-EVENT-001`, `DEV-EVENT-002` | supported | Every element sits at the position SCR-EVENT-001 records, with its pressed faces and act-on-release input. The captions are the rebuild's own text, because the rebuild does not load the executable's STRING/33 to STRING/44. |
 
 ## COMLINK
 
@@ -418,7 +418,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-TIMER-001` | Planning time limit chosen for a match | supported | complete | None | None | implemented | None |
 | `RULE-TIMER-002` | A human planning turn ends when its time limit passes | supported | complete | None | None | implemented | On expiry the rebuild submits the finish-planning operation without the idle-gang warning. |
 | `RULE-TIMER-003` | The planning clock bar and its warning sounds | supported | complete | None | None | implemented | Checks run every sixth fixed update rather than every sixth presentation tick; the two rates were not compared. |
-| `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | missing | None | None | supported | Not yet compared with the rebuild. |
+| `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | partial | None | `DEV-TIMER-001` | supported | No wait depends on the machine (DEV-TIMER-001). Pressed key faces and the city, site and sector-cell flashes wait on 166 ms ticks. How much lighter the flash copy is, and the order of the city-cell copies, are not recorded, so the rebuild picks them. |
 
 ## UI
 
@@ -426,27 +426,27 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-UI-001` | A push-button control acts only when released inside | supported | complete | None | None | implemented | None |
 | `RULE-UI-002` | Routing a press on the main console | supported | complete | None | None | implemented | None |
-| `RULE-UI-003` | Panels slide in from the right and out to the right | supported | partial | None | `DEV-UI-001` | supported | The slide-in follows the benchmark step; the slide-out is not animated (deviation). |
+| `RULE-UI-003` | Panels slide in from the right and out to the right | supported | complete | None | `DEV-TIMER-001`, `DEV-UI-001` | implemented | The slide-in reveals only the panel's left columns up to x 448 over the screen it opened from, in the rule's step and copy sequence at a fixed benchmark of 84 copies a second (DEV-TIMER-001); the slide-out is not animated (DEV-UI-001). |
 | `RULE-UI-004` | Drawing numbers in fixed glyph cells | supported | complete | None | None | implemented | None |
-| `RULE-UI-005` | Lengths of the site progress and Force meters | supported | partial | None | None | supported | Detailed-sector meters are drawn; whether their lengths use the same integer arithmetic was not checked. |
-| `RULE-UI-006` | Choosing a sector's gang-status marker | supported | partial | None | None | supported | Status art is drawn for every active-gang sector; the frame precedence was not checked against the rule. |
-| `RULE-UI-007` | The pointer shape | supported | partial | None | None | supported | The framework's standard pointer is used; the wait cursor during blocking work is not reproduced. |
-| `RULE-UI-008` | The presentation timer | supported | partial | None | None | supported | The rebuild uses its own fixed update rate; the 166 ms tick is not a separate clock. |
+| `RULE-UI-005` | Lengths of the site progress and Force meters | supported | complete | None | None | implemented | Site meters truncate progress * 100 / Resistance (100 at Resistance 0) and Force meters are Force * 6 pixels, checked by SectorMeterLengthTests. |
+| `RULE-UI-006` | Choosing a sector's gang-status marker | supported | complete | None | None | implemented | Frames and the one saved cell that loses frame 8 follow the rule. Enemy sight and presence come from a snapshot kept for each planning entry, and the idle test and incoming hires are read live. |
+| `RULE-UI-007` | The pointer shape | supported | complete | None | None | implemented | The stock arrow shows at all times, and the hourglass while a city is set up, a game is loaded or a turn is resolved. |
+| `RULE-UI-008` | The presentation timer | supported | complete | None | `DEV-TIMER-001` | implemented | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). |
 | `RULE-UI-009` | The texts of the Game Information panel | supported | partial | None | `DEV-AI-003` | supported | Game Information appends the AI policy label after Mentality (deviation); the other fields follow the original. |
-| `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | partial | None | None | supported | Which gangs the roster and card lists include was not checked against the rule. |
+| `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | complete | None | None | implemented | The cards list the viewed player's visible gangs and Gangs in Sector the active player's gangs, both in roster slot order, checked by SectorOpponentGangsTests and GangInformationRosterTests. |
 | `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | Income for all and Support and Cash for the owner are shown. |
 | `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | `DEV-UI-002` | implemented | The rebuild also draws the pylons on the detailed-sector minimap (deviation). |
-| `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | missing | None | None | supported | Not yet compared with the rebuild. |
-| `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | missing | None | None | supported | Not yet compared with the rebuild. |
+| `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | complete | None | `DEV-UI-015`, `DEV-UI-016` | implemented | The title loop starts a new game on a press outside the rebuild's buttons, and the options are read at start and saved at exit. The single-instance check, the command-line file and the image-set choice are deviations. |
+| `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | complete | None | `DEV-GFX-001`, `DEV-UI-016`, `DEV-UI-017`, `DEV-UI-018` | implemented | Input is polled once per frame (DEV-UI-018), and the US shift table and upper-case letters are kept for setup names and Comlink text. |
 | `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-012`, `DEV-VIDEO-003` | supported | The title screen shows the build version and an intro button the original lacks. |
-| `SCR-UI-002` | Credits screen | supported | partial | None | None | supported | Whether the credits sequence matches the original presenter's order and timing was not checked. |
+| `SCR-UI-002` | Credits screen | supported | complete | None | `DEV-UI-019` | implemented | Shift+F1 stands in for Help, About (DEV-UI-019); the credits image covers the screen until any key or click. Whether the music keeps playing is not recorded, and the rebuild keeps it playing. |
 | `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006` | supported | Console routes and pressed art match; tooltips and projected cashflow are added. |
 | `SCR-UI-004` | Detailed sector screen | supported | partial | None | `DEV-UI-002`, `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-013`, `DEV-UI-014` | supported | Draws the group order strip. Adds tooltips, target highlights, ctrl-picking and minimap pylons. |
-| `SCR-UI-005` | Gangs in Sector panel | supported | partial | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | supported | Whether the compact all-gangs roster matches the original rows was not checked. |
+| `SCR-UI-005` | Gangs in Sector panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | The sector cell, code, portraits and the sixteen rows follow the original in roster order, with Upkeep negated and Base Statistics ignored. A seventh gang is not drawn where the original draws it past the panel's right edge. |
 | `SCR-UI-006` | Item Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-009`, `DEV-UI-010` | implemented | Item Information uses PX05001 with the 15-frame rotation; it can also be opened from Gang Information. |
 | `SCR-UI-007` | Site Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | None |
 | `SCR-UI-008` | Game Information panel | supported | partial | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | supported | Appends the AI policy label. |
-| `SCR-UI-009` | Application menu bar | supported | missing | None | `DEV-HELP-001`, `DEV-OPTIONS-003`, `DEV-UI-011` | supported | The rebuild has no Windows menu bar; its commands live in the Escape menu, Options and shortcuts. |
+| `SCR-UI-009` | Application menu bar | supported | complete | None | `DEV-HELP-001`, `DEV-OPTIONS-003`, `DEV-UI-011`, `DEV-UI-016`, `DEV-UI-019` | implemented | The rebuild has no menu bar, and every command on it is reached another way (DEV-UI-019). |
 
 ## OPTIONS
 
@@ -461,8 +461,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `SCR-NET-001` | Legacy network host lobby that edits up to four seats and waits for the participants | supported | missing | None | `DEV-NET-001` | supported | Legacy network screens are deliberately not reproduced. |
-| `SCR-NET-002` | Legacy network client session editor with four seats | supported | missing | None | `DEV-NET-001` | supported | Legacy network screens are deliberately not reproduced. |
-| `SCR-NET-003` | Legacy network screen that waits for every participant to be ready | supported | missing | None | `DEV-NET-001` | supported | Legacy network screens are deliberately not reproduced. |
-| `SCR-NET-004` | Legacy network transfer progress frame with a status line and a spinner | supported | missing | None | `DEV-NET-001` | supported | Legacy network screens are deliberately not reproduced. |
-| `SCR-NET-005` | Legacy network turn synchronization frame with one progress row per seat and a spinner | supported | missing | None | `DEV-NET-001` | supported | Legacy network screens are deliberately not reproduced. |
+| `SCR-NET-001` | Legacy network host lobby that edits up to four seats and waits for the participants | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-002` | Legacy network client session editor with four seats | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-003` | Legacy network screen that waits for every participant to be ready | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-004` | Legacy network transfer progress frame with a status line and a spinner | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-005` | Legacy network turn synchronization frame with one progress row per seat and a spinner | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |

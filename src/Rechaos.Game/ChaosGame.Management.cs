@@ -42,6 +42,10 @@ public sealed partial class ChaosGame
             FinanceLayout.ContractCountWidth(projection.ProjectedGangCount));
         font.Draw(batch, ")", new Vector2(
             FinanceLayout.ContractCountCloseLeft(projection.ProjectedGangCount), FinanceLayout.ContractCountY), Color.Lime, 1);
+        // SCR-FINANCE-001, FND-FINANCE-002: the Sector variant names the sector it totals.
+        if (sectorId is { } financeSector)
+            font.Draw(batch, SectorGangsLayout.SectorCodeText(financeSector),
+                FinanceLayout.SectorName.ToVector2(), Color.Lime, 1);
     }
 
     private static void DrawFinanceValue(

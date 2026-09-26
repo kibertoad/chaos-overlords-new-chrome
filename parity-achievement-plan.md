@@ -64,42 +64,24 @@ computer players choose orders.
 
 ## Step 9: Remaining rule details
 
-- FMT-STATE-001 to FMT-STATE-009: map every field a rule reads or writes to the rebuild state
-  that holds it, as the 2026-09-26 decision asks, and mark each row by what the mapping shows.
+- RULE-POLICE-002's edge case says a count of 103 to 105 then counts down, while RULE-POLICE-003's
+  procedure never lowers a count of 100 or above. The rebuild follows the procedure; the two
+  entries need reconciling from the executable.
 
 ## Step 10: Screens
 
-Closes the partial and missing screen rows. The comparisons use the findings #181 recorded.
+The screens and interface rules were compared with the findings #181 recorded. What is left
+needs static reads or captures of the original:
 
-- SCR-RESEARCH-001: the list's press region starts at panel y 26.
-- SCR-HIRE-002: portraits one pixel right and two pixels down; the hire and snub marks cropped
-  from the recorded rectangles.
-- SCR-ATTACK-001 (FND-ATTACK-003, FND-ATTACK-004), SCR-COMBAT-001 (FND-COMBAT-012) and
-  SCR-COMBAT-002 (FND-COMBAT-010): panel origin, control faces, keys, portraits and tracks.
-- SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-MOVE-001, SCR-FINANCE-001, SCR-GANG-001,
-  SCR-GANG-002, SCR-UI-002 and SCR-UI-005: pin the controls, fonts, keys and rows each row lists.
-- RULE-UI-003, RULE-UI-005, RULE-UI-006, RULE-UI-007, RULE-UI-008 and RULE-UI-010: the slide-out,
-  meter arithmetic, marker precedence, wait cursor, the 166 ms tick and the gang lists.
-- RULE-GFX-002, RULE-TIMER-004, RULE-UI-013 and RULE-UI-014: compare the display, presentation
-  waits, program shell and input loop with the rebuild, then mark or fix.
-
-Where a screen already carries a deviation for added information (tooltips, highlights,
-breakdowns), the row becomes `complete` once everything outside that deviation matches.
-
-## Step 11: Deviations for what the rebuild does not reproduce
-
-These rows stay `missing` until a deviation covers them:
-
-- SCR-NET-001 to SCR-NET-005: the legacy network screens.
-- SCR-UI-009: the Windows menu bar, whose commands live in the Escape menu, Options and
-  shortcuts.
-- FMT-SAVE-002: the short save file. FMT-SAVE-001 already cites DEV-SAVE-001 and DEV-NET-001.
-- FMT-DATA-004: either read CLT00002 or record why the rebuild does without it.
-- RULE-AUDIO-010 and RULE-HELP-001 already cite DEV-AUDIO-001 and DEV-HELP-001; mark them
-  `complete` once the rest of each rule matches.
-
-FMT-DATA-005 (DATA.Z) is `unknown` in the spec and cannot be `complete`; it needs static work
-first.
+- RULE-TIMER-004: how much lighter a flash copy is and the order of the city-cell copies
+  (FND-UI-017); the pressed faces of Influence's Escape, Move and Research, which no finding
+  records.
+- SCR-EVENT-001: the captions come from `Chaos Overlords.exe#STRING/33` to `STRING/44`, and the
+  rebuild has no loader for the executable's string resources; the extractor needs one, and the
+  panel then draws them.
+- SCR-GANG-001's half-tone pattern (its PLACEHOLDER), SCR-GIVE-001's list background and dimming
+  pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's police portrait and
+  header strips.
 
 ## Step 12: Close the research plans
 
@@ -114,8 +96,9 @@ first.
 A row is `validated` only when its Tests column lists a test that compares the rebuild with
 evidence from the original (see [docs/VALIDATION.md](docs/VALIDATION.md#tests-against-the-original)).
 
-- Formats first, since they need no new experiments: tests that decode every shipped file for
-  FMT-DATA-001 to FMT-DATA-003, FMT-GFX-001 to FMT-GFX-003, the audio, video and help formats.
+- Formats: FMT-DATA-001 to 003, FMT-GFX-001 to 003, FMT-VIDEO-001 and FMT-HELP-001 to 002 are
+  validated against every shipped file. FMT-AUDIO-001 and 002 have file tests too, but the
+  rebuild hands those files to the framework whole, so no decoder of its own is compared.
 - Rules next, as each `EXP-` fixture from step 12 lands: a test replays the fixture and compares
   events and end state. A test that reaches a `mandatory` deviation cites its ID and allows for it.
 - Screens last, against captures of the original, with masks for the areas a deviation draws.

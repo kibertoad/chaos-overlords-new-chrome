@@ -69,7 +69,13 @@ public static class OptionsTooltip
         if (OptionsLayout.DetailedCombat.Contains(point))
             return ["DETAILED COMBAT", "ON PLAYS AUTOMATIC COMBAT ANIMATIONS."];
         if (OptionsLayout.SlidePanels.Contains(point))
-            return ["SLIDE PANELS", "OFF MAKES SECTORS AND DETAILS APPEAR IMMEDIATELY."];
+            return [
+                "SLIDE PANELS",
+                "ON SLIDES PANELS IN FROM THE RIGHT AND PLAYS OPEN AND CLOSE SOUNDS.",
+                "EACH STEP SHOWS MORE OF THE PANEL, LEFT COLUMNS FIRST, CUT OFF",
+                "AT ITS RIGHT EDGE. PANELS CLOSE AT ONCE.",
+                "OFF SHOWS PANELS AT ONCE, SILENTLY."
+            ];
         if (OptionsLayout.WarnIfIdleGangs.Contains(point))
             return ["WARN IF IDLE GANGS", "ASKS BEFORE ENDING WITH UNASSIGNED ACTIVE GANGS."];
         if (OptionsLayout.EventSiteImages.Contains(point))

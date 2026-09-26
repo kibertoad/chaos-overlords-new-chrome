@@ -44,7 +44,7 @@
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | supported |
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | supported |
 | [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 | supported |
-| [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | unknown |
+| [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | supported |
 | [FND-DATA-001](../findings/FND-DATA-001.md) | DATA/SITES is 22 records of 62 bytes, numbered 0 to 21, with a special-site word of 0 to 3 at 0x3C | recorded |
 | [FND-DATA-002](../findings/FND-DATA-002.md) | DATA/Gangs is 90 records of 156 bytes, numbered 0 to 89, with a name, a 90-byte description and 17 words | recorded |
 | [FND-DATA-003](../findings/FND-DATA-003.md) | DATA/ITEMS is 64 records of 166 bytes, 53 items numbered 0 to 52 and 11 blank records of type 99 | recorded |
@@ -53,6 +53,8 @@
 | [FND-DATA-006](../findings/FND-DATA-006.md) | The Kaitai definitions of the shipped file formats parse every shipped file to its last byte with the documented field values | recorded |
 | [FND-DATA-007](../findings/FND-DATA-007.md) | Each match start reads DATA/Gangs, DATA/ITEMS and DATA/SITES whole into fixed tables, and the code reads their fields at the offsets the format entries give | recorded |
 | [FND-DATA-008](../findings/FND-DATA-008.md) | No code path in the executable can open DATA/DATA.Z | recorded |
+| [FND-DATA-009](../findings/FND-DATA-009.md) | DATA/DATA.Z is an InstallShield 3 archive of 459 files in five directories whose tables account for every byte | recorded |
+| [FND-DATA-010](../findings/FND-DATA-010.md) | The 459 blocks of DATA/DATA.Z expand to 449 installed files unchanged, and its remaining header and entry bytes are sizes or constants | recorded |
 
 ## GFX
 
@@ -432,7 +434,7 @@
 |---|---|---|
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
-| [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, plus or its lower face and cancels with Escape or its upper face | recorded |
+| [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, Execute or its lower face and cancels with Escape or its upper face | recorded |
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | A double-click in the Attack picker opens Item Information for an equipment icon and the gang information panel for a portrait, of the acting gang or of a listed target | recorded |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | supported |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported |

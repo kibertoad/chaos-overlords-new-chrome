@@ -57,7 +57,8 @@ public sealed partial class ChaosGame
         _autoSave.ForgetVerifiedPrimary();
         var path = _automaticRowPath ?? _autoSavePath;
         return AdoptLoadedMatch(
-            () => NativeSaveStore.LoadRecoveringBackup(path, _definitions!).State,
+            () => _autoSave.Load(
+                () => NativeSaveStore.LoadRecoveringBackup(path, _definitions!).State),
             _ => null,
             _saveSlots[SaveSlotCatalog.AutoSaveRow]);
     }
@@ -69,6 +70,8 @@ public sealed partial class ChaosGame
     {
         if (_session is not null) return false;
         if (_definitions is null) return false;
+        // The original shows the hourglass while it loads a game (RULE-UI-007).
+        using var busy = _pointer.Busy();
         try
         {
             var loaded = load();
@@ -82,7 +85,7 @@ public sealed partial class ChaosGame
                 summary?.RecoveredFromBackup == true
                     ? summary.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
                     : string.Empty,
-                continueRunSequence: true);
+                enteredFromSave: true);
             return true;
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -101,17 +104,23 @@ public sealed partial class ChaosGame
     /// a replay of a finished match opened the city instead of the endgame, and the gang selection,
     /// management return screen and planning-entry flags of the previous match leaked into it.
     /// </remarks>
-    /// <param name="continueRunSequence">
-    /// RULE-RNG-001: whether the loaded match draws on from the run's sequence, so reloading a save
-    /// does not replay its luck. The journal records the move, and replays it. A replay load keeps
-    /// the sequence the journal reached.
+    /// <param name="enteredFromSave">
+    /// Whether the match is entered the way the original enters a loaded game. RULE-RNG-001: it
+    /// draws on from the run's sequence, so reloading a save does not replay its luck.
+    /// RULE-COMLINK-004, FMT-STATE-005: every inbox is emptied, so it starts with no messages. The
+    /// journal records both moves, and replays them. A replay load keeps the sequence and the
+    /// inboxes the journal reached.
     /// </param>
     private void AdoptMatch(
         MatchState loaded, MatchReplayRecorder recorder, string message,
-        bool continueRunSequence = false)
+        bool enteredFromSave = false)
     {
         ReplaceMatch(loaded, new MatchActions(recorder));
-        if (continueRunSequence) _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
+        if (enteredFromSave)
+        {
+            _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
+            _actions.HotSeatRecorder.EmptyComlinkInboxes();
+        }
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
         if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();

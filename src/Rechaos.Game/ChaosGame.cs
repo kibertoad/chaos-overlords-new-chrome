@@ -88,7 +88,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private SoundEffectInstance? _activeEffectVoice;
     private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
+    private readonly DetailedCombatExit _combatExit = new();
     private readonly PanelSlideTransition _panelSlideTransition = new();
+    private readonly GangSightSnapshotCache _gangSight = new();
     private MatchState? _state;
     /// <summary>
     /// Where a player's mutations go, and the only handle on the match's recorder.
@@ -140,7 +142,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _hireCursor;
     private int _itemCursor;
     private int _combatSummaryCursor;
-    private long _combatSummaryEventSequence = -1;
+    private int _combatSummarySector = -1;
+    private GangId? _combatSummaryFocal;
+    private GangId? _combatSummaryFocalTarget;
     private PlayerId? _combatSummaryOpponent;
     private bool _openEventsAfterCombat;
     private bool _automaticDetailedCombatPresentation;
@@ -170,8 +174,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private ComlinkSendButton? _pressedComlinkSendButton;
     private readonly ComlinkAlertCadence _comlinkAlertCadence = new();
     private readonly BackgroundRedrawCadence _backgroundRedrawCadence = new();
+    private readonly PresentationPointer _pointer = new(shape =>
+        Mouse.SetCursor(shape == PointerShape.Hourglass ? MouseCursor.Wait : MouseCursor.Arrow));
     private string _comlinkStatus = string.Empty;
-    private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
     private IReadOnlyList<GangId> _sectorGangRoster = [];
     private int _sectorGangCursor;
@@ -236,11 +241,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _screens.Changed += (previous, current) =>
         {
             if (!KeepsGangSelection(current)) _gangSelection.Clear();
+            // A pressed face acts on the screen it was pressed on; if something else moved the
+            // screen during the wait, the key's action is dropped.
+            _tickedPresentation.Clear();
             _citySectorClicks.Cancel();
             _sectorSiteClicks.Cancel();
             _sectorGangClicks.Cancel();
             _siteSearchClicks.Cancel();
-            if (_slidePanels) _panelSlideTransition.Begin(previous, current, _inputTime);
+            if (_slidePanels)
+                _panelSlideTransition.Begin(previous, current, _inputTime, _gangDetailsCompact);
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
                 PlayGeneralSound(slot);
             // RULE-AWARDS-002: the endgame opens on its Awards tab.
@@ -443,6 +452,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // Before the planning timer, so a turn that resolved on the server is adopted even on the
         // frame the local clock would otherwise have taken over the loop.
         UpdateOnlineSession();
+        // SCR-UI-002: the credits hold every input until a click or a key closes them.
+        if (_creditsOpen)
+        {
+            UpdateCredits(keyboard, mouse);
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
+        }
         var rightClicked = PointerButtonEdges.Pressed(
             mouse.RightButton, _previousMouse.RightButton);
         if (!_gameMenuOpen && UpdatePlanningTimer(gameTime.TotalGameTime))
@@ -456,30 +472,40 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (clip.Sound is { } soundIndex) PlayCombatSound(soundIndex);
         if (_combatAnimationPlayer.IsPlaying)
         {
-            var cancelPointMapped = VirtualInput.TryMap(
-                GraphicsDevice.Viewport, mouse.Position, out var cancelPoint);
-            var cancelClicked = cancelPointMapped
-                && mouse.LeftButton == ButtonState.Pressed
-                && _previousMouse.LeftButton == ButtonState.Released
-                && CombatPanelLayout.Cancel.Contains(cancelPoint);
-            if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)
-                || cancelClicked || rightClicked)
+            var exitPointMapped = VirtualInput.TryMap(
+                GraphicsDevice.Viewport, mouse.Position, out var exitPoint);
+            var pointer = _combatExit.Update(exitPointMapped ? exitPoint : null,
+                mouse.LeftButton == ButtonState.Pressed,
+                _previousMouse.LeftButton == ButtonState.Pressed);
+            if (pointer == DetailedCombatPointerResult.Rejected)
+                PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+            // Escape and a release on the Exit face end the whole presentation (SCR-COMBAT-002);
+            // the right button does too (DEV-COMBAT-001).
+            if (Pressed(keyboard, Keys.Escape)
+                || pointer == DetailedCombatPointerResult.EndPresentation || rightClicked)
             {
                 // The cue belongs to the clip being skipped, and the original unloads slot 5 once
                 // a combatant's sequence ends, so it does not outlive the presentation.
                 _combatAnimationPlayer.Clear();
+                _combatExit.Reset();
                 StopEffectVoice();
                 _message = string.Empty;
-                rightClicked = false;
             }
-            else
-            {
-                EndUpdate(gameTime, keyboard, mouse);
-                return;
-            }
+            // The key or button that ended the presentation does nothing else this frame, so
+            // Escape does not also open the game menu.
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
         }
+        _combatExit.Reset();
         if (_automaticDetailedCombatPresentation)
             FinishAutomaticCombatPresentation();
+        // RULE-TIMER-004: the original handles no message while a pressed face or a flash waits
+        // on the presentation clock, so this frame's keys and clicks are dropped.
+        if (UpdateTickedPresentation())
+        {
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
+        }
         if (rightClicked && !_gameMenuOpen) CancelCurrentInteraction();
         if (_gameMenuOpen)
         {
@@ -508,11 +534,18 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             // TextInput event can deliver that character to the field.
             if (!_idleGangWarningOpen && !TextInputHasFocus())
             {
-                if (Pressed(keyboard, Keys.F1)) OpenHelp();
+                if (Pressed(keyboard, Keys.F1)
+                    && (keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift)))
+                    OpenCredits();
+                else if (Pressed(keyboard, Keys.F1)) OpenHelp();
                 else if (Pressed(keyboard, Keys.O)) OpenOptions();
+                else if (Pressed(keyboard, Keys.Escape) && CommandPanelOpen)
+                    CancelCommandPanelWithEscape();
                 else if (Pressed(keyboard, Keys.Escape))
                 {
-                    if (_configuringOnlineLobby) CloseOnlineSetup();
+                    // SCR-ATTACK-001, FND-ATTACK-003: Escape is the Attack picker's Cancel.
+                    if (IsAttackPickerOpen()) CancelAttackPickerByKey();
+                    else if (_configuringOnlineLobby) CloseOnlineSetup();
                     else if (_state is not null && _screens.Current is not ClientScreen.Title)
                         OpenGameMenu();
                     else if (!_screens.Back()) Exit();
@@ -551,14 +584,22 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 case ClientScreen.Events:
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveEventCursor(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveEventCursor(1);
-                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)
-                        || Pressed(keyboard, Keys.Back))
+                    // A step started this frame holds its key face; input during the wait is
+                    // dropped (RULE-TIMER-004), so the panel does not close under it.
+                    if (!_tickedPresentation.Active
+                        && (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)
+                            || Pressed(keyboard, Keys.Back)))
                         AcceptAndInvoke(CloseEvents);
                     break;
                 case ClientScreen.ComlinkView:
                     UpdateComlinkView(keyboard);
                     break;
                 case ClientScreen.Commands:
+                    if (IsAttackPickerOpen())
+                    {
+                        UpdateAttackPicker(keyboard);
+                        break;
+                    }
                     if (IsMovementCommandPicker())
                     {
                         if (Pressed(keyboard, Keys.Left)) MoveMovementTarget(-1, 0);
@@ -571,7 +612,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
                         if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
                     }
-                    if (Pressed(keyboard, Keys.Enter)) ActivateCommandSelection();
+                    if (Pressed(keyboard, Keys.Enter)
+                        || (CommandPanelOpen && Pressed(keyboard, Keys.Execute)))
+                        ConfirmCommandsByKey();
                     if (Pressed(keyboard, Keys.Back))
                         AcceptAndInvoke(BackFromCommands);
                     break;
@@ -579,8 +622,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveHireCursor(1);
                     if (Pressed(keyboard, Keys.S)) SnubSelectedHireOffer();
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        AcceptAndShow(_managementReturnScreen);
+                    if (Pressed(keyboard, Keys.Back)) AcceptAndShow(_managementReturnScreen);
+                    // FND-HIRE-009: Enter or Execute presses the OK face for one tick, then closes.
+                    else if (PressedEnterOrExecute(keyboard))
+                        PressKeyFace(PressedKeyFace.Confirm, HireComparisonLayout.Ok.Location,
+                            () => _screens.Show(_managementReturnScreen));
                     break;
                 case ClientScreen.Sector:
                     UpdateSector(keyboard);
@@ -590,7 +636,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         MoveSectorGangCursor(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down))
                         MoveSectorGangCursor(1);
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    // SCR-UI-005: Enter or Execute presses the close face.
+                    if (Pressed(keyboard, Keys.Back) || PressedEnterOrExecute(keyboard))
                         AcceptAndInvoke(CloseSectorGangs);
                     break;
                 case ClientScreen.Gang:
@@ -599,8 +646,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) CycleGangDetails(-1);
                         if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) CycleGangDetails(1);
                     }
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        AcceptAndInvoke(CloseGangDetails);
+                    // SCR-GANG-001, SCR-GANG-002: Enter or Execute presses the close face for one
+                    // tick before the panel closes (FND-GANG-006, FND-GANG-010).
+                    if (Pressed(keyboard, Keys.Back)) AcceptAndInvoke(CloseGangDetails);
+                    else if (PressedEnterOrExecute(keyboard))
+                        PressKeyFace(PressedKeyFace.Confirm, GangDetailsOk.Location, CloseGangDetails);
                     break;
                 case ClientScreen.Site:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
@@ -615,9 +665,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         AcceptAndInvoke(CloseGameInformation);
                     break;
                 case ClientScreen.Finance:
-                case ClientScreen.Ranking:
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    // SCR-FINANCE-001: Enter or Execute presses the close control.
+                    if (Pressed(keyboard, Keys.Back) || PressedEnterOrExecute(keyboard))
                         AcceptAndShow(_managementReturnScreen);
+                    break;
+                case ClientScreen.Ranking:
+                    // FND-OBJECTIVE-005: Enter or Execute presses the button for one tick, then
+                    // closes.
+                    if (Pressed(keyboard, Keys.Back)) AcceptAndShow(_managementReturnScreen);
+                    else if (PressedEnterOrExecute(keyboard))
+                        PressKeyFace(PressedKeyFace.Confirm, PlayerRankingLayout.Ok.Location,
+                            () => _screens.Show(_managementReturnScreen));
                     break;
                 case ClientScreen.Items:
                     if (Pressed(keyboard, Keys.Up)) MoveItemCursor(-1);
@@ -636,7 +694,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.D3)) ToggleGiveSelection(2);
                     if (Pressed(keyboard, Keys.Up)) MoveGiveCursor(-1);
                     if (Pressed(keyboard, Keys.Down)) MoveGiveCursor(1);
-                    if (Pressed(keyboard, Keys.Enter)) QueueSelectedGive();
+                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute))
+                        ConfirmCommandPanelByKey();
                     if (Pressed(keyboard, Keys.Back))
                         AcceptAndInvoke(CloseGiveEquipment);
                     break;
@@ -650,15 +709,19 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.D1)) ToggleSellSelection(0);
                     if (Pressed(keyboard, Keys.D2)) ToggleSellSelection(1);
                     if (Pressed(keyboard, Keys.D3)) ToggleSellSelection(2);
-                    if (Pressed(keyboard, Keys.Enter)) QueueSelectedSale();
+                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute))
+                        ConfirmCommandPanelByKey();
                     if (Pressed(keyboard, Keys.Back))
                         AcceptAndInvoke(CloseSellEquipment);
                     break;
                 case ClientScreen.CombatSummary:
-                    if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveCombatSummary(-1);
-                    if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveCombatSummary(1);
+                    // Left and Right page and Enter or Execute (0x2B) closes; the panel handles no
+                    // other key, Escape included (SCR-COMBAT-001). D replays the selected fight
+                    // (DEV-COMBAT-002).
+                    if (Pressed(keyboard, Keys.Left)) MoveCombatSummary(-1);
+                    if (Pressed(keyboard, Keys.Right)) MoveCombatSummary(1);
                     if (Pressed(keyboard, Keys.D)) ReplaySelectedCombatDetail();
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute))
                         AcceptAndInvoke(CloseCombatResults);
                     break;
                 case ClientScreen.Search:
@@ -676,12 +739,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     break;
             }
         }
+        // RULE-UI-003: the original handles no message while a panel slides in, and takes a click
+        // made during the slide from the queue once the panel is in place. The pointer is
+        // therefore read against the panel's final place, whatever the drawn offset.
         var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
-        if (pointerMapped && _slidePanels && !_gameMenuOpen)
-        {
-            var offset = _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime);
-            virtualPoint = new Point(virtualPoint.X - offset, virtualPoint.Y);
-        }
         UpdateHoverPoint(pointerMapped ? virtualPoint : null);
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)
@@ -740,13 +801,30 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         switch (_screens.Current)
         {
             case ClientScreen.Title:
-                if (TitleNewGame.Contains(point)) OpenNewGameSetup();
-                else if (TitleLoadGame.Contains(point)) OpenSaveBrowser(saving: false, fromTitle: true);
-                else if (TitleOnline.Contains(point)) OpenOnline();
-                else if (TitleOptions.Contains(point)) OpenOptions();
-                else if (TitleHelp.Contains(point)) OpenHelp();
-                else if (TitleIntro.Contains(point)) ReplayIntroMovies();
-                else if (TitleQuit.Contains(point)) Exit();
+                switch (TitleActionAt(point))
+                {
+                    case TitleAction.LoadGame:
+                        OpenSaveBrowser(saving: false, fromTitle: true);
+                        break;
+                    case TitleAction.Online:
+                        OpenOnline();
+                        break;
+                    case TitleAction.Options:
+                        OpenOptions();
+                        break;
+                    case TitleAction.Help:
+                        OpenHelp();
+                        break;
+                    case TitleAction.Intro:
+                        ReplayIntroMovies();
+                        break;
+                    case TitleAction.Quit:
+                        Exit();
+                        break;
+                    default:
+                        OpenNewGameSetup();
+                        break;
+                }
                 break;
             case ClientScreen.Options:
                 HandleOptionsClick(point);
@@ -811,19 +889,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleSectorClick(point);
                 break;
             case ClientScreen.SectorGangs:
-                if (SectorGangsLayout.Ok.Contains(point))
-                    AcceptAndInvoke(CloseSectorGangs);
+                // SCR-UI-005: the face closes on a release inside it; a press outside the panel
+                // is refused, and a press elsewhere inside it does nothing.
+                PressPanelFace(point, SectorGangsLayout.Panel, SectorGangsLayout.Ok, CloseSectorGangs);
                 break;
             case ClientScreen.Gang:
-            {
                 if (HandleGangDetailsEquipmentClick(point)) break;
-                var gangOk = _gangDetailsInstanceId is null
-                    ? GangDefinitionInformationLayout.Ok
-                    : GangInformationLayout.Ok;
-                if (gangOk.Contains(point))
-                    AcceptAndInvoke(CloseGangDetails);
+                // SCR-GANG-001, SCR-GANG-002: the same face and outside test.
+                PressPanelFace(point, GangDetailsPanel, GangDetailsOk, CloseGangDetails);
                 break;
-            }
             case ClientScreen.Site:
                 if (SiteInformationLayout.Ok.Contains(point))
                     AcceptAndInvoke(CloseSiteDetails);

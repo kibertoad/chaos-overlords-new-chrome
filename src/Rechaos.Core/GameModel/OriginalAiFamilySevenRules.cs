@@ -120,7 +120,8 @@ internal static class OriginalAiFamilySevenRules
         int type)
     {
         ValidateGang(state, player, gang);
-        var techLimit = SpecialSiteRules.ResearchTechLimit(state, gang);
+        // RULE-AI-026: local_tech_cap, whoever owns the sector (FND-AI-054).
+        var techLimit = SpecialSiteRules.ComputerTechLimit(state, gang);
         for (var itemId = 1;
              itemId < Math.Min(64, state.Definitions.Items.Count);
              itemId++)
@@ -140,7 +141,8 @@ internal static class OriginalAiFamilySevenRules
         MatchGangState gang)
     {
         ValidateGang(state, player, gang);
-        var techLimit = SpecialSiteRules.ResearchTechLimit(state, gang);
+        // RULE-AI-026: local_tech_cap, whoever owns the sector (FND-AI-054).
+        var techLimit = SpecialSiteRules.ComputerTechLimit(state, gang);
         foreach (var itemId in MiscellaneousResearchPriority)
             if (itemId < state.Definitions.Items.Count
                 && state.Definitions.Items[itemId].TechLevel <= techLimit

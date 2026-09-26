@@ -592,7 +592,8 @@ public sealed class BoardResolutionTests
         Assert.Equal(MatchBootstrap.HeadquartersDefinitionId, headquarters.DefinitionId);
         Assert.Equal(0, headquarters.Resistance);
         Assert.Null(headquarters.InfluencedBy);
-        Assert.Equal(new PlayerId(0), SiteControlRules.Controller(sector, headquarters));
+        Assert.Equal(new PlayerId(0), SiteControlRules.Controller(
+            sector, headquarters, match.Definitions.Site(headquarters.DefinitionId)));
     }
 
     [Fact]

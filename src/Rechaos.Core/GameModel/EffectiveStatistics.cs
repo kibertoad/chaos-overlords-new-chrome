@@ -159,9 +159,8 @@ public static class EffectiveStatisticsCalculator
             var item = state.Definitions.Items[itemId];
             yield return new GangStatisticsModifier(source, item.Name, item.Stats);
         }
-        foreach (var site in CompletedSitesOfOwnedSector(state, gang))
+        foreach (var definition in CompletedSitesOfOwnedSector(state, gang))
         {
-            var definition = state.Definitions.Site(site.DefinitionId);
             yield return new GangStatisticsModifier(
                 GangModifierSource.Site, definition.Name, definition.Stats);
         }
@@ -187,14 +186,18 @@ public static class EffectiveStatisticsCalculator
     }
 
     // RULE-GANG-001: a gang takes the completed sites of its sector only when its player owns the
-    // sector, whoever completed them.
-    private static IEnumerable<MatchSiteState> CompletedSitesOfOwnedSector(
+    // sector, whoever completed them, by the completion test RULE-SITE-001 applies.
+    private static IEnumerable<SiteDefinition> CompletedSitesOfOwnedSector(
         MatchState state,
         MatchGangState gang)
     {
         var sector = state.Sectors[gang.SectorId];
-        if (sector.Owner != gang.Owner) return [];
-        return sector.Sites.Where(site => SiteControlRules.Controller(sector, site) is not null);
+        if (sector.Owner != gang.Owner) yield break;
+        foreach (var site in sector.Sites)
+        {
+            var definition = state.Definitions.Site(site.DefinitionId);
+            if (SiteControlRules.IsComplete(site, definition)) yield return definition;
+        }
     }
 }
 

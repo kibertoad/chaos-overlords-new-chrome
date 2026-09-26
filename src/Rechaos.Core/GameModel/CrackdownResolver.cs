@@ -13,6 +13,11 @@ public static class CrackdownResolver
         ArgumentNullException.ThrowIfNull(state);
     }
 
+    /// <summary>
+    /// RULE-POLICE-003: after the combat phase every presence from 1 to 99 loses a turn. A value
+    /// of 100 or more stays, so the island name's police never leave, and a Crackdown that adds
+    /// its 3 to 5 turns to them keeps them permanent. A value wrapped below 0 stays too.
+    /// </summary>
     public static void FinishCombat(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -21,8 +26,7 @@ public static class CrackdownResolver
         // permanent presence a neutralizing Crackdown raised to 103 to 105 (RULE-POLICE-002) stays
         // there as well.
         foreach (var sector in state.Sectors.OrderBy(sector => sector.Id))
-            if (sector.CrackdownTurnsRemaining > 0
-                && sector.CrackdownTurnsRemaining < ManualRules.PermanentCrackdownTurns)
+            if (sector.CrackdownTurnsRemaining is > 0 and < ManualRules.PermanentCrackdownTurns)
                 sector.CrackdownTurnsRemaining--;
     }
 
@@ -55,7 +59,11 @@ public static class CrackdownResolver
         var duration = state.Random.NextInclusive(
             ManualRules.MaximumCrackdownTurns - ManualRules.MinimumCrackdownTurns + 1)
             + ManualRules.MinimumCrackdownTurns - 1;
-        sector.CrackdownTurnsRemaining = checked(sector.CrackdownTurnsRemaining + duration);
+        // FMT-STATE-002 holds `crackdown_turns` in a signed byte. From 100 the countdown of
+        // RULE-POLICE-003 no longer runs, so repeated neutralizations wrap it past 127 to a
+        // negative value, which the police phase reads as no police and the Control pass and the
+        // computer players read as police (RULE-POLICE-001, RULE-CONTROL-001, RULE-AI-004).
+        sector.CrackdownTurnsRemaining = unchecked((sbyte)(sector.CrackdownTurnsRemaining + duration));
         return new CrackdownTriggerResult(duration, previousOwner, controlLost);
     }
 }

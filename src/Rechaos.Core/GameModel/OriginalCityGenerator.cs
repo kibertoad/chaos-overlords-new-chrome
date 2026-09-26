@@ -104,7 +104,7 @@ public static class OriginalCityGenerator
                 crackdownActive: sector.CrackdownActive, isImportant: sector.IsImportant,
                 income: sector.Income, crackdownTurnsRemaining: sector.CrackdownTurnsRemaining,
                 crackdownHistory: sector.CrackdownHistory, baseTolerance: sector.BaseTolerance,
-                support: sector.Support);
+                support: sector.Support, cashYield: sector.StoredCashYield);
         }
         return assigned;
     }

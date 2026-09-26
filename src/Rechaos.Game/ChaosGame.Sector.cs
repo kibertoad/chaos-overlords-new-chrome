@@ -40,8 +40,13 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Down) && row < 7) _cursor += 8;
         if (_cursor != previousCursor) _sectorGangCardOwner = null;
         _gangSelection.KeepOnly(_cursor);
-        if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+        if (Pressed(keyboard, Keys.Back))
             _screens.Show(ClientScreen.City);
+        // FND-UI-015: Enter and Execute show the back control pressed for one tick of the
+        // presentation clock, then return to the city (fn_00418CCC kind 3, RULE-TIMER-004).
+        else if (PressedEnterOrExecute(keyboard))
+            PressKeyFace(PressedKeyFace.SectorBack, SectorDetailLayout.Back.Location,
+                () => _screens.Show(ClientScreen.City));
     }
 
     /// <summary>
@@ -67,17 +72,25 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Points the workspace at an overlord's gangs. The viewer's own portrait — and any opponent
-    /// whose gangs stay hidden — restores the viewer's own roster.
+    /// Points the workspace at an overlord's gangs. RULE-UI-010: a portrait switches the cards
+    /// only when the viewer can see a gang of that overlord in the sector, and the viewer's own
+    /// portrait then restores the viewer's roster. The portrait of an overlord with no such gang
+    /// leaves the cards as they are.
     /// </summary>
     private void SelectSectorGangCardOwner(MatchState state, PlayerId viewer, PlayerId owner)
     {
         _message = string.Empty;
-        _sectorGangCardOwner =
-            SectorOpponentGangs.Detectable(state, viewer, owner, _cursor) ? owner : null;
+        if (owner == viewer)
+        {
+            if (SectorOpponentGangs.InSector(state, viewer, viewer, _cursor).Count > 0)
+                _sectorGangCardOwner = null;
+            return;
+        }
+        if (!SectorOpponentGangs.Detectable(state, viewer, owner, _cursor)) return;
+        _sectorGangCardOwner = owner;
         // Borrowing an opponent's cards puts the player's own gangs out of sight, and a pick
         // nobody can see is a pick nobody meant to keep.
-        if (_sectorGangCardOwner is not null) _gangSelection.Clear();
+        _gangSelection.Clear();
     }
 
     private void HandleSectorClick(Point point)
@@ -101,7 +114,7 @@ public sealed partial class ChaosGame
         }
         if (BeginCityConsolePress(point, ClientScreen.Sector)) return;
         var rejectSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Reject, point);
-        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Portrait, point);
+        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.PortraitHit, point);
         if (rejectSlot >= 0)
         {
             BeginHireReject(rejectSlot, ClientScreen.Sector);
@@ -178,7 +191,7 @@ public sealed partial class ChaosGame
         {
             var definition = state.Definitions.Site(site.DefinitionId);
             var portrait = SectorDetailLayout.SitePortrait(site.Slot);
-            var controlOwner = SiteControlRules.Controller(sector, site);
+            var controlOwner = SiteControlRules.Controller(sector, site, definition);
             if (_sitePortraits is not null)
                 batch.Draw(_sitePortraits, portrait,
                     OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
@@ -375,11 +388,15 @@ public sealed partial class ChaosGame
         if (siteSlot >= 0)
         {
             var target = CommandTarget.Site(_cursor * MatchLimits.SitesPerSector + siteSlot);
-            DropGangCommand(gang,
+            var influenced = DropGangCommand(gang,
                 new BulkCommandIntent(GangAction.Influence, target, Repeat: true),
                 _state.Sectors[_cursor].Owner != gang.Owner
                     ? "CONTROL SECTOR TO INFLUENCE"
                     : "BUILDING CANNOT BE INFLUENCED");
+            // FND-UI-018: the command handler flashes the site with fn_00419AA8 when its progress
+            // is short of its resistance, that is while some resistance remains (RULE-TIMER-004).
+            if (influenced && _state.Sectors[_cursor].Sites[siteSlot].Resistance != 0)
+                StartFlash(TickedPresentationKind.SiteFlash, SectorDetailLayout.SitePortrait(siteSlot));
             return;
         }
         if (!SectorDetailLayout.TrySectorAt(point, _cursor, out var sectorId))
@@ -387,31 +404,35 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
-        DropGangCommand(gang, SectorMapGangDrop.Intent(gang.SectorId, sectorId),
-            SectorMapGangDrop.Rejection(_state, gang, sectorId));
+        var intent = SectorMapGangDrop.Intent(gang.SectorId, sectorId);
+        // FND-UI-018: a Move destination flashes its cell of the nine-sector display with
+        // fn_0041A0D4 (RULE-TIMER-004).
+        if (DropGangCommand(gang, intent, SectorMapGangDrop.Rejection(_state, gang, sectorId))
+            && intent.Action == GangAction.Move
+            && SectorDetailLayout.CellOf(_cursor, sectorId) is { } cell)
+            StartFlash(TickedPresentationKind.SectorDisplayCellFlash, cell);
     }
 
     /// <summary>
     /// Carries a finished drag out: for the gang dragged alone, or for the whole ctrl-picked
     /// selection when the gang dragged is one of them.
     /// </summary>
-    private void DropGangCommand(MatchGangState gang, BulkCommandIntent intent, string rejection)
+    /// <returns>Whether at least one order was accepted.</returns>
+    private bool DropGangCommand(MatchGangState gang, BulkCommandIntent intent, string rejection)
     {
-        if (_state is null || _actions is null) return;
+        if (_state is null || _actions is null) return false;
         if (IsSelectedForBulkCommand(gang))
-        {
-            ApplyBulkCommand(gang.Owner, intent, rejection);
-            return;
-        }
+            return ApplyBulkCommand(gang.Owner, intent, rejection);
         var command = new GameCommand(
             gang.Owner, gang.Id, intent.Action, intent.Target, intent.Repeat);
         if (!CommandValidator.Validate(_state, command).IsValid)
         {
             RejectInput(rejection);
-            return;
+            return false;
         }
         var result = _actions.Submit(command);
         ReportInputResult(result.Accepted, result.Validation.Message);
+        return result.Accepted;
     }
 
     private void CancelGangDrag()
@@ -658,21 +679,14 @@ public sealed partial class ChaosGame
         }
 
         var playerId = ViewingPlayer(state);
-        var player = state.FindPlayer(playerId)!;
-        var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
-            .GroupBy(gang => gang.SectorId).ToArray();
-        var pendingHireSectors = player.PendingHires
-            .Select(pending => pending.TargetSectorId).ToHashSet();
-        foreach (var gangs in activeGangsBySector)
-            if (SectorDetailLayout.Marker(_cursor, gangs.Key) is { } gangMarker)
-                DrawGangStatusMarker(batch, gangMarker,
-                    GangStatusSource(state, playerId, gangs.Key, gangs,
-                        pendingHireSectors.Contains(gangs.Key)));
-        var occupiedGangSectors = activeGangsBySector.Select(gangs => gangs.Key).ToHashSet();
-        foreach (var pendingSector in pendingHireSectors.Where(
-                     pendingSector => !occupiedGangSectors.Contains(pendingSector)))
-            if (SectorDetailLayout.Marker(_cursor, pendingSector) is { } hireMarker)
-                DrawGangStatusMarker(batch, hireMarker, OriginalSpriteLayout.IncomingGangStatus);
+        // RULE-UI-006: the 3-by-3 display is copied from the prepared city map, so it shows the
+        // markers the full map draw left behind.
+        var markerFrames = GangStatusMarkerPresentation.MapFrames(
+            state, playerId, _gangSight.For(state, playerId));
+        for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
+            if (markerFrames[sectorId] >= 0
+                && SectorDetailLayout.Marker(_cursor, sectorId) is { } marker)
+                DrawGangStatusMarker(batch, marker, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]));
     }
 
     private void DrawGangStatusMarker(SpriteBatch batch, Rectangle destination, Rectangle source)

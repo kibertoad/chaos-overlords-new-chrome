@@ -118,6 +118,22 @@ public sealed class CombatForceTimeline
             attackerBefore, ForceAfter(dealer, attackerBefore, order, step));
     }
 
+    /// <summary>The cap on one gang's damage in a combat phase (RULE-COMBAT-002).</summary>
+    public const int PhaseDamageCap = 10;
+
+    /// <summary>
+    /// The Force <paramref name="gang"/> entered the combat phase with, the <c>force_start</c> of
+    /// its combat record (RULE-COMBAT-002).
+    /// </summary>
+    public int PhaseStartForce(GangId gang) => InitialForce(gang);
+
+    /// <summary>
+    /// The <c>force_final</c> of <paramref name="gang"/>'s combat record: its phase-start Force less
+    /// the phase's damage capped at 10, not clamped at 0 (RULE-COMBAT-002).
+    /// </summary>
+    public int PhaseFinalForce(GangId gang) =>
+        InitialForce(gang) - Math.Min(PhaseDamageCap, _phaseDamage.GetValueOrDefault(gang));
+
     /// <summary>The force <paramref name="gang"/> keeps once the clip's own hits have landed.</summary>
     private int ForceAfter(GangId gang, int force, int order, int step)
     {
@@ -145,8 +161,9 @@ public sealed class CombatForceTimeline
     }
 
     /// <summary>
-    /// The force the gang entered the phase with: recorded on any event that targets it, otherwise
-    /// recovered from its current force, which is exact unless the phase wiped it out.
+    /// The force the gang entered the phase with, the <c>force_start</c> of its combat record
+    /// (FMT-STATE-003, RULE-COMBAT-004): recorded on any event it fought in, otherwise recovered
+    /// from its current force, which is exact unless the phase wiped it out.
     /// </summary>
     private int InitialForce(GangId gang)
     {
@@ -158,6 +175,13 @@ public sealed class CombatForceTimeline
 
     private int? RecordedInitialForce(GangId gang)
     {
+        foreach (var gameEvent in _events)
+        {
+            // An attacker that nothing attacked has its start only here: recovering it from the
+            // Force left over overstates the start of one a larger retaliation killed.
+            if (CombatantLookup.RecordedCombatant(gameEvent, gang)?.Force is { } recorded)
+                return recorded;
+        }
         foreach (var gameEvent in _events)
         {
             if (gameEvent.PoliceAttack is { } police && gameEvent.Gang == gang)

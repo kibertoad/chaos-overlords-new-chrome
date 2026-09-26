@@ -32,7 +32,7 @@
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | supported |
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | supported |
 | [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 | supported |
-| [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | unknown |
+| [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | supported |
 | [FMT-GFX-001](../formats/FMT-GFX-001.md) | 16-bit image files in DATA/PX16 | supported |
 | [FMT-GFX-002](../formats/FMT-GFX-002.md) | 8-bit image files in DATA/PX08 | supported |
 | [FMT-GFX-003](../formats/FMT-GFX-003.md) | Palette entry in a PX08 image file | supported |
@@ -219,7 +219,7 @@
 
 ## findings
 
-320 entries.
+322 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -288,7 +288,7 @@
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
-| [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, plus or its lower face and cancels with Escape or its upper face | recorded |
+| [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, Execute or its lower face and cancels with Escape or its upper face | recorded |
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | A double-click in the Attack picker opens Item Information for an equipment icon and the gang information panel for a portrait, of the acting gang or of a listed target | recorded |
 | [FND-AUDIO-001](../findings/FND-AUDIO-001.md) | Music plays one of three CD track programs, restarts each when it ends, and pauses while the window is inactive | recorded |
 | [FND-AUDIO-002](../findings/FND-AUDIO-002.md) | Nine general sound effects load into slots 0 to 9 with slot 5 left empty, and a wrapper plays them only while effects are enabled | recorded |
@@ -344,6 +344,8 @@
 | [FND-DATA-006](../findings/FND-DATA-006.md) | The Kaitai definitions of the shipped file formats parse every shipped file to its last byte with the documented field values | recorded |
 | [FND-DATA-007](../findings/FND-DATA-007.md) | Each match start reads DATA/Gangs, DATA/ITEMS and DATA/SITES whole into fixed tables, and the code reads their fields at the offsets the format entries give | recorded |
 | [FND-DATA-008](../findings/FND-DATA-008.md) | No code path in the executable can open DATA/DATA.Z | recorded |
+| [FND-DATA-009](../findings/FND-DATA-009.md) | DATA/DATA.Z is an InstallShield 3 archive of 459 files in five directories whose tables account for every byte | recorded |
+| [FND-DATA-010](../findings/FND-DATA-010.md) | The 459 blocks of DATA/DATA.Z expand to 449 installed files unchanged, and its remaining header and entry bytes are sizes or constants | recorded |
 | [FND-DETECT-001](../findings/FND-DETECT-001.md) | The visibility rebuild takes each sector's best Detect and adds a helper bonus from every other friendly gang there | recorded |
 | [FND-DETECT-002](../findings/FND-DETECT-002.md) | The visibility rebuild runs for all six observer slots, writes 0 before 1 for every active opposing gang, and leaves inactive records alone | recorded |
 | [FND-EQUIP-001](../findings/FND-EQUIP-001.md) | A Factory lowers an item's price by its cost divided by three, truncated | recorded |
