@@ -1671,7 +1671,7 @@ None.
 | [FND-AI-049](../findings/FND-AI-049.md) | body |
 | [FND-AI-052](../findings/FND-AI-052.md) | body |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
-| [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
+| [RULE-AI-019](../rules/RULE-AI-019.md) | body, evidence |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 
 ## FND-AI-049
