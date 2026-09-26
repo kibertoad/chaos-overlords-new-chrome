@@ -129,13 +129,26 @@ public static class EffectiveStatisticsCalculator
             result = result.Add(modifier.Stats);
             modifiers?.Add(modifier);
         }
+        // RULE-GANG-001: each field is an INT8 and keeps only its low eight bits. Addition wraps
+        // the same whether it wraps at each step or once at the end, but the skills read the
+        // wrapped fields, so the wrap comes before them.
+        result = SignedBytes(result);
         var skills = WeaponSkills(state, gang, result);
         if (skills != 0)
             modifiers?.Add(new GangStatisticsModifier(
                 GangModifierSource.WeaponSkills, "WEAPON SKILLS",
                 new Statistics(checked((short)skills), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)));
-        return result with { Combat = checked(result.Combat + skills) };
+        return result with { Combat = SignedByte(result.Combat + skills) };
     }
+
+    private static EffectiveStatistics SignedBytes(EffectiveStatistics value) => new(
+        SignedByte(value.Combat), SignedByte(value.Defense), SignedByte(value.Stealth),
+        SignedByte(value.Detect), SignedByte(value.Chaos), SignedByte(value.Control),
+        SignedByte(value.Heal), SignedByte(value.Influence), SignedByte(value.Research),
+        SignedByte(value.Strength), SignedByte(value.Blade), SignedByte(value.Range),
+        SignedByte(value.Fighting), SignedByte(value.MartialArts));
+
+    private static int SignedByte(int value) => unchecked((sbyte)value);
 
     private static IEnumerable<GangStatisticsModifier> SourceModifiers(
         MatchState state,

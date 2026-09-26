@@ -259,7 +259,7 @@ public sealed class AiFamilySevenTurnPlannerTests
     {
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 6);
-        match.AiPlanning.SetFamily(player, 0, 7);
+        match.AiPlanning.SeedFamily(player, 0, 7);
     }
 
     private static void AdvanceCoordinatorToTurn(

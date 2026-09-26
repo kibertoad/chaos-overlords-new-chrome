@@ -28,36 +28,47 @@ public sealed class PlayerControlTransferTests
         Assert.True(match.TransferPlayerToHuman(new PlayerId(1)));
         Assert.Equal(PlayerController.Human, match.Setup.Players[1].Controller);
         Assert.Equal(PlayerController.Human, match.Players[1].Setup.Controller);
-        Assert.Equal(before, MatchStateHasher.ComputeFingerprint(match));
+        // RULE-AI-027: the takeover's raider flag stays with the seat for the rest of the match,
+        // as the original keeps it; it matters only while the computer plans the seat.
+        Assert.True(match.AiPlanning.RaiderMode(new PlayerId(1)));
         Assert.False(match.TransferPlayerToHuman(new PlayerId(1)));
     }
 
-    // RULE-AI-001, RULE-AI-027: the computer that takes over a seat plans every gang as a raider
-    // from its second pass; on the first the flagged slot takes its hire role's family.
     [Fact]
-    public void ATakenOverSeatPlansEveryGangAsARaider()
+    public void TakenOverSeatPlansEveryGangAsARaider()
     {
         var match = CreateMatch();
         var seat = new PlayerId(1);
         match.FinishUpkeep();
+        match.AiPlanning.SetCurrentHireRole(seat, 3);
+
         Assert.True(match.TransferPlayerToComputer(seat));
+
+        // RULE-AI-027 (FND-AI-043): the takeover starts the seat, resets its records and makes
+        // every active gang family 9.
+        var gangs = match.Players[1].Gangs;
+        Assert.NotEmpty(gangs);
         Assert.True(match.AiPlanning.RaiderMode(seat));
-
-        match.FinishCommand(new PlayerId(0));
-        match.PrepareAiPlanning(seat);
-        Assert.NotEqual(AiPlanningState.UnusedFamily, match.AiPlanning.Family(seat, 0));
-
-        AdvanceToNextCommandPhase(match);
-        match.FinishCommand(new PlayerId(0));
-        match.PrepareAiPlanning(seat);
-
-        var active = match.Players[1].Gangs
-            .Select((gang, slot) => (gang, slot))
-            .Where(entry => entry.gang.IsActive)
-            .ToArray();
-        Assert.NotEmpty(active);
-        Assert.All(active, entry => Assert.Equal(9, match.AiPlanning.Family(seat, entry.slot)));
+        Assert.True(match.AiPlanning.HasPlanned(seat));
         Assert.False(match.AiPlanning.RaiderMode(new PlayerId(0)));
+        for (var slot = 0; slot < AiPlanningState.GangSlotsPerPlayer; slot++)
+        {
+            var active = slot < gangs.Count && gangs[slot].IsActive;
+            Assert.Equal(active ? AiPlanningState.RaiderFamily : AiPlanningState.UnusedFamily,
+                match.AiPlanning.Family(seat, slot));
+            Assert.False(match.AiPlanning.NeedsFamily(seat, slot));
+        }
+
+        // A gang hired into a slot a pass saw empty takes the hire role's family at its first
+        // dispatch; every other gang is family 9 again before its own (RULE-AI-001).
+        match.AiPlanning.SetNeedsFamily(seat, 0);
+        match.FinishCommand(new PlayerId(0));
+        match.PrepareAiPlanning(seat);
+
+        Assert.Equal(2, match.AiPlanning.Family(seat, 0));
+        for (var slot = 1; slot < gangs.Count; slot++)
+            if (gangs[slot].IsActive)
+                Assert.Equal(AiPlanningState.RaiderFamily, match.AiPlanning.Family(seat, slot));
     }
 
     [Fact]
