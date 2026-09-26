@@ -689,17 +689,19 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
-    public void EliminateMovementPrefersRecoveredHeadquartersCandidateSet()
+    public void EliminateMovementGivesHeadquartersCandidatesNoObjectiveBonus()
     {
-        var match = CreateMatch();
+        // The six headquarters sectors are scenario 6's (Siege) objective list
+        // (RULE-AI-031); Eliminate (scenario 7) has no objective sectors.
+        var match = CreateMatch(scenario: ScenarioId.Eliminate);
         const int ordinarySector = 10;
 
         foreach (var headquarters in OriginalCityGenerator.HeadquartersCandidates)
-            Assert.True(
+            Assert.Equal(
                 AiTurnPlanner.DestinationValue(
-                    match, new PlayerId(0), headquarters, ScenarioId.Eliminate)
-                > AiTurnPlanner.DestinationValue(
-                    match, new PlayerId(0), ordinarySector, ScenarioId.Eliminate));
+                    match, new PlayerId(0), ordinarySector, ScenarioId.Eliminate),
+                AiTurnPlanner.DestinationValue(
+                    match, new PlayerId(0), headquarters, ScenarioId.Eliminate));
     }
 
     [Fact]

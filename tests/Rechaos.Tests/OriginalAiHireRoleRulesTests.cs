@@ -214,7 +214,7 @@ public sealed class OriginalAiHireRoleRulesTests
     [Theory]
     [InlineData(9, 3)]
     [InlineData(4, 1)]
-    public void EliminateQuotasResetAtExactOneYearBoundary(int turn, int count)
+    public void SiegeQuotasResetAtExactOneYearBoundary(int turn, int count)
     {
         var inputs = turn == 9
             ? PowerInputs(family5Count: count)
@@ -226,7 +226,7 @@ public sealed class OriginalAiHireRoleRulesTests
     }
 
     [Fact]
-    public void EliminateDurationFactorScalesQuota()
+    public void SiegeDurationFactorScalesQuota()
     {
         var result = OriginalAiHireRoleRules.SelectSiegeAdjusted(
             turn: 9,
@@ -236,7 +236,7 @@ public sealed class OriginalAiHireRoleRulesTests
     }
 
     [Fact]
-    public void EliminateMinimumBaseFamilyCountOverridesOtherSlots()
+    public void SiegeMinimumBaseFamilyCountOverridesOtherSlots()
     {
         var result = OriginalAiHireRoleRules.SelectSiegeAdjusted(
             turn: 1,
@@ -249,7 +249,7 @@ public sealed class OriginalAiHireRoleRulesTests
     [InlineData(3)]
     [InlineData(6)]
     [InlineData(8)]
-    public void SiegeFamilyThreeQuotaResetsScheduledSlots(int turn)
+    public void EliminateFamilyThreeQuotaResetsScheduledSlots(int turn)
     {
         Assert.Equal(
             new OriginalAiHireRoleSelection(0, 1),
@@ -261,19 +261,32 @@ public sealed class OriginalAiHireRoleRulesTests
     [Theory]
     [InlineData(5)]
     [InlineData(7)]
-    public void SiegeFamilySixQuotaResetsScheduledSlots(int turn)
+    public void EliminateFamilySixQuotaResetsScheduledSlots(int turn)
     {
+        // RULE-AI-010: scenario 7 resets slots 5 and 7 at 10f (FND-AI-050, 0x00481030).
         Assert.Equal(
             new OriginalAiHireRoleSelection(0, 1),
             OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn,
-                PowerInputs(family6Or12Count: 6)));
+                PowerInputs(family6Or12Count: 10)));
+    }
+
+    [Theory]
+    [InlineData(5)]
+    [InlineData(7)]
+    public void EliminateFamilySixQuotaKeepsScheduledSlotsBelowTenPerYear(int turn)
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(3, 4),
+            OriginalAiHireRoleRules.SelectEliminateAdjusted(
+                turn,
+                PowerInputs(family6Or12Count: 9)));
     }
 
     [Theory]
     [InlineData(2, 100)]
     [InlineData(1, 99)]
-    public void SiegeSlotNineChecksFamilyAndCashThresholds(int family2Count, int cash)
+    public void EliminateSlotNineChecksFamilyAndCashThresholds(int family2Count, int cash)
     {
         Assert.Equal(
             new OriginalAiHireRoleSelection(0, 1),
@@ -283,7 +296,7 @@ public sealed class OriginalAiHireRoleRulesTests
     }
 
     [Fact]
-    public void SiegeSlotNineKeepsExactCashBoundaryBelowFamilyQuota()
+    public void EliminateSlotNineKeepsExactCashBoundaryBelowFamilyQuota()
     {
         Assert.Equal(
             new OriginalAiHireRoleSelection(5, 3),
@@ -293,7 +306,7 @@ public sealed class OriginalAiHireRoleRulesTests
     }
 
     [Fact]
-    public void SiegeRequiresAtLeastOneFamilySixOrTwelveGang()
+    public void EliminateRequiresAtLeastOneFamilySixOrTwelveGang()
     {
         Assert.Equal(
             new OriginalAiHireRoleSelection(3, 4),

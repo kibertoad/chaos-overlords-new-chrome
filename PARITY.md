@@ -223,7 +223,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | The fields are kept as 32-bit values; the INT8 wrap of a total outside -128 to 127 is not reproduced, and no shipped combination reaches it. |
+| `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | Each rebuilt field keeps its low eight bits, as the original's INT8 fields do; no shipped combination reaches the wrap. |
 | `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | partial | None | None | supported | Force 0 and cleared orders stand in for the sector byte 100. |
 | `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | partial | None | None | supported | Field columns and rows follow the original; which statistic sits on which row is not recorded. |
 | `SCR-GANG-002` | Gang information panel for a hired gang | supported | partial | None | `DEV-GANG-001` | supported | Value columns follow the original; the rows, equipment and portrait positions are not recorded, and the rebuild adds breakdown tooltips. |
