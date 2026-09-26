@@ -371,7 +371,8 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Writes the player's own preferences.
+    /// Writes the player's own preferences. The original's save always fails (RULE-OPTIONS-002);
+    /// the rebuild's succeeds (DEV-OPTIONS-001).
     /// </summary>
     /// <remarks>
     /// Two of these are borrowed by a lobby, which reads the host's settings into the same fields
