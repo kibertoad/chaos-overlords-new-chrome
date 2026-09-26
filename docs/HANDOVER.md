@@ -99,10 +99,14 @@ used by the shared template. What the original does now lives only in
   carries a Justification that the rebuild's behaviour is strictly better.
   Every entry now has one. The weakest are DEV-MOVE-001 (a swap into a full
   sector takes two turns; counting gangs ordered out of the destination, as
-  DEV-HIRE-001 does, would remove that), DEV-CONTROL-001 and DEV-AI-001
-  (player reliance on the original is unknown rather than ruled out) and
-  DEV-AI-002 (the resolved action can differ). DEV-HIRE-003 was dropped on
-  2026-09-25: the original also lets a zero-cost hire through (FND-HIRE-006).
+  DEV-HIRE-001 does, would remove that), DEV-CONTROL-001 (player reliance on
+  the original is unknown rather than ruled out) and DEV-AI-002 (the resolved
+  action can differ). DEV-HIRE-003 was dropped on 2026-09-25: the original also
+  lets a zero-cost hire through (FND-HIRE-006). DEV-AI-001 was dropped on
+  2026-09-26: paired simulations showed the corrected hunter guard changed no
+  match, so the rebuild keeps the original comparison. The same simulations
+  found no hunter hire by any computer player, an open claim on RULE-AI-010
+  followed up in step 8 of parity-achievement-plan.md.
 - No rule is `disputed`. RULE-AI-007, RULE-AI-019 and RULE-AI-023 are
   `supported`, and the static plan has nothing left to read for the computer
   players.
