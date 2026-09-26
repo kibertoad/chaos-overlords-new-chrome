@@ -578,6 +578,68 @@ public sealed class MatchReplayTests
         }
     }
 
+    /// <summary>
+    /// A journal from a newer build is incompatible, not damaged, even when it carries a field
+    /// this build does not know.
+    /// </summary>
+    /// <remarks>
+    /// The members are bound strictly, so reading them before the version failed as "JSON is
+    /// invalid"; recovery then took the newer primary for damage and fell back to the backup.
+    /// </remarks>
+    [Fact]
+    public void NewerJournalWithAnUnknownFieldIsIncompatibleRatherThanDamaged()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        recorder.FinishUpkeep();
+        var newer = NewerJournal(recorder);
+
+        var exception = Assert.ThrowsAny<InvalidDataException>(() =>
+            MatchReplaySerializer.LoadAndReplay(new MemoryStream(newer), recorder.State.Definitions));
+        Assert.Equal(IncompatibleSaveReason.NewerFormat, IncompatibleSave.ReasonOf(exception));
+        // Both resume paths answer null for a journal this build cannot continue, as documented.
+        Assert.Null(MatchReplaySerializer.TryLoadResumable(
+            new MemoryStream(newer), recorder.State.Definitions));
+        Assert.Null(MatchReplaySerializer.TryResumeOnto(new MemoryStream(newer), recorder.State));
+    }
+
+    [Fact]
+    public void RecoveryLeavesANewerPrimaryJournalInPlace()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(directory, "match.rchreplay");
+        try
+        {
+            var recorder = new MatchReplayRecorder(CreateMatch());
+            recorder.FinishUpkeep();
+            MatchReplayStore.SaveAtomic(path, recorder);
+            recorder.FinishCommand(new PlayerId(0));
+            MatchReplayStore.SaveAtomic(path, recorder);
+            var newer = NewerJournal(recorder);
+            File.WriteAllBytes(path, newer);
+
+            var exception = Assert.ThrowsAny<InvalidDataException>(() =>
+                MatchReplayStore.LoadAndReplayRecoveringBackup(path, recorder.State.Definitions));
+
+            Assert.Equal(IncompatibleSaveReason.NewerFormat, IncompatibleSave.ReasonOf(exception));
+            Assert.Equal(newer, File.ReadAllBytes(path));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    /// <summary>The recorder's journal as a newer build would write it, with a field added.</summary>
+    private static byte[] NewerJournal(MatchReplayRecorder recorder)
+    {
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = MatchReplaySerializer.CurrentFormatVersion + 1;
+        document["addedByANewerBuild"] = true;
+        return System.Text.Encoding.UTF8.GetBytes(document.ToJsonString());
+    }
+
     private static void AdvanceToHire(MatchState state)
     {
         state.FinishUpkeep();

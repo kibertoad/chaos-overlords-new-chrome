@@ -134,22 +134,49 @@ public sealed partial class MultiplayerMatchSession
             mayRepair,
             $"LOCAL {ShortHash(hash ?? "unknown")}  REPORTS {pending.Details}"));
         if (!mayRepair) return;
-        await CallAsync(
+        try
+        {
+            await UploadRepairAsync(pending.Turn, hash!, ours!, cancellationToken).ConfigureAwait(false);
+        }
+        catch (MultiplayerApiException exception) when (IsRepairAlreadyPosted(exception))
+        {
+            // Another client's repair landed first. Every client holding the sole most-reported
+            // hash is entitled to post it, so on a table of three or more two of them routinely
+            // race, and the loser's upload reaches a turn the winner's already settled: a peer is
+            // refused `403 host_only` by the checkpoint path a confirmed turn now takes, and the
+            // host `409 turn_not_desynced` once the turn has moved on. Neither says anything is
+            // wrong. The pause stays, and the winner's `snapshot.available` and `turn.confirmed`,
+            // which are behind this point in the log, settle it as they would for any client that
+            // never tried.
+        }
+    }
+
+    /// <summary>
+    /// Whether a refused repair upload was refused because the turn no longer needs one.
+    /// </summary>
+    private static bool IsRepairAlreadyPosted(MultiplayerApiException exception) =>
+        exception.Reason is "host_only" or "turn_not_desynced";
+
+    private Task UploadRepairAsync(
+        int turn,
+        string hash,
+        MatchState ours,
+        CancellationToken cancellationToken) =>
+        CallAsync(
             token => _match.UploadSnapshotAsync(
                 new UploadSnapshotRequest(
-                    pending.Turn,
+                    turn,
                     // The body is a native save, so the version that describes it is the native
                     // save format's — not the replay format's, which says nothing about these bytes.
                     NativeSaveSerializer.CurrentFormatVersion,
                     MultiplayerProtocolVersion.Current,
                     MultiplayerSessionVersion.Current,
-                    hash!,
-                    MatchStateClone.ToBase64(ours!),
-                    SummarizeSeats(ours!)),
+                    hash,
+                    MatchStateClone.ToBase64(ours),
+                    SummarizeSeats(ours)),
                 token),
             _pumpLane,
-            cancellationToken).ConfigureAwait(false);
-    }
+            cancellationToken);
 
     /// <summary>
     /// A repair was posted for a turn; adopt it unless this client is already on that state.

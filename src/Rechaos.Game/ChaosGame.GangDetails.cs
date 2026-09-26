@@ -78,8 +78,15 @@ public sealed partial class ChaosGame
             CycleGang(delta);
             return;
         }
-        var gangs = GangInformationRoster.ForSector(
-            _state.FindPlayer(playerId)!.Gangs, sectorId);
+        // Another player's gang steps through that player's gangs the viewer can see in the sector;
+        // stepping through the viewer's own from there swapped the panel to a different side.
+        var owner = _gangDetailsInstanceId is { } shownId && _state.FindGang(shownId) is { } shown
+            ? shown.Owner
+            : playerId;
+        var gangs = owner == playerId
+            ? GangInformationRoster.ForSector(_state.FindPlayer(playerId)!.Gangs, sectorId)
+            : GangInformationRoster.ForOwnerInSector(
+                SectorGangView.Visible(_state, playerId, sectorId), owner, sectorId);
         if (gangs.Count == 0) return;
         var current = _gangDetailsInstanceId is { } id
             ? Enumerable.Range(0, gangs.Count).FirstOrDefault(index => gangs[index].Id == id, -1)
@@ -89,11 +96,13 @@ public sealed partial class ChaosGame
         _gangDetailsDefinitionId = gang.DefinitionId;
         _gangDetailsAnimationStart = _inputTime;
         _gangEquipmentItemClicks.Cancel();
+        _message = string.Empty;
+        // The selection indexes the viewer's own gangs only.
+        if (owner != playerId) return;
         _selectedGangIndex = _state.FindPlayer(playerId)!.Gangs
             .Where(candidate => candidate.IsActive)
             .Select((candidate, index) => (candidate, index))
             .First(entry => entry.candidate.Id == gang.Id).index;
-        _message = string.Empty;
     }
 
     private void DrawGangDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)

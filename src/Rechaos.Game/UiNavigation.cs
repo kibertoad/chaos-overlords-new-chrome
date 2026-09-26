@@ -38,8 +38,15 @@ public static class OriginalFontLayout
     public static int MaskWidth => AtlasBounds.Width + SupplementalFontGlyphs.Characters.Length * CellWidth;
 
     /// <summary>Source cell of <paramref name="character"/> in the glyph mask.</summary>
+    /// <remarks>
+    /// U+2212 MINUS SIGN is drawn as the hyphen-minus the strip has. Cultures whose number format
+    /// uses it (Swedish, Norwegian and others under ICU) otherwise lost the sign of every negative
+    /// number on screen. The game formats with the invariant culture (<see cref="GameCulture"/>);
+    /// this keeps a stray culture-formatted number readable all the same.
+    /// </remarks>
     public static bool TryGlyph(char character, out Rectangle source)
     {
+        if (character == '\u2212') character = '-';
         character = char.ToUpperInvariant(character);
         if (character is >= FirstCharacter and <= LastCharacter)
         {
@@ -378,9 +385,6 @@ public static partial class OriginalSpriteLayout
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
     public static Rectangle SectorBackArrow => new(120, 211, 30, 47);
 
-    /// <summary>SCR-UI-004, FND-UI-018: the group order strip.</summary>
-    public static Rectangle GroupOrderStrip => new(190, 425, 152, 16);
-
     public static Rectangle ActivePlayerMarker(int frame)
     {
         if (frame is < 0 or >= ActivePlayerMarkerFrameCount)
@@ -424,12 +428,6 @@ public static class GangStatusMarkerLayout
 
 public static partial class SectorDetailLayout
 {
-    /// <summary>SCR-UI-004, FND-UI-015: the group order strip, one-off on the left.</summary>
-    public static Rectangle GroupOrderStrip => new(253, 61, 152, 16);
-
-    /// <summary>FND-UI-015: a press beyond x 367 opens the recurring menu.</summary>
-    public static bool GroupOrderIsRecurring(Point point) => point.X > 367;
-
     public const int Left = 61;
     public const int Top = 48;
     public const int Columns = 3;

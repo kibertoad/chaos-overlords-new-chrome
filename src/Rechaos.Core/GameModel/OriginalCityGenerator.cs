@@ -216,7 +216,7 @@ public static class OriginalMatchFactory
         AddNameModifierStartingGangs(foundation.Players);
         if (setup.Players.Any(player => OriginalSetupNameRules.EnablesIslands(player.Name)))
             foreach (var sector in foundation.Sectors.Where(sector => sector.Owner is null))
-                sector.CrackdownTurnsRemaining = CrackdownResolver.PermanentCrackdownTurns;
+                sector.CrackdownTurnsRemaining = ManualRules.PermanentCrackdownTurns;
         return new MatchState(
             definitions, setup, foundation.Players, foundation.Sectors, random, aiStrategy);
     }

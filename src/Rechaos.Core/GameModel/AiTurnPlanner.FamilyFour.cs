@@ -44,6 +44,7 @@ public static partial class AiTurnPlanner
         int gangSlot,
         FamilyPlanningSnapshot snapshot)
     {
+        // After the Heal gate, FND-AI-046 call 0x004010E9 tests the count below 1.
         if (OriginalAiFamilyFourRules.ShouldHeal(
                 gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Heal))
             SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
@@ -77,6 +78,7 @@ public static partial class AiTurnPlanner
 
         if (state.Sectors[gang.SectorId].Owner == playerId)
         {
+            // FND-AI-046, call 0x00401D7B: the count is tested below 1.
             if (CountPreviousChaosInSector(state, playerId, gang.SectorId) < 1)
                 SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Chaos);
             else
@@ -129,6 +131,7 @@ public static partial class AiTurnPlanner
             is GangAction.Attack or GangAction.Equip)
             return;
 
+        // FND-AI-046, call 0x0040179A: the count is tested below 2.
         if (state.Sectors[gang.SectorId].Owner == playerId
             && CountPreviousChaosInSector(state, playerId, gang.SectorId)
                 <= OriginalAiFamilyFourRules.MaximumPreviousChaosInOwnedSector)
@@ -171,7 +174,6 @@ public static partial class AiTurnPlanner
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }

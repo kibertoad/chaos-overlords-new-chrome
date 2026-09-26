@@ -53,27 +53,19 @@ public sealed class OriginalAiEquipmentRulesTests
     }
 
     // RULE-AI-005, FND-AI-055: families 13 and 14 keep the miscellaneous item with the most
-    // Control (selector 0x75) and reject the one already equipped.
+    // Control (selector 0x75) and reject the one already equipped. For a Tech 2 gang the first
+    // Control 1 item, 39, beats item 0 and the later Control 1 item 41 does not replace it.
     [Fact]
     public void MiscellaneousUpgradeMaximizesControlAndRejectsCurrentMaximum()
     {
         var match = CreateMatch(gangDefinitionId: 5, cash: 500);
         var player = match.Players[0];
         var gang = player.Gangs[0];
-        var items = match.Definitions.Items;
-        var tech = match.Definitions.Gang(gang.DefinitionId).TechLevel;
-        var eligible = Enumerable.Range(0, 64)
-            .Where(id => items[id].Type == 4
-                && items[id].TechLevel <= tech
-                && player.ResearchedItems.Contains(checked((short)id)))
-            .ToArray();
-        var bestControl = eligible.Max(id => items[id].Stats.Control);
-        var expected = eligible.First(id => items[id].Stats.Control == bestControl);
 
-        Assert.Equal(expected, OriginalAiEquipmentRules.SelectMiscellaneousControlUpgrade(
+        Assert.Equal(39, OriginalAiEquipmentRules.SelectMiscellaneousControlUpgrade(
             match, player, gang));
 
-        gang.MiscellaneousItemId = checked((short)expected);
+        gang.MiscellaneousItemId = 39;
         Assert.Null(OriginalAiEquipmentRules.SelectMiscellaneousControlUpgrade(
             match, player, gang));
     }

@@ -39,10 +39,12 @@ public sealed class AiFamilyZeroTurnPlannerTests
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
     }
 
-    // RULE-AI-019, FND-AI-046: the count includes the planning gang, so a gang that raised Chaos
-    // last turn after Heal, Hide or Move moves on.
+    // RULE-AI-019, FND-AI-046: after Heal, Hide or Move a gang moves on when another of its
+    // player's gangs raised Chaos in the sector last turn. (The planning gang's own previous
+    // Chaos is counted too, but family 0 never counts after Chaos; AiFamilyFourTurnPlannerTests
+    // covers that.)
     [Fact]
-    public void PreviousChaosInTheSectorSendsTheGangOn()
+    public void PreviousChaosOfAnotherGangInTheSectorSendsTheGangOn()
     {
         var match = CreateMatch();
         var player = new PlayerId(0);
@@ -159,6 +161,26 @@ public sealed class AiFamilyZeroTurnPlannerTests
         Assert.Equal(GangAction.Attack, command.Action);
         Assert.Equal(CommandTarget.Gang(new GangId(20)), command.Target);
         Assert.Equal(15, match.Random.ConsumptionCount - randomBefore);
+    }
+
+    // RULE-AI-019, FND-AI-048: after Chaos or Equip the owned-sector test reads the owner query,
+    // so under police presence the gang's own sector reads as not owned and it moves on.
+    [Theory]
+    [InlineData(false, GangAction.Chaos)]
+    [InlineData(true, GangAction.Move)]
+    public void PreviousChaosOwnedSectorTestReadsTheOwnerQuery(
+        bool crackdown, GangAction expected)
+    {
+        var match = CreateMatch();
+        var player = new PlayerId(0);
+        BeginFamilyZeroTurn(match, player);
+        SetPreviousAction(match, player, GangAction.Chaos);
+        match.Sectors[0].CrackdownActive = crackdown;
+        match.FinishUpkeep();
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
     }
 
     [Fact]

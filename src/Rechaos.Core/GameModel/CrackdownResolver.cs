@@ -8,12 +8,6 @@ public sealed record CrackdownTriggerResult(
 
 public static class CrackdownResolver
 {
-    /// <summary>
-    /// The police presence that never counts down, which the island name rule writes into every
-    /// neutral sector (RULE-SETUP-005, RULE-POLICE-003).
-    /// </summary>
-    public const int PermanentCrackdownTurns = 100;
-
     public static void ResolveUpkeep(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -27,8 +21,12 @@ public static class CrackdownResolver
     public static void FinishCombat(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
+        // RULE-POLICE-003: only a presence between 1 and 99 counts down; one at CRACKDOWN_PERMANENT
+        // (the island rule's unowned sectors) never changes. The native test is `c < 100`, so a
+        // permanent presence a neutralizing Crackdown raised to 103 to 105 (RULE-POLICE-002) stays
+        // there as well.
         foreach (var sector in state.Sectors.OrderBy(sector => sector.Id))
-            if (sector.CrackdownTurnsRemaining is > 0 and < PermanentCrackdownTurns)
+            if (sector.CrackdownTurnsRemaining is > 0 and < ManualRules.PermanentCrackdownTurns)
                 sector.CrackdownTurnsRemaining--;
     }
 

@@ -27,29 +27,11 @@ internal static class OriginalAiFamilyTenRules
             || gang.Owner != player.Id
             || !player.Gangs.Contains(gang))
             throw new ArgumentException("Gang and player must belong to the match.");
-        if (state.Definitions.Items.Count < 64)
-            throw new InvalidOperationException(
-                "Original family-10 armor selection requires the 64-item table.");
-
-        var selected = gang.ArmorItemId is { } equipped
-            ? checked((int)equipped)
-            : UnequippedArmorBaselineItem;
-        var gangTech = state.Definitions.Gang(gang.DefinitionId).TechLevel;
-        for (var index = 0; index < 64; index++)
-        {
-            var item = state.Definitions.Items[index];
-            if (item.Type != 3
-                || !player.ResearchedItems.Contains(checked((short)index))
-                || item.TechLevel > gangTech
-                || item.Stats.Stealth <= state.Definitions.Items[selected].Stats.Stealth)
-                continue;
-            selected = index;
-        }
-
-        return selected == UnequippedArmorBaselineItem
-            || selected == gang.ArmorItemId
-                ? null
-                : selected;
+        return OriginalAiEquipmentRules.SelectUpgradeOfType(
+            state, player, gang,
+            OriginalAiEquipmentRules.ArmorItemType, gang.ArmorItemId, UnequippedArmorBaselineItem,
+            item => item.Stats.Stealth,
+            _ => true);
     }
 
     public static bool CanEquipArmor(int cooldown, int itemCost, int cash)

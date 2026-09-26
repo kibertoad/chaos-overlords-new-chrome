@@ -215,7 +215,8 @@ public sealed class ComputerPlayerStateParityTests
         match.AiPlanning.SetFamily(player, 1, 12);
         match.AiPlanning.SetNeedsFamily(player, 0);
 
-        AiPlanningPreparation.RevertSurplusHunter(match, player);
+        AiPlanningPreparation.RevertSurplusHunter(
+            match, player, AiPlanningPreparation.TakeHireCensus(match, player));
 
         Assert.Equal(0, match.AiPlanning.Family(player, 0));
         Assert.True(match.AiPlanning.NeedsFamily(player, 0));

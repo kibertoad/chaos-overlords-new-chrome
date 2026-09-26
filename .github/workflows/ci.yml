@@ -23,7 +23,10 @@ jobs:
   verify:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    # The fast gate alone fits in 20 minutes, but the Linux leg of `fast-and-long-running` then
+    # runs the long-running campaigns as well, which get 35 minutes of their own in
+    # nightly-ai-campaigns.yml; 20 cancelled that leg part-way through the campaigns.
+    timeout-minutes: ${{ inputs.suite == 'fast-and-long-running' && matrix.name == 'Linux x64' && 60 || 20 }}
     strategy:
       fail-fast: false
       matrix:
@@ -42,20 +45,33 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Full history, so `check-spec.mjs` can find where this commit forked from main (or its
+          # parent on main) and fail when a spec ID, area or deviation that existed there is gone.
+          fetch-depth: 0
 
       - name: Set up .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.400
 
+      # `check-spec.mjs` (run by Invoke-Validation.ps1) compiles the `.ksy` definitions with it, and
+      # fails when CI is set and no compiler is found.
+      - name: Install the Kaitai Struct compiler
+        id: kaitai
+        uses: $/.github/actions/install-kaitai
+
       - name: Verify, build, and test
         shell: pwsh
         run: ./tools/Invoke-Validation.ps1
+        env:
+          KSC: ${{ steps.kaitai.outputs.ksc }}
 
       - name: Run observable long-running AI campaigns
         if: inputs.suite == 'fast-and-long-running' && matrix.name == 'Linux x64'
         shell: pwsh
         run: ./tools/Invoke-Validation.ps1 -LongRunningTestsOnly -TraceTestOutput
+        env:
+          KSC: ${{ steps.kaitai.outputs.ksc }}
 
       # No `--no-restore`: since de425b9 the validation step restores into a temporary root and
       # deletes it, so the checkout has no project.assets.json and this failed with NETSDK1004 on

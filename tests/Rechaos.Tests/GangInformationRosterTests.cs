@@ -28,6 +28,29 @@ public sealed class GangInformationRosterTests
             () => GangInformationRoster.ForSector(gangs, MatchLimits.SectorCount));
     }
 
+    /// <summary>
+    /// Arrows on another player's gang panel stay on that player's visible gangs, in roster order
+    /// (RULE-UI-010).
+    /// </summary>
+    [Fact]
+    public void OwnerRosterKeepsOnlyThatPlayersGangsInTheSector()
+    {
+        var viewer = new PlayerId(0);
+        var rival = new PlayerId(2);
+        MatchGangState[] visible =
+        [
+            new(new GangId(4), viewer, 0, 11, 7),
+            new(new GangId(9), rival, 1, 11, 6),
+            new(new GangId(6), rival, 2, 11, 5),
+            new(new GangId(7), rival, 3, 12, 5)
+        ];
+
+        Assert.Equal([9, 6], GangInformationRoster.ForOwnerInSector(visible, rival, 11)
+            .Select(gang => gang.Id.Value));
+        Assert.Equal([4], GangInformationRoster.ForOwnerInSector(visible, viewer, 11)
+            .Select(gang => gang.Id.Value));
+    }
+
     // SCR-GANG-002, FND-GANG-006: 48-by-48 rotation frames at (392, 141 + 64k), double-clicked
     // on (391, 140 + 64k, 50, 50).
     [Fact]
