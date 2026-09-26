@@ -44,6 +44,27 @@ public sealed class AiFamilySixTurnPlannerTests
         Assert.Equal(0, match.AiPlanning.CoverageSector(player, 0));
     }
 
+    [Fact]
+    public void FinalGreedTurnsTerminateAndFlagTheRecordForAFamily()
+    {
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(data, targetSector: 63, scenario: ScenarioId.Greed);
+        var player = new PlayerId(0);
+        AdvanceCoordinatorToTurn(match.Coordinator,
+            ScenarioCatalog.Turns(match.Setup.Duration) - 1, match.Players.Count);
+        BeginFamilySixTurn(match, player);
+        match.Coordinator.FinishUpkeep();
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.Equal(6, match.AiPlanning.Family(player, 0));
+        Assert.Equal(GangAction.Terminate, command.Action);
+        // FND-AI-059, FND-AI-042: the Greed Terminate flags the record for a family at the next
+        // dispatch, after the dispatcher cleared the flag it gave family 6 under.
+        Assert.True(match.AiPlanning.NeedsFamily(player, 0));
+    }
+
     [Theory]
     [InlineData(7, -3, GangAction.None, 0, true)]
     [InlineData(8, -3, GangAction.None, 0, false)]
@@ -61,12 +82,34 @@ public sealed class AiFamilySixTurnPlannerTests
 
     private static void BeginFamilySixTurn(MatchState match, PlayerId player)
     {
+        // RULE-AI-002: slot 0 is flagged on the first pass, so the dispatcher gives it hire role
+        // 4's family and covers its sector.
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 6);
         match.AiPlanning.SetCurrentHireRole(player, 4);
     }
 
-    private static MatchState CreateMatch(OriginalData data, int targetSector)
+    private static void AdvanceCoordinatorToTurn(
+        TurnCoordinator coordinator,
+        int targetTurn,
+        int playerCount)
+    {
+        while (coordinator.Turn < targetTurn)
+        {
+            coordinator.FinishUpkeep();
+            for (var player = 0; player < playerCount; player++)
+                coordinator.FinishCommand(new PlayerId(player));
+            foreach (var _ in TurnStructure.ExecutionOrder)
+                coordinator.FinishExecutionPhase();
+            for (var player = 0; player < playerCount; player++)
+                coordinator.FinishHire(new PlayerId(player));
+            coordinator.FinishPlayerElimination();
+        }
+    }
+
+    private static MatchState CreateMatch(
+        OriginalData data,
+        int targetSector,
+        ScenarioId scenario = ScenarioId.Power)
     {
         var attacker = data.Gangs
             .OrderByDescending(gang => gang.Stats.Detect)
@@ -97,7 +140,7 @@ public sealed class AiFamilySixTurnPlannerTests
             ], owner: id == 0 && targetSector == 0 ? setups[1].Id : null))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.SixMonths, 41, setups,
+            scenario, GameDuration.SixMonths, 41, setups,
             AiDifficulty.HomicidalManiac), players, sectors);
     }
 }

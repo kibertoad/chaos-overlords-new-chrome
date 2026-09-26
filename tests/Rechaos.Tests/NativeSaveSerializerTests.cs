@@ -13,6 +13,7 @@ public sealed partial class NativeSaveSerializerTests
     public void RoundTripPreservesCanonicalStateAndQueuedCommandProjection()
     {
         var match = CreateMatch();
+        match.AiPlanning.BeginPlanning(new PlayerId(1));
         match.AiPlanning.SetCurrentHireRole(new PlayerId(1), 4);
         match.AiPlanning.BeginPlanning(new PlayerId(1));
         match.AiPlanning.SetCurrentHireRole(new PlayerId(1), 2);

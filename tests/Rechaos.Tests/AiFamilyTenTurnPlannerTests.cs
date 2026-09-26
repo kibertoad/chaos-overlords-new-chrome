@@ -122,7 +122,7 @@ public sealed class AiFamilyTenTurnPlannerTests
         var match = CreateMatch(data, cash: 20, force: 10, researched: []);
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 10);
+        match.AiPlanning.SeedFamily(player, 0, 10);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Chaos);
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.Coordinator.FinishUpkeep();
