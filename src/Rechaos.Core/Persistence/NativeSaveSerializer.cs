@@ -205,7 +205,9 @@ public static class NativeSaveSerializer
                 savedPlanning.CoverageSectors
                     ?? throw new InvalidDataException("Native save AI coverage sectors are missing."),
                 savedPlanning.NeedsFamily
-                    ?? throw new InvalidDataException("Native save AI family flags are missing."))
+                    ?? throw new InvalidDataException("Native save AI family flags are missing."),
+                savedPlanning.RaiderMode
+                    ?? throw new InvalidDataException("Native save AI raider flags are missing."))
             : throw new InvalidDataException("Native save AI planning state is missing.");
         var runtime = new MatchRuntimeRestore(
             document.Runtime.Turn,
@@ -301,7 +303,8 @@ public static class NativeSaveSerializer
                 state.AiPlanning.CaptureArmorCooldowns(),
                 state.AiPlanning.CaptureFormationSectors(),
                 state.AiPlanning.CaptureCoverageSectors(),
-                state.AiPlanning.CaptureNeedsFamily()),
+                state.AiPlanning.CaptureNeedsFamily(),
+                state.AiPlanning.CaptureRaiderMode()),
             state.Players.Select(player => new PlayerComlinkDocument(
                 player.Id.Value,
                 state.ComlinkFor(player.Id).NextSequence,
@@ -349,7 +352,10 @@ public static class NativeSaveSerializer
             var restored = new MatchGangState(
                 new GangId(gang.Id), playerId, gang.DefinitionId, gang.SectorId, gang.Force,
                 gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId,
-                gang.Statistics is { } statistics ? NativeStatistics.FromArray(statistics) : null)
+                // RULE-GANG-001: every gang in a match holds stored values, and the current format
+                // writes them, so a gang without them is a malformed save rather than one to rebuild.
+                NativeStatistics.FromArray(gang.Statistics
+                    ?? throw new InvalidDataException("Native save gang statistics are missing.")))
             {
                 Hidden = gang.Hidden,
                 HiredThisTurn = gang.HiredThisTurn
@@ -614,7 +620,8 @@ internal sealed record AiPlanningDocument(
     IReadOnlyList<short>? ArmorCooldowns = null,
     IReadOnlyList<short>? FormationSectors = null,
     IReadOnlyList<short>? CoverageSectors = null,
-    IReadOnlyList<bool>? NeedsFamily = null);
+    IReadOnlyList<bool>? NeedsFamily = null,
+    IReadOnlyList<bool>? RaiderMode = null);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,

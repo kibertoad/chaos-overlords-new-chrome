@@ -185,7 +185,7 @@ public sealed class AiFamilyZeroTurnPlannerTests
     private static void BeginFamilyZeroTurn(MatchState match, PlayerId player)
     {
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 0);
+        match.AiPlanning.SeedFamily(player, 0, 0);
         match.AiPlanning.SetCurrentHireRole(player, 0);
     }
 
