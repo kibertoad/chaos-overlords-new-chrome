@@ -167,13 +167,13 @@ public sealed class SectorRecordParityTests
         var neutral = match.Sectors.Where(sector => sector.Owner is null).ToArray();
         Assert.NotEmpty(neutral);
         Assert.All(neutral, sector =>
-            Assert.Equal(CrackdownResolver.PermanentCrackdownTurns, sector.CrackdownTurnsRemaining));
+            Assert.Equal(ManualRules.PermanentCrackdownTurns, sector.CrackdownTurnsRemaining));
 
         for (var turn = 0; turn < 150; turn++) CrackdownResolver.FinishCombat(match);
 
         Assert.All(neutral, sector =>
         {
-            Assert.Equal(CrackdownResolver.PermanentCrackdownTurns, sector.CrackdownTurnsRemaining);
+            Assert.Equal(ManualRules.PermanentCrackdownTurns, sector.CrackdownTurnsRemaining);
             Assert.True(sector.CrackdownActive);
         });
     }

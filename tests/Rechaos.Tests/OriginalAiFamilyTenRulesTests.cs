@@ -7,7 +7,8 @@ namespace Rechaos.Tests;
 public sealed class OriginalAiFamilyTenRulesTests
 {
     // RULE-AI-005, FND-AI-055: selector 0x72 keeps the first researched armor within the gang's
-    // Tech Level with the most Stealth, starting from item 1.
+    // Tech Level with the most Stealth, starting from item 1. For a Tech 7 gang that is item 28,
+    // Stealth 3; item 36 has more Stealth but needs Tech 9.
     [Fact]
     public void ArmorSelectorUsesStrictStealthMaximumWithinRawTech()
     {
@@ -20,15 +21,13 @@ public sealed class OriginalAiFamilyTenRulesTests
         var match = CreateMatch(data, researchedItems: armor);
         var player = match.Players[0];
         var gang = player.Gangs[0];
-        var tech = data.Gang(gang.DefinitionId).TechLevel;
-        var eligible = armor.Where(id => data.Items[id].TechLevel <= tech).ToArray();
-        var bestStealth = eligible.Max(id => data.Items[id].Stats.Stealth);
-        var expected = eligible.First(id => data.Items[id].Stats.Stealth == bestStealth);
 
-        var selected = OriginalAiFamilyTenRules.SelectArmorUpgrade(match, player, gang);
+        Assert.Equal(28, OriginalAiFamilyTenRules.SelectArmorUpgrade(match, player, gang));
 
-        Assert.Equal(expected, selected);
-        Assert.True(bestStealth > data.Items[1].Stats.Stealth);
+        // Without item 28 researched no armor within Tech 7 beats item 1's Stealth 0.
+        var unresearched = CreateMatch(data, researchedItems: armor.Where(id => id != 28));
+        Assert.Null(OriginalAiFamilyTenRules.SelectArmorUpgrade(
+            unresearched, unresearched.Players[0], unresearched.Players[0].Gangs[0]));
     }
 
     [Fact]

@@ -337,13 +337,18 @@ public sealed partial class ChaosGame
     private void DrawCommands(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         DrawMapBackdrop(batch, pixel, font, state, _commandReturnScreen);
-        var playerId = ViewingPlayer(state);
-        var gang = SelectedGang(state.FindPlayer(playerId)!);
         if (_choosingCommandTarget)
         {
             DrawCommandTargets(batch, pixel, font, state);
             return;
         }
+        // RULE-TURN-005: a group order speaks for the sector's gangs, not the roster's selection.
+        var gang = _groupCommand
+            ? _bulkCommandGangs.Select(state.FindGang).FirstOrDefault(found => found is not null)
+            : SelectedGang(state.FindPlayer(ViewingPlayer(state))!);
+        var canCancel = _groupCommand
+            ? _bulkCommandGangs.Any(id => state.FindGang(id)?.QueuedCommand is not null)
+            : gang?.QueuedCommand is not null;
 
         var panel = CommandOverlayLayout.Panel;
         batch.Draw(pixel, panel, new Color(12, 18, 18, 246));
@@ -357,7 +362,7 @@ public sealed partial class ChaosGame
             var action = actions[index];
             var row = CommandOverlayLayout.ActionRow(index);
             var available = action == GangAction.None
-                ? gang?.QueuedCommand is not null
+                ? canCancel
                 : _commandOptions.Any(command => command.Action == action);
             if (index == _commandCursor)
                 batch.Draw(pixel, row, new Color(65, 35, 25));

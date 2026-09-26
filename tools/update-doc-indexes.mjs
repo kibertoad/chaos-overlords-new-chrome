@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Regenerates the generated index blocks in docs/*.md, and checks that every relative link in
-// those documents, the root README, AGENTS.md, the rebuild's ledgers and spec/ still resolves.
+// Regenerates the generated index blocks in docs/*.md, and checks that every relative link (inline
+// or a reference-style definition) in those documents, the root README, AGENTS.md, the rebuild's
+// ledgers, spec/, multiplayer/ and tools/ still resolves.
 //
 // A block is delimited by two HTML comments:
 //
@@ -161,11 +162,14 @@ function anchorsOf(path) {
 
 /**
  * Relative links of the maintained documents that no longer resolve: a missing
- * file, or an `#anchor` no heading produces. External and absolute links are
- * left alone.
+ * file, or an `#anchor` no heading produces. Both inline links (`[x](path)`)
+ * and reference-style definitions (`[x]: path`) are checked. External and
+ * absolute links are left alone.
  */
 function brokenLinks(paths) {
-  const LINK = /\[[^\]]*\]\(([^)\s]+)\)/g;
+  const LINK = /\[[^\]]*\]\(<?([^)\s>]+)>?(?:\s+[^)]*)?\)/g;
+  // A label starting with `^` is a footnote (`[^1]: text`), whose body is prose, not a target.
+  const DEFINITION = /^ {0,3}\[(?!\^)[^\]]+\]:\s*<?([^\s>]+)>?(?:\s+.*)?$/;
   const broken = [];
   for (const path of paths) {
     const label = relative(repoDir, path).split(/[\\/]/).join("/");
@@ -175,7 +179,10 @@ function brokenLinks(paths) {
       line++;
       if (/^(```|~~~)/.test(text)) inFence = !inFence;
       if (inFence) continue;
-      for (const [, target] of text.matchAll(LINK)) {
+      const definition = DEFINITION.exec(text);
+      const targets = [...text.matchAll(LINK)].map((m) => m[1]);
+      if (definition) targets.push(definition[1]);
+      for (const target of targets) {
         if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("/")) continue;
         const [file, anchor] = target.split("#");
         const resolved = file ? resolve(dirname(path), file) : path;
@@ -211,13 +218,24 @@ for (const path of documentPaths()) {
 const rootDocuments = ["README.md", "AGENTS.md", "PARITY.md", "DEVIATIONS.md", "static_validation_plan.md", "manual_validation_plan.md"]
   .map((name) => join(repoDir, name))
   .filter((path) => existsSync(path));
-/** Every Markdown file under spec/, whose entries link to each other by relative path. */
-function specPaths(dir = join(repoDir, "spec")) {
+/**
+ * Every Markdown file under a directory: spec/, whose entries link to each other by relative
+ * path, and the multiplayer and tools documentation. Installed packages and build output are
+ * not the repository's documents.
+ */
+const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "bin", "obj", ".turbo"]);
+function markdownUnder(dir) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true }).sort((x, y) => x.name.localeCompare(y.name)).flatMap((entry) =>
-    entry.isDirectory() ? specPaths(join(dir, entry.name)) : entry.name.endsWith(".md") ? [join(dir, entry.name)] : []);
+    entry.isDirectory()
+      ? SKIPPED_DIRECTORIES.has(entry.name) ? [] : markdownUnder(join(dir, entry.name))
+      : entry.name.endsWith(".md") ? [join(dir, entry.name)] : []);
 }
-const broken = brokenLinks([...documentPaths(), ...rootDocuments, ...specPaths()]);
+const broken = brokenLinks([
+  ...documentPaths(),
+  ...rootDocuments,
+  ...["spec", "multiplayer", "tools"].flatMap((name) => markdownUnder(join(repoDir, name))),
+]);
 for (const problem of broken) console.error(`broken link: ${problem}`);
 
 if (check && stale > 0) {

@@ -50,10 +50,6 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// The gangs the Sector workspace lists. A borrowed opponent roster falls back to the viewer's
-    /// own gangs once the opponent no longer keeps a detectable gang in the selected sector.
-    /// </summary>
-    /// <summary>
     /// SCR-UI-004, FND-UI-018: the group order strip is drawn when the cards show at least two
     /// gangs of the player whose turn it is, during planning.
     /// </summary>
@@ -63,6 +59,10 @@ public sealed partial class ChaosGame
         && SectorCardGangs(state, viewer) is { Count: >= 2 } cards
         && cards[0].Owner == viewer;
 
+    /// <summary>
+    /// The gangs the Sector workspace lists. A borrowed opponent roster falls back to the viewer's
+    /// own gangs once the opponent no longer keeps a detectable gang in the selected sector.
+    /// </summary>
     private IReadOnlyList<MatchGangState> SectorCardGangs(MatchState state, PlayerId viewer)
     {
         if (_sectorGangCardOwner is { } owner && owner != viewer
@@ -229,9 +229,10 @@ public sealed partial class ChaosGame
             [
                 "GROUP ORDER",
                 "GIVES ONE ORDER TO EVERY GANG YOU HAVE HERE, HIDING OR NOT.",
-                "LEFT HALF: FOR THIS TURN. RIGHT HALF: RECURRING,",
-                "WITHOUT RESEARCH. HEAL SKIPS GANGS AT FORCE 10.",
-                "THE ORDER REPLACES EACH GANG'S PREVIOUS ONE."
+                "LEFT PART: FOR THIS TURN. LAST QUARTER ON THE",
+                "RIGHT: RECURRING, WITHOUT RESEARCH.",
+                "HEAL SKIPS GANGS AT FORCE 10. A GANG THAT CANNOT",
+                "TAKE THE ORDER KEEPS ITS PREVIOUS ONE."
             ]);
         if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }

@@ -103,6 +103,73 @@ public sealed class AiFamilyFourTurnPlannerTests
         Assert.Equal(CommandTarget.Item(expected.ItemId), command.Target);
     }
 
+    // RULE-AI-023, FND-AI-046: the count includes the planning gang. After Chaos in an owned
+    // sector the gang raises Chaos again while the count is below 2, so alone it stays, and with
+    // one more gang that raised Chaos there it moves on.
+    [Theory]
+    [InlineData(false, GangAction.Chaos)]
+    [InlineData(true, GangAction.Move)]
+    public void PreviousChaosCountIncludesThePlanningGang(
+        bool secondChaosGang,
+        GangAction expected)
+    {
+        var match = CreateMatch();
+        var player = new PlayerId(0);
+        BeginFamilyFourTurn(match);
+        match.Players[0].AddGang(new MatchGangState(new GangId(11), player, 1, 0, 10));
+        match.AiPlanning.SeedFamily(player, 1, 4);
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Chaos);
+        match.AiPlanning.SetPlannedAction(
+            player, 1, secondChaosGang ? GangAction.Chaos : GangAction.Hide);
+        match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
+        match.FinishUpkeep();
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
+    }
+
+    // RULE-AI-023, FND-AI-049: Attack, Hide and Move share a branch, which raises Chaos in an
+    // owned sector nobody raised Chaos in; Bribe, Research and Snitch plan nothing.
+    [Theory]
+    [InlineData(GangAction.Attack, GangAction.Chaos)]
+    [InlineData(GangAction.Hide, GangAction.Chaos)]
+    [InlineData(GangAction.Move, GangAction.Chaos)]
+    [InlineData(GangAction.Snitch, GangAction.None)]
+    [InlineData(GangAction.Research, GangAction.None)]
+    [InlineData(GangAction.Bribe, GangAction.None)]
+    public void JumpTableGroupsThePreviousActions(GangAction previous, GangAction expected)
+    {
+        var match = CreateMatch();
+        var player = new PlayerId(0);
+        BeginFamilyFourTurn(match);
+        SetPreviousAction(match, previous);
+        match.FinishUpkeep();
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
+    }
+
+    // RULE-AI-023, FND-AI-049: at weight 10 previous Hide takes the Attack/Move branch's single
+    // draw, not the five draws of the Chaos/Equip branch.
+    [Fact]
+    public void PreviousHideMakesTheSingleDrawOfTheAttackBranch()
+    {
+        var match = CreateMatch(
+            targetSector: 0, force: 8, targetForce: 10, weakAttacker: true);
+        var player = new PlayerId(0);
+        BeginFamilyFourTurn(match);
+        SetPreviousAction(match, GangAction.Hide);
+        match.FinishUpkeep();
+        var randomBefore = match.Random.ConsumptionCount;
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Empty(AiTurnPlanner.Plan(match, player));
+        Assert.Equal(3, match.Random.ConsumptionCount - randomBefore);
+    }
+
     [Fact]
     public void UnmappedGreedRolePreservesFamilyFourAndReplaysLivePlanning()
     {

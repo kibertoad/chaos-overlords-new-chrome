@@ -272,16 +272,17 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
-    public void LiteralPlayerOrderPredicatePreservesValueSearchAndMissingValueBehavior()
+    public void StandingsSearchPreservesValueSearchAndMissingValueBehavior()
     {
+        // RULE-AI-006, FND-AI-056: selector 0x2D searches the standings bytes for slot numbers.
         int[] values = [2, 0, 0, 1, 4, 4];
 
-        Assert.True(OriginalAiSectorSelectionRules.LiteralPlayerOrderAccepts(0, 2, values));
-        Assert.False(OriginalAiSectorSelectionRules.LiteralPlayerOrderAccepts(0, 1, values));
-        Assert.False(OriginalAiSectorSelectionRules.LiteralPlayerOrderAccepts(0, 0, values));
-        Assert.False(OriginalAiSectorSelectionRules.LiteralPlayerOrderAccepts(0, -1, values));
-        Assert.True(OriginalAiSectorSelectionRules.LiteralPlayerOrderAccepts(5, 4, values));
-        Assert.True(OriginalAiSectorSelectionRules.LiteralPlayerOrderAccepts(2, 5, values));
+        Assert.True(OriginalAiSectorSelectionRules.StandingsAccept(0, 2, values));
+        Assert.False(OriginalAiSectorSelectionRules.StandingsAccept(0, 1, values));
+        Assert.False(OriginalAiSectorSelectionRules.StandingsAccept(0, 0, values));
+        Assert.False(OriginalAiSectorSelectionRules.StandingsAccept(0, -1, values));
+        Assert.True(OriginalAiSectorSelectionRules.StandingsAccept(5, 4, values));
+        Assert.True(OriginalAiSectorSelectionRules.StandingsAccept(2, 5, values));
     }
 
     // RULE-AI-006, FND-AI-056: mode 4 searches the standings bytes with the owner query, so a
@@ -298,6 +299,35 @@ public sealed class OriginalAiSectorSelectionRulesTests
 
         Assert.Equal(26, facts.Select(mode: 4, family: 2));
         Assert.Equal(0, facts.Random.ConsumptionCount);
+    }
+
+    // RULE-AI-006, FND-AI-056: when the player's slot is the first standings byte, every owner
+    // query but -1 and the player's own passes, -2 included. A sector under police presence then
+    // scores and ends the search at its radius, and the late filter clears it, so the selector
+    // draws among 64 zero scores instead of reaching the rival two sectors away.
+    [Fact]
+    public void ModeFourPolicePresenceEndsTheSearchWhenThePlayerLeadsTheStandings()
+    {
+        const int source = 27;
+        var facts = new Facts(source, seed: 4321);
+        Array.Fill(facts.Owners, -1);
+        facts.Owners[source] = 0;
+        facts.Owners[25] = 1;
+
+        Assert.Equal(26, facts.Select(mode: 4, family: 2));
+        Assert.Equal(0, facts.Random.ConsumptionCount);
+
+        var policed = new Facts(source, seed: 4321);
+        Array.Fill(policed.Owners, -1);
+        policed.Owners[source] = 0;
+        policed.Owners[25] = 1;
+        policed.Disabled[28] = true;
+        var expectedRandom = new DeterministicRandom(
+            policed.Random.State, policed.Random.ConsumptionCount);
+        var expected = ZeroMaximumStep(source, policed.GangCounts, expectedRandom);
+
+        Assert.Equal(expected, policed.Select(mode: 4, family: 2));
+        Assert.Equal(expectedRandom.ConsumptionCount, policed.Random.ConsumptionCount);
     }
 
     [Fact]
@@ -482,30 +512,36 @@ public sealed class OriginalAiSectorSelectionRulesTests
             6, 27, new PlayerId(0), 2,
             facts.Owners, facts.Disabled, facts.GangCounts,
             _ => false, _ => false, _ => false, _ => false,
-            facts.PlayerOrder, facts.Random,
+            facts.Random,
             hasHumanPlayers: false));
+        Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
+            4, 27, new PlayerId(0), 2,
+            facts.Owners, facts.Disabled, facts.GangCounts,
+            _ => false, _ => false, _ => false, _ => false,
+            facts.Random,
+            scenarioStandings: facts.Standings));
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 8));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             8, 27, new PlayerId(0), 3,
             facts.Owners, facts.Disabled, facts.GangCounts,
             _ => false, _ => false, _ => false, _ => false,
-            facts.PlayerOrder, facts.Random));
+            facts.Random));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             7, 27, new PlayerId(0), 5,
             facts.Owners, facts.Disabled, facts.GangCounts,
             _ => false, _ => false, _ => false, _ => false,
-            facts.PlayerOrder, facts.Random,
+            facts.Random,
             unfinishedSiteScore: facts.SiteScores.ElementAt));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             9, 27, new PlayerId(0), 10,
             facts.Owners, facts.Disabled, facts.GangCounts,
             _ => false, _ => false, _ => false, _ => false,
-            facts.PlayerOrder, facts.Random));
+            facts.Random));
         Assert.Throws<ArgumentException>(() => OriginalAiSectorSelectionRules.Select(
             3, 27, new PlayerId(0), 2,
             facts.Owners[..^1], facts.Disabled, facts.GangCounts,
             _ => false, _ => false, _ => false, _ => false,
-            facts.PlayerOrder, facts.Random));
+            facts.Random));
         facts.GangCounts[28] = -1;
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 2));
         facts.GangCounts[28] = AiPlanningState.GangSlotsPerPlayer + 1;
@@ -549,7 +585,6 @@ public sealed class OriginalAiSectorSelectionRulesTests
             Owners[source] = Player.Value;
             Disabled = new bool[MatchLimits.SectorCount];
             GangCounts = new int[MatchLimits.SectorCount];
-            PlayerOrder = [0, 1, 2, 3, 4, 5];
             Standings = [0, 1, 2, 3, 4, 5];
             Random = new DeterministicRandom(seed);
         }
@@ -559,7 +594,6 @@ public sealed class OriginalAiSectorSelectionRulesTests
         public int[] Owners { get; }
         public bool[] Disabled { get; }
         public int[] GangCounts { get; }
-        public int[] PlayerOrder { get; set; }
         public int[] Standings { get; set; }
         public HashSet<int> SoloControl { get; } = [];
         public HashSet<int> PriorChaos { get; } = [];
@@ -582,13 +616,16 @@ public sealed class OriginalAiSectorSelectionRulesTests
                 PriorChaos.Contains,
                 HostileOwners.Contains,
                 HumanOwners.Contains,
-                PlayerOrder,
                 Random,
                 hasHumanPlayers,
                 formationSectorId,
                 scenarioStandings: mode is 4 or 6 ? Standings : null,
                 unfinishedSiteScore: SiteScores.ElementAt,
                 hasPriorInfluence: PriorInfluence.Contains,
-                completedSiteScore: SiteScores.ElementAt);
+                completedSiteScore: SiteScores.ElementAt,
+                ownerQuery: mode == 4 ? OwnerQuery : null);
+
+        // RULE-AI-004 owner_query: -2 under police presence, else the owner byte.
+        private int OwnerQuery(int sectorId) => Disabled[sectorId] ? -2 : Owners[sectorId];
     }
 }

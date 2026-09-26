@@ -28,6 +28,13 @@ export interface StoredBugReportState {
 /** The writes and reads this area needs; implemented over Drizzle, faked in tests. */
 export interface BugReportRepository {
   insert(report: StoredBugReport): Promise<void>
+  /**
+   * `insert`, only while the day still has room for the report's archive: the row goes in when the
+   * compressed bytes filed since `since`, plus this report's, are at most `budget`. The sum and the
+   * write are ONE statement, so two reports racing for the day's last bytes cannot both see room and
+   * both be filed. False, and nothing written, when there is no room.
+   */
+  insertWithinBudget(report: StoredBugReport, since: Date, budget: number): Promise<boolean>
   get(id: string): Promise<StoredBugReport | null>
   /** Newest first, for triage. */
   list(limit: number): Promise<StoredBugReport[]>

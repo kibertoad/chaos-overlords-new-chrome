@@ -1,5 +1,5 @@
 import { ABSENT_HUMAN_STATUSES, type TakeoverRepository } from '@chaos-overlords/kernel'
-import { and, asc, eq, gte, inArray, notExists, sql } from 'drizzle-orm'
+import { and, asc, eq, gte, inArray, isNull, notExists, sql } from 'drizzle-orm'
 import { toTakeoverVote } from '../shared/mappers'
 import type { SqliteDatabase } from './database'
 import * as schema from './schema'
@@ -44,6 +44,7 @@ export function sqliteTakeoverRepository(db: SqliteDatabase): TakeoverRepository
               playerId: sql`${playerId}`.as('player_id'),
               turn: sql`${turn}`.as('turn'),
               openedAt: sql`${openedAt.getTime()}`.as('opened_at'),
+              announcedAt: sql`null`.as('announced_at'),
             })
             .from(players)
             .where(
@@ -55,6 +56,34 @@ export function sqliteTakeoverRepository(db: SqliteDatabase): TakeoverRepository
             ),
         )
         .onConflictDoNothing()
+        .returning({ playerId: takeoverPrompts.playerId })
+      return rows.length === 1
+    },
+    async getPrompt(matchId, playerId) {
+      const rows = await db
+        .select({
+          turn: takeoverPrompts.turn,
+          openedAt: takeoverPrompts.openedAt,
+          announcedAt: takeoverPrompts.announcedAt,
+        })
+        .from(takeoverPrompts)
+        .where(and(eq(takeoverPrompts.matchId, matchId), eq(takeoverPrompts.playerId, playerId)))
+        .limit(1)
+      return rows[0] ?? null
+    },
+    async markPromptAnnounced(matchId, playerId, openedAt, at) {
+      const rows = await db
+        .update(takeoverPrompts)
+        .set({ announcedAt: at })
+        .where(
+          and(
+            eq(takeoverPrompts.matchId, matchId),
+            eq(takeoverPrompts.playerId, playerId),
+            // The prompt that was announced, not one reopened for the seat since.
+            eq(takeoverPrompts.openedAt, openedAt),
+            isNull(takeoverPrompts.announcedAt),
+          ),
+        )
         .returning({ playerId: takeoverPrompts.playerId })
       return rows.length === 1
     },

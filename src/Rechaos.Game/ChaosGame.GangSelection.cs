@@ -66,6 +66,8 @@ public sealed partial class ChaosGame
     /// Puts one order to <paramref name="gangs"/>. The ctrl-picked selection is used up by the
     /// order; a group order was never the pick, so it leaves the pick alone.
     /// </summary>
+    /// <param name="group">Whether the gangs are a group order's, checked against the group
+    /// menus' allowlist rather than the ctrl-pick one.</param>
     private bool ApplyBulkCommand(
         PlayerId player, IReadOnlyList<GangId> gangs, bool group, BulkCommandIntent intent, string rejection)
     {

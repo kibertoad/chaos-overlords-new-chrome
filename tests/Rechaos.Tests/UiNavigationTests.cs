@@ -414,6 +414,22 @@ public sealed class UiNavigationTests
                 ScenarioId.BigMan, MatchLimits.SectorCount, isImportant: false));
     }
 
+    /// <summary>Left and Right flip settings, but never run the diagnostics export.</summary>
+    [Fact]
+    public void OptionsArrowsNeverExportDiagnostics()
+    {
+        Assert.Equal(OptionsLayout.ExportDiagnostics,
+            OptionsLayout.ToggleRows[OptionsLayout.ExportDiagnosticsRow - OptionsLayout.FirstToggleRow]);
+        Assert.Equal(OptionsLayout.LastRow, OptionsLayout.FirstToggleRow + OptionsLayout.ToggleRows.Count - 1);
+        Assert.False(OptionsLayout.ArrowsToggle(OptionsLayout.ExportDiagnosticsRow));
+        Assert.False(OptionsLayout.ArrowsToggle(0));
+        Assert.False(OptionsLayout.ArrowsToggle(1));
+        Assert.All(
+            Enumerable.Range(OptionsLayout.FirstToggleRow, OptionsLayout.ToggleRows.Count)
+                .Where(row => row != OptionsLayout.ExportDiagnosticsRow),
+            row => Assert.True(OptionsLayout.ArrowsToggle(row)));
+    }
+
     [Fact]
     public void OptionsExposeBothOriginalAudioScalesAsDistinctHitTargets()
     {

@@ -39,13 +39,16 @@ public sealed partial class MatchState
             throw new InvalidOperationException("AI hiring preparation requires that player's active Command phase.");
         if (!IsPlannedByComputer(player))
             throw new ArgumentException("AI hiring preparation requires a computer-controlled player.", nameof(player));
+        var census = AiPlanningPreparation.TakeHireCensus(this, player);
         var preparation = new AiTurnPlanner.HirePreparation(null);
-        if (AiPlanningPreparation.SelectHireRole(this, player) is { } selection)
+        if (AiPlanningPreparation.SelectHireRole(this, player, census) is { } selection)
         {
             AiPlanning.SetCurrentHireRole(player, selection.Role);
-            preparation = AiTurnPlanner.PrepareHire(this, player, selection);
+            // The anchor PrepareAiPlanning refreshed this turn (RULE-AI-013).
+            preparation = AiTurnPlanner.PrepareHire(
+                this, player, selection, AiPlanning.SectorAnchor(player));
         }
-        AiPlanningPreparation.RevertSurplusHunter(this, player);
+        AiPlanningPreparation.RevertSurplusHunter(this, player, census);
         return preparation;
     }
 }

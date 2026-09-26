@@ -36,11 +36,28 @@ public sealed record MultiplayerGameSettings(
     AiPolicyMode AiPolicy = AiPolicyMode.Original,
     bool AllowLateJoin = false)
 {
-    private static JsonSerializerOptions ReadOptions { get; } = new(WireJson.Options)
+    /// <summary>
+    /// The blob is written in camelCase, the spelling the coordinator reads its two keys by.
+    /// </summary>
+    /// <remarks>
+    /// The server is TypeScript and reads <c>gameSettings.allowLateJoin</c> to open the late-join
+    /// door (docs/MULTIPLAYER.md). <see cref="WireJson.Options"/> has no naming policy — the
+    /// generated records name every property themselves — so this hand-written record has to ask
+    /// for camelCase, or the flag arrives as <c>AllowLateJoin</c> and the door never opens.
+    /// </remarks>
+    private static JsonSerializerOptions WriteOptions { get; } = new(WireJson.Options)
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    private static JsonSerializerOptions ReadOptions { get; } = new(WriteOptions)
     {
         // The coordinator enriches this opaque blob with runtime-only facts such as
         // `seatSummaries`. They are not game setup and must not make a resumable match unreadable.
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+        // Builds before the camelCase blob wrote PascalCase keys, and the server stores the blob
+        // verbatim for the whole life of a match, so a resumable match may still carry them.
+        PropertyNameCaseInsensitive = true,
     };
 
     /// <summary>The blob the host sends and every client reads back.</summary>
@@ -49,7 +66,7 @@ public sealed record MultiplayerGameSettings(
             JsonSerializer.Serialize(new Wire(
                 (int)Scenario, (int)Duration, (int)AiMentality, [.. Portraits],
                 (int)AiPolicy, AllowLateJoin),
-                WireJson.Options),
+                WriteOptions),
             WireJson.Options)!;
 
     /// <summary>

@@ -139,11 +139,16 @@ public sealed class PlayerControlTransferTests
             Rechaos.Core.GameModel.CommandTarget.None, Repeat: true)).Accepted);
         AdvanceToNextCommandPhase(match);
         Assert.True(match.Commands.TryGet(gang.Id, out _));
+        // The upkeep that carried the recurring Hide in re-derived Hidden from it.
+        Assert.True(match.FindGang(gang.Id)!.Hidden);
 
         Assert.True(match.TransferPlayerToComputer(new PlayerId(1)));
 
         Assert.False(match.Commands.TryGet(gang.Id, out _));
         Assert.Null(match.FindGang(gang.Id)!.QueuedCommand);
+        // RULE-HIDE-001, as a player's own Cancel does: with the Hide order gone the gang is no
+        // longer hiding, even if the computer's planner leaves it idle this turn.
+        Assert.False(match.FindGang(gang.Id)!.Hidden);
     }
 
     [Fact]

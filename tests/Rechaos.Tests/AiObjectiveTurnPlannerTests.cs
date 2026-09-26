@@ -114,6 +114,41 @@ public sealed class AiObjectiveTurnPlannerTests
         Assert.Equal(CommandTarget.Gang(new GangId(20)), command.Target);
     }
 
+    // RULE-AI-005, FND-AI-055: with no weapon or armor upgrade, families 13 and 14 equip the
+    // miscellaneous item with the most Control (selector 0x75). For a Tech 2 gang that is item 39;
+    // no miscellaneous item within Tech 2 has positive Detect, so the Detect selector would equip
+    // nothing.
+    [Theory]
+    [InlineData(1, 13)]
+    [InlineData(2, 14)]
+    public void OwnedObjectiveEquipsTheMiscellaneousItemWithTheMostControl(
+        int hireRole,
+        int expectedFamily)
+    {
+        var data = BundledOriginalData.Load();
+        var researched = data.Items
+            .Where(item => item.Type == 4)
+            .Select(item => item.Id)
+            .ToHashSet();
+        var match = CreateMatch(data, definitionId: 5, cash: 500, researched);
+        var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
+        match.AiPlanning.SetCurrentHireRole(player, hireRole);
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
+
+        recorder.PrepareAiPlanning(player);
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.Equal(expectedFamily, match.AiPlanning.Family(player, 0));
+        Assert.Equal(GangAction.Equip, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(new AiActionTarget(39, 0), match.AiPlanning.PlannedTarget(player, 0));
+        Assert.Equal(0, match.AiPlanning.WeaponCooldown(player, 0));
+        Assert.Equal(0, match.AiPlanning.ArmorCooldown(player, 0));
+        Assert.Equal(GangAction.Equip, command.Action);
+        Assert.Equal(CommandTarget.Item(39), command.Target);
+    }
+
     [Theory]
     [InlineData(1, 13)]
     [InlineData(2, 14)]

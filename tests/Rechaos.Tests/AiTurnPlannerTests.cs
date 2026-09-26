@@ -725,6 +725,32 @@ public sealed partial class AiTurnPlannerTests
         Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(player, 0));
     }
 
+    // RULE-AI-020: every action family 1 writes but the Attack clears the focus, whatever the
+    // previous action was.
+    [Theory]
+    [InlineData(GangAction.None, 5, GangAction.Heal)]
+    [InlineData(GangAction.Chaos, 5, GangAction.Heal)]
+    [InlineData(GangAction.Heal, 8, GangAction.Heal)]
+    [InlineData(GangAction.Heal, 10, GangAction.Move)]
+    public void FamilyOneClearsAStaleFocusOnEveryActionButAttack(
+        GangAction previous, int force, GangAction expected)
+    {
+        var data = BundledOriginalData.Load();
+        var capable = data.Gangs.First(candidate => candidate.Stats.Heal >= -3).Id;
+        var match = CreateMatch(definitionId: capable, force: force, data: data);
+        var player = new PlayerId(0);
+        match.FinishUpkeep();
+        match.AiPlanning.SeedFamily(player, 0, 1);
+        match.AiPlanning.SetPlannedAction(player, 0, previous);
+        match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
+        match.AiPlanning.SetFocusValue(player, 0, 7);
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(player, 0));
+    }
+
     private static MatchState CreateMatch(
         PlayerController controller = PlayerController.Computer,
         AiDifficulty difficulty = AiDifficulty.Criminal,
