@@ -55,7 +55,8 @@ public sealed partial class ChaosGame
         // become the backup generation.
         _autoSave.ForgetVerifiedPrimary();
         return AdoptLoadedMatch(
-            () => NativeSaveStore.LoadRecoveringBackup(_autoSavePath, _definitions!).State,
+            () => _autoSave.Load(
+                () => NativeSaveStore.LoadRecoveringBackup(_autoSavePath, _definitions!).State),
             _ => null,
             _saveSlots[SaveSlotCatalog.AutoSaveRow]);
     }
@@ -82,6 +83,9 @@ public sealed partial class ChaosGame
             // RULE-RNG-001: the loaded match draws on from the run's sequence, so reloading a save
             // does not replay its luck. The journal records the move, and replays it.
             _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
+            // RULE-COMLINK-004, FMT-STATE-005: the original empties every inbox when it enters a
+            // match, so a loaded match starts with no messages. The journal records it too.
+            _actions.HotSeatRecorder.EmptyComlinkInboxes();
             ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();

@@ -64,40 +64,24 @@ computer players choose orders.
 
 ## Step 9: Remaining rule details
 
-- Fix the rule differences docs/STATE-MAPPING.md found, verifying each against the spec first:
-  - RULE-TURN-004, RULE-HEAL-001: a recurring Heal stays until the next turn start's Force test.
-  - RULE-UPKEEP-001: after a Control takeover the new owner is paid the old yield once.
-  - RULE-SITE-001, RULE-CHAOS-002: the headquarters' +2 Tolerance applies in a neutral sector.
-  - RULE-AI-005, RULE-AI-026: the computer's local tech cap ignores who owns the sector.
-  - RULE-POLICE-003, RULE-SETUP-005: the permanent crackdown value 100 never counts down.
-  - RULE-AI-005, RULE-AI-013: record 0's `definition` as the owner the computer reads at index 64.
-  - RULE-COMBAT-004: `force_start` of an attacker killed by a retaliation larger than its Force.
-  - RULE-COMLINK-004: every inbox is emptied when a match is entered.
-  - RULE-EVENT-005, RULE-EVENT-006: one Influence report per completed site.
-  - RULE-AI-010: reverting a surplus hunter keeps a `needs_family` flag set earlier in the pass.
-  - FMT-STATE-008: compare the gang entries with RULE-COMBAT-004.
+- RULE-POLICE-002's edge case says a count of 103 to 105 then counts down, while RULE-POLICE-003's
+  procedure never lowers a count of 100 or above. The rebuild follows the procedure; the two
+  entries need reconciling from the executable.
 
 ## Step 10: Screens
 
-The screens and interface rules were compared with the findings #181 recorded. What is left:
+The screens and interface rules were compared with the findings #181 recorded. What is left
+needs static reads or captures of the original:
 
-- RULE-UI-003: clip the sliding panel at x 448 so only its left columns show, as the original's
-  copies do.
-- RULE-UI-006: take enemy visibility for the gang-status markers from the snapshot made when
-  planning starts.
-- RULE-TIMER-004: the pressed key faces (fn_00418CCC) and the cell and site flashes (FND-UI-017,
-  FND-UI-018), with their one-tick waits.
-- Static reads the screens wait on: SCR-GANG-001's half-tone pattern (its PLACEHOLDER), SCR-GIVE-001's
-  list background and dimming pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's
-  police portrait and header strips.
-- Two copies of the rebuild (DEV-UI-015) share the rolling autosave file, and the autosave
-  assumes only its own process writes it; give each process its own guard.
-
-## Step 11: Deviations for what the rebuild does not reproduce
-
-FMT-DATA-005 (DATA.Z) stays `unknown` while bytes of its header and file entries are not
-interpreted (FND-DATA-009 lists them); an InstallShield 3 extraction of the blocks would settle
-them and show whether they expand to the installed files.
+- RULE-TIMER-004: how much lighter a flash copy is and the order of the city-cell copies
+  (FND-UI-017); the pressed faces of Influence's Escape, Move and Research, which no finding
+  records.
+- SCR-EVENT-001: the captions come from `Chaos Overlords.exe#STRING/33` to `STRING/44`, and the
+  rebuild has no loader for the executable's string resources; the extractor needs one, and the
+  panel then draws them.
+- SCR-GANG-001's half-tone pattern (its PLACEHOLDER), SCR-GIVE-001's list background and dimming
+  pattern, SCR-MOVE-001's table of disabled cells, and SCR-COMBAT-002's police portrait and
+  header strips.
 
 ## Step 12: Close the research plans
 
@@ -112,8 +96,9 @@ them and show whether they expand to the installed files.
 A row is `validated` only when its Tests column lists a test that compares the rebuild with
 evidence from the original (see [docs/VALIDATION.md](docs/VALIDATION.md#tests-against-the-original)).
 
-- Formats first, since they need no new experiments: tests that decode every shipped file for
-  FMT-DATA-001 to FMT-DATA-003, FMT-GFX-001 to FMT-GFX-003, the audio, video and help formats.
+- Formats: FMT-DATA-001 to 003, FMT-GFX-001 to 003, FMT-VIDEO-001 and FMT-HELP-001 to 002 are
+  validated against every shipped file. FMT-AUDIO-001 and 002 have file tests too, but the
+  rebuild hands those files to the framework whole, so no decoder of its own is compared.
 - Rules next, as each `EXP-` fixture from step 12 lands: a test replays the fixture and compares
   events and end state. A test that reaches a `mandatory` deviation cites its ID and allows for it.
 - Screens last, against captures of the original, with masks for the areas a deviation draws.

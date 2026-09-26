@@ -161,8 +161,9 @@ public sealed class CombatForceTimeline
     }
 
     /// <summary>
-    /// The force the gang entered the phase with: recorded on any event that targets it, otherwise
-    /// recovered from its current force, which is exact unless the phase wiped it out.
+    /// The force the gang entered the phase with, the <c>force_start</c> of its combat record
+    /// (FMT-STATE-003, RULE-COMBAT-004): recorded on any event it fought in, otherwise recovered
+    /// from its current force, which is exact unless the phase wiped it out.
     /// </summary>
     private int InitialForce(GangId gang)
     {
@@ -174,6 +175,13 @@ public sealed class CombatForceTimeline
 
     private int? RecordedInitialForce(GangId gang)
     {
+        foreach (var gameEvent in _events)
+        {
+            // An attacker that nothing attacked has its start only here: recovering it from the
+            // Force left over overstates the start of one a larger retaliation killed.
+            if (CombatantLookup.RecordedCombatant(gameEvent, gang)?.Force is { } recorded)
+                return recorded;
+        }
         foreach (var gameEvent in _events)
         {
             if (gameEvent.PoliceAttack is { } police && gameEvent.Gang == gang)

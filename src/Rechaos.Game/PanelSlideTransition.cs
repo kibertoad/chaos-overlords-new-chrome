@@ -1,9 +1,12 @@
+using Microsoft.Xna.Framework;
+
 namespace Rechaos.Game;
 
 /// <summary>
 /// The slide-in of a panel (RULE-UI-003). The panel comes in from x 448 in whole steps worked out
-/// from a copy benchmark, one copy per step, and the last copy puts it in place. The slide-out is
-/// not animated (DEV-UI-001).
+/// from a copy benchmark, one copy per step, and the last copy puts it in place. Each copy draws
+/// only the panel's left columns, cut off at the panel's right edge, over the screen the panel
+/// opened from. The slide-out is not animated (DEV-UI-001).
 /// </summary>
 public sealed class PanelSlideTransition
 {
@@ -20,9 +23,20 @@ public sealed class PanelSlideTransition
     /// </summary>
     public const int NominalBlitBenchmarkCount = 84;
 
+    /// <summary>The right edge of the panel area every original panel ends at (RULE-UI-003).</summary>
+    public const int PanelRight = 448;
+    public const int PanelTop = 124;
+    public const int PanelHeight = 209;
+
     private ClientScreen? _screen;
     private TimeSpan _started;
     private int _startOffset;
+
+    /// <summary>The screen the sliding panel opened from, drawn around and under it.</summary>
+    public ClientScreen? Previous { get; private set; }
+
+    /// <summary>Where the sliding panel ends up, in the 640-by-460 virtual screen.</summary>
+    public Rectangle PanelArea { get; private set; }
 
     public void Begin(ClientScreen screen, TimeSpan now)
     {
@@ -30,6 +44,8 @@ public sealed class PanelSlideTransition
         _screen = IsPanel(screen) ? screen : null;
         _startOffset = StartOffsetFor(screen);
         _started = now;
+        Previous = null;
+        PanelArea = PanelAreaFor(screen);
     }
 
     /// <param name="compactGangPanel">
@@ -43,6 +59,8 @@ public sealed class PanelSlideTransition
         _screen = ShouldAnimate(previous, current) ? current : null;
         _startOffset = StartOffsetFor(current, compactGangPanel);
         _started = now;
+        Previous = previous;
+        PanelArea = PanelAreaFor(current, compactGangPanel);
     }
 
     /// <summary>
@@ -101,6 +119,31 @@ public sealed class PanelSlideTransition
                 offsets.Add(travel - shown);
         offsets.Add(0);
         return offsets;
+    }
+
+    /// <summary>
+    /// RULE-UI-003: the final place of a panel, <c>(104,124,344,209)</c> for a primary panel and
+    /// <c>(128,124,320,209)</c> for an alternate one. The rebuild's Options and Help panels are
+    /// larger than the original's and keep their own rectangles, so they are cut off at their own
+    /// right edges.
+    /// </summary>
+    public static Rectangle PanelAreaFor(ClientScreen screen, bool compactGangPanel = false)
+    {
+        if (screen == ClientScreen.Options) return OptionsLayout.Panel;
+        if (screen == ClientScreen.Help) return HelpLayout.Panel;
+        var travel = StartOffsetFor(screen, compactGangPanel);
+        return new Rectangle(PanelRight - travel, PanelTop, travel, PanelHeight);
+    }
+
+    /// <summary>
+    /// RULE-UI-003: the part of the screen a copy at <paramref name="offset"/> draws. The panel's
+    /// left edge stands <paramref name="offset"/> pixels right of its final place and it is cut
+    /// off at its final right edge, so only its left <c>width - offset</c> columns show.
+    /// </summary>
+    public static Rectangle VisibleArea(Rectangle panel, int offset)
+    {
+        var shift = Math.Clamp(offset, 0, panel.Width);
+        return new Rectangle(panel.X + shift, panel.Y, panel.Width - shift, panel.Height);
     }
 
     public static bool ShouldAnimate(ClientScreen previous, ClientScreen current) =>

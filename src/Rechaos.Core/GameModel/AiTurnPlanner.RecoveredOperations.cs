@@ -10,7 +10,7 @@ public static partial class AiTurnPlanner
     internal static int OwnerQuery(MatchState state, int sectorId)
     {
         var sector = state.Sectors[sectorId];
-        return sector.CrackdownActive ? -2 : sector.Owner?.Value ?? -1;
+        return sector.HasCrackdownTurns ? -2 : sector.Owner?.Value ?? -1;
     }
 
     /// <summary>

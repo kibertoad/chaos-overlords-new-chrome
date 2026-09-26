@@ -24,6 +24,39 @@ public sealed class ComlinkTests
         Assert.True(inbox.HasUnread);
     }
 
+    // RULE-COMLINK-003: with a recipient chosen, a blank draft is stored for no one and the send
+    // counts as made; with none, the send is refused first. The rule lives in the match, so every
+    // sender, the journal included, sees the same result.
+    [Fact]
+    public void ABlankDraftIsDroppedOnceARecipientIsChosen()
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] players =
+        [
+            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(1), "TWO", PlayerController.Human)
+        ];
+        var match = OriginalMatchFactory.Create(data,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+        match.FinishUpkeep();
+        var before = MatchStateHasher.ComputeFingerprint(match);
+
+        var noRecipient = match.SendComlinkMessage(new PlayerId(0), [], "   ");
+        var blank = match.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], "   ");
+        var empty = match.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], string.Empty);
+
+        Assert.Equal(ComlinkValidationCode.NoRecipients, noRecipient.Code);
+        Assert.True(blank.Accepted);
+        Assert.Empty(blank.Recipients);
+        Assert.Equal(string.Empty, blank.Message);
+        Assert.True(empty.Accepted);
+        Assert.Empty(empty.Recipients);
+        Assert.Equal(0, match.ComlinkFor(new PlayerId(1)).Count);
+        Assert.Equal(before, MatchStateHasher.ComputeFingerprint(match));
+        Assert.Equal(ComlinkValidationCode.EmptyMessage,
+            match.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], "\t").Code);
+    }
+
     // RULE-COMLINK-007: ending planning drops the read messages at the front, up to the first
     // unread one; a read message after it stays.
     [Fact]
@@ -56,6 +89,53 @@ public sealed class ComlinkTests
         save.Position = 0;
         var restored = Rechaos.Core.Persistence.NativeSaveSerializer.Load(save, data);
         Assert.Equal(2, restored.ComlinkFor(new PlayerId(1)).Count);
+    }
+
+    // RULE-COMLINK-004, FMT-STATE-005: the original's save holds no messages and entering a match
+    // empties every record, so after a load View finds no message and does not open.
+    [Fact]
+    public void EnteringALoadedMatchEmptiesEveryInbox()
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] players =
+        [
+            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(1), "TWO", PlayerController.Human),
+            new(new PlayerId(2), "THREE", PlayerController.Human)
+        ];
+        var match = OriginalMatchFactory.Create(data,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+        match.FinishUpkeep();
+        Assert.True(match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1), new PlayerId(2)], "TRUCE?").Accepted);
+        Assert.True(match.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], "ANSWER").Accepted);
+        match.MarkComlinkRead(new PlayerId(1), match.ComlinkFor(new PlayerId(1)).Messages[0].Sequence);
+        using var save = new MemoryStream();
+        Rechaos.Core.Persistence.NativeSaveSerializer.Save(save, match);
+        save.Position = 0;
+        var loaded = Rechaos.Core.Persistence.NativeSaveSerializer.Load(save, data);
+        var next = loaded.ComlinkFor(new PlayerId(1)).NextSequence;
+
+        Assert.True(loaded.EmptyComlinkInboxes());
+
+        foreach (var player in loaded.Players)
+        {
+            var inbox = loaded.ComlinkFor(player.Id);
+            Assert.Equal(0, inbox.Count);
+            Assert.Empty(inbox.ReadSequences);
+            Assert.False(inbox.HasUnread);
+        }
+        Assert.False(loaded.EmptyComlinkInboxes());
+        // A message after the load takes a new number, so no stale read mark can reach it.
+        Assert.True(loaded.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], "AGAIN").Accepted);
+        var again = Assert.Single(loaded.ComlinkFor(new PlayerId(1)).Messages);
+        Assert.Equal(next, again.Sequence);
+        Assert.False(loaded.ComlinkFor(new PlayerId(1)).IsRead(again.Sequence));
+        using var resaved = new MemoryStream();
+        Rechaos.Core.Persistence.NativeSaveSerializer.Save(resaved, loaded);
+        resaved.Position = 0;
+        Assert.Single(Rechaos.Core.Persistence.NativeSaveSerializer.Load(resaved, data)
+            .ComlinkFor(new PlayerId(1)).Messages);
     }
 
     [Fact]

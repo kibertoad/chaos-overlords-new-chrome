@@ -163,6 +163,108 @@ public sealed class RollingAutoSaveTests
         }
     }
 
+    /// <summary>
+    /// DEV-UI-015 lets a second copy of the rebuild run. Its autosave lands on the same file, so a
+    /// primary this process verified stops being trusted once the other copy has replaced it.
+    /// </summary>
+    [Fact]
+    public void APrimaryAnotherProcessReplacedIsNotTrusted()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var path = Path.Combine(directory, "autosave.rchsave");
+            var guard = new AutoSaveFileGuard(path);
+            var trusted = new List<bool>();
+
+            guard.Write(true, trust => { trusted.Add(trust); File.WriteAllBytes(path, [1, 2, 3]); });
+            guard.Write(true, trust => { trusted.Add(trust); File.WriteAllBytes(path, [4, 5, 6]); });
+            // The other copy promotes its own generation over the primary.
+            File.WriteAllBytes(path, [7, 8, 9, 10]);
+            guard.Write(true, trust => { trusted.Add(trust); File.WriteAllBytes(path, [11]); });
+            guard.Write(false, trust => { trusted.Add(trust); File.WriteAllBytes(path, [12]); });
+
+            Assert.Equal(new[] { false, true, false, false }, trusted);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    /// <summary>A write waits for the other copy's lock and gives up with an I/O failure.</summary>
+    [Fact]
+    public void AWriteWhileAnotherProcessHoldsTheLockIsReportedAsAFailure()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var path = Path.Combine(directory, "autosave.rchsave");
+            var failures = new List<(int Turn, Exception Failure)>();
+            var queue = new RollingAutoSave(
+                new AutoSaveFileGuard(path, TimeSpan.FromMilliseconds(200)),
+                (turn, exception) => failures.Add((turn, exception)));
+            var match = CreateMatch();
+
+            using (new FileStream(AutoSaveFileGuard.LockPathFor(path), FileMode.OpenOrCreate,
+                       FileAccess.ReadWrite, FileShare.None))
+            {
+                queue.Capture(match);
+                queue.Flush();
+            }
+
+            Assert.IsType<IOException>(Assert.Single(failures).Failure);
+            Assert.False(File.Exists(path));
+
+            // Once the other copy lets go, the next turn is written as usual.
+            queue.Capture(match);
+            queue.Flush();
+            Assert.Single(failures);
+            Assert.True(File.Exists(path));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AWriteWaitsUntilTheOtherProcessReleasesTheLock()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var path = Path.Combine(directory, "autosave.rchsave");
+            var guard = new AutoSaveFileGuard(path, TimeSpan.FromSeconds(10));
+            var held = new FileStream(AutoSaveFileGuard.LockPathFor(path), FileMode.OpenOrCreate,
+                FileAccess.ReadWrite, FileShare.None);
+            var releasing = new Thread(() =>
+            {
+                Thread.Sleep(150);
+                held.Dispose();
+            });
+            releasing.Start();
+
+            var wrote = false;
+            guard.Write(false, _ => wrote = true);
+            releasing.Join();
+
+            Assert.True(wrote);
+            Assert.Equal(7, guard.Read(() => 7));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static string NewDirectory()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"rechaos-autosave-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        return directory;
+    }
+
     private static bool[] Trust(RecordingWriter writer) =>
         writer.Writes.Select(write => write.TrustExistingPrimary).ToArray();
 

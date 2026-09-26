@@ -51,7 +51,7 @@ internal static class AiPlanningPreparation
         var activeGangCount = playerState.Gangs.Count(gang => gang.IsActive);
         var ownedSectorCount = state.Sectors.Count(sector => sector.Owner == player);
         var hasNeutralSector = state.Sectors.Any(sector =>
-            sector.Owner is null && !sector.CrackdownActive);
+            sector.Owner is null && !sector.HasCrackdownTurns);
         var hireGangLimit = OriginalAiHireRoleRules.CalculateHireGangLimit(
             state.Setup.Scenario, activeGangCount, ownedSectorCount,
             playerState.Cash, hasNeutralSector);
@@ -128,18 +128,17 @@ internal static class AiPlanningPreparation
         var playerState = state.FindPlayer(player)
             ?? throw new ArgumentOutOfRangeException(nameof(player));
         var owners = state.Sectors.Select(sector => sector.Owner?.Value ?? -1)
-            // Sector index 64 aliases player 0 gang slot 0's owner byte. In a
-            // fresh game that byte is initialized to zero and remains stale at
-            // zero if the Right Hands slot later becomes inactive.
-            .Append(0)
+            // RULE-AI-013: the owner read at sector index 64 is byte 0 of the first combat record,
+            // the definition of the last gang in player 0's roster slot 0 that fought
+            // (FMT-STATE-003).
+            .Append(state.AiPlanning.FirstCombatRecordDefinition)
             .ToArray();
         var availability = state.Sectors
-            // Clamped, not checked. The original held this counter in a byte; here it is an int
-            // that Trigger adds three to five to and FinishCombat takes one off, so a sector that
-            // is crackdown-triggered most turns crosses 255 in a long game. Everything downstream
-            // reads it as "how long this sector stays shut", and 255 turns is already forever.
-            .Select(sector => (byte)Math.Clamp(sector.CrackdownTurnsRemaining, 0, byte.MaxValue))
-            // The aliased retaliation byte is irrelevant while owner[64] != -1.
+            // RULE-AI-013: the scans compare the signed byte with 0, so a value wrapped below 0
+            // still reads as a Crackdown (FMT-STATE-002).
+            .Select(sector => unchecked((byte)(sbyte)sector.CrackdownTurnsRemaining))
+            // The aliased retaliation byte is irrelevant: owner[64] is a definition in 0..127, never
+            // -1 (AiPlanningState.FirstCombatRecordDefinition).
             .Append((byte)0)
             .ToArray();
         var anchorSector = state.AiPlanning.SectorAnchor(player)

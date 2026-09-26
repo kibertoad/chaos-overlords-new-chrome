@@ -3,7 +3,7 @@ namespace Rechaos.Core.GameModel;
 /// <summary>
 /// A sector's Tolerance in two parts: the base that Bribe, Snitch and the return toward normal
 /// change during resolution, and the completed sites' Tolerance that the rebuild before planning
-/// adds on top of it (RULE-TOLERANCE-001, RULE-TOLERANCE-002, RULE-SITE-001).
+/// (<see cref="SectorRecordRebuild"/>) adds on top of it (RULE-TOLERANCE-001, RULE-TOLERANCE-002, RULE-SITE-001).
 /// </summary>
 public static class ToleranceResolver
 {
@@ -29,8 +29,9 @@ public static class ToleranceResolver
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);
         return sector.Sites
-            .Where(site => SiteControlRules.Controller(sector, site) is not null)
-            .Sum(site => state.Definitions.Site(site.DefinitionId).Tolerance);
+            .Select(site => (Site: site, Definition: state.Definitions.Site(site.DefinitionId)))
+            .Where(pair => SiteControlRules.IsComplete(pair.Site, pair.Definition))
+            .Sum(pair => pair.Definition.Tolerance);
     }
 
     /// <summary>RULE-BRIBE-001: the base plus 3, stored as a signed byte.</summary>
@@ -72,29 +73,6 @@ public static class ToleranceResolver
         ArgumentNullException.ThrowIfNull(state);
         foreach (var sector in state.Sectors)
             sector.BaseTolerance = MoveOnePointToward(sector.BaseTolerance, NormalBaseTolerance(sector));
-    }
-
-    /// <summary>
-    /// RULE-SITE-001: before planning, the Tolerance the Chaos test reads is rebuilt as the base
-    /// plus the completed sites' Tolerance, each sum stored as a signed byte.
-    /// </summary>
-    internal static void RebuildBeforePlanning(MatchState state)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        foreach (var sector in state.Sectors)
-        {
-            var tolerance = sector.BaseTolerance;
-            var support = 0;
-            foreach (var site in sector.Sites)
-            {
-                if (SiteControlRules.Controller(sector, site) is null) continue;
-                var definition = state.Definitions.Site(site.DefinitionId);
-                tolerance = SignedByte(tolerance + definition.Tolerance);
-                support = SignedByte(support + definition.Support);
-            }
-            sector.Tolerance = tolerance;
-            sector.Support = support;
-        }
     }
 
     private static int SignedByte(int value) => unchecked((sbyte)value);

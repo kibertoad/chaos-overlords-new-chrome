@@ -97,12 +97,56 @@ public sealed partial class ChaosGame
         }
     }
 
-    /// <summary>Escape presses Cancel on these panels instead of opening the game menu.</summary>
+    /// <summary>
+    /// Escape presses Cancel on these panels instead of opening the game menu. The Equip, Give
+    /// and Sell handlers draw the Cancel face pressed for one tick before they close
+    /// (fn_00418CCC; FND-EQUIP-010, FND-GIVE-001, FND-SELL-001, RULE-TIMER-004).
+    /// </summary>
     private void CancelCommandPanelWithEscape()
     {
         CancelCommandPanelButton();
-        AcceptAndInvoke(CancelCommandPanel);
+        if (PressesCommandPanelKeyFaces())
+            PressKeyFace(PressedKeyFace.Cancel, CommandPanelFaces.Face(CommandPanelButton.Cancel).Location,
+                CancelCommandPanel);
+        else
+            AcceptAndInvoke(CancelCommandPanel);
     }
+
+    /// <summary>
+    /// Enter or Execute on a panel with the shared faces: a confirm the panel cannot take is
+    /// refused with slot 4 at once; otherwise the Equip, Influence, Give and Sell handlers press
+    /// the confirm face for one tick before the order is written (fn_00418CCC; FND-EQUIP-010,
+    /// FND-INFLUENCE-003, FND-GIVE-001, FND-SELL-001, RULE-TIMER-004).
+    /// </summary>
+    private void ConfirmCommandPanelByKey()
+    {
+        if (!PressesCommandPanelKeyFaces() || !CanConfirmCommandPanel())
+        {
+            ConfirmCommandPanel(pointerButton: false);
+            return;
+        }
+        PressKeyFace(PressedKeyFace.Confirm, CommandPanelFaces.Face(CommandPanelButton.Confirm).Location,
+            () => ConfirmCommandPanel(pointerButton: true));
+    }
+
+    /// <summary>The Commands screen's Enter: the panels above press their face first.</summary>
+    private void ConfirmCommandsByKey()
+    {
+        if (PressesCommandPanelKeyFaces()) ConfirmCommandPanelByKey();
+        else ActivateCommandSelection();
+    }
+
+    /// <summary>
+    /// The panels whose findings record the press helper fn_00418CCC on their keys. The Move and
+    /// Research handlers are not among them, so their keys act at once.
+    /// </summary>
+    private bool PressesCommandPanelKeyFaces() => _screens.Current switch
+    {
+        ClientScreen.Give or ClientScreen.Sell => true,
+        ClientScreen.Commands => _choosingCommandTarget && _commandTargetOptions.Count > 0
+            && _commandTargetOptions[0].Action is GangAction.Equip or GangAction.Influence,
+        _ => false
+    };
 
     /// <summary>A press outside the panel is refused with slot 4 and leaves it open.</summary>
     private void RejectOutsideCommandPanel() => RejectInput("CLICK INSIDE THE PANEL");

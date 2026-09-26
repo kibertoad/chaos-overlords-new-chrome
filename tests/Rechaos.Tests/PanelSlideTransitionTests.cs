@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Rechaos.Game;
 using Xunit;
 
@@ -111,5 +113,58 @@ public sealed class PanelSlideTransitionTests
                 PanelSlideTransition.SlideStep(travel, PanelSlideTransition.NominalBlitBenchmarkCount),
                 slidePanels: true)[0],
             slide.Offset(ClientScreen.Gang, start));
+    }
+
+    /// <summary>
+    /// RULE-UI-003: each copy draws only the panel's left travel - offset columns, ending at
+    /// x 448, over rows 124 to 333.
+    /// </summary>
+    [Theory]
+    [InlineData(ClientScreen.Items, false, 104, 344)]
+    [InlineData(ClientScreen.Finance, false, 128, 320)]
+    [InlineData(ClientScreen.Gang, false, 104, 344)]
+    [InlineData(ClientScreen.Gang, true, 128, 320)]
+    public void EachCopyShowsOnlyThePanelsLeftColumnsUpToX448(
+        ClientScreen screen, bool compact, int left, int travel)
+    {
+        var panel = PanelSlideTransition.PanelAreaFor(screen, compact);
+        Assert.Equal(new Rectangle(left, 124, travel, 209), panel);
+
+        var step = PanelSlideTransition.SlideStep(travel, PanelSlideTransition.NominalBlitBenchmarkCount);
+        foreach (var offset in PanelSlideTransition.SlideInOffsets(travel, step, slidePanels: true))
+        {
+            var visible = PanelSlideTransition.VisibleArea(panel, offset);
+            Assert.Equal(448, visible.Right);
+            Assert.Equal(travel - offset, visible.Width);
+            Assert.Equal(left + offset, visible.Left);
+            Assert.Equal(124, visible.Top);
+            Assert.Equal(333, visible.Bottom);
+        }
+        // The first copy of a 344-pixel slide shows the 16 columns of one step.
+        Assert.Equal(new Rectangle(432, 124, 16, 209), PanelSlideTransition.VisibleArea(
+            PanelSlideTransition.PanelAreaFor(ClientScreen.Items), 344 - 16));
+    }
+
+    [Fact]
+    public void TheSlideRemembersTheScreenThePanelOpenedFrom()
+    {
+        var slide = new PanelSlideTransition();
+        slide.Begin(ClientScreen.Sector, ClientScreen.Finance, TimeSpan.FromSeconds(1));
+
+        Assert.Equal(ClientScreen.Sector, slide.Previous);
+        Assert.Equal(new Rectangle(128, 124, 320, 209), slide.PanelArea);
+    }
+
+    [Fact]
+    public void TheClipRectangleFollowsTheWindowScale()
+    {
+        var doubled = new Viewport(0, 0, 1280, 920);
+        Assert.Equal(new Rectangle(864, 248, 32, 418),
+            VirtualInput.ToPhysical(doubled, new Rectangle(432, 124, 16, 209)));
+
+        // A wider window centres the 640-by-460 screen and keeps the edges on whole pixels.
+        var wide = new Viewport(0, 0, 1000, 460);
+        Assert.Equal(new Rectangle(180 + 432, 124, 16, 209),
+            VirtualInput.ToPhysical(wide, new Rectangle(432, 124, 16, 209)));
     }
 }
