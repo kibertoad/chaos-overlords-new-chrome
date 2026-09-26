@@ -251,6 +251,12 @@ public sealed partial class ChaosGame
             .Where(index => _comlinkRecipients[index])
             .Select(index => new PlayerId(index))
             .ToArray();
+        if (DropsBlankComlinkMessage(recipients.Length > 0, _comlinkEditor))
+        {
+            ReportButtonResult(true, string.Empty, pointerButton);
+            CloseComlink();
+            return;
+        }
         var result = _actions.SendComlinkMessage(sender, recipients, _comlinkEditor.Text);
         ReportButtonResult(result.Accepted, result.Message, pointerButton);
         if (!result.Accepted)
@@ -260,6 +266,14 @@ public sealed partial class ChaosGame
         }
         CloseComlink();
     }
+
+    /// <summary>
+    /// RULE-COMLINK-003: with a recipient chosen, a draft of spaces only is stored for no one and
+    /// the panel closes as if the message had been sent. With no recipient the send is refused
+    /// first, as in the original.
+    /// </summary>
+    internal static bool DropsBlankComlinkMessage(bool anyRecipient, ComlinkTextEditor editor) =>
+        anyRecipient && editor.IsBlank;
 
     private void CloseComlink() => _screens.Show(_managementReturnScreen);
 

@@ -107,6 +107,50 @@ public sealed class SectorRecordParityTests
         Assert.Equal(after, match.Sectors[5].CrackdownTurnsRemaining);
     }
 
+    // FMT-STATE-002, RULE-POLICE-002: `crackdown_turns` is a signed byte. A neutralizing
+    // Crackdown on a presence of 125 adds 3 to 5 and wraps it to -128 to -126. RULE-POLICE-003
+    // then leaves it, the police phase and the turn-start test read "above 0" and see no police,
+    // and the Control pass and the computer players read "not 0" and see a Crackdown
+    // (RULE-POLICE-001, RULE-TURN-004, RULE-CONTROL-001, RULE-AI-004).
+    [Fact]
+    public void RepeatedNeutralizationsWrapThePolicePresencePast127()
+    {
+        var match = CreateHeadquartersMatch(baseTolerance: 12, owned: false);
+        var sector = match.Sectors[6];
+        CrackdownResolver.Trigger(match, sector);
+        AdvanceCoordinatorTurn(match);
+        CrackdownResolver.Trigger(match, sector);
+        AdvanceCoordinatorTurn(match);
+        sector.CrackdownTurnsRemaining = 125;
+
+        var result = CrackdownResolver.Trigger(match, sector);
+
+        Assert.InRange(result.Duration, 3, 5);
+        Assert.Equal(125 + result.Duration - 256, sector.CrackdownTurnsRemaining);
+        Assert.False(sector.CrackdownActive);
+        Assert.True(sector.HasCrackdownTurns);
+        Assert.Equal(-2, AiTurnPlanner.OwnerQuery(match, sector.Id));
+        var wrapped = sector.CrackdownTurnsRemaining;
+        CrackdownResolver.FinishCombat(match);
+        Assert.Equal(wrapped, sector.CrackdownTurnsRemaining);
+    }
+
+    // FMT-STATE-002: a wrapped presence survives a save and its fingerprint.
+    [Fact]
+    public void AWrappedPolicePresenceRoundTripsThroughASave()
+    {
+        var match = CreateHeadquartersMatch(baseTolerance: 12, owned: false);
+        match.Sectors[6].CrackdownTurnsRemaining = -126;
+        using var stream = new MemoryStream();
+        Rechaos.Core.Persistence.NativeSaveSerializer.Save(stream, match);
+        stream.Position = 0;
+
+        var restored = Rechaos.Core.Persistence.NativeSaveSerializer.Load(stream, match.Definitions);
+
+        Assert.Equal(-126, restored.Sectors[6].CrackdownTurnsRemaining);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
+    }
+
     // RULE-SETUP-005, RULE-POLICE-003: the island name puts every neutral sector under police of
     // 100 turns, and no number of countdowns removes them.
     [Fact]
@@ -132,6 +176,16 @@ public sealed class SectorRecordParityTests
             Assert.Equal(CrackdownResolver.PermanentCrackdownTurns, sector.CrackdownTurnsRemaining);
             Assert.True(sector.CrackdownActive);
         });
+    }
+
+    private static void AdvanceCoordinatorTurn(MatchState match)
+    {
+        var coordinator = match.Coordinator;
+        coordinator.FinishUpkeep();
+        foreach (var player in match.Players) coordinator.FinishCommand(player.Id);
+        while (coordinator.Phase == TurnPhase.Execution) coordinator.FinishExecutionPhase();
+        foreach (var player in match.Players) coordinator.FinishHire(player.Id);
+        coordinator.FinishPlayerElimination();
     }
 
     private static void FinishTurn(MatchState match)
