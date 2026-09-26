@@ -135,7 +135,7 @@ public static class GamePreferencesStore
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(preferences);
         if (!IsValid(preferences)) return false;
-        if (IsFromNewerBuild(path)) return false;
+        if (NewerPreferences.IsNewer(path, MaximumFileBytes)) return false;
 
         var temporaryPath = path + ".tmp";
         try
@@ -148,6 +148,7 @@ public static class GamePreferencesStore
                 stream.Flush(flushToDisk: true);
             }
             File.Move(temporaryPath, path, overwrite: true);
+            NewerPreferences.NoteCurrent(path);
             return true;
         }
         catch
@@ -166,25 +167,12 @@ public static class GamePreferencesStore
 
     private static T? Read<T>(byte[] bytes) => JsonSerializer.Deserialize<T>(bytes, JsonOptions);
 
-    /// <summary>Whether the file on disk carries a <c>FormatVersion</c> newer than this build's.</summary>
-    /// <remarks>Anything else — no file, a lock, unparseable bytes — does not stop a save.</remarks>
-    private static bool IsFromNewerBuild(string path)
-    {
-        try
-        {
-            var file = new FileInfo(path);
-            if (!file.Exists || file.Length > MaximumFileBytes) return false;
-            using var document = JsonDocument.Parse(File.ReadAllBytes(path));
-            return document.RootElement.TryGetProperty(nameof(GamePreferences.FormatVersion), out var version)
-                && version.ValueKind == JsonValueKind.Number
-                && version.TryGetInt32(out var number)
-                && number > GamePreferences.CurrentFormatVersion;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    /// <summary>
+    /// Whether the file on disk carries a <c>FormatVersion</c> newer than this build's; see
+    /// <see cref="NewerBuildFileGuard"/>.
+    /// </summary>
+    private static readonly NewerBuildFileGuard NewerPreferences = new(
+        nameof(GamePreferences.FormatVersion), GamePreferences.CurrentFormatVersion);
 
     private static bool IsValid(GamePreferences? preferences) =>
         preferences is { FormatVersion: GamePreferences.CurrentFormatVersion }

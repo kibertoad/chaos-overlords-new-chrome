@@ -39,13 +39,19 @@
     ".id1",
     ".id2",
     ".idb",
-    ".lock",
-    ".lock~",
     ".lst",
     ".nam",
     ".til"
   ],
   "analysisArtifactDirectorySuffixes": [
+    ".rep"
+  ],
+  "analysisProjectLockExtensions": [
+    ".lock",
+    ".lock~"
+  ],
+  "analysisProjectExtensions": [
+    ".gpr",
     ".rep"
   ],
   "approvedRestrictedRoots": [

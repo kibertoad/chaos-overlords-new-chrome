@@ -39,6 +39,8 @@ public static class MultiplayerFailureText
             // own membership going away answers `invalid_token` — so it is not a membership reason.
             MultiplayerApiException { Reason: "unknown_player" } =>
                 "That player is no longer in this match.",
+            MultiplayerApiException { Reason: "unreadable_event" } =>
+                "The server holds a match event it cannot read, so this match cannot be resumed.",
             // A reserved display name is not in this list because it never reaches the server from
             // this client: the name is refused before a request is built, which is the only way to
             // say which field is wrong. The server refuses it too, as a contract violation like any

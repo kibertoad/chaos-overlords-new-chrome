@@ -50,16 +50,47 @@ foreach ($extension in $policy.restrictedExtensions) {
 # repository, wherever they sit — there is no approved root for them. Ghidra projects are a `.gpr`
 # file, a `.rep` directory and `.lock`/`.lock~` files; packed programs and archives are `.gzf`,
 # `.gar` and `.gdt`; IDA databases are `.idb`/`.i64` (or unpacked `.id0`-`.id2`/`.nam`/`.til`);
-# Binary Ninja's are `.bndb`; listings are `.lst` and `.asm`.
+# Binary Ninja's are `.bndb`; listings are `.lst` and `.asm`. The rebuild has no hand-written
+# assembly, so an `.asm` here is a listing. A `.lock` is not: package managers and toolchains write
+# `yarn.lock`, `Cargo.lock` and the like, so only a Ghidra project's own lock — `<project>.lock`
+# beside that project's `.gpr` or `.rep` — counts.
 $analysisExtensions = [Collections.Generic.HashSet[string]]::new(
     [StringComparer]::OrdinalIgnoreCase)
 foreach ($extension in $policy.analysisArtifactExtensions) {
     [void] $analysisExtensions.Add([string] $extension)
 }
 $analysisDirectorySuffixes = @($policy.analysisArtifactDirectorySuffixes | ForEach-Object { [string] $_ })
+$projectLockExtensions = @($policy.analysisProjectLockExtensions | ForEach-Object { [string] $_ })
+$projectExtensions = @($policy.analysisProjectExtensions | ForEach-Object { [string] $_ })
+$trackedPathSet = [Collections.Generic.HashSet[string]]::new(
+    [string[]] $trackedPaths, [StringComparer]::OrdinalIgnoreCase)
+
+# A project lock is recognised by its project, tracked or merely present in the worktree: the lock
+# is what gets committed by accident while the project itself is ignored.
+function Test-AnalysisProjectLock([string] $Path) {
+    $name = [IO.Path]::GetFileName($Path)
+    foreach ($lockExtension in $projectLockExtensions) {
+        if (-not $name.EndsWith($lockExtension, [StringComparison]::OrdinalIgnoreCase)) { continue }
+        $stem = $Path.Substring(0, $Path.Length - $lockExtension.Length)
+        foreach ($projectExtension in $projectExtensions) {
+            $project = $stem + $projectExtension
+            if ($trackedPathSet.Contains($project)) { return $true }
+            $absoluteProject = Join-Path $root $project
+            if ([IO.File]::Exists($absoluteProject) -or [IO.Directory]::Exists($absoluteProject)) {
+                return $true
+            }
+        }
+    }
+
+    return $false
+}
 
 function Test-AnalysisArtifact([string] $Path) {
     if ($analysisExtensions.Contains([IO.Path]::GetExtension($Path))) {
+        return $true
+    }
+
+    if (Test-AnalysisProjectLock $Path) {
         return $true
     }
 

@@ -168,7 +168,8 @@ function anchorsOf(path) {
  */
 function brokenLinks(paths) {
   const LINK = /\[[^\]]*\]\(<?([^)\s>]+)>?(?:\s+[^)]*)?\)/g;
-  const DEFINITION = /^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)>?(?:\s+.*)?$/;
+  // A label starting with `^` is a footnote (`[^1]: text`), whose body is prose, not a target.
+  const DEFINITION = /^ {0,3}\[(?!\^)[^\]]+\]:\s*<?([^\s>]+)>?(?:\s+.*)?$/;
   const broken = [];
   for (const path of paths) {
     const label = relative(repoDir, path).split(/[\\/]/).join("/");

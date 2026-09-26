@@ -220,6 +220,7 @@ public static class MultiplayerRecoveryStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         var primary = Read(path, setAsideWhenCorrupt: true);
+        if (primary.Kind == ReadKind.Read) NewerHistory.NoteCurrent(path);
         if (primary.Kind != ReadKind.Corrupt) return primary.Recoveries;
         // The backup is only read, never set aside: it is the last copy there is.
         var backup = Read(path + ".bak", setAsideWhenCorrupt: false);
@@ -282,27 +283,13 @@ public static class MultiplayerRecoveryStore
             ? number
             : null;
 
-    /// <summary>Whether the file at <paramref name="path"/> is a history from a newer build.</summary>
-    /// <remarks>
-    /// Asked before every save rather than remembered from the load, because the newer build may
-    /// have written the file since. Anything short of a clearly newer history — no file, a lock,
-    /// bytes that do not parse — is not a reason to refuse the save.
-    /// </remarks>
-    private static bool IsNewerHistory(string path)
-    {
-        try
-        {
-            var file = new FileInfo(path);
-            if (!file.Exists || file.Length > MaximumFileBytes) return false;
-            using var document = JsonDocument.Parse(File.ReadAllBytes(path));
-            return document.RootElement.TryGetProperty("Sessions", out _)
-                && StoredFormatVersion(document) > MultiplayerRecoveryHistory.CurrentFormatVersion;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    /// <summary>
+    /// Whether the file is a history from a newer build. Asked before every save, and answered from
+    /// the file's stamp while it is still the one this build last wrote or read; see
+    /// <see cref="NewerBuildFileGuard"/>.
+    /// </summary>
+    private static readonly NewerBuildFileGuard NewerHistory = new(
+        "FormatVersion", MultiplayerRecoveryHistory.CurrentFormatVersion, requiredProperty: "Sessions");
 
     /// <summary>
     /// The file's bytes, or null when there are none to parse.
@@ -389,7 +376,7 @@ public static class MultiplayerRecoveryStore
         var temporaryPath = path + ".tmp";
         // A newer build's history is not this build's to replace: neither it nor the .bak copy of
         // it would survive the write below, and this build could not have read its seats back.
-        if (IsNewerHistory(path)) return false;
+        if (NewerHistory.IsNewer(path, MaximumFileBytes)) return false;
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
@@ -412,6 +399,7 @@ public static class MultiplayerRecoveryStore
                 stream.Flush(flushToDisk: durable);
             }
             File.Move(temporaryPath, path, overwrite: true);
+            NewerHistory.NoteCurrent(path);
             return true;
         }
         catch

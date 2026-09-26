@@ -79,8 +79,9 @@ public sealed class MultiplayerServerAgreementTests
     }
 
     /// <summary>
-    /// Each code is the one the kernel's <c>LobbyService</c> writes; a map written against codes it
-    /// never sends fell through to the raw HTTP line.
+    /// Each code is the one the server writes (the kernel's <c>LobbyService</c>, and the events route
+    /// for <c>unreadable_event</c>); a map written against codes it never sends fell through to the
+    /// raw HTTP line.
     /// </summary>
     [Theory]
     [InlineData(HttpStatusCode.Unauthorized, "wrong_password", "Wrong password.")]
@@ -89,6 +90,8 @@ public sealed class MultiplayerServerAgreementTests
     [InlineData(HttpStatusCode.Conflict, "match_not_in_lobby", "That match has already started.")]
     [InlineData(HttpStatusCode.Conflict, "match_not_joinable", "That match has already started.")]
     [InlineData(HttpStatusCode.NotFound, "unknown_player", "That player is no longer in this match.")]
+    [InlineData(HttpStatusCode.Conflict, "unreadable_event",
+        "The server holds a match event it cannot read, so this match cannot be resumed.")]
     [InlineData(HttpStatusCode.Unauthorized, "invalid_token", "You are no longer in this match.")]
     [InlineData(HttpStatusCode.Forbidden, "kicked", "You are no longer in this match.")]
     public async Task RefusalsReadAsTheServerMeansThem(

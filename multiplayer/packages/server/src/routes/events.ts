@@ -1,5 +1,5 @@
 import { INT32_MAX, listEventsContract, streamEventsContract } from '@chaos-overlords/contracts'
-import { type PersistedEvent, UnauthorizedError } from '@chaos-overlords/kernel'
+import { ConflictError, type PersistedEvent, UnauthorizedError } from '@chaos-overlords/kernel'
 import type { Hono } from 'hono'
 import { answering } from '../http/contractJson'
 import { requireMember } from '../http/guards'
@@ -7,6 +7,21 @@ import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
 import { isReadableEvent } from '../sse/createSseResponse'
 import { isActiveMember } from '../sse/membership'
+
+/**
+ * The events a client's history replay applies to the match itself — seats, seals, verdicts and
+ * pauses — as opposed to vote tallies, readiness and deadlines, which only feed the interface.
+ */
+const STATE_BEARING_EVENTS: ReadonlySet<string> = new Set([
+  'match.started',
+  'match.statusChanged',
+  'match.playerTakenOver',
+  'match.playerReturned',
+  'match.latePlayerJoined',
+  'turn.sealed',
+  'turn.confirmed',
+  'turn.desynced',
+])
 
 /** The event log: a paged REST read (the fallback) and the SSE stream over the same log. */
 export function registerEventRoutes(api: Hono<AppEnv>): void {
@@ -20,9 +35,13 @@ export function registerEventRoutes(api: Hono<AppEnv>): void {
     //
     // The contract with the client: the stored log is gapless, so a jump in the sequence numbers of
     // a page (or of the stream, which withholds the same rows) is a withheld row and nothing else.
-    // The C# client's history replay steps over one (`MultiplayerMatchSession.Restore`) and relies
-    // on its turn checks for anything that matters; a placeholder event would have been a new
-    // event type, which the wire's union does not have.
+    // The C# client's history replay steps over one (`MultiplayerMatchSession.Restore`); a
+    // placeholder event would have been a new event type, which the wire's union does not have.
+    //
+    // Only a row the replay can do without is withheld. The client cannot tell what a gap held,
+    // and its turn checks catch a missing seal but not a missing handover or pause: stepping over
+    // one of those plans every later turn from seats that differ from its peers'. Such a row is
+    // refused instead, so the loss is reported where it happens rather than as a desync later.
     //
     // The test is a validation, not a format: building the whole SSE frame here only to throw the
     // string away meant serialising every event of the page an extra time, and `c.json` then
@@ -39,6 +58,17 @@ export function registerEventRoutes(api: Hono<AppEnv>): void {
         if (isReadableEvent(event)) {
           readable.push(event)
           continue
+        }
+        if (STATE_BEARING_EVENTS.has(event.type)) {
+          container.kernel.deps.logger.error('an unreadable stored event changes the match', {
+            matchId: principal.match.id,
+            seq: event.seq,
+            type: event.type,
+          })
+          throw new ConflictError('A stored event this server cannot read changes the match', {
+            reason: 'unreadable_event',
+            seq: event.seq,
+          })
         }
         container.kernel.deps.logger.warn('skipped an unreadable stored event', {
           matchId: principal.match.id,

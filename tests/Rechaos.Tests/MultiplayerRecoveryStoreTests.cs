@@ -390,6 +390,25 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         Assert.False(File.Exists(Path() + ".corrupt"));
     }
 
+    /// <summary>
+    /// A newer build writing the file between two of this build's saves is still noticed, although
+    /// the check no longer reads a file this build wrote itself.
+    /// </summary>
+    [Fact]
+    public void AHistoryANewerBuildWritesAfterASaveIsNotOverwritten()
+    {
+        var recovery = Recovery(CleanExit: false, Completed: false);
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+
+        var newer = $$"""{"Sessions":[{"FormatVersion":1}],"FormatVersion":{{MultiplayerRecoveryHistory.CurrentFormatVersion + 1}}}""";
+        File.WriteAllText(Path(), newer);
+        File.SetLastWriteTimeUtc(Path(), DateTime.UtcNow.AddMinutes(1));
+
+        Assert.False(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+        Assert.Equal(newer, File.ReadAllText(Path()));
+    }
+
     /// <summary>An empty or broken primary falls back to the previous generation.</summary>
     /// <remarks>
     /// The per-turn stamp is written without an fsync, so a power loss can leave a renamed-in empty

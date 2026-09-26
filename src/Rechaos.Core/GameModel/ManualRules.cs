@@ -23,8 +23,9 @@ public static class ManualRules
     public const int PoliceSuccessThreshold = 5;
     public const int MinimumCrackdownTurns = 3;
     public const int MaximumCrackdownTurns = 5;
-    // RULE-POLICE-003: CRACKDOWN_PERMANENT. A sector's police presence at exactly this value never
-    // counts down; the island rule starts every unowned sector at it (FND-SETUP-003).
+    // RULE-POLICE-003: CRACKDOWN_PERMANENT. A sector's police presence at this value or above never
+    // counts down (the native test is `c < 100`, so a presence raised to 103-105 stays too, per
+    // RULE-POLICE-002); the island rule starts every unowned sector at it (FND-SETUP-003).
     public const int PermanentCrackdownTurns = 100;
     public const int HealBaseDice = 4;
     public const int ControlledSectorTax = 1;

@@ -584,6 +584,42 @@ describe('server app over in-memory storage', () => {
     expect(body.events.map((event) => event.seq)).toEqual([base + 4])
   })
 
+  /**
+   * A withheld handover or seal cannot be told from any other gap by the client, which would plan
+   * every later turn from the wrong seats. Such a row is refused rather than withheld.
+   */
+  it('refuses a page that would withhold an event the match state depends on', async () => {
+    const { app: fresh, kernel: freshKernel } = build()
+    const created = await fresh.request('/api/v1/matches', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        settings: {
+          name: 'x',
+          maxPlayers: 2,
+          turnTimerSeconds: 0,
+          visibility: 'private',
+          gameSettings: {},
+        },
+        hostDisplayName: 'h',
+      }),
+    })
+    const { token, match } = (await created.json()) as { token: string; match: { id: string } }
+    const { events } = freshKernel.deps.storage
+    const base = await events.lastSeq(match.id)
+    await events.append({
+      matchId: match.id,
+      type: 'match.playerTakenOver',
+      payload: { reshaped: true },
+      createdAt: '2026-03-01T10:00:00.000Z',
+    } as unknown as Parameters<typeof events.append>[0])
+    const page = await fresh.request(`/api/v1/matches/${match.id}/events?after=${base}`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(page.status).toBe(409)
+    expect(await page.json()).toMatchObject({ error: { details: { reason: 'unreadable_event' } } })
+  })
+
   it('closes the stream and drops the listener when the client disconnects', async () => {
     const { app: fresh, hub } = build()
     const originalOpen = hub.open.bind(hub)

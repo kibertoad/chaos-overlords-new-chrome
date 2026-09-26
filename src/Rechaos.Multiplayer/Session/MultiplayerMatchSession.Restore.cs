@@ -291,10 +291,13 @@ public sealed partial class MultiplayerMatchSession
     /// forward jump in a page, and an empty page before <paramref name="throughSeq"/>, are rows it
     /// withheld rather than rows that were lost. Both are stepped over. Treating them as fatal made
     /// one unreadable row end every session of its match for good, since the stream resynchronises
-    /// through here on a gap. Nothing that matters is taken on trust by stepping over: a withheld
-    /// seal leaves the next one naming a turn ahead of the reconstructed state, which
-    /// <see cref="ApplyHistoricalEventAsync"/> refuses, and the caller refuses a replay that ends on
-    /// a turn other than the server's.
+    /// through here on a gap. Nothing that matters is stepped over: the server withholds only rows
+    /// the replay can do without (readiness, deadlines, vote tallies) and refuses the page with
+    /// <c>unreadable_event</c> when the row is a seal, a verdict, a pause or a seat changing hands,
+    /// none of which a gap could be told apart from. The turn checks stay behind that: a seal
+    /// naming a turn ahead of the reconstructed state is refused by
+    /// <see cref="ApplyHistoricalEventAsync"/>, and the caller refuses a replay that ends on a turn
+    /// other than the server's.
     /// </remarks>
     private async Task ReplayPagesAsync(
         int after,

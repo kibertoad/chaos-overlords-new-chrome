@@ -146,8 +146,8 @@ public sealed class PlayerControlTransferTests
 
         Assert.False(match.Commands.TryGet(gang.Id, out _));
         Assert.Null(match.FindGang(gang.Id)!.QueuedCommand);
-        // As a player's own Cancel does: with the Hide order gone the gang is no longer hiding,
-        // even if the computer's planner leaves it idle this turn.
+        // RULE-HIDE-001, as a player's own Cancel does: with the Hide order gone the gang is no
+        // longer hiding, even if the computer's planner leaves it idle this turn.
         Assert.False(match.FindGang(gang.Id)!.Hidden);
     }
 

@@ -1129,7 +1129,14 @@ function walk(dir, fn) {
       try {
         return git("show", `${base}:${path}`);
       } catch (err) {
-        if (!git("ls-tree", "--name-only", base, "--", path).trim()) return null;
+        let listed;
+        try {
+          listed = git("ls-tree", "--name-only", base, "--", path).trim();
+        } catch {
+          // The tree cannot be listed either: that is the same failure to report, not a crash.
+          listed = path;
+        }
+        if (!listed) return null;
         problem(null, `cannot read ${path} at ${base}: ${gitError(err)}`);
         return null;
       }
