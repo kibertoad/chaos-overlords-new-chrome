@@ -46,10 +46,43 @@ $restrictedExtensions = [Collections.Generic.HashSet[string]]::new(
 foreach ($extension in $policy.restrictedExtensions) {
     [void] $restrictedExtensions.Add([string] $extension)
 }
+# AGENTS.md: decompiler output, disassembly listings and analysis databases never go into the
+# repository, wherever they sit — there is no approved root for them. Ghidra projects are a `.gpr`
+# file, a `.rep` directory and `.lock`/`.lock~` files; packed programs and archives are `.gzf`,
+# `.gar` and `.gdt`; IDA databases are `.idb`/`.i64` (or unpacked `.id0`-`.id2`/`.nam`/`.til`);
+# Binary Ninja's are `.bndb`; listings are `.lst` and `.asm`.
+$analysisExtensions = [Collections.Generic.HashSet[string]]::new(
+    [StringComparer]::OrdinalIgnoreCase)
+foreach ($extension in $policy.analysisArtifactExtensions) {
+    [void] $analysisExtensions.Add([string] $extension)
+}
+$analysisDirectorySuffixes = @($policy.analysisArtifactDirectorySuffixes | ForEach-Object { [string] $_ })
+
+function Test-AnalysisArtifact([string] $Path) {
+    if ($analysisExtensions.Contains([IO.Path]::GetExtension($Path))) {
+        return $true
+    }
+
+    $segments = $Path.Split('/')
+    for ($index = 0; $index -lt $segments.Length - 1; $index++) {
+        foreach ($suffix in $analysisDirectorySuffixes) {
+            if ($segments[$index].EndsWith($suffix, [StringComparison]::OrdinalIgnoreCase)) {
+                return $true
+            }
+        }
+    }
+
+    return $false
+}
 
 foreach ($path in $trackedPaths) {
     if (Starts-WithRepositoryRoot $path $policy.deniedRoots) {
         $violations.Add("tracked local/imported content: $path")
+        continue
+    }
+
+    if (Test-AnalysisArtifact $path) {
+        $violations.Add("decompiler, disassembly or analysis-database artifact: $path")
         continue
     }
 

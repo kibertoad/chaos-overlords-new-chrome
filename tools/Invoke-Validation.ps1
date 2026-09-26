@@ -14,13 +14,19 @@ $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Pat
 $temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
 $sha256 = [Security.Cryptography.SHA256]::Create()
 try {
-    if (($TestFilter -and ($IncludeLongRunningTests -or $LongRunningTestsOnly)) -or
-        ($IncludeLongRunningTests -and $LongRunningTestsOnly)) {
-        throw 'Choose only one of -TestFilter, -IncludeLongRunningTests, or -LongRunningTestsOnly.'
+    # -TestFilter combines with -IncludeLongRunningTests (the filter then may reach long-running
+    # tests); -LongRunningTestsOnly takes neither.
+    if ($LongRunningTestsOnly -and ($TestFilter -or $IncludeLongRunningTests)) {
+        throw '-LongRunningTestsOnly cannot be combined with -TestFilter or -IncludeLongRunningTests.'
     }
 
-    $repositoryHash = $sha256.ComputeHash(
-        [Text.Encoding]::UTF8.GetBytes($repositoryRoot.ToUpperInvariant()))
+    # The lock and build roots are keyed by the checkout's path. Windows and macOS file systems are
+    # case-insensitive by default, so two spellings of one checkout must share a lock there; on
+    # Linux they are two checkouts, and folding them together would make one refuse to run while
+    # the other validates. Windows PowerShell 5.1 has no $IsWindows, and runs only on Windows.
+    $caseInsensitivePaths = ($PSVersionTable.PSEdition -eq 'Desktop') -or $IsWindows -or $IsMacOS
+    $identityPath = if ($caseInsensitivePaths) { $repositoryRoot.ToUpperInvariant() } else { $repositoryRoot }
+    $repositoryHash = $sha256.ComputeHash([Text.Encoding]::UTF8.GetBytes($identityPath))
 }
 finally {
     $sha256.Dispose()
@@ -145,22 +151,35 @@ try {
         '--verbosity', 'minimal',
         "-p:ValidationArtifactsRoot=$validationProjectRoot"
     )
+    # Minimum counts are what `dotnet test --list-tests` discovers with the same filters, so a filter
+    # or discovery change that silently drops tests fails the run; theories whose rows are only
+    # expanded at run time make the executed count somewhat higher. Full = fast + long-running;
+    # raise all three together when tests are added.
+    $minimumFastTests = 3060
+    $minimumLongRunningTests = 53
+    $minimumAllTests = $minimumFastTests + $minimumLongRunningTests
     if ($TestFilter) {
-        $testArguments += @('--filter', $TestFilter)
+        # A narrowed run still honours the fast-gate scope: the long-running campaigns stay out
+        # unless asked for, and a filter that matches nothing fails instead of passing vacuously.
+        $filter = if ($IncludeLongRunningTests) { $TestFilter } else { "($TestFilter)&Category!=LongRunning" }
+        $testArguments += @(
+            '--filter', $filter,
+            '--minimum-expected-tests', '1'
+        )
     }
     elseif ($LongRunningTestsOnly) {
         $testArguments += @(
             '--filter', 'Category=LongRunning',
-            '--minimum-expected-tests', '52'
+            '--minimum-expected-tests', "$minimumLongRunningTests"
         )
     }
     elseif ($IncludeLongRunningTests) {
-        $testArguments += @('--minimum-expected-tests', '1575')
+        $testArguments += @('--minimum-expected-tests', "$minimumAllTests")
     }
     else {
         $testArguments += @(
             '--filter', 'Category!=LongRunning',
-            '--minimum-expected-tests', '1522'
+            '--minimum-expected-tests', "$minimumFastTests"
         )
     }
     if ($TraceTestOutput) {

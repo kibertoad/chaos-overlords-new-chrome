@@ -9,7 +9,9 @@
 //   node tools/check-spec.mjs --base <ref>
 //                                        also fail when an ID or area that exists at <ref>
 //                                        is gone (default: where HEAD forked from
-//                                        origin/$GITHUB_BASE_REF or origin/main, when it resolves)
+//                                        origin/$GITHUB_BASE_REF or origin/main; on that branch
+//                                        itself, the push's previous tip or HEAD~1). When no base
+//                                        resolves this warns, and fails when CI is set
 //   node tools/check-spec.mjs --no-ksy   skip compiling the Kaitai definitions
 //   node tools/check-spec.mjs --glossary <file>
 //                                        also accept the terms of a draft glossary file
@@ -866,7 +868,13 @@ if (!skipKsy) {
     } catch (err) {
       problem(null, `Kaitai definitions do not compile:\n${String(err.stdout ?? "")}${String(err.stderr ?? "")}`);
     }
-  } else if (ksys.length) console.warn("warning: no Kaitai Struct compiler found (set KSC or install kaitai-struct-compiler); definitions were not compiled.");
+  } else if (ksys.length) {
+    // AGENTS.md promises that in CI the definitions always compile, so a runner without the
+    // compiler fails rather than warning: a warning is how a broken definition once passed.
+    const message = "no Kaitai Struct compiler found (set KSC or install kaitai-struct-compiler); definitions were not compiled";
+    if (process.env.CI) problem(null, `${message}. CI must install the pinned compiler (.github/actions/install-kaitai)`);
+    else console.warn(`warning: ${message}.`);
+  }
 }
 
 function findKaitai() {
@@ -875,7 +883,9 @@ function findKaitai() {
     try {
       execFileSync(cmd, ["--version"], { stdio: "pipe", shell: process.platform === "win32" });
       return { cmd, args: [] };
-    } catch {}
+    } catch {
+      // Not on the path under this name; try the next one.
+    }
   }
   return null;
 }
@@ -1053,34 +1063,81 @@ function walk(dir, fn) {
 {
   // Without --base, compare with the point this branch left the base branch (the pull request's
   // target in CI), not that branch's tip: an entry added on the base branch after this branch
-  // forked is not one this branch deleted.
-  const git = (...args) => execFileSync("git", ["-C", repoDir, ...args], { stdio: ["ignore", "pipe", "ignore"] }).toString();
+  // forked is not one this branch deleted. When HEAD is on the base branch itself (a push to
+  // main, a scheduled or dispatched run of main) the fork point is HEAD and would compare HEAD
+  // with itself, so the comparison is with what the push replaced (`before` in the push event)
+  // or, failing that, the parent commit.
+  //
+  // When no base can be found (no origin remote, a shallow clone) the check cannot run. Locally
+  // that is a warning; in CI (CI set) it is a failure, because a skipped check looks exactly like
+  // a passing one — every workflow that runs this script checks out with fetch-depth: 0.
+  const git = (...args) => execFileSync("git", ["-C", repoDir, ...args], { stdio: ["ignore", "pipe", "pipe"] }).toString();
+  const gitError = (err) => String(err.stderr ?? err.message ?? err).trim().split("\n")[0];
+  const resolves = (ref) => {
+    try {
+      return git("rev-parse", "--verify", "--quiet", `${ref}^{commit}`).trim();
+    } catch {
+      return null; // an unknown ref: the caller decides whether that is a problem
+    }
+  };
+  const cannotRun = (why) => {
+    const message = `the deleted-ID check did not run: ${why}. Pass --base <ref>, or fetch the base branch with full history`;
+    if (process.env.CI) problem(null, message);
+    else console.warn(`warning: ${message}.`);
+  };
   let base = baseArg;
   if (!base) {
     const target = process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : "origin/main";
+    let forkPoint = null;
     try {
-      base = git("merge-base", "HEAD", target).trim();
-    } catch {
-      base = null;
+      forkPoint = git("merge-base", "HEAD", target).trim();
+    } catch (err) {
+      cannotRun(`git merge-base HEAD ${target} failed (${gitError(err) || "no common ancestor"})`);
+    }
+    const head = resolves("HEAD");
+    if (forkPoint && forkPoint !== head) base = forkPoint;
+    else if (forkPoint) {
+      let before = null;
+      if (process.env.GITHUB_EVENT_NAME === "push" && process.env.GITHUB_EVENT_PATH) {
+        try {
+          before = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8")).before ?? null;
+        } catch (err) {
+          console.warn(`warning: could not read the push event (${err.message}); comparing with HEAD~1.`);
+        }
+      }
+      // All zeros: the push created the branch. A force push can name a commit that is no longer
+      // in the history; the parent is the next best thing in both cases.
+      if (before && !/^0+$/.test(before) && resolves(before)) base = before;
+      else if (resolves("HEAD~1")) base = "HEAD~1";
+      else cannotRun(`HEAD is on ${target} and has no parent to compare with`);
     }
   }
   let listing = null;
   if (base) try {
     listing = git("ls-tree", "-r", "--name-only", base, "--", "spec");
-  } catch {
-    if (baseArg) problem(null, `cannot list spec/ at ${base}`);
+  } catch (err) {
+    problem(null, `cannot list spec/ at ${base}: ${gitError(err)}`);
   }
   if (listing) {
-    for (const p of listing.split("\n")) {
+    const files = new Set(listing.split("\n"));
+    for (const p of files) {
       const m = /^spec\/(?:builds|sources|formats|rules|findings|experiments|bugs|screens)\/([A-Z]+-[A-Z0-9.-]+)\.md$/.exec(p);
       if (m && !entries.has(m[1])) problem(null, `${m[1]} exists at ${base} and has been deleted or renamed`);
     }
-    try {
-      const oldReadme = git("show", `${base}:spec/README.md`);
-      for (const m of oldReadme.matchAll(/^\| `([A-Z][A-Z0-9]*)` \|/gm)) if (!areas.includes(m[1])) problem(null, `area ${m[1]} exists at ${base} and has been removed or renamed`);
-      const oldDev = git("show", `${base}:DEVIATIONS.md`);
-      for (const m of oldDev.matchAll(/^## (DEV-[A-Z0-9]+-\d+)$/gm)) if (!deviations.has(m[1])) problem(null, `${m[1]} exists at ${base} and has been removed`);
-    } catch {}
+    // A file the base does not have yet has nothing to lose; any other failure is reported.
+    const showAt = (path) => {
+      try {
+        return git("show", `${base}:${path}`);
+      } catch (err) {
+        if (!git("ls-tree", "--name-only", base, "--", path).trim()) return null;
+        problem(null, `cannot read ${path} at ${base}: ${gitError(err)}`);
+        return null;
+      }
+    };
+    const oldReadme = showAt("spec/README.md");
+    if (oldReadme) for (const m of oldReadme.matchAll(/^\| `([A-Z][A-Z0-9]*)` \|/gm)) if (!areas.includes(m[1])) problem(null, `area ${m[1]} exists at ${base} and has been removed or renamed`);
+    const oldDev = showAt("DEVIATIONS.md");
+    if (oldDev) for (const m of oldDev.matchAll(/^## (DEV-[A-Z0-9]+-\d+)$/gm)) if (!deviations.has(m[1])) problem(null, `${m[1]} exists at ${base} and has been removed`);
   }
 }
 
