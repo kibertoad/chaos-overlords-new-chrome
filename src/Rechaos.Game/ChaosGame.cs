@@ -124,6 +124,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private GameDuration _selectedDuration = GameDuration.OneYear;
     // RULE-SETUP-002: the scenario a fresh local setup selects, Greed when nothing is stored.
     private ScenarioId _preferredScenario = ScenarioId.Greed;
+    private bool _scenarioPreferenceUnsaved;
     // RULE-SETUP-010: the roster of the last Begin of this session.
     private LocalSetupSnapshot? _begunLocalSetup;
     private int _cursor;
@@ -756,6 +757,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     /// <summary>Records this frame's input as the previous frame's, which every edge test reads.</summary>
     private void EndUpdate(GameTime gameTime, KeyboardState keyboard, MouseState mouse)
     {
+        FlushScenarioPreference();
         _previousKeyboard = keyboard;
         _previousMouse = mouse;
         base.Update(gameTime);

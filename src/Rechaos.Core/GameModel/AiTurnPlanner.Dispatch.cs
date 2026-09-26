@@ -38,13 +38,13 @@ public static partial class AiTurnPlanner
         foreach (var entry in player.Gangs.Select((gang, slot) => (gang, slot)))
         {
             if (!entry.gang.IsActive) continue;
-            // RULE-AI-001: a player whose seat the computer took over plans every gang as a
-            // raider.
+            // RULE-AI-001: a raider player's gangs are family 9 before each dispatch, so only a
+            // flagged gang's first dispatch gives it the hire role's family, until the next pass.
             if (state.AiPlanning.RaiderMode(playerId))
-                state.AiPlanning.SetRaiderFamily(playerId, entry.slot);
+                state.AiPlanning.SetFamily(playerId, entry.slot, AiPlanningState.RaiderFamily);
             // RULE-AI-002: the family is settled just before the gang's own handler, so an earlier
             // gang's handler sees a later new gang's record as it stood.
-            AiPlanningPreparation.AssignFamilyIfNeeded(state, playerId, entry.slot);
+            AiPlanningPreparation.AssignFamilyIfNeeded(state, playerId, entry.gang, entry.slot);
             var family = state.AiPlanning.Family(playerId, entry.slot);
             switch (family)
             {

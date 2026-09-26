@@ -264,7 +264,7 @@ public static class MatchStateHasher
         foreach (var sector in planning.CaptureFormationSectors()) writer.Write(sector);
         foreach (var sector in planning.CaptureCoverageSectors()) writer.Write(sector);
         foreach (var needsFamily in planning.CaptureNeedsFamily()) writer.Write(needsFamily);
-        foreach (var raider in planning.CaptureRaiderMode()) writer.Write(raider);
+        foreach (var raiderMode in planning.CaptureRaiderMode()) writer.Write(raiderMode);
     }
 
     private static void WriteOutcome(BinaryWriter writer, MatchOutcome? outcome)
