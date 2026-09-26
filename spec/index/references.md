@@ -4200,6 +4200,7 @@ None.
 | [FND-SETUP-015](../findings/FND-SETUP-015.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: modifier_name_islands | glossary |
+| [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | body, evidence |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | evidence |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
 | [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | evidence |
@@ -6172,6 +6173,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | body |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | body |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, related |
 

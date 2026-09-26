@@ -165,6 +165,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         Bootstrap = new MatchBootstrap(
             MatchStateClone.Of(replay.State, options.Definitions),
             ParseInstant(options.View.Turn?.DeadlineAt));
+        // A restoring session says it after `Resumed`, from the view it resumes on.
+        if (SeedReadiness(options.View) && !isRestoring) PublishReadiness();
     }
 
     /// <summary>This client's player id.</summary>
@@ -713,6 +715,17 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         {
             // Nothing to do and nothing wrong: the verdict this report was asking for is in.
         }
+        catch (MultiplayerApiException exception)
+            when (exception.Reason == "match_not_running" && report.Request.Finished)
+        {
+            // The report on the turn that ended the match, retried after the attempt that landed
+            // lost its response. That attempt completed the barrier and the server marked the
+            // match finished, and `report` refuses any match not in progress before it looks at
+            // the turn — so the retry is told `409 match_not_running`, not `turn_confirmed`, and
+            // used to replace the endgame with a connection failure. The match is over, which is
+            // the verdict this report was asking for. A report on an earlier turn meeting the same
+            // refusal is still a failure: the match ended while this client had turns to play.
+        }
         catch (MultiplayerApiException exception) when (exception.Reason == "not_active")
         {
             // The roster moved under this report: the seat was handed to the computer, or removed,
@@ -753,51 +766,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             .Select(player => player.Id)
             .ToHashSet(StringComparer.Ordinal);
         return view;
-    }
-
-    /// <summary>
-    /// Says which of the awaited seats have finished the turn being planned.
-    /// </summary>
-    /// <remarks>
-    /// Readiness belongs to one turn: a roster kept for an earlier one says nothing about this one,
-    /// so it reports nobody ready rather than carrying the old one forward.
-    /// </remarks>
-    private void PublishReadiness()
-    {
-        var turn = _replay.State.Coordinator.Turn;
-        _notices.Enqueue(new MultiplayerNotice.ReadinessChanged(
-            turn, _readinessTurn == turn ? ReadySlots() : [], AwaitedSlots()));
-    }
-
-    /// <summary>The seats of the players that have said they are done with the open turn.</summary>
-    private HashSet<int> ReadySlots()
-    {
-        var slots = new HashSet<int>();
-        foreach (var playerId in _readyPlayerIds)
-        {
-            if (_slotsByPlayerId.TryGetValue(playerId, out var slot)) slots.Add(slot);
-        }
-        return slots;
-    }
-
-    /// <summary>
-    /// A copy of the awaited seats, because a notice outlives the roster it was made from.
-    /// </summary>
-    /// <remarks>
-    /// The pump replaces the set whenever the roster changes, and the game thread reads notices
-    /// whenever it next draws; handing out the live set would let a frame see a roster from after
-    /// the tally it is drawn beside.
-    /// </remarks>
-    private HashSet<int> AwaitedSlots()
-    {
-        var slots = new HashSet<int>(_awaitedSlots);
-        foreach (var playerId in _takeoverVotes.Keys)
-        {
-            if (_departedPlayerIds.Contains(playerId)
-                && _slotsByPlayerId.TryGetValue(playerId, out var slot))
-                slots.Add(slot);
-        }
-        return slots;
     }
 
     /// <summary>
@@ -847,29 +815,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             lane?.Recovered();
             throw;
         }
-    }
-
-    /// <summary>
-    /// Keeps the roster of seats that have said they are done with the open turn.
-    /// </summary>
-    /// <remarks>
-    /// A turn's readiness is forgotten when a later turn's arrives, so it never carries over. Only
-    /// seats held by a human player are kept, which is the roster the server waits on.
-    /// </remarks>
-    private void NoteReadiness(int turn, string playerId, bool ready)
-    {
-        if (!_slotsByPlayerId.ContainsKey(playerId)) return;
-        if (turn != _readinessTurn)
-        {
-            _readinessTurn = turn;
-            _readyPlayerIds.Clear();
-        }
-        if (ready) _readyPlayerIds.Add(playerId);
-        else _readyPlayerIds.Remove(playerId);
-        // For the turn the event names, not the one this client has replayed to: the server can be
-        // a turn ahead of a client that is still applying the seal before it.
-        _notices.Enqueue(
-            new MultiplayerNotice.ReadinessChanged(turn, ReadySlots(), AwaitedSlots()));
     }
 
     private void HandleStatus(MatchStatus status)

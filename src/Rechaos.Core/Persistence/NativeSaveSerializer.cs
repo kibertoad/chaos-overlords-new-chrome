@@ -109,7 +109,7 @@ public static class NativeSaveSerializer
 
     /// <summary>The envelope's <c>formatVersion</c>, or null when the bytes are not readable JSON.</summary>
     /// <remarks>Leaves the stream rewound for the real deserialization pass.</remarks>
-    private static int? DeclaredFormatVersion(MemoryStream bounded)
+    internal static int? DeclaredFormatVersion(MemoryStream bounded)
     {
         try
         {

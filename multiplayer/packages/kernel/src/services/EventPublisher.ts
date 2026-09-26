@@ -25,6 +25,33 @@ export class EventPublisher {
       matchId,
       createdAt: this.deps.clock.now().toISOString(),
     })
+    await this.fanOut(matchId, event)
+    return event
+  }
+
+  /**
+   * `publish`, at most once per `key` for the match; null when the log already carries it.
+   *
+   * For an announcement that follows a compare-and-swap. The winner of the swap used to be the only
+   * caller that ever published, so an append that threw after the swap lost the event for good and
+   * every client waited on it forever. Keyed, the announcement can be repeated by anyone who finds
+   * the state change unannounced, and racing repeats still log it exactly once. A repeat that finds
+   * the event already there wakes nobody: whoever logged it did.
+   */
+  async publishOnce(
+    matchId: string,
+    key: string,
+    body: MatchEventBody,
+  ): Promise<PersistedEvent | null> {
+    const event = await this.deps.storage.events.appendOnce(
+      { ...body, matchId, createdAt: this.deps.clock.now().toISOString() },
+      key,
+    )
+    if (event) await this.fanOut(matchId, event)
+    return event
+  }
+
+  private async fanOut(matchId: string, event: PersistedEvent): Promise<void> {
     try {
       await this.deps.notifier.notify(event)
     } catch (error) {
@@ -35,6 +62,5 @@ export class EventPublisher {
         error: String(error),
       })
     }
-    return event
   }
 }

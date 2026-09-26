@@ -1,4 +1,5 @@
 import {
+  type AiSeatSummary,
   type GameSettings,
   gameSettingsSchema,
   type SnapshotView,
@@ -120,16 +121,19 @@ export class SnapshotService {
    * The merge is judged before anything is written: a refusal after the row landed would leave a
    * stored snapshot the caller was told was rejected, with no `snapshot.available` and no verdict.
    * Re-running the settings schema over the merge is what holds the blob to its cap, which is why
-   * every upload path comes through here before its write.
+   * every upload path comes through here before its write. It is judged once, against the blob as
+   * it is stored now rather than the copy read when the request was authenticated, and the write
+   * after the row only merges what was judged.
    */
   private async store(
     match: Principal['match'],
     uploadedByPlayerId: string,
     request: UploadSnapshotRequest,
   ): Promise<void> {
-    const gameSettings = mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
+    const current = await this.deps.storage.matches.get(match.id)
+    if (current) mergeSeatSummaries(current.settings.gameSettings, request.seatSummaries)
     await this.deps.storage.snapshots.put(this.snapshotOf(match, uploadedByPlayerId, request))
-    await this.publishSeatSummaries(match.id, gameSettings)
+    await this.writeSeatSummaries(match.id, request.seatSummaries)
     await this.pruneOldSnapshots(match.id)
   }
 
@@ -155,11 +159,14 @@ export class SnapshotService {
    * Late-join hints are optional metadata; the snapshot the players are waiting on is not. A
    * transient failure of this write is logged and never fails the upload that already succeeded.
    */
-  private async publishSeatSummaries(matchId: string, gameSettings: GameSettings): Promise<void> {
+  private async writeSeatSummaries(
+    matchId: string,
+    seatSummaries: UploadSnapshotRequest['seatSummaries'],
+  ): Promise<void> {
     try {
-      await this.deps.storage.matches.updateRuntimeGameSettings(
+      await this.deps.storage.matches.updateSeatSummaries(
         matchId,
-        gameSettings,
+        seatSummaries,
         this.deps.clock.now(),
       )
     } catch (error) {
@@ -256,9 +263,28 @@ export class SnapshotService {
 }
 
 /**
- * Publishes the seat summaries into the settings blob, or refuses the upload.
+ * Write the host's seat summaries into the match's stored `gameSettings`.
  *
- * `createMatch` holds `gameSettings` to 8 KiB and to a nesting depth; this write goes in through
+ * Only the summaries are written, and the storage merges them into the blob as it stands when the
+ * statement runs. The whole blob used to be replaced with the caller's copy, which was the one read
+ * when the request was authenticated — a report and an upload in flight together each put back the
+ * settings they started from. The cap is judged against the blob as it is now, for the same reason.
+ */
+export async function publishSeatSummaries(
+  deps: Pick<KernelDeps, 'storage' | 'clock'>,
+  matchId: string,
+  seatSummaries: readonly AiSeatSummary[],
+): Promise<void> {
+  const current = await deps.storage.matches.get(matchId)
+  if (!current) return
+  mergeSeatSummaries(current.settings.gameSettings, [...seatSummaries])
+  await deps.storage.matches.updateSeatSummaries(matchId, seatSummaries, deps.clock.now())
+}
+
+/**
+ * The settings blob with the seat summaries merged in, or a refusal when it would not fit.
+ *
+ * `createMatch` holds `gameSettings` to 8 KiB and to a nesting depth; the summaries go in through
  * `json_set` and would otherwise skip both, which would make the merge a way around a cap that is
  * there because the blob is served on every match read and in every public listing. Re-running the
  * schema over the merged object is what keeps the blob's cap the blob's cap. The array itself is

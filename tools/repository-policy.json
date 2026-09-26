@@ -27,6 +27,33 @@
     ".smk",
     ".wav"
   ],
+  "analysisArtifactExtensions": [
+    ".asm",
+    ".bndb",
+    ".gar",
+    ".gdt",
+    ".gpr",
+    ".gzf",
+    ".i64",
+    ".id0",
+    ".id1",
+    ".id2",
+    ".idb",
+    ".lst",
+    ".nam",
+    ".til"
+  ],
+  "analysisArtifactDirectorySuffixes": [
+    ".rep"
+  ],
+  "analysisProjectLockExtensions": [
+    ".lock",
+    ".lock~"
+  ],
+  "analysisProjectExtensions": [
+    ".gpr",
+    ".rep"
+  ],
   "approvedRestrictedRoots": [
     "assets/clean-room/",
     "tests/fixtures/synthetic/"

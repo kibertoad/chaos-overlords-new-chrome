@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 65 |
+| `supported` | 66 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 156 |
+| `implemented` | 155 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 19 |
-| `partial` | 47 |
-| `complete` | 156 |
+| `partial` | 48 |
+| `complete` | 155 |
 
 ## DATA
 
@@ -317,7 +317,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | complete | None | `DEV-AI-003` | implemented | A seat changes hands only at a clean Command boundary, so the takeover's own planning pass (FND-AI-043) is the pass that turn's planning runs. |
-| `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
+| `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | A gang of a player whose planning pass has not run gets a command from recreation-native weights (PLACEHOLDER in AiTurnPlanner.ProvisionalFallback.cs) instead of a family handler. |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | None |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | hostile_owner reads the attitude cell of owner_query, with the out-of-row reads of FND-AI-048 for a neutral sector and one under police presence. |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | None |
