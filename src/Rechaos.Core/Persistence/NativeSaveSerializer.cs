@@ -352,7 +352,10 @@ public static class NativeSaveSerializer
             var restored = new MatchGangState(
                 new GangId(gang.Id), playerId, gang.DefinitionId, gang.SectorId, gang.Force,
                 gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId,
-                gang.Statistics is { } statistics ? NativeStatistics.FromArray(statistics) : null)
+                // RULE-GANG-001: every gang in a match holds stored values, and the current format
+                // writes them, so a gang without them is a malformed save rather than one to rebuild.
+                NativeStatistics.FromArray(gang.Statistics
+                    ?? throw new InvalidDataException("Native save gang statistics are missing.")))
             {
                 Hidden = gang.Hidden,
                 HiredThisTurn = gang.HiredThisTurn

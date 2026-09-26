@@ -105,6 +105,37 @@ public sealed class EffectiveStatisticsModifierTests
                 .Select(modifier => (modifier.Source, modifier.Name)));
     }
 
+    // RULE-GANG-001: each field is an INT8, so a total past 127 keeps its low eight bits, and the
+    // weapon skills Combat takes are read from the wrapped fields.
+    [Fact]
+    public void EachRebuiltFieldKeepsItsLowEightBits()
+    {
+        var source = BundledOriginalData.Load();
+        var armor = source.Items.Select((item, index) => (item, index))
+            .First(entry => entry.item.Type == 3).index;
+        var items = source.Items.ToArray();
+        items[armor] = items[armor] with
+        {
+            Stats = new Statistics(0, 50, 0, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0, 0)
+        };
+        var gangs = source.Gangs.ToArray();
+        gangs[0] = gangs[0] with
+        {
+            Stats = new Statistics(120, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0)
+        };
+        var data = source with { Gangs = gangs, Items = items };
+        var match = CreateMatch(data, weaponItemId: null, influencedSiteSlots: []);
+        var gang = match.FindGang(new GangId(10))!;
+        gang.ArmorItemId = checked((short)armor);
+
+        var rebuilt = EffectiveStatisticsCalculator.Rebuilt(match, gang);
+
+        Assert.Equal(-106, rebuilt.Defense);
+        Assert.Equal(-106, rebuilt.Strength);
+        // Unarmed: 120 + Strength -106 + Fighting 0 + Martial Arts 0.
+        Assert.Equal(14, rebuilt.Combat);
+    }
+
     // RULE-GANG-001: a generated match, which is built through a synthetic restore, stores every
     // gang's values before the first planning phase, as a bootstrapped one does.
     [Fact]

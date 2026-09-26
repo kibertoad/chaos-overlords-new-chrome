@@ -275,11 +275,19 @@ public sealed class OriginalAiHireRoleRulesTests
     [InlineData(7)]
     public void EliminateFamilySixQuotaResetsScheduledSlots(int turn)
     {
+        // RULE-AI-010: scenario 7 resets slots 5 and 7 at 10f (FND-AI-050, 0x00481030).
         Assert.Equal(
             new OriginalAiHireRoleSelection(0, 1),
             OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn,
                 PowerInputs(family6Or12Count: 10)));
+    }
+
+    [Theory]
+    [InlineData(5)]
+    [InlineData(7)]
+    public void EliminateFamilySixQuotaKeepsScheduledSlotsBelowTenPerYear(int turn)
+    {
         Assert.Equal(
             new OriginalAiHireRoleSelection(3, 4),
             OriginalAiHireRoleRules.SelectEliminateAdjusted(

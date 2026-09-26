@@ -79,6 +79,36 @@ public sealed class GangStatisticModifierTooltipTests
         Assert.Equal(["BASE 1", "NEXT TURN 1", "NOW 5"], lines);
     }
 
+    // RULE-GANG-001: with the panel on the definition's values, the stored value is not the one
+    // on screen, so it is named as the one in play rather than as the panel's.
+    [Fact]
+    public void WithTheBaseValuesShownTheStoredValueIsNamedAsTheOneInPlay()
+    {
+        var jacket = new GangStatisticsModifier(GangModifierSource.Armor, "Flak Jacket", Stats(defense: 4));
+
+        Assert.Equal(["BASE 1", "+4 FLAK JACKET (ARMOR)", "IN PLAY 5"],
+            GangStatisticModifierTooltip.Lines(InformationEffect.Defense, Stats(defense: 1), [jacket],
+                current: 5, panelShowsBase: true));
+        Assert.Equal(["BASE 1", "+4 FLAK JACKET (ARMOR)", "NEXT TURN 5", "IN PLAY 1"],
+            GangStatisticModifierTooltip.Lines(InformationEffect.Defense, Stats(defense: 1), [jacket],
+                current: 1, panelShowsBase: true));
+    }
+
+    // RULE-GANG-001, RULE-COMBAT-001: only the rebuilt Combat holds the weapon skills, so only a
+    // panel showing rebuilt values says so; the shared description does not.
+    [Fact]
+    public void OnlyTheRebuiltCombatSaysItIncludesTheWeaponSkills()
+    {
+        var point = new Point(200, GangInformationLayout.StatisticY(0) + 2);
+        const string note = "INCLUDES THE WEAPON SKILLS.";
+
+        Assert.Contains(note, InformationEffectTooltips.GangAt(point, showsRebuiltValues: true));
+        Assert.DoesNotContain(note, InformationEffectTooltips.GangAt(point));
+        Assert.DoesNotContain(note, InformationEffectTooltips.Describe(InformationEffect.Combat, "SCOPE"));
+        Assert.DoesNotContain(note, InformationEffectTooltips.GangAt(
+            new Point(200, GangInformationLayout.StatisticY(1) + 2), showsRebuiltValues: true));
+    }
+
     // RULE-COMBAT-001: the skills row names skills, not a weapon, so a bare-handed gang's row does
     // not read as an equipped weapon.
     [Fact]
