@@ -51,37 +51,43 @@ public sealed class GangSightSnapshot
 /// The snapshot is taken the first time a marker is drawn in a planning phase, which comes before
 /// the player can give any order in it, and is kept until the turn, the planning player or the
 /// match changes. Outside planning the match is resolving and the markers are read from it as it
-/// stands.
+/// stands, so that snapshot lasts only until <see cref="BeginFrame"/>: every sector drawn in one
+/// frame shares it instead of capturing the city again.
 /// </remarks>
 public sealed class GangSightSnapshotCache
 {
     private MatchState? _state;
     private int _turn;
     private PlayerId _player;
+    private bool _frameScoped;
     private GangSightSnapshot? _snapshot;
 
     public GangSightSnapshot For(MatchState state, PlayerId player)
     {
         ArgumentNullException.ThrowIfNull(state);
-        if (state.Coordinator.Phase != TurnPhase.Command)
-        {
-            Clear();
-            return GangSightSnapshot.Capture(state, player);
-        }
-        if (_snapshot is null || !ReferenceEquals(_state, state)
+        var frameScoped = state.Coordinator.Phase != TurnPhase.Command;
+        if (_snapshot is null || !ReferenceEquals(_state, state) || _frameScoped != frameScoped
             || _turn != state.Coordinator.Turn || _player != player)
         {
             _snapshot = GangSightSnapshot.Capture(state, player);
             _state = state;
             _turn = state.Coordinator.Turn;
             _player = player;
+            _frameScoped = frameScoped;
         }
         return _snapshot;
+    }
+
+    /// <summary>Drops a snapshot taken outside planning, which describes only the frame it was drawn in.</summary>
+    public void BeginFrame()
+    {
+        if (_frameScoped) Clear();
     }
 
     public void Clear()
     {
         _snapshot = null;
         _state = null;
+        _frameScoped = false;
     }
 }

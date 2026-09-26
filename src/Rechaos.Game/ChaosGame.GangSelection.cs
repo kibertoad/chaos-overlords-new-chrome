@@ -13,10 +13,16 @@ public sealed partial class ChaosGame
     private bool _bulkCommand;
 
     /// <summary>
-    /// Whether that selection is the sector's gangs, picked by the group order strip, which lists
-    /// the original's group menus.
+    /// Whether the overlay orders the sector's gangs, for the group order strip, which lists the
+    /// original's group menus.
     /// </summary>
     private bool _groupCommand;
+
+    /// <summary>
+    /// The gangs a bulk command overlay orders: the ctrl-picked selection, or for a group order
+    /// every gang of the sector, which leaves the player's own pick as it was.
+    /// </summary>
+    private IReadOnlyList<GangId> _bulkCommandGangs = [];
 
     /// <summary>
     /// Whether the ctrl-picked selection survives the screen now showing, which
@@ -52,16 +58,22 @@ public sealed partial class ChaosGame
     /// Puts one order to every picked gang, keeping the gangs the rules allow and leaving the
     /// rest as they were, and reports how much of the selection took it.
     /// </summary>
-    /// <param name="group">Whether the selection is a group order's, checked against the group
-    /// menus' allowlist rather than the ctrl-pick one.</param>
     /// <returns>Whether any gang took the order.</returns>
+    private bool ApplyBulkCommand(PlayerId player, BulkCommandIntent intent, string rejection) =>
+        ApplyBulkCommand(player, _gangSelection.Gangs, group: false, intent, rejection);
+
+    /// <summary>
+    /// Puts one order to <paramref name="gangs"/>. The ctrl-picked selection is used up by the
+    /// order; a group order was never the pick, so it leaves the pick alone.
+    /// </summary>
+    /// <param name="group">Whether the gangs are a group order's, checked against the group
+    /// menus' allowlist rather than the ctrl-pick one.</param>
     private bool ApplyBulkCommand(
-        PlayerId player, BulkCommandIntent intent, string rejection, bool group = false)
+        PlayerId player, IReadOnlyList<GangId> gangs, bool group, BulkCommandIntent intent, string rejection)
     {
         if (_state is null || _actions is null) return false;
-        var selected = _gangSelection.Count;
-        var plan = BulkGangCommands.Plan(
-            _state, player, _gangSelection.Gangs, intent, group);
+        var selected = gangs.Count;
+        var plan = BulkGangCommands.Plan(_state, player, gangs, intent, group);
         var ordered = 0;
         foreach (var command in plan.Commands)
             if (_actions.Submit(command).Accepted) ordered++;
@@ -72,7 +84,7 @@ public sealed partial class ChaosGame
         }
         AcceptInput();
         _message = BulkGangCommands.Message(intent.Action, ordered, selected);
-        _gangSelection.Clear();
+        if (!group) _gangSelection.Clear();
         return true;
     }
 }

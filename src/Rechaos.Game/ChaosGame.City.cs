@@ -221,6 +221,10 @@ public sealed partial class ChaosGame
         for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
             if (markerFrames[sectorId] >= 0)
                 DrawGangStatusMarker(batch, sectorId, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]));
+        // FND-UI-037: the city-cell flash lightens the cell copied from the map, markers
+        // included. The original keys its edge tabs over the lightening; the rebuild draws no
+        // separate tabs on the city map, so none are drawn over it here.
+        DrawFlashLightening(batch, TickedPresentationKind.CityCellFlash);
         if (_draggedHireDefinitionId is not null
             && CityMapLayout.TrySectorAt(_dragPoint, out var dropSector))
         {

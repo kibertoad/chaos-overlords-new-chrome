@@ -208,7 +208,8 @@ public static class NativeSaveSerializer
                     ?? throw new InvalidDataException("Native save AI family flags are missing."),
                 savedPlanning.RaiderMode
                     ?? throw new InvalidDataException("Native save AI raider flags are missing."),
-                savedPlanning.FirstCombatRecordDefinition)
+                savedPlanning.FirstCombatRecordDefinition
+                    ?? throw new InvalidDataException("Native save first combat record definition is missing."))
             : throw new InvalidDataException("Native save AI planning state is missing.");
         var runtime = new MatchRuntimeRestore(
             document.Runtime.Turn,
@@ -629,7 +630,7 @@ internal sealed record AiPlanningDocument(
     IReadOnlyList<short>? CoverageSectors = null,
     IReadOnlyList<bool>? NeedsFamily = null,
     IReadOnlyList<bool>? RaiderMode = null,
-    byte FirstCombatRecordDefinition = 0);
+    byte? FirstCombatRecordDefinition = null);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,

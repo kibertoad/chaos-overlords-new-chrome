@@ -44,4 +44,21 @@ public sealed class GangDefinitionInformationLayoutTests
             new Rectangle(282, 270, 12, 45), new Rectangle(378, 270, 12, 45)
         ], GangDefinitionInformationLayout.BaseValueDimAreas);
     }
+
+    // SCR-GANG-001, FND-GANG-011: 0x7FFF selects bitmap 143, anchored at each area's corner, so
+    // an area's top-left pixel is black and its neighbour to the right keeps the digit.
+    [Fact]
+    public void BaseValuesAreDimmedThroughTheHalfTonePatternFromEachAreasCorner()
+    {
+        Assert.Equal(OriginalPatternMask.Half, GangDefinitionInformationLayout.BaseValueDimPattern);
+        var area = GangDefinitionInformationLayout.BaseValueDimAreas[0];
+        var pixels = OriginalPatternMask.ShadedRectangle(
+            GangDefinitionInformationLayout.BaseValueDimPattern, area.Width, area.Height,
+            Color.Black, Color.Black);
+        Assert.Equal(Color.Black, pixels[0]);
+        Assert.Equal(Color.Transparent, pixels[1]);
+        Assert.Equal(Color.Transparent, pixels[area.Width]);
+        Assert.Equal(Color.Black, pixels[area.Width + 1]);
+        Assert.Equal(area.Width * area.Height / 2, pixels.Count(pixel => pixel == Color.Black));
+    }
 }

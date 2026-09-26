@@ -225,7 +225,7 @@ public sealed partial class ChaosGame
         if (!result.Accepted) return;
         // The Hire handler flashes the cell the portrait was dropped on: the city cell with
         // fn_0041ACE6 (FND-UI-017), or the cell of the nine-sector display with fn_0041A0D4 on the
-        // sector view (FND-UI-018), pausing on the presentation clock (RULE-TIMER-004).
+        // sector view (FND-UI-018), pausing on the presentation clock (RULE-TIMER-004, FND-UI-037).
         if (_screens.Current == ClientScreen.Sector)
         {
             if (SectorDetailLayout.CellOf(_cursor, sectorId) is { } cell)

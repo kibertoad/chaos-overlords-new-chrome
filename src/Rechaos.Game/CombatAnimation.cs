@@ -39,6 +39,13 @@ public static class CombatAnimationRouting
     public const int FirstAnimationTick = 3;
     public const int LastAnimationTick = 10;
     public const int PreDamageTick = 12;
+
+    /// <summary>
+    /// FND-COMBAT-014: on tick 12 the clip player draws black through bitmap 143 over the last
+    /// frame of both strips and shows them, so the two apertures stay darkened until the clip
+    /// ends.
+    /// </summary>
+    public const int DimmedFramesTick = 12;
     public const int FirstDamageFlashTick = 13;
     public const int SecondDamageFlashTick = 15;
     public const int FinalResultTick = 16;
@@ -232,6 +239,7 @@ public sealed class CombatAnimationPlayer
         0,
         CombatAnimationRouting.FrameCount - 1);
     public bool ShowsPreDamageForce => TimelineTick <= CombatAnimationRouting.PreDamageTick;
+    public bool ShowsDimmedFrames => TimelineTick >= CombatAnimationRouting.DimmedFramesTick;
     public bool ShowsDamageFlash => TimelineTick is
         CombatAnimationRouting.FirstDamageFlashTick or
         CombatAnimationRouting.SecondDamageFlashTick;

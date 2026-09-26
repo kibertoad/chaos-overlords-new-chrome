@@ -8,6 +8,14 @@ namespace Rechaos.Game;
 public static class EquipmentGiveLayout
 {
     public const int RecipientCount = 5;
+
+    /// <summary>
+    /// SCR-GIVE-001, FND-GIVE-003: the list builder sets the pattern from the grey 48,000, which
+    /// selects bitmap 146, and draws black through it over an ineligible card, starting the
+    /// pattern at the card's corner. It fills no background: the list shows the panel image
+    /// wherever no card is drawn.
+    /// </summary>
+    public static int IneligibleCardPattern => OriginalPatternMask.ForGrey(48000);
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
@@ -215,21 +223,34 @@ public sealed partial class ChaosGame
         return -1;
     }
 
-    private int GiveRequiredTechLevel()
+    /// <summary>The items the giver carries in the selected slots.</summary>
+    private short[] SelectedGiveItems(MatchGangState giver)
     {
-        if (_state is null || _giveGang is not { } gangId || _state.FindGang(gangId) is not { } gang) return 0;
-        var carried = EquippedItems(gang);
-        return EquipmentGiveSelection.RequiredTechLevel(Enumerable.Range(0, 3)
+        var carried = EquippedItems(giver);
+        return Enumerable.Range(0, 3)
             .Where(slot => _giveSelections[slot] && carried[slot].HasValue)
-            .Select(slot => _state.Definitions.Items[carried[slot]!.Value]));
+            .Select(slot => carried[slot]!.Value)
+            .ToArray();
     }
 
+    /// <summary>
+    /// Whether a listed recipient can be chosen: its gang type's Tech Level reaches the selected
+    /// items' (FND-GIVE-001), and, once items are selected, the rules accept the Give it would
+    /// write, so a card the order would be refused for is dimmed and never offered.
+    /// </summary>
     private bool GiveRecipientEligible(int slot)
     {
         if (_state is null || slot < 0 || slot >= _giveRecipients.Count
-            || _state.FindGang(_giveRecipients[slot]) is not { } recipient) return false;
-        return EquipmentGiveSelection.CanReceive(
-            _state.Definitions.Gang(recipient.DefinitionId).TechLevel, GiveRequiredTechLevel());
+            || _giveGang is not { } gangId || _state.FindGang(gangId) is not { } giver
+            || _state.FindGang(_giveRecipients[slot]) is not { } recipient
+            || _state.Coordinator.ActivePlayer is not { } playerId) return false;
+        var selected = SelectedGiveItems(giver);
+        var required = EquipmentGiveSelection.RequiredTechLevel(
+            selected.Select(item => _state.Definitions.Items[item]));
+        if (!EquipmentGiveSelection.CanReceive(_state.Definitions.Gang(recipient.DefinitionId).TechLevel, required))
+            return false;
+        return selected.Length == 0 || CommandValidator.Validate(_state, EquipmentGiveSelection.CreateCommand(
+            playerId, gangId, recipient.Id, selected, _giveRepeats)).IsValid;
     }
 
     private bool GiveReady() => _giveSelections.Any(selected => selected) && GiveRecipientEligible(_giveCursor);
@@ -346,12 +367,8 @@ public sealed partial class ChaosGame
         }
         if (_actions is null || _state?.Coordinator.ActivePlayer is not { } playerId
             || _giveGang is not { } gangId || _state.FindGang(gangId) is not { } gang) return;
-        var carried = EquippedItems(gang);
-        var selected = Enumerable.Range(0, 3)
-            .Where(slot => _giveSelections[slot] && carried[slot].HasValue)
-            .Select(slot => carried[slot]!.Value);
         var command = EquipmentGiveSelection.CreateCommand(
-            playerId, gangId, _giveRecipients[_giveCursor], selected, _giveRepeats);
+            playerId, gangId, _giveRecipients[_giveCursor], SelectedGiveItems(gang), _giveRepeats);
         var result = _actions.Submit(command);
         ReportButtonResult(result.Accepted, result.Validation.Message, pointerButton);
         if (result.Accepted) _screens.Show(_giveReturnScreen);
@@ -403,8 +420,8 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// A recipient card: the card art, the half-size portrait, the Force meter and the three
-    /// item icons, dimmed by a black pattern when the gang type's Tech Level is below the
-    /// selected items' (SCR-GIVE-001, FND-GIVE-002).
+    /// item icons, dimmed by black through bitmap 146 when the gang type's Tech Level is below
+    /// the selected items' (SCR-GIVE-001, FND-GIVE-002, FND-GIVE-003).
     /// </summary>
     private void DrawGiveRecipient(SpriteBatch batch, MatchState state, int slot, MatchGangState recipient)
     {
@@ -430,8 +447,13 @@ public sealed partial class ChaosGame
         if (!GiveRecipientEligible(slot))
         {
             var card = EquipmentGiveLayout.RecipientHit(slot);
-            _giveRecipientDimOverlay ??= LastTurnEventPresentation.CreatePatternOverlay(
-                GraphicsDevice, card.Width, card.Height);
+            if (_giveRecipientDimOverlay is null)
+            {
+                _giveRecipientDimOverlay = new Texture2D(GraphicsDevice, card.Width, card.Height);
+                _giveRecipientDimOverlay.SetData(OriginalPatternMask.ShadedRectangle(
+                    EquipmentGiveLayout.IneligibleCardPattern, card.Width, card.Height,
+                    Color.Black, Color.Black));
+            }
             batch.Draw(_giveRecipientDimOverlay, card, Color.White);
         }
     }

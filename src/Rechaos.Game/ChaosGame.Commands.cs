@@ -30,8 +30,9 @@ public sealed partial class ChaosGame
     private void OpenBulkCommands(bool repeat)
     {
         if (!CanOpenCommands(out var playerId)) return;
+        _bulkCommandGangs = _gangSelection.Gangs.ToArray();
         _commandOptions = BulkGangCommands.Options(
-            _state!, playerId, _gangSelection.Gangs, repeat);
+            _state!, playerId, _bulkCommandGangs, repeat);
         ShowCommandOverlay(repeat, ClientScreen.Sector, bulk: true);
     }
 
@@ -42,11 +43,9 @@ public sealed partial class ChaosGame
     private void OpenGroupCommands(MatchState state, PlayerId playerId, bool repeat)
     {
         if (!CanOpenCommands(out _)) return;
-        _gangSelection.Clear();
-        foreach (var gang in GroupOrderGangs(state, playerId))
-            _gangSelection.Toggle(gang.Id, gang.SectorId);
+        _bulkCommandGangs = GroupOrderGangs(state, playerId).Select(gang => gang.Id).ToArray();
         _commandOptions = BulkGangCommands.Options(
-            state, playerId, _gangSelection.Gangs, repeat, group: true);
+            state, playerId, _bulkCommandGangs, repeat, group: true);
         ShowCommandOverlay(repeat, ClientScreen.Sector, bulk: true, group: true);
     }
 
@@ -78,6 +77,7 @@ public sealed partial class ChaosGame
         _choosingCommandTarget = false;
         _commandRepeats = repeat;
         _bulkCommand = bulk;
+        if (!bulk) _bulkCommandGangs = [];
         _groupCommand = group;
         _commandReturnScreen = returnScreen;
         _screens.Show(ClientScreen.Commands);
@@ -284,7 +284,7 @@ public sealed partial class ChaosGame
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
         var intent = new BulkCommandIntent(action, target, _commandRepeats);
-        if (ApplyBulkCommand(playerId, intent, BulkGangCommands.Rejection(action), _groupCommand))
+        if (ApplyBulkCommand(playerId, _bulkCommandGangs, _groupCommand, intent, BulkGangCommands.Rejection(action)))
             _screens.Show(_commandReturnScreen);
     }
 
@@ -309,7 +309,7 @@ public sealed partial class ChaosGame
     private void CancelGroupCommands(PlayerId playerId)
     {
         var cancelled = 0;
-        foreach (var gang in _gangSelection.Gangs)
+        foreach (var gang in _bulkCommandGangs)
             if (_state!.FindGang(gang)?.QueuedCommand is not null
                 && _actions!.Cancel(playerId, gang).Accepted)
                 cancelled++;
@@ -320,7 +320,6 @@ public sealed partial class ChaosGame
         }
         AcceptInput();
         _message = CityStatusMessage.RequireFit($"ORDERS CANCELLED FOR {cancelled}");
-        _gangSelection.Clear();
         _screens.Show(_commandReturnScreen);
     }
 
@@ -332,8 +331,6 @@ public sealed partial class ChaosGame
             _commandTargetOptions = [];
             return;
         }
-        // The group order picked the sector's gangs for itself; backing out leaves no pick behind.
-        if (_groupCommand) _gangSelection.Clear();
         _screens.Show(_commandReturnScreen);
     }
 
@@ -347,17 +344,17 @@ public sealed partial class ChaosGame
         }
         // RULE-TURN-005: a group order speaks for the sector's gangs, not the roster's selection.
         var gang = _groupCommand
-            ? _gangSelection.Gangs.Select(state.FindGang).FirstOrDefault(found => found is not null)
+            ? _bulkCommandGangs.Select(state.FindGang).FirstOrDefault(found => found is not null)
             : SelectedGang(state.FindPlayer(ViewingPlayer(state))!);
         var canCancel = _groupCommand
-            ? _gangSelection.Gangs.Any(id => state.FindGang(id)?.QueuedCommand is not null)
+            ? _bulkCommandGangs.Any(id => state.FindGang(id)?.QueuedCommand is not null)
             : gang?.QueuedCommand is not null;
 
         var panel = CommandOverlayLayout.Panel;
         batch.Draw(pixel, panel, new Color(12, 18, 18, 246));
         DrawBorder(batch, pixel, panel, new Color(0, 190, 65), 2);
         var heading = _commandRepeats ? "RECURRING ACTION" : "ONE-OFF ACTION";
-        if (_bulkCommand) heading += $" X{_gangSelection.Count}";
+        if (_bulkCommand) heading += $" X{_bulkCommandGangs.Count}";
         font.Draw(batch, heading, new Vector2(panel.X + 8, panel.Y + 5), Color.Gold, 1);
         var actions = CommandOverlayActions;
         for (var index = 0; index < actions.Count; index++)

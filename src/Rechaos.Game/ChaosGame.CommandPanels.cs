@@ -6,7 +6,7 @@ namespace Rechaos.Game;
 
 /// <summary>
 /// The Cancel and confirm faces, keys and panel-wide pointer rules the Equip, Research, Give,
-/// Sell and Move panels share (SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-MOVE-001).
+/// Sell, Move and Influence panels share (SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-MOVE-001).
 /// </summary>
 public sealed partial class ChaosGame
 {
@@ -14,12 +14,17 @@ public sealed partial class ChaosGame
     private CommandPanelButton? _pressedCommandPanelButton;
     private readonly IndexedDoubleClickTracker _commandPanelClicks = new();
 
-    /// <summary>Whether one of the panels with the shared faces is the one taking input.</summary>
+    /// <summary>
+    /// Whether one of the panels with the shared faces is the one taking input: the Equip,
+    /// Research, Influence, Move, Give and Sell panels, whose keys all press the faces through
+    /// fn_00418CCC (FND-EQUIP-010, FND-INFLUENCE-003, FND-MOVE-007, FND-RESEARCH-005,
+    /// FND-GIVE-001, FND-SELL-001).
+    /// </summary>
     private bool CommandPanelOpen => _screens.Current switch
     {
         ClientScreen.Give or ClientScreen.Sell => true,
         ClientScreen.Commands => _choosingCommandTarget
-            && (IsEquipmentCommandPicker() || IsMovementCommandPicker()),
+            && (IsEquipmentCommandPicker() || IsInfluenceCommandPicker() || IsMovementCommandPicker()),
         _ => false
     };
 
@@ -98,29 +103,28 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Escape presses Cancel on these panels instead of opening the game menu. The Equip, Give
-    /// and Sell handlers draw the Cancel face pressed for one tick before they close
-    /// (fn_00418CCC; FND-EQUIP-010, FND-GIVE-001, FND-SELL-001, RULE-TIMER-004).
+    /// Escape presses Cancel on these panels instead of opening the game menu. The Equip,
+    /// Influence, Move, Research, Give and Sell handlers draw the Cancel face pressed for one
+    /// tick before they close (fn_00418CCC; FND-EQUIP-010, FND-INFLUENCE-003, FND-MOVE-007,
+    /// FND-RESEARCH-005, FND-GIVE-001, FND-SELL-001, RULE-TIMER-004).
     /// </summary>
     private void CancelCommandPanelWithEscape()
     {
         CancelCommandPanelButton();
-        if (PressesCommandPanelKeyFaces())
-            PressKeyFace(PressedKeyFace.Cancel, CommandPanelFaces.Face(CommandPanelButton.Cancel).Location,
-                CancelCommandPanel);
-        else
-            AcceptAndInvoke(CancelCommandPanel);
+        PressKeyFace(PressedKeyFace.Cancel, CommandPanelFaces.Face(CommandPanelButton.Cancel).Location,
+            CancelCommandPanel);
     }
 
     /// <summary>
     /// Enter or Execute on a panel with the shared faces: a confirm the panel cannot take is
-    /// refused with slot 4 at once; otherwise the Equip, Influence, Give and Sell handlers press
-    /// the confirm face for one tick before the order is written (fn_00418CCC; FND-EQUIP-010,
-    /// FND-INFLUENCE-003, FND-GIVE-001, FND-SELL-001, RULE-TIMER-004).
+    /// refused with slot 4 at once; otherwise the Equip, Influence, Move, Research, Give and Sell
+    /// handlers press the confirm face for one tick before the order is written (fn_00418CCC;
+    /// FND-EQUIP-010, FND-INFLUENCE-003, FND-MOVE-007, FND-RESEARCH-005, FND-GIVE-001,
+    /// FND-SELL-001, RULE-TIMER-004).
     /// </summary>
     private void ConfirmCommandPanelByKey()
     {
-        if (!PressesCommandPanelKeyFaces() || !CanConfirmCommandPanel())
+        if (!CommandPanelOpen || !CanConfirmCommandPanel())
         {
             ConfirmCommandPanel(pointerButton: false);
             return;
@@ -132,21 +136,9 @@ public sealed partial class ChaosGame
     /// <summary>The Commands screen's Enter: the panels above press their face first.</summary>
     private void ConfirmCommandsByKey()
     {
-        if (PressesCommandPanelKeyFaces()) ConfirmCommandPanelByKey();
+        if (CommandPanelOpen) ConfirmCommandPanelByKey();
         else ActivateCommandSelection();
     }
-
-    /// <summary>
-    /// The panels whose findings record the press helper fn_00418CCC on their keys. The Move and
-    /// Research handlers are not among them, so their keys act at once.
-    /// </summary>
-    private bool PressesCommandPanelKeyFaces() => _screens.Current switch
-    {
-        ClientScreen.Give or ClientScreen.Sell => true,
-        ClientScreen.Commands => _choosingCommandTarget && _commandTargetOptions.Count > 0
-            && _commandTargetOptions[0].Action is GangAction.Equip or GangAction.Influence,
-        _ => false
-    };
 
     /// <summary>A press outside the panel is refused with slot 4 and leaves it open.</summary>
     private void RejectOutsideCommandPanel() => RejectInput("CLICK INSIDE THE PANEL");

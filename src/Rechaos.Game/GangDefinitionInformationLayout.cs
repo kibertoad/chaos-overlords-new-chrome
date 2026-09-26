@@ -33,6 +33,12 @@ public static class GangDefinitionInformationLayout
     /// values, (282,243)-(294,261), (378,243)-(390,261), (282,270)-(294,315) and
     /// (378,270)-(390,315).
     /// </summary>
+    /// <summary>
+    /// SCR-GANG-001, FND-GANG-011: the pattern bitmap the grey 0x7FFF selects for the dimming,
+    /// bitmap 143, anchored at each area's top-left corner.
+    /// </summary>
+    public static int BaseValueDimPattern => OriginalPatternMask.ForGrey(0x7fff);
+
     public static IReadOnlyList<Rectangle> BaseValueDimAreas { get; } =
     [
         new(282, 243, 12, 18),

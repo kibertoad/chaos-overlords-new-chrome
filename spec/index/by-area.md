@@ -68,6 +68,7 @@
 | [FND-GFX-003](../findings/FND-GFX-003.md) | The PX08 line geometry gives every image's width and height, and the PX16 rows are padded to four bytes | recorded |
 | [FND-GFX-004](../findings/FND-GFX-004.md) | The display layer draws with GDI into twelve surface slots, copies the 640-by-460 backing surface to the window's client origin, and uses DirectDraw only to take the screen in full screen | recorded |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 | recorded |
+| [FND-GFX-006](../findings/FND-GFX-006.md) | A pattern fill takes its bitmap from the high byte of a 16-bit grey, starts the pattern at the filled rectangle's corner, and outlines the fill with the scratch surface's own pen | recorded |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image | supported |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported |
 
@@ -290,6 +291,7 @@
 | [FND-RESEARCH-002](../findings/FND-RESEARCH-002.md) | New-game setup copies each item's research difficulty to every player, or zero for every item in Armageddon | recorded |
 | [FND-RESEARCH-003](../findings/FND-RESEARCH-003.md) | The Research list builder lists unresearched items of the chosen category up to the gang type's Tech Level, capped by the sector's research-site level, with each item's remaining research | recorded |
 | [FND-RESEARCH-004](../findings/FND-RESEARCH-004.md) | The Research panel selects a row on a press, opens Item Information on a double-clicked row and the gang definition on a double-clicked portrait, and shares the command-panel controls | recorded |
+| [FND-RESEARCH-005](../findings/FND-RESEARCH-005.md) | The Research panel's Enter, Execute and Escape draw the pressed confirm and Cancel faces before they act | recorded |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported |
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | supported |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | Research panel with item categories and a fixed sixteen-row item list | supported |
@@ -333,6 +335,7 @@
 | [FND-MOVE-004](../findings/FND-MOVE-004.md) | The Move panel handler shows the city around the gang, blacks out cells beyond the edge, and stores the chosen sector in the target byte | recorded |
 | [FND-MOVE-005](../findings/FND-MOVE-005.md) | The Move panel marks the chosen neighbour with one of eight 32-by-32 keyed arrows from PX00129 placed around the centre cell | recorded |
 | [FND-MOVE-006](../findings/FND-MOVE-006.md) | The Move repair loop has no bound, and some order sets keep it running for ever | recorded |
+| [FND-MOVE-007](../findings/FND-MOVE-007.md) | The Move panel's cell table disables only neighbours beyond the city's edge or with owner byte -2, and its keys draw the pressed faces | recorded |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported |
 | [SCR-MOVE-001](../screens/SCR-MOVE-001.md) | Move panel | supported |
@@ -361,6 +364,7 @@
 | [FND-GANG-008](../findings/FND-GANG-008.md) | The Hire input handler opens the gang information panel PX05000 for an offer with a record whose Force is 0, so the panel shows two question marks for Force | recorded |
 | [FND-GANG-009](../findings/FND-GANG-009.md) | The compact gang information panel 0x00455B6B is opened only from the Attack, Equip, Research, Sell and Give panels, with a copy of a live gang record | recorded |
 | [FND-GANG-010](../findings/FND-GANG-010.md) | The compact gang panel places each value field in its 320-pixel frame, closes only on its face, Enter or Execute, and covers the base values with a black pattern | recorded |
+| [FND-GANG-011](../findings/FND-GANG-011.md) | The compact gang panel dims its base values with black through bitmap 143, starting the pattern at each area's corner | recorded |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | supported |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported |
@@ -392,6 +396,7 @@
 |---|---|---|
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | The Give panel handler lists the giver's sector mates, accepts a recipient only when its Tech Level covers every selected item, and stores the order in the target bytes | recorded |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art | recorded |
+| [FND-GIVE-003](../findings/FND-GIVE-003.md) | The Give recipient list fills no background, and dims an ineligible card with black through bitmap 146 from the card's corner | recorded |
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | supported |
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | Give panel | supported |
 
@@ -458,6 +463,7 @@
 | [FND-COMBAT-011](../findings/FND-COMBAT-011.md) | Detailed Combat builds each focal gang's fight list from the combat result entries, resets displayed Force once for every listed gang, and keeps its state in two blocks of globals | recorded |
 | [FND-COMBAT-012](../findings/FND-COMBAT-012.md) | Combat Results pages with the left and right arrow keys, closes on Enter or plus but not Escape, and the force selector makes one of the viewer's gangs the focus whose target and attackers are framed | recorded |
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | Surfaces 3 and 5 hold PX03000 and PX02000 with PX04999 whenever a combat panel is open, the outline colours are red, green and blue in that order, and the Detailed Combat fight list has room for 36 elements | recorded |
+| [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | Detailed Combat draws each gang's header as a colour strip, an Overlord portrait and a name, takes the police header, portrait and items from resource 300, and darkens the last strip frames from tick 12 | recorded |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported |
@@ -744,6 +750,7 @@
 | [FND-UI-034](../findings/FND-UI-034.md) | The pointer is a stock Windows cursor, the arrow or the hourglass, never an image from the game's files | recorded |
 | [FND-UI-035](../findings/FND-UI-035.md) | The sector panel shows Income from byte 4 and an owner-only Cash from byte 3 of the sector record | recorded |
 | [FND-UI-036](../findings/FND-UI-036.md) | The detailed sector screen draws truncated site progress and six-pixel Force steps, and lists only the active player's gangs | recorded |
+| [FND-UI-037](../findings/FND-UI-037.md) | The city-cell, site and sector-cell flashes lighten with white through bitmap 143 and show lit, normal, lit, normal with a one-tick wait after each of the first three copies | recorded |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |

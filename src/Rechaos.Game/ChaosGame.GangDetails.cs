@@ -21,8 +21,9 @@ public sealed partial class ChaosGame
         OpenSectorGangs(returnScreen);
 
     /// <summary>
-    /// Opens a gang that exists. An order panel (the Commands screen) opens the compact panel of
-    /// SCR-GANG-001 with the gang's record (FND-GANG-009); every other caller opens SCR-GANG-002.
+    /// Opens a gang that exists. An order panel (the Commands, Give or Sell screen) opens the
+    /// compact panel of SCR-GANG-001 with the gang's record (FND-GANG-009, FND-GANG-010); every
+    /// other caller opens SCR-GANG-002.
     /// </summary>
     private void OpenGangDetails(
         MatchGangState gang,
@@ -33,7 +34,7 @@ public sealed partial class ChaosGame
         _gangDetailsDefinitionId = gang.DefinitionId;
         _gangDetailsReturnScreen = returnScreen;
         _gangDetailsSectorFilter = sectorFilter;
-        _gangDetailsCompact = returnScreen == ClientScreen.Commands;
+        _gangDetailsCompact = IsOrderPanel(returnScreen);
         _gangDetailsAnimationStart = _inputTime;
         _gangEquipmentItemClicks.Cancel();
         _screens.Show(ClientScreen.Gang);
@@ -66,12 +67,15 @@ public sealed partial class ChaosGame
         _screens.Show(returnScreen);
     }
 
+    /// <summary>The order panels SCR-GANG-001 opens from: Attack, Equip and Research share Commands.</summary>
+    private static bool IsOrderPanel(ClientScreen screen) =>
+        screen is ClientScreen.Commands or ClientScreen.Give or ClientScreen.Sell;
+
     private void CycleGangDetails(int delta)
     {
         // Opened from a command overlay, the panel describes the gang being ordered and
         // must hand the overlay back that same gang.
-        if (_gangDetailsReturnScreen is ClientScreen.Commands or ClientScreen.Give or ClientScreen.Sell)
-            return;
+        if (IsOrderPanel(_gangDetailsReturnScreen)) return;
         if (_gangDetailsSectorFilter is not { } sectorId
             || _state?.Coordinator.ActivePlayer is not { } playerId)
         {
@@ -277,28 +281,24 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// SCR-GANG-001, FND-GANG-010: black drawn through a pattern over the base values.
+    /// SCR-GANG-001, FND-GANG-010, FND-GANG-011: black drawn through bitmap 143, the pattern
+    /// 0x7FFF selects, over the base values. Each area starts the pattern at its own corner, so
+    /// its top-left pixel is black.
     /// </summary>
     private void DrawGangBaseValueDimming(SpriteBatch batch)
     {
-        // PLACEHOLDER: SCR-GANG-001. The pattern of selector 0 has not been read; the half-tone
-        // brush stands in for it.
         _gangBaseValueDimPattern ??= CreateBaseValueDimPattern(GraphicsDevice);
         foreach (var area in GangDefinitionInformationLayout.BaseValueDimAreas)
             batch.Draw(_gangBaseValueDimPattern, area,
-                new Rectangle(area.X & 7, area.Y & 7, area.Width, area.Height), Color.White);
+                new Rectangle(0, 0, area.Width, area.Height), Color.White);
     }
 
     private static Texture2D CreateBaseValueDimPattern(GraphicsDevice graphicsDevice)
     {
         const int size = 64;
-        var pixels = new Color[size * size];
-        for (var y = 0; y < size; y++)
-        for (var x = 0; x < size; x++)
-            pixels[y * size + x] = OriginalPatternMask.PreservesDestination(
-                OriginalPatternMask.Half, x, y) ? Color.Transparent : Color.Black;
         var texture = new Texture2D(graphicsDevice, size, size);
-        texture.SetData(pixels);
+        texture.SetData(OriginalPatternMask.ShadedRectangle(
+            GangDefinitionInformationLayout.BaseValueDimPattern, size, size, Color.Black, Color.Black));
         return texture;
     }
 

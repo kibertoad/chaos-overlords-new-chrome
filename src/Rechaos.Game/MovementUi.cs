@@ -35,6 +35,28 @@ public static class MovementLayout
         return column != 1 || row != 1;
     }
 
+    /// <summary>
+    /// The nine flags <c>fn_00411119</c> writes for the selected sector, in row-major order, and
+    /// the Move panel reads to enable its cells (SCR-MOVE-001, FND-MOVE-007): all set, then
+    /// cleared for the row or column of cells beyond the city's edge. The original also clears a
+    /// neighbour whose owner byte is -2, a value no instruction stores and the rebuild's sectors
+    /// never hold, so a cell is enabled exactly when it lies on the map. Whether the destination
+    /// can take another gang is not part of the table (DEV-MOVE-001).
+    /// </summary>
+    public static IReadOnlyList<bool> NeighbourFlags(int centerSector)
+    {
+        ValidateSector(centerSector);
+        var column = centerSector % MatchLimits.BoardWidth;
+        var row = centerSector / MatchLimits.BoardWidth;
+        var flags = Enumerable.Repeat(true, Columns * Rows).ToArray();
+        var last = MatchLimits.BoardWidth - 1;
+        if (row == 0) flags[0] = flags[1] = flags[2] = false;
+        if (row == last) flags[6] = flags[7] = flags[8] = false;
+        if (column == 0) flags[0] = flags[3] = flags[6] = false;
+        if (column == last) flags[2] = flags[5] = flags[8] = false;
+        return flags;
+    }
+
     public static int SectorAt(int centerSector, int column, int row)
     {
         if (centerSector is < 0 or >= MatchLimits.SectorCount)
@@ -169,9 +191,11 @@ public sealed partial class ChaosGame
         for (var row = 0; row < MovementLayout.Rows; row++)
         {
             if (!MovementLayout.Cell(column, row).Contains(point)) continue;
-            if (!MovementLayout.IsDestinationCell(column, row)) return;
-            var sector = MovementLayout.SectorAt(actor.SectorId, column, row);
-            if (sector >= 0) SelectMovementSector(sector);
+            // FND-MOVE-004, FND-MOVE-007: the centre and any cell whose flag is clear do nothing.
+            if (!MovementLayout.IsDestinationCell(column, row)
+                || !MovementLayout.NeighbourFlags(actor.SectorId)[column + MovementLayout.Columns * row])
+                return;
+            SelectMovementSector(MovementLayout.SectorAt(actor.SectorId, column, row));
             return;
         }
     }
@@ -193,8 +217,9 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Chooses a destination the order may take; a cell without one does nothing, as a cell
-    /// the original's table disables does (SCR-MOVE-001).
+    /// Chooses a destination the order may take. The original enables every neighbour on the
+    /// map (FND-MOVE-007); a full destination is not among the options, so choosing it does
+    /// nothing (DEV-MOVE-001).
     /// </summary>
     private void SelectMovementSector(int sectorId)
     {
