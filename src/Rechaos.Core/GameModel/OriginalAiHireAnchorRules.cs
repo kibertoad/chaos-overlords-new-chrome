@@ -98,28 +98,18 @@ internal static class OriginalAiHireAnchorRules
     {
         ValidateLiteralArrays(literalSectorOwners, literalAvailability);
         ArgumentNullException.ThrowIfNull(activeGangCount);
-        int freeNeighbours;
-        int occupancy;
         if (anchorSectorId == NoSector)
-        {
-            if (player.Value != 0) return false;
-            freeNeighbours = FailedAnchorNeighbours.Count(sectorId =>
-                literalSectorOwners[sectorId] == NeutralOwner
-                && literalAvailability[sectorId] == 0);
-            occupancy = 0;
-        }
-        else if (anchorSectorId is >= 0 and < MatchLimits.SectorCount)
-        {
-            freeNeighbours = CountAvailableNeutralNeighbors(
-                player, anchorSectorId, literalSectorOwners, literalAvailability);
-            occupancy = activeGangCount(anchorSectorId);
-        }
-        else
-        {
-            return false;
-        }
-        return freeNeighbours > 0
-            && occupancy < MatchLimits.FriendlyGangsPerSector
+            // Occupancy reads 0 for the failed anchor, so there is always room.
+            return player.Value == 0
+                && FailedAnchorNeighbours.Any(sectorId =>
+                    literalSectorOwners[sectorId] == NeutralOwner
+                    && literalAvailability[sectorId] == 0)
+                && scenario != ScenarioId.BigMan;
+        // DEV-AI-004: anchor 164 (sector 100) is replaced; the original reads past the sectors.
+        if (anchorSectorId is < 0 or >= MatchLimits.SectorCount) return false;
+        return CountAvailableNeutralNeighbors(
+                player, anchorSectorId, literalSectorOwners, literalAvailability) > 0
+            && activeGangCount(anchorSectorId) < MatchLimits.FriendlyGangsPerSector
             && scenario != ScenarioId.BigMan;
     }
 

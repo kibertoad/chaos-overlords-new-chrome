@@ -11,7 +11,10 @@ the original's behaviour, unless the entry's Justification argues that the rebui
 strictly better; then it starts `on`, and a player who wants the original switches it off. A
 deviation with no setting is `mandatory`, and its Justification also says why the original's
 behaviour is not worth a setting. The validation suite runs with every setting switched off, and a
-test that reaches a mandatory deviation cites its ID and allows for it.
+test that reaches a mandatory deviation cites its ID and allows for it. Default always describes
+the deviation, never the option it is carried by: when the deviation is to start an option off
+that the original starts on, the Setting item says the setting is inverted and which value is the
+original's.
 
 Dated product decisions behind many of these entries, with their full reasoning, are in
 [docs/DECISIONS.md](docs/DECISIONS.md).
@@ -436,7 +439,7 @@ The correction applied under the Original AI policy as well. Decided 2026-09-17.
 
 ## DEV-AI-002
 
-- Departs from: RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-MOVE-002
+- Departs from: RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-MOVE-002, RULE-EQUIP-001, RULE-INFLUENCE-001
 - Reason: A computer player's planned action becomes a command only when a human could give the
   same order and the planner's running total of this turn's costs leaves cash for it; any other
   planned action is kept in the planning state and gives the gang no command. The original stores
@@ -471,6 +474,22 @@ The resolved action can differ from the original's, which changes the match when
 
 The policy is chosen for a new match and kept by it; loaded saves keep the policy they were
 started with.
+
+## DEV-AI-004
+
+- Departs from: RULE-AI-013
+- Reason: A hire placement anchor of 164 (sector 100) always fails the rebuild's keep test, so the
+  fixed scans replace it at the next refresh. The original's keep test reads the owner byte of
+  sector 100, which lies past the end of the sector list, and keeps the anchor or not by whatever
+  that byte holds.
+- Setting: None
+- Default: mandatory
+- Justification: Anchor 164 is stored only for a player whose Right Hands slot is empty when the
+  match is set up, which the original's setup never produces, so no match the original can play
+  reaches the read. What the stray byte holds depends on memory outside the sector list that the
+  rebuild does not lay out, and keeping an anchor that names no sector is logic that plainly does
+  not do what it was written to do; a setting would choose between a rescan and a guess.
+- Dropped: no
 
 ## DEV-EVENT-001
 
@@ -712,7 +731,8 @@ Whether the original shows the count is not recorded.
 - Departs from: RULE-OPTIONS-001
 - Reason: Slide Panels starts off. The original initializes it to on, and panel motion holds
   input for about a quarter of a second on every panel change.
-- Setting: Slide Panels
+- Setting: Slide Panels, inverted (the deviation on starts Slide Panels off; Slide Panels on is the
+  original's motion)
 - Default: on
 - Justification: Panel motion holds input for about a quarter of a second on every panel change and
   changes nothing in the match. A player who wants the original's motion switches Slide Panels on.
@@ -723,7 +743,8 @@ Whether the original shows the count is not recorded.
 - Departs from: RULE-OPTIONS-001, SCR-UI-009
 - Reason: The rebuild starts in a window, and F11 or Alt+Enter switches to borderless full screen
   from any screen; the choice is kept for every match. The original initializes full screen to on.
-- Setting: Full screen (F11)
+- Setting: Full screen (F11), inverted (the deviation on starts the rebuild in a window; full
+  screen is the original's start)
 - Default: on
 - Justification: A window leaves the player's other programs reachable, full screen is one key away
   from any screen, and nothing in the match depends on it. A player who wants the original's start

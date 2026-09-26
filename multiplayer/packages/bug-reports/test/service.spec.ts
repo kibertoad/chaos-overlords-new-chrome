@@ -56,6 +56,14 @@ function inMemoryRepository(): BugReportRepository & { rows: StoredBugReport[] }
     async insert(report) {
       rows.push(report)
     },
+    async insertWithinBudget(report, since, budget) {
+      const spent = rows
+        .filter((row) => row.receivedAt >= since)
+        .reduce((total, row) => total + (row.state?.compressedBytes ?? 0), 0)
+      if (spent + (report.state?.compressedBytes ?? 0) > budget) return false
+      rows.push(report)
+      return true
+    },
     async get(id) {
       return rows.find((row) => row.id === id) ?? null
     },
@@ -203,6 +211,39 @@ describe('bug report intake', () => {
     expect(repository.rows[0]?.state?.anonymized).toBe(false)
   })
 
+  /**
+   * The budget used to be a read before the upload and an unconditional write after it, so every
+   * report racing for the day's last bytes saw room and every one of them was filed.
+   */
+  it('files one of two journals racing for the last of the day budget, and drops the other', async () => {
+    const repository = inMemoryRepository()
+    const stored = new Map<string, Uint8Array>()
+    const blobs: BlobStore = {
+      async put(key, bytes) {
+        stored.set(key, bytes)
+      },
+      async get(key) {
+        return stored.get(key) ?? null
+      },
+      async delete(key) {
+        stored.delete(key)
+      },
+    }
+    const service = serviceOver(repository, blobs, {
+      retention: { dailyStateBytes: 96, maxAgeMs: 0, batchSize: 10 },
+    })
+
+    const receipts = await Promise.all([
+      service.submit(request({ state: await stateOf(new Uint8Array(64).fill(1)) })),
+      service.submit(request({ state: await stateOf(new Uint8Array(64).fill(2)) })),
+    ])
+    expect(receipts.map((receipt) => receipt.stateStored).sort()).toEqual(['omitted', 'stored'])
+    expect(repository.rows).toHaveLength(2)
+    expect(await repository.bytesSince(new Date(0))).toBe(64)
+    // The loser's object was already written; it goes with its journal.
+    expect(stored.size).toBe(1)
+  })
+
   it('says so when no archive came with the report', async () => {
     const service = serviceOver(inMemoryRepository())
     expect((await service.submit(request())).stateStored).toBe('not_sent')
@@ -227,6 +268,9 @@ describe('bug report intake', () => {
     const failing: BugReportRepository = {
       ...repository,
       insert: async () => {
+        throw new Error('disk is on fire')
+      },
+      insertWithinBudget: async () => {
         throw new Error('disk is on fire')
       },
     }
@@ -295,5 +339,41 @@ describe('bug report storage on SQLite', () => {
 
     const listed = await service.list(2)
     expect(listed.map((row) => row.message)).toEqual(['newer', 'older'])
+  })
+
+  it('files a journal only while the day has room for it, in the same statement', async () => {
+    const receivedAt = new Date('2030-06-01T12:00:00.000Z')
+    const since = new Date('2030-05-31T12:00:00.000Z')
+    const base = await repository.bytesSince(since)
+    const report = (id: string, compressedBytes: number): StoredBugReport => ({
+      id,
+      receivedAt,
+      message: 'budget',
+      clientVersion: '1',
+      clientPlatform: 'test',
+      context: null,
+      state: {
+        codec: 'brotli',
+        replayFormatVersion: 24,
+        uncompressedBytes: 10 * compressedBytes,
+        compressedBytes,
+        sha256: 'a'.repeat(64),
+        anonymized: false,
+        blobKey: `bug-reports/${id}`,
+        body: null,
+      },
+    })
+    const budget = base + 100
+    expect(await repository.insertWithinBudget(report('fits', 60), since, budget)).toBe(true)
+    expect(await repository.insertWithinBudget(report('spills', 60), since, budget)).toBe(false)
+    expect(await repository.get('spills')).toBeNull()
+    expect(await repository.insertWithinBudget(report('exact', 40), since, budget)).toBe(true)
+    expect((await repository.get('fits'))?.state).toMatchObject({
+      compressedBytes: 60,
+      anonymized: false,
+      blobKey: 'bug-reports/fits',
+    })
+    expect((await repository.get('fits'))?.receivedAt).toEqual(receivedAt)
+    expect(await repository.bytesSince(since)).toBe(base + 100)
   })
 })

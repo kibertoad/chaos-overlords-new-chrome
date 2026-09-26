@@ -38,7 +38,8 @@ public sealed partial class ChaosGame
         _saveSlots[slot]);
 
     /// <summary>
-    /// Loads the rolling autosave.
+    /// Loads the browser's automatic row: the rolling autosave, or the crash-recovery save when
+    /// that is the newer (<see cref="SaveSlotCatalog.ReadAutomatic"/>).
     /// </summary>
     /// <remarks>
     /// The autosave writes no journal (it is written from inside the turn flow, where capturing one
@@ -54,8 +55,9 @@ public sealed partial class ChaosGame
         // read back. The next autosave has to prove the primary is worth keeping before it may
         // become the backup generation.
         _autoSave.ForgetVerifiedPrimary();
+        var path = _automaticRowPath ?? _autoSavePath;
         return AdoptLoadedMatch(
-            () => NativeSaveStore.LoadRecoveringBackup(_autoSavePath, _definitions!).State,
+            () => NativeSaveStore.LoadRecoveringBackup(path, _definitions!).State,
             _ => null,
             _saveSlots[SaveSlotCatalog.AutoSaveRow]);
     }
@@ -74,27 +76,13 @@ public sealed partial class ChaosGame
             // it, is only how it got there — the history from the first turn, which is what lets a
             // bug report filed after a load reproduce the whole session rather than the tail of it.
             // Either way the state that is played on is the one that was saved.
-            ReplaceMatch(
-                loaded, new MatchActions(journal(loaded) ?? new MatchReplayRecorder(loaded)));
-            // RULE-RNG-001: the loaded match draws on from the run's sequence, so reloading a save
-            // does not replay its luck. The journal records the move, and replays it.
-            _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
-            ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
-            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
-            if (!_debugPhaseStepping) PrepareCurrentHireOffers();
-            _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
-            _selectedGangIndex = 0;
-            _message = summary?.RecoveredFromBackup == true
-                ? summary.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
-                : string.Empty;
-            ResetMatchPresentation(_state);
-            _resumedMatchTurn = _state.Coordinator.Turn;
-            _resumedGameInfoShown.Clear();
-            _continuePlanningEntryAfterGameInfo = false;
-            _deferComlinkAlertUntilPlanningVisible = false;
-            _managementReturnScreen = ClientScreen.City;
-            if (_state.Outcome is not null) ShowMatchEnd();
-            else PresentHotSeatPlanningEntry();
+            AdoptMatch(
+                loaded,
+                journal(loaded) ?? new MatchReplayRecorder(loaded),
+                summary?.RecoveredFromBackup == true
+                    ? summary.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
+                    : string.Empty,
+                continueRunSequence: true);
             return true;
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -102,6 +90,42 @@ public sealed partial class ChaosGame
             _message = "LOAD FAILED";
             return false;
         }
+    }
+
+    /// <summary>
+    /// Puts a match read from disk on screen, the one way every load does it.
+    /// </summary>
+    /// <remarks>
+    /// Shared by the save browser and F10's replay load. The replay load had its own copy that
+    /// predated the endgame routing, the hot-seat planning entry and the per-match resets below, so
+    /// a replay of a finished match opened the city instead of the endgame, and the gang selection,
+    /// management return screen and planning-entry flags of the previous match leaked into it.
+    /// </remarks>
+    /// <param name="continueRunSequence">
+    /// RULE-RNG-001: whether the loaded match draws on from the run's sequence, so reloading a save
+    /// does not replay its luck. The journal records the move, and replays it. A replay load keeps
+    /// the sequence the journal reached.
+    /// </param>
+    private void AdoptMatch(
+        MatchState loaded, MatchReplayRecorder recorder, string message,
+        bool continueRunSequence = false)
+    {
+        ReplaceMatch(loaded, new MatchActions(recorder));
+        if (continueRunSequence) _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
+        ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
+        if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
+        if (!_debugPhaseStepping) PrepareCurrentHireOffers();
+        _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
+        _selectedGangIndex = 0;
+        _message = message;
+        ResetMatchPresentation(_state);
+        _resumedMatchTurn = _state.Coordinator.Turn;
+        _resumedGameInfoShown.Clear();
+        _continuePlanningEntryAfterGameInfo = false;
+        _deferComlinkAlertUntilPlanningVisible = false;
+        _managementReturnScreen = ClientScreen.City;
+        if (_state.Outcome is not null) ShowMatchEnd();
+        else PresentHotSeatPlanningEntry();
     }
 
     /// <summary>
@@ -119,7 +143,7 @@ public sealed partial class ChaosGame
         try
         {
             if (_state is null || _session is not null) return null;
-            var path = Path.Combine(_saveDirectory, "crash-recovery.rchsave");
+            var path = SaveSlotCatalog.CrashRecoveryPath(_saveDirectory);
             NativeSaveStore.SaveAtomic(path, _state);
             return path;
         }
@@ -154,21 +178,17 @@ public sealed partial class ChaosGame
 
     private void LoadReplay()
     {
-        if (_state is null) return;
+        if (_state is null || _session is not null) return;
         try
         {
             var result = MatchReplayStore.LoadAndReplayRecoveringBackup(
                 _replayPath, _state.Definitions);
-            ReplaceMatch(result.State, new MatchActions(new MatchReplayRecorder(result.State)));
-            ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
-            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
-            if (!_debugPhaseStepping) PrepareCurrentHireOffers();
-            _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
-            _message = result.RecoveredFromBackup
-                ? result.PrimaryRepaired ? "REPLAY RECOVERED" : "REPLAY LOADED  REPAIR FAILED"
-                : string.Empty;
-            ResetMatchPresentation(_state);
-            StartPlanningTimer(_inputTime);
+            AdoptMatch(
+                result.State,
+                new MatchReplayRecorder(result.State),
+                result.RecoveredFromBackup
+                    ? result.PrimaryRepaired ? "REPLAY RECOVERED" : "REPLAY LOADED  REPAIR FAILED"
+                    : string.Empty);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {

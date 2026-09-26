@@ -38,24 +38,24 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> visible,
         int visibleWeight)
     {
-        return TakesHumanPool(state, playerId, sectorId, visibleWeight)
-            ? HumanOwnedTargets(state, visible)
+        return UsesHumanTargetPool(state, playerId, sectorId, visibleWeight)
+            ? HumanTargets(state, visible)
             : visible;
     }
 
     /// <summary>
-    /// RULE-AI-004: the pool narrows to human-owned gangs when the sector's owner is hostile and
-    /// the first visible opponent weighs 10, on the owner attitude alone with no human-owner test.
+    /// A draw takes only human players' gangs at weight 10 when the player's attitude toward the
+    /// owner query is hostile (FND-AI-048).
     /// </summary>
-    private static bool TakesHumanPool(
+    private static bool UsesHumanTargetPool(
         MatchState state,
         PlayerId playerId,
         int sectorId,
         int visibleWeight) =>
-        IsHostileOwner(state, playerId, sectorId) && visibleWeight == 10;
+        visibleWeight == 10 && IsHostileOwner(state, playerId, sectorId);
 
-    /// <summary>RULE-AI-004: the visible opponents whose owners are human players.</summary>
-    private static ObjectiveTarget[] HumanOwnedTargets(
+    /// <summary>The visible gangs of human players, in the order they were seen.</summary>
+    private static ObjectiveTarget[] HumanTargets(
         MatchState state,
         IReadOnlyList<ObjectiveTarget> visible) =>
         visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
@@ -206,5 +206,22 @@ public static partial class AiTurnPlanner
         SetRecoveredMoveAction(state, playerId, gangSlot, destination);
         state.AiPlanning.SetFocusValue(
             playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+    }
+
+    /// <summary>
+    /// Selector 0x5B (FND-AI-046): the player's active gangs in the sector whose previous action
+    /// was Chaos, the planning gang included.
+    /// </summary>
+    internal static int CountPreviousChaosInSector(
+        MatchState state,
+        PlayerId playerId,
+        int sectorId)
+    {
+        var player = state.FindPlayer(playerId)!;
+        return player.Gangs.Select((gang, slot) => (gang, slot))
+            .Count(entry => entry.gang.IsActive
+                && entry.gang.SectorId == sectorId
+                && state.AiPlanning.PreviousAction(playerId, entry.slot)
+                    == GangAction.Chaos);
     }
 }

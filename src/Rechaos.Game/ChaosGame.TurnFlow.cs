@@ -31,8 +31,10 @@ public sealed partial class ChaosGame
         // gang warning has already had its say, and a turn it sends back keeps its selection.
         _gangSelection.Clear();
         // Including a gang still held under the pointer: the planning clock can end the turn from
-        // under a drag, and the next player must not inherit it.
+        // under a drag, and the next player must not inherit it — nor a hire offer held from the
+        // dock of the player whose turn this was.
         ForgetGangDrag();
+        ForgetHireDrag();
         StopPlanningTimer();
         if (_state.Outcome is not null)
         {
@@ -125,6 +127,7 @@ public sealed partial class ChaosGame
         if (_state is null) return;
         _gangSelection.Clear();
         ForgetGangDrag();
+        ForgetHireDrag();
         if (_state.Outcome is not null)
         {
             _message = string.Empty;

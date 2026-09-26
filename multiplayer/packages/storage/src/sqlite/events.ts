@@ -1,6 +1,6 @@
 import type { EventRepository, PersistedEvent } from '@chaos-overlords/kernel'
 import { and, asc, desc, eq, sql } from 'drizzle-orm'
-import { appendWithRetry } from '../shared/constraints'
+import { appendWithRetry, DUPLICATE } from '../shared/constraints'
 import { toEvent } from '../shared/mappers'
 import type { SqliteDatabase } from './database'
 import * as schema from './schema'
@@ -36,6 +36,30 @@ export function sqliteEventRepository(db: SqliteDatabase): EventRepository {
       })
       return { ...event, seq } as PersistedEvent
     },
+    /**
+     * The same insert with a key, and a conflict clause aimed at `match_events_dedupe_idx` alone:
+     * a key already logged writes nothing and returns no row, while a collision on the sequence
+     * number still raises and is retried like any append's.
+     */
+    async appendOnce(event, dedupeKey): Promise<PersistedEvent | null> {
+      const nextSeq = sql<number>`(select coalesce(max(${matchEvents.seq}), 0) + 1 from ${matchEvents} where ${eq(matchEvents.matchId, event.matchId)})`
+      const seq = await appendWithRetry(event.matchId, async () => {
+        const rows = await db
+          .insert(matchEvents)
+          .values({
+            matchId: event.matchId,
+            seq: nextSeq,
+            type: event.type,
+            payload: event.payload,
+            createdAt: new Date(event.createdAt),
+            dedupeKey,
+          })
+          .onConflictDoNothing({ target: [matchEvents.matchId, matchEvents.dedupeKey] })
+          .returning({ seq: matchEvents.seq })
+        return rows[0]?.seq ?? DUPLICATE
+      })
+      return seq === DUPLICATE ? null : ({ ...event, seq } as PersistedEvent)
+    },
     async listAfter(matchId, afterSeq, limit) {
       const rows = await db
         .select()
@@ -44,6 +68,15 @@ export function sqliteEventRepository(db: SqliteDatabase): EventRepository {
         .orderBy(asc(matchEvents.seq))
         .limit(limit)
       return rows.map(toEvent)
+    },
+    async latestOfType(matchId, type) {
+      const rows = await db
+        .select()
+        .from(matchEvents)
+        .where(and(eq(matchEvents.matchId, matchId), eq(matchEvents.type, type)))
+        .orderBy(desc(matchEvents.seq))
+        .limit(1)
+      return rows[0] ? toEvent(rows[0]) : null
     },
     async lastSeq(matchId) {
       const rows = await db

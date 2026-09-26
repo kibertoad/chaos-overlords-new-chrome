@@ -296,4 +296,85 @@ public sealed class SaveSlotCatalogTests
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
     }
+
+    /// <summary>
+    /// The crash-recovery save is offered on the automatic row when it is the newer loadable file.
+    /// </summary>
+    [Fact]
+    public void TheAutomaticRowOffersTheNewerOfAutosaveAndCrashRecovery()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"rechaos-slots-{Guid.NewGuid():N}");
+        try
+        {
+            Directory.CreateDirectory(directory);
+            var definitions = BundledOriginalData.Load();
+            var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
+                ScenarioId.Greed, GameDuration.SixMonths, 1996,
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+            var autoSave = Path.Combine(directory, "autosave.rchsave");
+            var recovery = SaveSlotCatalog.CrashRecoveryPath(directory);
+
+            Assert.Null(SaveSlotCatalog.ReadAutomatic(autoSave, recovery, definitions));
+
+            NativeSaveStore.SaveAtomic(recovery, state);
+            var only = Assert.IsType<(SaveSlotSummary Row, string Path)>(
+                SaveSlotCatalog.ReadAutomatic(autoSave, recovery, definitions));
+            Assert.Equal(recovery, only.Path);
+            Assert.Equal("CRASH RECOVERY", only.Row.Name);
+            Assert.Equal(SaveSlotCatalog.AutoSaveRow, only.Row.Slot);
+            Assert.True(only.Row.IsPlayable);
+
+            NativeSaveStore.SaveAtomic(autoSave, state);
+            File.SetLastWriteTimeUtc(autoSave, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+            File.SetLastWriteTimeUtc(recovery, new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+            Assert.Equal(recovery, SaveSlotCatalog.ReadAutomatic(autoSave, recovery, definitions)?.Path);
+
+            File.SetLastWriteTimeUtc(autoSave, new DateTime(2026, 1, 3, 0, 0, 0, DateTimeKind.Utc));
+            var newer = SaveSlotCatalog.ReadAutomatic(autoSave, recovery, definitions);
+            Assert.Equal(autoSave, newer?.Path);
+            Assert.Equal("AUTOSAVE", newer?.Row.Name);
+
+            // A newer recovery file that cannot be loaded never hides a good autosave.
+            File.WriteAllText(recovery, "damaged");
+            File.SetLastWriteTimeUtc(recovery, new DateTime(2026, 1, 4, 0, 0, 0, DateTimeKind.Utc));
+            Assert.Equal(autoSave, SaveSlotCatalog.ReadAutomatic(autoSave, recovery, definitions)?.Path);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    /// <summary>An out-of-range enum in a sidecar is not believed, so the row can still be drawn.</summary>
+    [Theory]
+    [InlineData("\"AiPolicy\":1", "\"AiPolicy\":99")]
+    [InlineData("\"Scenario\":", "\"Scenario\":99,\"Ignored\":")]
+    public void ASidecarWithAnOutOfRangeValueIsNotBelieved(string original, string replacement)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"rechaos-slots-{Guid.NewGuid():N}");
+        try
+        {
+            var definitions = BundledOriginalData.Load();
+            var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
+                ScenarioId.Power, GameDuration.SixMonths, 1996,
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)],
+                aiPolicy: AiPolicyMode.Advanced));
+            var sidecar = SaveSlotCatalog.SavePath(directory, 2) + ".json";
+            SaveSlotCatalog.Save(directory, 2, "Tampered", state, online: false);
+            var text = File.ReadAllText(sidecar);
+            Assert.Contains(original, text);
+            File.WriteAllText(sidecar, text.Replace(original, replacement, StringComparison.Ordinal));
+
+            var summary = Assert.IsType<SaveSlotSummary>(
+                SaveSlotCatalog.Read(directory, 2, definitions));
+
+            Assert.Equal(AiPolicyMode.Advanced, summary.AiPolicy);
+            Assert.Equal(ScenarioId.Power, summary.Scenario);
+            Assert.Contains("ADVANCED AI", summary.Details);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
 }

@@ -214,6 +214,12 @@ public static partial class AiTurnPlanner
         {
             var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
             var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
+            // The human pool is taken on the hostile-owner attitude alone, with no human-owner
+            // test.
+            var humanTargets = UsesHumanTargetPool(
+                state, playerId, gang.SectorId, visibleWeight)
+                    ? HumanTargets(state, visible)
+                    : null;
             if (OwnerQuery(state, gang.SectorId) != playerId.Value)
             {
                 var turnsRemaining = ScenarioCatalog.Turns(state.Setup.Duration)
@@ -221,13 +227,12 @@ public static partial class AiTurnPlanner
                 if (OriginalAiObjectiveFamilyRules.ShouldScanContestedObjectiveTargets(
                         turnsRemaining, visibleWeight))
                 {
-                    // Outside the human pool the draw is from the sector owner's gangs.
+                    // Outside the human pool only the owner's gangs are drawn.
                     var owner = state.Sectors[gang.SectorId].Owner;
                     PrepareObjectiveFightOrHeal(
                         state, playerId, gang, gangSlot, healOk, visible,
-                        TakesHumanPool(state, playerId, gang.SectorId, visibleWeight)
-                            ? HumanOwnedTargets(state, visible)
-                            : visible.Where(candidate => candidate.Gang.Owner == owner)
+                        humanTargets
+                            ?? visible.Where(candidate => candidate.Gang.Owner == owner)
                                 .ToArray());
                 }
                 else
@@ -237,8 +242,7 @@ public static partial class AiTurnPlanner
             else if (visibleWeight > 0)
                 PrepareObjectiveFightOrHeal(
                     state, playerId, gang, gangSlot, healOk, visible,
-                    SelectHumanWeightedTargetPool(
-                        state, playerId, gang.SectorId, visible, visibleWeight));
+                    humanTargets ?? visible);
             else if (healOk)
                 SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
             else
@@ -320,30 +324,22 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> visible,
         IReadOnlyList<ObjectiveTarget> targetPool)
     {
-        ObjectiveTarget? selected = null;
-        // Every pool is visible or a subset of it, so the draw's row always exists in visible:
-        // the comparison reads that row, not the pool's (FND-AI-062).
-        var attackerStats = targetPool.Count > 0
-            ? EffectiveStatisticsCalculator.ForGang(state, gang)
-            : default;
-        for (var draw = 0;
-             targetPool.Count > 0 && draw < OriginalAiObjectiveFamilyRules.AttackDraws;
-             draw++)
+        RecoveredAttackDraw? draw = null;
+        for (var attempt = 0;
+             targetPool.Count > 0 && attempt < OriginalAiObjectiveFamilyRules.AttackDraws;
+             attempt++)
         {
-            var ordinal = state.Random.NextInclusive(targetPool.Count);
-            selected = targetPool[ordinal - 1];
-            var retryTarget = visible[ordinal - 1].Gang;
-            var targetStats = EffectiveStatisticsCalculator.ForGang(state, retryTarget);
-            if (OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry(
-                    gang.Force, attackerStats.Combat, attackerStats.Defense,
-                    retryTarget.Force, targetStats.Combat, targetStats.Defense)) break;
+            draw = DrawRecoveredAttackTarget(
+                state, gang, visible, targetPool,
+                OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry);
+            if (draw.Value.Accepted) break;
         }
 
         switch (OriginalAiObjectiveFamilyRules.SelectContestedObjectiveResult(
-                    selected.HasValue, gang.Force, healOk))
+                    draw.HasValue, gang.Force, healOk))
         {
             case GangAction.Attack:
-                SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, selected!.Value);
+                SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw!.Value.Selected);
                 break;
             case GangAction.Heal:
                 SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);

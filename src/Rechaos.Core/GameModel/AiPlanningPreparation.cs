@@ -146,11 +146,8 @@ internal static class AiPlanningPreparation
             - AiPlanningState.SectorAnchorOffset;
         var activeGangCount = (int sectorId) => playerState.Gangs.Count(gang =>
             gang.IsActive && gang.SectorId == sectorId);
-        var priorChaosCount = (int sectorId) => playerState.Gangs
-            .Select((gang, slot) => (gang, slot))
-            .Count(entry => entry.gang.IsActive
-                && entry.gang.SectorId == sectorId
-                && state.AiPlanning.PreviousAction(player, entry.slot) == GangAction.Chaos);
+        var priorChaosCount = (int sectorId) =>
+            AiTurnPlanner.CountPreviousChaosInSector(state, player, sectorId);
         if (OriginalAiHireAnchorRules.KeepsAnchor(
                 player, state.Setup.Scenario, anchorSector, owners, availability, activeGangCount))
             return;

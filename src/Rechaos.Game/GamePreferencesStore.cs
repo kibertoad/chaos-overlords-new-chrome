@@ -123,11 +123,19 @@ public static class GamePreferencesStore
         }
     }
 
+    /// <summary>Writes the preferences atomically, unless a newer build owns the file.</summary>
+    /// <remarks>
+    /// A file whose <c>FormatVersion</c> is newer than this build's is read as defaults by
+    /// <see cref="LoadOrDefault"/>, and writing those back — the intro's first showing does it
+    /// unasked — replaced every choice the newer build had stored. This build keeps its choices in
+    /// memory for the session instead and leaves the newer file alone.
+    /// </remarks>
     public static bool TrySave(string path, GamePreferences preferences)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(preferences);
         if (!IsValid(preferences)) return false;
+        if (NewerPreferences.IsNewer(path, MaximumFileBytes)) return false;
 
         var temporaryPath = path + ".tmp";
         try
@@ -140,6 +148,7 @@ public static class GamePreferencesStore
                 stream.Flush(flushToDisk: true);
             }
             File.Move(temporaryPath, path, overwrite: true);
+            NewerPreferences.NoteCurrent(path);
             return true;
         }
         catch
@@ -157,6 +166,13 @@ public static class GamePreferencesStore
     }
 
     private static T? Read<T>(byte[] bytes) => JsonSerializer.Deserialize<T>(bytes, JsonOptions);
+
+    /// <summary>
+    /// Whether the file on disk carries a <c>FormatVersion</c> newer than this build's; see
+    /// <see cref="NewerBuildFileGuard"/>.
+    /// </summary>
+    private static readonly NewerBuildFileGuard NewerPreferences = new(
+        nameof(GamePreferences.FormatVersion), GamePreferences.CurrentFormatVersion);
 
     private static bool IsValid(GamePreferences? preferences) =>
         preferences is { FormatVersion: GamePreferences.CurrentFormatVersion }

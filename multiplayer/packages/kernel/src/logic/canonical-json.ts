@@ -10,7 +10,7 @@
  * something a peer cannot reproduce.
  */
 export function canonicalJson(value: unknown): string {
-  return JSON.stringify(canonicalize(value))
+  return canonicalize(value)
 }
 
 export class NonCanonicalValueError extends Error {
@@ -25,8 +25,18 @@ export class NonCanonicalValueError extends Error {
 
 type PathSegment = string | number
 
-function canonicalize(value: unknown, path: PathSegment[] = []): unknown {
-  if (value === null || typeof value === 'boolean' || typeof value === 'string') return value
+/**
+ * Writes the text directly, in sorted order, rather than building a sorted object and handing it to
+ * `JSON.stringify`. An object does not keep the order its keys were inserted in: every key that
+ * reads as an array index (`"9"`, `"10"`) is enumerated first and numerically, so `{"10","9"}` came
+ * out as `9, 10` where the code-unit order — and the C# mirror's `StringComparer.Ordinal` — is
+ * `10, 9`. The two sides then hashed different text for the same document. Building the string also
+ * keeps a `__proto__` key a key rather than a prototype assignment.
+ */
+function canonicalize(value: unknown, path: PathSegment[] = []): string {
+  if (value === null) return 'null'
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
+  if (typeof value === 'string') return JSON.stringify(value)
   if (typeof value === 'number') {
     if (!Number.isSafeInteger(value) || Object.is(value, -0)) {
       throw new NonCanonicalValueError(
@@ -34,21 +44,27 @@ function canonicalize(value: unknown, path: PathSegment[] = []): unknown {
         `${value} is not a safe non-negative-zero integer`,
       )
     }
-    return value
+    return String(value)
   }
-  if (Array.isArray(value)) return value.map((item, index) => descend(path, index, item))
+  if (Array.isArray(value)) {
+    const items: string[] = []
+    for (let index = 0; index < value.length; index += 1) {
+      items.push(descend(path, index, value[index]))
+    }
+    return `[${items.join(',')}]`
+  }
   if (typeof value === 'object') {
     const source = value as Record<string, unknown>
-    const sorted: Record<string, unknown> = {}
-    for (const key of Object.keys(source).sort()) {
-      sorted[key] = descend(path, key, source[key])
-    }
-    return sorted
+    // `sort()` with no comparator orders by UTF-16 code unit, which is `StringComparer.Ordinal`.
+    const members = Object.keys(source)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${descend(path, key, source[key])}`)
+    return `{${members.join(',')}}`
   }
   throw new NonCanonicalValueError(describe(path), `unsupported type ${typeof value}`)
 }
 
-function descend(path: PathSegment[], segment: PathSegment, value: unknown): unknown {
+function descend(path: PathSegment[], segment: PathSegment, value: unknown): string {
   path.push(segment)
   try {
     return canonicalize(value, path)

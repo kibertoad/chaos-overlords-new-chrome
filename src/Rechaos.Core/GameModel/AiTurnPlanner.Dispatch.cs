@@ -113,8 +113,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         PrepareFamilyOneAction(state, player, gang, gangSlot, snapshot);
-        // RULE-AI-020: after the switch, whatever the branch, a planned action other than None or
-        // Attack clears the focus.
+        // RULE-AI-020: every action the switch writes but the Attack clears the focus.
         if (state.AiPlanning.PlannedAction(player.Id, gangSlot)
             is not (GangAction.None or GangAction.Attack))
             state.AiPlanning.SetFocusValue(
@@ -159,7 +158,7 @@ public static partial class AiTurnPlanner
     /// RULE-AI-020, FND-AI-057: after previous Attack, Hide or Move. At weight 10 one draw is
     /// made; a passing comparison attacks. Otherwise a gang in a sector the owner query gives to
     /// its player moves through mode 5, and any other gang heals, takes the sector, snitches or
-    /// moves. The focus is cleared after the switch by <see cref="PrepareFamilyOneCommand"/>.
+    /// moves. The Attack stores the gang's sector as the focus.
     /// </summary>
     private static void PrepareFamilyOneAfterAttackHideOrMove(
         MatchState state,
@@ -182,7 +181,7 @@ public static partial class AiTurnPlanner
         }
         else if (OwnerQuery(state, gang.SectorId) == player.Id.Value)
         {
-            SetRecoveredFocusedMoveAction(
+            SetRecoveredMoveAction(
                 state, player.Id, gangSlot, SelectFamilyOneMove(state, player, gang, snapshot));
             return;
         }
@@ -196,10 +195,10 @@ public static partial class AiTurnPlanner
             state.Setup.AiMentality,
             player.Cash);
         if (action == GangAction.Move)
-            SetRecoveredFocusedMoveAction(
+            SetRecoveredMoveAction(
                 state, player.Id, gangSlot, SelectFamilyOneMove(state, player, gang, snapshot));
         else
-            SetRecoveredActionClearingFocus(state, player.Id, gangSlot, action);
+            state.AiPlanning.SetPlannedAction(player.Id, gangSlot, action);
     }
 
     private static int SelectFamilyOneMove(
@@ -217,12 +216,8 @@ public static partial class AiTurnPlanner
             snapshot.SectorDisabled,
             snapshot.SectorGangCounts,
             canSoloControl: sectorId => CanSoloControl(state, player.Id, gang, sectorId),
-            hasPriorChaos: sectorId => player.Gangs
-                .Select((candidate, slot) => (candidate, slot))
-                .Any(entry => entry.candidate.IsActive
-                    && entry.candidate.SectorId == sectorId
-                    && state.AiPlanning.PreviousAction(player.Id, entry.slot)
-                        == GangAction.Chaos),
+            hasPriorChaos: sectorId =>
+                CountPreviousChaosInSector(state, player.Id, sectorId) > 0,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(player.Id, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?

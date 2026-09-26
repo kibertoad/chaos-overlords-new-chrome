@@ -115,7 +115,10 @@ moving forward would skip forever.
 The fan-out (an in-process hub on Node, a per-match Durable Object on Cloudflare) is only a wake-up
 hint: every wake and heartbeat drains the log from the last delivered sequence, so a lost
 notification costs at most one heartbeat, never an event, and a reconnecting client resumes from
-the last `seq` it saw. Delivery is
+the last `seq` it saw. A stored row the server's own build cannot validate (a payload reshaped by
+another build) is withheld from both the stream and `GET /events`, so a jump in the sequence numbers
+a client is served means a withheld row and nothing else; the paged read reads past a page of
+withheld rows rather than answer an empty one before the end of the log. Delivery is
 therefore at least once — a resume, or a seal finished by the repair sweep, can repeat a fact a
 client already holds — so every client handler must be idempotent. Events name facts and carry
 references, not payloads: a sealed order set is fetched once over REST with `Cache-Control:
@@ -262,6 +265,16 @@ a live match whose current turn is no longer open and completes it. A start that
 the match but before seating it or announcing it is finished the same way: the sweep seats whoever
 is still unseated and publishes `match.started` if the log does not carry it, then opens turn 1.
 
+An announcement that follows a compare-and-swap — `turn.sealed`, `turn.desynced`, `turn.confirmed`,
+`match.takeoverVoteRequested` and the status changes a verdict makes — is not owned by the swap's
+winner. It is appended under a dedupe key naming the fact (`appendOnce`, a unique index on the
+match's log), so whoever finds it missing can repeat it and racing repeats log it once, and the
+state it announces records that it was announced: a seal is announced before its successor opens,
+`desyncedAt` and a prompt's `announcedAt` are stamped after their events are durable, and a
+confirmed turn's `settledAt` after every follow-up of the verdict (the announcement, lifting a pause,
+finishing the match). The sweep finishes whichever is missing. The bounded sweep pass counts a seal
+as a touch of the match, since sealing writes only the turn row.
+
 ### Timer
 
 `turnTimerSeconds` (0, or 30 to 86400) puts a `deadlineAt` on every opened turn. Node arms a timer
@@ -354,7 +367,9 @@ default); collecting one deletes its archive from the blob store as well, becaus
 there. The intake also spends a whole-day byte budget across every reporter
 (`BUG_REPORT_DAILY_STATE_MB`, 512 by default): over budget a report is still filed and only its
 journal is dropped, which is what bounds a flood arriving from many addresses at a few a minute
-each. A per-address daily counter sits beside it, spent by the handler only for a report that
+each. The ceiling is held by the row's insert itself, which sums the day and writes in one
+statement, so reports racing for the day's last bytes cannot all be filed with their journals. A
+per-address daily counter sits beside it, spent by the handler only for a report that
 actually carries a journal and only after the contract has accepted the body — a budget charged
 before either would be spent by text-only reports and by bodies the validator refused, so the one
 report somebody attached a journal to would be filed without it. The map that counter lives in is
@@ -668,7 +683,9 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    planning says so: the sealed set names the seats it carried, which is the only honest answer to
    whether the draft they were still editing reached the server in time.
 7. On reconnect, fetch the match, load the latest snapshot if the local state is behind, then read
-   the durable event log gaplessly through the refreshed `lastEventSeq`. Replay approved takeover and seal
+   the durable event log through the refreshed `lastEventSeq`, stepping over any row the server
+   withheld (a seal missing that way surfaces as the next seal naming a turn the state has not
+   reached, which is refused). Replay approved takeover and seal
    events in order, skipping seals already represented by the snapshot, before restoring the current
    draft and resuming the stream. Historical confirmation hashes are checked after each reconstructed
    turn, so a cash or other rules divergence is refused at its first authoritative boundary instead
@@ -786,7 +803,8 @@ dock a player plans against the dock the sealed turn grants.
 - **Late joining is offered, and narrowly.** A host may set `allowLateJoin`, and once the match
   has its bootstrap snapshot a newcomer can take a slot that never belonged to a human. A public match
   can be named by its id or its join code; a `private` one only by its code, because the id rides
-  every event, the client's recovery file and any log line. The door reads the host's
+  every event, the client's recovery file and any log line. The code is trimmed and upper-cased
+  there as it is at the lobby door. The door reads the host's
   `maxPlayers`, so the lobby's limit is the running match's limit too.
 - **An approved computer seat can be reclaimed, by the player whose seat it was.** Players may
   wait indefinitely while a temporarily absent member holds a human seat, and authenticated turn
