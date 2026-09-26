@@ -152,11 +152,14 @@ jobs:
       # `check-spec.mjs` (run by Invoke-Validation.ps1) compiles the `.ksy` definitions with it, and
       # fails when CI is set and no compiler is found.
       - name: Install the Kaitai Struct compiler
+        id: kaitai
         uses: ./.github/actions/install-kaitai
 
       - name: Verify legal boundary and tests
         shell: pwsh
         run: ./tools/Invoke-Validation.ps1
+        env:
+          KSC: ${{ steps.kaitai.outputs.ksc }}
 
   build-windows:
     name: Build Windows x64 installer

@@ -1,18 +1,26 @@
 # Installs the pinned Kaitai Struct compiler and points `KSC` at it, so `tools/check-spec.mjs`
 # compiles every `.ksy` definition in spec/formats/. AGENTS.md promises that in CI the definitions
 # always compile, and check-spec now fails when CI is set and no compiler is found, so every
-# workflow that runs `tools/Invoke-Validation.ps1` uses this action first.
+# workflow that runs `tools/Invoke-Validation.ps1` uses this action first and passes its `ksc`
+# output to that step as `KSC`. The path is an output rather than a GITHUB_ENV write, which would
+# hand every later step of the job whatever the step wrote there.
 #
 # No maintained action installs the compiler, so the pinned release is fetched and checked against
 # its SHA-256 here. The release runs on the runner's preinstalled Java.
 # kibertoad/refurbished-dinosaurs-toolkit#1 moves this into a shared action.
 name: Install the Kaitai Struct compiler
-description: Downloads the pinned Kaitai Struct compiler release, verifies it, and sets KSC.
+description: Downloads the pinned Kaitai Struct compiler release, verifies it, and outputs its path as ksc.
+
+outputs:
+  ksc:
+    description: Path of the installed compiler, for the `KSC` environment variable.
+    value: ${{ steps.install.outputs.ksc }}
 
 runs:
   using: composite
   steps:
     - name: Install the Kaitai Struct compiler
+      id: install
       shell: bash
       env:
         KSC_VERSION: "0.11"
@@ -32,4 +40,4 @@ runs:
         if [ "$RUNNER_OS" = Windows ]; then bin="$bin.bat"; fi
         "$bin" --version
         if [ "$RUNNER_OS" = Windows ]; then bin="$(cygpath -w "$bin")"; fi
-        echo "KSC=$bin" >> "$GITHUB_ENV"
+        echo "ksc=$bin" >> "$GITHUB_OUTPUT"
