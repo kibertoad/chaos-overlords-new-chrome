@@ -615,6 +615,11 @@ public static partial class CommandResolver
                         ChanceSides: drawn ? candidates.Count : null),
                     GameNotificationKind.Control));
         }
+        // RULE-EVENT-012: a winner without a Control order here (BUG-CONTROL-001) has no result of
+        // its own, so its report carries no event.
+        if (captured && !attacks.ContainsKey(winner!.Value))
+            state.QueueNotification(winner.Value, GameNotificationKind.Control,
+                sectorId: sector.Id, executionPhase: ExecutionPhase.Control);
         // RULE-EVENT-013: the previous owner is told it lost the sector.
         if (captured && previousOwner is { } loser)
             state.QueueNotification(loser, GameNotificationKind.ControlLost,

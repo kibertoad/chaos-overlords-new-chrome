@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 90 |
+| `supported` | 84 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 131 |
+| `implemented` | 137 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
-| `missing` | 20 |
-| `partial` | 71 |
-| `complete` | 131 |
+| `missing` | 19 |
+| `partial` | 66 |
+| `complete` | 137 |
 
 ## DATA
 
@@ -93,7 +93,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | partial | None | None | supported | The rebuild derives combat presentation from combat events and clip forces rather than keeping these 10-byte records. |
 | `FMT-STATE-004` | Site slot in a sector record | supported | partial | None | None | supported | The rebuild keeps remaining Resistance per site plus an explicit influencer identity that the original does not store. |
 | `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | The rebuild keeps the Comlink inbox with the same occupied, read, turn, sender and text content, not this 166-byte layout. |
-| `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | The rebuild keeps its own notification history and derives the Last Turn reports from it, not this 10-byte layout; whether its arguments match the report types' arguments was not checked. |
+| `FMT-STATE-006` | Last Turn report record | supported | partial | None | None | supported | The rebuild keeps its own notification history and derives the Last Turn reports from it, not this 10-byte layout. The recipients and the report of each type follow RULE-EVENT-003, RULE-EVENT-004 and RULE-EVENT-012 to RULE-EVENT-014. |
 | `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | missing | None | None | supported | The rebuild's computer players keep their own planning state; it was not compared with this 16-byte layout. |
 | `FMT-STATE-008` | Combat result row of one sector | supported | missing | None | None | supported | The rebuild keeps combat events with combatant details instead of these per-sector rows of gang and target indices. |
 | `FMT-STATE-009` | Input event record | supported | missing | None | None | supported | Not yet compared with the rebuild. |
@@ -354,8 +354,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-EVENT-001` | The Last Turn reports are cleared just before each resolution | supported | complete | None | None | implemented | None |
 | `RULE-EVENT-002` | Recording a Last Turn report keeps the first 32 reports of a resolution | supported | complete | None | None | implemented | The rebuild keeps a fuller notification history and derives the first 32 reports of the completed turn from it. |
-| `RULE-EVENT-003` | An elimination is reported to all six player slots | supported | partial | None | None | supported | Whether the rebuild records the elimination report for all six slots, empty and computer slots included, was not checked. |
-| `RULE-EVENT-004` | A Crackdown is reported to each player who had a gang in its sector | supported | partial | None | None | supported | Whether the rebuild judges Crackdown recipients by gang presence at the start of resolution was not checked. |
+| `RULE-EVENT-003` | An elimination is reported to all six player slots | supported | complete | None | None | implemented | The rebuild has a slot only for each seated player, so an empty slot has no report to receive. |
+| `RULE-EVENT-004` | A Crackdown is reported to each player who had a gang in its sector | supported | complete | None | None | implemented | None |
 | `RULE-EVENT-005` | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded | supported | complete | None | None | implemented | None |
 | `RULE-EVENT-006` | A completed site is reported to the player whose Influence completed it | supported | complete | None | None | implemented | None |
 | `RULE-EVENT-007` | A completed item is reported to the player whose Research completed it | supported | complete | None | None | implemented | None |
@@ -363,9 +363,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EVENT-009` | A Hire that fails for lack of cash is reported to its player | supported | complete | None | None | implemented | None |
 | `RULE-EVENT-010` | A Hire refused because its sector is full is reported to its player | supported | complete | None | None | implemented | None |
 | `RULE-EVENT-011` | A Hire refused because the player has the most gangs allowed is reported to its player | supported | complete | None | None | implemented | None |
-| `RULE-EVENT-012` | Taking control of a sector is reported to the new owner | supported | partial | None | None | supported | The rebuild emits its own control notifications; the report type and its arguments are not checked against the original. |
-| `RULE-EVENT-013` | Losing control of a sector is reported to the previous owner | supported | partial | None | None | supported | The rebuild emits its own control notifications; the report type and its arguments are not checked against the original. |
-| `RULE-EVENT-014` | An Equip that fails for lack of cash is reported to its player | supported | partial | None | None | supported | The rebuild reports a failed Equip through its own notification; the report type and its arguments are not checked against the original. |
+| `RULE-EVENT-012` | Taking control of a sector is reported to the new owner | supported | complete | None | None | implemented | The report is the rebuild's Control notification; a winner without a Control order (BUG-CONTROL-001) gets one with no event. |
+| `RULE-EVENT-013` | Losing control of a sector is reported to the previous owner | supported | complete | None | None | implemented | The report is the rebuild's Control lost notification, sent on a takeover by Control and on a third Crackdown. |
+| `RULE-EVENT-014` | An Equip that fails for lack of cash is reported to its player | supported | complete | None | None | implemented | The report is the rebuild's failed Equip result, which names the gang and its sector; like the original it does not name the item. |
 | `SCR-EVENT-001` | Last Turn Events panel | supported | complete | None | `DEV-EVENT-001`, `DEV-EVENT-002` | implemented | Positions of the status line, illustration and footer come from the rebuild's own measurements, not from findings. |
 
 ## COMLINK
@@ -378,7 +378,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMLINK-004` | Comlink View opens at the oldest unread message and refuses an empty inbox | supported | complete | None | None | implemented | None |
 | `RULE-COMLINK-005` | Showing a Comlink message marks it read and dates it from its turn | supported | complete | None | None | implemented | None |
 | `RULE-COMLINK-006` | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | supported | complete | None | None | implemented | None |
-| `RULE-COMLINK-007` | When a player finishes planning, the read messages at the front of the inbox are dropped | supported | missing | None | None | supported | The rebuild keeps read messages until the 16-message limit drops them. |
+| `RULE-COMLINK-007` | When a player finishes planning, the read messages at the front of the inbox are dropped | supported | complete | None | None | implemented | None |
 | `SCR-COMLINK-001` | Comlink View panel | supported | complete | None | `DEV-COMLINK-001` | implemented | None |
 | `SCR-COMLINK-002` | Comlink Send panel | supported | complete | None | None | implemented | None |
 

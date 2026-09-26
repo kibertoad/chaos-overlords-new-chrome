@@ -84,7 +84,9 @@ public sealed class ComlinkInbox
                 || message.Sender.Value is < 0 or >= MatchLimits.PlayerCount
                 || string.IsNullOrWhiteSpace(message.Text)
                 || message.Text.Length > MatchLimits.ComlinkMessageCharacters).Any()
-            || messages.Count != Math.Min(nextSequence, MatchLimits.ComlinkMessagesPerPlayer))
+            // RULE-COMLINK-007 drops read messages from the front, so an inbox can hold fewer
+            // than it has received; what is left is still the newest run of messages.
+            || messages.Count > Math.Min(nextSequence, MatchLimits.ComlinkMessagesPerPlayer))
             throw new ArgumentException("Restored Comlink inbox is invalid.", nameof(messages));
 
         var inbox = new ComlinkInbox
@@ -117,6 +119,21 @@ public sealed class ComlinkInbox
     }
 
     public bool IsRead(long sequence) => _readSequences.Contains(sequence);
+
+    /// <summary>
+    /// RULE-COMLINK-007: removes the read messages at the front of the inbox, up to the first
+    /// unread one, when the player's planning ends. Returns how many were removed.
+    /// </summary>
+    internal int DropLeadingRead()
+    {
+        var dropped = 0;
+        while (_messages.TryPeek(out var message) && _readSequences.Remove(message.Sequence))
+        {
+            _messages.Dequeue();
+            dropped++;
+        }
+        return dropped;
+    }
 
     internal bool MarkRead(long sequence)
     {
