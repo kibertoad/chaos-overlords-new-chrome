@@ -46,6 +46,16 @@ public sealed class ComputerPlayerStateParityTests
         Assert.Equal(cap, SpecialSiteRules.ResearchTechLimit(match, gang));
     }
 
+    // RULE-SITE-001: a Research Lab whose Resistance ran out but that Upkeep has not activated
+    // yet is not complete, so it does not raise the research level.
+    [Fact]
+    public void ASiteNotYetActivatedDoesNotRaiseTheComputerTechCap()
+    {
+        var match = CreateResearchMatch(ResearchLabSite, sectorOwner: new PlayerId(1), activated: false);
+
+        Assert.Equal(5, SpecialSiteRules.ComputerTechLimit(match, match.FindGang(new GangId(10))!));
+    }
+
     // RULE-AI-005 first_affordable and RULE-AI-026 research_first apply the gang's own Tech Level
     // below the cap: a Tech 1 gang stays at 1 beside a Research Lab.
     [Fact]
@@ -221,7 +231,8 @@ public sealed class ComputerPlayerStateParityTests
         PlayerId sectorOwner,
         short? gangDefinitionId = null,
         IReadOnlySet<short>? researched = null,
-        PlayerController controller = PlayerController.Computer)
+        PlayerController controller = PlayerController.Computer,
+        bool activated = true)
     {
         var data = BundledOriginalData.Load();
         var definition = gangDefinitionId ?? data.Gangs.First(gang => gang.TechLevel == 10).Id;
@@ -241,7 +252,7 @@ public sealed class ComputerPlayerStateParityTests
             [
                 new MatchSiteState(0, 0, 7),
                 id == 0 && site is { } special
-                    ? new MatchSiteState(1, special, 0, sectorOwner)
+                    ? new MatchSiteState(1, special, 0, activated ? sectorOwner : null)
                     : new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
             ], owner: id == 0 ? sectorOwner : null))

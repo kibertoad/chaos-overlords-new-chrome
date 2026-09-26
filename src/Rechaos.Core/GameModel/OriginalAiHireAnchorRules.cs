@@ -99,29 +99,26 @@ internal static class OriginalAiHireAnchorRules
         ValidateLiteralArrays(literalSectorOwners, literalAvailability);
         ArgumentNullException.ThrowIfNull(activeGangCount);
         int freeNeighbours;
-        int occupancy;
         if (anchorSectorId == NoSector)
         {
             if (player.Value != 0) return false;
             freeNeighbours = FailedAnchorNeighbours.Count(sectorId =>
                 literalSectorOwners[sectorId] == NeutralOwner
                 && literalAvailability[sectorId] == 0);
-            occupancy = 0;
         }
         else if (anchorSectorId is >= 0 and < MatchLimits.SectorCount)
         {
             freeNeighbours = CountAvailableNeutralNeighbors(
                 player, anchorSectorId, literalSectorOwners, literalAvailability);
-            if (freeNeighbours == 0) return false;
-            occupancy = activeGangCount(anchorSectorId);
         }
         else
         {
             return false;
         }
-        return freeNeighbours > 0
-            && occupancy < MatchLimits.FriendlyGangsPerSector
-            && scenario != ScenarioId.BigMan;
+        if (freeNeighbours == 0) return false;
+        var occupancy = anchorSectorId == NoSector ? 0 : activeGangCount(anchorSectorId);
+        if (occupancy >= MatchLimits.FriendlyGangsPerSector) return false;
+        return scenario != ScenarioId.BigMan;
     }
 
     public static int CountAvailableNeutralNeighbors(

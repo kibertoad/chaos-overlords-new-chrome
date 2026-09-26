@@ -16,7 +16,8 @@ public static partial class AiTurnPlanner
     /// <summary>
     /// RULE-AI-004 owner_is_human (selector 0x35, FND-AI-057): the raw owner byte indexes the
     /// controllers with no range test, so for a neutral sector the read lands on player 5's
-    /// casualty count, and a count of 0 or 3 reads as human.
+    /// casualty count, and a count of 0 or 3 reads as human. Both tables hold 32-bit entries
+    /// (FMT-SAVE-001), so the whole count is compared, not its low byte.
     /// </summary>
     internal static bool OwnerIsHuman(MatchState state, int sectorId)
     {

@@ -169,6 +169,10 @@ public sealed partial class ChaosGame
             KeepRunRandomState();
             _state = result.State;
             _actions = new MatchActions(new MatchReplayRecorder(_state));
+            // RULE-RNG-001, RULE-COMLINK-004: an adopted journal enters the match like a loaded
+            // save, drawing on from the run's sequence with every inbox emptied.
+            _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
+            _actions.HotSeatRecorder.EmptyComlinkInboxes();
             ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();

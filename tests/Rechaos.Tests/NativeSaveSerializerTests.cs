@@ -261,6 +261,24 @@ public sealed partial class NativeSaveSerializerTests
             NativeSaveSerializer.Load(changed, match.Definitions));
     }
 
+    // FMT-STATE-003: the first combat record is a required planning field like its siblings, so
+    // a save without it is malformed rather than restored as definition 0.
+    [Fact]
+    public void RejectsSaveWithoutFirstCombatRecordDefinition()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        Assert.True(document["runtime"]!["aiPlanning"]!.AsObject().Remove("firstCombatRecordDefinition"));
+
+        using var changed = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var error = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(changed, match.Definitions));
+        Assert.Contains("first combat record", error.Message);
+    }
+
     [Fact]
     public void RejectsModifiedAiActionWhoseFingerprintWasNotUpdated()
     {

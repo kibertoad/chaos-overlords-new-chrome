@@ -21,8 +21,9 @@ public sealed partial class ChaosGame
         OpenSectorGangs(returnScreen);
 
     /// <summary>
-    /// Opens a gang that exists. An order panel (the Commands screen) opens the compact panel of
-    /// SCR-GANG-001 with the gang's record (FND-GANG-009); every other caller opens SCR-GANG-002.
+    /// Opens a gang that exists. An order panel (the Commands, Give or Sell screen) opens the
+    /// compact panel of SCR-GANG-001 with the gang's record (FND-GANG-009, FND-GANG-010); every
+    /// other caller opens SCR-GANG-002.
     /// </summary>
     private void OpenGangDetails(
         MatchGangState gang,
@@ -33,7 +34,7 @@ public sealed partial class ChaosGame
         _gangDetailsDefinitionId = gang.DefinitionId;
         _gangDetailsReturnScreen = returnScreen;
         _gangDetailsSectorFilter = sectorFilter;
-        _gangDetailsCompact = returnScreen == ClientScreen.Commands;
+        _gangDetailsCompact = IsOrderPanel(returnScreen);
         _gangDetailsAnimationStart = _inputTime;
         _gangEquipmentItemClicks.Cancel();
         _screens.Show(ClientScreen.Gang);
@@ -66,12 +67,15 @@ public sealed partial class ChaosGame
         _screens.Show(returnScreen);
     }
 
+    /// <summary>The order panels SCR-GANG-001 opens from: Attack, Equip and Research share Commands.</summary>
+    private static bool IsOrderPanel(ClientScreen screen) =>
+        screen is ClientScreen.Commands or ClientScreen.Give or ClientScreen.Sell;
+
     private void CycleGangDetails(int delta)
     {
         // Opened from a command overlay, the panel describes the gang being ordered and
         // must hand the overlay back that same gang.
-        if (_gangDetailsReturnScreen is ClientScreen.Commands or ClientScreen.Give or ClientScreen.Sell)
-            return;
+        if (IsOrderPanel(_gangDetailsReturnScreen)) return;
         if (_gangDetailsSectorFilter is not { } sectorId
             || _state?.Coordinator.ActivePlayer is not { } playerId)
         {

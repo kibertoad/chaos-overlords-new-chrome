@@ -56,17 +56,18 @@ public static class SpecialSiteRules
 
     /// <summary>
     /// The sector's <c>research_level</c> as RULE-SITE-001 rebuilds it before planning: 2 with a
-    /// completed site whose special is 2, else 1 with one whose special is 1, else 0. A site is
-    /// complete once its remaining Resistance is 0; before planning that holds exactly for the
-    /// sites the original counts, since a site finished during Instant has been activated by the
-    /// Upkeep that precedes planning.
+    /// completed site whose special is 2, else 1 with one whose special is 1, else 0, with
+    /// completion judged by <see cref="SiteControlRules.IsComplete"/> like every other reader of
+    /// that rebuild.
     /// </summary>
     private static int ResearchLevel(MatchState state, MatchSectorState sector)
     {
         var level = 0;
-        foreach (var site in sector.Sites.Where(site => site.Resistance == 0))
+        foreach (var site in sector.Sites)
         {
-            level = state.Definitions.Site(site.DefinitionId).Special switch
+            var definition = state.Definitions.Site(site.DefinitionId);
+            if (!SiteControlRules.IsComplete(site, definition)) continue;
+            level = definition.Special switch
             {
                 ResearchLab => Math.Max(level, 2),
                 ScienceCenter => Math.Max(level, 1),
