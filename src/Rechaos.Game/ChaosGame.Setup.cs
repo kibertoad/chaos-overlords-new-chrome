@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -111,6 +112,44 @@ public sealed partial class ChaosGame
     private void KeepRunRandomState()
     {
         if (_state is not null && HotSeatJournal is not null) _runRandomState = _state.Random.State;
+    }
+
+    /// <summary>
+    /// RULE-RNG-001: puts another match in place of the one on screen. Every replacement or
+    /// clearing of the match goes through here or its siblings below, and each first calls
+    /// <see cref="KeepRunRandomState"/>, so a local match that is left hands the run's sequence
+    /// back whichever path leaves it.
+    /// </summary>
+    [MemberNotNull(nameof(_state), nameof(_actions))]
+    private void ReplaceMatch(MatchState next, MatchActions actions)
+    {
+        ReplaceMatchState(next);
+        _actions = actions;
+    }
+
+    /// <summary>
+    /// <see cref="ReplaceMatch"/> for the online paths, which keep the actions for now and close
+    /// them on their own.
+    /// </summary>
+    [MemberNotNull(nameof(_state))]
+    private void ReplaceMatchState(MatchState next)
+    {
+        KeepRunRandomState();
+        _state = next;
+    }
+
+    /// <summary>Leaves the match on screen for none.</summary>
+    private void ClearMatch()
+    {
+        ClearMatchState();
+        _actions = null;
+    }
+
+    /// <summary><see cref="ClearMatch"/> for the online paths that close the actions on their own.</summary>
+    private void ClearMatchState()
+    {
+        KeepRunRandomState();
+        _state = null;
     }
 
     private void ChangeScenario(int delta)
@@ -391,6 +430,7 @@ public sealed partial class ChaosGame
                 PlayerController.Human,
                 _playerPortraits[slot]))
             .ToArray();
+        // The seed is where the run's sequence stands once the match being left has handed it back.
         KeepRunRandomState();
         var setup = new MatchSetup(
             _selectedScenario, _selectedDuration, unchecked((int)_runRandomState), players,
@@ -406,8 +446,8 @@ public sealed partial class ChaosGame
             ["aiPolicy"] = _defaultAiPolicy.ToString(),
             ["seed"] = setup.InitialSeed.ToString()
         });
-        _state = OriginalMatchFactory.Create(_definitions, setup);
-        _actions = new MatchActions(new MatchReplayRecorder(_state));
+        var created = OriginalMatchFactory.Create(_definitions, setup);
+        ReplaceMatch(created, new MatchActions(new MatchReplayRecorder(created)));
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: false);
         if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();

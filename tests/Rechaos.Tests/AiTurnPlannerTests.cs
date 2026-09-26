@@ -725,6 +725,27 @@ public sealed partial class AiTurnPlannerTests
         Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(player, 0));
     }
 
+    // RULE-AI-020: the focus is cleared after every branch of the switch, not only after previous
+    // Attack, Hide or Move, whenever the planned action is neither None nor Attack.
+    [Fact]
+    public void FamilyOneHealContinuationClearsAnEarlierAttackFocus()
+    {
+        var data = BundledOriginalData.Load();
+        var capable = data.Gangs.First(candidate => candidate.Stats.Heal >= -3).Id;
+        var match = CreateMatch(definitionId: capable, force: 8, data: data);
+        var player = new PlayerId(0);
+        match.FinishUpkeep();
+        match.AiPlanning.SeedFamily(player, 0, 1);
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Heal);
+        match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
+        match.AiPlanning.SetFocusValue(player, 0, 22);
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Equal(GangAction.Heal, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(player, 0));
+    }
+
     private static MatchState CreateMatch(
         PlayerController controller = PlayerController.Computer,
         AiDifficulty difficulty = AiDifficulty.Criminal,

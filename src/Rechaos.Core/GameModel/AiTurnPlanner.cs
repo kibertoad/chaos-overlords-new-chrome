@@ -214,10 +214,6 @@ public static partial class AiTurnPlanner
         {
             var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
             var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
-            // The human pool is taken on the hostile-owner attitude alone, with no human-owner
-            // test.
-            var humanPool = visibleWeight == 10
-                && IsHostileOwner(state, playerId, gang.SectorId);
             if (OwnerQuery(state, gang.SectorId) != playerId.Value)
             {
                 var turnsRemaining = ScenarioCatalog.Turns(state.Setup.Duration)
@@ -225,11 +221,12 @@ public static partial class AiTurnPlanner
                 if (OriginalAiObjectiveFamilyRules.ShouldScanContestedObjectiveTargets(
                         turnsRemaining, visibleWeight))
                 {
+                    // Outside the human pool the draw is from the sector owner's gangs.
                     var owner = state.Sectors[gang.SectorId].Owner;
                     PrepareObjectiveFightOrHeal(
                         state, playerId, gang, gangSlot, healOk, visible,
-                        humanPool
-                            ? HumanObjectiveTargets(state, visible)
+                        TakesHumanPool(state, playerId, gang.SectorId, visibleWeight)
+                            ? HumanOwnedTargets(state, visible)
                             : visible.Where(candidate => candidate.Gang.Owner == owner)
                                 .ToArray());
                 }
@@ -240,7 +237,8 @@ public static partial class AiTurnPlanner
             else if (visibleWeight > 0)
                 PrepareObjectiveFightOrHeal(
                     state, playerId, gang, gangSlot, healOk, visible,
-                    humanPool ? HumanObjectiveTargets(state, visible) : visible);
+                    SelectHumanWeightedTargetPool(
+                        state, playerId, gang.SectorId, visible, visibleWeight));
             else if (healOk)
                 SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
             else
@@ -307,13 +305,6 @@ public static partial class AiTurnPlanner
             : -1;
     }
 
-    private static ObjectiveTarget[] HumanObjectiveTargets(
-        MatchState state,
-        IReadOnlyList<ObjectiveTarget> visible) =>
-        visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
-                .Setup.Controller == PlayerController.Human)
-            .ToArray();
-
     /// <summary>
     /// RULE-AI-031, FND-AI-062: up to five draws from the pool, made only when the pool is not
     /// empty. A drawn gang and Force of at least 5 attack; otherwise a gang that passes the Heal
@@ -330,15 +321,18 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> targetPool)
     {
         ObjectiveTarget? selected = null;
+        // Every pool is visible or a subset of it, so the draw's row always exists in visible:
+        // the comparison reads that row, not the pool's (FND-AI-062).
+        var attackerStats = targetPool.Count > 0
+            ? EffectiveStatisticsCalculator.ForGang(state, gang)
+            : default;
         for (var draw = 0;
              targetPool.Count > 0 && draw < OriginalAiObjectiveFamilyRules.AttackDraws;
              draw++)
         {
             var ordinal = state.Random.NextInclusive(targetPool.Count);
             selected = targetPool[ordinal - 1];
-            if (ordinal > visible.Count) continue;
             var retryTarget = visible[ordinal - 1].Gang;
-            var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
             var targetStats = EffectiveStatisticsCalculator.ForGang(state, retryTarget);
             if (OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry(
                     gang.Force, attackerStats.Combat, attackerStats.Defense,

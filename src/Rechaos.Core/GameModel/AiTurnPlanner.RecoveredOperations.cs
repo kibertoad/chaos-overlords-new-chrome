@@ -38,13 +38,29 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> visible,
         int visibleWeight)
     {
-        return IsHostileOwner(state, playerId, sectorId)
-            && visibleWeight == 10
-                ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
-                        .Setup.Controller == PlayerController.Human)
-                    .ToArray()
-                : visible;
+        return TakesHumanPool(state, playerId, sectorId, visibleWeight)
+            ? HumanOwnedTargets(state, visible)
+            : visible;
     }
+
+    /// <summary>
+    /// RULE-AI-004: the pool narrows to human-owned gangs when the sector's owner is hostile and
+    /// the first visible opponent weighs 10, on the owner attitude alone with no human-owner test.
+    /// </summary>
+    private static bool TakesHumanPool(
+        MatchState state,
+        PlayerId playerId,
+        int sectorId,
+        int visibleWeight) =>
+        IsHostileOwner(state, playerId, sectorId) && visibleWeight == 10;
+
+    /// <summary>RULE-AI-004: the visible opponents whose owners are human players.</summary>
+    private static ObjectiveTarget[] HumanOwnedTargets(
+        MatchState state,
+        IReadOnlyList<ObjectiveTarget> visible) =>
+        visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
+                .Setup.Controller == PlayerController.Human)
+            .ToArray();
 
     /// <summary>Weight of the first visible opponent's owner, or 0 when nobody is visible.</summary>
     private static int FirstVisibleOpponentWeight(

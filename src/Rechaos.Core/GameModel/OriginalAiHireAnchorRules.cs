@@ -112,7 +112,6 @@ internal static class OriginalAiHireAnchorRules
         {
             freeNeighbours = CountAvailableNeutralNeighbors(
                 player, anchorSectorId, literalSectorOwners, literalAvailability);
-            if (freeNeighbours == 0) return false;
             occupancy = activeGangCount(anchorSectorId);
         }
         else

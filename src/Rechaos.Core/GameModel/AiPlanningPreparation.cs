@@ -95,8 +95,8 @@ internal static class AiPlanningPreparation
         var playerState = state.FindPlayer(player)
             ?? throw new ArgumentOutOfRangeException(nameof(player));
         var ownedSectorCount = state.Sectors.Count(sector => sector.Owner == player);
-        if (ownedSectorCount / 4 >= CountFamilies(state, player, playerState, 6, 12)
-            || ownedSectorCount <= 6)
+        if (ownedSectorCount <= 6
+            || ownedSectorCount / 4 >= CountFamilies(state, player, playerState, 6, 12))
             return;
         if (state.AiPlanning.PlannedAction(player, ownedSectorCount) == GangAction.Attack) return;
         for (var gangSlot = 0; gangSlot < playerState.Gangs.Count; gangSlot++)

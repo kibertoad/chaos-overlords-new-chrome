@@ -113,6 +113,12 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         PrepareFamilyOneAction(state, player, gang, gangSlot, snapshot);
+        // RULE-AI-020: after the switch, whatever the branch, a planned action other than None or
+        // Attack clears the focus.
+        if (state.AiPlanning.PlannedAction(player.Id, gangSlot)
+            is not (GangAction.None or GangAction.Attack))
+            state.AiPlanning.SetFocusValue(
+                player.Id, gangSlot, AiPlanningState.InactiveFocusValue);
         // FND-AI-057: after the switch, the Greed Terminate of FND-AI-042.
         TerminateForGreed(state, player.Id, gangSlot);
     }
@@ -153,7 +159,7 @@ public static partial class AiTurnPlanner
     /// RULE-AI-020, FND-AI-057: after previous Attack, Hide or Move. At weight 10 one draw is
     /// made; a passing comparison attacks. Otherwise a gang in a sector the owner query gives to
     /// its player moves through mode 5, and any other gang heals, takes the sector, snitches or
-    /// moves. Every action but the Attack clears the focus.
+    /// moves. The focus is cleared after the switch by <see cref="PrepareFamilyOneCommand"/>.
     /// </summary>
     private static void PrepareFamilyOneAfterAttackHideOrMove(
         MatchState state,
