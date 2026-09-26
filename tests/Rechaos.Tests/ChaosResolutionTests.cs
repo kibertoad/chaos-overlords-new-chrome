@@ -10,7 +10,7 @@ public sealed class ChaosResolutionTests
     [Fact]
     public void NewCrackdownRetainsTwoToFourFuturePoliceCombatPhasesAfterImmediateCombat()
     {
-        var match = CreateMatch(tolerance: 0);
+        var match = CreateMatch(tolerance: 0, twoEarlierCrackdowns: true);
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
 
         match.FinishExecutionPhase();
@@ -32,7 +32,7 @@ public sealed class ChaosResolutionTests
     [Fact]
     public void AnotherCrackdownExtendsExistingPolicePresenceBeforeSameTurnDurationTick()
     {
-        var match = CreateMatch(tolerance: 0, crackdownActive: true);
+        var match = CreateMatch(tolerance: 0, crackdownActive: true, twoEarlierCrackdowns: true);
         var remainingBeforeChaos = match.Sectors[0].CrackdownTurnsRemaining;
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
 
@@ -234,7 +234,7 @@ public sealed class ChaosResolutionTests
     [Fact]
     public void NewlyTriggeredCrackdownParticipatesInSameTurnCombatAndDurationTick()
     {
-        var match = CreateMatch(tolerance: 0);
+        var match = CreateMatch(tolerance: 0, twoEarlierCrackdowns: true);
         match.FinishUpkeep();
         Assert.True(match.Submit(Chaos(0, 10)).Accepted);
         match.FinishCommand(new PlayerId(0));
@@ -341,7 +341,7 @@ public sealed class ChaosResolutionTests
         Assert.True(totalSuccesses > 0);
         Assert.All(match.LastPhaseResolutions,
             result => Assert.Equal(totalSuccesses, result.Event!.Resolution!.ResultValue));
-        Assert.True(match.Sectors[0].CrackdownActive);
+        Assert.Equal([match.Coordinator.Turn], match.Sectors[0].CrackdownHistory);
         Assert.Equal(cashBefore, match.Players.Select(player => player.Cash));
         Assert.All(match.Players, player => Assert.Contains(
             match.NotificationsFor(player.Id),
@@ -400,8 +400,9 @@ public sealed class ChaosResolutionTests
             reports.Select(notification => notification.Kind));
     }
 
+    // RULE-CHAOS-002: no test of police presence is made at payout [FND-CHAOS-002].
     [Fact]
-    public void ExistingCrackdownSuppressesIncomeWhileChaosStillRolls()
+    public void PolicePresenceFromEarlierTurnsDoesNotStopChaosPay()
     {
         var match = CreateMatch(tolerance: 40, crackdownActive: true);
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
@@ -410,7 +411,8 @@ public sealed class ChaosResolutionTests
         match.FinishExecutionPhase();
 
         var successes = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.Successes;
-        Assert.Equal(cashBefore, match.Players[0].Cash);
+        var paid = match.FindGang(new GangId(10))!.IsActive ? successes / 2 : 0;
+        Assert.Equal(cashBefore + paid, match.Players[0].Cash);
         Assert.Equal(successes,
             Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.ResultValue);
         Assert.DoesNotContain(match.NotificationsFor(new PlayerId(0)),
@@ -432,7 +434,54 @@ public sealed class ChaosResolutionTests
 
         Assert.Equal(1, match.Sectors[0].BaseTolerance);
         Assert.Equal(-2, match.Sectors[0].Tolerance);
+        Assert.Equal([1], match.Sectors[0].CrackdownHistory);
+    }
+
+    // RULE-POLICE-002: the first and second Crackdown in five turns bring no police and make no
+    // draw; only the third does [FND-POLICE-004].
+    [Fact]
+    public void AFirstCrackdownBringsNoPoliceAndKeepsTheOwner()
+    {
+        var match = CreateMatch(owner: new PlayerId(0), tolerance: 0);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+
+        Assert.Equal([1], match.Sectors[0].CrackdownHistory);
+        Assert.False(match.Sectors[0].CrackdownActive);
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
+        Assert.Contains(match.NotificationsFor(new PlayerId(0)),
+            notification => notification.Kind == GameNotificationKind.Crackdown);
+        Assert.DoesNotContain(match.NotificationsFor(new PlayerId(0)),
+            notification => notification.Kind == GameNotificationKind.ControlLost);
+    }
+
+    [Fact]
+    public void AThirdCrackdownInANeutralSectorBringsPolice()
+    {
+        var match = CreateMatch(tolerance: 0, twoEarlierCrackdowns: true);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+
         Assert.True(match.Sectors[0].CrackdownActive);
+        Assert.Equal([match.Coordinator.Turn, match.Coordinator.Turn], match.Sectors[0].CrackdownHistory);
+    }
+
+    // RULE-CHAOS-002: a Chaos gang killed in this turn's Combat is not paid, and the survivors'
+    // successes are still added up for the sector [FND-CHAOS-002].
+    [Fact]
+    public void AChaosGangKilledBeforeThePayoutIsNotPaid()
+    {
+        var match = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+        var killed = match.FindGang(new GangId(11))!;
+        match.Commands.Cancel(killed.Id);
+        killed.QueuedCommand = null;
+        killed.Force = 0;
+        var cashBefore = match.Players[0].Cash;
+
+        match.FinishExecutionPhase();
+
+        var survivor = Assert.Single(match.LastPhaseResolutions,
+            result => result.Command.Gang == new GangId(10)).Event!.Resolution!;
+        Assert.Equal(cashBefore + survivor.PreviousValue!.Value, match.Players[0].Cash);
     }
 
     [Fact]
@@ -578,7 +627,8 @@ public sealed class ChaosResolutionTests
         PlayerId? owner = null,
         int tolerance = 20,
         bool crackdownActive = false,
-        int income = 2)
+        int income = 2,
+        bool twoEarlierCrackdowns = false)
     {
         var data = BundledOriginalData.Load();
         var chaosGang = data.Gangs.OrderByDescending(gang => gang.Stats.Chaos).First().Id;
@@ -608,8 +658,13 @@ public sealed class ChaosResolutionTests
                 new MatchSiteState(2, 2, 4)
             ], id == 0 ? owner : null, id == 0 ? tolerance : 20,
                 crackdownActive: id == 0 && crackdownActive,
-                income: id == 0 ? income : 2))
+                income: id == 0 ? income : 2,
+                crackdownHistory: id == 0 && twoEarlierCrackdowns ? [1, 2] : null))
             .ToArray();
-        return new MatchState(data, setup, players, sectors);
+        var match = new MatchState(data, setup, players, sectors);
+        // The Crackdowns of turns 1 and 2 are in the window, so the next one is the third.
+        if (twoEarlierCrackdowns)
+            for (var turn = 1; turn < 3; turn++) AdvanceCoordinatorTurn(match);
+        return match;
     }
 }

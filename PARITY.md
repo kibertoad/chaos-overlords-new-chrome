@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 97 |
+| `supported` | 94 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 124 |
+| `implemented` | 127 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 20 |
-| `partial` | 78 |
-| `complete` | 124 |
+| `partial` | 75 |
+| `complete` | 127 |
 
 ## DATA
 
@@ -89,7 +89,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `FMT-STATE-001` | Gang record, one per player and roster slot | supported | partial | None | None | supported | The rebuild keeps each gang's fields as named state rather than this 32-byte layout, and marks an empty roster slot with Force 0 rather than sector 100. |
-| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | The rebuild keeps sector owner, Income, the base Tolerance, the rebuilt Tolerance, sites and site benefits as named state rather than this 36-byte layout; the research level and the seen-gang bytes are not yet mapped (see the 2026-09-25 decision in docs/DECISIONS.md). |
+| `FMT-STATE-002` | Sector record, one per city sector | supported | partial | None | None | supported | The rebuild keeps sector owner, Income, the base Tolerance, the rebuilt Tolerance, the rebuilt Support, sites and site benefits as named state rather than this 36-byte layout; the research level and the seen-gang bytes are not yet mapped (see the 2026-09-25 decision in docs/DECISIONS.md). |
 | `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | partial | None | None | supported | The rebuild derives combat presentation from combat events and clip forces rather than keeping these 10-byte records. |
 | `FMT-STATE-004` | Site slot in a sector record | supported | partial | None | None | supported | The rebuild keeps remaining Resistance per site plus an explicit influencer identity that the original does not store. |
 | `FMT-STATE-005` | Comlink message record | supported | partial | None | None | supported | The rebuild keeps the Comlink inbox with the same occupied, read, turn, sender and text content, not this 166-byte layout. |
@@ -217,7 +217,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-CONTROL-001` | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported | partial | None | `DEV-CONTROL-001`, `DEV-CONTROL-002` | supported | Candidates are limited to players with a Control order and a Crackdown sector gets an explicit failed result (see deviations). FND-CONTROL-003 changed the procedure (only contested sectors without police are settled; the defense joins the owner's pool); the rebuild has not been checked against it. |
+| `RULE-CONTROL-001` | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported | complete | None | `DEV-CONTROL-001`, `DEV-CONTROL-002` | implemented | A sector under police records a failed result for each Control gang (DEV-CONTROL-002); only players with an order and the owner compete (DEV-CONTROL-001). |
 
 ## GANG
 
@@ -301,14 +301,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-CHAOS-001` | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported | complete | None | None | implemented | None |
-| `RULE-CHAOS-002` | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported | partial | None | None | supported | The rebuild pays nothing in a sector under police presence, where the original pays unless the sector cracked down this turn (FND-CHAOS-002); whether it skips gangs killed in this turn's combat was not checked. |
+| `RULE-CHAOS-002` | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported | complete | None | None | implemented | None |
 
 ## POLICE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-POLICE-001` | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | supported | complete | None | None | implemented | None |
-| `RULE-POLICE-002` | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | supported | partial | None | None | supported | The rebuild adds police presence, with its draw, on every Crackdown, where the original does so only on the third (FND-POLICE-004). It also resets more on neutralization (Support, Tolerance modifiers, resistance) than the original, which clears only the three site progress bytes (FND-CHAOS-002). |
+| `RULE-POLICE-002` | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | supported | complete | None | None | implemented | None |
 | `RULE-POLICE-003` | Police presence counts down by one at the end of every turn unless it is permanent | supported | complete | None | None | implemented | None |
 | `RULE-POLICE-004` | Crackdown reports go to the players who had a gang in the sector when resolution began | supported | complete | None | None | implemented | None |
 

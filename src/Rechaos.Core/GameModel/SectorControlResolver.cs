@@ -2,11 +2,28 @@ namespace Rechaos.Core.GameModel;
 
 internal static class SectorControlResolver
 {
+    /// <summary>
+    /// Makes the sector neutral and sets its sites' progress back to nothing, as RULE-POLICE-002
+    /// does on a third Crackdown. The values rebuilt from completed sites before planning, the
+    /// Tolerance and the sector's Support, keep theirs until the next rebuild (FND-CHAOS-002).
+    /// </summary>
     public static void Neutralize(MatchState state, MatchSectorState sector)
     {
-        if (sector.Owner is not { } previousOwner) return;
-        ResetInfluencedSites(state, sector, previousOwner);
+        if (sector.Owner is { } previousOwner)
+            ResetInfluencedSites(state, sector, previousOwner);
+        else
+            ResetSiteProgress(state, sector);
         sector.Owner = null;
+    }
+
+    /// <summary>Sets the progress of every site of the sector back to nothing.</summary>
+    public static void ResetSiteProgress(MatchState state, MatchSectorState sector)
+    {
+        foreach (var site in sector.Sites)
+        {
+            site.InfluencedBy = null;
+            site.Resistance = state.Definitions.Site(site.DefinitionId).Resistance;
+        }
     }
 
     public static void ResetInfluencedSites(

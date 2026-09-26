@@ -81,7 +81,9 @@ public static class InformationEffectTooltips
             return ["TOLERANCE", "ONCE COMPLETED, ADDED TO THE SECTOR'S BASE TOLERANCE",
                 "WHEN THE SECTOR IS REBUILT BEFORE PLANNING."];
         if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(2), 122).Contains(point))
-            return ["SUPPORT", "WHEN INFLUENCED, ADDED AGAINST HOSTILE CONTROL ATTEMPTS."];
+            // RULE-CONTROL-001
+            return ["SUPPORT", "ONCE COMPLETED, ADDED TO THE SECTOR'S SUPPORT",
+                "WHEN THE SECTOR IS REBUILT BEFORE PLANNING."];
         if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(3), 122).Contains(point))
             return ["CASH", "WHEN INFLUENCED, PAID TO THE SITE OWNER EACH UPKEEP."];
         return StatisticAt(point, SiteInformationLayout.StatisticY,
@@ -183,7 +185,7 @@ public static class InformationEffectTooltips
         InformationEffect.Combat => "ADDS TO FORCE WHEN ROLLING ATTACK DICE.",
         InformationEffect.Defense => "SUBTRACTED FROM AN ENEMY'S ATTACK DICE.",
         InformationEffect.Chaos => "ADDS TO FORCE FOR THE CHAOS ACTION'S DICE.",
-        InformationEffect.Control => "ADDS ITS VALUE TO FORCE FOR CONTROL AND SECTOR DEFENSE.",
+        InformationEffect.Control => "ADDS ITS VALUE TO FORCE FOR CONTROL AND THE OWNER'S DEFENSE.",
         InformationEffect.Heal => "MODIFIES THE HEAL ACTION'S BASE FOUR DICE.",
         InformationEffect.Influence => "ADDS ITS VALUE TO DICE FOR THE INFLUENCE ACTION.",
         InformationEffect.Research => "ADDS TO FORCE WHEN RESEARCHING AN ITEM.",

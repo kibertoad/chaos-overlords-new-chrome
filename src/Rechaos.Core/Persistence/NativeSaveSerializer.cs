@@ -14,7 +14,7 @@ public static class NativeSaveSerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
-    public const int CurrentFormatVersion = 29;
+    public const int CurrentFormatVersion = 30;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -381,7 +381,8 @@ public static class NativeSaveSerializer
         sector.CrackdownTurnsRemaining,
         sector.CrackdownHistory.ToArray(),
         Chaos: null,
-        BaseTolerance: sector.BaseTolerance);
+        BaseTolerance: sector.BaseTolerance,
+        Support: sector.Support);
 
     private static MatchSectorState RestoreSector(SectorDocument sector) => new(
         sector.Id,
@@ -401,7 +402,9 @@ public static class NativeSaveSerializer
         sector.CrackdownHistory
             ?? throw new InvalidDataException("Native save crackdown history is missing."),
         sector.BaseTolerance
-            ?? throw new InvalidDataException("Native save base Tolerance is missing."));
+            ?? throw new InvalidDataException("Native save base Tolerance is missing."),
+        sector.Support
+            ?? throw new InvalidDataException("Native save sector Support is missing."));
 
     /// <summary>
     /// Copies <paramref name="source"/> into memory and rewinds the copy, throwing
@@ -562,7 +565,8 @@ internal sealed record SectorDocument(
     int? CrackdownTurnsRemaining = null,
     IReadOnlyList<int>? CrackdownHistory = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Chaos = null,
-    int? BaseTolerance = null);
+    int? BaseTolerance = null,
+    int? Support = null);
 
 internal sealed record SiteDocument(int Slot, short DefinitionId, int Resistance, int? InfluencedBy);
 

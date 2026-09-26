@@ -157,7 +157,7 @@ public sealed class UiNavigationTests
             InformationEffect.Range, "SCOPE")[1]);
         Assert.Contains("INFLUENCE ACTION", InformationEffectTooltips.Describe(
             InformationEffect.Influence, "SCOPE")[1]);
-        Assert.Contains("SECTOR DEFENSE", InformationEffectTooltips.Describe(
+        Assert.Contains("OWNER'S DEFENSE", InformationEffectTooltips.Describe(
             InformationEffect.Control, "SCOPE")[1]);
         var strength = InformationEffectTooltips.Describe(
             InformationEffect.Strength, "SCOPE")[1];

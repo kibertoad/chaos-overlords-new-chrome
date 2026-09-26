@@ -187,7 +187,19 @@ public sealed class MatchReplayTests
     [Fact]
     public void ReplaysCrackdownTriggerCountdownAndFollowingPoliceCombat()
     {
-        var recorder = new MatchReplayRecorder(CreateMatch());
+        // RULE-POLICE-002: only the third Crackdown within five turns brings police, so the sector
+        // starts turn 3 with the Crackdowns of turns 1 and 2 in its history.
+        var match = TestMatches.Create(sectorZeroCrackdowns: [1, 2]);
+        for (var turn = 1; turn < 3; turn++)
+        {
+            var coordinator = match.Coordinator;
+            coordinator.FinishUpkeep();
+            foreach (var player in match.Players) coordinator.FinishCommand(player.Id);
+            while (coordinator.Phase == TurnPhase.Execution) coordinator.FinishExecutionPhase();
+            foreach (var player in match.Players) coordinator.FinishHire(player.Id);
+            coordinator.FinishPlayerElimination();
+        }
+        var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
         Assert.True(recorder.Submit(new GameCommand(
             new PlayerId(0), new GangId(0), GangAction.Chaos, CommandTarget.None)).Accepted);
@@ -195,7 +207,7 @@ public sealed class MatchReplayTests
         while (recorder.State.Coordinator.Phase == TurnPhase.Execution)
             recorder.FinishExecutionPhase();
         Assert.True(recorder.State.Sectors[0].CrackdownActive);
-        Assert.Equal([1], recorder.State.Sectors[0].CrackdownHistory);
+        Assert.Equal([3, 3], recorder.State.Sectors[0].CrackdownHistory);
         var initialDuration = recorder.State.Sectors[0].CrackdownTurnsRemaining;
         FinishHireAndElimination(recorder);
 
