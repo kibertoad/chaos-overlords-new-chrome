@@ -86,9 +86,14 @@ from a stalled one:
 ```
 
 `-TestFilter` can select any narrower test slice; `-TraceTestOutput` exposes
-captured test output and completed-case names. The long-only mode requires all
-53 cases to be discovered. `-TestFilter`, `-IncludeLongRunningTests`, and
-`-LongRunningTestsOnly` are mutually exclusive so the selected scope remains
+captured test output and completed-case names. A filtered run still leaves the
+long category out (the filter is combined with `Category!=LongRunning`) unless
+`-IncludeLongRunningTests` is also passed, and fails when the filter selects no
+test at all. The default gate requires 3,060 cases to be discovered, the
+long-only mode all 53, and the full suite their sum, 3,113; the counts come from
+`dotnet test --project tests/Rechaos.Tests --list-tests` with the same filters
+and are raised together when tests are added. `-LongRunningTestsOnly` cannot be
+combined with either of the other two, so the selected scope remains
 unambiguous. Every invocation retains the 30-minute global test safety timeout.
 
 The manually dispatched CI workflow runs the fast tier on Windows x64, Linux
