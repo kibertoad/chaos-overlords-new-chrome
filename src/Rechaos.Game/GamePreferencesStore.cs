@@ -123,11 +123,19 @@ public static class GamePreferencesStore
         }
     }
 
+    /// <summary>Writes the preferences atomically, unless a newer build owns the file.</summary>
+    /// <remarks>
+    /// A file whose <c>FormatVersion</c> is newer than this build's is read as defaults by
+    /// <see cref="LoadOrDefault"/>, and writing those back — the intro's first showing does it
+    /// unasked — replaced every choice the newer build had stored. This build keeps its choices in
+    /// memory for the session instead and leaves the newer file alone.
+    /// </remarks>
     public static bool TrySave(string path, GamePreferences preferences)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(preferences);
         if (!IsValid(preferences)) return false;
+        if (IsFromNewerBuild(path)) return false;
 
         var temporaryPath = path + ".tmp";
         try
@@ -157,6 +165,26 @@ public static class GamePreferencesStore
     }
 
     private static T? Read<T>(byte[] bytes) => JsonSerializer.Deserialize<T>(bytes, JsonOptions);
+
+    /// <summary>Whether the file on disk carries a <c>FormatVersion</c> newer than this build's.</summary>
+    /// <remarks>Anything else — no file, a lock, unparseable bytes — does not stop a save.</remarks>
+    private static bool IsFromNewerBuild(string path)
+    {
+        try
+        {
+            var file = new FileInfo(path);
+            if (!file.Exists || file.Length > MaximumFileBytes) return false;
+            using var document = JsonDocument.Parse(File.ReadAllBytes(path));
+            return document.RootElement.TryGetProperty(nameof(GamePreferences.FormatVersion), out var version)
+                && version.ValueKind == JsonValueKind.Number
+                && version.TryGetInt32(out var number)
+                && number > GamePreferences.CurrentFormatVersion;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     private static bool IsValid(GamePreferences? preferences) =>
         preferences is { FormatVersion: GamePreferences.CurrentFormatVersion }

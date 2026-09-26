@@ -14,6 +14,9 @@ if (args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase))
     return 0;
 }
 
+// Before anything formats a number: see GameCulture for why the player's culture is not used.
+GameCulture.Apply();
+
 string? assetRoot = null;
 var platformSmokeTest = args.Contains("--platform-smoke-test", StringComparer.OrdinalIgnoreCase);
 using var diagnostics = RuntimeDiagnostics.OpenDefault();
