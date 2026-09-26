@@ -284,6 +284,18 @@ public sealed partial class MultiplayerMatchSession
             TaskContinuationOptions.OnlyOnFaulted,
             TaskScheduler.Default);
 
+    /// <summary>Applies the event history after <paramref name="after"/>, through <paramref name="throughSeq"/>.</summary>
+    /// <remarks>
+    /// The server stores its log without gaps but withholds, from both this read and the stream,
+    /// any row its own build cannot validate — a payload reshaped by another server build — so a
+    /// forward jump in a page, and an empty page before <paramref name="throughSeq"/>, are rows it
+    /// withheld rather than rows that were lost. Both are stepped over. Treating them as fatal made
+    /// one unreadable row end every session of its match for good, since the stream resynchronises
+    /// through here on a gap. Nothing that matters is taken on trust by stepping over: a withheld
+    /// seal leaves the next one naming a turn ahead of the reconstructed state, which
+    /// <see cref="ApplyHistoricalEventAsync"/> refuses, and the caller refuses a replay that ends on
+    /// a turn other than the server's.
+    /// </remarks>
     private async Task ReplayPagesAsync(
         int after,
         int throughSeq,
@@ -295,22 +307,21 @@ public sealed partial class MultiplayerMatchSession
                 token => _match.EventsAsync(after, EventHistoryPageSize, token),
                 _pumpLane,
                 cancellationToken).ConfigureAwait(false);
-            if (page.Events.Count == 0)
-            {
-                throw new MultiplayerProtocolException(
-                    $"the event history ended at sequence {after}, before sequence {throughSeq}");
-            }
+            // Every row left before `throughSeq` was withheld: the server reads past a page of
+            // withheld rows rather than answer an empty one, so an empty page is the log's end.
+            if (page.Events.Count == 0) return;
             // The page names every turn this replay is about to apply, so the fetches for the first
             // few can start now rather than one at a time as each turn comes round.
             PrefetchSealedSets(page, throughSeq, cancellationToken);
 
             foreach (var @event in page.Events)
             {
-                var expected = after + 1;
-                if (@event.Seq != expected)
+                // Forward only. A jump is a withheld row; a repeat or a step back is not something
+                // a gapless log read in order can produce.
+                if (@event.Seq <= after)
                 {
                     throw new MultiplayerProtocolException(
-                        $"the event history jumped from sequence {after} to {@event.Seq}");
+                        $"the event history went back from sequence {after} to {@event.Seq}");
                 }
                 if (!string.Equals(@event.MatchId, _match.MatchId, StringComparison.Ordinal))
                 {

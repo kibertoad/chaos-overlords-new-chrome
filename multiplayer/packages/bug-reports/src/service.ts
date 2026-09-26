@@ -79,6 +79,9 @@ export interface BugReportService {
  * Nothing here decompresses or parses an archive. It is opaque bytes with a digest, and keeping it
  * that way is what makes accepting one from an unauthenticated stranger safe.
  */
+/** The rolling window the byte budget is spent over. */
+const DAY_MS = 24 * 60 * 60 * 1000
+
 export function createBugReportService(deps: BugReportServiceDeps): BugReportService {
   const { repository, clock, logger, blobs } = deps
   const retention = deps.retention ?? DEFAULT_BUG_REPORT_RETENTION
@@ -90,7 +93,7 @@ export function createBugReportService(deps: BugReportServiceDeps): BugReportSer
 
       const stored = await file(id, receivedAt, request.state)
 
-      const report: StoredBugReport = {
+      let report: StoredBugReport = {
         id,
         receivedAt,
         message: request.message,
@@ -99,9 +102,22 @@ export function createBugReportService(deps: BugReportServiceDeps): BugReportSer
         context: request.context ?? null,
         state: stored.state,
       }
+      let outcome = stored.outcome
 
       try {
-        await repository.insert(report)
+        if (!(await insertWithinBudget(report))) {
+          // Another report took the day's last bytes between the check before the upload and this
+          // write. The report is still filed, without its journal, exactly as if the check had
+          // said so; the object already written goes.
+          logger.warn('bug report state dropped: the daily archive budget was spent meanwhile', {
+            id,
+            budget: retention.dailyStateBytes,
+          })
+          if (report.state?.blobKey) await forget(report.state.blobKey)
+          report = { ...report, state: null }
+          outcome = 'omitted'
+          await repository.insert(report)
+        }
       } catch (error) {
         // The archive was written first, so a failed insert would otherwise leave an object nobody
         // can ever find a key for. Best effort: if this fails too the object is merely orphaned,
@@ -112,13 +128,13 @@ export function createBugReportService(deps: BugReportServiceDeps): BugReportSer
 
       logger.info('bug report received', {
         id,
-        bytes: stored.state?.compressedBytes ?? 0,
-        state: stored.outcome,
+        bytes: report.state?.compressedBytes ?? 0,
+        state: outcome,
       })
       return {
         id,
         receivedAt: receivedAt.toISOString(),
-        stateStored: stored.outcome,
+        stateStored: outcome,
       }
     },
 
@@ -150,6 +166,23 @@ export function createBugReportService(deps: BugReportServiceDeps): BugReportSer
       if (state.blobKey) return (await blobs?.get(state.blobKey)) ?? null
       return state.body === null ? null : decodeBase64(state.body)
     },
+  }
+
+  /**
+   * Write the report's row, holding an attached archive to the day's budget in the same statement.
+   *
+   * `withinDailyBudget` answers before the upload so a day that is plainly spent costs no object
+   * write, but it is a read: reports racing for the day's last bytes all passed it and were all
+   * filed, however far past the ceiling that took them. The write is what enforces the ceiling.
+   * False when the day had no room left; nothing was written then.
+   */
+  async function insertWithinBudget(report: StoredBugReport): Promise<boolean> {
+    if (!report.state || retention.dailyStateBytes <= 0) {
+      await repository.insert(report)
+      return true
+    }
+    const since = new Date(report.receivedAt.getTime() - DAY_MS)
+    return repository.insertWithinBudget(report, since, retention.dailyStateBytes)
   }
 
   /**
@@ -185,7 +218,7 @@ export function createBugReportService(deps: BugReportServiceDeps): BugReportSer
     state: NonNullable<SubmitBugReportRequest['state']>,
   ): Promise<boolean> {
     if (retention.dailyStateBytes <= 0) return true
-    const since = new Date(receivedAt.getTime() - 24 * 60 * 60 * 1000)
+    const since = new Date(receivedAt.getTime() - DAY_MS)
     const spent = await repository.bytesSince(since)
     // The declared encoded length is what is checked, before anything is decoded: deciding after the
     // decode would mean the budget is only applied to bytes already in memory.

@@ -1,4 +1,5 @@
 import {
+  type AiSeatSummary,
   type GameSettings,
   gameSettingsSchema,
   type SnapshotView,
@@ -127,9 +128,9 @@ export class SnapshotService {
     uploadedByPlayerId: string,
     request: UploadSnapshotRequest,
   ): Promise<void> {
-    const gameSettings = mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
+    mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
     await this.deps.storage.snapshots.put(this.snapshotOf(match, uploadedByPlayerId, request))
-    await this.publishSeatSummaries(match.id, gameSettings)
+    await this.publishSeatSummaries(match.id, request.seatSummaries)
     await this.pruneOldSnapshots(match.id)
   }
 
@@ -155,13 +156,12 @@ export class SnapshotService {
    * Late-join hints are optional metadata; the snapshot the players are waiting on is not. A
    * transient failure of this write is logged and never fails the upload that already succeeded.
    */
-  private async publishSeatSummaries(matchId: string, gameSettings: GameSettings): Promise<void> {
+  private async publishSeatSummaries(
+    matchId: string,
+    seatSummaries: UploadSnapshotRequest['seatSummaries'],
+  ): Promise<void> {
     try {
-      await this.deps.storage.matches.updateRuntimeGameSettings(
-        matchId,
-        gameSettings,
-        this.deps.clock.now(),
-      )
+      await publishSeatSummaries(this.deps, matchId, seatSummaries)
     } catch (error) {
       this.deps.logger.warn('could not publish seat summaries', { matchId, error: String(error) })
     }
@@ -265,6 +265,25 @@ export class SnapshotService {
  * already bounded to one entry per seat by `uploadSnapshotRequestSchema`, so reaching this is a host
  * that filled the settings almost to the cap before starting.
  */
+/**
+ * Write the host's seat summaries into the match's stored `gameSettings`.
+ *
+ * Only the summaries are written, and the storage merges them into the blob as it stands when the
+ * statement runs. The whole blob used to be replaced with the caller's copy, which was the one read
+ * when the request was authenticated — a report and an upload in flight together each put back the
+ * settings they started from. The cap is judged against the blob as it is now, for the same reason.
+ */
+export async function publishSeatSummaries(
+  deps: Pick<KernelDeps, 'storage' | 'clock'>,
+  matchId: string,
+  seatSummaries: readonly AiSeatSummary[],
+): Promise<void> {
+  const current = await deps.storage.matches.get(matchId)
+  if (!current) return
+  mergeSeatSummaries(current.settings.gameSettings, [...seatSummaries])
+  await deps.storage.matches.updateSeatSummaries(matchId, seatSummaries, deps.clock.now())
+}
+
 export function mergeSeatSummaries(
   gameSettings: GameSettings,
   seatSummaries: UploadSnapshotRequest['seatSummaries'],

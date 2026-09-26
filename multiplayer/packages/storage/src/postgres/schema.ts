@@ -7,6 +7,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
 /** The Postgres dialect. Column-for-column the SQLite schema; see that file for the layout notes. */
@@ -90,10 +91,18 @@ export const turns = pgTable(
      * scanning the log for one, the same way `order_set_hash` does for `turn.sealed`.
      */
     desyncedAt: stamp('desynced_at'),
+    /**
+     * When every consequence of the confirmation was carried out (announced, pause lifted, a
+     * finished match marked finished), stamped after the last of them. A confirmed turn with this
+     * still null is a verdict cut short, which the sweep finishes; `turns_settled_idx` answers that
+     * question without visiting the settled history.
+     */
+    settledAt: stamp('settled_at'),
   },
   (table) => [
     primaryKey({ columns: [table.matchId, table.number] }),
     index('turns_deadline_idx').on(table.status, table.deadlineAt),
+    index('turns_settled_idx').on(table.status, table.settledAt),
   ],
 )
 
@@ -156,8 +165,18 @@ export const matchEvents = pgTable(
     type: text('type').notNull(),
     payload: jsonb('payload').notNull(),
     createdAt: stamp('created_at').notNull(),
+    /**
+     * Set only by `appendOnce`: the fact an announcement stands for (`turn.sealed:12`), unique per
+     * match, so an announcement that follows a compare-and-swap can be repeated by whoever finds it
+     * missing and still be logged once. Null for every other event, and never served to a client.
+     */
+    dedupeKey: text('dedupe_key'),
   },
-  (table) => [primaryKey({ columns: [table.matchId, table.seq] })],
+  (table) => [
+    primaryKey({ columns: [table.matchId, table.seq] }),
+    // Nulls are distinct in a unique index on both dialects, so only keyed events are constrained.
+    uniqueIndex('match_events_dedupe_idx').on(table.matchId, table.dedupeKey),
+  ],
 )
 
 /** See the SQLite schema: one row per open absence prompt of a match. */
@@ -170,6 +189,8 @@ export const takeoverPrompts = pgTable(
     playerId: text('player_id').notNull(),
     turn: integer('turn').notNull(),
     openedAt: stamp('opened_at').notNull(),
+    /** When its `match.takeoverVoteRequested` was durable; null while the prompt still owes one. */
+    announcedAt: stamp('announced_at'),
   },
   (table) => [primaryKey({ columns: [table.matchId, table.playerId] })],
 )

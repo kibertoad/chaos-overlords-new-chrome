@@ -372,36 +372,6 @@ public sealed partial class MultiplayerSessionTests
     }
 
     [Fact]
-    public async Task RestartRefusesAGapInTheAuthoritativeEventHistory()
-    {
-        var view = ViewAtTurn(2) with { LastEventSeq = 3 };
-        MatchEvent[] history =
-        [
-            new TurnOpenedEvent(1, MatchId, "2026-09-10T12:00:00.000Z", new(1, null)),
-            new TurnSealedEvent(
-                3, MatchId, "2026-09-10T12:01:00.000Z",
-                new(1, SealedOrders(1).OrderSetHash)),
-        ];
-        var (session, _, http) = Running(
-            matchView: view,
-            configure: fake =>
-            {
-                fake.Answer(
-                    HttpMethod.Get,
-                    "/snapshots/latest",
-                    Envelope("no_snapshot"),
-                    HttpStatusCode.NotFound);
-                fake.Answer(HttpMethod.Get, "/events", new EventPage(history));
-            });
-        using var _ = http;
-        await using var __ = session;
-
-        var failed = await WaitFor<MultiplayerNotice.Failed>(session);
-
-        Assert.Contains("jumped from sequence 1 to 3", failed.Reason, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public async Task RestartRefusesACurrentSubmissionWhoseDigestDoesNotMatch()
     {
         var draft = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);

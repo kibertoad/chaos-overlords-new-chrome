@@ -1,4 +1,5 @@
 import type {
+  AiSeatSummary,
   MatchEventBody,
   MatchSettings,
   MatchStatus,
@@ -66,10 +67,16 @@ export interface MatchRepository {
   releaseSeat(matchId: string): Promise<void>
   /** Host-only lobby configuration; false after the match starts or below the occupied seat count. */
   updateSettings(matchId: string, settings: MatchSettings, updatedAt: Date): Promise<boolean>
-  /** Host-published public seat facts, written while running without changing lobby policy. */
-  updateRuntimeGameSettings(
+  /**
+   * Host-published public seat facts, written while running without changing lobby policy.
+   *
+   * Only `settings.gameSettings.seatSummaries` is written, merged into the stored blob by the
+   * statement itself. Replacing the whole `gameSettings` with a copy the caller read at
+   * authentication time put back whatever that copy held, over anything written since.
+   */
+  updateSeatSummaries(
     matchId: string,
-    gameSettings: MatchSettings['gameSettings'],
+    seatSummaries: readonly AiSeatSummary[],
     updatedAt: Date,
   ): Promise<boolean>
   /**
@@ -270,14 +277,31 @@ export interface TurnRepository {
     frozen: { orderSetHash: string; sealedSlots: readonly SealedSlot[] },
   ): Promise<boolean>
   /**
-   * Claim the announcement of a turn's divergence, in ONE statement conditional on `desyncedAt`
-   * being null. True only for the caller that stamped it, which is then the one that publishes
-   * `turn.desynced`.
+   * Record that a turn's divergence has been announced, in ONE statement conditional on
+   * `desyncedAt` being null. True only for the caller that stamped it.
    *
-   * The alternative was asking the event log whether the announcement was already there, which
-   * pages every event the match ever logged — on every sweep, for every paused match.
+   * The caller stamps it after `turn.desynced` is durable (published with `appendOnce`, so two
+   * callers racing here log it once), which makes a null stamp mean "not announced yet" and a
+   * failed publish something the next verdict retries. The alternative was asking the event log
+   * whether the announcement was already there, which pages every event the match ever logged — on
+   * every sweep, for every paused match.
    */
   claimDesyncAnnouncement(matchId: string, number: number, at: Date): Promise<boolean>
+  /**
+   * Stamp `settledAt` on a confirmed turn whose follow-ups are all done, in ONE statement
+   * conditional on it being null. True only for the caller that stamped it.
+   */
+  markSettled(matchId: string, number: number, at: Date): Promise<boolean>
+  /**
+   * Confirmed turns of running, desynced or finished matches whose `settledAt` is still null:
+   * verdicts cut short between their compare-and-swap and the end of their follow-ups, oldest
+   * first. The sweep finishes them.
+   *
+   * Not bounded by a recency window, because the set is tiny by construction — every verdict stamps
+   * its turn moments after confirming it — and an index on the status and the stamp answers it
+   * without visiting the settled history.
+   */
+  listUnannouncedVerdicts(limit: number): Promise<Array<Pick<Turn, 'matchId' | 'number'>>>
   /** Move an open turn's deadline, e.g. when a match resumes after a desync pause. */
   rescheduleDeadline(matchId: string, number: number, deadlineAt: Date | null): Promise<boolean>
   /**
@@ -310,6 +334,11 @@ export interface TurnRepository {
    * unbounded join walked thousands of rows every fifteen seconds to find nothing. The caller runs
    * the bounded scan every tick and the unbounded one (null) on a much longer period, which is what
    * still finds a seal interrupted while the process was down.
+   *
+   * "Touched" is the match's `updatedAt` OR the current turn's `sealedAt`. Sealing writes only the
+   * turn row, so a window on `updatedAt` alone missed every seal interrupted in a match whose last
+   * status change or turn open was more than a window ago — that is, every untimed match whose
+   * players take longer than the window to plan — until the next unbounded scan.
    */
   listStalledSeals(
     limit: number,
@@ -345,9 +374,31 @@ export interface EventRepository {
    * concurrent appends race on the primary key; the loser retries. Returns the persisted event.
    */
   append(event: MatchEventBody & { matchId: string; createdAt: string }): Promise<PersistedEvent>
+  /**
+   * `append`, at most once per `dedupeKey` for the match: null, and nothing written, when an event
+   * with that key is already in the log. The check is the insert's own unique index, so two callers
+   * racing to announce the same fact log it once.
+   *
+   * This is what makes an announcement retryable. A publish that throws after the state change it
+   * announces can be repeated by whoever finds the state change unannounced — the sweep, the next
+   * verdict, a repeated seal step — without ever logging the fact twice. The key never leaves the
+   * server: it is not part of `PersistedEvent`.
+   */
+  appendOnce(
+    event: MatchEventBody & { matchId: string; createdAt: string },
+    dedupeKey: string,
+  ): Promise<PersistedEvent | null>
   listAfter(matchId: string, afterSeq: number, limit: number): Promise<PersistedEvent[]>
   /** Highest sequence number persisted for the match, or 0 when the log is empty. */
   lastSeq(matchId: string): Promise<number>
+}
+
+/** An open absence prompt, as `TakeoverRepository.getPrompt` answers it. */
+export interface OpenPrompt {
+  turn: number
+  openedAt: Date
+  /** When its `match.takeoverVoteRequested` was durable; null while it still owes one. */
+  announcedAt: Date | null
 }
 
 /** One voter's choice on an open takeover prompt. */
@@ -373,6 +424,19 @@ export interface TakeoverRepository {
    * false when one is already open or the seat is active, computer controlled or not in the match.
    */
   openPrompt(matchId: string, playerId: string, turn: number, openedAt: Date): Promise<boolean>
+  /** The open prompt on a seat, or null when none is open. */
+  getPrompt(matchId: string, playerId: string): Promise<OpenPrompt | null>
+  /**
+   * Record that a prompt's `match.takeoverVoteRequested` is durable, in ONE statement conditional
+   * on the prompt still being the one opened at `openedAt` and not stamped yet. True only for the
+   * caller that stamped it.
+   *
+   * The announcement follows the insert that opens the prompt, and a publish that threw between the
+   * two used to leave a prompt nobody was ever shown: `openPrompt` answers false from then on, so
+   * no caller published again. With the stamp, a prompt that is open and unstamped is one that
+   * still owes its announcement, which the next caller to ask about the seat makes.
+   */
+  markPromptAnnounced(matchId: string, playerId: string, openedAt: Date, at: Date): Promise<boolean>
   /** Closes the prompt and discards its votes. A no-op when none is open. */
   closePrompt(matchId: string, playerId: string): Promise<void>
   hasOpenPrompts(matchId: string): Promise<boolean>
