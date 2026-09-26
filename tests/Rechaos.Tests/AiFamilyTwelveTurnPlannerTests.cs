@@ -241,13 +241,15 @@ public sealed class AiFamilyTwelveTurnPlannerTests
         var player = new PlayerId(0);
         AdvanceCoordinatorToTurn(match.Coordinator, 24, match.Players.Count);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 12);
+        match.AiPlanning.SeedFamily(player, 0, 12);
         match.Coordinator.FinishUpkeep();
 
         AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
 
         Assert.Equal(GangAction.Terminate,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
+        // RULE-AI-001: the Greed Terminate flags the record for a family at the next dispatch.
+        Assert.True(match.AiPlanning.NeedsFamily(player, 0));
     }
 
     private static void BeginFamilyTwelveTurn(MatchState match, PlayerId player)

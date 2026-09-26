@@ -133,16 +133,36 @@ public sealed class AiObjectiveTurnPlannerTests
 
         match.PrepareAiPlanning(player);
 
+        Assert.Empty(AiTurnPlanner.Plan(match, player));
         Assert.Equal(expectedFamily, match.AiPlanning.Family(player, 0));
         Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(player, 0));
-        Assert.Empty(AiTurnPlanner.Plan(match, player));
+    }
+
+    // RULE-AI-002: on the first turn of Big Man a gang given a family takes hire role 1's family.
+    [Fact]
+    public void FirstBigManTurnForcesHireRoleOne()
+    {
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(
+            data, definitionId: 4, cash: 20, new HashSet<short>(), secondTurn: false);
+        var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
+        match.AiPlanning.SetCurrentHireRole(player, 2);
+        match.FinishUpkeep();
+
+        match.PrepareAiPlanning(player);
+        AiTurnPlanner.Plan(match, player);
+
+        Assert.Equal(1, match.AiPlanning.CurrentHireRole(player));
+        Assert.Equal(13, match.AiPlanning.Family(player, 0));
     }
 
     private static MatchState CreateMatch(
         OriginalData data,
         short definitionId,
         int cash,
-        IReadOnlySet<short> researchedItems)
+        IReadOnlySet<short> researchedItems,
+        bool secondTurn = true)
     {
         MatchPlayerSetup[] setups =
         [
@@ -165,7 +185,18 @@ public sealed class AiObjectiveTurnPlannerTests
                 new MatchSiteState(2, 2, 4)
             ], owner: id == 27 ? setups[0].Id : null, income: 3))
             .ToArray();
-        return new MatchState(data, new MatchSetup(
+        var match = new MatchState(data, new MatchSetup(
             ScenarioId.BigMan, GameDuration.SixMonths, 31, setups), players, sectors);
+        // RULE-AI-002 forces hire role 1 on the first Big Man turn, so the role cases play turn 2.
+        if (secondTurn)
+        {
+            var coordinator = match.Coordinator;
+            coordinator.FinishUpkeep();
+            foreach (var setup in setups) coordinator.FinishCommand(setup.Id);
+            foreach (var _ in TurnStructure.ExecutionOrder) coordinator.FinishExecutionPhase();
+            foreach (var setup in setups) coordinator.FinishHire(setup.Id);
+            coordinator.FinishPlayerElimination();
+        }
+        return match;
     }
 }
