@@ -13,6 +13,23 @@ public static partial class AiTurnPlanner
         return sector.CrackdownActive ? -2 : sector.Owner?.Value ?? -1;
     }
 
+    /// <summary>
+    /// FND-AI-046: selector 0x5B counts the player's gangs in the sector whose previous action was
+    /// Chaos, the planning gang included.
+    /// </summary>
+    internal static int CountPreviousChaosInSector(
+        MatchState state,
+        PlayerId playerId,
+        int sectorId)
+    {
+        var player = state.FindPlayer(playerId)!;
+        return player.Gangs.Select((gang, slot) => (gang, slot))
+            .Count(entry => entry.gang.IsActive
+                && entry.gang.SectorId == sectorId
+                && state.AiPlanning.PreviousAction(playerId, entry.slot)
+                    == GangAction.Chaos);
+    }
+
     /// <summary>RULE-AI-004 hostile_owner, with the original's out-of-row reads (FND-AI-048).</summary>
     internal static bool IsHostileOwner(MatchState state, PlayerId playerId, int sectorId) =>
         state.AiStrategy.IsHostileToOwnerQuery(playerId, OwnerQuery(state, sectorId));

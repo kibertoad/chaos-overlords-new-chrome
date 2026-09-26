@@ -215,7 +215,6 @@ public static partial class AiTurnPlanner
         int gangSlot,
         FamilyPlanningSnapshot snapshot)
     {
-        var player = state.FindPlayer(playerId)!;
         var target = OriginalAiSectorSelectionRules.Select(
             mode: 5,
             sourceSectorId: gang.SectorId,
@@ -225,35 +224,12 @@ public static partial class AiTurnPlanner
             snapshot.SectorDisabled,
             snapshot.SectorGangCounts,
             canSoloControl: sectorId => CanSoloControl(state, playerId, gang, sectorId),
-            hasPriorChaos: sectorId => player.Gangs
-                .Select((candidate, slot) => (candidate, slot))
-                .Any(entry => entry.candidate.IsActive
-                    && entry.candidate.SectorId == sectorId
-                    && state.AiPlanning.PreviousAction(playerId, entry.slot)
-                        == GangAction.Chaos),
+            hasPriorChaos: sectorId => CountPreviousChaosInSector(state, playerId, sectorId) > 0,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
-    }
-
-    /// <summary>
-    /// FND-AI-046: selector 0x5B counts the player's gangs in the sector whose previous action was
-    /// Chaos, the planning gang included.
-    /// </summary>
-    private static int CountPreviousChaosInSector(
-        MatchState state,
-        PlayerId playerId,
-        int sectorId)
-    {
-        var player = state.FindPlayer(playerId)!;
-        return player.Gangs.Select((gang, slot) => (gang, slot))
-            .Count(entry => entry.gang.IsActive
-                && entry.gang.SectorId == sectorId
-                && state.AiPlanning.PreviousAction(playerId, entry.slot)
-                    == GangAction.Chaos);
     }
 }

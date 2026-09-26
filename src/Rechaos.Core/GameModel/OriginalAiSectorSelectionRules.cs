@@ -10,7 +10,6 @@ namespace Rechaos.Core.GameModel;
 internal static class OriginalAiSectorSelectionRules
 {
     private const int NeutralOwner = -1;
-    private const int PolicePresenceOwner = -2;
     private const int MinimumRawOwner = -3;
     private const int MaximumDestinationGangCount =
         MatchLimits.FriendlyGangsPerSector - 1;
@@ -27,21 +26,21 @@ internal static class OriginalAiSectorSelectionRules
         Func<int, bool> hasPriorChaos,
         Func<int, bool> isHostileOwner,
         Func<int, bool> isHumanOwner,
-        IReadOnlyList<int> playerOrderValues,
         DeterministicRandom random,
         bool? hasHumanPlayers = null,
         int? formationSectorId = null,
         IReadOnlyList<int>? scenarioStandings = null,
         Func<int, int>? unfinishedSiteScore = null,
         Func<int, bool>? hasPriorInfluence = null,
-        Func<int, int>? completedSiteScore = null)
+        Func<int, int>? completedSiteScore = null,
+        Func<int, int>? ownerQuery = null)
     {
         ValidateInputs(
             mode, sourceSectorId, family, sectorOwners, sectorDisabled,
             sectorGangCounts, canSoloControl, hasPriorChaos,
-            isHostileOwner, isHumanOwner, playerOrderValues, random,
+            isHostileOwner, isHumanOwner, random,
             hasHumanPlayers, formationSectorId, scenarioStandings, unfinishedSiteScore,
-            hasPriorInfluence, completedSiteScore);
+            hasPriorInfluence, completedSiteScore, ownerQuery);
         if (mode == 0) return RandomNeighbour(sourceSectorId, random);
 
         var scores = new int[MatchLimits.SectorCount];
@@ -60,15 +59,13 @@ internal static class OriginalAiSectorSelectionRules
                     if (y is < 0 or >= MatchLimits.BoardWidth) continue;
                     var sectorId = y * MatchLimits.BoardWidth + x;
                     var owner = sectorOwners[sectorId];
-                    // RULE-AI-006, FND-AI-056: mode 4 passes the owner query, which gives -2 under
-                    // police presence, to the standings search.
-                    var scoredOwner = mode == 4 && sectorDisabled[sectorId]
-                        ? PolicePresenceOwner
-                        : owner;
+                    // RULE-AI-006, FND-AI-056: mode 4 scores the owner query (RULE-AI-004), which
+                    // gives -2 under police presence, rather than the owner byte.
+                    var scoredOwner = mode == 4 ? ownerQuery!(sectorId) : owner;
                     var added = BaseScore(
                         mode, sectorId, player.Value, scoredOwner,
                         sectorGangCounts, canSoloControl, hasPriorChaos,
-                        isHostileOwner, isHumanOwner, playerOrderValues,
+                        isHostileOwner, isHumanOwner,
                         hasHumanPlayers, formationSectorId, scenarioStandings, unfinishedSiteScore,
                         hasPriorInfluence, completedSiteScore);
                     if (added > 0)
@@ -150,23 +147,29 @@ internal static class OriginalAiSectorSelectionRules
         }
     }
 
-    internal static bool LiteralPlayerOrderAccepts(
+    /// <summary>
+    /// RULE-AI-006, FND-AI-056: mode 4's test (selector 0x2D). It searches the six standings bytes
+    /// (FND-STATE-004) for the player's and the owner's slot numbers as values, not as indices, and
+    /// accepts the owner when the player's value is found first; a value that is absent is found
+    /// at the end.
+    /// </summary>
+    internal static bool StandingsAccept(
         int player,
         int owner,
-        IReadOnlyList<int> playerOrderValues)
+        IReadOnlyList<int> scenarioStandings)
     {
-        ArgumentNullException.ThrowIfNull(playerOrderValues);
+        ArgumentNullException.ThrowIfNull(scenarioStandings);
         if (player is < 0 or >= MatchLimits.PlayerCount)
             throw new ArgumentOutOfRangeException(nameof(player));
-        if (playerOrderValues.Count != MatchLimits.PlayerCount)
+        if (scenarioStandings.Count != MatchLimits.PlayerCount)
             throw new ArgumentException(
-                "Player-order values must contain all six original player slots.",
-                nameof(playerOrderValues));
+                "Scenario standings must contain all six original player slots.",
+                nameof(scenarioStandings));
         if (owner == NeutralOwner || owner == player) return false;
 
-        var playerIndex = FirstIndexOrEnd(playerOrderValues, player);
+        var playerIndex = FirstIndexOrEnd(scenarioStandings, player);
         if (playerIndex == 0) return true;
-        var ownerIndex = FirstIndexOrEnd(playerOrderValues, owner);
+        var ownerIndex = FirstIndexOrEnd(scenarioStandings, owner);
         return ownerIndex < playerIndex;
     }
 
@@ -180,7 +183,6 @@ internal static class OriginalAiSectorSelectionRules
         Func<int, bool> hasPriorChaos,
         Func<int, bool> isHostileOwner,
         Func<int, bool> isHumanOwner,
-        IReadOnlyList<int> playerOrderValues,
         bool? hasHumanPlayers,
         int? formationSectorId,
         IReadOnlyList<int>? scenarioStandings,
@@ -191,7 +193,7 @@ internal static class OriginalAiSectorSelectionRules
             1 => owner == NeutralOwner && canSoloControl(sectorId) ? 1 : 0,
             2 => owner == player ? 1 : 0,
             3 => owner != player && owner > NeutralOwner ? 1 : 0,
-            4 => LiteralPlayerOrderAccepts(player, owner, scenarioStandings!) ? 1 : 0,
+            4 => StandingsAccept(player, owner, scenarioStandings!) ? 1 : 0,
             5 when owner == NeutralOwner && canSoloControl(sectorId) => 5,
             5 when owner == player && !hasPriorChaos(sectorId) => 2,
             5 when owner != player && owner > NeutralOwner => 1,
@@ -295,14 +297,14 @@ internal static class OriginalAiSectorSelectionRules
         Func<int, bool> hasPriorChaos,
         Func<int, bool> isHostileOwner,
         Func<int, bool> isHumanOwner,
-        IReadOnlyList<int> playerOrderValues,
         DeterministicRandom random,
         bool? hasHumanPlayers,
         int? formationSectorId,
         IReadOnlyList<int>? scenarioStandings,
         Func<int, int>? unfinishedSiteScore,
         Func<int, bool>? hasPriorInfluence,
-        Func<int, int>? completedSiteScore)
+        Func<int, int>? completedSiteScore,
+        Func<int, int>? ownerQuery)
     {
         if (mode is not (>= 0 and <= 10 or >= 12 and <= 16
                 or >= 0x40 and < 0x80))
@@ -319,7 +321,6 @@ internal static class OriginalAiSectorSelectionRules
         ArgumentNullException.ThrowIfNull(hasPriorChaos);
         ArgumentNullException.ThrowIfNull(isHostileOwner);
         ArgumentNullException.ThrowIfNull(isHumanOwner);
-        ArgumentNullException.ThrowIfNull(playerOrderValues);
         ArgumentNullException.ThrowIfNull(random);
         if (sectorOwners.Count != MatchLimits.SectorCount)
             throw new ArgumentException("Sector owners must contain all 64 sectors.", nameof(sectorOwners));
@@ -333,14 +334,12 @@ internal static class OriginalAiSectorSelectionRules
             throw new ArgumentOutOfRangeException(nameof(sectorGangCounts));
         if (sectorOwners.Any(owner => owner is < MinimumRawOwner or >= MatchLimits.PlayerCount))
             throw new ArgumentOutOfRangeException(nameof(sectorOwners));
-        if (playerOrderValues.Count != MatchLimits.PlayerCount)
-            throw new ArgumentException(
-                "Player-order values must contain all six original player slots.",
-                nameof(playerOrderValues));
         if (mode is 6 or 10 && hasHumanPlayers is null)
             throw new ArgumentNullException(nameof(hasHumanPlayers));
         if (mode is 4 or 6 && scenarioStandings is null)
             throw new ArgumentNullException(nameof(scenarioStandings));
+        if (mode == 4 && ownerQuery is null)
+            throw new ArgumentNullException(nameof(ownerQuery));
         if (scenarioStandings is not null
             && (scenarioStandings.Count != MatchLimits.PlayerCount
                 || scenarioStandings.Any(standing =>

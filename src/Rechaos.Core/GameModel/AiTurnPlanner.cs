@@ -179,7 +179,6 @@ public static partial class AiTurnPlanner
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
@@ -269,7 +268,6 @@ public static partial class AiTurnPlanner
             owner => state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             owner => state.FindPlayer(new PlayerId(owner))?.Setup.Controller
                 == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }
@@ -481,6 +479,11 @@ public static partial class AiTurnPlanner
 
         if (AiPlanningPreparation.SelectHireRole(state, playerId) is not { } selection)
             return null;
+        // RULE-AI-013: the placement anchor is the one RefreshHireAnchor settled at the end of
+        // Command planning; this query leaves it alone, since changing it here would move match
+        // state outside the replay recorder. When debug phase stepping reaches the Hire phase after
+        // combat has taken the anchor sector, the placement names a sector the player no longer
+        // owns, hire validation refuses it and no gang is hired that phase.
         return PrepareHire(state, playerId, selection).Choice;
     }
 

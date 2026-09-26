@@ -195,6 +195,8 @@ public sealed class OriginalAiHireAnchorRulesTests
         Assert.False(facts.Keeps(ScenarioId.Greed, -1));
     }
 
+    // RULE-AI-013, FND-AI-051: the failed anchor's remainder -1 leaves only sectors 0, 6, 7 and 8,
+    // so free land elsewhere in the top rows does not keep it.
     [Fact]
     public void FailedAnchorIgnoresOtherFreeCellsOfTheTopRows()
     {

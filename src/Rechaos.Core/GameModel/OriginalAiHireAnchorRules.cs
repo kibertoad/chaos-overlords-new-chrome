@@ -11,6 +11,8 @@ internal static class OriginalAiHireAnchorRules
     private const int NoSector = -1;
     private const int InactiveGangSector = 100;
     private const int OriginalNeighborLimit = 65;
+    // FND-AI-051: the failed anchor's occupancy read gives 0.
+    private const int FailedAnchorOccupancy = 0;
 
     private static readonly int[] FailedAnchorNeighbours = [0, 6, 7, 8];
     private static readonly int[] BigManRadiusOne = [18, 26, 19, 27];
@@ -98,29 +100,17 @@ internal static class OriginalAiHireAnchorRules
     {
         ValidateLiteralArrays(literalSectorOwners, literalAvailability);
         ArgumentNullException.ThrowIfNull(activeGangCount);
-        int freeNeighbours;
-        int occupancy;
         if (anchorSectorId == NoSector)
-        {
-            if (player.Value != 0) return false;
-            freeNeighbours = FailedAnchorNeighbours.Count(sectorId =>
-                literalSectorOwners[sectorId] == NeutralOwner
-                && literalAvailability[sectorId] == 0);
-            occupancy = 0;
-        }
-        else if (anchorSectorId is >= 0 and < MatchLimits.SectorCount)
-        {
-            freeNeighbours = CountAvailableNeutralNeighbors(
-                player, anchorSectorId, literalSectorOwners, literalAvailability);
-            if (freeNeighbours == 0) return false;
-            occupancy = activeGangCount(anchorSectorId);
-        }
-        else
-        {
-            return false;
-        }
-        return freeNeighbours > 0
-            && occupancy < MatchLimits.FriendlyGangsPerSector
+            return player.Value == 0
+                && FailedAnchorNeighbours.Any(sectorId => IsAvailableNeutral(
+                    sectorId, literalSectorOwners, literalAvailability))
+                && FailedAnchorOccupancy < MatchLimits.FriendlyGangsPerSector
+                && scenario != ScenarioId.BigMan;
+        if (anchorSectorId is < 0 or >= MatchLimits.SectorCount) return false;
+        // The occupancy is read only when the anchor has free land next to it.
+        return CountAvailableNeutralNeighborsOfValidated(
+                player, anchorSectorId, literalSectorOwners, literalAvailability) > 0
+            && activeGangCount(anchorSectorId) < MatchLimits.FriendlyGangsPerSector
             && scenario != ScenarioId.BigMan;
     }
 
@@ -132,17 +122,32 @@ internal static class OriginalAiHireAnchorRules
     {
         ValidateLiteralArrays(literalSectorOwners, literalAvailability);
         ValidateCenter(centerSectorId);
+        return CountAvailableNeutralNeighborsOfValidated(
+            player, centerSectorId, literalSectorOwners, literalAvailability);
+    }
+
+    private static int CountAvailableNeutralNeighborsOfValidated(
+        PlayerId player,
+        int centerSectorId,
+        IReadOnlyList<int> literalSectorOwners,
+        IReadOnlyList<byte> literalAvailability)
+    {
         if (literalSectorOwners[centerSectorId] != player.Value) return 0;
 
         var count = 0;
         VisitLiteralNeighborhood(centerSectorId, candidate =>
         {
-            if (literalSectorOwners[candidate] == NeutralOwner
-                && literalAvailability[candidate] == 0)
+            if (IsAvailableNeutral(candidate, literalSectorOwners, literalAvailability))
                 count++;
         });
         return count;
     }
+
+    private static bool IsAvailableNeutral(
+        int sectorId,
+        IReadOnlyList<int> literalSectorOwners,
+        IReadOnlyList<byte> literalAvailability) =>
+        literalSectorOwners[sectorId] == NeutralOwner && literalAvailability[sectorId] == 0;
 
     public static int CountNonOwnedNeighbors(
         PlayerId player,
