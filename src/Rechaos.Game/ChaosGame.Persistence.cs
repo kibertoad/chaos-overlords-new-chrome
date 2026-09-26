@@ -90,7 +90,7 @@ public sealed partial class ChaosGame
             _continuePlanningEntryAfterGameInfo = false;
             _deferComlinkAlertUntilPlanningVisible = false;
             _managementReturnScreen = ClientScreen.City;
-            if (_state.Outcome is not null) _screens.Show(ClientScreen.Endgame);
+            if (_state.Outcome is not null) ShowMatchEnd();
             else PresentHotSeatPlanningEntry();
             return true;
         }

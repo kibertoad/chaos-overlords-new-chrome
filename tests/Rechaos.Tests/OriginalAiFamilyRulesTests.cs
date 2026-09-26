@@ -15,8 +15,8 @@ public sealed class OriginalAiFamilyRulesTests
         { ScenarioId.Dominance,   [0, 0, 5, 2, 6, 3, 7] },
         { ScenarioId.KillEmAll,   [0, 1, 3, 2, 6, 5, 7] },
         { ScenarioId.Big40,       [0, 1, 3, 2, 6, 5, 7] },
-        { ScenarioId.Eliminate,   [0, 13, 14, Preserved, 6, 5, 7] },
-        { ScenarioId.Siege,       [10, 0, 3, 11, 12, Preserved, 7] },
+        { ScenarioId.Siege,   [0, 13, 14, Preserved, 6, 5, 7] },
+        { ScenarioId.Eliminate,       [10, 0, 3, 11, 12, Preserved, 7] },
         { ScenarioId.BigMan,      [0, 13, 14, 3, Preserved, Preserved, Preserved] },
         { ScenarioId.Armageddon,  [0, 1, 3, 2, 6, 3, Preserved] }
     };
@@ -30,24 +30,15 @@ public sealed class OriginalAiFamilyRulesTests
         Assert.Equal(7, expected.Length);
 
         for (var hireRole = 0; hireRole < expected.Length; hireRole++)
-        {
-            var selection = OriginalAiFamilyRules.Select(scenario, hireRole, Preserved);
-
-            Assert.Equal(expected[hireRole], selection.Family);
-            Assert.Equal(hireRole == 4 && expected[hireRole] != Preserved,
-                selection.CopiesProjectedGangValue);
-        }
+            Assert.Equal(expected[hireRole] == Preserved ? null : expected[hireRole],
+                OriginalAiFamilyRules.FamilyFor(scenario, hireRole));
     }
 
+    // RULE-AI-002: a hire role outside 0 to 6 assigns nothing.
     [Theory]
     [InlineData(-1)]
     [InlineData(7)]
     [InlineData(100)]
-    public void UnknownHireRolePreservesCurrentFamily(int strategicMode)
-    {
-        var selection = OriginalAiFamilyRules.Select(ScenarioId.Power, strategicMode, 11);
-
-        Assert.Equal(11, selection.Family);
-        Assert.False(selection.CopiesProjectedGangValue);
-    }
+    public void UnknownHireRoleAssignsNoFamily(int hireRole) =>
+        Assert.Null(OriginalAiFamilyRules.FamilyFor(ScenarioId.Power, hireRole));
 }

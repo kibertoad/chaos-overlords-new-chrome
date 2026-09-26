@@ -51,7 +51,7 @@ public sealed class AiTurnPlannerTests
         match.AiPlanning.BeginPlanning(playerId);
         for (var slot = 0; slot < 2; slot++)
         {
-            match.AiPlanning.SetFamily(playerId, slot, 1);
+            match.AiPlanning.SeedFamily(playerId, slot, 1);
             match.AiPlanning.SetPlannedAction(playerId, slot, GangAction.Equip,
                 new AiActionTarget(checked((byte)itemId), 0));
         }
@@ -61,6 +61,24 @@ public sealed class AiTurnPlannerTests
         Assert.Equal(new GangId(30), command.Gang);
         Assert.Equal(GangAction.Equip, command.Action);
         Assert.Equal(CommandTarget.Item(itemId), command.Target);
+    }
+
+    [Fact]
+    public void GangLeftInFamilyNinetyNinePlansNothing()
+    {
+        var match = CreateMatch();
+        var playerId = new PlayerId(0);
+        match.Players[0].AddGang(new MatchGangState(new GangId(11), playerId, 1, 0, 10));
+        match.FinishUpkeep();
+
+        match.PrepareAiPlanning(playerId);
+        var commands = AiTurnPlanner.Plan(match, playerId);
+
+        // RULE-AI-001, RULE-AI-002: the first pass flags only slot 0, so the gang in slot 1 stays
+        // in family 99, which has no handler, and gets no order from the provisional fallback.
+        Assert.NotEqual(AiPlanningState.UnusedFamily, match.AiPlanning.Family(playerId, 0));
+        Assert.Equal(AiPlanningState.UnusedFamily, match.AiPlanning.Family(playerId, 1));
+        Assert.DoesNotContain(commands, command => command.Gang == new GangId(11));
     }
 
     [Fact]
@@ -229,7 +247,7 @@ public sealed class AiTurnPlannerTests
         foreach (var match in new[] { heal, crackdown, priorSnitch })
         {
             match.FinishUpkeep();
-            match.AiPlanning.SetFamily(new PlayerId(0), 0, 1);
+            match.AiPlanning.SeedFamily(new PlayerId(0), 0, 1);
         }
         crackdown.Sectors[0].CrackdownActive = true;
         priorSnitch.AiPlanning.SetPlannedAction(new PlayerId(0), 0, GangAction.Snitch);
@@ -258,7 +276,7 @@ public sealed class AiTurnPlannerTests
         foreach (var match in new[] { repeatHeal, takeControl, move })
         {
             match.FinishUpkeep();
-            match.AiPlanning.SetFamily(new PlayerId(0), 0, 1);
+            match.AiPlanning.SeedFamily(new PlayerId(0), 0, 1);
             match.AiPlanning.SetPlannedAction(new PlayerId(0), 0, GangAction.Heal);
             match.AiPlanning.RollActiveGangActions(
                 new PlayerId(0), match.Players[0].Gangs);
@@ -281,7 +299,7 @@ public sealed class AiTurnPlannerTests
             cash: 50);
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 1);
+        match.AiPlanning.SeedFamily(player, 0, 1);
         match.AiPlanning.SetCurrentHireRole(player, 5);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
         match.Sectors[0].Owner = new PlayerId(1);
@@ -316,6 +334,7 @@ public sealed class AiTurnPlannerTests
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 1);
+        match.AiPlanning.SeedFamily(player, 0, 1);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
         match.Sectors[1].Owner = new PlayerId(1);
         var recorder = new MatchReplayRecorder(match);
@@ -375,6 +394,7 @@ public sealed class AiTurnPlannerTests
         match.Players[0].Gangs[0].WeaponItemId = 23;
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 1);
+        match.AiPlanning.SeedFamily(player, 0, 1);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
         match.Sectors[1].Owner = new PlayerId(1);
         var recorder = new MatchReplayRecorder(match);
@@ -405,7 +425,7 @@ public sealed class AiTurnPlannerTests
 
     [Theory]
     [InlineData(ScenarioId.BigMan, 1, 13, 0, 9)]
-    [InlineData(ScenarioId.Eliminate, 2, 14, 20, 12)]
+    [InlineData(ScenarioId.Siege, 2, 14, 20, 12)]
     public void ObjectiveFamilyTerminalMoveIsPreparedAndResolved(
         ScenarioId scenario,
         int hireRole,
@@ -418,6 +438,7 @@ public sealed class AiTurnPlannerTests
             ownsStartingSector: false,
             startingSector: startingSector);
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, hireRole);
         var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
@@ -461,6 +482,7 @@ public sealed class AiTurnPlannerTests
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 2);
+        match.AiPlanning.SeedFamily(player, 0, 14);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
         var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
@@ -490,7 +512,7 @@ public sealed class AiTurnPlannerTests
 
     [Theory]
     [InlineData(ScenarioId.BigMan, 27)]
-    [InlineData(ScenarioId.Eliminate, 9)]
+    [InlineData(ScenarioId.Siege, 9)]
     public void FamilyThirteenOwnedObjectiveWithoutVisibleOpponentHealsAndReplays(
         ScenarioId scenario,
         int objectiveSector)
@@ -600,6 +622,7 @@ public sealed class AiTurnPlannerTests
         var controller = data.Gangs.MaxBy(candidate => candidate.Stats.Control)!.Id;
         var match = CreateMatch(definitionId: controller, force: 8, data: data);
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 1);
         match.Sectors[8].CrackdownActive = true;
         match.Sectors[9].CrackdownActive = true;
@@ -624,7 +647,7 @@ public sealed class AiTurnPlannerTests
         var player = new PlayerId(0);
         match.FinishUpkeep();
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 1);
+        match.AiPlanning.SeedFamily(player, 0, 1);
         match.AiPlanning.SetPlannedAction(
             player, 0, GangAction.Move, new AiActionTarget(0, 0));
 
@@ -640,6 +663,7 @@ public sealed class AiTurnPlannerTests
         var controller = data.Gangs.MaxBy(candidate => candidate.Stats.Control)!.Id;
         var match = CreateMatch(definitionId: controller, force: 8, data: data);
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 1);
         var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
@@ -665,17 +689,19 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
-    public void EliminateMovementPrefersRecoveredHeadquartersCandidateSet()
+    public void EliminateMovementGivesHeadquartersCandidatesNoObjectiveBonus()
     {
-        var match = CreateMatch();
+        // The six headquarters sectors are scenario 6's (Siege) objective list
+        // (RULE-AI-031); Eliminate (scenario 7) has no objective sectors.
+        var match = CreateMatch(scenario: ScenarioId.Eliminate);
         const int ordinarySector = 10;
 
         foreach (var headquarters in OriginalCityGenerator.HeadquartersCandidates)
-            Assert.True(
+            Assert.Equal(
                 AiTurnPlanner.DestinationValue(
-                    match, new PlayerId(0), headquarters, ScenarioId.Eliminate)
-                > AiTurnPlanner.DestinationValue(
-                    match, new PlayerId(0), ordinarySector, ScenarioId.Eliminate));
+                    match, new PlayerId(0), ordinarySector, ScenarioId.Eliminate),
+                AiTurnPlanner.DestinationValue(
+                    match, new PlayerId(0), headquarters, ScenarioId.Eliminate));
     }
 
     [Fact]
@@ -701,6 +727,7 @@ public sealed class AiTurnPlannerTests
     {
         var match = CreateMatch(scenario: ScenarioId.BigMan);
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 6);
         match.FinishUpkeep();
         match.PrepareAiPlanning(player);
@@ -718,6 +745,7 @@ public sealed class AiTurnPlannerTests
             scenario: ScenarioId.Greed,
             ownsStartingSector: false);
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 6);
         match.FinishUpkeep();
         match.PrepareAiPlanning(player);

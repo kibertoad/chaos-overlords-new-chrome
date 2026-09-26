@@ -30,6 +30,6 @@ internal static class OriginalAiFamilyZeroRules
         GangAction plannedAction,
         GangAction olderAction) =>
         plannedAction == GangAction.Move && olderAction == GangAction.Move
-            ? scenario == ScenarioId.Siege ? 11 : 2
+            ? scenario == ScenarioId.Eliminate ? 11 : 2
             : null;
 }

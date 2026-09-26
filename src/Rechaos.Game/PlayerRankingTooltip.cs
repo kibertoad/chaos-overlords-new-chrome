@@ -75,8 +75,10 @@ public static class PlayerRankingTooltip
         ScenarioId.Armageddon => "SECTORS CONTROLLED (GOAL 64)",
         ScenarioId.Acceptance => "SUPPORT",
         ScenarioId.Dominance => "WEIGHTED CASH, SUPPORT, SECTORS",
-        ScenarioId.KillEmAll or ScenarioId.Siege => "OVERLORD SEATS NO LONGER ACTIVE",
-        ScenarioId.Eliminate => "HQ SECTORS CONTROLLED (OF 6)",
+        // RULE-OBJECTIVE-002: Kill 'Em All and Eliminate (4 and 7) count the inactive seats,
+        // Siege (6) the headquarters sectors held.
+        ScenarioId.KillEmAll or ScenarioId.Eliminate => "OVERLORD SEATS NO LONGER ACTIVE",
+        ScenarioId.Siege => "HQ SECTORS CONTROLLED (OF 6)",
         ScenarioId.BigMan => "BIG MAN POINTS (GOAL 40)",
         _ => throw new ArgumentOutOfRangeException(nameof(scenario))
     };
@@ -105,14 +107,12 @@ public static class PlayerRankingTooltip
                     + (long)sectors * weights.ControlledSector;
                 yield return $"  TOTAL {Number(total)} / 10 = SCORE";
                 break;
-            case ScenarioId.KillEmAll or ScenarioId.Siege:
+            case ScenarioId.KillEmAll or ScenarioId.Eliminate:
                 yield return $"  {MatchLimits.PlayerCount} SEATS - {holdings.OpponentsAlive + 1} ACTIVE OVERLORDS";
                 yield return "  SHARED BY EVERY SURVIVING OVERLORD";
-                if (state.Setup.Scenario == ScenarioId.Siege)
-                    yield return $"  SIEGE SECTORS HELD: {holdings.ImportantSectorsControlled} OF 6 (GOAL)";
                 break;
-            case ScenarioId.Eliminate:
-                yield return $"  HQ SECTORS HELD: {HeadquartersHeld(state, player.Id)}";
+            case ScenarioId.Siege:
+                yield return $"  HQ SECTORS HELD: {HeadquartersHeld(state, player.Id)} OF 6 (GOAL)";
                 break;
             case ScenarioId.BigMan:
                 yield return "  +1 PER CENTRAL SECTOR HELD EACH TURN";

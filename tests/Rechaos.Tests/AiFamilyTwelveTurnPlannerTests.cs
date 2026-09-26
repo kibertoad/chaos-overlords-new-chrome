@@ -217,7 +217,7 @@ public sealed class AiFamilyTwelveTurnPlannerTests
             ], owner: id == 0 ? setups[1].Id : null, income: 3))
             .ToArray();
         var match = new MatchState(data, new MatchSetup(
-            ScenarioId.Siege, GameDuration.SixMonths, 41, setups,
+            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups,
             AiDifficulty.HomicidalManiac), players, sectors);
         var player = new PlayerId(0);
         BeginFamilyTwelveTurn(match, player);
@@ -241,13 +241,15 @@ public sealed class AiFamilyTwelveTurnPlannerTests
         var player = new PlayerId(0);
         AdvanceCoordinatorToTurn(match.Coordinator, 24, match.Players.Count);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 12);
+        match.AiPlanning.SeedFamily(player, 0, 12);
         match.Coordinator.FinishUpkeep();
 
         AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
 
         Assert.Equal(GangAction.Terminate,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
+        // RULE-AI-001: the Greed Terminate flags the record for a family at the next dispatch.
+        Assert.True(match.AiPlanning.NeedsFamily(player, 0));
     }
 
     private static void BeginFamilyTwelveTurn(MatchState match, PlayerId player)
@@ -299,7 +301,7 @@ public sealed class AiFamilyTwelveTurnPlannerTests
         int attackerSector = 0,
         int targetSector = 63,
         PlayerId? sectorOwner = null,
-        ScenarioId scenario = ScenarioId.Siege,
+        ScenarioId scenario = ScenarioId.Eliminate,
         AiDifficulty mentality = AiDifficulty.Criminal)
     {
         MatchPlayerSetup[] setups =
