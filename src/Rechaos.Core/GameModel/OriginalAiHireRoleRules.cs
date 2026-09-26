@@ -7,12 +7,15 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiHireRoleRules
 {
-    // The shipped executable compares selector 0x8f (the previous hire role) with
-    // the number of the schedule slot that produces role 4. Those slot numbers
-    // differ by scenario (6, 5, 2, 10, and 5), even though every branch is the
-    // same "do not immediately select another family-6 hire" guard. Comparing
-    // with role 4 is the deliberate clean-room bug fix recorded in DECISIONS.md.
-    private const int Family6HireRole = 4;
+    // BUG-AI-001: each hunter guard compares the previous hire role with the number
+    // of the scenario's hunter slot, the slot that produces role 4, and never with
+    // role 4 itself. The rebuild keeps the comparison (RULE-AI-010); DEV-AI-001,
+    // which compared with role 4, was dropped on 2026-09-26.
+    private const int GreedHunterSlot = 5;
+    private const int PowerHunterSlot = 6;
+    private const int AcceptanceHunterSlot = 2;
+    private const int DominanceHunterSlot = 10;
+    private const int ArmageddonHunterSlot = 5;
 
     public static int CalculateHireGangLimit(
         ScenarioId scenario,
@@ -125,7 +128,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family5Count < 1
             || inputs.Family7Count < 1
-            || inputs.PreviousRole == Family6HireRole;
+            || inputs.PreviousRole == PowerHunterSlot;
         if (!changesSix)
         {
             slot = 6;
@@ -214,7 +217,7 @@ internal static class OriginalAiHireRoleRules
         var changesFive = !inputs.HasVisibleHostileSector
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
-            || inputs.PreviousRole == Family6HireRole;
+            || inputs.PreviousRole == ArmageddonHunterSlot;
         if (!changesFive)
         {
             slot = 5;
@@ -254,7 +257,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.Family7Count < 1
-            || inputs.PreviousRole == Family6HireRole;
+            || inputs.PreviousRole == GreedHunterSlot;
         if (!changesFive)
         {
             slot = 5;
@@ -295,7 +298,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family5Count < 1
             || inputs.Family7Count < 1
-            || inputs.PreviousRole == Family6HireRole;
+            || inputs.PreviousRole == AcceptanceHunterSlot;
         if (!changesTwo)
         {
             slot = 2;
@@ -335,7 +338,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.Family7Count < 1
-            || inputs.PreviousRole == Family6HireRole;
+            || inputs.PreviousRole == DominanceHunterSlot;
         if (!changesTen)
         {
             slot = 10;
