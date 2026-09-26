@@ -69,7 +69,7 @@ public sealed class AiFamilySixTurnPlannerTests
                 0x40 + OriginalAiSectorSelectionRules.GuardTargetEndMarker,
                 27, new PlayerId(0), 6, owners, disabled, counts,
                 _ => true, _ => false, _ => false, _ => false,
-                [0, 1, 2, 3, 4, 5], new DeterministicRandom(seed)));
+                new DeterministicRandom(seed)));
 
         // Every sector ties at 0, so the step heads toward a random sector in any direction.
         Assert.True(destinations.Count > 4);

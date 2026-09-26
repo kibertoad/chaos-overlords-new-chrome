@@ -11,8 +11,7 @@ public static partial class AiTurnPlanner
     private sealed record FamilyPlanningSnapshot(
         IReadOnlyList<int> SectorOwners,
         IReadOnlyList<bool> SectorDisabled,
-        IReadOnlyList<int> SectorGangCounts,
-        IReadOnlyList<int> PlayerOrder)
+        IReadOnlyList<int> SectorGangCounts)
     {
         public static FamilyPlanningSnapshot Capture(
             MatchState state,
@@ -22,8 +21,7 @@ public static partial class AiTurnPlanner
             Enumerable.Range(0, MatchLimits.SectorCount)
                 .Select(sectorId => player.Gangs.Count(gang =>
                     gang.IsActive && gang.SectorId == sectorId))
-                .ToArray(),
-            Enumerable.Range(0, MatchLimits.PlayerCount).ToArray());
+                .ToArray());
     }
 
     internal static void PrepareRecoveredFamilyCommands(
@@ -222,7 +220,6 @@ public static partial class AiTurnPlanner
                 state.AiStrategy.IsHostile(player.Id, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random);
     }
 }

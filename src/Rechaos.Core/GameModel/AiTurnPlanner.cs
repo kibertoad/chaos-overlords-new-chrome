@@ -182,7 +182,6 @@ public static partial class AiTurnPlanner
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
@@ -279,7 +278,6 @@ public static partial class AiTurnPlanner
             owner => state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             owner => state.FindPlayer(new PlayerId(owner))?.Setup.Controller
                 == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
         state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
@@ -470,15 +468,25 @@ public static partial class AiTurnPlanner
         if (!state.IsPlannedByComputer(playerId))
             throw new ArgumentException("AI hiring requires a computer-controlled player.", nameof(playerId));
 
-        if (AiPlanningPreparation.SelectHireRole(state, playerId) is not { } selection)
+        var census = AiPlanningPreparation.TakeHireCensus(state, playerId);
+        if (AiPlanningPreparation.SelectHireRole(state, playerId, census) is not { } selection)
             return null;
-        return PrepareHire(state, playerId, selection).Choice;
+        // A preview against the current state: the anchor is refreshed here without being stored,
+        // and the hunter reversion, which follows the choice and cannot change it, is left to
+        // MatchState.PrepareAiHiring.
+        return PrepareHire(
+            state, playerId, selection,
+            AiPlanningPreparation.ResolveHireAnchor(state, playerId)).Choice;
     }
 
+    /// <param name="sectorAnchor">
+    /// The RULE-AI-013 placement anchor in its stored form, as refreshed for this turn.
+    /// </param>
     internal static HirePreparation PrepareHire(
         MatchState state,
         PlayerId playerId,
-        OriginalAiHireRoleSelection selection)
+        OriginalAiHireRoleSelection selection,
+        int sectorAnchor)
     {
         var player = state.FindPlayer(playerId)
             ?? throw new ArgumentOutOfRangeException(nameof(playerId));
@@ -496,7 +504,7 @@ public static partial class AiTurnPlanner
         }
         var definitionId = player.HirePool[offerIndex];
         var placementMode = AiPlanningPreparation.PrepareHirePlacementMode(
-            state, playerId, selection.Role);
+            state, playerId, selection.Role, sectorAnchor);
         var sectorOwners = state.Sectors
             .Select(sector => sector.Owner?.Value ?? -1)
             .ToArray();

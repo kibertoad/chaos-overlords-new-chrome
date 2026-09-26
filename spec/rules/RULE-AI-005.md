@@ -13,9 +13,10 @@ related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-003, RULE-AI-004]
 ## Summary
 
 A computer gang upgrades its equipment when enemies are close: it looks for
-the best weapon for its fighting style, an armor with more Defense, or a
-miscellaneous item with more Chaos, among the items its player has researched
-and can pay for.
+the best weapon for its fighting style, an armor with more Defense (more
+Stealth for family 10), or a miscellaneous item with more Detect (families 11
+and 12) or more Control (families 13 and 14), among the items its player has
+researched and, where the selector tests cost, can pay for.
 
 ## When it runs
 
