@@ -145,13 +145,31 @@ public static class HotSeatHandoffPresentation
     public static bool RequiresPrivateHandoff(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        var lastRound = state.Coordinator.Turn - 1;
-        var eliminatedLastRound = state.Events
-            .Where(gameEvent => gameEvent.Kind == GameEventKind.PlayerEliminated
-                && gameEvent.Turn >= lastRound)
-            .Select(gameEvent => gameEvent.Player)
-            .ToHashSet();
-        return state.Players.Count(player => player.Setup.Controller == PlayerController.Human
-            && (player.Status == PlayerStatus.Active || eliminatedLastRound.Contains(player.Id))) > 1;
+        var activeHumans = state.Players.Count(player =>
+            player.Setup.Controller == PlayerController.Human && player.Status == PlayerStatus.Active);
+        if (activeHumans > 1) return true;
+
+        var counted = activeHumans;
+        foreach (var playerId in PlayersEliminatedSince(state, state.Coordinator.Turn - 1))
+        {
+            if (state.FindPlayer(playerId) is { Status: PlayerStatus.Eliminated } player
+                && player.Setup.Controller == PlayerController.Human
+                && ++counted > 1) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The players eliminated on or after <paramref name="turn"/>. Events are appended in turn
+    /// order, so the scan walks back from the newest and stops at the first older event instead
+    /// of reading the whole match history on every handoff.
+    /// </summary>
+    private static IEnumerable<PlayerId> PlayersEliminatedSince(MatchState state, int turn)
+    {
+        var events = state.Events;
+        for (var index = events.Count - 1; index >= 0 && events[index].Turn >= turn; index--)
+        {
+            if (events[index].Kind == GameEventKind.PlayerEliminated) yield return events[index].Player;
+        }
     }
 }

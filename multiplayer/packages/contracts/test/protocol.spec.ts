@@ -28,12 +28,12 @@ describe('sessionVersionSchema', () => {
 /**
  * The two versions move independently on purpose: the protocol has already been bumped for wire
  * changes that left every stored session resumable, and a session version that tracked it would
- * have retired those matches for nothing.
+ * have retired those matches for nothing. Each number is pinned on its own, and neither has to stay
+ * above the other: a run of rule changes can carry the session version past the protocol version.
  */
 describe('the two versions', () => {
-  it('are separate numbers, not one renamed', () => {
+  it('are pinned separately', () => {
     expect(MULTIPLAYER_SESSION_VERSION).toBe(23)
     expect(MULTIPLAYER_PROTOCOL_VERSION).toBe(22)
-    expect(MULTIPLAYER_PROTOCOL_VERSION).toBeGreaterThan(MULTIPLAYER_SESSION_VERSION)
   })
 })

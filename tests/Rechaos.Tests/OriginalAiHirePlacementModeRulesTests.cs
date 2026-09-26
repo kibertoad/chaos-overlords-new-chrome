@@ -38,13 +38,13 @@ public sealed class OriginalAiHirePlacementModeRulesTests
     [Theory]
     [InlineData(ScenarioId.Siege)]
     [InlineData(ScenarioId.BigMan)]
-    public void RoleFourRetainsAnchorForEliminateAndBigMan(ScenarioId scenario)
+    public void RoleFourRetainsAnchorForSiegeAndBigMan(ScenarioId scenario)
     {
         Assert.Equal(82, Select(scenario, role: 4, hostileSector: 27, gangZero: 12));
     }
 
     [Fact]
-    public void SiegeRoleFourUsesEncodedGangSlotZeroSector()
+    public void EliminateRoleFourUsesEncodedGangSlotZeroSector()
     {
         Assert.Equal(76, Select(
             ScenarioId.Eliminate, role: 4, hostileSector: 27, gangZero: 12));
