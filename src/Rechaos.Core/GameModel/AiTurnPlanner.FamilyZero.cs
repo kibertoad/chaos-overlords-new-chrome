@@ -70,6 +70,7 @@ public static partial class AiTurnPlanner
             return;
         }
 
+        // FND-AI-046, call 0x00428FD9: the count is tested against 0.
         if (CountPreviousChaosInSector(state, playerId, gang.SectorId) == 0)
             SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Chaos);
         else
@@ -201,6 +202,7 @@ public static partial class AiTurnPlanner
             return;
         }
 
+        // FND-AI-046, call 0x0042A419: the count is tested below 1.
         if (CountPreviousChaosInSector(state, playerId, gang.SectorId) < 1)
             SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Chaos);
         else
@@ -224,7 +226,8 @@ public static partial class AiTurnPlanner
             snapshot.SectorDisabled,
             snapshot.SectorGangCounts,
             canSoloControl: sectorId => CanSoloControl(state, playerId, gang, sectorId),
-            hasPriorChaos: sectorId => CountPreviousChaosInSector(state, playerId, sectorId) > 0,
+            hasPriorChaos: sectorId =>
+                CountPreviousChaosInSector(state, playerId, sectorId) > 0,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?

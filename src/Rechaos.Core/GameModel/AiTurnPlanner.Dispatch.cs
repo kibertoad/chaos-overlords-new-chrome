@@ -134,7 +134,8 @@ public static partial class AiTurnPlanner
             snapshot.SectorDisabled,
             snapshot.SectorGangCounts,
             canSoloControl: sectorId => CanSoloControl(state, player.Id, gang, sectorId),
-            hasPriorChaos: sectorId => CountPreviousChaosInSector(state, player.Id, sectorId) > 0,
+            hasPriorChaos: sectorId =>
+                CountPreviousChaosInSector(state, player.Id, sectorId) > 0,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(player.Id, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?

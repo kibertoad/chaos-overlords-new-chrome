@@ -13,26 +13,32 @@ public static partial class AiTurnPlanner
         return sector.CrackdownActive ? -2 : sector.Owner?.Value ?? -1;
     }
 
+    /// <summary>RULE-AI-004 hostile_owner, with the original's out-of-row reads (FND-AI-048).</summary>
+    internal static bool IsHostileOwner(MatchState state, PlayerId playerId, int sectorId) =>
+        state.AiStrategy.IsHostileToOwnerQuery(playerId, OwnerQuery(state, sectorId));
+
     /// <summary>
-    /// FND-AI-046: selector 0x5B counts the player's gangs in the sector whose previous action was
-    /// Chaos, the planning gang included.
+    /// FND-AI-046: selector 0x5B counts the player's active gangs in the sector whose previous
+    /// action was Chaos, the planning gang included. Callers compare the count with the threshold
+    /// the FND-AI-046 table gives for their call site (0, below 1 or below 2).
     /// </summary>
     internal static int CountPreviousChaosInSector(
         MatchState state,
         PlayerId playerId,
         int sectorId)
     {
-        var player = state.FindPlayer(playerId)!;
-        return player.Gangs.Select((gang, slot) => (gang, slot))
-            .Count(entry => entry.gang.IsActive
-                && entry.gang.SectorId == sectorId
-                && state.AiPlanning.PreviousAction(playerId, entry.slot)
-                    == GangAction.Chaos);
+        var gangs = state.FindPlayer(playerId)!.Gangs;
+        var count = 0;
+        for (var slot = 0; slot < gangs.Count; slot++)
+        {
+            var gang = gangs[slot];
+            if (gang.IsActive
+                && gang.SectorId == sectorId
+                && state.AiPlanning.PreviousAction(playerId, slot) == GangAction.Chaos)
+                count++;
+        }
+        return count;
     }
-
-    /// <summary>RULE-AI-004 hostile_owner, with the original's out-of-row reads (FND-AI-048).</summary>
-    internal static bool IsHostileOwner(MatchState state, PlayerId playerId, int sectorId) =>
-        state.AiStrategy.IsHostileToOwnerQuery(playerId, OwnerQuery(state, sectorId));
 
     private static IReadOnlyList<ObjectiveTarget> SelectHumanWeightedTargetPool(
         MatchState state,

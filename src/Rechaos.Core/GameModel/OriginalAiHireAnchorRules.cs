@@ -11,10 +11,8 @@ internal static class OriginalAiHireAnchorRules
     private const int NoSector = -1;
     private const int InactiveGangSector = 100;
     private const int OriginalNeighborLimit = 65;
-    // FND-AI-051: the failed anchor's occupancy read gives 0.
-    private const int FailedAnchorOccupancy = 0;
-
-    private static readonly int[] FailedAnchorNeighbours = [0, 6, 7, 8];
+    // FND-AI-051: the owner read for a centre of -1 lands on the byte at 0x004A08C4, which holds 0.
+    private const int FailedAnchorOwner = 0;
     private static readonly int[] BigManRadiusOne = [18, 26, 19, 27];
     private static readonly int[] BigManRadiusTwo =
     [
@@ -86,9 +84,10 @@ internal static class OriginalAiHireAnchorRules
 
     /// <summary>
     /// RULE-AI-013, FND-AI-051: the anchor is kept when it has free land next to it, room in it
-    /// and the scenario is not Big Man, tested in that order. A failed anchor decodes to sector
-    /// -1: its owner read lands on a byte holding 0, so only player 0 passes; the remainder -1
-    /// excludes no column, leaving sectors 0, 6, 7 and 8; and its occupancy read gives 0.
+    /// and the scenario is not Big Man, tested in that order and stopping at the first failure. A
+    /// failed anchor decodes to sector -1 and goes through the same neighbourhood count: its owner
+    /// read gives 0, so only player 0 gets past it, and the signed remainder -1 excludes no column,
+    /// leaving sectors 0, 6, 7 and 8. Its occupancy read gives 0.
     /// </summary>
     public static bool KeepsAnchor(
         PlayerId player,
@@ -100,17 +99,14 @@ internal static class OriginalAiHireAnchorRules
     {
         ValidateLiteralArrays(literalSectorOwners, literalAvailability);
         ArgumentNullException.ThrowIfNull(activeGangCount);
-        if (anchorSectorId == NoSector)
-            return player.Value == 0
-                && FailedAnchorNeighbours.Any(sectorId => IsAvailableNeutral(
-                    sectorId, literalSectorOwners, literalAvailability))
-                && FailedAnchorOccupancy < MatchLimits.FriendlyGangsPerSector
-                && scenario != ScenarioId.BigMan;
-        if (anchorSectorId is < 0 or >= MatchLimits.SectorCount) return false;
-        // The occupancy is read only when the anchor has free land next to it.
-        return CountAvailableNeutralNeighborsOfValidated(
-                player, anchorSectorId, literalSectorOwners, literalAvailability) > 0
-            && activeGangCount(anchorSectorId) < MatchLimits.FriendlyGangsPerSector
+        // PLACEHOLDER: RULE-AI-013. An anchor of 164 (sector 100) reads its owner past the sector
+        // list, at an address no finding identifies; it is taken as not the player's, so the
+        // anchor is replaced.
+        if (anchorSectorId != NoSector && anchorSectorId is < 0 or >= MatchLimits.SectorCount)
+            return false;
+        return CountFreeNeighbours(
+                   player, anchorSectorId, literalSectorOwners, literalAvailability) > 0
+            && AnchorOccupancy(anchorSectorId, activeGangCount) < MatchLimits.FriendlyGangsPerSector
             && scenario != ScenarioId.BigMan;
     }
 
@@ -122,32 +118,9 @@ internal static class OriginalAiHireAnchorRules
     {
         ValidateLiteralArrays(literalSectorOwners, literalAvailability);
         ValidateCenter(centerSectorId);
-        return CountAvailableNeutralNeighborsOfValidated(
+        return CountFreeNeighbours(
             player, centerSectorId, literalSectorOwners, literalAvailability);
     }
-
-    private static int CountAvailableNeutralNeighborsOfValidated(
-        PlayerId player,
-        int centerSectorId,
-        IReadOnlyList<int> literalSectorOwners,
-        IReadOnlyList<byte> literalAvailability)
-    {
-        if (literalSectorOwners[centerSectorId] != player.Value) return 0;
-
-        var count = 0;
-        VisitLiteralNeighborhood(centerSectorId, candidate =>
-        {
-            if (IsAvailableNeutral(candidate, literalSectorOwners, literalAvailability))
-                count++;
-        });
-        return count;
-    }
-
-    private static bool IsAvailableNeutral(
-        int sectorId,
-        IReadOnlyList<int> literalSectorOwners,
-        IReadOnlyList<byte> literalAvailability) =>
-        literalSectorOwners[sectorId] == NeutralOwner && literalAvailability[sectorId] == 0;
 
     public static int CountNonOwnedNeighbors(
         PlayerId player,
@@ -168,6 +141,36 @@ internal static class OriginalAiHireAnchorRules
         });
         return count;
     }
+
+    /// <summary>
+    /// RULE-AI-013 free_neighbours (selector 0x24) for a centre from -1 to 63; the public entry
+    /// point accepts only real sectors, the keep test also the failed anchor.
+    /// </summary>
+    private static int CountFreeNeighbours(
+        PlayerId player,
+        int centerSectorId,
+        IReadOnlyList<int> literalSectorOwners,
+        IReadOnlyList<byte> literalAvailability)
+    {
+        var centerOwner = centerSectorId == NoSector
+            ? FailedAnchorOwner
+            : literalSectorOwners[centerSectorId];
+        if (centerOwner != player.Value) return 0;
+
+        var count = 0;
+        VisitLiteralNeighborhood(centerSectorId, candidate =>
+        {
+            if (literalSectorOwners[candidate] == NeutralOwner
+                && literalAvailability[candidate] == 0)
+                count++;
+        });
+        return count;
+    }
+
+    // FND-AI-051: for player 0 the occupancy read of the failed anchor gives 0. For players 1 to 5
+    // it would read the previous player's row, but the owner test has already failed for them.
+    private static int AnchorOccupancy(int anchorSectorId, Func<int, int> activeGangCount) =>
+        anchorSectorId == NoSector ? 0 : activeGangCount(anchorSectorId);
 
     private static int SelectBigMan(
         int player,
@@ -197,14 +200,17 @@ internal static class OriginalAiHireAnchorRules
 
     private static void VisitLiteralNeighborhood(int centerSectorId, Action<int> visit)
     {
+        // The signed remainder, as selector 0x24 takes it (FND-AI-051): -1 for the failed anchor,
+        // which then excludes no column. For a centre from 0 to 63 this row-wrap guard excludes
+        // the same cells as selector 0x26's test of centerX + deltaX against the board.
         var centerX = centerSectorId % MatchLimits.BoardWidth;
         for (var deltaY = -1; deltaY <= 1; deltaY++)
         for (var deltaX = -1; deltaX <= 1; deltaX++)
         {
-            // This column check is the original row-wrap guard. The separate
-            // linear bound is intentionally <65, so bottom-edge index 64 remains.
-            var candidateX = centerX + deltaX;
-            if (candidateX is < 0 or >= MatchLimits.BoardWidth) continue;
+            if ((centerX == 0 && deltaX == -1)
+                || (centerX == MatchLimits.BoardWidth - 1 && deltaX == 1))
+                continue;
+            // The linear bound is intentionally <65, so bottom-edge index 64 remains.
             var candidate = centerSectorId + deltaY * MatchLimits.BoardWidth + deltaX;
             if (candidate is < 0 or >= OriginalNeighborLimit) continue;
             visit(candidate);

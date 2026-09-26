@@ -86,6 +86,9 @@ public static partial class AiTurnPlanner
         }
     }
 
+    // Repeated Chaos, which families 0 and 4 hold an owned sector with (RULE-AI-019, RULE-AI-023),
+    // is left out: it earns, and sending those gangs out as well leaves more gang-turns idle than
+    // the expansion wins (AdvancedAiPlaytestTests.ExpertExpansionImprovesSameSeedPowerCampaignSample).
     private static bool IsPassiveExpansionAction(GangAction action) =>
         action is GangAction.Hide or GangAction.Snitch or GangAction.Bribe;
 

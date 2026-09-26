@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 66 |
+| `supported` | 67 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 155 |
+| `implemented` | 154 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 19 |
-| `partial` | 48 |
-| `complete` | 155 |
+| `partial` | 49 |
+| `complete` | 154 |
 
 ## DATA
 
@@ -328,7 +328,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | partial | None | None | supported | The hunter guards compare the previous hire role with the scenario's hunter slot number, as the original does (BUG-AI-001), and the per-scenario slot adjustments and the hunter reversion follow FND-AI-050. Open claim: no computer player of the rebuild hired a hunter (role 4) in 2,688 simulated four-year matches, and the rebuild's first hostile sector takes any detectable gang of any hostile player where RULE-AI-004 counts only the first visible gang of a hostile human; step 8 of parity-achievement-plan.md asks for the follow-up. |
 | `RULE-AI-011` | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported | complete | None | None | implemented | None |
 | `RULE-AI-012` | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported | complete | None | None | implemented | None |
-| `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | complete | None | None | implemented | Placement is carried out in the Hire phase. An anchor of 164 (sector 100) arises only from a Right Hands slot that is inactive when the match is set up, which never happens, so the rebuild does not model the owner read the keep test would make for it. |
+| `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | partial | None | None | supported | Placement is carried out in the Hire phase. The failed anchor 63 follows FND-AI-051. An anchor of 164 (sector 100) is seeded for a player without a gang, which match set-up never produces but a planning state built without players (AiPlanningState.Initialize) does; its keep test reads an owner past the sector list at an address no finding identifies, and the rebuild replaces the anchor there (PLACEHOLDER: RULE-AI-013). |
 | `RULE-AI-014` | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported | complete | None | None | implemented | None |
 | `RULE-AI-015` | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | supported | complete | None | None | implemented | None |
 | `RULE-AI-016` | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported | complete | None | None | implemented | None |
