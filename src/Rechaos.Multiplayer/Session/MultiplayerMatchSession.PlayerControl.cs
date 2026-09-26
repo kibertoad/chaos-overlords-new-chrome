@@ -62,17 +62,40 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private readonly List<ControlHandover> _controlHandovers = [];
 
+    /// <summary>A handover announced live, which takes effect before the turn the match is on.</summary>
     private void TransferPlayerToComputer(string playerId) =>
-        HandOverSeat(playerId, PlayerController.Computer);
+        HandOverSeat(playerId, PlayerController.Computer, _replay.State.Coordinator.Turn);
 
+    /// <summary>A handover announced live, which takes effect before the turn the match is on.</summary>
     private void TransferPlayerToHuman(string playerId) =>
-        HandOverSeat(playerId, PlayerController.Human);
+        HandOverSeat(playerId, PlayerController.Human, _replay.State.Coordinator.Turn);
 
-    private void HandOverSeat(string playerId, PlayerController controller)
+    /// <summary>
+    /// Records a handover at the turn it took effect before, and applies it unless the state
+    /// already reflects that turn.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The turn is the log's, not the state's. A handover carries no turn of its own, and a replay
+    /// from sequence 0 over an adopted snapshot meets every handover the match ever had while its
+    /// state is already past them; the state's turn would have recorded all of them at the
+    /// snapshot's boundary, and a desync repair from an older snapshot would then have put them
+    /// back a turn or more late.
+    /// </para>
+    /// <para>
+    /// The test for "already reflected" is the one a sealed turn is skipped by: a handover before
+    /// turn N is part of any state standing on a turn after N. Applying such a handover again
+    /// replays a seat's old controller onto the snapshot — a seat taken over and later returned
+    /// became the computer's again for as long as the replay was between the two events, and one
+    /// whose return did not replace the computer stayed that way.
+    /// </para>
+    /// </remarks>
+    private void HandOverSeat(string playerId, PlayerController controller, int beforeTurn)
     {
         if (!_slotsByPlayerId.TryGetValue(playerId, out var slot)) return;
-        var handover = new ControlHandover(_replay.State.Coordinator.Turn, slot, controller);
+        var handover = new ControlHandover(beforeTurn, slot, controller);
         _controlHandovers.Add(handover);
+        if (beforeTurn < _replay.State.Coordinator.Turn) return;
         ApplyHandover(_replay, handover);
     }
 
@@ -111,7 +134,11 @@ public sealed partial class MultiplayerMatchSession
             recorder.TransferPlayerToHuman(player.Id);
     }
 
-    private void AddLatePlayer(string playerId, int slot)
+    private void AddLatePlayer(string playerId, int slot) =>
+        AddLatePlayer(playerId, slot, _replay.State.Coordinator.Turn);
+
+    /// <param name="beforeTurn">The turn the join took effect before; see <see cref="HandOverSeat"/>.</param>
+    private void AddLatePlayer(string playerId, int slot, int beforeTurn)
     {
         if (_slotsByPlayerId.TryGetValue(playerId, out var knownSlot))
         {
@@ -127,6 +154,6 @@ public sealed partial class MultiplayerMatchSession
         }
         // Through the same guarded path as any other handover: the seat is now in the map, and a
         // late join announced on a match that has already ended has no turn left to take over.
-        TransferPlayerToHuman(playerId);
+        HandOverSeat(playerId, PlayerController.Human, beforeTurn);
     }
 }

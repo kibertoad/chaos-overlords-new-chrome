@@ -1,4 +1,4 @@
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 /**
  * The SQLite dialect, shared byte-for-byte by better-sqlite3 (Node) and D1 (Cloudflare): one
@@ -80,10 +80,18 @@ export const turns = sqliteTable(
      * scanning the log for one, the same way `order_set_hash` does for `turn.sealed`.
      */
     desyncedAt: integer('desynced_at', { mode: 'timestamp_ms' }),
+    /**
+     * When every consequence of the confirmation was carried out (announced, pause lifted, a
+     * finished match marked finished), stamped after the last of them. A confirmed turn with this
+     * still null is a verdict cut short, which the sweep finishes; `turns_settled_idx` answers that
+     * question without visiting the settled history.
+     */
+    settledAt: integer('settled_at', { mode: 'timestamp_ms' }),
   },
   (table) => [
     primaryKey({ columns: [table.matchId, table.number] }),
     index('turns_deadline_idx').on(table.status, table.deadlineAt),
+    index('turns_settled_idx').on(table.status, table.settledAt),
   ],
 )
 
@@ -146,8 +154,20 @@ export const matchEvents = sqliteTable(
     type: text('type').notNull(),
     payload: text('payload', { mode: 'json' }).notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    /**
+     * Set only by `appendOnce`: the fact an announcement stands for (`turn.sealed:12`), unique per
+     * match, so an announcement that follows a compare-and-swap can be repeated by whoever finds it
+     * missing and still be logged once. Null for every other event, and never served to a client.
+     */
+    dedupeKey: text('dedupe_key'),
   },
-  (table) => [primaryKey({ columns: [table.matchId, table.seq] })],
+  (table) => [
+    primaryKey({ columns: [table.matchId, table.seq] }),
+    // Nulls are distinct in a unique index on both dialects, so only keyed events are constrained.
+    uniqueIndex('match_events_dedupe_idx').on(table.matchId, table.dedupeKey),
+    // `latestOfType`: the last status announcement of a match, found without walking its log.
+    index('match_events_type_idx').on(table.matchId, table.type, table.seq),
+  ],
 )
 
 /**
@@ -165,6 +185,8 @@ export const takeoverPrompts = sqliteTable(
     playerId: text('player_id').notNull(),
     turn: integer('turn').notNull(),
     openedAt: integer('opened_at', { mode: 'timestamp_ms' }).notNull(),
+    /** When its `match.takeoverVoteRequested` was durable; null while the prompt still owes one. */
+    announcedAt: integer('announced_at', { mode: 'timestamp_ms' }),
   },
   (table) => [primaryKey({ columns: [table.matchId, table.playerId] })],
 )

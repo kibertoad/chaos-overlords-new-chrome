@@ -38,8 +38,15 @@ public static class OriginalFontLayout
     public static int MaskWidth => AtlasBounds.Width + SupplementalFontGlyphs.Characters.Length * CellWidth;
 
     /// <summary>Source cell of <paramref name="character"/> in the glyph mask.</summary>
+    /// <remarks>
+    /// U+2212 MINUS SIGN is drawn as the hyphen-minus the strip has. Cultures whose number format
+    /// uses it (Swedish, Norwegian and others under ICU) otherwise lost the sign of every negative
+    /// number on screen. The game formats with the invariant culture (<see cref="GameCulture"/>);
+    /// this keeps a stray culture-formatted number readable all the same.
+    /// </remarks>
     public static bool TryGlyph(char character, out Rectangle source)
     {
+        if (character == '\u2212') character = '-';
         character = char.ToUpperInvariant(character);
         if (character is >= FirstCharacter and <= LastCharacter)
         {
