@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 1 |
 | `sourced` | 0 |
-| `supported` | 62 |
+| `supported` | 61 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 159 |
+| `implemented` | 160 |
 | `validated` | 0 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 19 |
-| `partial` | 44 |
-| `complete` | 159 |
+| `partial` | 43 |
+| `complete` | 160 |
 
 ## DATA
 
@@ -223,7 +223,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | The fields are kept as 32-bit values; the INT8 wrap of a total outside -128 to 127 is not reproduced, and no shipped combination reaches it. |
+| `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | Each rebuilt field keeps its low eight bits, as the original's INT8 fields do; no shipped combination reaches the wrap. |
 | `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | partial | None | None | supported | Force 0 and cleared orders stand in for the sector byte 100. |
 | `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | partial | None | None | supported | Field columns and rows follow the original; which statistic sits on which row is not recorded. |
 | `SCR-GANG-002` | Gang information panel for a hired gang | supported | partial | None | `DEV-GANG-001` | supported | Value columns follow the original; the rows, equipment and portrait positions are not recorded, and the rebuild adds breakdown tooltips. |
@@ -316,7 +316,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | partial | None | `DEV-AI-003` | supported | The rebuild submits commands in roster slot order, keeps the history rollover and the needs_family flags of FND-AI-042: the first pass resets the records and flags slot 0, a slot without an active gang is flagged, and the Greed Terminate flags its record. The takeover's raider_mode is not checked. |
+| `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | complete | None | `DEV-AI-003` | implemented | A seat changes hands only at a clean Command boundary, so the takeover's own planning pass (FND-AI-043) is the pass that turn's planning runs. |
 | `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | None |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | hostile_owner reads the attitude cell of owner_query, with the out-of-row reads of FND-AI-048 for a neutral sector and one under police presence. |

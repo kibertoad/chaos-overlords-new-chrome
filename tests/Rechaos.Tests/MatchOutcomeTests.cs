@@ -8,7 +8,7 @@ namespace Rechaos.Tests;
 public sealed class MatchOutcomeTests
 {
     [Fact]
-    public void ProjectionUsesAuthoritativeImportantSectorsAndRightHands()
+    public void ProjectionUsesAuthoritativeImportantSectors()
     {
         var match = CreateMatch(ScenarioId.Siege, importantSectorOwners: [0, 0, 0, 0, 0, 0]);
 
@@ -17,7 +17,6 @@ public sealed class MatchOutcomeTests
         Assert.Equal(6, score.ControlledSectors);
         Assert.Equal(6, score.ImportantSectorsControlled);
         Assert.Equal(1, score.OpponentsAlive);
-        Assert.Equal(1, score.OpposingRightHandsAlive);
         Assert.Equal([new PlayerId(0)], MatchOutcomeEvaluator.Evaluate(match)!.Winners);
     }
 

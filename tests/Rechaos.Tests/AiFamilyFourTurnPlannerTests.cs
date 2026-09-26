@@ -143,7 +143,7 @@ public sealed class AiFamilyFourTurnPlannerTests
     {
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 4);
+        match.AiPlanning.SeedFamily(player, 0, 4);
     }
 
     private static void SetPreviousAction(MatchState match, GangAction action)
