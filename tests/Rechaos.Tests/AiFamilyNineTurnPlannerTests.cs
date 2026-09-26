@@ -113,7 +113,7 @@ public sealed class AiFamilyNineTurnPlannerTests
     private static void BeginFamilyNineTurn(MatchState match, PlayerId player)
     {
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 9);
+        match.AiPlanning.SeedFamily(player, 0, 9);
         match.AiPlanning.SetCurrentHireRole(player, 5);
     }
 

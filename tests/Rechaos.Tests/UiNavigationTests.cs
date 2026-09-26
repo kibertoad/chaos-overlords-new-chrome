@@ -144,7 +144,8 @@ public sealed class UiNavigationTests
 
             Assert.True(gangLeft.Count >= 3);
             Assert.True(gangRight.Count >= 3);
-            Assert.Contains("SECTOR", siteLeft[^1]);
+            // RULE-GANG-001: a completed site modifies the sector owner's gangs, whoever completed it.
+            Assert.Contains("SECTOR OWNER'S GANGS", siteLeft[^1]);
             Assert.Contains("EQUIPPED", itemRight[^1]);
         }
 

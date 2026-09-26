@@ -78,8 +78,6 @@ internal static class MatchOutcomeValidator
 /// </summary>
 public static class MatchOutcomeEvaluator
 {
-    private const short RightHandsDefinitionId = 0;
-
     /// <param name="humanActiveAtTurnStart">
     /// Whether a human was still playing before this turn's eliminations. When none was and none is
     /// now, and nothing else ends the match, the match ends as <see cref="MatchEndReason.NoHumansLeft"/>
@@ -118,8 +116,9 @@ public static class MatchOutcomeEvaluator
         if (definition.IsTimed)
         {
             // RULE-OBJECTIVE-004: the match ends with the resolution of the turn numbered with the
-            // limit. The turn only counts up and the match stops there, so the test is an equality.
-            if (state.Coordinator.Turn != ScenarioCatalog.Turns(state.Setup.Duration)) return null;
+            // limit. A state already past it (restored from an older build, or stepped by hand)
+            // still ends rather than playing on for good.
+            if (state.Coordinator.Turn < ScenarioCatalog.Turns(state.Setup.Duration)) return null;
             var standings = EndgameRankingEvaluator.Evaluate(state);
             return Conclude(
                 state,
@@ -129,6 +128,7 @@ public static class MatchOutcomeEvaluator
                 standings);
         }
 
+        // RULE-OBJECTIVE-004: the test runs for every slot, active or not.
         var winners = state.Players
             .Where(player => ScenarioCatalog.HasObjectiveVictory(
                 state.Setup.Scenario, Project(state, player)))
@@ -163,17 +163,14 @@ public static class MatchOutcomeEvaluator
         state.RequirePlayer(player);
 
         var controlledSectors = state.Sectors.Count(sector => sector.Owner == player.Id);
-        var opponents = state.Players.Where(candidate => candidate.Id != player.Id).ToArray();
         var importantSectors = state.Sectors.Count(sector =>
             sector.Owner == player.Id && sector.IsImportant);
         return new PlayerScoreState(
             player.Cash,
             player.Support,
             controlledSectors,
-            player.Status == PlayerStatus.Active,
-            opponents.Count(candidate => candidate.Status == PlayerStatus.Active),
-            opponents.Sum(candidate => candidate.Gangs.Count(gang =>
-                gang.IsActive && gang.DefinitionId == RightHandsDefinitionId)),
+            state.Players.Count(candidate =>
+                candidate.Id != player.Id && candidate.Status == PlayerStatus.Active),
             importantSectors,
             player.BigManPoints);
     }

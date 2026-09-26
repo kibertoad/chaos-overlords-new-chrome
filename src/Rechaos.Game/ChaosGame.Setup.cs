@@ -66,6 +66,18 @@ public sealed partial class ChaosGame
         _selectedScenario = scenario;
         if (_configuringOnlineLobby) return;
         _preferredScenario = scenario;
+        // Written once the player leaves setup (FlushScenarioPreference), not on every step of
+        // cycling through the scenarios.
+        _scenarioPreferenceUnsaved = true;
+    }
+
+    /// <summary>
+    /// Stores the scenario chosen in setup once setup is no longer showing, or at shutdown.
+    /// </summary>
+    private void FlushScenarioPreference(bool force = false)
+    {
+        if (!_scenarioPreferenceUnsaved || !force && _screens.Current == ClientScreen.Setup) return;
+        _scenarioPreferenceUnsaved = false;
         SavePreferences();
     }
 

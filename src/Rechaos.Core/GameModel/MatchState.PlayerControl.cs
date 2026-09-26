@@ -30,10 +30,12 @@ public sealed partial class MatchState
         foreach (var gang in player.Gangs.Where(gang => Commands.TryGet(gang.Id, out _)).ToArray())
             CancelQueuedCommand(gang);
 
+        // RULE-AI-027 (FND-AI-043): the computer taking over a network seat turns every gang of
+        // it into a raider for the rest of the match. The original then runs the seat's planning
+        // pass at once; here the transfer happens at a clean Command boundary, so the pass is the
+        // one that turn's planning runs.
+        AiPlanning.EnterRaiderMode(playerId, player.Gangs);
         SetController(playerId, PlayerController.Computer);
-        // RULE-AI-001, RULE-AI-027: the computer that takes over a seat plans every gang as a
-        // raider.
-        AiPlanning.SetRaiderMode(playerId, true);
         return true;
     }
 
@@ -44,7 +46,6 @@ public sealed partial class MatchState
         if (player.Setup.Controller == PlayerController.Human) return false;
         RequireCleanCommandBoundary();
         SetController(playerId, PlayerController.Human);
-        AiPlanning.SetRaiderMode(playerId, false);
         return true;
     }
 

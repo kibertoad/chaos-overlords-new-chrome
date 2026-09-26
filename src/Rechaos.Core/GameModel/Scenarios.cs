@@ -89,8 +89,6 @@ public readonly record struct PlayerScoreState(
     int Cash,
     int Support,
     int ControlledSectors,
-    bool IsAlive = true,
     int OpponentsAlive = 0,
-    int OpposingRightHandsAlive = 0,
     int ImportantSectorsControlled = 0,
     int BigManPoints = 0);
