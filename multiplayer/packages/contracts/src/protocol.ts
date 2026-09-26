@@ -21,7 +21,7 @@ export const MULTIPLAYER_PROTOCOL_VERSION = 22
  * {@link MULTIPLAYER_PROTOCOL_VERSION} and leaves this where it is, so an in-flight match survives
  * the client and server being updated underneath it. The C# mirror is MultiplayerSessionVersion.
  */
-export const MULTIPLAYER_SESSION_VERSION = 21
+export const MULTIPLAYER_SESSION_VERSION = 22
 
 export const protocolVersionSchema = pipe(
   number(),

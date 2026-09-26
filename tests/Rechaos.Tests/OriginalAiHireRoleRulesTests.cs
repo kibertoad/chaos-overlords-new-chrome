@@ -642,15 +642,16 @@ public sealed class OriginalAiHireRoleRulesTests
                 PowerInputs(family0Or4Count: 3)));
     }
 
+    // BUG-AI-001: the hunter guard compares the previous hire role with the scenario's hunter slot
+    // number. Dominance's slot 10 is no hire role, so its guard never fires.
     [Theory]
-    [InlineData(ScenarioId.Greed, 0, 0, 1)]
-    [InlineData(ScenarioId.Power, 0, 0, 0)]
-    [InlineData(ScenarioId.Acceptance, 0, 0, 1)]
-    [InlineData(ScenarioId.Dominance, 0, 0, 1)]
-    [InlineData(ScenarioId.Armageddon, 0, 0, 0)]
-    public void PriorFamilySixRoleSuppressesTheScenarioSpecificFamilySixSlot(
+    [InlineData(ScenarioId.Greed, 5, 0, 1)]
+    [InlineData(ScenarioId.Power, 6, 0, 0)]
+    [InlineData(ScenarioId.Acceptance, 2, 0, 1)]
+    [InlineData(ScenarioId.Armageddon, 5, 0, 0)]
+    public void PriorRoleEqualToTheHunterSlotNumberSuppressesTheHunterSlot(
         ScenarioId scenario,
-        int turn,
+        int previousRole,
         int expectedMode,
         int expectedRole)
     {
@@ -659,27 +660,34 @@ public sealed class OriginalAiHireRoleRulesTests
             hasFamily6CoveringFirstHostileSector: false,
             family2Count: 1,
             family3Count: 1,
-            previousRole: 4);
+            previousRole: previousRole);
 
         Assert.Equal(
             new OriginalAiHireRoleSelection(expectedMode, expectedRole),
-            OriginalAiHireRoleRules.SelectAdjusted(scenario, turn, inputs));
+            OriginalAiHireRoleRules.SelectAdjusted(scenario, turn: 0, inputs));
     }
 
+    // BUG-AI-001: a previous hunter hire (role 4) does not fire the guard, so the hunter slot is
+    // forced again, as it is after any role other than the slot number.
     [Theory]
-    [InlineData(ScenarioId.Greed)]
-    [InlineData(ScenarioId.Power)]
-    [InlineData(ScenarioId.Acceptance)]
-    [InlineData(ScenarioId.Dominance)]
-    [InlineData(ScenarioId.Armageddon)]
-    public void DifferentPriorRoleStillPermitsTheFamilySixSlot(ScenarioId scenario)
+    [InlineData(ScenarioId.Greed, 4)]
+    [InlineData(ScenarioId.Power, 4)]
+    [InlineData(ScenarioId.Acceptance, 4)]
+    [InlineData(ScenarioId.Dominance, 4)]
+    [InlineData(ScenarioId.Armageddon, 4)]
+    [InlineData(ScenarioId.Greed, 3)]
+    [InlineData(ScenarioId.Power, 3)]
+    [InlineData(ScenarioId.Acceptance, 3)]
+    [InlineData(ScenarioId.Dominance, 3)]
+    [InlineData(ScenarioId.Armageddon, 3)]
+    public void OtherPriorRolesStillForceTheHunterSlot(ScenarioId scenario, int previousRole)
     {
         var inputs = PowerInputs(
             hasVisibleHostileSector: true,
             hasFamily6CoveringFirstHostileSector: false,
             family2Count: 1,
             family3Count: 1,
-            previousRole: 3);
+            previousRole: previousRole);
 
         Assert.Equal(
             new OriginalAiHireRoleSelection(3, 4),
