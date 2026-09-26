@@ -41,6 +41,32 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false, fromTitle: true);
     }
 
+    internal enum TitleAction
+    {
+        NewGame,
+        LoadGame,
+        Online,
+        Options,
+        Help,
+        Intro,
+        Quit
+    }
+
+    /// <summary>What a left press at <paramref name="point"/> on the title screen does.</summary>
+    /// <remarks>
+    /// The original's title loop turns a left press anywhere into New Game (RULE-UI-013,
+    /// SCR-UI-001). The rebuild's own buttons keep their commands, and a press anywhere else still
+    /// starts a new game.
+    /// </remarks>
+    internal static TitleAction TitleActionAt(Point point) =>
+        TitleLoadGame.Contains(point) ? TitleAction.LoadGame
+        : TitleOnline.Contains(point) ? TitleAction.Online
+        : TitleOptions.Contains(point) ? TitleAction.Options
+        : TitleHelp.Contains(point) ? TitleAction.Help
+        : TitleIntro.Contains(point) ? TitleAction.Intro
+        : TitleQuit.Contains(point) ? TitleAction.Quit
+        : TitleAction.NewGame;
+
     /// <summary>
     /// RULE-SETUP-002: the stored scenario and a one-year limit. RULE-SETUP-010: the roster of the
     /// last Begin of the session, or one human in slot 0 before the first.
@@ -373,6 +399,8 @@ public sealed partial class ChaosGame
         // RULE-SETUP-010: Begin saves the roster for the next local setup; Cancel saves nothing.
         _begunLocalSetup = new LocalSetupSnapshot(
             _localSetupRoster.HumanSlots.ToArray(), _playerPortraits.ToArray(), _playerNames.ToArray());
+        // The original shows the hourglass while it sets up the city (RULE-UI-007).
+        using var busy = _pointer.Busy();
         var players = _localSetupRoster.HumanSlots.Order()
             .Select(slot => new MatchPlayerSetup(
                 new PlayerId(slot), _playerNames[slot],

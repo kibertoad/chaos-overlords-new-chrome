@@ -237,6 +237,7 @@ asynchronously, but every client still applies them in the same sealed order.
 | Save a screenshot | F12 | Writes the finished native window backbuffer as a PNG to the game-local `screenshots` folder |
 | Planning timer (setup) | L | Click None, 30 Seconds, 2 Minutes, or 5 Minutes |
 | Help | F1 | Click Help on the title screen; point at the topic list or article and use the mouse wheel to scroll it |
+| Credits | Shift+F1 | The original's Help > About screen; any key or click closes it |
 | Online play | Tab between enabled fields; Left/Right turn your overlord face; Enter creates or connects; F5 refreshes the browser | The form asks what you want to do, who you are, which session, and last which server: pick Host A New Game or Join With A Code, the arrows beside the face pick it, Paste fills the join code, Browse Games and Unfinished Sessions are the other ways in, and Copy copies the join code from the lobby |
 | Save / load | F5 / F9 | Use Save Game or Load Game in the Escape menu and choose one of nine slots |
 | Save / load replay | F6 / F10 | Local games only; records or verifies the recreation replay file |

@@ -26,13 +26,27 @@ public sealed partial class ChaosGame
             DrawPoliceCombatant(batch, pixel, font, rightSide: attackerOnRight);
         else if (attacker is not null && clip.Forces.AttackerAfter is { } attackerForce)
             DrawCombatant(batch, pixel, font, state, attacker, rightSide: attackerOnRight,
-                gameEvent?.Resolution?.ItemId, attackerForce, clip.Forces.AttackerDamage);
+                gameEvent?.Resolution?.ItemId,
+                clip.AttackerStart ?? clip.Forces.AttackerBefore ?? attackerForce,
+                attackerForce, clip.Forces.AttackerDamage);
         if (defender is not null)
             DrawCombatant(batch, pixel, font, state, defender, rightSide: !attackerOnRight,
                 gameEvent?.Resolution?.RetaliationItemId,
+                clip.DefenderStart ?? clip.Forces.DefenderBefore,
                 clip.Forces.DefenderAfter, clip.Forces.DefenderDamage);
 
         DrawCombatFrames(batch, pixel, clip);
+        DrawPressedCombatExit(batch);
+    }
+
+    /// <summary>
+    /// The pressed Exit face while a press that started on it is held over it; the release there
+    /// ends the whole presentation (SCR-COMBAT-002, FND-COMBAT-010).
+    /// </summary>
+    private void DrawPressedCombatExit(SpriteBatch batch)
+    {
+        if (!_combatExit.ShowsPressed || _uiSprites is null) return;
+        batch.Draw(_uiSprites, CombatPanelLayout.Exit, CombatPanelLayout.ExitPressedSource, Color.White);
     }
 
     private void DrawCombatSector(SpriteBatch batch, PixelFont font, MatchState state, int sectorId)
@@ -53,6 +67,7 @@ public sealed partial class ChaosGame
         MatchGangState gang,
         bool rightSide,
         short? eventWeapon,
+        int start,
         int force,
         int damage)
     {
@@ -69,7 +84,7 @@ public sealed partial class ChaosGame
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, CombatPanelLayout.GangPortrait(rightSide),
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
-        DrawDetailedCombatForce(batch, pixel, rightSide, force, damage);
+        DrawDetailedCombatForce(batch, pixel, rightSide, start, force, damage);
 
         DrawCombatItem(batch, state, eventWeapon ?? gang.WeaponItemId, CombatPanelLayout.EquipmentItem(rightSide, 0));
         DrawCombatItem(batch, state, gang.ArmorItemId, CombatPanelLayout.EquipmentItem(rightSide, 1));
@@ -83,7 +98,9 @@ public sealed partial class ChaosGame
         if (_policeSprites is not null)
             batch.Draw(_policeSprites, CombatPanelLayout.PolicePortrait(rightSide),
                 OriginalSpriteLayout.PolicePatrolCar, Color.White);
-        DrawDetailedCombatForce(batch, pixel, rightSide, ManualRules.MaximumForce, 0);
+        // The police are drawn with Force 10 on both tracks (RULE-COMBAT-004).
+        DrawDetailedCombatForce(batch, pixel, rightSide,
+            ManualRules.MaximumForce, ManualRules.MaximumForce, 0);
     }
 
     private void DrawCombatItem(SpriteBatch batch, MatchState state, short? itemId, Rectangle aperture)
@@ -102,37 +119,67 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.ItemPortrait(resolved), Color.White);
     }
 
-    private void DrawCombatForce(
+    /// <summary>
+    /// The lower track of SCR-COMBAT-002, <c>force_shown</c>: the Force before the clip until its
+    /// hits land, the part lost in white on ticks 13 and 15, and the new Force after
+    /// (FND-COMBAT-010).
+    /// </summary>
+    private void DrawShownCombatForce(
         SpriteBatch batch,
         Texture2D pixel,
         Rectangle bar,
         int force,
-        int damage = 0)
+        int damage)
     {
-        DrawBeveledForce(batch, pixel, bar, 0, bar.Width, red: true);
-        var width = Math.Clamp(bar.Width * force / ManualRules.MaximumForce, 0, bar.Width);
-        if (width > 0)
-            DrawBeveledForce(batch, pixel, bar, 0, width, red: false);
-
-        var previousForce = Math.Clamp(force + damage, 0, ManualRules.MaximumForce);
-        var previousWidth = Math.Clamp(
-            bar.Width * previousForce / ManualRules.MaximumForce, width, bar.Width);
-        if (previousWidth <= width) return;
-        if (_combatAnimationPlayer.ShowsPreDamageForce)
-            DrawBeveledForce(batch, pixel, bar, width, previousWidth - width, red: false);
-        else if (_combatAnimationPlayer.ShowsDamageFlash)
+        var width = CombatPanelLayout.TrackFill(force);
+        var previousWidth = Math.Max(width,
+            CombatPanelLayout.TrackFill(Math.Min(force + damage, ManualRules.MaximumForce)));
+        if (previousWidth > width && _combatAnimationPlayer.ShowsPreDamageForce)
+        {
+            DrawForceTrack(batch, pixel, bar, previousWidth);
+            return;
+        }
+        DrawForceTrack(batch, pixel, bar, width);
+        if (previousWidth > width && _combatAnimationPlayer.ShowsDamageFlash)
             batch.Draw(pixel, new Rectangle(bar.X + width, bar.Y, previousWidth - width, bar.Height), Color.White);
     }
 
+    /// <summary>
+    /// The two tracks of one gang in SCR-COMBAT-002: <c>force_start</c> above, which does not
+    /// move, and <c>force_shown</c> below (FND-COMBAT-009, FND-COMBAT-010).
+    /// </summary>
     private void DrawDetailedCombatForce(
         SpriteBatch batch,
         Texture2D pixel,
         bool rightSide,
+        int start,
         int force,
         int damage)
     {
-        for (var track = 0; track < CombatPanelLayout.ForceBarTracks; track++)
-            DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide, track), force, damage);
+        DrawForceTrack(batch, pixel, CombatPanelLayout.ForceBar(rightSide, 0),
+            CombatPanelLayout.TrackFill(start));
+        DrawShownCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide, 1), force, damage);
+    }
+
+    /// <summary>
+    /// One Force track as the original copies it from <c>PX00129</c>: the red track across the
+    /// whole width, then <paramref name="fill"/> pixels of the green strip from its left edge
+    /// (FND-COMBAT-009). Without the sheet the rows are drawn in the art's three intensities.
+    /// </summary>
+    private void DrawForceTrack(SpriteBatch batch, Texture2D pixel, Rectangle bar, int fill)
+    {
+        fill = Math.Clamp(fill, 0, bar.Width);
+        if (_uiSprites is not null)
+        {
+            var red = CombatPanelLayout.RedTrackSource;
+            batch.Draw(_uiSprites, bar, red with { Width = bar.Width }, Color.White);
+            if (fill > 0)
+                batch.Draw(_uiSprites, bar with { Width = fill },
+                    CombatPanelLayout.GreenTrackSource(fill), Color.White);
+            return;
+        }
+        DrawBeveledForce(batch, pixel, bar, 0, bar.Width, red: true);
+        DrawBeveledForce(batch, pixel, bar, 0, fill, red: false);
     }
 
     private static void DrawBeveledForce(

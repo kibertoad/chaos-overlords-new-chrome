@@ -16,7 +16,7 @@ public sealed partial class ChaosGame
             return;
         }
         _combatSummaryCursor = 0;
-        SelectDefaultCombatResult(_state, viewer, pages[0]);
+        SelectCombatResultPage(_state, viewer, pages[0]);
         _managementReturnScreen = returnScreen;
         _screens.Show(ClientScreen.CombatSummary);
     }
@@ -81,7 +81,8 @@ public sealed partial class ChaosGame
             return;
         }
         _combatSummaryCursor = Math.Clamp(_combatSummaryCursor, 0, pages.Count - 1);
-        var gameEvent = SelectedCombatResult(pages[_combatSummaryCursor]);
+        var gameEvent = pages[_combatSummaryCursor]
+            .SelectedResult(_combatSummaryFocal, _combatSummaryOpponent)?.Event;
         if (gameEvent is null)
         {
             RejectInput("NO COMBAT DETAIL AVAILABLE");
@@ -114,6 +115,11 @@ public sealed partial class ChaosGame
             .OrderBy(gameEvent => gameEvent.Sequence)
             .ToArray();
 
+    /// <summary>
+    /// A page step: Previous on the first page and Next on the last play the rejected sound, and
+    /// a step that changes the page plays the accepted one and focuses the viewer's first entry
+    /// of the new page (SCR-COMBAT-001).
+    /// </summary>
     private void MoveCombatSummary(int delta)
     {
         if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
@@ -125,7 +131,7 @@ public sealed partial class ChaosGame
             var changed = next != _combatSummaryCursor;
             PlayGeneralSound(AudioRouting.PageNavigationSound(changed));
             _combatSummaryCursor = next;
-            if (changed) SelectDefaultCombatResult(_state, viewer, pages[next]);
+            if (changed) SelectCombatResultPage(_state, viewer, pages[next]);
         }
     }
 
@@ -148,7 +154,6 @@ public sealed partial class ChaosGame
         DrawPanelArtwork(batch, pixel, _combatResultsBackground, CombatResultsLayout.Panel);
         var viewer = ViewingPlayer(state);
         var pages = CombatResultPages(state, viewer);
-        ClearCombatResultPage(batch, pixel);
         if (pages.Count == 0)
         {
             font.Draw(batch, "NO COMBAT RESULTS",
@@ -159,17 +164,36 @@ public sealed partial class ChaosGame
         _combatSummaryCursor = Math.Clamp(_combatSummaryCursor, 0, pages.Count - 1);
         var page = pages[_combatSummaryCursor];
         EnsureCombatResultSelection(state, viewer, page);
-        font.Draw(batch, $"{_combatSummaryCursor + 1:00} OF {pages.Count:00}",
-            CombatResultsLayout.PageText.ToVector2(), Color.Lime, 1);
+        DrawCombatResultPageCounter(batch, pixel, font, _combatSummaryCursor, pages.Count);
 
-        DrawCombatResultSector(batch, font, state, page.SectorId);
-        DrawCombatResultForces(batch, pixel, state, page.ForcesFor(viewer), enemy: false);
-        if (SelectedCombatResult(page)?.PoliceAttack is not null)
-            DrawCombatResultPolice(batch, pixel, CombatResultsLayout.Force(0, enemy: true));
-        else if (_combatSummaryOpponent is { } opponent)
-            DrawCombatResultForces(batch, pixel, state, page.ForcesFor(opponent), enemy: true);
-        DrawCombatResultOpponents(batch, pixel, state, viewer, page);
-        DrawButton(batch, pixel, font, CombatResultsLayout.Ok, "OK", true);
+        DrawCombatResultSector(batch, pixel, font, state, page);
+        var timeline = CombatForceTimeline.For(state, page.Results[0].Event);
+        DrawCombatResultForces(batch, pixel, state, timeline,
+            page.ForcesFor(viewer, RosterSlots(state, viewer)), enemy: false);
+        if (_combatSummaryOpponent is { } opponent)
+            DrawCombatResultForces(batch, pixel, state, timeline,
+                page.ForcesFor(opponent, RosterSlots(state, opponent)), enemy: true);
+        DrawCombatResultOpponents(batch, state, viewer, page);
+    }
+
+    /// <summary>
+    /// The page number from 1 and the page count as two-cell numbers with leading zeros, and the
+    /// arrows, greyed on the first and last page (SCR-COMBAT-001, FND-COMBAT-007).
+    /// </summary>
+    private void DrawCombatResultPageCounter(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, int cursor, int count)
+    {
+        batch.Draw(pixel, CombatResultsLayout.PageNumber, Color.Black);
+        batch.Draw(pixel, CombatResultsLayout.PageCount, Color.Black);
+        font.Draw(batch, $"{Math.Min(cursor + 1, 99):00}",
+            CombatResultsLayout.PageNumber.Location.ToVector2(), Color.Lime, 1);
+        font.Draw(batch, $"{Math.Min(count, 99):00}",
+            CombatResultsLayout.PageCount.Location.ToVector2(), Color.Lime, 1);
+        if (_uiSprites is null) return;
+        batch.Draw(_uiSprites, CombatResultsLayout.Previous,
+            CombatResultsLayout.PreviousSource(firstPage: cursor == 0), Color.White);
+        batch.Draw(_uiSprites, CombatResultsLayout.Next,
+            CombatResultsLayout.NextSource(lastPage: cursor == count - 1), Color.White);
     }
 
     private IReadOnlyList<GameEvent> VisibleCombatResults(MatchState state, PlayerId viewer) =>
@@ -198,20 +222,35 @@ public sealed partial class ChaosGame
         ((int Events, int Turn) Key, IReadOnlyList<CombatResultPage> Pages)>
         _combatResultCache = [];
 
-    private void DrawCombatResultSector(SpriteBatch batch, PixelFont font, MatchState state, int sectorId)
+    /// <summary>
+    /// The sector tile framed in black, the police strip over its top when the police found a
+    /// gang there, and the sector code (SCR-COMBAT-001, FND-COMBAT-007).
+    /// </summary>
+    private void DrawCombatResultSector(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state, CombatResultPage page)
     {
+        var sectorId = page.SectorId;
         var sector = state.Sectors[sectorId];
         var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
         if (layer is not null)
             batch.Draw(layer, CombatResultsLayout.Sector, CityMapLayout.Source(sectorId), Color.White);
+        DrawBorder(batch, pixel, CombatResultsLayout.Sector, Color.Black, 1);
+        if (page.HasPolice && _uiSprites is not null)
+            batch.Draw(_uiSprites, CombatResultsLayout.PoliceStrip,
+                CombatResultsLayout.PoliceStripSource, Color.White);
         font.Draw(batch, SectorCode(sectorId),
             CombatResultsLayout.SectorCodeText.ToVector2(), Color.Lime, 1);
     }
 
+    /// <summary>
+    /// One player's row of the page: each gang's focus outlines, its portrait scaled to 40 by 40,
+    /// and its <c>force_start</c> and <c>force_final</c> tracks (SCR-COMBAT-001, FND-COMBAT-012).
+    /// </summary>
     private void DrawCombatResultForces(
         SpriteBatch batch,
         Texture2D pixel,
         MatchState state,
+        CombatForceTimeline timeline,
         IReadOnlyList<CombatResultForce> forces,
         bool enemy)
     {
@@ -221,50 +260,75 @@ public sealed partial class ChaosGame
             var gang = state.FindCombatant(force.Event, force.Gang);
             if (gang is null) continue;
             var cell = CombatResultsLayout.Force(slot, enemy);
+            var outline = CombatResultsLayout.FocusOutline(cell);
+            var marks = CombatResultFocus.Marks(
+                force.Gang, force.Target, _combatSummaryFocal, _combatSummaryFocalTarget);
+            if (marks.HasFlag(CombatResultOutline.Focal))
+                DrawBorder(batch, pixel, outline, CombatResultFocus.FocalColor, 1);
+            if (marks.HasFlag(CombatResultOutline.Target))
+                DrawBorder(batch, pixel, outline, CombatResultFocus.TargetColor, 1);
+            if (marks.HasFlag(CombatResultOutline.Attacker))
+                DrawBorder(batch, pixel, outline, CombatResultFocus.AttackerColor, 1);
+            if (marks.HasFlag(CombatResultOutline.Mutual) && _uiKeyedSprites is not null)
+                batch.Draw(_uiKeyedSprites, outline, CombatResultsLayout.MutualFocusSource, Color.White);
             if (_gangPortraits is not null)
                 batch.Draw(_gangPortraits, cell,
                     OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
-            DrawBorder(batch, pixel, cell, PlayerColors[gang.Owner.Value],
-                force.Event.Sequence == _combatSummaryEventSequence ? 2 : 1);
-            DrawCombatForce(batch, pixel, CombatResultsLayout.ForceBar(cell), gang.Force);
+            DrawForceTrack(batch, pixel, CombatResultsLayout.ForceTrack(cell, 0),
+                CombatResultsLayout.ForceTrackFill(timeline.PhaseStartForce(force.Gang)));
+            DrawForceTrack(batch, pixel, CombatResultsLayout.ForceTrack(cell, 1),
+                CombatResultsLayout.ForceTrackFill(timeline.PhaseFinalForce(force.Gang)));
         }
     }
 
-    private void DrawCombatResultPolice(SpriteBatch batch, Texture2D pixel, Rectangle panel)
-    {
-        batch.Draw(pixel, panel, Color.Black);
-        if (_policeSprites is not null)
-            batch.Draw(_policeSprites, panel,
-                OriginalSpriteLayout.PolicePatrolCar, Color.White);
-        DrawBorder(batch, pixel, panel, Color.LightBlue, 2);
-        DrawCombatForce(batch, pixel, CombatResultsLayout.ForceBar(panel),
-            ManualRules.MaximumForce);
-    }
-
+    /// <summary>
+    /// The other five players in player order, dim for a player with no result in the sector,
+    /// and the frame around the chosen opponent (SCR-COMBAT-001, FND-COMBAT-007, FND-COMBAT-009).
+    /// </summary>
     private void DrawCombatResultOpponents(
         SpriteBatch batch,
-        Texture2D pixel,
         MatchState state,
         PlayerId viewer,
         CombatResultPage page)
     {
-        var owners = state.Players.Select(player => player.Id)
-            .Where(player => player != viewer).OrderBy(player => player.Value)
-            .Take(CombatResultsLayout.OpponentSlots).ToArray();
-        for (var slot = 0; slot < owners.Length; slot++)
+        var owners = CombatResultOpponents(state, viewer);
+        for (var slot = 0; slot < owners.Count; slot++)
         {
             var player = state.FindPlayer(owners[slot])!;
-            var destination = CombatResultsLayout.Opponent(slot);
             var available = page.ForcesFor(player.Id).Count > 0;
             if (_uiSprites is not null)
-                batch.Draw(_uiSprites, destination,
-                    OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId),
-                    available ? Color.White : new Color(48, 48, 48));
-            DrawBorder(batch, pixel, destination, PlayerColors[player.Id.Value],
-                player.Id == _combatSummaryOpponent ? 2 : 1);
+                batch.Draw(_uiSprites, CombatResultsLayout.Opponent(slot),
+                    CombatResultsLayout.OpponentPortraitSource(player.Setup.PortraitId, available),
+                    Color.White);
+            if (player.Id == _combatSummaryOpponent && _uiKeyedSprites is not null)
+                batch.Draw(_uiKeyedSprites, CombatResultsLayout.OpponentFrame(slot),
+                    CombatResultsLayout.OpponentFrameSource, Color.White);
         }
     }
 
+    private static IReadOnlyList<PlayerId> CombatResultOpponents(MatchState state, PlayerId viewer) =>
+        state.Players.Select(player => player.Id)
+            .Where(player => player != viewer).OrderBy(player => player.Value)
+            .Take(CombatResultsLayout.OpponentSlots).ToArray();
+
+    /// <summary>The roster slot of each of <paramref name="player"/>'s gangs, the order of its row.</summary>
+    private static Func<GangId, int> RosterSlots(MatchState state, PlayerId player)
+    {
+        var roster = state.FindPlayer(player)?.Gangs ?? [];
+        return gang =>
+        {
+            for (var index = 0; index < roster.Count; index++)
+                if (roster[index].Id == gang) return index;
+            return int.MaxValue;
+        };
+    }
+
+    /// <summary>
+    /// A click on an opponent portrait or on the viewer's force selector (SCR-COMBAT-001). A
+    /// portrait is accepted only for a player with a result in the sector, and choosing another
+    /// opponent plays the accepted sound. The selector makes the slot's gang the focal gang and its
+    /// target the focal target, and keeps the opponent (FND-COMBAT-012).
+    /// </summary>
     private void SelectCombatSummaryEntry(Point point)
     {
         if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
@@ -272,55 +336,87 @@ public sealed partial class ChaosGame
         if (pages.Count == 0) return;
         _combatSummaryCursor = Math.Clamp(_combatSummaryCursor, 0, pages.Count - 1);
         var page = pages[_combatSummaryCursor];
-        var opponents = _state.Players.Select(player => player.Id)
-            .Where(player => player != viewer).OrderBy(player => player.Value)
-            .Take(CombatResultsLayout.OpponentSlots).ToArray();
-        for (var opponentSlot = 0; opponentSlot < opponents.Length; opponentSlot++)
+        var opponents = CombatResultOpponents(_state, viewer);
+        for (var opponentSlot = 0; opponentSlot < opponents.Count; opponentSlot++)
         {
             if (!CombatResultsLayout.Opponent(opponentSlot).Contains(point)) continue;
             var opponent = opponents[opponentSlot];
-            if (_combatSummaryOpponent == opponent
-                || page.ResultAgainst(viewer, opponent) is not { } selected) return;
+            if (_combatSummaryOpponent == opponent || page.ForcesFor(opponent).Count == 0) return;
             AcceptInput();
-            // The clicked player, not one derived from the fight: in a fight the viewer is not in,
-            // the other side is whoever happened to be listed first, and that may not be them.
-            SelectCombatResult(selected, opponent);
+            _combatSummaryOpponent = opponent;
             return;
         }
-        var viewerForces = page.ForcesFor(viewer);
-        var forceSlot = CombatResultsLayout.FriendlyForceSlotAt(point);
-        if (forceSlot is { } slot && slot < viewerForces.Count)
+        var viewerForces = page.ForcesFor(viewer, RosterSlots(_state, viewer));
+        if (CombatResultsLayout.FriendlyForceSlotAt(point) is { } slot && slot < viewerForces.Count)
         {
-            var selected = page.Results.First(result =>
-                result.Event.Sequence == viewerForces[slot].Event.Sequence);
-            SelectCombatResult(selected, selected.OpponentFor(viewer));
+            _combatSummaryFocal = viewerForces[slot].Gang;
+            _combatSummaryFocalTarget = viewerForces[slot].Target;
         }
     }
 
+    /// <summary>Reselects the page's opening focus when the results under the panel changed.</summary>
     private void EnsureCombatResultSelection(MatchState state, PlayerId viewer, CombatResultPage page)
     {
-        if (page.Results.All(result => result.Event.Sequence != _combatSummaryEventSequence))
-            SelectDefaultCombatResult(state, viewer, page);
+        if (_combatSummarySector != page.SectorId
+            || _combatSummaryFocal is { } focal
+            && page.ForcesFor(viewer).All(force => force.Gang != focal)
+            || _combatSummaryOpponent is { } opponent && page.ForcesFor(opponent).Count == 0)
+            SelectCombatResultPage(state, viewer, page);
     }
 
-    private void SelectDefaultCombatResult(MatchState state, PlayerId viewer, CombatResultPage page)
+    /// <summary>
+    /// A page as it opens: the viewer's first entry is the focal gang, and the first opponent in
+    /// player order with a result is chosen (SCR-COMBAT-001, FND-COMBAT-007, FND-COMBAT-012).
+    /// </summary>
+    private void SelectCombatResultPage(MatchState state, PlayerId viewer, CombatResultPage page)
     {
-        var selected = page.Results.FirstOrDefault(result => result.Involves(viewer))
-            ?? page.Results[0];
-        SelectCombatResult(selected, selected.OpponentFor(viewer));
+        _combatSummarySector = page.SectorId;
+        var first = page.ForcesFor(viewer, RosterSlots(state, viewer)).FirstOrDefault();
+        _combatSummaryFocal = first?.Gang;
+        _combatSummaryFocalTarget = first?.Target;
+        _combatSummaryOpponent = CombatResultOpponents(state, viewer)
+            .Cast<PlayerId?>()
+            .FirstOrDefault(opponent => page.ForcesFor(opponent!.Value).Count > 0);
     }
+}
 
-    private void SelectCombatResult(CombatResultEntry selected, PlayerId? opponent)
+/// <summary>The outlines a Combat Results grid cell gets from the focal gang (FND-COMBAT-012).</summary>
+[Flags]
+public enum CombatResultOutline
+{
+    None = 0,
+    /// <summary>The focal gang, outlined in green.</summary>
+    Focal = 1,
+    /// <summary>The focal gang's target, outlined in red.</summary>
+    Target = 2,
+    /// <summary>A gang that attacked the focal gang, outlined in yellow.</summary>
+    Attacker = 4,
+    /// <summary>The focal gang's target that also attacked it, marked with the art at <c>(468,15)</c>.</summary>
+    Mutual = 8
+}
+
+/// <summary>The focus marks of SCR-COMBAT-001 (FND-COMBAT-012, FND-COMBAT-013).</summary>
+public static class CombatResultFocus
+{
+    public static readonly Color FocalColor = new(0, 255, 0);
+    public static readonly Color TargetColor = new(255, 0, 0);
+    public static readonly Color AttackerColor = new(255, 255, 0);
+
+    /// <summary>
+    /// The marks of the cell of <paramref name="gang"/>, whose own attack target is
+    /// <paramref name="target"/>, drawn in the order of the flags. Nothing is marked while no
+    /// focal gang is set.
+    /// </summary>
+    public static CombatResultOutline Marks(GangId gang, GangId? target, GangId? focal, GangId? focalTarget)
     {
-        _combatSummaryEventSequence = selected.Event.Sequence;
-        _combatSummaryOpponent = opponent;
+        if (focal is not { } focus) return CombatResultOutline.None;
+        var marks = CombatResultOutline.None;
+        if (gang == focus) marks |= CombatResultOutline.Focal;
+        if (gang == focalTarget) marks |= CombatResultOutline.Target;
+        if (target == focus)
+            marks |= gang == focalTarget ? CombatResultOutline.Mutual : CombatResultOutline.Attacker;
+        return marks;
     }
-
-    private GameEvent? SelectedCombatResult(CombatResultPage page) => page.Results
-        .FirstOrDefault(result => result.Event.Sequence == _combatSummaryEventSequence)?.Event;
-
-    private static void ClearCombatResultPage(SpriteBatch batch, Texture2D pixel)
-        => batch.Draw(pixel, CombatResultsLayout.Page, Color.Black);
 }
 
 public static class CombatResultProjection
@@ -426,40 +522,54 @@ public sealed record CombatResultEntry(
 {
     public bool Involves(PlayerId player) => FirstPlayer == player || SecondPlayer == player;
 
-    /// <summary>The side of this result facing <paramref name="player"/>.</summary>
-    /// <remarks>
-    /// For a result <paramref name="player"/> is not in, there is no side facing them, and the
-    /// first-listed player stands in so the page still shows one side of the fight. A caller that
-    /// knows which of the two it wants, such as a click on a portrait, passes that player instead.
-    /// </remarks>
-    public PlayerId? OpponentFor(PlayerId player) => FirstPlayer == player
-        ? SecondPlayer
-        : SecondPlayer == player ? FirstPlayer : FirstPlayer;
-
     public GangId? GangFor(PlayerId player) => FirstPlayer == player
         ? FirstGang
         : SecondPlayer == player ? SecondGang : null;
 }
 
-public sealed record CombatResultForce(GangId Gang, GameEvent Event);
+/// <summary>
+/// One entry of a player's row in a sector: a gang that fought there, the event it is found by,
+/// and its own Attack target, or null when it did not attack (RULE-COMBAT-002).
+/// </summary>
+public sealed record CombatResultForce(GangId Gang, GameEvent Event, GangId? Target = null);
 
 public sealed record CombatResultPage(int SectorId, IReadOnlyList<CombatResultEntry> Results)
 {
-    /// <summary>
-    /// The fight to show against <paramref name="opponent"/>: the first one they fought
-    /// <paramref name="viewer"/> in, else the first one they fought in at all.
-    /// </summary>
-    public CombatResultEntry? ResultAgainst(PlayerId viewer, PlayerId opponent) =>
-        Results.FirstOrDefault(result => result.Involves(opponent) && result.Involves(viewer))
-        ?? Results.FirstOrDefault(result => result.Involves(opponent));
+    /// <summary>Whether the police found a gang in the sector, which sets a police flag (RULE-POLICE-001).</summary>
+    public bool HasPolice => Results.Any(result => result.Police);
 
-    public IReadOnlyList<CombatResultForce> ForcesFor(PlayerId player) => Results
-        .Select(result => (Result: result, Gang: result.GangFor(player)))
-        .Where(value => value.Gang is not null)
-        .GroupBy(value => value.Gang!.Value)
-        .Select(group => new CombatResultForce(group.Key, group.First().Result.Event))
-        .Take(MatchLimits.FriendlyGangsPerSector)
-        .ToArray();
+    /// <summary>
+    /// <paramref name="player"/>'s row of the sector: each of its gangs that fought there, at most
+    /// six, with its own Attack target. The resolver fills the row in roster order
+    /// (RULE-COMBAT-002), which <paramref name="rosterSlot"/> gives; without it the gangs keep the
+    /// order they first appear in the results.
+    /// </summary>
+    public IReadOnlyList<CombatResultForce> ForcesFor(
+        PlayerId player,
+        Func<GangId, int>? rosterSlot = null)
+    {
+        var forces = Results
+            .Select(result => (Result: result, Gang: result.GangFor(player)))
+            .Where(value => value.Gang is not null)
+            .GroupBy(value => value.Gang!.Value)
+            .Select(group => new CombatResultForce(group.Key, group.First().Result.Event,
+                Results.FirstOrDefault(result => !result.Police && result.FirstGang == group.Key)
+                    ?.SecondGang));
+        if (rosterSlot is not null)
+            forces = forces.OrderBy(force => rosterSlot(force.Gang)).ThenBy(force => force.Gang.Value);
+        return forces.Take(MatchLimits.FriendlyGangsPerSector).ToArray();
+    }
+
+    /// <summary>
+    /// The fight the Detail control replays (DEV-COMBAT-002): the focal gang's own attack, else a
+    /// fight it was in, else the first fight of <paramref name="opponent"/>, else the page's first.
+    /// </summary>
+    public CombatResultEntry? SelectedResult(GangId? focal, PlayerId? opponent) =>
+        Results.FirstOrDefault(result => !result.Police && result.FirstGang == focal)
+        ?? Results.FirstOrDefault(result => focal is { } gang
+            && (result.FirstGang == gang || result.SecondGang == gang))
+        ?? Results.FirstOrDefault(result => opponent is { } other && result.Involves(other))
+        ?? Results.FirstOrDefault();
 }
 
 public sealed class CombatPresentationProgress

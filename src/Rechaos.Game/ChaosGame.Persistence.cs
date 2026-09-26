@@ -67,6 +67,8 @@ public sealed partial class ChaosGame
     {
         if (_session is not null) return false;
         if (_definitions is null) return false;
+        // The original shows the hourglass while it loads a game (RULE-UI-007).
+        using var busy = _pointer.Busy();
         try
         {
             var loaded = load();

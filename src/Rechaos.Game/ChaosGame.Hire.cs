@@ -23,7 +23,7 @@ public sealed partial class ChaosGame
             if (_gangPortraits is not null)
                 batch.Draw(_gangPortraits, HireDockLayout.Portrait(slot),
                     OriginalSpriteLayout.GangPortrait(entry.GangDefinitionId), Color.White);
-            DrawHireDockMark(batch, entry.Mark, HireDockLayout.Stamp(slot));
+            DrawHireDockMark(batch, entry.Mark, HireDockLayout.Portrait(slot));
             if (!entry.Hired)
             {
                 var definition = state.Definitions.Gang(entry.GangDefinitionId);

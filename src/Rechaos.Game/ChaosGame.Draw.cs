@@ -27,6 +27,15 @@ public sealed partial class ChaosGame
             return;
         }
         var viewport = GraphicsDevice.Viewport;
+        if (_creditsOpen)
+        {
+            _batch.Begin(samplerState: SamplerState.PointClamp,
+                transformMatrix: VirtualInput.Transform(viewport));
+            DrawCredits(_batch, _pixel);
+            _batch.End();
+            CompleteDraw(gameTime);
+            return;
+        }
         var slideOffset = _panelSlideTransition.Offset(
             _screens.Current, gameTime.TotalGameTime, _slidePanels);
         if (_screens.Current == ClientScreen.Gang && _state is not null)

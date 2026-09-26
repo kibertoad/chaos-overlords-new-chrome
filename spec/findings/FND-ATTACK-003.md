@@ -1,6 +1,6 @@
 ---
 id: FND-ATTACK-003
-title: The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, plus or its lower face and cancels with Escape or its upper face
+title: The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, Execute or its lower face and cancels with Escape or its upper face
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -72,7 +72,7 @@ The picker is at the same origin as the other command panels. Its opponents
 are the other players in slot order, and one can be picked only when the
 acting player sees at least one of its gangs in the sector. The upper face
 under the portrait is Cancel and the lower face is Confirm; Escape is Cancel,
-Enter and plus are Confirm. Reopening the picker for a gang that already
+Enter and Execute (virtual key `0x2B`) are Confirm. Reopening the picker for a gang that already
 attacks shows the current order selected.
 
 ## Alternatives

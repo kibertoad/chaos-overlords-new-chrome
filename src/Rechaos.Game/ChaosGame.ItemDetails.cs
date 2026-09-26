@@ -25,6 +25,10 @@ public sealed partial class ChaosGame
     {
         if (_itemDetailsReturnScreen == ClientScreen.Gang)
             DrawGangDetails(batch, pixel, font, state);
+        else if (_itemDetailsReturnScreen == ClientScreen.Give)
+            DrawGiveEquipment(batch, pixel, font, state);
+        else if (_itemDetailsReturnScreen == ClientScreen.Sell)
+            DrawSellEquipment(batch, pixel, font, state);
         else
             DrawCommands(batch, pixel, font, state);
         if (_itemInfoBackground is not null)

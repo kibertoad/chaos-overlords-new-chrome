@@ -40,7 +40,7 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(EquipmentCommandLayout.Panel, AttackCommandLayout.Panel);
         Assert.Equal(new Rectangle(130, 141, 64, 64), AttackCommandLayout.ActorPortrait);
-        Assert.Equal(new Rectangle(240, 140, 64, 64), AttackCommandLayout.TargetPortrait(0));
+        Assert.Equal(new Rectangle(240, 141, 64, 64), AttackCommandLayout.TargetPortrait(0));
         Assert.Equal(new Rectangle(202, 140, 32, 32), AttackCommandLayout.Opponent(0));
         Assert.Equal(new Rectangle(202, 284, 32, 32), AttackCommandLayout.Opponent(4));
         Assert.Equal(new Rectangle(130, 206, 20, 20), AttackCommandLayout.ActorItem(0));
@@ -72,7 +72,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(207, 139, 52, 52), EquipmentGiveLayout.ItemHit(0));
         Assert.Equal(new Rectangle(207, 203, 52, 52), EquipmentGiveLayout.ItemHit(1));
         Assert.Equal(new Rectangle(207, 267, 52, 52), EquipmentGiveLayout.ItemHit(2));
-        Assert.Equal(new Rectangle(208, 140, 50, 51), EquipmentGiveLayout.Item(0));
+        Assert.Equal(new Rectangle(209, 141, 48, 48), EquipmentGiveLayout.ItemPicture(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => EquipmentGiveLayout.ItemHit(3));
     }
 
@@ -470,7 +470,7 @@ public sealed class UiNavigationTests
         });
         Assert.Contains("ORIGINAL HOST-LOBBY ART",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.ColorDepth.Center)));
-        Assert.Contains("IMMEDIATELY",
+        Assert.Contains("SLIDES PANELS IN FROM THE RIGHT",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.SlidePanels.Center)));
         Assert.Contains("NATIVE STRETCH AND ORDERED DITHER",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.EventSiteImages.Center)));
@@ -516,10 +516,12 @@ public sealed class UiNavigationTests
 
         slide.Begin(ClientScreen.Gang, start);
 
-        Assert.Equal(PanelSlideTransition.StartOffset, slide.Offset(ClientScreen.Gang, start));
-        Assert.Equal(172,
-            slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration / 2));
-        Assert.Equal(0, slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration));
+        // RULE-UI-003: the first copy already shows one 16-pixel step of the panel.
+        Assert.Equal(PanelSlideTransition.StartOffset - 16, slide.Offset(ClientScreen.Gang, start));
+        Assert.Equal(PanelSlideTransition.StartOffset - 16 * 11, slide.Offset(ClientScreen.Gang,
+            start + TimeSpan.FromTicks(10 * TimeSpan.TicksPerSecond / 84 + 1)));
+        Assert.Equal(0, slide.Offset(ClientScreen.Gang,
+            start + PanelSlideTransition.DurationFor(PanelSlideTransition.StartOffset)));
         Assert.Equal(0, slide.Offset(ClientScreen.City, start));
         slide.Begin(ClientScreen.City, start);
         Assert.Equal(0, slide.Offset(ClientScreen.City, start));
@@ -529,7 +531,8 @@ public sealed class UiNavigationTests
     public void PanelSlideOnlyRunsForForwardDetailTransitions()
     {
         Assert.True(PanelSlideTransition.ShouldAnimate(ClientScreen.Sector, ClientScreen.Gang));
-        Assert.True(PanelSlideTransition.ShouldAnimate(ClientScreen.City, ClientScreen.Sector));
+        // RULE-UI-003: the detailed sector screen is drawn in place and is no sliding panel.
+        Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.City, ClientScreen.Sector));
         Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.Gang, ClientScreen.Sector));
         Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.Site, ClientScreen.Sector));
         Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.City, ClientScreen.Commands));
@@ -540,7 +543,7 @@ public sealed class UiNavigationTests
         slide.Begin(ClientScreen.Gang, ClientScreen.Sector, start);
         Assert.Equal(0, slide.Offset(ClientScreen.Sector, start));
         slide.Begin(ClientScreen.Sector, ClientScreen.Gang, start);
-        Assert.Equal(PanelSlideTransition.StartOffset,
+        Assert.Equal(PanelSlideTransition.StartOffset - 16,
             slide.Offset(ClientScreen.Gang, start));
     }
 
@@ -589,8 +592,8 @@ public sealed class UiNavigationTests
     public void OriginalPortraitLayoutsCoverAllDefinitionSlots()
     {
         Assert.Equal(new Rectangle(116, 0, 48, 64), OriginalSpriteLayout.PolicePatrolCar);
-        Assert.Equal(new Rectangle(120, 300, 60, 60), OriginalSpriteLayout.HiredStamp);
-        Assert.Equal(new Rectangle(180, 300, 60, 60), OriginalSpriteLayout.SnubbedStamp);
+        Assert.Equal(new Rectangle(114, 299, 64, 64), OriginalSpriteLayout.HiredStamp);
+        Assert.Equal(new Rectangle(178, 299, 64, 64), OriginalSpriteLayout.SnubbedStamp);
         Assert.Equal(new Rectangle(492, 67, 20, 20), OriginalSpriteLayout.AssignedGangStatus);
         Assert.Equal(new Rectangle(492, 87, 20, 20), OriginalSpriteLayout.ContestedAssignedGangStatus);
         Assert.Equal(new Rectangle(492, 107, 20, 20), OriginalSpriteLayout.IdleGangStatus);
@@ -671,8 +674,9 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(256, 70, 158, 22), CommandOverlayLayout.ActionRow(0));
         Assert.Equal(new Rectangle(104, 124, 344, 209), EquipmentCommandLayout.Panel);
         Assert.Equal(new Rectangle(251, 149, 181, 9), EquipmentCommandLayout.ItemRow(0));
-        Assert.Equal(new Rectangle(207, 140, 34, 34), EquipmentCommandLayout.Category(0));
-        Assert.Equal(new Rectangle(207, 248, 34, 34), EquipmentCommandLayout.Category(3));
+        // SCR-EQUIP-001: the frame lies one pixel outside category cell n.
+        Assert.Equal(new Rectangle(207, 139, 34, 34), EquipmentCommandLayout.Category(0));
+        Assert.Equal(new Rectangle(207, 247, 34, 34), EquipmentCommandLayout.Category(3));
         Assert.Equal(0, EquipmentCommandLayout.CategoryForItemType(0));
         Assert.Equal(0, EquipmentCommandLayout.CategoryForItemType(1));
         Assert.Equal(1, EquipmentCommandLayout.CategoryForItemType(2));
@@ -695,7 +699,7 @@ public sealed class UiNavigationTests
         Assert.Equal(EquipmentCommandLayout.Panel, CombatPanelLayout.Panel);
         Assert.Equal(new Rectangle(135, 135, 54, 52), CombatPanelLayout.Sector);
         Assert.Equal(new Point(156, 190), CombatPanelLayout.SectorCodeText);
-        Assert.Equal(EquipmentCommandLayout.Ok, CombatPanelLayout.Cancel);
+        Assert.Equal(new Rectangle(137, 293, 50, 23), CombatPanelLayout.Exit);
         Assert.Equal(new Rectangle(253, 254, 67, 64), CombatPanelLayout.LeftAction);
         Assert.Equal(new Rectangle(324, 254, 67, 64), CombatPanelLayout.RightAction);
         Assert.Equal(new Rectangle(254, 172, 64, 64), CombatPanelLayout.GangPortrait(false));
@@ -704,17 +708,16 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(327, 254, 64, 64), CombatPanelLayout.Animation(true));
         Assert.Equal(new Rectangle(262, 172, 48, 64), CombatPanelLayout.PolicePortrait(false));
         Assert.Equal(new Rectangle(335, 172, 48, 64), CombatPanelLayout.PolicePortrait(true));
-        Assert.Equal(new Rectangle(256, 238, 60, 3), CombatPanelLayout.ForceBar(false, 0));
-        Assert.Equal(new Rectangle(256, 245, 60, 3), CombatPanelLayout.ForceBar(false, 1));
-        Assert.Equal(new Rectangle(329, 238, 60, 3), CombatPanelLayout.ForceBar(true, 0));
-        Assert.Equal(new Rectangle(329, 245, 60, 3), CombatPanelLayout.ForceBar(true, 1));
+        Assert.Equal(new Rectangle(256, 240, 60, 3), CombatPanelLayout.ForceBar(false, 0));
+        Assert.Equal(new Rectangle(256, 247, 60, 3), CombatPanelLayout.ForceBar(false, 1));
+        Assert.Equal(new Rectangle(329, 240, 60, 3), CombatPanelLayout.ForceBar(true, 0));
+        Assert.Equal(new Rectangle(329, 247, 60, 3), CombatPanelLayout.ForceBar(true, 1));
         Assert.Equal(EquipmentCommandLayout.Panel, CombatResultsLayout.Panel);
         Assert.Equal(new Rectangle(135, 191, 54, 52), CombatResultsLayout.Sector);
         Assert.Equal(new Rectangle(202, 140, 94, 179), CombatResultsLayout.FriendlyPanel);
         Assert.Equal(new Rectangle(207, 153, 40, 40), CombatResultsLayout.Force(0, enemy: false));
         Assert.Equal(new Rectangle(394, 257, 40, 40), CombatResultsLayout.Force(5, enemy: true));
         Assert.Equal(new Rectangle(306, 284, 32, 32), CombatResultsLayout.Opponent(4));
-        Assert.Equal(new Point(138, 137), CombatResultsLayout.PageText);
         Assert.Equal(new Point(156, 246), CombatResultsLayout.SectorCodeText);
         Assert.Equal(EquipmentCommandLayout.Panel, LastTurnEventsLayout.Panel);
         Assert.Equal(new Rectangle(138, 137, 47, 7), LastTurnEventsLayout.Page);
@@ -901,15 +904,17 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
-    public void AttackTargetGridHasSixNonOverlappingCards()
+    public void AttackTargetPortraitsSitInsideTheirOwnHitCells()
     {
-        var cards = Enumerable.Range(0, AttackCommandLayout.VisibleTargets)
-            .Select(AttackCommandLayout.TargetCard).ToArray();
-
-        Assert.Equal(new Rectangle(240, 140, 64, 90), cards[0]);
-        Assert.Equal(new Rectangle(372, 230, 64, 90), cards[^1]);
-        Assert.All(cards.SelectMany((left, index) => cards.Skip(index + 1)
-            .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
+        // SCR-ATTACK-001, FND-ATTACK-001, FND-ATTACK-004: each target's portrait and item icons
+        // lie inside the pointer cell that selects it.
+        for (var cell = 0; cell < AttackCommandLayout.VisibleTargets; cell++)
+        {
+            var hit = AttackCommandLayout.TargetHit(cell);
+            Assert.True(hit.Contains(AttackCommandLayout.TargetPortrait(cell)));
+            for (var item = 0; item < AttackCommandLayout.EquippedItemCount; item++)
+                Assert.True(hit.Contains(AttackCommandLayout.TargetItem(cell, item)));
+        }
     }
 
     [Fact]

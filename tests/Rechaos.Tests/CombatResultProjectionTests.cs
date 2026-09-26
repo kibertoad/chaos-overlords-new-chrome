@@ -123,35 +123,91 @@ public sealed class CombatResultProjectionTests
     }
 
     [Fact]
-    public void SelectedFightIdentifiesItsActualOpponent()
+    public void RowEntriesCarryTheGangsOwnAttackTarget()
     {
-        var ownFight = Attack(1, 12, 0, 10, 2, 30);
-        var otherFight = Attack(2, 12, 1, 20, 3, 40);
+        // SCR-COMBAT-001: an entry's second word is the gang's Attack target, or -1 when it did
+        // not attack (RULE-COMBAT-002, FND-COMBAT-012).
+        var page = new CombatResultPage(12,
+        [
+            Attack(1, 12, 0, 10, 1, 20),
+            Attack(2, 12, 1, 21, 0, 10)
+        ]);
 
-        Assert.Equal(new PlayerId(2), ownFight.OpponentFor(new PlayerId(0)));
-        Assert.Equal(new PlayerId(0), ownFight.OpponentFor(new PlayerId(2)));
-        Assert.Equal(new PlayerId(1), otherFight.OpponentFor(new PlayerId(0)));
+        var viewerRow = page.ForcesFor(new PlayerId(0));
+        var opponentRow = page.ForcesFor(new PlayerId(1));
+
+        Assert.Equal(new GangId(20), Assert.Single(viewerRow).Target);
+        Assert.Equal([(new GangId(20), (GangId?)null), (new GangId(21), new GangId(10))],
+            opponentRow.Select(force => (force.Gang, force.Target)));
     }
 
     [Fact]
-    public void ClickedOpponentSelectsAFightTheyAreIn()
+    public void RowsFollowRosterOrderAndHoldSixEntries()
     {
-        var viewer = new PlayerId(0);
+        // RULE-COMBAT-002: the resolver fills a player's row in roster order, six entries at most.
         var page = new CombatResultPage(12,
         [
-            Attack(1, 12, 1, 20, 2, 30),
-            Attack(2, 12, 1, 21, 3, 40),
-            Attack(3, 12, 0, 10, 3, 41)
+            Attack(1, 12, 0, 16, 1, 20),
+            Attack(2, 12, 0, 15, 1, 20),
+            Attack(3, 12, 0, 14, 1, 20),
+            Attack(4, 12, 0, 13, 1, 20),
+            Attack(5, 12, 0, 12, 1, 20),
+            Attack(6, 12, 0, 11, 1, 20),
+            Attack(7, 12, 0, 10, 1, 20)
         ]);
 
-        // Prefers the fight against the viewer, even when an earlier one also involves them.
-        Assert.Equal(3L, page.ResultAgainst(viewer, new PlayerId(3))!.Event.Sequence);
-        // Player 2 never fought the viewer, so their first fight is shown. Its first-listed player
-        // is player 1, which is why a click passes the opponent it was on instead of deriving it.
-        var selected = page.ResultAgainst(viewer, new PlayerId(2))!;
-        Assert.Equal(1L, selected.Event.Sequence);
-        Assert.Equal(new PlayerId(1), selected.OpponentFor(viewer));
-        Assert.Null(page.ResultAgainst(viewer, new PlayerId(4)));
+        var row = page.ForcesFor(new PlayerId(0), gang => gang.Value);
+
+        Assert.Equal([10, 11, 12, 13, 14, 15], row.Select(force => force.Gang.Value));
+    }
+
+    [Fact]
+    public void PoliceFlagAndDetailSelectionFollowTheFocalGang()
+    {
+        var police = Event(9, GameEventKind.PoliceAttackResolved, new PlayerId(0),
+            new GangId(11), GangAction.None, CommandTarget.Sector(12));
+        var page = new CombatResultPage(12,
+        [
+            Attack(1, 12, 1, 20, 0, 10),
+            Attack(2, 12, 0, 10, 1, 21),
+            Attack(3, 12, 2, 30, 1, 21),
+            new CombatResultEntry(police, 12, new PlayerId(0), new GangId(11), null, null, true)
+        ]);
+
+        // SCR-COMBAT-001: the police strip shows when the police found a gang in the sector.
+        Assert.True(page.HasPolice);
+        Assert.False(new CombatResultPage(12, [Attack(1, 12, 1, 20, 0, 10)]).HasPolice);
+        // DEV-COMBAT-002: Detail replays the focal gang's own attack, else a fight it was in.
+        Assert.Equal(2L, page.SelectedResult(new GangId(10), new PlayerId(1))!.Event.Sequence);
+        Assert.Equal(9L, page.SelectedResult(new GangId(11), new PlayerId(1))!.Event.Sequence);
+        Assert.Equal(3L, page.SelectedResult(null, new PlayerId(2))!.Event.Sequence);
+        Assert.Equal(1L, page.SelectedResult(null, null)!.Event.Sequence);
+    }
+
+    [Fact]
+    public void FocusMarksTheFocalGangItsTargetAndItsAttackers()
+    {
+        // SCR-COMBAT-001: green for the focal gang, red for its target, yellow for a gang that
+        // attacked it and the art for a target that attacked it back (FND-COMBAT-012).
+        GangId focal = new(10);
+        GangId target = new(20);
+
+        Assert.Equal(CombatResultOutline.Focal,
+            CombatResultFocus.Marks(focal, target, focal, target));
+        Assert.Equal(CombatResultOutline.Target,
+            CombatResultFocus.Marks(target, null, focal, target));
+        Assert.Equal(CombatResultOutline.Target | CombatResultOutline.Mutual,
+            CombatResultFocus.Marks(target, focal, focal, target));
+        Assert.Equal(CombatResultOutline.Attacker,
+            CombatResultFocus.Marks(new GangId(30), focal, focal, target));
+        Assert.Equal(CombatResultOutline.None,
+            CombatResultFocus.Marks(new GangId(31), target, focal, target));
+        Assert.Equal(CombatResultOutline.None,
+            CombatResultFocus.Marks(focal, target, null, null));
+        // FND-COMBAT-013: the colour words are red, green and blue in that order.
+        Assert.Equal(new Microsoft.Xna.Framework.Color(0, 255, 0), CombatResultFocus.FocalColor);
+        Assert.Equal(new Microsoft.Xna.Framework.Color(255, 0, 0), CombatResultFocus.TargetColor);
+        Assert.Equal(new Microsoft.Xna.Framework.Color(255, 255, 0), CombatResultFocus.AttackerColor);
     }
 
     [Fact]

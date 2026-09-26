@@ -26,5 +26,22 @@ public sealed class GangDefinitionInformationLayoutTests
             GangInformationLayout.ValueField(GangDefinitionInformationLayout.RightValueLeft, 216));
         Assert.Equal([243, 252, 270, 279, 288, 297, 306], Enumerable.Range(0, 7)
             .Select(GangDefinitionInformationLayout.StatisticY));
+        Assert.Equal(216, GangDefinitionInformationLayout.ForceY);
+        Assert.Equal(225, GangDefinitionInformationLayout.TechLevelY);
+    }
+
+    // SCR-GANG-001, FND-GANG-010: base values 18 pixels left, at x 282 and 378, under the pattern.
+    [Fact]
+    public void BaseValuesSitUnderTheFourDimmedAreas()
+    {
+        Assert.Equal(282, GangDefinitionInformationLayout.LeftValueLeft
+            - GangInformationLayout.BaseValueOffset);
+        Assert.Equal(378, GangDefinitionInformationLayout.RightValueLeft
+            - GangInformationLayout.BaseValueOffset);
+        Assert.Equal(
+        [
+            new Rectangle(282, 243, 12, 18), new Rectangle(378, 243, 12, 18),
+            new Rectangle(282, 270, 12, 45), new Rectangle(378, 270, 12, 45)
+        ], GangDefinitionInformationLayout.BaseValueDimAreas);
     }
 }
