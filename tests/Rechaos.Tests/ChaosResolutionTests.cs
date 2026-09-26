@@ -29,6 +29,28 @@ public sealed class ChaosResolutionTests
         Assert.Equal(0, match.Sectors[0].CrackdownTurnsRemaining);
     }
 
+    /// <summary>
+    /// RULE-POLICE-003: only a presence between 1 and 99 counts down; the permanent value 100
+    /// (the island rule's, FND-SETUP-003) and anything a Crackdown raised above it never change.
+    /// </summary>
+    [Fact]
+    public void PermanentPolicePresenceDoesNotCountDown()
+    {
+        var match = CreateMatch();
+        match.Sectors[0].CrackdownTurnsRemaining = ManualRules.PermanentCrackdownTurns;
+        match.Sectors[1].CrackdownTurnsRemaining = ManualRules.PermanentCrackdownTurns - 1;
+        // RULE-POLICE-002: a neutralizing Crackdown adds 3 to 5 to a permanent presence.
+        match.Sectors[2].CrackdownTurnsRemaining = ManualRules.PermanentCrackdownTurns + 3;
+        match.Sectors[3].CrackdownTurnsRemaining = 1;
+
+        CrackdownResolver.FinishCombat(match);
+
+        Assert.Equal(100, match.Sectors[0].CrackdownTurnsRemaining);
+        Assert.Equal(98, match.Sectors[1].CrackdownTurnsRemaining);
+        Assert.Equal(103, match.Sectors[2].CrackdownTurnsRemaining);
+        Assert.Equal(0, match.Sectors[3].CrackdownTurnsRemaining);
+    }
+
     [Fact]
     public void AnotherCrackdownExtendsExistingPolicePresenceBeforeSameTurnDurationTick()
     {

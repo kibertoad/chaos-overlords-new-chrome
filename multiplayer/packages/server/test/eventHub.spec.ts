@@ -7,7 +7,11 @@ const emptyEvents: EventRepository = {
   append: async () => {
     throw new Error('not used')
   },
+  appendOnce: async () => {
+    throw new Error('not used')
+  },
   listAfter: async (): Promise<PersistedEvent[]> => [],
+  latestOfType: async () => null,
   lastSeq: async () => 0,
 }
 
@@ -247,6 +251,27 @@ describe('LocalEventHub stream caps', () => {
     other.abort()
   })
 
+  /**
+   * Below the cap nothing is replaced. The count of streams to close went negative whenever a
+   * player held fewer than `perPlayer - 1`, and `slice` reads a negative end from the back of the
+   * array, so with a cap of four the second reconnect closed the player's first, live stream.
+   */
+  it('closes nothing while a player is under a generous per-player cap', async () => {
+    const hub = hubOf({ perPlayer: 4, perMatch: 10, perProcess: 10 })
+    const streams = [
+      await open(hub, 'm', 'p1'),
+      await open(hub, 'm', 'p1'),
+      await open(hub, 'm', 'p1'),
+      await open(hub, 'm', 'p1'),
+    ]
+    expect(hub.connectionCount('m')).toBe(4)
+    // The fifth is over the cap, and only the oldest makes room for it.
+    streams.push(await open(hub, 'm', 'p1'))
+    expect(hub.connectionCount('m')).toBe(4)
+    expect(await streams[0]?.ended()).toBe(true)
+    for (const stream of streams.slice(1)) stream.abort()
+  })
+
   it('refuses a stream past the match ceiling, and past the process one first', async () => {
     const hub = hubOf({ perPlayer: 5, perMatch: 2, perProcess: 3 })
     const held = [await open(hub, 'm', 'p1'), await open(hub, 'm', 'p2')]
@@ -365,9 +390,15 @@ function countingLog(events: PersistedEvent[]) {
     append: async () => {
       throw new Error('not used')
     },
+    appendOnce: async () => {
+      throw new Error('not used')
+    },
     listAfter: async (_matchId, afterSeq, limit) => {
       reads.push(afterSeq)
       return events.filter((event) => event.seq > afterSeq).slice(0, limit)
+    },
+    latestOfType: async () => {
+      throw new Error('not used')
     },
     lastSeq: async () => events.at(-1)?.seq ?? 0,
   }

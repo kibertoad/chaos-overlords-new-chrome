@@ -7,6 +7,8 @@ public static partial class AiTurnPlanner
     /// recovered family record. A prepared native decision never falls through
     /// here merely because modern command validation cannot project it.
     /// These weights are not original-game evidence.
+    /// PLACEHOLDER: RULE-AI-002 — every score below stands in for the family
+    /// handler the dispatcher would run for this gang; none is recovered.
     /// </summary>
     private static GameCommand? SelectProvisionalFallbackCommand(
         MatchState state,

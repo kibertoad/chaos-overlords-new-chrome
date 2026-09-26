@@ -36,7 +36,12 @@ export class InMemoryStorage implements MultiplayerStorage {
   private readonly reportRows = new Map<string, TurnReport>()
   private readonly snapshotRows = new Map<string, Snapshot>()
   private readonly eventRows = new Map<string, PersistedEvent[]>()
-  private readonly promptRows = new Map<string, { matchId: string; playerId: string }>()
+  private readonly promptRows = new Map<
+    string,
+    { matchId: string; playerId: string; turn: number; openedAt: Date; announcedAt: Date | null }
+  >()
+  /** `matchId` + dedupe key of every event appended with `appendOnce`, as the unique index holds. */
+  private readonly eventKeys = new Set<string>()
   private readonly voteRows = new Map<string, TakeoverVote>()
 
   readonly matches: MatchRepository = {
@@ -113,10 +118,16 @@ export class InMemoryStorage implements MultiplayerStorage {
       match.updatedAt = updatedAt
       return true
     },
-    updateRuntimeGameSettings: async (matchId, gameSettings, updatedAt) => {
+    updateSeatSummaries: async (matchId, seatSummaries, updatedAt) => {
       const match = this.matchRows.get(matchId)
       if (match?.status !== 'running' && match?.status !== 'desynced') return false
-      match.settings = { ...match.settings, gameSettings: structuredClone(gameSettings) }
+      match.settings = {
+        ...match.settings,
+        gameSettings: {
+          ...match.settings.gameSettings,
+          seatSummaries: structuredClone([...seatSummaries]),
+        },
+      }
       match.updatedAt = updatedAt
       return true
     },
@@ -321,6 +332,25 @@ export class InMemoryStorage implements MultiplayerStorage {
       turn.desyncedAt = at
       return true
     },
+    markSettled: async (matchId, number, at) => {
+      const turn = this.turnRows.get(turnKey(matchId, number))
+      if (turn?.status !== 'confirmed' || turn.settledAt !== null) return false
+      turn.settledAt = at
+      return true
+    },
+    listUnannouncedVerdicts: async (limit) =>
+      [...this.turnRows.values()]
+        .filter(
+          (turn) =>
+            turn.status === 'confirmed' &&
+            turn.settledAt === null &&
+            (['running', 'desynced', 'finished'] as MatchStatus[]).includes(
+              this.matchRows.get(turn.matchId)?.status ?? 'lobby',
+            ),
+        )
+        .sort((a, b) => a.matchId.localeCompare(b.matchId) || a.number - b.number)
+        .slice(0, limit)
+        .map((turn) => ({ matchId: turn.matchId, number: turn.number })),
     rescheduleDeadline: async (matchId, number, deadlineAt) => {
       const turn = this.turnRows.get(turnKey(matchId, number))
       if (turn?.status !== 'open') return false
@@ -366,13 +396,25 @@ export class InMemoryStorage implements MultiplayerStorage {
     listStalledSeals: async (limit, touchedSince) =>
       [...this.matchRows.values()]
         .filter((match) => match.status === 'running' || match.status === 'desynced')
-        .filter((match) => touchedSince === null || match.updatedAt >= touchedSince)
-        .filter(
-          (match) => this.turnRows.get(turnKey(match.id, match.currentTurn))?.status !== 'open',
-        )
-        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime() || a.id.localeCompare(b.id))
+        .filter((match) => {
+          const current = this.turnRows.get(turnKey(match.id, match.currentTurn))
+          if (current?.status === 'open') return false
+          // Touched means the match row or the seal: sealing writes only the turn.
+          return (
+            touchedSince === null ||
+            match.updatedAt >= touchedSince ||
+            (current?.sealedAt != null && current.sealedAt >= touchedSince)
+          )
+        })
+        // By the later of the two stamps, as the window is taken on either.
+        .map((match) => {
+          const sealedAt = this.turnRows.get(turnKey(match.id, match.currentTurn))?.sealedAt
+          const touched = Math.max(match.updatedAt.getTime(), sealedAt?.getTime() ?? 0)
+          return { match, touched }
+        })
+        .sort((a, b) => b.touched - a.touched || a.match.id.localeCompare(b.match.id))
         .slice(0, limit)
-        .map((match) => ({ matchId: match.id, number: match.currentTurn })),
+        .map(({ match }) => ({ matchId: match.id, number: match.currentTurn })),
   }
 
   readonly snapshots: SnapshotRepository = {
@@ -413,13 +455,30 @@ export class InMemoryStorage implements MultiplayerStorage {
   }
 
   readonly takeovers: TakeoverRepository = {
-    openPrompt: async (matchId, playerId) => {
+    openPrompt: async (matchId, playerId, turn, openedAt) => {
       const player = this.playerRows.get(playerId)
       if (player?.matchId !== matchId || !ABSENT_HUMAN_STATUSES.includes(player.status))
         return false
       const key = promptKey(matchId, playerId)
       if (this.promptRows.has(key)) return false
-      this.promptRows.set(key, { matchId, playerId })
+      this.promptRows.set(key, { matchId, playerId, turn, openedAt, announcedAt: null })
+      return true
+    },
+    getPrompt: async (matchId, playerId) => {
+      const prompt = this.promptRows.get(promptKey(matchId, playerId))
+      if (!prompt) return null
+      return { turn: prompt.turn, openedAt: prompt.openedAt, announcedAt: prompt.announcedAt }
+    },
+    markPromptAnnounced: async (matchId, playerId, openedAt, at) => {
+      const prompt = this.promptRows.get(promptKey(matchId, playerId))
+      if (
+        !prompt ||
+        prompt.announcedAt !== null ||
+        prompt.openedAt.getTime() !== openedAt.getTime()
+      ) {
+        return false
+      }
+      prompt.announcedAt = at
       return true
     },
     closePrompt: async (matchId, playerId) => {
@@ -461,11 +520,32 @@ export class InMemoryStorage implements MultiplayerStorage {
       this.eventRows.set(event.matchId, log)
       return { ...persisted }
     },
+    appendOnce: async (event, dedupeKey) => {
+      const key = `${event.matchId}\u0000${dedupeKey}`
+      if (this.eventKeys.has(key)) return null
+      // Taken before the first await, as the unique index takes it inside the insert.
+      this.eventKeys.add(key)
+      try {
+        return await this.events.append(event)
+      } catch (error) {
+        // A failed insert rolls its key back with it, so a retry of the announcement can log it.
+        this.eventKeys.delete(key)
+        throw error
+      }
+    },
     listAfter: async (matchId, afterSeq, limit) =>
       (this.eventRows.get(matchId) ?? [])
         .filter((event) => event.seq > afterSeq)
         .slice(0, limit)
         .map((event) => ({ ...event })),
+    latestOfType: async (matchId, type) => {
+      const log = this.eventRows.get(matchId) ?? []
+      for (let index = log.length - 1; index >= 0; index -= 1) {
+        const event = log[index]
+        if (event?.type === type) return { ...event }
+      }
+      return null
+    },
     lastSeq: async (matchId) => this.eventRows.get(matchId)?.at(-1)?.seq ?? 0,
   }
 
@@ -473,6 +553,9 @@ export class InMemoryStorage implements MultiplayerStorage {
   private deleteMatch(matchId: string): void {
     this.matchRows.delete(matchId)
     this.eventRows.delete(matchId)
+    for (const key of this.eventKeys) {
+      if (key.startsWith(`${matchId}\u0000`)) this.eventKeys.delete(key)
+    }
     for (const [id, player] of this.playerRows) {
       if (player.matchId === matchId) this.playerRows.delete(id)
     }

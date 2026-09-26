@@ -43,6 +43,13 @@
       "when": 1789920763362,
       "tag": "0005_lumpy_stingray",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1790451002670,
+      "tag": "0006_flawless_bedlam",
+      "breakpoints": true
     }
   ]
 }
