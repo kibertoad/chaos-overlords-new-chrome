@@ -531,14 +531,30 @@ public sealed partial class NativeSaveSerializerTests
     {
         var match = CreateMatch();
         var player = match.Players[1];
+        var statistics = EffectiveStatistics.From(match.Definitions.Gang(4).Stats);
         foreach (var index in Enumerable.Range(0, MatchLimits.FriendlyGangsPerSector))
-            player.AddGang(new MatchGangState(new GangId(30 + index), player.Id, 4, 62, 5));
+            player.AddGang(new MatchGangState(new GangId(30 + index), player.Id, 4, 62, 5,
+                statistics: statistics));
         var bytes = SaveBytes(match);
-        player.AddGang(new MatchGangState(new GangId(39), player.Id, 4, 62, 5));
+        player.AddGang(new MatchGangState(new GangId(39), player.Id, 4, 62, 5,
+            statistics: statistics));
 
         Assert.NotEmpty(bytes);
         var failure = Assert.Throws<InvalidDataException>(() => RoundTrip(match));
         Assert.Contains("capacity", failure.InnerException!.Message, StringComparison.Ordinal);
+    }
+
+    // RULE-GANG-001: every gang in a match holds stored values and the current format writes
+    // them, so a gang entry without them is refused rather than rebuilt behind the fingerprint.
+    [Fact]
+    public void AGangWithoutStoredStatisticsIsRefused()
+    {
+        var match = CreateMatch();
+        var player = match.Players[1];
+        player.AddGang(new MatchGangState(new GangId(30), player.Id, 4, 62, 5));
+
+        var failure = Assert.Throws<InvalidDataException>(() => RoundTrip(match));
+        Assert.Contains("gang statistics are missing", failure.Message, StringComparison.Ordinal);
     }
 
     private static MatchState RoundTrip(MatchState match)
