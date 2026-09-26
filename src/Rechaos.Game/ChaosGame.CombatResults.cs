@@ -168,11 +168,12 @@ public sealed partial class ChaosGame
 
         DrawCombatResultSector(batch, pixel, font, state, page);
         var timeline = CombatForceTimeline.For(state, page.Results[0].Event);
+        var recorded = RecordedSlots(page);
         DrawCombatResultForces(batch, pixel, state, timeline,
-            page.ForcesFor(viewer, RosterSlots(state, viewer, page)), enemy: false);
+            page.ForcesFor(viewer, RosterSlots(state, viewer, recorded)), enemy: false);
         if (_combatSummaryOpponent is { } opponent)
             DrawCombatResultForces(batch, pixel, state, timeline,
-                page.ForcesFor(opponent, RosterSlots(state, opponent, page)), enemy: true);
+                page.ForcesFor(opponent, RosterSlots(state, opponent, recorded)), enemy: true);
         DrawCombatResultOpponents(batch, state, viewer, page);
     }
 
@@ -313,22 +314,14 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// The roster slot of each of <paramref name="player"/>'s gangs, the order of its row
-    /// (FMT-STATE-008): the slot the page's events record for the gang when it fought, since a
-    /// hire can have reused the slot of a gang the fight wiped out, else its current slot.
+    /// (FMT-STATE-008), from the slots the page's events record (<see cref="CombatRosterSlots"/>).
     /// </summary>
-    private static Func<GangId, int> RosterSlots(MatchState state, PlayerId player, CombatResultPage page)
-    {
-        var roster = state.FindPlayer(player)?.Gangs ?? [];
-        return gang =>
-        {
-            foreach (var result in page.Results)
-                if (CombatantLookup.RecordedCombatant(result.Event, gang)?.RosterSlot is { } recorded)
-                    return recorded;
-            for (var index = 0; index < roster.Count; index++)
-                if (roster[index].Id == gang) return index;
-            return int.MaxValue;
-        };
-    }
+    private static Func<GangId, int> RosterSlots(
+        MatchState state, PlayerId player, IReadOnlyDictionary<GangId, int> recorded) =>
+        CombatRosterSlots.Resolver(recorded, state.FindPlayer(player)?.Gangs ?? []);
+
+    private static Dictionary<GangId, int> RecordedSlots(CombatResultPage page) =>
+        CombatRosterSlots.Recorded(page.Results.Select(result => result.Event));
 
     /// <summary>
     /// A click on an opponent portrait or on the viewer's force selector (SCR-COMBAT-001). A
@@ -353,7 +346,7 @@ public sealed partial class ChaosGame
             _combatSummaryOpponent = opponent;
             return;
         }
-        var viewerForces = page.ForcesFor(viewer, RosterSlots(_state, viewer, page));
+        var viewerForces = page.ForcesFor(viewer, RosterSlots(_state, viewer, RecordedSlots(page)));
         if (CombatResultsLayout.FriendlyForceSlotAt(point) is { } slot && slot < viewerForces.Count)
         {
             _combatSummaryFocal = viewerForces[slot].Gang;
@@ -378,7 +371,7 @@ public sealed partial class ChaosGame
     private void SelectCombatResultPage(MatchState state, PlayerId viewer, CombatResultPage page)
     {
         _combatSummarySector = page.SectorId;
-        var first = page.ForcesFor(viewer, RosterSlots(state, viewer, page)).FirstOrDefault();
+        var first = page.ForcesFor(viewer, RosterSlots(state, viewer, RecordedSlots(page))).FirstOrDefault();
         _combatSummaryFocal = first?.Gang;
         _combatSummaryFocalTarget = first?.Target;
         _combatSummaryOpponent = CombatResultOpponents(state, viewer)

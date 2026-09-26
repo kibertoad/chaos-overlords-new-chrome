@@ -4,15 +4,16 @@ namespace Rechaos.Core.GameModel;
 
 public static class SiteControlRules
 {
-    public static PlayerId? Controller(MatchSectorState sector, MatchSiteState site)
+    /// <summary>
+    /// The player a completed site counts for: its influencer, or the sector's owner for a site
+    /// that is complete without one (<see cref="IsComplete"/>). Null for a site that is not
+    /// complete, or complete in a neutral sector.
+    /// </summary>
+    public static PlayerId? Controller(
+        MatchSectorState sector, MatchSiteState site, SiteDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(sector);
-        ArgumentNullException.ThrowIfNull(site);
-        return site.InfluencedBy
-            ?? (site.DefinitionId == MatchBootstrap.HeadquartersDefinitionId
-                && site.Resistance == 0
-                    ? sector.Owner
-                    : null);
+        return IsComplete(site, definition) ? site.InfluencedBy ?? sector.Owner : null;
     }
 
     /// <summary>

@@ -258,7 +258,11 @@ public static class ReplayAnonymizer
     private static string AnonymizedName(int playerId, string name) =>
         ReservedPlayerNames.IsReserved(name) ? name : SeatName(playerId);
 
-    private static string Redact(string text) => new(RedactedCharacter, text.Length);
+    // A blank Comlink draft stays blank, so the rewritten send is dropped as the original was
+    // (RULE-COMLINK-003).
+    private static string Redact(string text) => MatchState.IsBlankComlinkDraft(text)
+        ? text
+        : new(RedactedCharacter, text.Length);
 
     private static JsonNode Required(JsonObject parent, string property) =>
         parent[property] ?? throw new InvalidDataException(

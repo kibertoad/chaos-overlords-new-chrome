@@ -34,26 +34,16 @@ public static class CombatPresentationOrder
         ArgumentNullException.ThrowIfNull(phase);
 
         var focalSectors = new Dictionary<GangId, int>();
-        var recordedSlots = new Dictionary<GangId, int>();
         foreach (var gameEvent in phase)
-            foreach (var (gang, owner, sector, slot) in Combatants(state, gameEvent))
+            foreach (var (gang, owner, sector) in Combatants(state, gameEvent))
                 if (owner == viewer)
-                {
                     focalSectors.TryAdd(gang, sector);
-                    if (slot is { } recorded) recordedSlots.TryAdd(gang, recorded);
-                }
 
-        var roster = state.FindPlayer(viewer)?.Gangs ?? [];
         // An event recorded before the slot was kept leaves only the current roster to go by. A gang
         // the fight wiped out can then have lost its slot to a hire in the same turn, so it follows
         // the gangs that still hold theirs.
-        int RosterSlot(GangId gang)
-        {
-            if (recordedSlots.TryGetValue(gang, out var recorded)) return recorded;
-            for (var index = 0; index < roster.Count; index++)
-                if (roster[index].Id == gang) return index;
-            return int.MaxValue;
-        }
+        var rosterSlot = CombatRosterSlots.Resolver(
+            CombatRosterSlots.Recorded(phase), state.FindPlayer(viewer)?.Gangs ?? []);
 
         var presented = new List<PresentedCombatEvent>(phase.Count);
         var emitted = new HashSet<long>();
@@ -64,7 +54,7 @@ public static class CombatPresentationOrder
 
         foreach (var focal in focalSectors
                      .OrderBy(entry => entry.Value)
-                     .ThenBy(entry => RosterSlot(entry.Key))
+                     .ThenBy(entry => rosterSlot(entry.Key))
                      .ThenBy(entry => entry.Key.Value)
                      .Select(entry => entry.Key))
         {
@@ -91,30 +81,29 @@ public static class CombatPresentationOrder
     }
 
     /// <summary>
-    /// The gangs <paramref name="gameEvent"/> puts in the fight, with owner, sector and the roster
-    /// slot the event recorded.
+    /// The gangs <paramref name="gameEvent"/> puts in the fight, with owner and sector.
     /// </summary>
-    private static IEnumerable<(GangId Gang, PlayerId Owner, int Sector, int? Slot)> Combatants(
+    private static IEnumerable<(GangId Gang, PlayerId Owner, int Sector)> Combatants(
         MatchState state,
         GameEvent gameEvent)
     {
         if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
         {
             if (gameEvent.Gang is { } target && gameEvent.PoliceAttack is { } police)
-                yield return (target, gameEvent.Player, police.SectorId, police.Target?.RosterSlot);
+                yield return (target, gameEvent.Player, police.SectorId);
             yield break;
         }
         if (!IsGangAttack(gameEvent) || gameEvent.Gang is not { } attacker) yield break;
         var resolution = gameEvent.Resolution;
         if (resolution?.Attacker is { } attackerDetails)
-            yield return (attacker, attackerDetails.Owner, attackerDetails.SectorId, attackerDetails.RosterSlot);
+            yield return (attacker, attackerDetails.Owner, attackerDetails.SectorId);
         else if (state.FindCombatant(gameEvent, attacker) is { } attackingGang)
-            yield return (attacker, attackingGang.Owner, attackingGang.SectorId, null);
+            yield return (attacker, attackingGang.Owner, attackingGang.SectorId);
         var defender = TargetGang(gameEvent);
         if (resolution?.Defender is { } defenderDetails)
-            yield return (defender, defenderDetails.Owner, defenderDetails.SectorId, defenderDetails.RosterSlot);
+            yield return (defender, defenderDetails.Owner, defenderDetails.SectorId);
         else if (state.FindCombatant(gameEvent, defender) is { } defendingGang)
-            yield return (defender, defendingGang.Owner, defendingGang.SectorId, null);
+            yield return (defender, defendingGang.Owner, defendingGang.SectorId);
     }
 
     private static bool IsGangAttack(GameEvent gameEvent) =>

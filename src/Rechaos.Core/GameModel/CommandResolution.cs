@@ -136,8 +136,11 @@ public static partial class CommandResolver
             throw new ArgumentException("Every command must belong to Combat.", nameof(commands));
 
         var orderedCommands = InRosterOrder(state, commands);
-        var snapshots = state.Players.SelectMany(player => player.Gangs)
-            .ToDictionary(gang => gang.Id, gang => CombatSnapshot.For(state, gang));
+        // The rosters are enumerated in slot order, so each gang's index is its roster slot.
+        var snapshots = state.Players
+            .SelectMany(player => player.Gangs.Select((gang, slot) => (gang, slot)))
+            .ToDictionary(
+                entry => entry.gang.Id, entry => CombatSnapshot.For(state, entry.gang, entry.slot));
         var outcomes = new List<CombatOutcome>(orderedCommands.Length);
         // Every Attack order rolls its own attack and retaliation, including two gangs that attack
         // each other: the original resolver has no branch that merges such a pair
@@ -203,7 +206,7 @@ public static partial class CommandResolver
         var policeOutcomes = snapshots.Values
             .Where(snapshot => snapshot.Force > 0 && state.Sectors[snapshot.SectorId].CrackdownActive)
             .OrderBy(snapshot => snapshot.Owner.Value)
-            .ThenBy(snapshot => GangSlot(state, snapshot.Owner, snapshot.Id))
+            .ThenBy(snapshot => snapshot.RosterSlot)
             .Select(snapshot => RollPoliceAttack(state, snapshot))
             .ToArray();
 
@@ -381,12 +384,14 @@ public static partial class CommandResolver
         short? WeaponItemId,
         CombatantDetails Details)
     {
-        public static CombatSnapshot For(MatchState state, MatchGangState gang) => new(
+        public static CombatSnapshot For(MatchState state, MatchGangState gang, int rosterSlot) => new(
             gang.Id, gang.Owner, gang.SectorId, gang.Force, gang.Hidden,
             EffectiveStatisticsCalculator.ForGang(state, gang),
             gang.WeaponItemId is { } weapon ? state.Definitions.Items[weapon].Type : null,
             gang.WeaponItemId,
-            CombatantDetails.Of(gang, GangSlot(state, gang.Owner, gang.Id)));
+            CombatantDetails.Of(gang, rosterSlot));
+
+        public int RosterSlot => Details.RosterSlot!.Value;
     }
 
     private sealed record CombatOutcome(

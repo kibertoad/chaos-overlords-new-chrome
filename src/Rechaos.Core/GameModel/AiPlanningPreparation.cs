@@ -104,7 +104,7 @@ internal static class AiPlanningPreparation
             if (!playerState.Gangs[gangSlot].IsActive
                 || state.AiPlanning.Family(player, gangSlot) is not (6 or 12))
                 continue;
-            state.AiPlanning.RewriteFamily(player, gangSlot, 0);
+            state.AiPlanning.SetFamily(player, gangSlot, 0);
             return;
         }
     }
@@ -137,7 +137,8 @@ internal static class AiPlanningPreparation
             // RULE-AI-013: the scans compare the signed byte with 0, so a value wrapped below 0
             // still reads as a Crackdown (FMT-STATE-002).
             .Select(sector => unchecked((byte)(sbyte)sector.CrackdownTurnsRemaining))
-            // The aliased retaliation byte is irrelevant while owner[64] != -1.
+            // The aliased retaliation byte is irrelevant: owner[64] is a definition in 0..127, never
+            // -1 (AiPlanningState.FirstCombatRecordDefinition).
             .Append((byte)0)
             .ToArray();
         var anchorSector = state.AiPlanning.SectorAnchor(player)

@@ -274,7 +274,7 @@ public sealed partial class MatchState
         // FMT-STATE-002 `cash_yield`: a sector built or restored without one takes the value the
         // rebuild before planning would give it (RULE-SITE-001).
         foreach (var sector in Sectors.Where(sector => sector.StoredCashYield is null))
-            sector.CashYield = SectorIncomeResolver.Rebuilt(definitions, sector);
+            sector.CashYield = SectorRecordRebuild.Rebuilt(definitions, sector).CashYield;
         if (restore is not null) RestoreRuntime(restore);
         // RULE-GANG-001 runs before the first planning phase; a gang joining without stored values
         // (a new match, including the generator's, which passes a synthetic restore) stores them
@@ -404,8 +404,7 @@ public sealed partial class MatchState
         CrackdownResolver.ResolveUpkeep(this);
         LastUpkeepResolutions = Coordinator.Turn == 1 ? [] : EconomyResolver.ResolveUpkeep(this);
         SectorBenefitResolver.ActivatePending(this);
-        SectorIncomeResolver.RebuildBeforePlanning(this);
-        ToleranceResolver.RebuildBeforePlanning(this);
+        SectorRecordRebuild.BeforePlanning(this);
         EffectiveStatisticsCalculator.RebuildBeforePlanning(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }

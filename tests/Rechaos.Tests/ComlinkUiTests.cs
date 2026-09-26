@@ -70,26 +70,25 @@ public sealed class ComlinkUiTests
         Assert.False(editor.TryAppend('~'));
     }
 
-    // RULE-COMLINK-003, RULE-COMLINK-006, FMT-STATE-005: a draft of spaces only is dropped once
-    // a recipient is chosen, and the panel closes as if it had been sent. The stored text drops
-    // trailing spaces and keeps the others, so padding it back to 160 gives the original's record.
+    // RULE-COMLINK-003, RULE-COMLINK-006, FMT-STATE-005: the editor's text of a draft of spaces
+    // only is the blank the send drops. The stored text drops trailing spaces and keeps the
+    // others, so padding it back to 160 gives the original's record.
     [Fact]
     public void BlankDraftIsDroppedAndTextPadsBackToTheOriginalRecord()
     {
         var editor = new ComlinkTextEditor();
         Assert.True(editor.IsBlank);
-        Assert.False(ChaosGame.DropsBlankComlinkMessage(anyRecipient: false, editor));
-        Assert.True(ChaosGame.DropsBlankComlinkMessage(anyRecipient: true, editor));
+        Assert.True(MatchState.IsBlankComlinkDraft(editor.Text));
         Assert.True(editor.TryAppend(' '));
         Assert.True(editor.IsBlank);
-        Assert.True(ChaosGame.DropsBlankComlinkMessage(anyRecipient: true, editor));
+        Assert.True(MatchState.IsBlankComlinkDraft(editor.Text));
 
         editor.MoveNextRow();
         Assert.True(editor.TryAppend(' '));
         Assert.True(editor.TryAppend('h'));
         Assert.True(editor.TryAppend(' '));
         Assert.False(editor.IsBlank);
-        Assert.False(ChaosGame.DropsBlankComlinkMessage(anyRecipient: true, editor));
+        Assert.False(MatchState.IsBlankComlinkDraft(editor.Text));
         var expected = new string(' ', 40) + " H" + new string(' ', 118);
         Assert.Equal(expected.TrimEnd(), editor.Text);
         Assert.Equal(expected, editor.Text.PadRight(MatchLimits.ComlinkMessageCharacters));

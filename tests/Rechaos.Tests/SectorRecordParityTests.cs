@@ -261,6 +261,27 @@ public sealed class SectorRecordParityTests
         return new MatchState(data, setup, players, sectors);
     }
 
+    // FMT-STATE-002 `crackdown_turns` is a signed byte: a sector restored with a value outside
+    // -128..127 is refused rather than wrapped later.
+    [Theory]
+    [InlineData(128)]
+    [InlineData(200)]
+    [InlineData(-129)]
+    public void ACrackdownCountOutsideTheSignedByteIsRefused(int turns)
+    {
+        MatchSiteState[] sites =
+        [
+            new MatchSiteState(0, 0, 7),
+            new MatchSiteState(1, 1, 5),
+            new MatchSiteState(2, 2, 4)
+        ];
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MatchSectorState(0, sites,
+            crackdownActive: turns > 0, crackdownTurnsRemaining: turns));
+        Assert.Equal(sbyte.MaxValue, new MatchSectorState(0, sites,
+            crackdownActive: true, crackdownTurnsRemaining: sbyte.MaxValue).CrackdownTurnsRemaining);
+    }
+
     private static MatchSetup Setup() => new(
         ScenarioId.Greed, GameDuration.SixMonths, 1996,
         [
