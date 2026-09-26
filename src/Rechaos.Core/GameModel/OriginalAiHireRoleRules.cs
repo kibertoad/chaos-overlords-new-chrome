@@ -180,7 +180,7 @@ internal static class OriginalAiHireRoleRules
         var slot = turn % 10;
         var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
         if (slot is 3 or 6 or 8 && inputs.Family3Count >= durationFactor * 4f) slot = 0;
-        if (slot is 5 or 7 && inputs.Family6Or12Count >= durationFactor * 6f) slot = 0;
+        if (slot is 5 or 7 && inputs.Family6Or12Count >= durationFactor * 10f) slot = 0;
         if (slot == 9 && (inputs.Family2Count >= durationFactor * 2f
             || inputs.Cash < durationFactor * 100f)) slot = 0;
         if (slot == 1 && inputs.Family7Count >= durationFactor) slot = 0;
