@@ -586,6 +586,11 @@ public sealed partial class MatchState
     {
         Commands.Cancel(gang.Id);
         gang.QueuedCommand = null;
+        // As the public Cancel does: Hidden only ever mirrors a queued Hide (Submit sets it, and
+        // FinishUpkeep re-derives it from a recurring Hide carried into the turn), so once the
+        // order is gone the gang is no longer hiding. A seat handed to the computer would otherwise
+        // keep a departed player's Hide in force for any gang the planner leaves idle.
+        gang.Hidden = false;
     }
 
     public TurnTransition FinishHire(PlayerId player)
