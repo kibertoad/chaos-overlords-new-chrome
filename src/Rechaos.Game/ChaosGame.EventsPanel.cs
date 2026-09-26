@@ -319,7 +319,8 @@ public sealed partial class ChaosGame
         Texture2D pixel,
         PixelFont font,
         MatchState state,
-        GameNotification? notification)
+        GameNotification? notification,
+        GameEvent? related)
     {
         if (notification is null)
         {
@@ -351,8 +352,7 @@ public sealed partial class ChaosGame
                 batch.Draw(_uiSprites, LastTurnEventsLayout.Face(pressed),
                     LastTurnEventsLayout.PressedSource(pressed), Color.White);
         }
-        // The report's event and FMT-STATE-006 record, found once for the frame's fields.
-        var related = RelatedEvent(state, notification);
+        // The report's FMT-STATE-006 record, built once for the frame's fields.
         var record = LastTurnEventPresentation.Record(state, notification, related);
         DrawEventArtworkForeground(batch, state, notification, related, record);
         // SCR-EVENT-001: the date is elapsed_turns (turns completed) as year and week, drawn
@@ -385,9 +385,9 @@ public sealed partial class ChaosGame
     private bool DrawInfluenceSiteBackground(
         SpriteBatch batch,
         MatchState state,
-        GameNotification notification)
+        GameNotification notification,
+        GameEvent? related)
     {
-        var related = RelatedEvent(state, notification);
         if (LastTurnEventPresentation.InfluenceSiteId(notification, related) is not { } siteId
             || state.FindSite(siteId) is not { } site
             || _sitePortraits is null)

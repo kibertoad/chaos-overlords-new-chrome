@@ -30,6 +30,8 @@ public sealed partial class ChaosGame
         _batch.End();
 
         var notification = CurrentEventReport(_state);
+        // The report's event, found once for every field the frame draws from it.
+        var related = notification is null ? null : RelatedEvent(_state, notification);
         if (notification is not null)
         {
             var siteSampler = _smoothEventSiteImages
@@ -37,7 +39,7 @@ public sealed partial class ChaosGame
                 : SamplerState.PointClamp;
             _batch.Begin(samplerState: siteSampler, rasterizerState: clip,
                 transformMatrix: transform);
-            var drewSiteBackground = DrawInfluenceSiteBackground(_batch, _state, notification);
+            var drewSiteBackground = DrawInfluenceSiteBackground(_batch, _state, notification, related);
             if (drewSiteBackground && !_smoothEventSiteImages
                 && _eventSiteDitherOverlay is not null)
                 _batch.Draw(_eventSiteDitherOverlay, LastTurnEventsLayout.Artwork, Color.White);
@@ -46,7 +48,7 @@ public sealed partial class ChaosGame
 
         _batch.Begin(samplerState: SamplerState.PointClamp, rasterizerState: clip,
             transformMatrix: transform);
-        DrawLastTurnEventContent(_batch, _pixel, _font, _state, notification);
+        DrawLastTurnEventContent(_batch, _pixel, _font, _state, notification, related);
         if (_combatAnimationPlayer.IsPlaying)
             DrawCombatPanel(_batch, _pixel, _font, _state);
         DrawPlanningTimer(_batch, _pixel);
