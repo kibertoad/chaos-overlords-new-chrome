@@ -74,8 +74,8 @@ public static class OptionsTooltip
         if (OptionsLayout.IntroOnlyOnce.Contains(point))
             return [
                 "INTRO ONLY ONCE",
-                "OFF PLAYS THE INTRO AT EVERY START, AS THE ORIGINAL DOES.",
-                "ON PLAYS IT ON THE FIRST START ONLY.",
+                "ON PLAYS THE INTRO ON THE FIRST START ONLY.",
+                "OFF PLAYS IT AT EVERY START, AS THE ORIGINAL DOES.",
                 "INTRO ON THE TITLE SCREEN REPLAYS IT."
             ];
         if (OptionsLayout.ExportDiagnostics.Contains(point))
