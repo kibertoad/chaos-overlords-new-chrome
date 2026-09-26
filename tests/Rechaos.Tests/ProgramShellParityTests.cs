@@ -104,6 +104,22 @@ public sealed class ProgramShellParityTests
         Assert.Equal(ChaosGame.TitleAction.NewGame, ChaosGame.TitleActionAt(new Point(x, y)));
     }
 
+    [Theory]
+    [InlineData(Keys.N, true, "NewGame")]
+    [InlineData(Keys.O, true, "LoadGame")]
+    [InlineData(Keys.H, true, "Online")]
+    [InlineData(Keys.J, true, "Online")]
+    [InlineData(Keys.N, false, null)]
+    [InlineData(Keys.O, false, null)]
+    [InlineData(Keys.Enter, false, "NewGame")]
+    [InlineData(Keys.F9, false, "LoadGame")]
+    public void TitleKeysFollowScrUi001(Keys key, bool control, string? expected)
+    {
+        // SCR-UI-001: Ctrl+N, Ctrl+O, Ctrl+H and Ctrl+J act as the menu items; the rebuild's
+        // Online screen holds Host and Join (DEV-UI-019).
+        Assert.Equal(expected, ChaosGame.TitleShortcut(key, control)?.ToString());
+    }
+
     [Fact]
     public void TheRebuildsTitleButtonsKeepTheirCommands()
     {
