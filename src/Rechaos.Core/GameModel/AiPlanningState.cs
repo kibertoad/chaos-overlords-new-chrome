@@ -148,7 +148,7 @@ public sealed class AiPlanningState
         _coverageSectors = coverageSectors.ToArray();
         _needsFamily = needsFamily.ToArray();
         _raiderMode = raiderMode.ToArray();
-        _firstCombatRecordDefinition = firstCombatRecordDefinition;
+        _firstCombatRecordDefinition = RequireUnsignedAgnostic(firstCombatRecordDefinition);
     }
 
     public int CurrentHireRole(PlayerId player) => _currentHireRoles[PlayerIndex(player)];
@@ -205,12 +205,22 @@ public sealed class AiPlanningState
     /// then writes the definition of the gang holding the slot, and the value stays through later
     /// phases in which the slot does not fight, after the gang dies and after a hire reuses the
     /// slot (FND-STATE-005).
+    /// FMT-STATE-003 does not record whether the original loads the byte signed. The value is held
+    /// within 0..127, where both readings agree and it is never the neutral owner -1: the gang
+    /// definitions are the 90 records of FMT-DATA-002, and a larger value is refused.
     /// </summary>
     public int FirstCombatRecordDefinition => _firstCombatRecordDefinition;
 
     internal void RecordFirstCombatRecordDefinition(short definitionId) =>
         // The record stores the low byte of the gang's definition byte (FND-STATE-005).
-        _firstCombatRecordDefinition = unchecked((byte)definitionId);
+        _firstCombatRecordDefinition = RequireUnsignedAgnostic(unchecked((byte)definitionId));
+
+    private static byte RequireUnsignedAgnostic(byte definition) =>
+        definition <= sbyte.MaxValue
+            ? definition
+            : throw new ArgumentOutOfRangeException(
+                nameof(definition), definition,
+                "The first combat record's definition must read the same signed and unsigned.");
 
     /// <summary>
     /// RULE-AI-001: on the player's first pass every record is reset, both hire roles become 0
@@ -292,19 +302,12 @@ public sealed class AiPlanningState
         _currentHireRoles[PlayerIndex(player)] = role;
     }
 
-    internal void SetFamily(PlayerId player, int gangSlot, int family)
-    {
-        if (!IsValidFamily(family))
-            throw new ArgumentOutOfRangeException(nameof(family));
-        _families[FamilyIndex(player, gangSlot)] = family;
-    }
-
     /// <summary>
-    /// RULE-AI-010: the rewrite of a surplus hunter stores family 0 and nothing else, so a
-    /// needs_family flag the Greed Terminate branch of a family-6 or family-12 gang set earlier in
-    /// the pass (RULE-AI-025, RULE-AI-030) stays set.
+    /// Stores the family and nothing else. The needs_family flag is left alone, so the RULE-AI-010
+    /// rewrite of a surplus hunter keeps a flag a Greed Terminate set earlier in the pass
+    /// (RULE-AI-025, RULE-AI-030); only <see cref="ResetForNewFamily"/> clears it.
     /// </summary>
-    internal void RewriteFamily(PlayerId player, int gangSlot, int family)
+    internal void SetFamily(PlayerId player, int gangSlot, int family)
     {
         if (!IsValidFamily(family))
             throw new ArgumentOutOfRangeException(nameof(family));

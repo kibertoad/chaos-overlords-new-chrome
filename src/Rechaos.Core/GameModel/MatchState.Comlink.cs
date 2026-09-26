@@ -51,7 +51,8 @@ public sealed partial class MatchState
             return Rejected(ComlinkValidationCode.WrongPhase);
         if (recipients.Count == 0)
             return Rejected(ComlinkValidationCode.NoRecipients);
-        if (string.IsNullOrWhiteSpace(message))
+        // A draft of spaces only is the RULE-COMLINK-003 blank; other whitespace alone is refused.
+        if (message is null || !IsBlankComlinkDraft(message) && string.IsNullOrWhiteSpace(message))
             return Rejected(ComlinkValidationCode.EmptyMessage);
         if (message.Length > MatchLimits.ComlinkMessageCharacters)
             return Rejected(ComlinkValidationCode.MessageTooLong);
@@ -67,12 +68,27 @@ public sealed partial class MatchState
             if (setup.Controller != PlayerController.Human)
                 return Rejected(ComlinkValidationCode.RecipientNotHuman);
         }
+        // RULE-COMLINK-003: once a recipient is chosen, a blank draft is stored for no one and the
+        // send still counts as made, with nothing to report.
+        if (IsBlankComlinkDraft(message))
+            return new ComlinkSendResult(true, ComlinkValidationCode.Accepted, [], string.Empty);
         return new ComlinkSendResult(true, ComlinkValidationCode.Accepted,
             recipients.OrderBy(player => player.Value).ToArray(),
             ComlinkValidationMessages.For(ComlinkValidationCode.Accepted));
 
         ComlinkSendResult Rejected(ComlinkValidationCode code) =>
             new(false, code, [], ComlinkValidationMessages.For(code));
+    }
+
+    /// <summary>
+    /// RULE-COMLINK-003: the original tests all 160 characters of the draft for spaces. The text
+    /// the rebuild stores drops trailing spaces (RULE-COMLINK-006), so a blank draft is empty or
+    /// spaces only.
+    /// </summary>
+    public static bool IsBlankComlinkDraft(string message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        return message.All(character => character == ' ');
     }
 
     private ComlinkInbox GetComlinkInbox(PlayerId player) =>

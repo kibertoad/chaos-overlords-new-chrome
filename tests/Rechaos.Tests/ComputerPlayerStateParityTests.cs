@@ -46,6 +46,24 @@ public sealed class ComputerPlayerStateParityTests
         Assert.Equal(cap, SpecialSiteRules.ResearchTechLimit(match, gang));
     }
 
+    // RULE-SITE-001: research_level counts a site by the completion test the rebuild applies to
+    // every other field. A site whose Resistance reached 0 during Instant is not counted until
+    // the Upkeep activates it, for the tech cap as for Cash, Tolerance and Support.
+    [Theory]
+    [InlineData(ScienceCenterSite)]
+    [InlineData(ResearchLabSite)]
+    public void AResearchSiteNotYetActivatedDoesNotRaiseTheComputerTechCap(short site)
+    {
+        var match = CreateResearchMatch(site, sectorOwner: new PlayerId(1), activated: false);
+        var gang = match.FindGang(new GangId(10))!;
+        var sector = match.Sectors[gang.SectorId];
+
+        Assert.Equal(0, sector.Sites[1].Resistance);
+        Assert.Equal(0, SectorRecordRebuild.Rebuilt(match.Definitions, sector).ResearchLevel);
+        Assert.Equal(SpecialSiteRules.BaseResearchTechLimit,
+            SpecialSiteRules.ComputerTechLimit(match, gang));
+    }
+
     // RULE-AI-005 first_affordable and RULE-AI-026 research_first apply the gang's own Tech Level
     // below the cap: a Tech 1 gang stays at 1 beside a Research Lab.
     [Fact]
@@ -221,7 +239,8 @@ public sealed class ComputerPlayerStateParityTests
         PlayerId sectorOwner,
         short? gangDefinitionId = null,
         IReadOnlySet<short>? researched = null,
-        PlayerController controller = PlayerController.Computer)
+        PlayerController controller = PlayerController.Computer,
+        bool activated = true)
     {
         var data = BundledOriginalData.Load();
         var definition = gangDefinitionId ?? data.Gangs.First(gang => gang.TechLevel == 10).Id;
@@ -241,7 +260,7 @@ public sealed class ComputerPlayerStateParityTests
             [
                 new MatchSiteState(0, 0, 7),
                 id == 0 && site is { } special
-                    ? new MatchSiteState(1, special, 0, sectorOwner)
+                    ? new MatchSiteState(1, special, 0, activated ? sectorOwner : null)
                     : new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
             ], owner: id == 0 ? sectorOwner : null))

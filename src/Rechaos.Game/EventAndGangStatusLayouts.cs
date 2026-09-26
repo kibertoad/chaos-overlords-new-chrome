@@ -220,7 +220,7 @@ public static class LastTurnEventsLayout
     public static (string Year, string Week)? Date(int elapsedTurns)
     {
         if (elapsedTurns <= 0) return null;
-        var week = elapsedTurns - 1;
-        return ($"{week / 52 + 2050:0000}", $"{week % 52 + 1:00}");
+        var (year, week) = MatchCalendar.Of(elapsedTurns - 1);
+        return ($"{year:0000}", $"{week:00}");
     }
 }

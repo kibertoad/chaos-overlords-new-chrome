@@ -3,7 +3,7 @@ namespace Rechaos.Core.GameModel;
 /// <summary>
 /// A sector's Tolerance in two parts: the base that Bribe, Snitch and the return toward normal
 /// change during resolution, and the completed sites' Tolerance that the rebuild before planning
-/// adds on top of it (RULE-TOLERANCE-001, RULE-TOLERANCE-002, RULE-SITE-001).
+/// (<see cref="SectorRecordRebuild"/>) adds on top of it (RULE-TOLERANCE-001, RULE-TOLERANCE-002, RULE-SITE-001).
 /// </summary>
 public static class ToleranceResolver
 {
@@ -73,31 +73,6 @@ public static class ToleranceResolver
         ArgumentNullException.ThrowIfNull(state);
         foreach (var sector in state.Sectors)
             sector.BaseTolerance = MoveOnePointToward(sector.BaseTolerance, NormalBaseTolerance(sector));
-    }
-
-    /// <summary>
-    /// RULE-SITE-001: before planning, the Tolerance the Chaos test reads is rebuilt as the base
-    /// plus the completed sites' Tolerance, each sum stored as a signed byte. The headquarters
-    /// site is complete at progress 0 and adds its Tolerance whoever owns the sector, neutral
-    /// included (RULE-CHAOS-001).
-    /// </summary>
-    internal static void RebuildBeforePlanning(MatchState state)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        foreach (var sector in state.Sectors)
-        {
-            var tolerance = sector.BaseTolerance;
-            var support = 0;
-            foreach (var site in sector.Sites)
-            {
-                var definition = state.Definitions.Site(site.DefinitionId);
-                if (!SiteControlRules.IsComplete(site, definition)) continue;
-                tolerance = SignedByte(tolerance + definition.Tolerance);
-                support = SignedByte(support + definition.Support);
-            }
-            sector.Tolerance = tolerance;
-            sector.Support = support;
-        }
     }
 
     private static int SignedByte(int value) => unchecked((sbyte)value);

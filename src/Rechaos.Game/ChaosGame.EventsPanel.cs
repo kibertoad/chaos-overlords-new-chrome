@@ -235,7 +235,8 @@ public sealed partial class ChaosGame
 
     private void StepEventPage(int delta)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_screens.Current != ClientScreen.Events
+            || _state?.Coordinator.ActivePlayer is not { } playerId) return;
         var count = ReviewableReports(_state, playerId).Count;
         if (count == 0) return;
         var next = BoundedPageNavigation.Move(_eventCursor, count, delta);
@@ -350,7 +351,10 @@ public sealed partial class ChaosGame
                 batch.Draw(_uiSprites, LastTurnEventsLayout.Face(pressed),
                     LastTurnEventsLayout.PressedSource(pressed), Color.White);
         }
-        DrawEventArtworkForeground(batch, state, notification);
+        // The report's event and FMT-STATE-006 record, found once for the frame's fields.
+        var related = RelatedEvent(state, notification);
+        var record = LastTurnEventPresentation.Record(state, notification, related);
+        DrawEventArtworkForeground(batch, state, notification, related, record);
         // SCR-EVENT-001: the date is elapsed_turns (turns completed) as year and week, drawn
         // over the panel art's 0000.00 and left out at 0.
         if (LastTurnEventsLayout.Date(state.Coordinator.Turn - 1) is var (year, week))
@@ -360,12 +364,12 @@ public sealed partial class ChaosGame
         }
         // SCR-EVENT-001: the subject is not cut; only a cash report's gang name is, to 20
         // characters, inside LastTurnEventPresentation.Subject.
-        font.Draw(batch, EventObject(state, notification),
+        font.Draw(batch, LastTurnEventPresentation.Subject(state, record),
             LastTurnEventsLayout.Subject.ToVector2(), Color.Lime, 1);
         // SCR-EVENT-001 draws the caption from STRING/33 to STRING/44 of the executable, cut to
         // 35 characters (FND-EVENT-005). The rebuild reads no string resources from the
         // executable, so the text is its own wording until it does.
-        var status = NotificationPresentation.LastTurnStatus(notification, RelatedEvent(state, notification));
+        var status = NotificationPresentation.LastTurnStatus(notification, related);
         if (status.Length > LastTurnEventsLayout.CaptionColumns)
             status = status[..LastTurnEventsLayout.CaptionColumns];
         font.Draw(batch, status, LastTurnEventsLayout.Caption.ToVector2(), Color.Lime, 1);
@@ -396,9 +400,10 @@ public sealed partial class ChaosGame
     private void DrawEventArtworkForeground(
         SpriteBatch batch,
         MatchState state,
-        GameNotification notification)
+        GameNotification notification,
+        GameEvent? related,
+        LastTurnReportRecord record)
     {
-        var related = RelatedEvent(state, notification);
         var artworkIndex = LastTurnEventPresentation.ArtworkIndex(notification, related);
         if (artworkIndex > 0 && _lastTurnEventArtwork[artworkIndex] is { } artwork)
             batch.Draw(artwork, LastTurnEventsLayout.Artwork, Color.White);
@@ -413,7 +418,6 @@ public sealed partial class ChaosGame
                 Color.White);
         // SCR-EVENT-001: an elimination report adds the eliminated player's 32-by-32 portrait,
         // stretched to 48 by 48 over its illustration.
-        var record = LastTurnEventPresentation.Record(state, notification, related);
         if (record.Type == LastTurnReportRecord.Elimination && _uiSprites is not null
             && state.FindPlayer(new PlayerId(record.Arg1)) is { } eliminated)
             batch.Draw(_uiSprites, LastTurnEventsLayout.EliminatedPortrait,
@@ -421,13 +425,6 @@ public sealed partial class ChaosGame
     }
 
     private TimeSpan _eventPageShownAt;
-
-    private static string EventObject(MatchState state, GameNotification notification)
-    {
-        var related = RelatedEvent(state, notification);
-        return LastTurnEventPresentation.Subject(
-            state, LastTurnEventPresentation.Record(state, notification, related));
-    }
 
     /// <summary>
     /// This player's reports for the completed turn, memoised for the frame.

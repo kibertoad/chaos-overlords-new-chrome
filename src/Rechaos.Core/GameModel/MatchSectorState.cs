@@ -30,7 +30,8 @@ public sealed class MatchSectorState
         if (income < 0) throw new ArgumentOutOfRangeException(nameof(income));
         // FMT-STATE-002 `crackdown_turns` is a signed byte that repeated neutralizing Crackdowns
         // can wrap below 0 (RULE-POLICE-002), so an inactive sector may carry a negative value.
-        if (crackdownTurnsRemaining < sbyte.MinValue) throw new ArgumentOutOfRangeException(nameof(crackdownTurnsRemaining));
+        if (crackdownTurnsRemaining is < sbyte.MinValue or > sbyte.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(crackdownTurnsRemaining));
         if (!crackdownActive && crackdownTurnsRemaining > 0)
             throw new ArgumentException("Inactive police cannot have turns remaining.", nameof(crackdownTurnsRemaining));
         if (crackdownHistory is { Count: > 2 }
