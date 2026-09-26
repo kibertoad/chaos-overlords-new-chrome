@@ -31,6 +31,14 @@ function inMemoryBugReports(): BugReportRepository & { rows: StoredBugReport[] }
     async insert(report) {
       rows.push(report)
     },
+    async insertWithinBudget(report, since, budget) {
+      const spent = rows
+        .filter((row) => row.receivedAt >= since)
+        .reduce((total, row) => total + (row.state?.compressedBytes ?? 0), 0)
+      if (spent + (report.state?.compressedBytes ?? 0) > budget) return false
+      rows.push(report)
+      return true
+    },
     async get(id) {
       return rows.find((row) => row.id === id) ?? null
     },
@@ -526,6 +534,90 @@ describe('server app over in-memory storage', () => {
       expect(response.status, route.path).toBe(413)
       expect(await response.json()).toMatchObject({ error: { code: 'payload_too_large' } })
     }
+  })
+
+  /**
+   * The paged read withholds a row this build cannot validate, and the client reads an empty page
+   * as the end of the log. A page whose rows were all withheld therefore must not be answered as
+   * one while readable events follow it.
+   */
+  it('reads past a page of withheld rows instead of answering an empty one', async () => {
+    const { app: fresh, kernel: freshKernel } = build()
+    const created = await fresh.request('/api/v1/matches', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        settings: {
+          name: 'x',
+          maxPlayers: 2,
+          turnTimerSeconds: 0,
+          visibility: 'private',
+          gameSettings: {},
+        },
+        hostDisplayName: 'h',
+      }),
+    })
+    const { token, match } = (await created.json()) as { token: string; match: { id: string } }
+    const { events } = freshKernel.deps.storage
+    const base = await events.lastSeq(match.id)
+    const createdAt = '2026-03-01T10:00:00.000Z'
+    for (let i = 0; i < 3; i += 1) {
+      // A payload this build's schema refuses, as a reshaped event from another build would be.
+      await events.append({
+        matchId: match.id,
+        type: 'turn.opened',
+        payload: { reshaped: true },
+        createdAt,
+      } as unknown as Parameters<typeof events.append>[0])
+    }
+    await events.append({
+      matchId: match.id,
+      type: 'turn.opened',
+      payload: { turn: 1, deadlineAt: null },
+      createdAt,
+    })
+    const page = await fresh.request(`/api/v1/matches/${match.id}/events?after=${base}&limit=2`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(page.status).toBe(200)
+    const body = (await page.json()) as { events: Array<{ seq: number }> }
+    expect(body.events.map((event) => event.seq)).toEqual([base + 4])
+  })
+
+  /**
+   * A withheld handover or seal cannot be told from any other gap by the client, which would plan
+   * every later turn from the wrong seats. Such a row is refused rather than withheld.
+   */
+  it('refuses a page that would withhold an event the match state depends on', async () => {
+    const { app: fresh, kernel: freshKernel } = build()
+    const created = await fresh.request('/api/v1/matches', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        settings: {
+          name: 'x',
+          maxPlayers: 2,
+          turnTimerSeconds: 0,
+          visibility: 'private',
+          gameSettings: {},
+        },
+        hostDisplayName: 'h',
+      }),
+    })
+    const { token, match } = (await created.json()) as { token: string; match: { id: string } }
+    const { events } = freshKernel.deps.storage
+    const base = await events.lastSeq(match.id)
+    await events.append({
+      matchId: match.id,
+      type: 'match.playerTakenOver',
+      payload: { reshaped: true },
+      createdAt: '2026-03-01T10:00:00.000Z',
+    } as unknown as Parameters<typeof events.append>[0])
+    const page = await fresh.request(`/api/v1/matches/${match.id}/events?after=${base}`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(page.status).toBe(409)
+    expect(await page.json()).toMatchObject({ error: { details: { reason: 'unreadable_event' } } })
   })
 
   it('closes the stream and drops the listener when the client disconnects', async () => {

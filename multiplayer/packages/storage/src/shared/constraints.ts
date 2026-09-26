@@ -66,11 +66,18 @@ export async function appendBackoff(attempt: number): Promise<void> {
 }
 
 /**
+ * What a keyed insert resolves to when its key was already logged and it wrote nothing: a value no
+ * sequence number can take, handed straight back by `appendWithRetry`.
+ */
+export const DUPLICATE = -1
+
+/**
  * Runs an event insert until it claims a sequence number, and returns the number it claimed.
  *
- * `insert` is the dialect's own statement and resolves to the `seq` of the row it wrote. A
- * unique-constraint refusal means another appender took the number first, so the insert is run
- * again after `appendBackoff`, up to `APPEND_ATTEMPTS` times. Any other error is rethrown as it is.
+ * `insert` is the dialect's own statement and resolves to the `seq` of the row it wrote, or to
+ * `DUPLICATE` when a keyed insert found its key taken. A unique-constraint refusal means another
+ * appender took the number first, so the insert is run again after `appendBackoff`, up to
+ * `APPEND_ATTEMPTS` times. Any other error is rethrown as it is.
  */
 export async function appendWithRetry(
   matchId: string,

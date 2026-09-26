@@ -16,8 +16,13 @@ public static class CrackdownResolver
     public static void FinishCombat(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
+        // RULE-POLICE-003: only a presence between 1 and 99 counts down; one at CRACKDOWN_PERMANENT
+        // (the island rule's unowned sectors) never changes. The native test is `c < 100`, so a
+        // permanent presence a neutralizing Crackdown raised to 103 to 105 (RULE-POLICE-002) stays
+        // there as well.
         foreach (var sector in state.Sectors.OrderBy(sector => sector.Id))
-            if (sector.CrackdownTurnsRemaining > 0)
+            if (sector.CrackdownTurnsRemaining > 0
+                && sector.CrackdownTurnsRemaining < ManualRules.PermanentCrackdownTurns)
                 sector.CrackdownTurnsRemaining--;
     }
 

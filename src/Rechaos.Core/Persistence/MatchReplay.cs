@@ -332,7 +332,7 @@ public static class MatchReplaySerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: a journal is verified step
     // by step against the fingerprint of its day, so a journal from format 31 would diverge on its
     // first step and be reported as damage rather than as an older format.
-    public const int CurrentFormatVersion = 40;
+    public const int CurrentFormatVersion = 41;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -351,7 +351,9 @@ public static class MatchReplaySerializer
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(definitions);
         if (!source.CanRead) throw new ArgumentException("Source stream is not readable.", nameof(source));
-        return ApplyGuarded(Read(source), definitions);
+        var document = ReadCurrentFormat(source, out var declared)
+            ?? throw UnsupportedFormat(declared);
+        return ApplyGuarded(document, definitions);
     }
 
     /// <summary>
@@ -378,8 +380,9 @@ public static class MatchReplaySerializer
         ArgumentNullException.ThrowIfNull(definitions);
         if (!source.CanRead)
             throw new ArgumentException("Source stream is not readable.", nameof(source));
-        var document = Read(source);
-        if (document.FormatVersion != CurrentFormatVersion) return null;
+        // A journal in any other format, older or newer, is not this build's to continue.
+        var document = ReadCurrentFormat(source, out _);
+        if (document is null) return null;
         var state = ApplyGuarded(document, definitions);
         return MatchReplayRecorder.Resume(
             state, document.InitialSnapshot, document.InitialStateFingerprint, document.Steps);
@@ -421,8 +424,9 @@ public static class MatchReplaySerializer
         ArgumentNullException.ThrowIfNull(resumed);
         if (!source.CanRead)
             throw new ArgumentException("Source stream is not readable.", nameof(source));
-        var document = Read(source);
-        if (document.FormatVersion != CurrentFormatVersion) return null;
+        // A journal in any other format, older or newer, is not this build's to continue.
+        var document = ReadCurrentFormat(source, out _);
+        if (document is null) return null;
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
         var ending = EndingFingerprint(document.InitialStateFingerprint, document.Steps);
@@ -442,12 +446,29 @@ public static class MatchReplaySerializer
             ? initialStateFingerprint
             : steps[^1].ResultingStateFingerprint;
 
-    private static ReplayDocument Read(Stream source)
+    /// <summary>
+    /// Reads a journal written in this build's format, or answers null with the format it declares.
+    /// </summary>
+    /// <remarks>
+    /// The version has to be read before the members are bound, as the native save load does:
+    /// JsonOptions refuses unmapped members, so a journal from a newer build would otherwise fail as
+    /// "JSON is invalid" on the very field that build added. That reads as damage, and
+    /// <see cref="MatchReplayStore.LoadAndReplayRecoveringBackup"/> would then fall back to the
+    /// backup generation and could overwrite the newer primary with it.
+    /// </remarks>
+    private static ReplayDocument? ReadCurrentFormat(Stream source, out int declaredFormatVersion)
     {
         try
         {
             using var bounded = NativeSaveSerializer.ReadBounded(
                 source, MaximumReplayBytes, "Replay exceeds the size limit.");
+            if (NativeSaveSerializer.DeclaredFormatVersion(bounded) is { } declared
+                && declared != CurrentFormatVersion)
+            {
+                declaredFormatVersion = declared;
+                return null;
+            }
+            declaredFormatVersion = CurrentFormatVersion;
             return JsonSerializer.Deserialize<ReplayDocument>(bounded, JsonOptions)
                 ?? throw new InvalidDataException("Replay is empty.");
         }
@@ -456,6 +477,13 @@ public static class MatchReplaySerializer
             throw new InvalidDataException("Replay JSON is invalid.", exception);
         }
     }
+
+    private static InvalidDataException UnsupportedFormat(int declared) =>
+        IncompatibleSave.Create(
+            declared > CurrentFormatVersion
+                ? IncompatibleSaveReason.NewerFormat
+                : IncompatibleSaveReason.OlderFormat,
+            $"Unsupported replay format {declared}.");
 
     /// <summary>
     /// <see cref="Apply"/>, with every way a malformed journal can surface reported as bad data.
@@ -480,11 +508,7 @@ public static class MatchReplaySerializer
     private static MatchState Apply(ReplayDocument document, OriginalData definitions)
     {
         if (document.FormatVersion != CurrentFormatVersion)
-            throw IncompatibleSave.Create(
-                document.FormatVersion > CurrentFormatVersion
-                    ? IncompatibleSaveReason.NewerFormat
-                    : IncompatibleSaveReason.OlderFormat,
-                $"Unsupported replay format {document.FormatVersion}.");
+            throw UnsupportedFormat(document.FormatVersion);
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
         using var snapshot = new MemoryStream(document.InitialSnapshot, writable: false);

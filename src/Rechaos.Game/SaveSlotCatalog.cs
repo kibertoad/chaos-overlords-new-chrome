@@ -70,6 +70,10 @@ public static class SaveSlotCatalog
         return Path.Combine(directory, $"save-slot-{slot + 1}.rchsave");
     }
 
+    /// <summary>Where a main-loop crash writes the live match on the way out.</summary>
+    public static string CrashRecoveryPath(string directory) =>
+        Path.Combine(directory, "crash-recovery.rchsave");
+
     /// <summary>
     /// Summarises a slot for the browser, without touching anything on disk.
     /// </summary>
@@ -88,6 +92,35 @@ public static class SaveSlotCatalog
         ReadFile(autoSavePath, AutoSaveRow, definitions) is { } summary
             ? summary with { Name = "AUTOSAVE" }
             : null;
+
+    /// <summary>
+    /// The browser's automatic row: the rolling autosave or the crash-recovery save, whichever is
+    /// the newer loadable one, with the path it was read from.
+    /// </summary>
+    /// <remarks>
+    /// The crash-recovery save used to be written and then never offered: the browser listed only
+    /// the nine slots and the autosave, so the match the crash report promised was kept could be
+    /// reached only by renaming the file by hand. The browser has no room for another row, and the
+    /// two files are the same thing — the newest state the game saved without being asked — so the
+    /// automatic row shows whichever of them is newer. A crash-recovery save is written from the
+    /// live match, after the autosave of that turn, and the next autosave supersedes it again.
+    /// A playable file wins over one that cannot be loaded, so a damaged recovery save never hides
+    /// a good autosave.
+    /// </remarks>
+    public static (SaveSlotSummary Row, string Path)? ReadAutomatic(
+        string autoSavePath, string crashRecoveryPath, OriginalData definitions)
+    {
+        var autoSave = ReadAutoSave(autoSavePath, definitions);
+        var recovery = ReadFile(crashRecoveryPath, AutoSaveRow, definitions) is { } read
+            ? read with { Name = "CRASH RECOVERY" }
+            : null;
+        if (recovery is null) return autoSave is null ? null : (autoSave, autoSavePath);
+        if (autoSave is null) return (recovery, crashRecoveryPath);
+        var preferRecovery = recovery.IsPlayable != autoSave.IsPlayable
+            ? recovery.IsPlayable
+            : recovery.Timestamp > autoSave.Timestamp;
+        return preferRecovery ? (recovery, crashRecoveryPath) : (autoSave, autoSavePath);
+    }
 
     /// <remarks>
     /// Every question about the two files is answered from one stat each, taken up front:
@@ -398,10 +431,18 @@ public static class SaveSlotCatalog
                 fingerprint, NativeSaveSerializer.DefinitionsFingerprint(definitions),
                 StringComparison.OrdinalIgnoreCase);
 
+        /// <remarks>
+        /// The enums are range-checked here because the sidecar is plain JSON that nothing else
+        /// validates: an out-of-range <see cref="AiPolicyMode"/> reached
+        /// <see cref="AiPolicyPresentation.Label"/> from the browser's draw and threw there. A
+        /// sidecar that fails the check is not believed, and the row is read from the save itself.
+        /// </remarks>
         public SaveSlotSummary? ToSummary(int row, DateTimeOffset timestamp) =>
-            Name is { Length: > 0 } name && Online is { } online && Scenario is { } scenario
-            && HumanPlayers is { } humans && AiPlayers is { } ai && MatchType is { Length: > 0 } matchType
-            && AiPolicy is { } aiPolicy
+            Name is { Length: > 0 } name && Online is { } online
+            && Scenario is { } scenario && Enum.IsDefined(scenario)
+            && HumanPlayers is >= 0 and var humans && AiPlayers is >= 0 and var ai
+            && MatchType is { Length: > 0 } matchType
+            && AiPolicy is { } aiPolicy && Enum.IsDefined(aiPolicy)
                 ? new SaveSlotSummary(row, name, timestamp, scenario, humans, ai, matchType, aiPolicy)
                 : null;
     }

@@ -226,10 +226,22 @@ public sealed partial class ChaosGame
 
     private void CancelHireDrag()
     {
+        ForgetHireDrag();
+        _message = string.Empty;
+    }
+
+    /// <summary>Lets go of a hire offer held under the pointer, without a word to the player.</summary>
+    /// <remarks>
+    /// The hire counterpart of <see cref="ForgetGangDrag"/>, called from the same paths. An offer
+    /// picked up on a turn that has ended (or in a match that has been replaced) belongs to that
+    /// turn's dock: released afterwards it queued a hire for the next player, or into a state the
+    /// offer never came from.
+    /// </remarks>
+    private void ForgetHireDrag()
+    {
         _draggedHireDefinitionId = null;
         _draggedHireSlot = null;
         _hireDragStarted = false;
-        _message = string.Empty;
     }
 
     private void BeginHireReject(int slot, ClientScreen screen)
