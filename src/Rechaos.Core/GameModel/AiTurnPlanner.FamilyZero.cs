@@ -70,6 +70,7 @@ public static partial class AiTurnPlanner
             return;
         }
 
+        // FND-AI-046, call 0x00428FD9: the count is tested against 0.
         if (CountPreviousChaosInSector(state, playerId, gang.SectorId) == 0)
             SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Chaos);
         else
@@ -202,6 +203,7 @@ public static partial class AiTurnPlanner
             return;
         }
 
+        // FND-AI-046, call 0x0042A419: the count is tested below 1.
         if (CountPreviousChaosInSector(state, playerId, gang.SectorId) < 1)
             SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Chaos);
         else
@@ -216,7 +218,6 @@ public static partial class AiTurnPlanner
         int gangSlot,
         FamilyPlanningSnapshot snapshot)
     {
-        var player = state.FindPlayer(playerId)!;
         var target = OriginalAiSectorSelectionRules.Select(
             mode: 5,
             sourceSectorId: gang.SectorId,
@@ -226,17 +227,12 @@ public static partial class AiTurnPlanner
             snapshot.SectorDisabled,
             snapshot.SectorGangCounts,
             canSoloControl: sectorId => CanSoloControl(state, playerId, gang, sectorId),
-            hasPriorChaos: sectorId => player.Gangs
-                .Select((candidate, slot) => (candidate, slot))
-                .Any(entry => entry.candidate.IsActive
-                    && entry.candidate.SectorId == sectorId
-                    && state.AiPlanning.PreviousAction(playerId, entry.slot)
-                        == GangAction.Chaos),
+            hasPriorChaos: sectorId =>
+                CountPreviousChaosInSector(state, playerId, sectorId) > 0,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }

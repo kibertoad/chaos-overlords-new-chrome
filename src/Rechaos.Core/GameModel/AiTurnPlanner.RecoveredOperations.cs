@@ -31,6 +31,29 @@ public static partial class AiTurnPlanner
     internal static bool IsHostileOwner(MatchState state, PlayerId playerId, int sectorId) =>
         state.AiStrategy.IsHostileToOwnerQuery(playerId, OwnerQuery(state, sectorId));
 
+    /// <summary>
+    /// FND-AI-046: selector 0x5B counts the player's active gangs in the sector whose previous
+    /// action was Chaos, the planning gang included. Callers compare the count with the threshold
+    /// the FND-AI-046 table gives for their call site (0, below 1 or below 2).
+    /// </summary>
+    internal static int CountPreviousChaosInSector(
+        MatchState state,
+        PlayerId playerId,
+        int sectorId)
+    {
+        var gangs = state.FindPlayer(playerId)!.Gangs;
+        var count = 0;
+        for (var slot = 0; slot < gangs.Count; slot++)
+        {
+            var gang = gangs[slot];
+            if (gang.IsActive
+                && gang.SectorId == sectorId
+                && state.AiPlanning.PreviousAction(playerId, slot) == GangAction.Chaos)
+                count++;
+        }
+        return count;
+    }
+
     private static IReadOnlyList<ObjectiveTarget> SelectHumanWeightedTargetPool(
         MatchState state,
         PlayerId playerId,
@@ -206,22 +229,5 @@ public static partial class AiTurnPlanner
         SetRecoveredMoveAction(state, playerId, gangSlot, destination);
         state.AiPlanning.SetFocusValue(
             playerId, gangSlot, AiPlanningState.InactiveFocusValue);
-    }
-
-    /// <summary>
-    /// Selector 0x5B (FND-AI-046): the player's active gangs in the sector whose previous action
-    /// was Chaos, the planning gang included.
-    /// </summary>
-    internal static int CountPreviousChaosInSector(
-        MatchState state,
-        PlayerId playerId,
-        int sectorId)
-    {
-        var player = state.FindPlayer(playerId)!;
-        return player.Gangs.Select((gang, slot) => (gang, slot))
-            .Count(entry => entry.gang.IsActive
-                && entry.gang.SectorId == sectorId
-                && state.AiPlanning.PreviousAction(playerId, entry.slot)
-                    == GangAction.Chaos);
     }
 }
