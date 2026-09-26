@@ -11,7 +11,10 @@ the original's behaviour, unless the entry's Justification argues that the rebui
 strictly better; then it starts `on`, and a player who wants the original switches it off. A
 deviation with no setting is `mandatory`, and its Justification also says why the original's
 behaviour is not worth a setting. The validation suite runs with every setting switched off, and a
-test that reaches a mandatory deviation cites its ID and allows for it.
+test that reaches a mandatory deviation cites its ID and allows for it. Default always describes
+the deviation, never the option it is carried by: when the deviation is to start an option off
+that the original starts on, the Setting item says the setting is inverted and which value is the
+original's.
 
 Dated product decisions behind many of these entries, with their full reasoning, are in
 [docs/DECISIONS.md](docs/DECISIONS.md).
@@ -704,7 +707,8 @@ Whether the original shows the count is not recorded.
 - Departs from: RULE-OPTIONS-001
 - Reason: Slide Panels starts off. The original initializes it to on, and panel motion holds
   input for about a quarter of a second on every panel change.
-- Setting: Slide Panels
+- Setting: Slide Panels, inverted (the deviation on starts Slide Panels off; Slide Panels on is the
+  original's motion)
 - Default: on
 - Justification: Panel motion holds input for about a quarter of a second on every panel change and
   changes nothing in the match. A player who wants the original's motion switches Slide Panels on.
@@ -715,7 +719,8 @@ Whether the original shows the count is not recorded.
 - Departs from: RULE-OPTIONS-001, SCR-UI-009
 - Reason: The rebuild starts in a window, and F11 or Alt+Enter switches to borderless full screen
   from any screen; the choice is kept for every match. The original initializes full screen to on.
-- Setting: Full screen (F11)
+- Setting: Full screen (F11), inverted (the deviation on starts the rebuild in a window; full
+  screen is the original's start)
 - Default: on
 - Justification: A window leaves the player's other programs reachable, full screen is one key away
   from any screen, and nothing in the match depends on it. A player who wants the original's start
