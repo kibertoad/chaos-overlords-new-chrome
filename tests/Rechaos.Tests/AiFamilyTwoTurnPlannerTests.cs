@@ -237,7 +237,7 @@ public sealed class AiFamilyTwoTurnPlannerTests
     private static void BeginFamilyTwoTurn(MatchState match, PlayerId player)
     {
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 2);
+        match.AiPlanning.SeedFamily(player, 0, 2);
         match.AiPlanning.SetCurrentHireRole(player, 3);
     }
 
