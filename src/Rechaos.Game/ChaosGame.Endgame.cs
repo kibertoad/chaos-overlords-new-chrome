@@ -211,7 +211,8 @@ public static class EndgameNoticeLayout
 {
     public const int NameCenterX = 158;
     public const int NameY = 46;
-    public static Rectangle Panel => new(110, 30, 312, 393);
+    /// <summary>SCR-AWARDS-002: PX00202 and PX00203 are 311 x 393 (FMT-GFX-001, FND-GFX-005).</summary>
+    public static Rectangle Panel => new(110, 30, 311, 393);
     public static Rectangle Portrait => new(126, 54, 64, 64);
 
     /// <summary>SCR-AWARDS-002: the splash's areas painted in the survivor's colour.</summary>

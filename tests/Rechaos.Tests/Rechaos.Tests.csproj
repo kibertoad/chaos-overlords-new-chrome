@@ -16,6 +16,11 @@
          and never compares it to its own. -->
     <None Include="../../multiplayer/packages/contracts/src/protocol.ts"
           Link="contracts-protocol.ts" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The build and format entries, for the tests that decode every file a format entry lists
+         (OriginalFormatFiles). They name the files and their hashes; the files themselves come
+         from GAME_DIR. -->
+    <None Include="../../spec/builds/BLD-*.md" LinkBase="spec/builds" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../spec/formats/FMT-*.md" LinkBase="spec/formats" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="xunit.v3" Version="4.0.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />
