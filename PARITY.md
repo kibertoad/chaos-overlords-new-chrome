@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 11 |
+| `supported` | 7 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 202 |
+| `implemented` | 206 |
 | `validated` | 9 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 1 |
-| `partial` | 10 |
-| `complete` | 211 |
+| `partial` | 6 |
+| `complete` | 215 |
 
 ## DATA
 
