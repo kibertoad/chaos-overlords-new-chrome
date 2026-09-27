@@ -54,6 +54,17 @@ public sealed class IntroMoviePlaybackTests
             timeline.Advance(TimeSpan.FromSeconds(30)));
     }
 
+    // RULE-VIDEO-001, FND-VIDEO-003: the movie volume effects_level * 25 * 256 reaches the wave
+    // device clamped to 0xFFFF on both channels, which is the effects volume the rebuild plays.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(6)]
+    [InlineData(10)]
+    public void MovieSoundPlaysAtTheLibrarysWaveVolume(int level) =>
+        Assert.Equal(Math.Min(level * 25 * 256, 0xFFFF) / (float)0xFFFF,
+            AudioRouting.EffectVolumeForLevel(level));
+
     [Fact]
     public void UnsignedMoviePcmConvertsToSignedSixteenBitLittleEndian()
     {

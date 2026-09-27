@@ -277,7 +277,7 @@
 
 ## recorded
 
-327 entries.
+328 entries.
 
 | ID | Title |
 |---|---|
@@ -608,6 +608,7 @@
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | The intro plays MVLOGOS then MVINTRO at (80,102) through smackw32, each ended by the left button at a 10 Hz tick, at the effects volume |
+| [FND-VIDEO-003](../findings/FND-VIDEO-003.md) | smackw32 sets a movie's volume as a linear waveOut volume, clamped to 0xFFFF, both channels equal at the centre pan |
 
 ## reproduced
 

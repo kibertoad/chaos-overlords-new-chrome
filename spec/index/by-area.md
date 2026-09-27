@@ -108,6 +108,7 @@
 | [FMT-VIDEO-001](../formats/FMT-VIDEO-001.md) | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | The intro plays MVLOGOS then MVINTRO at (80,102) through smackw32, each ended by the left button at a 10 Hz tick, at the effects volume | recorded |
+| [FND-VIDEO-003](../findings/FND-VIDEO-003.md) | smackw32 sets a movie's volume as a linear waveOut volume, clamped to 0xFFFF, both channels equal at the centre pan | recorded |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | The intro plays the logos movie and then the intro movie, each ended by the left button | supported |
 
 ## HELP
