@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 16 |
+| `supported` | 13 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 196 |
+| `implemented` | 199 |
 | `validated` | 10 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 16 |
-| `complete` | 206 |
+| `partial` | 13 |
+| `complete` | 209 |
 
 ## DATA
 
@@ -438,7 +438,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | `DEV-UI-002` | implemented | The rebuild also draws the pylons on the detailed-sector minimap (deviation). |
 | `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | complete | None | `DEV-UI-015`, `DEV-UI-016` | implemented | The title loop starts a new game on a press outside the rebuild's buttons, and the options are read at start and saved at exit. The single-instance check, the command-line file and the image-set choice are deviations. |
 | `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | complete | None | `DEV-GFX-001`, `DEV-UI-016`, `DEV-UI-017`, `DEV-UI-018` | implemented | Input is polled once per frame (DEV-UI-018), and the US shift table and upper-case letters are kept for setup names and Comlink text. |
-| `SCR-UI-001` | Title screen | supported | partial | None | `DEV-UI-012`, `DEV-VIDEO-003` | supported | The title screen shows the build version and an intro button the original lacks. |
+| `SCR-UI-001` | Title screen | supported | complete | None | `DEV-UI-012`, `DEV-UI-019`, `DEV-VIDEO-003` | implemented | The title art, the press anywhere that starts a new game, Ctrl+N and Ctrl+O, the title music and the returns to the screen follow the entry. The rebuild's buttons, credit lines and notice box stand in for the menu bar, and Ctrl+H and Ctrl+J open the Online screen (DEV-UI-019); the version and Report Bug are DEV-UI-012, the Intro button DEV-VIDEO-003. |
 | `SCR-UI-002` | Credits screen | supported | complete | None | `DEV-UI-019` | implemented | Shift+F1 stands in for Help, About (DEV-UI-019); the credits image covers the screen until any key or click. Whether the music keeps playing is not recorded, and the rebuild keeps it playing. |
 | `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006` | supported | Console routes and pressed art match; tooltips and projected cashflow are added. |
 | `SCR-UI-004` | Detailed sector screen | supported | partial | None | `DEV-UI-002`, `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-013`, `DEV-UI-014` | supported | Draws the group order strip. Adds tooltips, target highlights, ctrl-picking and minimap pylons. |
@@ -452,8 +452,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-OPTIONS-001` | Reading the options from the registry at startup | supported | partial | None | `DEV-OPTIONS-001`, `DEV-OPTIONS-002`, `DEV-OPTIONS-003`, `DEV-RNG-001` | supported | The rebuild reads a per-user preferences file with the same defaults except Slide Panels, and makes no serial-number draws (deviation). |
-| `RULE-OPTIONS-002` | Saving the options to the registry, which always fails | supported | partial | None | `DEV-OPTIONS-001` | supported | The rebuild saves options reliably instead of failing (deviation). |
+| `RULE-OPTIONS-001` | Reading the options from the registry at startup | supported | complete | None | `DEV-OPTIONS-001`, `DEV-OPTIONS-002`, `DEV-OPTIONS-003`, `DEV-RNG-001` | implemented | A fresh start has the initialized values of the entry's table, apart from Slide Panels and Full screen, which DEV-OPTIONS-002 and DEV-OPTIONS-003 start off. The rebuild reads its own preferences file instead of the registry (DEV-OPTIONS-001), so BUG-OPTIONS-002's carried-over value cannot arise, and it makes no serial-number draws (DEV-RNG-001). Mentality is never stored, so it starts at Criminal at every start, as the original's does. |
+| `RULE-OPTIONS-002` | Saving the options to the registry, which always fails | supported | complete | None | `DEV-OPTIONS-001` | implemented | The rebuild writes its preferences file and the write succeeds (DEV-OPTIONS-001), where the original's write always fails. |
 | `RULE-OPTIONS-003` | Warn if Idle Gangs asks before Done ends a turn with a gang left idle | supported | complete | None | None | implemented | The warning is skipped when the planning time runs out. |
 | `SCR-OPTIONS-001` | Idle gang warning panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-010` | implemented | Adds Escape and right-click cancel beyond the original keys. |
 
