@@ -104,7 +104,7 @@ public sealed class AiFamilySixTurnPlannerTests
         BeginFamilySixTurn(match, player);
         match.Coordinator.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(6, match.AiPlanning.Family(player, 0));

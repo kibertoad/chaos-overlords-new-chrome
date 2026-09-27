@@ -369,17 +369,12 @@ internal static class OriginalAiEquipmentRules
         return 0;
     }
 
+    // RULE-AI-005 reads the weights RULE-AI-003 cached; the aliased read takes the next player's
+    // row as that player's own last pass left it.
     private static bool SectorWeightIsTen(
         MatchState state,
         PlayerId observer,
-        int sectorId) => state.Players.Any(player =>
-            player.Id != observer
-            && player.Status == PlayerStatus.Active
-            && player.Setup.Controller == PlayerController.Human
-            && state.AiStrategy.IsHostile(observer, player.Id)
-            && player.Gangs.Any(gang => gang.IsActive
-                && gang.SectorId == sectorId
-                && state.CanPlayerDetectGang(observer, gang.Id)));
+        int sectorId) => state.AiPlanning.SectorWeight(observer, sectorId) == 10;
 
     private static bool AliasedSectorWeightIsTen(MatchState state, PlayerId player) =>
         player.Value + 1 < MatchLimits.PlayerCount

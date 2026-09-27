@@ -28,6 +28,8 @@ public sealed partial class MatchState
         if (!IsPlannedByComputer(player))
             throw new ArgumentException("AI preparation requires a computer-controlled player.", nameof(player));
         AiPlanningPreparation.ApplyFamilyAssignments(this, player);
+        // RULE-AI-003: the sector weights are cached before the hostility step changes attitudes.
+        AiPlanning.CacheSectorWeights(player, AiTurnPlanner.VisibleWeights(this, player));
         AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
         AiTurnPlanner.PrepareRecoveredFamilyCommands(this, player);
         AiPlanningPreparation.RefreshHireAnchor(this, player);

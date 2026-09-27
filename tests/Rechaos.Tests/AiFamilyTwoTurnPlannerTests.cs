@@ -91,7 +91,7 @@ public sealed class AiFamilyTwoTurnPlannerTests
         SetPreviousAction(match, player, GangAction.Attack);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Move,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
@@ -106,7 +106,7 @@ public sealed class AiFamilyTwoTurnPlannerTests
         BeginFamilyTwoTurn(match, player);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Heal,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
@@ -122,7 +122,7 @@ public sealed class AiFamilyTwoTurnPlannerTests
         BeginFamilyTwoTurn(match, player);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Move, command.Action);
@@ -149,7 +149,7 @@ public sealed class AiFamilyTwoTurnPlannerTests
             attacker.Force, attackerStats.Combat, attackerStats.Defense,
             target.Force, targetStats.Combat, targetStats.Defense));
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Attack, command.Action);
@@ -173,8 +173,8 @@ public sealed class AiFamilyTwoTurnPlannerTests
         control.FinishUpkeep();
         move.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(control, player);
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(move, player);
+        AiHandlerPass.Run(control, player);
+        AiHandlerPass.Run(move, player);
 
         Assert.Equal(GangAction.Control,
             Assert.Single(AiTurnPlanner.Plan(control, player)).Action);
@@ -226,7 +226,7 @@ public sealed class AiFamilyTwoTurnPlannerTests
         BeginFamilyTwoTurn(match, player);
         match.Coordinator.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Terminate,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);

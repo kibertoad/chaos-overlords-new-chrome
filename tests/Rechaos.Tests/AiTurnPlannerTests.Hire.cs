@@ -119,8 +119,13 @@ public sealed partial class AiTurnPlannerTests
             new PlayerId(0), preparation.RejectedGangDefinitionId!.Value).Accepted);
     }
 
-    [Fact]
-    public void RoleFourPlacementUsesFirstVisibleHostileSectorRegardlessOfController()
+    // RULE-AI-010, RULE-AI-004: role 4 places at the first sector the pass weighted 10, which only
+    // a visible gang of a hostile human earns; a hostile computer's gang weighs 1.
+    [Theory]
+    [InlineData(PlayerController.Human, 10)]
+    [InlineData(PlayerController.Computer, 1)]
+    public void RoleFourPlacementUsesFirstSectorWeightedTen(
+        PlayerController rivalController, int expectedWeight)
     {
         var data = BundledOriginalData.Load();
         var observerDefinition = data.Gangs.MaxBy(gang => gang.Stats.Detect)!.Id;
@@ -128,14 +133,19 @@ public sealed partial class AiTurnPlannerTests
         short[] offers = [1, 2, 3];
         var match = CreateMatch(
             data: data, definitionId: observerDefinition, rivalDefinitionId: targetDefinition,
-            cash: 100, hirePool: offers, rivalController: PlayerController.Computer);
+            cash: 100, hirePool: offers, rivalController: rivalController);
         var playerId = new PlayerId(0);
         match.Sectors[1].Owner = playerId;
         match.Players[0].AddGang(new MatchGangState(
             new GangId(30), playerId, observerDefinition, sectorId: 1, force: 5));
         match.AiStrategy.RecordCombat(new PlayerId(1), playerId, openingDamage: 1);
         match.FinishUpkeep();
+        match.AiPlanning.CacheSectorWeights(playerId, AiTurnPlanner.VisibleWeights(match, playerId));
+        var rivalSector = match.Players[1].Gangs[0].SectorId;
 
+        Assert.True(match.AiStrategy.IsHostile(playerId, new PlayerId(1)));
+        Assert.Equal(expectedWeight, match.AiPlanning.SectorWeight(playerId, rivalSector));
+        if (expectedWeight != 10) return;
         var preparation = AiTurnPlanner.PrepareHire(
             match, playerId, new OriginalAiHireRoleSelection(RankingMode: 0, Role: 4),
             match.AiPlanning.SectorAnchor(playerId));

@@ -166,7 +166,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, player.Id, gang.SectorId);
-        var visibleWeight = FirstVisibleOpponentWeight(state, player.Id, visible);
+        var visibleWeight = CachedSectorWeight(state, player.Id, gang.SectorId);
         if (visibleWeight == 10)
         {
             var draw = DrawHumanWeightedAttackTarget(

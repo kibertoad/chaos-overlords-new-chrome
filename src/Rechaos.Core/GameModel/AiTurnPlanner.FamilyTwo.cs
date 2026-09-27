@@ -11,7 +11,7 @@ public static partial class AiTurnPlanner
     {
         var player = state.FindPlayer(playerId)!;
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var sectorWeight = FirstVisibleOpponentWeight(state, playerId, visible);
+        var sectorWeight = CachedSectorWeight(state, playerId, gang.SectorId);
 
         if (OriginalAiEquipmentRules.SelectFamilyTwoUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)

@@ -1766,6 +1766,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-AI-010](../rules/RULE-AI-010.md) | evidence |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | body, evidence |
 
 ## FND-AI-060
@@ -5542,6 +5543,7 @@ None.
 | [FND-AI-059](../findings/FND-AI-059.md) | body |
 | glossary: covered_by | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
+| [RULE-AI-010](../rules/RULE-AI-010.md) | body |
 
 ## RULE-AI-026
 

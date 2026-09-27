@@ -11,7 +11,7 @@ public static partial class AiTurnPlanner
     {
         var player = state.FindPlayer(playerId)!;
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
+        var visibleWeight = CachedSectorWeight(state, playerId, gang.SectorId);
 
         if (visibleWeight == 10)
             TryPrepareFamilySevenAttack(state, playerId, gang, gangSlot, visible);
