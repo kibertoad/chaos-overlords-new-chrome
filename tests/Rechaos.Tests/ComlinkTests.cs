@@ -6,6 +6,7 @@ namespace Rechaos.Tests;
 
 public sealed class ComlinkTests
 {
+    // RULE-COMLINK-001: a 17th message drops the oldest and the count stays at 16.
     [Fact]
     public void InboxRetainsNewestSixteenAndTracksUnreadMessages()
     {

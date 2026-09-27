@@ -7,7 +7,7 @@ superseded_by: []
 impact: rules
 intent: unintended
 player_reliance: unknown
-evidence: [FND-AI-062]
+evidence: [FND-AI-062, FND-AI-063]
 conflicting: []
 split_with: []
 related: [RULE-AI-031]
@@ -17,8 +17,10 @@ related: [RULE-AI-031]
 
 A computer gang of family 13 or 14 that holds its objective sector, sees no
 opponent there, is fit and has nothing to buy, is meant to Influence the site
-with the most Support. Which site it picks, and whether it picks one at all,
-does not follow from the game state.
+with the most Support. The handler compares Support with a value it never
+sets. In this build the value is always 0, so the gang picks the first
+unfinished site with the highest positive Support, as it would with the
+threshold set to 0, and the defect has no visible effect.
 
 ## Trigger conditions
 
@@ -33,19 +35,23 @@ all decline.
 The site scan keeps the slot whose Support is greater than the best value so
 far. The best value lives in a stack local that only the handler's target-draw
 loops write, and neither loop runs on this path. The comparison therefore
-starts from whatever an earlier call left in that stack slot. A large leftover
-value makes the scan choose no site, so the gang plans None; a negative one
-lets a site with no positive Support win.
+starts from whatever an earlier call left in that stack slot. On every path
+into the handler the last call made at the same stack depth is the AI
+selector, whose prologue writes 0 to the local at that address and whose cases
+`0x48` and `0x7C` leave it alone (FND-AI-063). A different call sequence
+before the handler, in another build or after a change to the dispatcher,
+could leave a large value, making the scan choose no site, or a negative one,
+letting a site with no positive Support win.
 
 ## Frequency
 
-Every planning pass that meets the trigger conditions. The leftover value
-depends on the calls made before the handler, which static reading cannot
-determine.
+Every planning pass that meets the trigger conditions reads the unset value,
+and in this build it is 0 every time (FND-AI-063).
 
 ## Player reliance
 
-Unknown. The outcome is not visible as a rule a player could learn.
+Unknown. With the value fixed at 0 the scan behaves as a set threshold of 0
+would, so players see the intended choice.
 
 ## Fixes elsewhere
 
@@ -57,5 +63,4 @@ None known.
 
 ## Open questions
 
-- What the stack slot holds in practice, and whether it is the same on every
-  call, needs a run of the original with a breakpoint on the scan's compare.
+None.

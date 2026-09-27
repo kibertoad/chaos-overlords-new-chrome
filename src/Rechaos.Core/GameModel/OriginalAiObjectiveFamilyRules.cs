@@ -100,9 +100,8 @@ internal static class OriginalAiObjectiveFamilyRules
         if ((uint)sectorId >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sectorId));
 
-        // PLACEHOLDER: RULE-AI-031. The original never sets the starting threshold, so the scan
-        // starts from a leftover stack value (BUG-AI-006); the rebuild starts from 0 until a run
-        // of the original shows what the slot holds.
+        // RULE-AI-031: the original never sets the starting threshold (BUG-AI-006), and the stack
+        // slot it reads always holds the 0 the AI selector left there (FND-AI-063).
         var bestSupport = 0;
         int? bestSlot = null;
         foreach (var site in state.Sectors[sectorId].Sites.OrderBy(site => site.Slot))

@@ -70,19 +70,12 @@ public static class OriginalSelectionLightLayout
     public static Rectangle EndgameTab(Rectangle tab) =>
         new(tab.Right - 5, tab.Y + 5, 3, 11);
 
-    public static Rectangle CityEvents => new(541, 129, 3, 11);
+    /// <summary>SCR-UI-003, FND-EVENT-006: the lit console light the pump copies from the sheet.</summary>
+    public static Rectangle CityLightSource => new(488, 512, 8, 16);
 
-    public static Rectangle CityComlinkView => new(593, 129, 3, 11);
-}
+    public static Rectangle CityEvents => new(540, 126, 8, 16);
 
-public static class ActivePlayerMarkerPresentation
-{
-    private static readonly TimeSpan FrameDuration = TimeSpan.FromMilliseconds(80);
+    public static Rectangle CityComlinkView => new(592, 126, 8, 16);
 
-    public static int Frame(TimeSpan elapsed)
-    {
-        if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
-        return (int)(elapsed.TotalMilliseconds / FrameDuration.TotalMilliseconds)
-            % OriginalSpriteLayout.ActivePlayerMarkerFrameCount;
-    }
+    public static Rectangle CityDone => new(592, 282, 8, 16);
 }
