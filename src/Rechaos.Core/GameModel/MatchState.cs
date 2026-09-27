@@ -302,6 +302,8 @@ public sealed partial class MatchState
     {
         ArgumentNullException.ThrowIfNull(initialRandom);
         ArgumentNullException.ThrowIfNull(aiStrategy);
+        // FND-AI-045: a new match runs the start pass after the city and the headquarters exist.
+        RefreshEveryPlayersAiSectorRecords();
     }
     public OriginalData Definitions { get; }
     public MatchSetup Setup { get; private set; }

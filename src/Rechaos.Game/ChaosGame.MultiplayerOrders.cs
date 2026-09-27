@@ -73,7 +73,7 @@ public sealed partial class ChaosGame
     /// The session has already stopped carrying readiness for the turn, and the server never
     /// recorded the document, so the turn is still waiting on this seat. Left in
     /// <see cref="MultiplayerStage.WaitingForSeal"/> the player could do nothing about that: an
-    /// untimed turn waited on them for good, and the WAIT mark that says so was hidden.
+    /// untimed turn waited on them for good, and the planning light that says so was dark.
     /// </remarks>
     private bool ReopenRefusedTurn(int turn)
     {

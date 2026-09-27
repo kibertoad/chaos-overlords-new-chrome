@@ -118,7 +118,7 @@ public static class MatchStateHasher
     /// multiplayer session version — so the file is refused as an older format before its
     /// fingerprint is ever compared. <c>StateFingerprintVersionCouplingTests</c> holds the rule.
     /// </remarks>
-    internal const int FormatVersion = 9;
+    internal const int FormatVersion = 10;
 
     /// <summary>The number of lowercase hex characters a fingerprint has.</summary>
     public const int FingerprintLength = 2 * DigestBytes;
@@ -265,6 +265,7 @@ public static class MatchStateHasher
         foreach (var sector in planning.CaptureCoverageSectors()) writer.Write(sector);
         foreach (var needsFamily in planning.CaptureNeedsFamily()) writer.Write(needsFamily);
         foreach (var raiderMode in planning.CaptureRaiderMode()) writer.Write(raiderMode);
+        foreach (var weight in planning.CaptureSectorWeights()) writer.Write(weight);
         writer.Write(checked((byte)planning.FirstCombatRecordDefinition));
     }
 

@@ -322,8 +322,12 @@ public static class StatusConsolePresentation
     public static int UnspentCash(MatchPlayerState player, IEnumerable<QueuedCashSpend> spends) =>
         checked(player.Cash - spends.Sum(entry => entry.Price));
 
-    public static int SectorCash(PlayerId? owner, PlayerId activePlayer, int cash) =>
-        owner == activePlayer ? cash : 0;
+    /// <summary>
+    /// RULE-UI-011: a Support or Cash value as the console shows it, the value to the sector's
+    /// owner and 0 to everyone else. A neutral sector has no owner, so it shows 0.
+    /// </summary>
+    public static int OwnerOnly(PlayerId? owner, PlayerId activePlayer, int value) =>
+        owner == activePlayer ? value : 0;
 
     /// <summary>RULE-UI-011: Income, Tolerance, Support and Cash of a sector as the console shows them.</summary>
     public static (int Income, int Tolerance, int Support, int Cash) SectorValues(
@@ -331,10 +335,9 @@ public static class StatusConsolePresentation
     {
         ArgumentNullException.ThrowIfNull(state);
         var sector = state.Sectors[sectorId];
-        var owned = sector.Owner == activePlayer;
         return (sector.Income, sector.Tolerance,
-            owned ? sector.Support : 0,
-            owned ? SectorIncomeResolver.SectorCash(state, sector) : 0);
+            OwnerOnly(sector.Owner, activePlayer, sector.Support),
+            OwnerOnly(sector.Owner, activePlayer, SectorIncomeResolver.SectorCash(state, sector)));
     }
 
     /// <summary>

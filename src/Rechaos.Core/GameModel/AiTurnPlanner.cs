@@ -212,7 +212,7 @@ public static partial class AiTurnPlanner
         if (objectiveSector)
         {
             var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-            var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
+            var visibleWeight = state.AiPlanning.SectorWeight(playerId, gang.SectorId);
             // The human pool is taken on the hostile-owner attitude alone, with no human-owner
             // test.
             var humanTargets = UsesHumanTargetPool(

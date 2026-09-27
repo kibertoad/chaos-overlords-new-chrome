@@ -333,12 +333,40 @@ public static class CityMapLayout
         return new Rectangle(Left + source.X, Top + source.Y, source.Width, source.Height);
     }
 
+    /// <summary>
+    /// The black bands over the cells of a three-by-three crop of the map around
+    /// <paramref name="centerSectorId"/> that lie beyond the city's edge. The top row and left
+    /// column end at <paramref name="nearEdge"/> and the bottom row and right column start at
+    /// <paramref name="farStart"/>, both from <paramref name="area"/>'s corner, as each caller's
+    /// evidence places them (FND-MOVE-004, FND-UI-018).
+    /// </summary>
+    public static IReadOnlyList<Rectangle> OffMapBands(
+        int centerSectorId, Rectangle area, Point nearEdge, Point farStart)
+    {
+        ValidateSector(centerSectorId);
+        var column = centerSectorId % MatchLimits.BoardWidth;
+        var row = centerSectorId / MatchLimits.BoardWidth;
+        var last = MatchLimits.BoardWidth - 1;
+        var bands = new List<Rectangle>(2);
+        if (row == 0) bands.Add(new Rectangle(area.X, area.Y, area.Width, nearEdge.Y));
+        if (row == last)
+            bands.Add(new Rectangle(area.X, area.Y + farStart.Y, area.Width, area.Height - farStart.Y));
+        if (column == 0) bands.Add(new Rectangle(area.X, area.Y, nearEdge.X, area.Height));
+        if (column == last)
+            bands.Add(new Rectangle(area.X + farStart.X, area.Y, area.Width - farStart.X, area.Height));
+        return bands;
+    }
+
     // Every PX1000x cell contains its own copy of the green grid edge. Keep the
     // neutral sheet's grid fixed and replace only the artwork inside an owned cell.
     public static Rectangle OwnershipSource(int sectorId) => Inset(Source(sectorId));
     public static Rectangle OwnershipDestination(int sectorId) => Inset(Destination(sectorId));
 
     public static int OwnershipSheet(PlayerId? owner) => owner?.Value + 1 ?? 0;
+
+    /// <summary>A rectangle of the screen's map at <c>(2,42)</c> in map coordinates.</summary>
+    public static Rectangle MapArea(Rectangle screen) =>
+        screen with { X = screen.X - Left, Y = screen.Y - Top };
 
     /// <summary>
     /// FND-UI-015: a press on the map takes the sector <c>(x - 2) / 54 + ((y - 42) / 52) * 8</c>,
@@ -422,7 +450,6 @@ public static partial class OriginalSpriteLayout
     public static Rectangle SnubbedStamp => new(178, 299, 64, 64);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
-    public static Rectangle SectorBackArrow => new(120, 211, 30, 47);
 
     public static Rectangle ActivePlayerMarker(int frame)
     {
@@ -487,8 +514,11 @@ public static class SectorGangDropTarget
             .ThenBy(gang => gang.Id.Value)
             .Take(SectorGangCardLayout.VisibleCards)
             .ToArray();
-        var slot = HitTest.IndexAt(displayed.Length, SectorGangCardLayout.Frame, point);
-        return slot >= 0 && displayed[slot].Owner != actorOwner ? displayed[slot].Id : null;
+        // The card a press here would take (FND-UI-015), gaps between the cards included.
+        var slot = SectorGangCardLayout.CardAt(point);
+        return slot >= 0 && slot < displayed.Length && displayed[slot].Owner != actorOwner
+            ? displayed[slot].Id
+            : null;
     }
 }
 

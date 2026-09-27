@@ -128,7 +128,7 @@ public sealed class AiFamilyTenTurnPlannerTests
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.Coordinator.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Hide,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);

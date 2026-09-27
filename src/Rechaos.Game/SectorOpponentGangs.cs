@@ -33,6 +33,33 @@ public static class SectorOpponentGangs
         owner != viewer && Detected(state, viewer, owner, sectorId).Any();
 
     /// <summary>
+    /// For every seat, whether <paramref name="viewer"/> sees at least one active gang of that
+    /// seat's overlord in the sector: the portraits the sector view's Overlord bar leaves undimmed
+    /// (FND-UI-018). One pass over the gangs, for a bar drawn every frame.
+    /// </summary>
+    public static bool[] SeenSeats(MatchState state, PlayerId viewer, int sectorId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (state.FindPlayer(viewer) is null) throw new ArgumentOutOfRangeException(nameof(viewer));
+        if (sectorId is < 0 or >= MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(sectorId));
+        var seen = new bool[MatchLimits.PlayerCount];
+        foreach (var player in state.Players)
+        {
+            var owner = player.Id;
+            foreach (var gang in player.Gangs)
+            {
+                if (!gang.IsActive || gang.SectorId != sectorId
+                    || (owner != viewer && !state.CanPlayerDetectGang(viewer, gang.Id)))
+                    continue;
+                seen[owner.Value] = true;
+                break;
+            }
+        }
+        return seen;
+    }
+
+    /// <summary>
     /// The overlord whose portrait on the Overlord bar covers the point, when one does
     /// (FND-UI-015: <c>(12 + 70n, 5, 62, 32)</c>).
     /// </summary>

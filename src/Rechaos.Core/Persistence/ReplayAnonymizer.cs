@@ -240,6 +240,9 @@ public static class ReplayAnonymizer
             case ReplayOperationKind.EmptyComlinkInboxes:
                 VerifyOutcome(step.Accepted, recorder.EmptyComlinkInboxes(), index);
                 break;
+            case ReplayOperationKind.RefreshAiSectorRecords:
+                recorder.RefreshAiSectorRecords();
+                break;
             default:
                 throw new ReplayAnonymizationException(
                     $"Journal step {index} has an operation this build cannot re-apply.");

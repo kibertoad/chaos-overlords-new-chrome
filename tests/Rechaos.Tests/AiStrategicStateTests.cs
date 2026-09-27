@@ -128,6 +128,34 @@ public sealed class AiStrategicStateTests
                 && command.Target == CommandTarget.Gang(new GangId(20)));
     }
 
+    // RULE-AI-003: the pass caches the sector weights before its hostility step, so the turn a
+    // human becomes hostile its gangs still weigh 1 in the cache the handlers and the hire read.
+    [Fact]
+    public void SectorWeightsAreCachedBeforeTheHostilityStep()
+    {
+        var match = CreateTerritorialPressureMatch(
+            AiDifficulty.Criminal, PlayerController.Human, advantagedSectors: 4);
+        match.FinishUpkeep();
+        var observer = new PlayerId(0);
+        var before = VisibleWeights(match, observer);
+
+        match.PrepareAiPlanning(observer);
+
+        var after = VisibleWeights(match, observer);
+        Assert.True(match.AiStrategy.IsHostile(observer, new PlayerId(1)));
+        Assert.Contains((byte)10, after);
+        Assert.DoesNotContain((byte)10, before);
+        Assert.Equal(before, Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(sectorId => (byte)match.AiPlanning.SectorWeight(observer, sectorId)));
+    }
+
+    private static byte[] VisibleWeights(MatchState match, PlayerId observer)
+    {
+        var weights = new byte[MatchLimits.SectorCount];
+        AiTurnPlanner.ComputeVisibleWeights(match, observer, weights);
+        return weights;
+    }
+
     [Fact]
     public void SectorCombatAdvantageUsesStrictInteger75PercentBoundary()
     {

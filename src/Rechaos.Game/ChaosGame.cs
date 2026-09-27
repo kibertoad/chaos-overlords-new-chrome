@@ -20,9 +20,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Color GangDragSectorHighlight =
         Color.FromNonPremultiplied(74, 156, 92, 160);
     /// <summary>
-    /// The translucent wash and inner outline a legal minimap destination is painted with. Every
-    /// minimap cell already carries a 1-pixel green frame, so an outline on that frame alone is
-    /// lost in it; the wash tints the whole tile and the outline sits just inside the frame.
+    /// The translucent wash and inner outline a legal destination on the nine-sector display is
+    /// painted with. Every cell of the display is cropped from the city map, whose art draws a
+    /// 1-pixel green grid edge round it, so an outline on that edge alone is lost in it; the wash
+    /// tints the whole tile and the outline sits just inside the edge.
     /// </summary>
     private static readonly Color GangDragDestinationWash =
         Color.FromNonPremultiplied(120, 255, 140, 60);
@@ -508,7 +509,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             EndUpdate(gameTime, keyboard, mouse);
             return;
         }
-        if (rightClicked && !_gameMenuOpen) CancelCurrentInteraction();
+        if (rightClicked && !_gameMenuOpen)
+            CancelCurrentInteraction(
+                VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var rightPoint) ? rightPoint : null);
         if (_gameMenuOpen)
         {
             UpdateGameMenu(keyboard);
@@ -775,7 +778,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             }
         }
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released)
-            CompletePointerRelease(pointerMapped, virtualPoint);
+            CompletePointerRelease(pointerMapped, virtualPoint, rightButton: false);
+        if (_previousMouse.RightButton == ButtonState.Pressed && mouse.RightButton == ButtonState.Released)
+            CompletePointerRelease(pointerMapped, virtualPoint, rightButton: true);
         CaptureNewCombatAnimations();
         EndUpdate(gameTime, keyboard, mouse);
     }

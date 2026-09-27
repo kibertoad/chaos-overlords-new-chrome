@@ -719,7 +719,7 @@ public sealed partial class AiTurnPlannerTests
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
         Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(player, 0));
@@ -745,7 +745,7 @@ public sealed partial class AiTurnPlannerTests
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.AiPlanning.SetFocusValue(player, 0, 7);
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
         Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(player, 0));

@@ -84,7 +84,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
             player, 0, GangAction.Influence, new AiActionTarget(0, 0));
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Influence,
             match.AiPlanning.PlannedAction(player, 0));
@@ -147,7 +147,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Move);
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Move,
             match.AiPlanning.PlannedAction(player, 0));
@@ -165,7 +165,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
         match.AiPlanning.SeedFamily(player, 0, 3);
         match.Coordinator.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Terminate, command.Action);
@@ -184,7 +184,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
         SetPreviousAction(match, player, GangAction.Bribe);
         match.Coordinator.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.None,
             match.AiPlanning.PlannedAction(player, 0));
