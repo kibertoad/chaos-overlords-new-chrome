@@ -86,32 +86,6 @@ public static partial class AiTurnPlanner
                 .Setup.Controller == PlayerController.Human)
             .ToArray();
 
-    /// <summary>
-    /// RULE-AI-003: the weight the planning pass cached for the gang's sector, which the handlers
-    /// read in place of a fresh <c>visible_weight</c>.
-    /// </summary>
-    private static int CachedSectorWeight(MatchState state, PlayerId playerId, int sectorId) =>
-        state.AiPlanning.SectorWeight(playerId, sectorId);
-
-    /// <summary>
-    /// RULE-AI-004's <c>visible_weight</c> for every sector: the first gang of another player the
-    /// observer can see, in player and roster order, gives 10 when its owner is a human the
-    /// observer is hostile to and 1 otherwise; a sector with no visible gang gives 0.
-    /// </summary>
-    internal static IReadOnlyList<int> VisibleWeights(MatchState state, PlayerId observer)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        var weights = new int[MatchLimits.SectorCount];
-        for (var sectorId = 0; sectorId < MatchLimits.SectorCount; sectorId++)
-        {
-            var visible = VisibleOpponentsInSector(state, observer, sectorId);
-            weights[sectorId] = visible.Count == 0
-                ? 0
-                : VisibleOpponentWeight(state, observer, visible[0].Gang.Owner);
-        }
-        return weights;
-    }
-
     /// <summary>The family 0 and family 4 draw: human-weighted pool, family 12 acceptance test.</summary>
     private static RecoveredAttackDraw DrawHumanWeightedAttackTarget(
         MatchState state,

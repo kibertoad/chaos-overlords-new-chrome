@@ -28,11 +28,30 @@ public sealed partial class MatchState
         if (!IsPlannedByComputer(player))
             throw new ArgumentException("AI preparation requires a computer-controlled player.", nameof(player));
         AiPlanningPreparation.ApplyFamilyAssignments(this, player);
-        // RULE-AI-003: the sector weights are cached before the hostility step changes attitudes.
-        AiPlanning.CacheSectorWeights(player, AiTurnPlanner.VisibleWeights(this, player));
-        AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(this, player);
+        var weights = RefreshAiSectorRecords(player);
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(this, weights);
         AiPlanningPreparation.RefreshHireAnchor(this, player);
+    }
+
+    /// <summary>
+    /// RULE-AI-003, FND-AI-045: when a match starts or is loaded, the refresh of the planning pass
+    /// runs once for every player in slot order, humans included, so each row of sector weights
+    /// holds values before its player's first pass and the aliased read of RULE-AI-005 finds a
+    /// human's row filled. A local load calls this; a new match runs it as it is built.
+    /// </summary>
+    internal void RefreshEveryPlayersAiSectorRecords()
+    {
+        foreach (var player in Players) RefreshAiSectorRecords(player.Id);
+    }
+
+    /// <summary>
+    /// RULE-AI-003: the sector weights are cached before the hostility step changes attitudes.
+    /// </summary>
+    private AiTurnPlanner.CachedSectorWeights RefreshAiSectorRecords(PlayerId player)
+    {
+        var weights = AiTurnPlanner.CachedSectorWeights.Cache(this, player);
+        AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
+        return weights;
     }
 
     public AiTurnPlanner.HirePreparation PrepareAiHiring(PlayerId player)

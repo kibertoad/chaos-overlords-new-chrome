@@ -107,8 +107,9 @@ public sealed partial class ChaosGame
     /// <param name="enteredFromSave">
     /// Whether the match is entered the way the original enters a loaded game. RULE-RNG-001: it
     /// draws on from the run's sequence, so reloading a save does not replay its luck.
-    /// RULE-COMLINK-004, FMT-STATE-005: every inbox is emptied, so it starts with no messages. The
-    /// journal records both moves, and replays them. A replay load keeps the sequence and the
+    /// RULE-COMLINK-004, FMT-STATE-005: every inbox is emptied, so it starts with no messages.
+    /// RULE-AI-003, FND-AI-045: every player's sector weights and combat-advantage hostility are
+    /// refreshed, as the original's load does. The journal records all three moves, and replays them. A replay load keeps the sequence and the
     /// inboxes the journal reached.
     /// </param>
     private void AdoptMatch(
@@ -120,6 +121,7 @@ public sealed partial class ChaosGame
         {
             _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
             _actions.HotSeatRecorder.EmptyComlinkInboxes();
+            _actions.HotSeatRecorder.RefreshAiSectorRecords();
         }
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
         if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);

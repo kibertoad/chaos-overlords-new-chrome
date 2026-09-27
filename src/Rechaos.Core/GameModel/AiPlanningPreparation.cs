@@ -91,7 +91,7 @@ internal static class AiPlanningPreparation
                 other.Status == PlayerStatus.Active && other.Cash > playerState.Cash),
             firstHostileSector.HasValue,
             firstHostileSector is { } sectorId
-                && HasFamilySixCoverage(state, player, playerState, sectorId),
+                && AiTurnPlanner.FamilySixCovers(state, playerState, sectorId),
             CountFamilies(state, player, playerState, 5),
             CountFamilies(state, player, playerState, 7),
             state.AiPlanning.PreviousHireRole(player),
@@ -211,17 +211,4 @@ internal static class AiPlanningPreparation
             .Where(sectorId => state.AiPlanning.SectorWeight(observer, sectorId) == 10)
             .Select(sectorId => (int?)sectorId)
             .FirstOrDefault();
-
-    private static bool HasFamilySixCoverage(
-        MatchState state,
-        PlayerId player,
-        MatchPlayerState playerState,
-        int sectorId) => playerState.Gangs
-        .Select((gang, slot) => (gang, slot))
-        .Any(entry => entry.gang.IsActive
-            && state.AiPlanning.Family(player, entry.slot) == 6
-            && (state.AiPlanning.FocusValue(player, entry.slot)
-                    != AiPlanningState.InactiveFocusValue
-                ? entry.gang.SectorId
-                : state.AiPlanning.CoverageSector(player, entry.slot)) == sectorId);
 }

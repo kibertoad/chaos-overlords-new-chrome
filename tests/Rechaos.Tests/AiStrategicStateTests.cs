@@ -137,16 +137,23 @@ public sealed class AiStrategicStateTests
             AiDifficulty.Criminal, PlayerController.Human, advantagedSectors: 4);
         match.FinishUpkeep();
         var observer = new PlayerId(0);
-        var before = AiTurnPlanner.VisibleWeights(match, observer);
+        var before = VisibleWeights(match, observer);
 
         match.PrepareAiPlanning(observer);
 
-        var after = AiTurnPlanner.VisibleWeights(match, observer);
+        var after = VisibleWeights(match, observer);
         Assert.True(match.AiStrategy.IsHostile(observer, new PlayerId(1)));
-        Assert.Contains(10, after);
-        Assert.DoesNotContain(10, before);
+        Assert.Contains((byte)10, after);
+        Assert.DoesNotContain((byte)10, before);
         Assert.Equal(before, Enumerable.Range(0, MatchLimits.SectorCount)
-            .Select(sectorId => match.AiPlanning.SectorWeight(observer, sectorId)));
+            .Select(sectorId => (byte)match.AiPlanning.SectorWeight(observer, sectorId)));
+    }
+
+    private static byte[] VisibleWeights(MatchState match, PlayerId observer)
+    {
+        var weights = new byte[MatchLimits.SectorCount];
+        AiTurnPlanner.ComputeVisibleWeights(match, observer, weights);
+        return weights;
     }
 
     [Fact]

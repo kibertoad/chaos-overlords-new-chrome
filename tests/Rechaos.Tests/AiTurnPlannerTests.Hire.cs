@@ -120,12 +120,15 @@ public sealed partial class AiTurnPlannerTests
     }
 
     // RULE-AI-010, RULE-AI-004: role 4 places at the first sector the pass weighted 10, which only
-    // a visible gang of a hostile human earns; a hostile computer's gang weighs 1.
+    // a visible gang of a hostile human earns. A hostile computer's gang weighs 1, so with no other
+    // hostile human in sight first_hostile is 100, the placement writes no destination and nothing
+    // is hired or snubbed.
     [Theory]
-    [InlineData(PlayerController.Human, 10)]
-    [InlineData(PlayerController.Computer, 1)]
+    [InlineData(PlayerController.Human, 10, 1, 1)]
+    [InlineData(PlayerController.Computer, 1, OriginalAiHirePlacementRules.InactiveGangSector, null)]
     public void RoleFourPlacementUsesFirstSectorWeightedTen(
-        PlayerController rivalController, int expectedWeight)
+        PlayerController rivalController, int expectedWeight, int expectedFirstHostile,
+        int? expectedHireSector)
     {
         var data = BundledOriginalData.Load();
         var observerDefinition = data.Gangs.MaxBy(gang => gang.Stats.Detect)!.Id;
@@ -140,17 +143,18 @@ public sealed partial class AiTurnPlannerTests
             new GangId(30), playerId, observerDefinition, sectorId: 1, force: 5));
         match.AiStrategy.RecordCombat(new PlayerId(1), playerId, openingDamage: 1);
         match.FinishUpkeep();
-        match.AiPlanning.CacheSectorWeights(playerId, AiTurnPlanner.VisibleWeights(match, playerId));
+        AiTurnPlanner.CachedSectorWeights.Cache(match, playerId);
         var rivalSector = match.Players[1].Gangs[0].SectorId;
+        var anchor = match.AiPlanning.SectorAnchor(playerId);
 
         Assert.True(match.AiStrategy.IsHostile(playerId, new PlayerId(1)));
         Assert.Equal(expectedWeight, match.AiPlanning.SectorWeight(playerId, rivalSector));
-        if (expectedWeight != 10) return;
+        Assert.Equal(expectedFirstHostile + AiPlanningState.SectorAnchorOffset,
+            AiPlanningPreparation.PrepareHirePlacementMode(match, playerId, 4, anchor));
         var preparation = AiTurnPlanner.PrepareHire(
-            match, playerId, new OriginalAiHireRoleSelection(RankingMode: 0, Role: 4),
-            match.AiPlanning.SectorAnchor(playerId));
+            match, playerId, new OriginalAiHireRoleSelection(RankingMode: 0, Role: 4), anchor);
 
-        Assert.NotNull(preparation.Choice);
-        Assert.Equal(1, preparation.Choice.SectorId);
+        Assert.Equal(expectedHireSector, preparation.Choice?.SectorId);
+        Assert.Null(preparation.RejectedGangDefinitionId);
     }
 }

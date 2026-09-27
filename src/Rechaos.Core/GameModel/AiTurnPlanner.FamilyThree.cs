@@ -80,7 +80,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = CachedSectorWeight(state, playerId, gang.SectorId);
+        var visibleWeight = state.AiPlanning.SectorWeight(playerId, gang.SectorId);
         if (visibleWeight != 10)
         {
             PrepareFamilyThreeCashSiteOrTerritorial(

@@ -30,7 +30,9 @@ public enum ReplayOperationKind : byte
     /// <summary>A local load moves the generator to the run's sequence (RULE-RNG-001).</summary>
     ContinueRandomStream,
     /// <summary>A local load empties every Comlink inbox (RULE-COMLINK-004, FMT-STATE-005).</summary>
-    EmptyComlinkInboxes
+    EmptyComlinkInboxes,
+    /// <summary>A local load reruns every player's planning refresh (RULE-AI-003, FND-AI-045).</summary>
+    RefreshAiSectorRecords
 }
 
 public sealed record ReplayStep(
@@ -307,6 +309,13 @@ public sealed class MatchReplayRecorder
         Add(new ReplayStep(
             ReplayOperationKind.EmptyComlinkInboxes, CurrentHash(), Accepted: changed));
         return changed;
+    }
+
+    public void RefreshAiSectorRecords()
+    {
+        EnsureSynchronized();
+        State.RefreshEveryPlayersAiSectorRecords();
+        Add(new ReplayStep(ReplayOperationKind.RefreshAiSectorRecords, CurrentHash()));
     }
 
     internal ReplayDocument Capture()
@@ -649,6 +658,9 @@ public static class MatchReplaySerializer
                     throw new InvalidDataException(
                         $"Replay step {index} produced a different Comlink clearing result.");
                 break;
+            case ReplayOperationKind.RefreshAiSectorRecords:
+                state.RefreshEveryPlayersAiSectorRecords();
+                break;
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }
     }
@@ -695,7 +707,8 @@ public static class MatchReplaySerializer
             ReplayOperationKind.FinishUpkeep
                 or ReplayOperationKind.FinishExecutionPhase
                 or ReplayOperationKind.FinishPlayerElimination
-                or ReplayOperationKind.PrepareSimultaneousHireOffers => ReplayStepFields.None,
+                or ReplayOperationKind.PrepareSimultaneousHireOffers
+                or ReplayOperationKind.RefreshAiSectorRecords => ReplayStepFields.None,
             _ => (ReplayStepFields)(-1)
         };
         if (actual != expected)

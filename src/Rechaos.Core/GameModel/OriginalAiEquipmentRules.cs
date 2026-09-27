@@ -325,7 +325,7 @@ internal static class OriginalAiEquipmentRules
                     : state.Sectors[sectorId].Owner?.Value ?? -1;
                 var hasVisibleHostileHuman = sectorId == MatchLimits.SectorCount
                     ? AliasedSectorWeightIsTen(state, player.Id)
-                    : SectorWeightIsTen(state, player.Id, sectorId);
+                    : state.AiPlanning.SectorWeight(player.Id, sectorId) == 10;
                 var nearbyEquipmentNeed = state.Setup.Scenario == ScenarioId.Greed
                     ? hasVisibleHostileHuman && owner == player.Id.Value
                     : (owner >= 0 && owner != player.Id.Value) || hasVisibleHostileHuman;
@@ -334,7 +334,7 @@ internal static class OriginalAiEquipmentRules
         }
 
         return state.Sectors[gang.SectorId].Owner == player.Id
-            && SectorWeightIsTen(state, player.Id, gang.SectorId);
+            && state.AiPlanning.SectorWeight(player.Id, gang.SectorId) == 10;
     }
 
     public static int EquipmentReplacementCooldown(int itemCost)
@@ -369,16 +369,11 @@ internal static class OriginalAiEquipmentRules
         return 0;
     }
 
-    // RULE-AI-005 reads the weights RULE-AI-003 cached; the aliased read takes the next player's
-    // row as that player's own last pass left it.
-    private static bool SectorWeightIsTen(
-        MatchState state,
-        PlayerId observer,
-        int sectorId) => state.AiPlanning.SectorWeight(observer, sectorId) == 10;
-
+    // RULE-AI-005 weight_at(player, 64): the flat array gives the next player's sector 0, as that
+    // player's own last pass, or the start or load pass (RULE-AI-003), left it.
     private static bool AliasedSectorWeightIsTen(MatchState state, PlayerId player) =>
         player.Value + 1 < MatchLimits.PlayerCount
-        && SectorWeightIsTen(state, new PlayerId(player.Value + 1), 0);
+        && state.AiPlanning.SectorWeight(new PlayerId(player.Value + 1), 0) == 10;
 
     private static void ValidateGang(
         MatchState state,

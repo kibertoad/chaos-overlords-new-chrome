@@ -195,17 +195,9 @@ public sealed class AiPlanningState
     public int SectorWeight(PlayerId player, int sectorId) =>
         _sectorWeights[SectorWeightIndex(player, sectorId)];
 
-    /// <summary>RULE-AI-003: stores the player's 64 sector weights at the start of its pass.</summary>
-    internal void CacheSectorWeights(PlayerId player, IReadOnlyList<int> weights)
-    {
-        ArgumentNullException.ThrowIfNull(weights);
-        if (weights.Count != MatchLimits.SectorCount)
-            throw new ArgumentException("A player caches one weight per sector.", nameof(weights));
-        for (var sectorId = 0; sectorId < MatchLimits.SectorCount; sectorId++)
-            _sectorWeights[SectorWeightIndex(player, sectorId)] = weights[sectorId] is 0 or 1 or 10
-                ? checked((byte)weights[sectorId])
-                : throw new ArgumentOutOfRangeException(nameof(weights));
-    }
+    /// <summary>The player's 64 cached sector weights (RULE-AI-003), for its pass to overwrite.</summary>
+    internal Span<byte> SectorWeightRow(PlayerId player) =>
+        _sectorWeights.AsSpan(PlayerIndex(player) * MatchLimits.SectorCount, MatchLimits.SectorCount);
 
     internal IReadOnlyList<int> CaptureCurrentHireRoles() => _currentHireRoles.ToArray();
     internal IReadOnlyList<int> CapturePreviousHireRoles() => _previousHireRoles.ToArray();
