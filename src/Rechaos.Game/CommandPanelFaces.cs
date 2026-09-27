@@ -18,8 +18,8 @@ public enum CommandPanelButton
 }
 
 /// <summary>
-/// The Cancel and confirm faces of the Equip, Give, Sell and Move panels (SCR-EQUIP-001,
-/// SCR-GIVE-001, SCR-SELL-001, SCR-MOVE-001). Both act on a release inside the half-open
+/// The Cancel and confirm faces of the Equip, Give, Sell, Move and Influence panels
+/// (SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-MOVE-001, SCR-INFLUENCE-001). Both act on a release inside the half-open
 /// 49-by-22 targets; the images are 50 by 23, one pixel larger.
 /// </summary>
 public static class CommandPanelFaces
