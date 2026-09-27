@@ -19,8 +19,9 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.D)) MoveCursor(1, 0);
         if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.W)) MoveCursor(0, -1);
         if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.S)) MoveCursor(0, 1);
-        // SCR-UI-003: Enter or Execute opens the detailed sector screen for the selected sector.
-        if (PressedEnterOrExecute(keyboard)) OpenSectorDetails();
+        // SCR-UI-003: Enter or Execute opens the detailed sector screen for the selected sector,
+        // during planning.
+        if (PressedEnterOrExecute(keyboard) && CityPlanningInputOpen()) OpenSectorDetails();
         if (Pressed(keyboard, Keys.C)) OpenCommands();
         if (Pressed(keyboard, Keys.G)) CycleGang(1);
         if (Pressed(keyboard, Keys.I)) OpenSectorDetails();
@@ -70,13 +71,33 @@ public sealed partial class ChaosGame
         {
             _cursor = selected;
             _message = string.Empty;
-            if (_citySectorClicks.Register(selected, _inputTime)) OpenSectorDetails();
+            if (_citySectorClicks.Register(selected, _inputTime) && CityPlanningInputOpen())
+                OpenSectorDetails();
         }
         else
         {
             _citySectorClicks.Cancel();
             BeginCityConsolePress(point, ClientScreen.City);
         }
+    }
+
+    /// <summary>
+    /// SCR-UI-003: the city's keys and sector double-click are enabled during planning only. A
+    /// refused input says why, as the rebuild's message line does for the other refused inputs.
+    /// </summary>
+    private bool CityPlanningInputOpen()
+    {
+        if (_actions is null)
+        {
+            RejectInput(OnlinePlanningClosed);
+            return false;
+        }
+        if (_state is null || _state.Coordinator.Phase != TurnPhase.Command)
+        {
+            RejectInput("SECTOR VIEW REQUIRES COMMAND PHASE");
+            return false;
+        }
+        return true;
     }
 
     private bool BeginCityConsolePress(Point point, ClientScreen returnScreen)
@@ -162,8 +183,12 @@ public sealed partial class ChaosGame
         OpenManagement(ClientScreen.Finance, returnScreen);
     }
 
+    /// <summary>
+    /// The city screen's console and Overlord bar, with the city map unless
+    /// <paramref name="sectorView"/> says the sector view is drawn over it.
+    /// </summary>
     private void DrawBoard(
-        SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state, bool drawMapLayer = true)
+        SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state, SectorViewFrame? sectorView = null)
     {
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
@@ -172,11 +197,17 @@ public sealed partial class ChaosGame
         // FND-UI-017, FND-UI-018: the marker follows the viewed player, which on the sector view is
         // the player whose cards are shown, and there a portrait dims when the active player sees
         // none of that player's gangs in the sector.
-        if (drawMapLayer)
-            DrawOverlordBar(batch, pixel, state, state.Coordinator.ActivePlayer, sectorView: null);
+        if (sectorView is { } view)
+        {
+            _overlordMarkerClock.SectorView(_cursor, view.Viewed, _inputTime);
+            DrawOverlordBar(batch, pixel, state, view.Viewed, view.SeatsSeen);
+        }
         else
-            DrawOverlordBar(batch, pixel, state, SectorViewedPlayer(state), sectorView: _cursor);
-        if (drawMapLayer)
+        {
+            _overlordMarkerClock.OtherView();
+            DrawOverlordBar(batch, pixel, state, state.Coordinator.ActivePlayer, seatsSeen: null);
+        }
+        if (sectorView is null)
         {
             DrawPreparedCityMap(batch, pixel, state, player.Id,
                 CityMapLayout.Bounds with { X = 0, Y = 0 }, CityMapLayout.Bounds.Location);
@@ -264,13 +295,13 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// RULE-UI-011, RULE-UI-004: a sector value in two cells from x 568, red without its sign when
-    /// negative. <paramref name="color"/> is the colour of a value that is not negative (DEV-UI-007
-    /// turns Tolerance orange).
+    /// negative, and with its whole leading quotient in the first cell when it is wider than two.
+    /// <paramref name="color"/> is the colour of a value that is not negative (DEV-UI-007 turns
+    /// Tolerance orange).
     /// </summary>
     private static void DrawSectorNumber(PixelFont font, SpriteBatch batch, int value, int y, Color color)
     {
-        var display = NativeTwoCellNumberPresentation.Format(
-            Math.Clamp(value, -99, 99), NativeTwoCellNumberPresentation.Kind.Baseline);
+        var display = NativeTwoCellNumberPresentation.Format(value, NativeTwoCellNumberPresentation.Kind.Baseline);
         font.Draw(batch, display.Digits,
             new Vector2(StatusConsoleLayout.SectorValueLeft + (2 - display.Digits.Length) * OriginalFontLayout.CellWidth, y),
             display.IsNegative ? Color.Red : color, 1);
@@ -369,60 +400,14 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Copies one sector's cell of the drawn city map to <paramref name="topLeft"/>: its ground,
-    /// owner's art, objective pylons, site markers and the active player's gang marker, as
-    /// <see cref="DrawBoard"/> draws them (SCR-UI-005, FND-UI-014).
+    /// Copies one sector's cell of the prepared city map to <paramref name="topLeft"/>, with what
+    /// the map holds there for the active player: ground, owner's art, pylons, site markers and
+    /// gang marker (SCR-UI-005, FND-UI-014).
     /// </summary>
     private void DrawCitySectorCell(
-        SpriteBatch batch, Texture2D pixel, MatchState state, int sectorId, Point topLeft)
-    {
-        var cell = CityMapLayout.Destination(sectorId);
-        var offset = topLeft - cell.Location;
-        Rectangle Moved(Rectangle rectangle) =>
-            new(rectangle.X + offset.X, rectangle.Y + offset.Y, rectangle.Width, rectangle.Height);
-
-        var sector = state.Sectors[sectorId];
-        var neutralLayer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
-        if (neutralLayer is not null)
-            batch.Draw(neutralLayer, Moved(cell), CityMapLayout.Source(sectorId), Color.White);
-        var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
-        if (sector.Owner is not null && layer is not null)
-            batch.Draw(layer, Moved(CityMapLayout.OwnershipDestination(sectorId)),
-                CityMapLayout.OwnershipSource(sectorId), Color.White);
-        else if (neutralLayer is null)
-            batch.Draw(pixel, Moved(cell), sector.Owner is { } owner
-                ? PlayerColors[owner.Value] * .68f
-                : new Color(24, 37, 39));
-        if (_uiKeyedSprites is not null
-            && ObjectiveSectorMarkerPresentation.IsMarked(
-                state.Setup.Scenario, sectorId, sector.IsImportant))
-            batch.Draw(_uiKeyedSprites, Moved(cell),
-                OriginalSpriteLayout.ObjectiveSectorPylons, Color.White);
-
-        var player = state.Players[state.Coordinator.ActivePlayer?.Value ?? 0];
-        foreach (var marker in CitySiteMarkerProjection.Project(
-                     state, player.Id, _siteSearchSelections.For(player.Id)))
-        {
-            if (marker.SectorId != sectorId) continue;
-            var destination = Moved(CitySiteMarkerProjection.Destination(marker));
-            if (_siteMarkerSprites is not null)
-                batch.Draw(_siteMarkerSprites, destination,
-                    CitySiteMarkerProjection.Source(marker), Color.White);
-            else
-                DrawBorder(batch, pixel, destination,
-                    marker.Controlled ? Color.Lime : Color.Cyan, 1);
-        }
-
-        if (_uiKeyedSprites is null) return;
-        var gangs = player.Gangs.Where(gang => gang.IsActive && gang.SectorId == sectorId).ToArray();
-        var pendingHire = player.PendingHires.Any(pending => pending.TargetSectorId == sectorId);
-        if (gangs.Length > 0)
-            batch.Draw(_uiKeyedSprites, Moved(GangStatusMarkerLayout.Destination(sectorId)),
-                GangStatusSource(state, player.Id, sectorId, gangs, pendingHire), Color.White);
-        else if (pendingHire)
-            batch.Draw(_uiKeyedSprites, Moved(GangStatusMarkerLayout.Destination(sectorId)),
-                OriginalSpriteLayout.IncomingGangStatus, Color.White);
-    }
+        SpriteBatch batch, Texture2D pixel, MatchState state, int sectorId, Point topLeft) =>
+        DrawPreparedCityMap(batch, pixel, state, state.Players[state.Coordinator.ActivePlayer?.Value ?? 0].Id,
+            CityMapLayout.Source(sectorId), topLeft);
 
     private Rectangle GangStatusSource(
         MatchState state,

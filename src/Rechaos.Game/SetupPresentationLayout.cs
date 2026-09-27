@@ -76,6 +76,4 @@ public static class OriginalSelectionLightLayout
     public static Rectangle CityEvents => new(540, 126, 8, 16);
 
     public static Rectangle CityComlinkView => new(592, 126, 8, 16);
-
-    public static Rectangle CityDone => new(592, 282, 8, 16);
 }

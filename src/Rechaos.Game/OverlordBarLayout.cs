@@ -71,6 +71,16 @@ public static class ActivePlayerMarkerPresentation
     public static int Frame(TimeSpan elapsed) =>
         (int)(Steps(elapsed) % OriginalSpriteLayout.ActivePlayerMarkerFrameCount);
 
+    /// <summary>
+    /// The marker frame at <paramref name="elapsed"/> when its counter was set back to 0 at
+    /// <paramref name="reset"/>: it steps on the same ticks as before, counted from the reset.
+    /// </summary>
+    public static int Frame(TimeSpan elapsed, TimeSpan reset)
+    {
+        if (reset > elapsed) throw new ArgumentOutOfRangeException(nameof(reset));
+        return (int)((Steps(elapsed) - Steps(reset)) % OriginalSpriteLayout.ActivePlayerMarkerFrameCount);
+    }
+
     public static int EmptySeatFrame(TimeSpan elapsed) =>
         (int)(Steps(elapsed) % OverlordBarLayout.EmptySeatFrameCount);
 
@@ -79,4 +89,31 @@ public static class ActivePlayerMarkerPresentation
         if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
         return elapsed.Ticks / FrameDuration.Ticks;
     }
+}
+
+/// <summary>
+/// The marker counter <c>0x00487B90</c>. It steps with the empty-seat counter on every tick of
+/// timer slot 1, but the sector-view compositor sets it back to 0 each time it composes a sector
+/// view (FND-UI-018, FND-UI-038). The rebuild draws every frame, so it counts a composition when
+/// the sector view is entered, or shows another sector or another player's cards.
+/// </summary>
+public sealed class ActivePlayerMarkerClock
+{
+    private TimeSpan _start;
+    private (int SectorId, PlayerId Viewed)? _composed;
+
+    /// <summary>Notes a drawn sector view, restarting the marker when the view is a new composition.</summary>
+    public void SectorView(int sectorId, PlayerId viewed, TimeSpan now)
+    {
+        if (_composed == (sectorId, viewed)) return;
+        _composed = (sectorId, viewed);
+        _start = now;
+    }
+
+    /// <summary>Notes a view that is not the sector view, so the next sector view restarts the marker.</summary>
+    public void OtherView() => _composed = null;
+
+    /// <summary>The marker frame at <paramref name="now"/>.</summary>
+    public int Frame(TimeSpan now) =>
+        ActivePlayerMarkerPresentation.Frame(now, now < _start ? now : _start);
 }
