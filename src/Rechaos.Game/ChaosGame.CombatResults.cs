@@ -576,6 +576,24 @@ public sealed class CombatPresentationProgress
 {
     private readonly Dictionary<PlayerId, long> _lastSeen = [];
 
+    /// <summary>
+    /// The player Detailed Combat plays for (RULE-COMBAT-004): the human who holds the turn, or
+    /// null while a computer holds it or nobody does.
+    /// </summary>
+    /// <remarks>
+    /// The computers' planning runs one turn per frame at most, so a frame can end just after a
+    /// resolution with the new turn's first computer holding it. Presenting then would play that
+    /// computer's fights, in sectors the human may have no gang in, to the human at the screen.
+    /// </remarks>
+    public static PlayerId? Viewer(MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return state.Coordinator.ActivePlayer is { } active
+            && state.FindPlayer(active)?.Setup.Controller == PlayerController.Human
+                ? active
+                : null;
+    }
+
     public long LastSeen(PlayerId player) => _lastSeen.GetValueOrDefault(player, -1);
 
     public void MarkSeen(PlayerId player, long sequence)

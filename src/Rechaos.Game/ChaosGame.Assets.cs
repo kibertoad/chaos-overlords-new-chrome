@@ -176,7 +176,8 @@ public sealed partial class ChaosGame
     {
         if (_state is null) return;
         if (_screens.Current is not (ClientScreen.City or ClientScreen.CombatSummary)) return;
-        var viewer = ViewingPlayer(_state);
+        // Left unseen while a computer holds the turn, so each human's fights play when they take it.
+        if (CombatPresentationProgress.Viewer(_state) is not { } viewer) return;
         var lastSeen = _combatPresentationProgress.LastSeen(viewer);
         // The list is append-only in sequence order and this runs twice per Update, so walk back
         // from the end to the first unseen event instead of filtering and re-sorting all of it.
