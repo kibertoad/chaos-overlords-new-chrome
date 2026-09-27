@@ -8,6 +8,48 @@ namespace Rechaos.Tests;
 
 public sealed class CombatResultProjectionTests
 {
+    [Fact]
+    public void DetailedCombatPlaysOnlyForTheHumanWhoHoldsTheTurn()
+    {
+        // RULE-COMBAT-004: the fights are the viewer's. While the computer in slot 0 plans, nobody
+        // is presented to; the human in slot 1 is once the turn passes to them.
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "HUMAN", PlayerController.Human)
+        ];
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20, [new MatchGangState(new GangId(10), setups[0].Id, 1, 0, 5)]),
+            new(setups[1], 20, [new MatchGangState(new GangId(20), setups[1].Id, 2, 1, 5)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 4)
+            ], owner: null, income: 3))
+            .ToArray();
+        var match = new MatchState(data, new MatchSetup(
+            ScenarioId.Eliminate, GameDuration.SixMonths, 37, setups), players, sectors);
+        var recorder = new MatchReplayRecorder(match);
+
+        recorder.FinishUpkeep();
+        Assert.Equal(new PlayerId(0), match.Coordinator.ActivePlayer);
+        Assert.Null(CombatPresentationProgress.Viewer(match));
+
+        recorder.FinishCommand(new PlayerId(0));
+        Assert.Equal(new PlayerId(1), match.Coordinator.ActivePlayer);
+        Assert.Equal(new PlayerId(1), CombatPresentationProgress.Viewer(match));
+
+        // SCR-UI-003: once the match has ended, the human in its final view is the viewer, and a
+        // computer's seat never is.
+        Assert.Equal(new PlayerId(1), CombatPresentationProgress.Viewer(match, new PlayerId(1)));
+        Assert.Null(CombatPresentationProgress.Viewer(match, new PlayerId(0)));
+    }
+
     [Theory]
     [InlineData(1, 2, true)]
     [InlineData(0, 2, false)]

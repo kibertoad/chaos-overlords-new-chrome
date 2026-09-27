@@ -109,7 +109,8 @@ public sealed class CitySectorScreenLayoutTests
         Assert.Equal(new Rectangle(64, 60, 54, 52), SectorDetailLayout.Cell(0, 0));
         Assert.Equal(new Rectangle(170, 162, 54, 52), SectorDetailLayout.Cell(2, 2));
         // FND-UI-018: the lightened cell sits at (1 + 53i, 1 + 51j) of the display.
-        Assert.Equal(new Rectangle(118, 112, 52, 50), SectorDetailLayout.CellInterior(1, 1));
+        Assert.Equal(new Rectangle(118, 112, 52, 50),
+            TickedPresentation.LitArea(TickedPresentationKind.SectorDisplayCellFlash, SectorDetailLayout.Cell(1, 1)));
         Assert.Equal(new Rectangle(146, 127, 20, 20), SectorDetailLayout.Marker(27, 27));
         Assert.Null(SectorDetailLayout.Marker(27, 29));
     }
@@ -189,5 +190,50 @@ public sealed class CitySectorScreenLayoutTests
         Assert.Equal(0, SectorDetailLayout.SiteControlWidth(10, 10));
         Assert.Equal(30, SectorDetailLayout.SiteControlWidth(10, 7));
         Assert.Equal(100, SectorDetailLayout.SiteControlWidth(0, 0));
+        Assert.Equal(new Rectangle(354, 0, 30, 3), SectorDetailLayout.SiteControlBarSource(30));
+    }
+
+    [Fact]
+    public void EveryRegionOfEveryCardHasItsOwnClickKey()
+    {
+        var keys = Enumerable.Range(0, 40)
+            .SelectMany(gang => Enumerable.Range(0, SectorGangCardLayout.ItemSlots + 1)
+                .Select(region => SectorGangCardLayout.ClickKey(new GangId(gang), region)))
+            .ToArray();
+        Assert.Equal(keys.Length, keys.Distinct().Count());
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            SectorGangCardLayout.ClickKey(new GangId(1), SectorGangCardLayout.ItemSlots + 1));
+    }
+
+    [Fact]
+    public void AnEquipmentSlotIsFoundUnderThePoint()
+    {
+        Assert.Equal(0, SectorGangCardLayout.ItemSlotAt(3, SectorGangCardLayout.ItemSlot(3, 0).Center));
+        Assert.Equal(2, SectorGangCardLayout.ItemSlotAt(3, SectorGangCardLayout.ItemSlot(3, 2).Center));
+        Assert.Equal(-1, SectorGangCardLayout.ItemSlotAt(3, SectorGangCardLayout.Portrait(3).Center));
+    }
+
+    [Fact]
+    public void TheSectorViewSetsTheMarkerBackToItsFirstFrame()
+    {
+        // FND-UI-018, FND-UI-038: composing a sector view resets the marker counter, which then
+        // steps on the same 100 ms ticks as before.
+        var clock = new ActivePlayerMarkerClock();
+        Assert.Equal(5, clock.Frame(TimeSpan.FromMilliseconds(530)));
+        clock.SectorView(27, new PlayerId(0), TimeSpan.FromMilliseconds(530));
+        Assert.Equal(0, clock.Frame(TimeSpan.FromMilliseconds(599)));
+        Assert.Equal(1, clock.Frame(TimeSpan.FromMilliseconds(600)));
+        // The same view drawn again is not a new composition.
+        clock.SectorView(27, new PlayerId(0), TimeSpan.FromMilliseconds(700));
+        Assert.Equal(2, clock.Frame(TimeSpan.FromMilliseconds(700)));
+        // Another player's cards, another sector, or a return from the city are.
+        clock.SectorView(27, new PlayerId(1), TimeSpan.FromMilliseconds(800));
+        Assert.Equal(0, clock.Frame(TimeSpan.FromMilliseconds(800)));
+        clock.SectorView(28, new PlayerId(1), TimeSpan.FromMilliseconds(1000));
+        Assert.Equal(0, clock.Frame(TimeSpan.FromMilliseconds(1000)));
+        clock.OtherView();
+        Assert.Equal(3, clock.Frame(TimeSpan.FromMilliseconds(1300)));
+        clock.SectorView(28, new PlayerId(1), TimeSpan.FromMilliseconds(1300));
+        Assert.Equal(0, clock.Frame(TimeSpan.FromMilliseconds(1300)));
     }
 }
