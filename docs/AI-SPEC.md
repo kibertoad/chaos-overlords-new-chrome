@@ -135,11 +135,10 @@ central sectors for Big Man, Support for Acceptance, and income for
 Greed/Dominance. Terminate is deliberately last-resort.
 
 Difficulty is one global match setting, matching the original setup panel's
-**AI Mentality** choice rather than a property selected per opponent. Goon,
-Criminal, and Crime Lord progressively increase attack preference. Homicidal
-Maniac adds the largest attack bias and particularly favors human-controlled
-targets. These weights are provisional recreation policy: the manual and
-contemporary FAQ support the behavioral direction, but not the numeric values.
+**AI Mentality** choice rather than a property selected per opponent. It acts
+only where the recovered handlers read it: the combat-advantage hostility of
+RULE-AI-003 and the family continuations that test it, such as family 1's
+choice between Snitch and taking a sector (RULE-AI-020).
 
 Every mentality uses the same authoritative state, command validation, economy,
 and RNG stream as a human player. The AI receives no extra cash, statistics,
@@ -458,17 +457,14 @@ explicit M6 gap rather than an unmeasured claim.
    exercise the recovered family choices through their complete selector
    context before replacing more recreation policy.
 2. Capture fixed-state decisions for every scenario and difficulty.
-3. Replace provisional weights and tie-breaking only when supported by those
-   fixtures.
-4. Extend the current ten-scenario two-player coverage to larger player counts,
+3. Extend the current ten-scenario two-player coverage to larger player counts,
    difficulty variants, objective completion stress cases, and statistical
    reference traces.
 
 The persisted simulation now carries the recovered directional attitude matrix
 and reaction values through hashing, saves, and replays, and command resolution
-uses the recovered 0/1/2 calibration. The current scalar Mentality ranking
-bonuses remain explicitly provisional and must not be described as exact
-original planning policy.
+uses the recovered 0/1/2 calibration. Every gang's order comes from its
+family handler; no command is ranked by recreation weights.
 
 The original manual and contemporary developer FAQ corroborate four global
 mentalities, increasing aggression, a player-denial emphasis at Homicidal

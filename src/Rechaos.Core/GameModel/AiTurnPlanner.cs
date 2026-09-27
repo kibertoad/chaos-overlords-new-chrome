@@ -1,9 +1,9 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Deterministic planner for computer-controlled command turns. Recovered
-/// family decisions are authoritative; the recreation-native fallback used
-/// outside a prepared family trace is isolated in AiTurnPlanner.ProvisionalFallback.cs.
+/// Deterministic planner for computer-controlled command turns. The planning pass
+/// (<see cref="MatchState.PrepareAiPlanning"/>) runs every gang's family handler, and each gang
+/// takes the order its record holds (RULE-AI-002).
 /// </summary>
 public static partial class AiTurnPlanner
 {
@@ -27,6 +27,8 @@ public static partial class AiTurnPlanner
         var player = state.FindPlayer(playerId) ?? throw new ArgumentOutOfRangeException(nameof(playerId));
         if (!state.IsPlannedByComputer(playerId))
             throw new ArgumentException("AI planning requires a computer-controlled player.", nameof(playerId));
+        if (!state.AiPlanning.HasPlanned(playerId))
+            throw new InvalidOperationException("AI planning requires the player's planning pass first.");
 
         var cashBudget = Math.Max(0, player.Cash);
         var commands = new List<GameCommand>();
@@ -39,13 +41,10 @@ public static partial class AiTurnPlanner
             var options = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id, targets)
                 .Where(command => EstimatedCost(state, command) <= cashBudget)
                 .ToArray();
+            // RULE-AI-002: a gang its handler left without an action, and a gang left in family
+            // 99, which has no handler, plans nothing.
             var choice = SelectRecoveredFamilyCommand(
                 state, player, gang, entry.slot, options);
-            if (choice is null
-                && PreservesRecoveredPreparation(state, playerId))
-                continue;
-            choice ??= SelectProvisionalFallbackCommand(
-                state, player, gang, options);
             if (choice is null) continue;
             commands.Add(choice);
             cashBudget -= EstimatedCost(state, choice);
@@ -74,23 +73,13 @@ public static partial class AiTurnPlanner
         if (choice.TargetId is { } targetId)
             candidates = candidates.Where(command => command.Target.Id == targetId);
         candidates = candidates.Where(command => IsDetectableAttack(state, player.Id, command));
+        // The record's action and target leave one legal command; Give, the only action with a
+        // second target, is never planned.
         return candidates
-            // Prepared live turns use the recovered mode-5 target. Retain the
-            // recreation's deterministic target ranking only when this pure
-            // query is invoked without its replay-recorded preparation boundary.
-            .OrderByDescending(command =>
-                ScoreProvisionalCommand(state, player, gang, command))
-            .ThenBy(command => command.Target.Id)
+            .OrderBy(command => command.Target.Id)
+            .ThenBy(command => command.SecondaryTarget?.Id ?? -1)
             .FirstOrDefault();
     }
-
-    /// <summary>
-    /// Once a player has a planning pass behind it, its records decide every gang's order. A gang
-    /// its handler left without an action, and a gang left in family 99, which has no handler,
-    /// plans nothing (RULE-AI-002) instead of reaching the provisional fallback.
-    /// </summary>
-    private static bool PreservesRecoveredPreparation(MatchState state, PlayerId playerId) =>
-        state.AiPlanning.HasPlanned(playerId);
 
     private static void PrepareFamilyElevenCommand(
         MatchState state,

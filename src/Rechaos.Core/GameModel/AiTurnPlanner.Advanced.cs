@@ -138,4 +138,21 @@ public static partial class AiTurnPlanner
         command.Action == GangAction.Attack
             ? state.FindGang(new GangId(command.Target.Id))?.Force ?? int.MaxValue
             : command.Target.Id;
+
+    /// <summary>
+    /// The Advanced policy's ranking of a Move destination: an unowned sector, a Siege or Big Man
+    /// objective and income weigh in. The weights are the rebuild's own (DEV-AI-003).
+    /// </summary>
+    internal static int DestinationValue(
+        MatchState state,
+        PlayerId player,
+        int sectorId,
+        ScenarioId scenario)
+    {
+        var sector = state.Sectors[sectorId];
+        var value = sector.Owner == player ? 0 : 100;
+        if (scenario == ScenarioId.Siege && sector.IsImportant) value += 300;
+        if (scenario == ScenarioId.BigMan && sectorId is 27 or 28 or 35 or 36) value += 300;
+        return value + sector.Income * 10;
+    }
 }

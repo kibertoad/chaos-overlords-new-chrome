@@ -12,6 +12,7 @@ public sealed partial class AiTurnPlannerTests
     {
         var match = CreateMatch();
         match.FinishUpkeep();
+        match.PrepareAiPlanning(new PlayerId(0));
         var before = MatchStateHasher.ComputeFingerprint(match);
 
         var first = AiTurnPlanner.Plan(match, new PlayerId(0));
@@ -75,7 +76,7 @@ public sealed partial class AiTurnPlannerTests
         var commands = AiTurnPlanner.Plan(match, playerId);
 
         // RULE-AI-001, RULE-AI-002: the first pass flags only slot 0, so the gang in slot 1 stays
-        // in family 99, which has no handler, and gets no order from the provisional fallback.
+        // in family 99, which has no handler, and gets no order.
         Assert.NotEqual(AiPlanningState.UnusedFamily, match.AiPlanning.Family(playerId, 0));
         Assert.Equal(AiPlanningState.UnusedFamily, match.AiPlanning.Family(playerId, 1));
         Assert.DoesNotContain(commands, command => command.Gang == new GangId(11));
@@ -121,6 +122,7 @@ public sealed partial class AiTurnPlannerTests
         var match = new MatchState(data,
             new MatchSetup(ScenarioId.KillEmAll, GameDuration.SixMonths, 9, setups), players, sectors);
         match.FinishUpkeep();
+        match.PrepareAiPlanning(new PlayerId(0));
 
         Assert.False(match.CanPlayerDetectGang(new PlayerId(0), new GangId(20)));
         Assert.DoesNotContain(CommandOptionCatalog.LegalCommands(match, new PlayerId(0), new GangId(10)),
@@ -136,18 +138,14 @@ public sealed partial class AiTurnPlannerTests
         var crimeLord = CreateMatch(difficulty: AiDifficulty.CrimeLord);
         goon.FinishUpkeep();
         crimeLord.FinishUpkeep();
+        goon.PrepareAiPlanning(new PlayerId(0));
+        crimeLord.PrepareAiPlanning(new PlayerId(0));
         var goonConsumption = goon.Random.ConsumptionCount;
         var crimeLordConsumption = crimeLord.Random.ConsumptionCount;
 
         var goonPlan = AiTurnPlanner.Plan(goon, new PlayerId(0));
         var crimeLordPlan = AiTurnPlanner.Plan(crimeLord, new PlayerId(0));
 
-        Assert.True(AiTurnPlanner.DifficultyAttackBias(AiDifficulty.Goon)
-            < AiTurnPlanner.DifficultyAttackBias(AiDifficulty.Criminal));
-        Assert.True(AiTurnPlanner.DifficultyAttackBias(AiDifficulty.Criminal)
-            < AiTurnPlanner.DifficultyAttackBias(AiDifficulty.CrimeLord));
-        Assert.True(AiTurnPlanner.DifficultyAttackBias(AiDifficulty.CrimeLord)
-            < AiTurnPlanner.DifficultyAttackBias(AiDifficulty.HomicidalManiac));
         Assert.All(goonPlan.Concat(crimeLordPlan), command =>
             Assert.True(CommandValidator.Validate(
                 command.Player == new PlayerId(0) && goonPlan.Contains(command) ? goon : crimeLord,
@@ -173,10 +171,6 @@ public sealed partial class AiTurnPlannerTests
         var advantageGang = advantage.FindGang(new GangId(10))!;
         Assert.False(AiTurnPlanner.CanSoloControl(equal, new PlayerId(0), equalGang));
         Assert.True(AiTurnPlanner.CanSoloControl(advantage, new PlayerId(0), advantageGang));
-        Assert.DoesNotContain(AiTurnPlanner.Plan(equal, new PlayerId(0)),
-            command => command.Action == GangAction.Control);
-        Assert.Contains(AiTurnPlanner.Plan(advantage, new PlayerId(0)),
-            command => command.Action == GangAction.Control);
     }
 
     [Fact]
@@ -216,27 +210,6 @@ public sealed partial class AiTurnPlannerTests
     }
 
     [Fact]
-    public void PlannerUsesOriginalHealForceAndSkillBoundaries()
-    {
-        var data = BundledOriginalData.Load();
-        var capable = data.Gangs.First(candidate => candidate.Stats.Heal >= -3).Id;
-        var incapable = data.Gangs.First(candidate => candidate.Stats.Heal < -3).Id;
-        var forceEight = CreateMatch(definitionId: capable, force: 8);
-        var forceNine = CreateMatch(definitionId: capable, force: 9);
-        var noHealSkill = CreateMatch(definitionId: incapable, force: 8);
-        forceEight.FinishUpkeep();
-        forceNine.FinishUpkeep();
-        noHealSkill.FinishUpkeep();
-
-        Assert.Contains(AiTurnPlanner.Plan(forceEight, new PlayerId(0)),
-            command => command.Action == GangAction.Heal);
-        Assert.DoesNotContain(AiTurnPlanner.Plan(forceNine, new PlayerId(0)),
-            command => command.Action == GangAction.Heal);
-        Assert.DoesNotContain(AiTurnPlanner.Plan(noHealSkill, new PlayerId(0)),
-            command => command.Action == GangAction.Heal);
-    }
-
-    [Fact]
     public void FamilyOneNoActionBranchDrivesLiveHealCrackdownAndOlderSnitchChoices()
     {
         var data = BundledOriginalData.Load();
@@ -247,6 +220,7 @@ public sealed partial class AiTurnPlannerTests
         foreach (var match in new[] { heal, crackdown, priorSnitch })
         {
             match.FinishUpkeep();
+            match.AiPlanning.BeginPlanning(new PlayerId(0));
             match.AiPlanning.SeedFamily(new PlayerId(0), 0, 1);
         }
         crackdown.Sectors[0].CrackdownActive = true;
@@ -276,6 +250,7 @@ public sealed partial class AiTurnPlannerTests
         foreach (var match in new[] { repeatHeal, takeControl, move })
         {
             match.FinishUpkeep();
+            match.AiPlanning.BeginPlanning(new PlayerId(0));
             match.AiPlanning.SeedFamily(new PlayerId(0), 0, 1);
             match.AiPlanning.SetPlannedAction(new PlayerId(0), 0, GangAction.Heal);
             match.AiPlanning.RollActiveGangActions(
@@ -641,7 +616,7 @@ public sealed partial class AiTurnPlannerTests
     }
 
     [Fact]
-    public void PreparedRecoveredMoveToSourceDoesNotInvokeProvisionalFallback()
+    public void PreparedRecoveredMoveToSourcePlansNothing()
     {
         var match = CreateMatch();
         var player = new PlayerId(0);
