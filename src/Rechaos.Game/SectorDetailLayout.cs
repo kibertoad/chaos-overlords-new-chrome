@@ -46,28 +46,12 @@ public static partial class SectorDetailLayout
             CityMapLayout.TileHeight);
     }
 
-    /// <summary>FND-UI-018: the 52-by-50 inside of a cell that <c>fn_0041A0D4</c> lightens.</summary>
-    public static Rectangle CellInterior(int column, int row)
-    {
-        var cell = Cell(column, row);
-        return new Rectangle(cell.X + 1, cell.Y + 1, cell.Width - 2, cell.Height - 2);
-    }
-
     /// <summary>
     /// FND-UI-018: the black <c>fn_00411119</c> lays over the row or column of the display that
     /// lies off the map.
     /// </summary>
-    public static IEnumerable<Rectangle> OffMapBands(int centerSectorId)
-    {
-        _ = CityMapLayout.Source(centerSectorId);
-        var column = centerSectorId % 8;
-        var row = centerSectorId / 8;
-        var display = Display;
-        if (row == 0) yield return new Rectangle(display.X, display.Y, display.Width, 51);
-        if (row == 7) yield return new Rectangle(display.X, display.Y + 103, display.Width, display.Height - 103);
-        if (column == 0) yield return new Rectangle(display.X, display.Y, 53, display.Height);
-        if (column == 7) yield return new Rectangle(display.X + 107, display.Y, display.Width - 107, display.Height);
-    }
+    public static IReadOnlyList<Rectangle> OffMapBands(int centerSectorId) =>
+        CityMapLayout.OffMapBands(centerSectorId, Display, new Point(53, 51), new Point(107, 103));
 
     public static int? SectorAt(int centerSectorId, int column, int row)
     {
@@ -114,10 +98,6 @@ public static partial class SectorDetailLayout
     /// <summary>The cell of the nine-sector display that shows <paramref name="sectorId"/>.</summary>
     public static Rectangle? CellOf(int centerSectorId, int sectorId) =>
         Offset(centerSectorId, sectorId) is var (column, row) ? Cell(column, row) : null;
-
-    /// <summary>The lightened inside of <paramref name="sectorId"/>'s cell (FND-UI-018).</summary>
-    public static Rectangle? CellInteriorOf(int centerSectorId, int sectorId) =>
-        Offset(centerSectorId, sectorId) is var (column, row) ? CellInterior(column, row) : null;
 
     /// <summary>The gang-status marker of a sector the display shows, where the map puts it.</summary>
     public static Rectangle? Marker(int centerSectorId, int sectorId) =>
@@ -179,4 +159,10 @@ public static partial class SectorDetailLayout
         var portrait = SitePortrait(slot);
         return new Rectangle(portrait.X + 10, portrait.Y + 59, 100, 3);
     }
+
+    /// <summary>
+    /// FND-UI-018, FND-UI-036: the green strip of the sheet a site meter <paramref name="filled"/>
+    /// pixels wide is copied from.
+    /// </summary>
+    public static Rectangle SiteControlBarSource(int filled) => new(354, 0, filled, 3);
 }

@@ -10,7 +10,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
+        var visibleWeight = state.AiPlanning.SectorWeight(playerId, gang.SectorId);
 
         if (visibleWeight < 1)
             PrepareFamilySixMove(
@@ -129,26 +129,32 @@ public static partial class AiTurnPlanner
         var anyGuardTarget = false;
         for (var sectorId = 0; sectorId < MatchLimits.SectorCount; sectorId++)
         {
-            var hasVisibleHostileHuman = state.Players.Any(candidate =>
-                candidate.Id != playerId
-                && candidate.Status == PlayerStatus.Active
-                && candidate.Setup.Controller == PlayerController.Human
-                && state.AiStrategy.IsHostile(playerId, candidate.Id)
-                && candidate.Gangs.Any(candidateGang => candidateGang.IsActive
-                    && candidateGang.SectorId == sectorId
-                    && state.CanPlayerDetectGang(playerId, candidateGang.Id)));
-            if (!hasVisibleHostileHuman) continue;
+            // Selector 0x60 lists the sectors the pass weighted 10 (RULE-AI-003).
+            if (state.AiPlanning.SectorWeight(playerId, sectorId) != 10) continue;
 
-            var covered = player.Gangs.Select((candidate, slot) => (candidate, slot))
-                .Any(entry => entry.candidate.IsActive
-                    && state.AiPlanning.Family(playerId, entry.slot) == 6
-                    && (state.AiPlanning.FocusValue(playerId, entry.slot)
-                            != AiPlanningState.InactiveFocusValue
-                        ? entry.candidate.SectorId
-                        : state.AiPlanning.CoverageSector(playerId, entry.slot)) == sectorId);
-            if (!covered) return sectorId;
+            if (!FamilySixCovers(state, player, sectorId)) return sectorId;
             anyGuardTarget = true;
         }
         return anyGuardTarget ? OriginalAiSectorSelectionRules.GuardTargetEndMarker : null;
+    }
+
+    /// <summary>
+    /// Selector 0x5F (FND-AI-059), RULE-AI-025's <c>covered_by</c> and RULE-AI-010's
+    /// <c>hunter_covered</c>: whether an active family-6 gang of the player covers the sector, a
+    /// gang with focus -1 by its coverage sector and any other by the sector it stands in.
+    /// </summary>
+    internal static bool FamilySixCovers(MatchState state, MatchPlayerState player, int sectorId)
+    {
+        var planning = state.AiPlanning;
+        for (var slot = 0; slot < player.Gangs.Count; slot++)
+        {
+            var gang = player.Gangs[slot];
+            if (!gang.IsActive || planning.Family(player.Id, slot) != 6) continue;
+            var covered = planning.FocusValue(player.Id, slot) == AiPlanningState.InactiveFocusValue
+                ? planning.CoverageSector(player.Id, slot)
+                : gang.SectorId;
+            if (covered == sectorId) return true;
+        }
+        return false;
     }
 }

@@ -743,7 +743,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             ready => !view.Players.Any(player => player.Id == ready && IsAwaited(player)));
         // What is on screen changes when a seat is vacated, not only when somebody toggles
         // readiness, so it is said here too — otherwise "READY 2/4" keeps a seat count that is no
-        // longer true, and a vacated seat keeps its WAIT, until the next player happens to toggle.
+        // longer true, and a vacated seat keeps its planning light, until the next player happens
+        // to toggle.
         PublishReadiness();
         _notices.Enqueue(new MultiplayerNotice.MatchUpdated(view));
     }

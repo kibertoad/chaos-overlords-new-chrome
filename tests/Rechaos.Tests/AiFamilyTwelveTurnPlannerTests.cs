@@ -251,7 +251,7 @@ public sealed class AiFamilyTwelveTurnPlannerTests
         match.AiPlanning.SeedFamily(player, 0, 12);
         match.Coordinator.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Terminate,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);

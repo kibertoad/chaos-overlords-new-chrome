@@ -37,7 +37,10 @@ public static class MatchBootstrap
         IReadOnlyList<MatchPlayerStart> starts)
     {
         var foundation = Compose(definitions, setup, sectors, starts);
-        return new MatchState(definitions, setup, foundation.Players, foundation.Sectors);
+        var state = new MatchState(definitions, setup, foundation.Players, foundation.Sectors);
+        // FND-AI-045: a new match runs the start pass once its layout exists.
+        state.RefreshEveryPlayersAiSectorRecords();
+        return state;
     }
 
     /// <summary>

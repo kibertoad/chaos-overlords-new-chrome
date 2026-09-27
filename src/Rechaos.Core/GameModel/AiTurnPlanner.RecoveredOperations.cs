@@ -86,15 +86,6 @@ public static partial class AiTurnPlanner
                 .Setup.Controller == PlayerController.Human)
             .ToArray();
 
-    /// <summary>Weight of the first visible opponent's owner, or 0 when nobody is visible.</summary>
-    private static int FirstVisibleOpponentWeight(
-        MatchState state,
-        PlayerId playerId,
-        IReadOnlyList<ObjectiveTarget> visible) =>
-        visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
-
     /// <summary>The family 0 and family 4 draw: human-weighted pool, family 12 acceptance test.</summary>
     private static RecoveredAttackDraw DrawHumanWeightedAttackTarget(
         MatchState state,
