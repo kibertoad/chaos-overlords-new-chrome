@@ -376,6 +376,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-036](../findings/FND-UI-036.md) | builds, locations |
 | [FND-UI-037](../findings/FND-UI-037.md) | builds, locations |
 | [FND-UI-038](../findings/FND-UI-038.md) | builds, locations |
+| [FND-UI-039](../findings/FND-UI-039.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -2837,6 +2838,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-039](../findings/FND-UI-039.md) | body |
 | glossary: comlink_blink_step | glossary |
 | glossary: events_unviewed | glossary |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | evidence |
@@ -2968,6 +2970,7 @@ None.
 | [FND-UI-027](../findings/FND-UI-027.md) | body |
 | [FND-UI-028](../findings/FND-UI-028.md) | body |
 | [FND-UI-038](../findings/FND-UI-038.md) | body |
+| [FND-UI-039](../findings/FND-UI-039.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -3725,6 +3728,7 @@ None.
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | evidence |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | body, evidence |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-OBJECTIVE-005
 
@@ -4589,9 +4593,11 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-039](../findings/FND-UI-039.md) | body |
 | glossary: no_match_in_play | glossary |
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | body, evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body, evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-STATE-011
 
@@ -5235,6 +5241,12 @@ None.
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
+
+## FND-UI-039
+
+| Cited by | In |
+|---|---|
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UPKEEP-001
 

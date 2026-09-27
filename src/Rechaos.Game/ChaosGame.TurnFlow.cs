@@ -11,6 +11,12 @@ public sealed partial class ChaosGame
 
     private void AdvanceTurn()
     {
+        // FND-OBJECTIVE-004, FND-STATE-010: Done ends a final view, with no idle-gang warning.
+        if (_finalViewPlayer is not null)
+        {
+            ShowNextFinalView();
+            return;
+        }
         // Online, finishing planning sends the turn and waits: the match advances when the server
         // seals it and every client applies the same set, not when this one decides it is done.
         // The idle-gang warning still gets its say first — an unordered gang is as easy to miss

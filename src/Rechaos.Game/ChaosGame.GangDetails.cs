@@ -77,7 +77,7 @@ public sealed partial class ChaosGame
         // must hand the overlay back that same gang.
         if (IsOrderPanel(_gangDetailsReturnScreen)) return;
         if (_gangDetailsSectorFilter is not { } sectorId
-            || _state?.Coordinator.ActivePlayer is not { } playerId)
+            || _state is null || PlanningViewer is not { } playerId)
         {
             CycleGang(delta);
             return;

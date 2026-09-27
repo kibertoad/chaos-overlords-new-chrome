@@ -20,6 +20,7 @@ public sealed partial class ChaosGame
     {
         _pendingHotSeatEliminations.Clear();
         _presentedHotSeatEliminations.Clear();
+        ClearFinalViews();
         _eliminationHandoffPlayer = null;
         _eliminationMusicHeld = false;
         if (!acknowledgeExistingEliminations || _state is null) return;
@@ -45,13 +46,20 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// Shows the end of a finished match. RULE-OBJECTIVE-005: a local game whose humans are all
-    /// out returns to the title without the awards.
+    /// out returns to the title without the awards. Otherwise a match that has just ended gives
+    /// each local human its final view before the awards (FND-OBJECTIVE-004); a finished match
+    /// that was loaded opens on the awards.
     /// </summary>
-    private void ShowMatchEnd()
+    private void ShowMatchEnd(bool justEnded = true)
     {
         if (_session is null && _state?.Outcome?.Reason == MatchEndReason.NoHumansLeft)
         {
             LeaveEndgame();
+            return;
+        }
+        if (_session is null && justEnded)
+        {
+            BeginFinalViews();
             return;
         }
         _screens.Show(ClientScreen.Endgame);
@@ -71,6 +79,11 @@ public sealed partial class ChaosGame
         if (_eliminationHandoffPlayer is { } shown && _state is not null)
             _eliminationMusicHeld = !HotSeatEliminationPresentation.HasLaterLocalHuman(_state, shown);
         _eliminationHandoffPlayer = null;
+        if (_finalViewPlayer is not null)
+        {
+            ShowNextFinalView();
+            return;
+        }
         if (ShowPendingHotSeatElimination()) return;
 
         if (_state?.Coordinator.ActivePlayer is { } playerId
