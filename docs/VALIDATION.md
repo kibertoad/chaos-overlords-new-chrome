@@ -105,7 +105,12 @@ always run it. The release workflow runs the fast tier only, leaving the repeate
 statistical campaign matrix off its critical path.
 
 For larger statistical samples, the presentation-free runner avoids xUnit and
-lets replay verification be sampled rather than paid for on every match:
+lets replay verification be sampled rather than paid for on every match. It
+runs computer-only matches against the authoritative model without building the
+game window or running graphics, audio, input, animation, or real-time pacing.
+Cases use consecutive seeds and run on a bounded number of workers. Progress and
+the optional per-turn trace go to standard error, and one JSON report goes to
+standard output:
 
 ```powershell
 dotnet run --project src/Rechaos.Tools -c Release --no-build -- ai-tournament `
@@ -113,11 +118,20 @@ dotnet run --project src/Rechaos.Tools -c Release --no-build -- ai-tournament `
   --scenarios objectives --replay-every 10 --trace
 ```
 
-Its periodic heartbeat remains visible without `--trace`; the trace adds each
-live case's scenario, seed, turn, boundary count, event count, and elapsed time.
-The final JSON includes deterministic hashes and territory, defended-territory,
-gang, combat, replay, and timing metrics. Run the same matrix with `--policy
-advanced` for a paired comparison.
+The heartbeat, every five seconds by default, shows completed, running, and
+failed counts without `--trace`; the trace adds each live case's scenario, seed,
+turn, boundary count, event count, and elapsed time. `--replay-every N`
+replay-verifies every Nth case and leaves the others as bare-model simulations;
+`--replay-every 0` turns replay verification off. The final JSON includes
+deterministic hashes and territory, defended-territory, gang, combat, replay,
+and timing metrics. For a paired comparison, run the same seeds, scenario set,
+turn horizon, and worker count with `--policy advanced`.
+
+The workers run separate matches in parallel. Seats inside one match stay
+ordered, because planning preparation, hire offers, and command resolution
+consume shared deterministic state and RNG. Online play may collect order
+documents asynchronously, but every client applies them in the same sealed
+order.
 
 ### Simulated human seats
 
