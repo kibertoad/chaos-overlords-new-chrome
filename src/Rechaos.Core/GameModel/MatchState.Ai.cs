@@ -2,6 +2,14 @@ namespace Rechaos.Core.GameModel;
 
 public sealed partial class MatchState
 {
+    /// <summary>
+    /// The turn each player's family dispatch last wrote its records for, 0 before its first.
+    /// Every driver runs the planning pass and plans from it in one step, so this is neither
+    /// saved nor hashed: it only lets <see cref="AiTurnPlanner.Plan"/> refuse records that were
+    /// not written this turn (RULE-AI-002).
+    /// </summary>
+    private readonly int[] _aiPlanningPreparedTurns = new int[MatchLimits.PlayerCount];
+
     private void RecordAiPlannedAction(GameCommand command)
     {
         var playerId = command.Player;
@@ -32,6 +40,15 @@ public sealed partial class MatchState
         AiTurnPlanner.PrepareRecoveredFamilyCommands(this, weights);
         AiPlanningPreparation.RefreshHireAnchor(this, player);
     }
+
+    /// <summary>Records that the family dispatch wrote the player's records for this turn.</summary>
+    internal void MarkAiPlanningPrepared(PlayerId player) =>
+        _aiPlanningPreparedTurns[player.Value] = Coordinator.Turn;
+
+    /// <summary>Whether the player's family dispatch has written its records for this turn.</summary>
+    internal bool IsAiPlanningPrepared(PlayerId player) =>
+        player.Value is >= 0 and < MatchLimits.PlayerCount
+        && _aiPlanningPreparedTurns[player.Value] == Coordinator.Turn;
 
     /// <summary>
     /// RULE-AI-003, FND-AI-045: when a match starts or is loaded, the refresh of the planning pass

@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 1 |
+| `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 210 |
+| `implemented` | 211 |
 | `validated` | 11 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 1 |
-| `complete` | 221 |
+| `partial` | 0 |
+| `complete` | 222 |
 
 ## DATA
 
@@ -317,7 +317,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | complete | None | `DEV-AI-003` | implemented | A seat changes hands only at a clean Command boundary, so the takeover's own planning pass (FND-AI-043) is the pass that turn's planning runs. |
-| `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | A gang of a player whose planning pass has not run gets a command from recreation-native weights (PLACEHOLDER in AiTurnPlanner.ProvisionalFallback.cs) instead of a family handler. |
+| `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | Every gang submits the one command its record holds after this turn's family dispatch, when that command is legal; a gang with none, a record missing the target its action needs, and a gang in family 99 plan nothing. The planner refuses a player whose records the dispatch has not written this turn. |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | The sector weights and the hostility step also run once for every player, humans included, when a match starts (as it is built) and when it is loaded (a journaled step of the local load), as FND-AI-045 records. |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | hostile_owner reads the attitude cell of owner_query, with the out-of-row reads of FND-AI-048 for a neutral sector and one under police presence. |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | None |

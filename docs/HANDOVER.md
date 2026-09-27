@@ -455,8 +455,9 @@ status of each spec entry is in [PARITY.md](../PARITY.md).
   parity tournaments.
 
 - Every recovered AI strategy family has a live handler and the earlier cleanup
-  pass separates dispatch, immutable planning facts, recovered shared operations,
-  and explicitly provisional fallback scoring. The next AI gate is evidence,
+  pass separates dispatch, immutable planning facts and recovered shared
+  operations; the provisional fallback scoring it isolated has since been
+  removed, so every gang plans from its handler. The next AI gate is evidence,
   not another structural rewrite: fixed original-runtime traces plus multi-seed
   tournament coverage. Six-computer deterministic/replay fixtures now exercise
   all objectives through live-equivalent 40-turn campaigns across five guarded
