@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+
 namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
@@ -20,7 +22,12 @@ public sealed partial class ChaosGame
         };
     }
 
-    private void CancelCurrentInteraction()
+    /// <summary>
+    /// Lets go of what the player is in the middle of, or backs out of the screen. A right press
+    /// passes its <paramref name="rightPress"/> point, for the screens whose own entry gives the
+    /// right button a meaning of its own.
+    /// </summary>
+    private void CancelCurrentInteraction(Point? rightPress = null)
     {
         if (_idleGangWarningOpen)
         {
@@ -130,7 +137,10 @@ public sealed partial class ChaosGame
                 _screens.Show(_managementReturnScreen);
                 break;
             case ClientScreen.Sector:
-                _screens.Show(ClientScreen.City);
+                // SCR-UI-004: the right button presses the back control and the cards as the left
+                // does, and nothing else.
+                if (rightPress is { } point) HandleSectorRightPress(point);
+                else _screens.Show(ClientScreen.City);
                 break;
             case ClientScreen.SectorGangs:
                 CloseSectorGangs();

@@ -8,6 +8,9 @@ public sealed partial class ChaosGame
     /// <summary>The close face held down on an information panel, and what releasing it does.</summary>
     private (Rectangle Face, ClientScreen Screen, Action Close)? _pressedPanelFace;
 
+    /// <summary>Whether the right button holds <see cref="_pressedPanelFace"/>, so only its release lets go.</summary>
+    private bool _pressedPanelFaceByRightButton;
+
     /// <summary>
     /// A press on an information panel: on the close face it holds the face until the release,
     /// outside the panel it is refused with slot 4, and elsewhere inside it does nothing
@@ -16,7 +19,10 @@ public sealed partial class ChaosGame
     private void PressPanelFace(Point point, Rectangle panel, Rectangle face, Action close)
     {
         if (face.Contains(point))
+        {
             _pressedPanelFace = (face, _screens.Current, close);
+            _pressedPanelFaceByRightButton = false;
+        }
         else if (!panel.Contains(point))
             PlayGeneralSound(GeneralSoundSlot.RejectedInput);
     }
@@ -25,16 +31,23 @@ public sealed partial class ChaosGame
     private bool PressedEnterOrExecute(KeyboardState keyboard) =>
         Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute);
 
-    private void CompletePointerRelease(bool pointerMapped, Point point)
+    /// <summary>
+    /// A button released: completes what its press holds. Only a face pressed with the right button
+    /// waits on that button; every other held control follows the left one.
+    /// </summary>
+    private void CompletePointerRelease(bool pointerMapped, Point point, bool rightButton)
     {
         if (_pressedPanelFace is { } pressedFace)
         {
+            if (_pressedPanelFaceByRightButton != rightButton) return;
             _pressedPanelFace = null;
             if (pointerMapped && pressedFace.Screen == _screens.Current
                 && pressedFace.Face.Contains(point))
                 AcceptAndInvoke(pressedFace.Close);
             return;
         }
+
+        if (rightButton) return;
 
         if (_pressedSetupButton is not null)
         {

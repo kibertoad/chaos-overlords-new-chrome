@@ -602,15 +602,15 @@ client hands the player the turn they planned, to change and end again. A
 refusal of the turn itself, such as `turn_not_open`, changes nothing.
 
 Readiness reaches the interface as the seats that have finished, not as a count
-of them. The city top bar marks every seat the turn is still waiting on with a
-green `WAIT` under its portrait, so "waiting for the other players" says which
-ones; the footer's tally is the same fact counted. The player's own seat is
-marked too, until they end the turn, and it follows what this client did rather
-than the server's echo, so the mark goes the moment the turn is sent. A seat the
-turn does not seal against — a computer empire, a kicked player, a player who
-left with no vote open on their seat, or one voted onto computer control — is
-never marked. A departed seat whose vote is still open is waited on, and marked,
-until the vote closes.
+of them. The Overlord bar lights the planning light under every seat the turn is
+still waiting on, the light the original keeps lit until a human seat's orders
+are in, so "waiting for the other players" says which ones; the footer's tally is
+the same fact counted. The player's own light is lit too, until they end the
+turn, and it follows what this client did rather than the server's echo, so it
+goes out the moment the turn is sent. A seat the turn does not seal against — a
+computer empire, a kicked player, a player who left with no vote open on their
+seat, or one voted onto computer control — is never lit. A departed seat whose
+vote is still open is waited on, and lit, until the vote closes.
 
 ## Client integration contract
 
