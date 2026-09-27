@@ -42,9 +42,9 @@ The rules, balance, AI, screens and file formats were recovered by reading the
 reading found. Every entry of the [spec](spec/README.md) has an implementation,
 and every function of the game's code is cited by at least one entry, so no
 part of the original is known to be left out. The rebuild keeps the original's
-rounding, ordering and quirks, bugs included; the few it fixes are listed in
-[DEVIATIONS.md](DEVIATIONS.md), many of them interface changes, and five have
-a setting that restores the original behaviour.
+rounding, ordering and quirks, bugs included. Its 65 deliberate departures
+are listed in [DEVIATIONS.md](DEVIATIONS.md); many are interface changes, and
+five have a setting that restores the original behaviour.
 
 What is still missing is confirmation from the running original. Almost all of
 the evidence is static, so only the data tables, image and movie formats, Help
