@@ -23,7 +23,14 @@ public sealed partial class ChaosGame
             _screens.Show(ClientScreen.Elimination);
             return;
         }
-        if (_state?.Coordinator.ActivePlayer is not { } playerId)
+        // FND-OBJECTIVE-004, FND-STATE-010: the final view enters planning with the last turn's
+        // reports, and without the planning clock or a new hire draw.
+        if (_finalViewPlayer is not null)
+        {
+            ShowTurnReportsOrCity();
+            return;
+        }
+        if (_state is null || PlanningViewer is not { } playerId)
         {
             _screens.Show(ClientScreen.City);
             StartPlanningTimer(_inputTime);
@@ -44,7 +51,7 @@ public sealed partial class ChaosGame
 
     private void ShowTurnReportsOrCity()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId)
+        if (_state is null || PlanningViewer is not { } playerId)
         {
             _screens.Show(ClientScreen.City);
             return;
@@ -94,7 +101,7 @@ public sealed partial class ChaosGame
         }
 
         _openEventsAfterCombat = false;
-        if (_state?.Coordinator.ActivePlayer is not { } playerId)
+        if (_state is null || PlanningViewer is not { } playerId)
         {
             _screens.Show(_managementReturnScreen);
             return;
@@ -112,7 +119,7 @@ public sealed partial class ChaosGame
 
     private void UpdateComlinkAlert(TimeSpan now, bool enteringPlanning = false)
     {
-        var hasUnread = _state?.Coordinator.ActivePlayer is { } playerId
+        var hasUnread = _state is not null && PlanningViewer is { } playerId
             && _state.Outcome is null
             && _state.ComlinkFor(playerId).HasUnread;
         var presentationActive = !_deferComlinkAlertUntilPlanningVisible
@@ -127,7 +134,7 @@ public sealed partial class ChaosGame
 
     private void OpenEvents(ClientScreen returnScreen)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_state is null || PlanningViewer is not { } playerId) return;
         var count = ReviewableReports(_state, playerId).Count;
         if (count == 0)
         {
@@ -228,7 +235,7 @@ public sealed partial class ChaosGame
 
     private bool CanStepEventPage(int delta)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return false;
+        if (_state is null || PlanningViewer is not { } playerId) return false;
         var count = ReviewableReports(_state, playerId).Count;
         return count > 0 && BoundedPageNavigation.Move(_eventCursor, count, delta) != _eventCursor;
     }
@@ -236,7 +243,7 @@ public sealed partial class ChaosGame
     private void StepEventPage(int delta)
     {
         if (_screens.Current != ClientScreen.Events
-            || _state?.Coordinator.ActivePlayer is not { } playerId) return;
+            || _state is null || PlanningViewer is not { } playerId) return;
         var count = ReviewableReports(_state, playerId).Count;
         if (count == 0) return;
         var next = BoundedPageNavigation.Move(_eventCursor, count, delta);
@@ -248,7 +255,7 @@ public sealed partial class ChaosGame
 
     private void CloseEvents()
     {
-        if (_state?.Coordinator.ActivePlayer is { } playerId && _actions is not null)
+        if (_state is not null && PlanningViewer is { } playerId && _actions is not null)
         {
             var currentReports = LastTurnReports(_state, playerId);
             var reportCount = ReviewableReports(_state, playerId).Count;

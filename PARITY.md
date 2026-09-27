@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 4 |
+| `supported` | 2 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 207 |
+| `implemented` | 209 |
 | `validated` | 11 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 4 |
-| `complete` | 218 |
+| `partial` | 2 |
+| `complete` | 220 |
 
 ## DATA
 
@@ -288,7 +288,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
 | `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | complete | None | `DEV-COMBAT-002` | implemented | Paging, keys, the opponent and police strips, grid cells with portraits, force_start and force_final tracks and the focus outlines follow FND-COMBAT-007 and FND-COMBAT-012. The pressed Exit face on Enter is not drawn as the panel closes at once, and the pressed arrows are not recorded. |
-| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips, 166 ms cadence, the Exit face on release, the refused press outside the panel and Escape follow FND-COMBAT-009 and FND-COMBAT-010; the header strips, police art and the darkening from tick 12 follow FND-COMBAT-014. The entry's open question gives the tracks at y 114 and 121, where the rebuild draws them at 116 and 123; a run of the original settles it. |
+| `SCR-COMBAT-002` | Detailed Combat panel | supported | complete | None | `DEV-COMBAT-001` | implemented | Layout, strips, 166 ms cadence, the Exit face on release, the refused press outside the panel and Escape follow FND-COMBAT-009 and FND-COMBAT-010; the header strips, police art and the darkening from tick 12 follow FND-COMBAT-014. The tracks are drawn at local y 116 and 123, the rows the code writes, 68 rows below the portrait (FND-COMBAT-015). |
 
 ## DETECT
 
@@ -440,7 +440,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | complete | None | `DEV-GFX-001`, `DEV-UI-016`, `DEV-UI-017`, `DEV-UI-018` | implemented | Input is polled once per frame (DEV-UI-018), and the US shift table and upper-case letters are kept for setup names and Comlink text. |
 | `SCR-UI-001` | Title screen | supported | complete | None | `DEV-UI-012`, `DEV-UI-019`, `DEV-VIDEO-003` | implemented | The title art, the press anywhere that starts a new game, Ctrl+N and Ctrl+O, the title music and the returns to the screen follow the entry. The rebuild's buttons, credit lines and notice box stand in for the menu bar, and Ctrl+H and Ctrl+J open the Online screen (DEV-UI-019); the version and Report Bug are DEV-UI-012, the Intro button DEV-VIDEO-003. |
 | `SCR-UI-002` | Credits screen | supported | complete | None | `DEV-UI-019` | implemented | Shift+F1 stands in for Help, About (DEV-UI-019); the credits image covers the screen until any key or click. Whether the music keeps playing is not recorded, and the rebuild keeps it playing. |
-| `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006`, `DEV-UI-020`, `DEV-UI-023` | supported | The map at `(2,42)` with its press grid, grid tabs, animated selection frame and markers, the Overlord bar with empty seats, the 100 ms marker and the planning lights, the console routes, pressed art, Events and Comlink lights, sector values, planning clock bar and Hire dock follow the entry; the arrows move the selection, and Enter or Execute opens SCR-UI-004. Missing: the Done light, which belongs to the final view of the city that every surviving local human gets before the awards (FND-OBJECTIVE-004), and the rebuild does not run that view. Tooltips (DEV-UI-005), the projected cash (DEV-UI-006), the extra single keys (DEV-UI-020) and the message and key lines (DEV-UI-023) are the rebuild's. |
+| `SCR-UI-003` | City screen and main console | supported | complete | None | `DEV-NET-001`, `DEV-UI-005`, `DEV-UI-006`, `DEV-UI-020`, `DEV-UI-023` | implemented | The map at `(2,42)` with its press grid, grid tabs, animated selection frame and markers, the Overlord bar with empty seats, the 100 ms marker and the planning lights, the console routes, pressed art, Events, Comlink and Done lights, sector values, planning clock bar and Hire dock follow the entry; the arrows move the selection, and Enter or Execute opens SCR-UI-004. A local match that ends gives each local human still in play the final view (FND-OBJECTIVE-004, FND-UI-039): the city as that player sees it, with the last turn's reports, the Done light blinking and no clock or idle-gang warning, and Done moves on to the next player and then the awards. Orders given there are refused, as the match can no longer take one; in the original they are never resolved. An online match opens the awards without it (DEV-NET-001). Tooltips (DEV-UI-005), the projected cash (DEV-UI-006), the extra single keys (DEV-UI-020) and the message and key lines (DEV-UI-023) are the rebuild's. |
 | `SCR-UI-004` | Detailed sector screen | supported | complete | None | `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-014`, `DEV-UI-021`, `DEV-UI-022`, `DEV-UI-023` | implemented | The darkened enlarged cell, the owner and back strips, the nine-sector display cropped from the prepared map with its frame and labels, the framed sites and their meter for the owner, the cards, the group order strip and the Overlord bar that follows the viewed player follow the entry, with its press formulas for the display, sites, cards and portraits and the back control released inside. The order menus are the rebuild's panel (DEV-UI-021), and dragging a card's portrait onto the display gives a Move or a recurring Control (DEV-UI-022). Tooltips, target highlights, ctrl-picking, the police countdown and the message line are the other listed deviations. |
 | `SCR-UI-005` | Gangs in Sector panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | The sector cell, code, portraits and the sixteen rows follow the original in roster order, with Upkeep negated and Base Statistics ignored. A seventh gang is not drawn where the original draws it past the panel's right edge. |
 | `SCR-UI-006` | Item Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-009`, `DEV-UI-010` | implemented | Item Information uses PX05001 with the 15-frame rotation; it can also be opened from Gang Information. |
