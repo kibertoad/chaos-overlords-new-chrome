@@ -106,6 +106,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly CitySectorClickTracker _citySectorClicks = new();
     private readonly IndexedDoubleClickTracker _sectorGangClicks = new();
     private readonly IndexedDoubleClickTracker _sectorSiteClicks = new();
+    private readonly IndexedDoubleClickTracker _sectorNeighborClicks = new();
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentPortraitClicks = new();
@@ -246,6 +247,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _tickedPresentation.Clear();
             _citySectorClicks.Cancel();
             _sectorSiteClicks.Cancel();
+            _sectorNeighborClicks.Cancel();
             _sectorGangClicks.Cancel();
             _siteSearchClicks.Cancel();
             if (_slidePanels)
