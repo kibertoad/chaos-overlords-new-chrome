@@ -43,8 +43,8 @@ Status: active at a validated local checkpoint
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v27, replays are v31, canonical fingerprint encoding is v2, asset
-  manifests are v6, extracted help is v3, and client preferences are v11. Save
+- Native saves are format v35, replays are v47, the state fingerprint encoding is v10, asset
+  manifests are v7, extracted help is v3, and client preferences are v12. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
 
@@ -62,17 +62,20 @@ used by the shared template. What the original does now lives only in
 ### What exists
 
 - `spec/`: one build (BLD-GOG-EN-1.1, every file hashed with xxh3-128), three
-  sources, 177 findings (two of them dynamic, from window captures), 20 formats
-  (17 binary ones with Kaitai definitions that all compile), 151 rules in
-  pseudocode, 14 bugs and 39 screens, with the glossary and the generated
-  indexes in `spec/index/`. Only static evidence exists for nearly everything, so
-  `supported` is the highest status reached, apart from RULE-SETUP-002, which a
-  window capture made `established`.
+  sources, 334 findings (332 static and two dynamic from window captures;
+  FND-AI-030 and FND-AI-031 are superseded), no experiments, 24 formats (23 binary ones with Kaitai
+  definitions that all compile), 159 rules in pseudocode, 16 bugs and 39
+  screens across 47 areas, with the glossary and the generated indexes in
+  `spec/index/`. All 464 game functions of FND-EXE-004 are cited. Only static
+  evidence exists for nearly everything, so every rule, format and screen is
+  `supported` and none is `established`; BUG-COMBAT-001, a reported freeze, is
+  `unknown`.
 - [PARITY.md](../PARITY.md) and [DEVIATIONS.md](../DEVIATIONS.md) at the root.
-  The Code column of PARITY.md was carried over from the old parity matrix and
-  the conversion notes, not re-read from `src/`; treat `complete` rows as claims
-  to check when their area is next touched. No row lists a test yet, because no
-  test compares the rebuild with evidence from the original.
+  All 222 parity rows have `complete` code. Eleven are `validated` by tests
+  against the shipped files (the data tables, image formats and palette,
+  DATA.Z, the movies, the Help files and the Game Information texts); the
+  other 211 are `implemented` and wait for experiments from the original.
+  DEVIATIONS.md holds 65 entries: 60 mandatory, 3 on and 2 off by default.
 - [static_validation_plan.md](../static_validation_plan.md) and
   [manual_validation_plan.md](../manual_validation_plan.md) at the root: every
   open question found during the conversion, grouped by part of the game.
