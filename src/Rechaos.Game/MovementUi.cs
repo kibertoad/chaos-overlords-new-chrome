@@ -92,23 +92,10 @@ public static class MovementLayout
     /// the sector is in row 0 or 7, the left or right 54 columns in column 0 or 7
     /// (SCR-MOVE-001, FND-MOVE-004).
     /// </summary>
-    public static IReadOnlyList<Rectangle> OffCityBands(int centerSector)
-    {
-        ValidateSector(centerSector);
-        var column = centerSector % MatchLimits.BoardWidth;
-        var row = centerSector / MatchLimits.BoardWidth;
-        var area = Neighborhood;
-        var bands = new List<Rectangle>(2);
-        if (row == 0) bands.Add(new Rectangle(area.X, area.Y, area.Width, CityMapLayout.TileHeight));
-        if (row == MatchLimits.BoardWidth - 1)
-            bands.Add(new Rectangle(area.X, area.Y + 2 * CityMapLayout.TileHeight, area.Width,
-                CityMapLayout.TileHeight));
-        if (column == 0) bands.Add(new Rectangle(area.X, area.Y, CityMapLayout.TileWidth, area.Height));
-        if (column == MatchLimits.BoardWidth - 1)
-            bands.Add(new Rectangle(area.X + 2 * CityMapLayout.TileWidth, area.Y, CityMapLayout.TileWidth,
-                area.Height));
-        return bands;
-    }
+    public static IReadOnlyList<Rectangle> OffCityBands(int centerSector) =>
+        CityMapLayout.OffMapBands(centerSector, Neighborhood,
+            new Point(CityMapLayout.TileWidth, CityMapLayout.TileHeight),
+            new Point(2 * CityMapLayout.TileWidth, 2 * CityMapLayout.TileHeight));
 
     /// <summary>
     /// Index 0 to 7 of the offsets -9, -8, -7, -1, +1, +7, +8 and +9 for a neighbourhood cell,
@@ -259,38 +246,16 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// The crop of the drawn city map around the gang's sector, its black outline and the
-    /// black bands beyond the city's edge (SCR-MOVE-001, FND-MOVE-004).
+    /// black bands beyond the city's edge (SCR-MOVE-001, FND-MOVE-004). The crop is of the same
+    /// prepared map the city screen shows, so it carries its pylons and markers.
     /// </summary>
     private void DrawMovementNeighborhood(SpriteBatch batch, Texture2D pixel, MatchState state, int centerSector)
     {
         var area = MovementLayout.Neighborhood;
-        var crop = MovementLayout.NeighborhoodSource(centerSector);
-        var neutral = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
-        if (neutral is not null)
-            DrawCropped(batch, neutral, CityMapLayout.Bounds with { X = 0, Y = 0 }, crop, area);
-        else
-            batch.Draw(pixel, area, new Color(24, 37, 39));
-        for (var sectorId = 0; sectorId < state.Sectors.Count; sectorId++)
-        {
-            var owner = state.Sectors[sectorId].Owner;
-            var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(owner)];
-            if (owner is null || layer is null) continue;
-            DrawCropped(batch, layer, CityMapLayout.OwnershipSource(sectorId), crop, area);
-        }
+        DrawPreparedCityMap(batch, pixel, state, ViewingPlayer(state),
+            MovementLayout.NeighborhoodSource(centerSector), area.Location);
         DrawBorder(batch, pixel, area, Color.Black, 1);
         foreach (var band in MovementLayout.OffCityBands(centerSector))
             batch.Draw(pixel, band, Color.Black);
-    }
-
-    /// <summary>Draws the part of <paramref name="source"/> inside <paramref name="crop"/> at 1:1.</summary>
-    private static void DrawCropped(
-        SpriteBatch batch, Texture2D texture, Rectangle source, Rectangle crop, Rectangle destination)
-    {
-        var visible = Rectangle.Intersect(source, crop);
-        if (visible.IsEmpty) return;
-        batch.Draw(texture,
-            new Rectangle(destination.X + visible.X - crop.X, destination.Y + visible.Y - crop.Y,
-                visible.Width, visible.Height),
-            visible, Color.White);
     }
 }

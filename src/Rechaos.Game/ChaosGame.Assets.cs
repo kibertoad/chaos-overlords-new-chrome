@@ -89,9 +89,12 @@ public sealed partial class ChaosGame
         if (_combatSounds.TryGetValue(soundIndex, out var sound)) TryPlaySound(sound);
     }
 
-    /// <summary>The player whose view is drawn: the active one, or the first seat between turns.</summary>
-    private static PlayerId ViewingPlayer(MatchState state) =>
-        state.Coordinator.ActivePlayer ?? new PlayerId(0);
+    /// <summary>
+    /// The player whose view is drawn: the one in its end-of-match final view, else the active one,
+    /// or the first seat between turns.
+    /// </summary>
+    private PlayerId ViewingPlayer(MatchState state) =>
+        PlanningViewer ?? new PlayerId(0);
 
     private void PlayGeneralSound(int slot, bool ignoresEffectsEnabled = false)
     {
@@ -176,7 +179,8 @@ public sealed partial class ChaosGame
     {
         if (_state is null) return;
         if (_screens.Current is not (ClientScreen.City or ClientScreen.CombatSummary)) return;
-        var viewer = ViewingPlayer(_state);
+        // Left unseen while a computer holds the turn, so each human's fights play when they take it.
+        if (CombatPresentationProgress.Viewer(_state, _finalViewPlayer) is not { } viewer) return;
         var lastSeen = _combatPresentationProgress.LastSeen(viewer);
         // The list is append-only in sequence order and this runs twice per Update, so walk back
         // from the end to the first unseen event instead of filtering and re-sorting all of it.

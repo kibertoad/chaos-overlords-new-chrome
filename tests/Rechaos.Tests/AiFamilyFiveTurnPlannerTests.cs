@@ -70,7 +70,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.Coordinator.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = AiTurnPlanner.Plan(match, player)
             .Single(candidate => candidate.Gang == new GangId(10));
 
@@ -90,7 +90,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
             player, 0, GangAction.Influence, new AiActionTarget(0, 0));
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Influence,
             match.AiPlanning.PlannedAction(player, 0));
@@ -110,7 +110,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
         match.Coordinator.FinishUpkeep();
 
         Assert.True(match.CanPlayerDetectGang(player, new GangId(20)));
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Attack, command.Action);
@@ -136,7 +136,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Move);
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Move,
             match.AiPlanning.PlannedAction(player, 0));
@@ -152,7 +152,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
         SetPreviousAction(match, player, GangAction.Bribe);
         match.Coordinator.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.None,
             match.AiPlanning.PlannedAction(player, 0));
@@ -170,7 +170,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
         match.AiPlanning.SeedFamily(player, 0, 5);
         match.Coordinator.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Terminate, command.Action);

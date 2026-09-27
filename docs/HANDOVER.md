@@ -104,9 +104,10 @@ used by the shared template. What the original does now lives only in
   action can differ). DEV-HIRE-003 was dropped on 2026-09-25: the original also
   lets a zero-cost hire through (FND-HIRE-006). DEV-AI-001 was dropped on
   2026-09-26: paired simulations showed the corrected hunter guard changed no
-  match, so the rebuild keeps the original comparison. The same simulations
-  found no hunter hire by any computer player, an open claim on RULE-AI-010
-  followed up in step 8 of parity-achievement-plan.md.
+  match, so the rebuild keeps the original comparison. Those simulations
+  found no hunter hire by any computer player; with the sector weights cached
+  as RULE-AI-003 describes, computer players hire hunters again, and step 8 of
+  parity-achievement-plan.md asks for the paired simulations to be rerun.
 - No rule is `disputed`. RULE-AI-007, RULE-AI-019 and RULE-AI-023 are
   `supported`, and the static plan has nothing left to read for the computer
   players.
@@ -454,8 +455,9 @@ status of each spec entry is in [PARITY.md](../PARITY.md).
   parity tournaments.
 
 - Every recovered AI strategy family has a live handler and the earlier cleanup
-  pass separates dispatch, immutable planning facts, recovered shared operations,
-  and explicitly provisional fallback scoring. The next AI gate is evidence,
+  pass separates dispatch, immutable planning facts and recovered shared
+  operations; the provisional fallback scoring it isolated has since been
+  removed, so every gang plans from its handler. The next AI gate is evidence,
   not another structural rewrite: fixed original-runtime traces plus multi-seed
   tournament coverage. Six-computer deterministic/replay fixtures now exercise
   all objectives through live-equivalent 40-turn campaigns across five guarded

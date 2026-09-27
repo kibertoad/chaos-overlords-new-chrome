@@ -110,7 +110,8 @@ public sealed class MatchReplayTests
                 (ReplayOperationKind.TransferPlayerToComputer, 16),
                 (ReplayOperationKind.TransferPlayerToHuman, 17),
                 (ReplayOperationKind.ContinueRandomStream, 18),
-                (ReplayOperationKind.EmptyComlinkInboxes, 19)
+                (ReplayOperationKind.EmptyComlinkInboxes, 19),
+                (ReplayOperationKind.RefreshAiSectorRecords, 20)
             },
             Enum.GetValues<ReplayOperationKind>().Select(kind => (kind, (int)kind)));
     }

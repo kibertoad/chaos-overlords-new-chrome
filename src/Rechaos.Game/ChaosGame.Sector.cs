@@ -50,13 +50,28 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
+    /// What one draw of the sector view reads more than once, taken once: the cards it lists, the
+    /// player they belong to, whom the Overlord bar's marker follows (FND-UI-018:
+    /// <c>0x00487B8C</c>), and for each seat whether the viewer sees one of its gangs here.
+    /// </summary>
+    private readonly record struct SectorViewFrame(
+        IReadOnlyList<MatchGangState> Cards, PlayerId Viewed, IReadOnlyList<bool> SeatsSeen);
+
+    private SectorViewFrame ComposeSectorView(MatchState state, PlayerId viewer)
+    {
+        var cards = SectorCardGangs(state, viewer);
+        return new SectorViewFrame(cards, cards.Count > 0 ? cards[0].Owner : viewer,
+            SectorOpponentGangs.SeenSeats(state, viewer, _cursor));
+    }
+
+    /// <summary>
     /// SCR-UI-004, FND-UI-018: the group order strip is drawn when the cards show at least two
     /// gangs of the player whose turn it is, during planning.
     /// </summary>
-    private bool ShowsGroupOrderStrip(MatchState state, PlayerId viewer) =>
+    private bool ShowsGroupOrderStrip(MatchState state, PlayerId viewer, IReadOnlyList<MatchGangState> cards) =>
         state.Coordinator.Phase == TurnPhase.Command
-        && state.Coordinator.ActivePlayer == viewer
-        && SectorCardGangs(state, viewer) is { Count: >= 2 } cards
+        && PlanningViewer == viewer
+        && cards.Count >= 2
         && cards[0].Owner == viewer;
 
     /// <summary>
@@ -69,16 +84,6 @@ public sealed partial class ChaosGame
             && SectorOpponentGangs.InSector(state, viewer, owner, _cursor) is { Count: > 0 } borrowed)
             return borrowed;
         return SectorOpponentGangs.InSector(state, viewer, viewer, _cursor);
-    }
-
-    /// <summary>
-    /// The player whose cards the view shows, which the Overlord bar's marker follows
-    /// (FND-UI-018: <c>0x00487B8C</c>).
-    /// </summary>
-    private PlayerId SectorViewedPlayer(MatchState state)
-    {
-        var viewer = ViewingPlayer(state);
-        return SectorCardGangs(state, viewer) is { Count: > 0 } cards ? cards[0].Owner : viewer;
     }
 
     /// <summary>
@@ -110,14 +115,7 @@ public sealed partial class ChaosGame
             HandleIdleGangWarningClick(point);
             return;
         }
-        // FND-UI-015: the back control returns to the city when the press is released inside it.
-        if (SectorDetailLayout.Back.Contains(point))
-        {
-            _pressedPanelFace = (SectorDetailLayout.Back, ClientScreen.Sector,
-                () => _screens.Show(ClientScreen.City));
-            return;
-        }
-        if (_state is null) return;
+        if (PressSectorBack(point, rightButton: false) || _state is null) return;
         var playerId = ViewingPlayer(_state);
         if (SectorOpponentGangs.PortraitAt(_state, point) is { } portraitOwner)
         {
@@ -154,35 +152,55 @@ public sealed partial class ChaosGame
                 OpenSiteDetails(_cursor, siteSlot, ClientScreen.Sector);
             return;
         }
+        var cards = SectorCardGangs(_state, playerId);
         if (SectorDetailLayout.GroupOrderStrip.Contains(point))
         {
-            if (ShowsGroupOrderStrip(_state, playerId))
+            if (ShowsGroupOrderStrip(_state, playerId, cards))
                 OpenGroupCommands(_state, playerId,
                     SectorDetailLayout.GroupOrderIsRecurring(point));
             return;
         }
-        var visible = SectorCardGangs(_state, playerId)
-            .Take(SectorGangCardLayout.VisibleCards).ToArray();
+        PressSectorCard(_state, playerId, cards, point, rightButton: false);
+    }
+
+    /// <summary>
+    /// SCR-UI-004: a press of either button on the Sector workspace. The right button reaches only
+    /// the back control and the cards, the two regions the entry lets it press.
+    /// </summary>
+    private void HandleSectorRightPress(Point point)
+    {
+        if (_idleGangWarningOpen || PressSectorBack(point, rightButton: true) || _state is null) return;
+        var playerId = ViewingPlayer(_state);
+        PressSectorCard(_state, playerId, SectorCardGangs(_state, playerId), point, rightButton: true);
+    }
+
+    /// <summary>FND-UI-015: the back control returns to the city when the press is released inside it.</summary>
+    private bool PressSectorBack(Point point, bool rightButton)
+    {
+        if (!SectorDetailLayout.Back.Contains(point)) return false;
+        _pressedPanelFace = (SectorDetailLayout.Back, ClientScreen.Sector,
+            () => _screens.Show(ClientScreen.City));
+        _pressedPanelFaceByRightButton = rightButton;
+        return true;
+    }
+
+    /// <summary>
+    /// A press on a card of the workspace (SCR-UI-004, FND-UI-015). The right button acts as the
+    /// left does, except that it picks up no drag: the rebuild's card drag (DEV-UI-022) follows the
+    /// left button.
+    /// </summary>
+    private void PressSectorCard(
+        MatchState state, PlayerId playerId, IReadOnlyList<MatchGangState> cards, Point point, bool rightButton)
+    {
         var index = SectorGangCardLayout.CardAt(point);
-        if (index < 0 || index >= visible.Length) return;
-        var gang = visible[index];
+        if (index < 0 || index >= Math.Min(cards.Count, SectorGangCardLayout.VisibleCards)) return;
+        var gang = cards[index];
         if (gang.Owner != playerId)
         {
-            // FND-UI-015: on another player's card a double-click on the portrait opens the gang
-            // panel and one on an equipment icon opens Item Information (fn_004169B3).
-            _message = string.Empty;
-            var equipped = EquippedItems(gang);
-            var region = SectorGangCardLayout.Portrait(index).Contains(point) ? 0
-                : Enumerable.Range(0, 3).FirstOrDefault(
-                    item => SectorGangCardLayout.ItemSlot(index, item).Contains(point)
-                        && equipped[item] is not null, -1) + 1;
-            if (region == 0 && !SectorGangCardLayout.Portrait(index).Contains(point)) return;
-            if (!_sectorGangClicks.Register(gang.Id.Value * 4 + region, _inputTime)) return;
-            if (region == 0) OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
-            else OpenItemDetails(equipped[region - 1]!.Value, ClientScreen.Sector);
+            PressOpponentCard(gang, index, point);
             return;
         }
-        var ownGangs = _state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();
+        var ownGangs = state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();
         _selectedGangIndex = Array.FindIndex(ownGangs, candidate => candidate.Id == gang.Id);
         if (_multiSelectModifier)
         {
@@ -195,17 +213,42 @@ public sealed partial class ChaosGame
             if (IsSelectedForBulkCommand(gang)) OpenBulkCommands(selectedRepeat);
             else OpenCommands(selectedRepeat, ClientScreen.Sector);
         }
-        else if (SectorGangCardLayout.Portrait(index).Contains(point))
+        else if (!rightButton && SectorGangCardLayout.Portrait(index).Contains(point))
             BeginGangDrag(gang, point);
-        else if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
+        else
+            RegisterGangCardClick(gang);
+    }
+
+    /// <summary>
+    /// FND-UI-015: on another player's card a double-click on the portrait opens the gang panel
+    /// and one on an equipment icon opens Item Information (fn_004169B3).
+    /// </summary>
+    private void PressOpponentCard(MatchGangState gang, int index, Point point)
+    {
+        _message = string.Empty;
+        var equipped = EquippedItems(gang);
+        var onPortrait = SectorGangCardLayout.Portrait(index).Contains(point);
+        var itemSlot = SectorGangCardLayout.ItemSlotAt(index, point);
+        if (!onPortrait && (itemSlot < 0 || equipped[itemSlot] is null)) return;
+        var region = onPortrait ? 0 : itemSlot + 1;
+        if (!_sectorGangClicks.Register(SectorGangCardLayout.ClickKey(gang.Id, region), _inputTime)) return;
+        if (onPortrait) OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
+        else OpenItemDetails(equipped[itemSlot]!.Value, ClientScreen.Sector);
+    }
+
+    /// <summary>A click on the gang of a card, which opens its panel on the second one.</summary>
+    private void RegisterGangCardClick(MatchGangState gang)
+    {
+        if (_sectorGangClicks.Register(SectorGangCardLayout.ClickKey(gang.Id, 0), _inputTime))
             OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
     }
 
     private void DrawSectorDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawBoard(batch, pixel, font, state, drawMapLayer: false);
-        var sector = state.Sectors[_cursor];
         var viewer = ViewingPlayer(state);
+        var view = ComposeSectorView(state, viewer);
+        DrawBoard(batch, pixel, font, state, view);
+        var sector = state.Sectors[_cursor];
         DrawSectorBackground(batch, pixel);
         if (_uiSprites is not null)
         {
@@ -242,16 +285,17 @@ public sealed partial class ChaosGame
             {
                 if (filled > 0)
                     batch.Draw(_uiSprites, meter with { Width = filled },
-                        new Rectangle(354, 0, filled, 3), Color.White);
+                        SectorDetailLayout.SiteControlBarSource(filled), Color.White);
             }
             else
                 DrawSectorMeter(batch, pixel, meter, filled, new Color(0, 247, 0));
         }
-        var visibleGangs = SectorCardGangs(state, viewer);
+        var visibleGangs = view.Cards;
+        var showsGroupOrderStrip = ShowsGroupOrderStrip(state, viewer, visibleGangs);
         foreach (var entry in visibleGangs.Take(SectorGangCardLayout.VisibleCards)
                      .Select((gang, index) => (gang, index)))
             DrawSectorGangCard(batch, pixel, font, state, viewer, entry.gang, entry.index);
-        if (_uiSprites is not null && ShowsGroupOrderStrip(state, viewer))
+        if (_uiSprites is not null && showsGroupOrderStrip)
             batch.Draw(_uiSprites, SectorDetailLayout.GroupOrderStrip,
                 OriginalSpriteLayout.GroupOrderStrip, Color.White);
         DrawQueuedCommandTargetHighlight(batch, pixel, viewer, visibleGangs);
@@ -261,7 +305,7 @@ public sealed partial class ChaosGame
         // DrawBoard, so composite the tooltip again after the workspace is complete.
         DrawStatusConsoleTooltip(batch, pixel, font);
         // RULE-TURN-005: what the group order strip does, as FND-TURN-009 records it.
-        if (_hoverPoint is { } stripHover && ShowsGroupOrderStrip(state, viewer)
+        if (_hoverPoint is { } stripHover && showsGroupOrderStrip
             && SectorDetailLayout.GroupOrderStrip.Contains(stripHover))
             DrawHoverTooltip(batch, pixel, font, stripHover,
             [
@@ -313,13 +357,12 @@ public sealed partial class ChaosGame
         IReadOnlyList<MatchGangState> visibleGangs)
     {
         if (_hoverPoint is not { } point) return;
-        var hoveredSlot = HitTest.IndexAt(
-            Math.Min(visibleGangs.Count, SectorGangCardLayout.VisibleCards),
-            SectorGangCardLayout.Frame,
-            point);
+        // The card a press here would take (FND-UI-015), gaps between the cards included.
+        var hoveredSlot = SectorGangCardLayout.CardAt(point);
         // An opponent's orders stay their own business: the cards hide their action strip, so the
         // workspace must not betray the same order by highlighting what it targets.
-        if (hoveredSlot < 0 || visibleGangs[hoveredSlot].Owner != viewer
+        if (hoveredSlot < 0 || hoveredSlot >= Math.Min(visibleGangs.Count, SectorGangCardLayout.VisibleCards)
+            || visibleGangs[hoveredSlot].Owner != viewer
             || visibleGangs[hoveredSlot].QueuedCommand is not { } queued) return;
 
         switch (queued.Command.Action)
@@ -414,8 +457,7 @@ public sealed partial class ChaosGame
         var gangId = _draggedGangId;
         ForgetGangDrag();
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang) return;
-        if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
-            OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
+        RegisterGangCardClick(gang);
     }
 
     private void CompleteGangDrag(Point point)
@@ -423,7 +465,7 @@ public sealed partial class ChaosGame
         var gangId = _draggedGangId;
         ForgetGangDrag();
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang || _actions is null) return;
-        var playerId = _state.Coordinator.ActivePlayer ?? gang.Owner;
+        var playerId = PlanningViewer ?? gang.Owner;
         var visibleGangs = SectorGangView.Visible(_state, playerId, _cursor).ToArray();
         if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, point) is { } enemyId)
         {
@@ -432,7 +474,8 @@ public sealed partial class ChaosGame
                 "GANG CANNOT BE ATTACKED");
             return;
         }
-        var siteSlot = HitTest.IndexAt(MatchLimits.SitesPerSector, SectorDetailLayout.SitePortrait, point);
+        // The site a double-click here would open (FND-UI-015), gaps between the portraits included.
+        var siteSlot = SectorDetailLayout.SiteAt(point);
         if (siteSlot >= 0)
         {
             var target = CommandTarget.Site(_cursor * MatchLimits.SitesPerSector + siteSlot);

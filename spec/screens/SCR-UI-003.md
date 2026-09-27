@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-032, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038]
+evidence: [FND-UI-032, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038, FND-UI-039, FND-OBJECTIVE-004, FND-STATE-010]
 conflicting: []
 split_with: []
 related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-UI-012, RULE-TIMER-002, RULE-TIMER-003, RULE-OPTIONS-003, RULE-AUDIO-001, RULE-AUDIO-007, RULE-AUDIO-008, SCR-UI-004, SCR-UI-005, SCR-UI-008, SCR-OPTIONS-001, SCR-HIRE-001, SCR-HIRE-002, SCR-GANG-002]
@@ -82,6 +82,7 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 | Planning | A human player's planning starts | Done is accepted, or the time limit passes (RULE-TIMER-002) | FND-UI-032, FND-TIMER-001 |
 | City view | Planning starts, or SCR-UI-004 is left; the byte `0x00487B88` is 1 | SCR-UI-004 opens and clears it | FND-UI-015 |
 | Waiting | After Done, while other players still plan; the same two views take input and the group strip of SCR-UI-004 is not drawn | The wait loop `fn_00471F06` ends | FND-UI-015, FND-UI-018 |
+| Final view | The end evaluation has finished the match: each local human still in play gets one planning visit, in slot order, after the Ready card when that shows; the Done light blinks, and there is no planning clock and no idle-gang warning | Done is accepted; after the last visit the awards open | FND-OBJECTIVE-004, FND-UI-039, FND-STATE-010 |
 | Busy | Resolution, setup of a city or loading runs; the pointer is the hourglass (RULE-UI-007) | The work ends; the pointer is the arrow again | FND-UI-034 |
 
 ## Timing

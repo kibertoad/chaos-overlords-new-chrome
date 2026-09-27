@@ -56,7 +56,7 @@ public sealed class AiFamilyZeroTurnPlannerTests
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Move, match.AiPlanning.PlannedAction(player, 0));
     }
@@ -74,7 +74,7 @@ public sealed class AiFamilyZeroTurnPlannerTests
         SetPreviousAction(match, player, previous);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
     }
@@ -88,7 +88,7 @@ public sealed class AiFamilyZeroTurnPlannerTests
         SetPreviousAction(match, player, GangAction.Attack);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Move, command.Action);
@@ -106,7 +106,7 @@ public sealed class AiFamilyZeroTurnPlannerTests
         match.FinishUpkeep();
         var randomBefore = match.Random.ConsumptionCount;
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Attack, command.Action);
@@ -134,7 +134,7 @@ public sealed class AiFamilyZeroTurnPlannerTests
             target.Force, targetStats.Combat, targetStats.Defense));
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Empty(AiTurnPlanner.Plan(match, player));
         Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(player, 0));
@@ -155,7 +155,7 @@ public sealed class AiFamilyZeroTurnPlannerTests
         match.FinishUpkeep();
         var randomBefore = match.Random.ConsumptionCount;
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Attack, command.Action);
@@ -178,7 +178,7 @@ public sealed class AiFamilyZeroTurnPlannerTests
         match.Sectors[0].CrackdownActive = crackdown;
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
     }
@@ -195,7 +195,7 @@ public sealed class AiFamilyZeroTurnPlannerTests
                 match, match.Players[0], match.Players[0].Gangs[0], 0));
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Equip, command.Action);

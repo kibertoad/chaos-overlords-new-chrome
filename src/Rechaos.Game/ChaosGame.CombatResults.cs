@@ -8,7 +8,7 @@ public sealed partial class ChaosGame
 {
     private void OpenCombatResults(ClientScreen returnScreen)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (_state is null || PlanningViewer is not { } viewer) return;
         var pages = CombatResultPages(_state, viewer);
         if (pages.Count == 0)
         {
@@ -35,7 +35,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ReplayAllCombatDetail()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (_state is null || PlanningViewer is not { } viewer) return;
         var clips = CombatAnimationRouting.ForPresentation(
             _state, VisibleCombatEvents(_state, viewer), viewer);
         if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
@@ -73,7 +73,7 @@ public sealed partial class ChaosGame
 
     private void ReplaySelectedCombatDetail()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (_state is null || PlanningViewer is not { } viewer) return;
         var pages = CombatResultPages(_state, viewer);
         if (pages.Count == 0)
         {
@@ -122,7 +122,7 @@ public sealed partial class ChaosGame
     /// </summary>
     private void MoveCombatSummary(int delta)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (_state is null || PlanningViewer is not { } viewer) return;
         var pages = CombatResultPages(_state, viewer);
         var count = pages.Count;
         if (count > 0)
@@ -331,7 +331,7 @@ public sealed partial class ChaosGame
     /// </summary>
     private void SelectCombatSummaryEntry(Point point)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (_state is null || PlanningViewer is not { } viewer) return;
         var pages = CombatResultPages(_state, viewer);
         if (pages.Count == 0) return;
         _combatSummaryCursor = Math.Clamp(_combatSummaryCursor, 0, pages.Count - 1);
@@ -575,6 +575,25 @@ public sealed record CombatResultPage(int SectorId, IReadOnlyList<CombatResultEn
 public sealed class CombatPresentationProgress
 {
     private readonly Dictionary<PlayerId, long> _lastSeen = [];
+
+    /// <summary>
+    /// The player Detailed Combat plays for (RULE-COMBAT-004): the human in its final view once
+    /// the match has ended (SCR-UI-003), else the human who holds the turn, or null while a
+    /// computer holds it or nobody does.
+    /// </summary>
+    /// <remarks>
+    /// The computers' planning runs one turn per frame at most, so a frame can end just after a
+    /// resolution with the new turn's first computer holding it. Presenting then would play that
+    /// computer's fights, in sectors the human may have no gang in, to the human at the screen.
+    /// </remarks>
+    public static PlayerId? Viewer(MatchState state, PlayerId? finalViewPlayer = null)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return (finalViewPlayer ?? state.Coordinator.ActivePlayer) is { } candidate
+            && state.FindPlayer(candidate)?.Setup.Controller == PlayerController.Human
+                ? candidate
+                : null;
+    }
 
     public long LastSeen(PlayerId player) => _lastSeen.GetValueOrDefault(player, -1);
 

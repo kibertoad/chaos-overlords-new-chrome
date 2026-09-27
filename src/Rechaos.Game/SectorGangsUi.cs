@@ -77,7 +77,7 @@ public sealed partial class ChaosGame
 
     private void OpenSectorGangs(ClientScreen returnScreen)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_state is null || PlanningViewer is not { } playerId) return;
         var gangs = GangInformationRoster.ForSector(_state.FindPlayer(playerId)!.Gangs, _cursor);
         if (gangs.Count == 0)
         {
@@ -101,7 +101,7 @@ public sealed partial class ChaosGame
 
     private void SelectSectorGang()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _sectorGangRoster.Count == 0) return;
+        if (_state is null || PlanningViewer is not { } playerId || _sectorGangRoster.Count == 0) return;
         var gangId = _sectorGangRoster[_sectorGangCursor];
         var active = _state.FindPlayer(playerId)!.Gangs.Where(gang => gang.IsActive).ToArray();
         var index = Array.FindIndex(active, gang => gang.Id == gangId);
