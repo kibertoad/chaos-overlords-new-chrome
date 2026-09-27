@@ -36,6 +36,16 @@ public static class SectorGangCardLayout
 
     public static Rectangle Frame(int slot) => At(slot, 0, 0, FrameWidth, FrameHeight);
 
+    /// <summary>
+    /// FND-UI-015: a press in <c>(254,80,150,336)</c> takes card
+    /// <c>(x &gt; 329) + 2*(y &gt; 192) + 2*(y &gt; 304)</c>, gaps between the cards included; -1 outside.
+    /// </summary>
+    public static int CardAt(Point point)
+    {
+        if (!new Rectangle(254, 80, 150, 336).Contains(point)) return -1;
+        return (point.X > 329 ? 1 : 0) + 2 * (point.Y > 192 ? 1 : 0) + 2 * (point.Y > 304 ? 1 : 0);
+    }
+
     public static Rectangle OwnerBorder(int slot)
     {
         var frame = Frame(slot);
