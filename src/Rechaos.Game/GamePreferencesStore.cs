@@ -3,6 +3,13 @@ using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
+/// <summary>
+/// The options a fresh start has. RULE-OPTIONS-001 gives the original's initialized values; the
+/// rebuild reads them from its own preferences file (DEV-OPTIONS-001), starts Slide Panels off
+/// (DEV-OPTIONS-002) and starts in a window (DEV-OPTIONS-003). The original saves nothing
+/// (RULE-OPTIONS-002), so its Mentality starts at the initialized value at every start, and so
+/// does the rebuild's, which never stores it.
+/// </summary>
 public static class OriginalOptionsPolicy
 {
     public const bool WarnIfIdleGangsByDefault = true;
@@ -12,6 +19,7 @@ public static class OriginalOptionsPolicy
     public const bool FullscreenByDefault = false;
     public const bool SmoothEventSiteImagesByDefault = false;
     public const AiPolicyMode AiPolicyByDefault = AiPolicyMode.Original;
+    public const AiDifficulty MentalityByDefault = AiDifficulty.Criminal;
 
     /// <summary>DEV-VIDEO-003: the intro plays on the first start only. The original plays it at
     /// every start.</summary>
