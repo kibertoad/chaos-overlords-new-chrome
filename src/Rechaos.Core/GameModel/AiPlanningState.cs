@@ -45,6 +45,7 @@ public sealed class AiPlanningState
     private readonly short[] _coverageSectors;
     private readonly bool[] _needsFamily;
     private readonly bool[] _raiderMode;
+    private readonly byte[] _sectorWeights;
     private byte _firstCombatRecordDefinition;
 
     private AiPlanningState(
@@ -65,7 +66,8 @@ public sealed class AiPlanningState
         IReadOnlyList<short> coverageSectors,
         IReadOnlyList<bool> needsFamily,
         IReadOnlyList<bool> raiderMode,
-        byte firstCombatRecordDefinition)
+        byte firstCombatRecordDefinition,
+        IReadOnlyList<byte> sectorWeights)
     {
         ArgumentNullException.ThrowIfNull(currentHireRoles);
         ArgumentNullException.ThrowIfNull(previousHireRoles);
@@ -84,6 +86,7 @@ public sealed class AiPlanningState
         ArgumentNullException.ThrowIfNull(coverageSectors);
         ArgumentNullException.ThrowIfNull(needsFamily);
         ArgumentNullException.ThrowIfNull(raiderMode);
+        ArgumentNullException.ThrowIfNull(sectorWeights);
         if (currentHireRoles.Count != MatchLimits.PlayerCount
             || previousHireRoles.Count != MatchLimits.PlayerCount)
             throw new ArgumentException("AI hire roles must contain all six original player slots.");
@@ -112,6 +115,10 @@ public sealed class AiPlanningState
             throw new ArgumentException("AI family flags must contain all six-by-81 original planning slots.");
         if (raiderMode.Count != MatchLimits.PlayerCount)
             throw new ArgumentException("AI raider flags must contain all six original player slots.", nameof(raiderMode));
+        if (sectorWeights.Count != MatchLimits.PlayerCount * MatchLimits.SectorCount)
+            throw new ArgumentException("AI sector weights must contain all six-by-64 original cells.", nameof(sectorWeights));
+        if (sectorWeights.Any(weight => weight is not (0 or 1 or 10)))
+            throw new ArgumentOutOfRangeException(nameof(sectorWeights));
         if (currentHireRoles.Any(role => role is < 0 or > MaximumHireRole))
             throw new ArgumentOutOfRangeException(nameof(currentHireRoles));
         if (previousHireRoles.Any(role => role is < 0 or > MaximumHireRole))
@@ -148,6 +155,7 @@ public sealed class AiPlanningState
         _coverageSectors = coverageSectors.ToArray();
         _needsFamily = needsFamily.ToArray();
         _raiderMode = raiderMode.ToArray();
+        _sectorWeights = sectorWeights.ToArray();
         _firstCombatRecordDefinition = RequireUnsignedAgnostic(firstCombatRecordDefinition);
     }
 
@@ -180,6 +188,17 @@ public sealed class AiPlanningState
     /// <summary>RULE-AI-001, RULE-AI-027: whether every active gang of the player plans as family 9.</summary>
     public bool RaiderMode(PlayerId player) => _raiderMode[PlayerIndex(player)];
 
+    /// <summary>
+    /// RULE-AI-003: the weight the player's last planning pass cached for the sector, from
+    /// RULE-AI-004's visible_weight before that pass's hostility step: 10, 1 or 0.
+    /// </summary>
+    public int SectorWeight(PlayerId player, int sectorId) =>
+        _sectorWeights[SectorWeightIndex(player, sectorId)];
+
+    /// <summary>The player's 64 cached sector weights (RULE-AI-003), for its pass to overwrite.</summary>
+    internal Span<byte> SectorWeightRow(PlayerId player) =>
+        _sectorWeights.AsSpan(PlayerIndex(player) * MatchLimits.SectorCount, MatchLimits.SectorCount);
+
     internal IReadOnlyList<int> CaptureCurrentHireRoles() => _currentHireRoles.ToArray();
     internal IReadOnlyList<int> CapturePreviousHireRoles() => _previousHireRoles.ToArray();
     internal IReadOnlyList<int> CaptureFamilies() => _families.ToArray();
@@ -197,6 +216,7 @@ public sealed class AiPlanningState
     internal IReadOnlyList<short> CaptureCoverageSectors() => _coverageSectors.ToArray();
     internal IReadOnlyList<bool> CaptureNeedsFamily() => _needsFamily.ToArray();
     internal IReadOnlyList<bool> CaptureRaiderMode() => _raiderMode.ToArray();
+    internal IReadOnlyList<byte> CaptureSectorWeights() => _sectorWeights.ToArray();
 
     /// <summary>
     /// Byte 0, <c>definition</c>, of the first combat record (FMT-STATE-003): player 0's roster
@@ -485,7 +505,8 @@ public sealed class AiPlanningState
             MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray(),
         new bool[MatchLimits.PlayerCount * GangSlotsPerPlayer],
         new bool[MatchLimits.PlayerCount],
-        0);
+        0,
+        new byte[MatchLimits.PlayerCount * MatchLimits.SectorCount]);
 
     internal static AiPlanningState Initialize(IReadOnlyList<MatchPlayerState> players)
     {
@@ -568,7 +589,8 @@ public sealed class AiPlanningState
         IReadOnlyList<short>? coverageSectors = null,
         IReadOnlyList<bool>? needsFamily = null,
         IReadOnlyList<bool>? raiderMode = null,
-        byte firstCombatRecordDefinition = 0) => new(
+        byte firstCombatRecordDefinition = 0,
+        IReadOnlyList<byte>? sectorWeights = null) => new(
             currentHireRoles, previousHireRoles, families, sectorAnchors,
             olderActions, previousActions, plannedActions,
             olderTargets, previousTargets, plannedTargets, hasPlanned,
@@ -582,7 +604,8 @@ public sealed class AiPlanningState
                 MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray(),
             needsFamily ?? new bool[MatchLimits.PlayerCount * GangSlotsPerPlayer],
             raiderMode ?? new bool[MatchLimits.PlayerCount],
-            firstCombatRecordDefinition);
+            firstCombatRecordDefinition,
+            sectorWeights ?? new byte[MatchLimits.PlayerCount * MatchLimits.SectorCount]);
 
     private static bool IsValidFamily(int family) =>
         family == UnusedFamily || family is >= 0 and <= MaximumFamily and not 8;
@@ -602,6 +625,13 @@ public sealed class AiPlanningState
         if (gangSlot is < 0 or >= GangSlotsPerPlayer)
             throw new ArgumentOutOfRangeException(nameof(gangSlot));
         return checked(PlayerIndex(player) * GangSlotsPerPlayer + gangSlot);
+    }
+
+    private static int SectorWeightIndex(PlayerId player, int sectorId)
+    {
+        if ((uint)sectorId >= MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(sectorId));
+        return checked(PlayerIndex(player) * MatchLimits.SectorCount + sectorId);
     }
 
     private static int PlayerIndex(PlayerId player)

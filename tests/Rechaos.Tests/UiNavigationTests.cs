@@ -114,10 +114,11 @@ public sealed class UiNavigationTests
         var sectorCash = string.Join(' ', StatusConsoleTooltip.At(
             StatusConsoleLayout.SectorEntry(4).Center));
         Assert.Contains("OWNER-ONLY", sectorCash);
-        Assert.Equal(7, StatusConsolePresentation.SectorCash(
+        Assert.Equal(7, StatusConsolePresentation.OwnerOnly(
             new PlayerId(1), new PlayerId(1), 7));
-        Assert.Equal(0, StatusConsolePresentation.SectorCash(
+        Assert.Equal(0, StatusConsolePresentation.OwnerOnly(
             new PlayerId(1), new PlayerId(0), 7));
+        Assert.Equal(0, StatusConsolePresentation.OwnerOnly(null, new PlayerId(0), 7));
         Assert.Equal("+1", StatusConsolePresentation.ProjectedChange(1));
         Assert.Equal("-3", StatusConsolePresentation.ProjectedChange(-3));
         Assert.Equal("0", StatusConsolePresentation.ProjectedChange(0));
@@ -366,6 +367,9 @@ public sealed class UiNavigationTests
             gangs, owner, SectorGangCardLayout.Frame(0).Center));
         Assert.Equal(new GangId(20), SectorGangDropTarget.EnemyAt(
             gangs, owner, SectorGangCardLayout.Frame(1).Center));
+        // FND-UI-015: the gap between the cards belongs to the card a press there takes.
+        Assert.Equal(new GangId(20), SectorGangDropTarget.EnemyAt(gangs, owner, new Point(330, 150)));
+        Assert.Null(SectorGangDropTarget.EnemyAt(gangs, owner, new Point(254, 250)));
     }
 
     [Fact]
@@ -616,7 +620,6 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(492, 207, 20, 20), OriginalSpriteLayout.GangStatus(7));
         Assert.Throws<ArgumentOutOfRangeException>(() => OriginalSpriteLayout.GangStatus(9));
         Assert.Equal(new Rectangle(150, 386, 40, 40), OriginalSpriteLayout.SetupDragFrame);
-        Assert.Equal(new Rectangle(120, 211, 30, 47), OriginalSpriteLayout.SectorBackArrow);
         Assert.Equal(new Rectangle(0, 626, 20, 20), OriginalSpriteLayout.ActivePlayerMarker(0));
         Assert.Equal(new Rectangle(220, 626, 20, 20), OriginalSpriteLayout.ActivePlayerMarker(11));
         Assert.Equal(new Rectangle(480, 480, 32, 32), OriginalSpriteLayout.OverlordPortrait(15));

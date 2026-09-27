@@ -64,6 +64,29 @@ public sealed class SectorOpponentGangsTests
     }
 
     [Fact]
+    public void SeenSeatsAgreeWithTheRostersTheWorkspaceWouldList()
+    {
+        var viewer = new PlayerId(0);
+        foreach (var detectable in new[] { true, false })
+        {
+            var state = CreateMatch(detectable);
+            for (var sectorId = 0; sectorId < 3; sectorId++)
+            {
+                var seen = SectorOpponentGangs.SeenSeats(state, viewer, sectorId);
+                Assert.Equal(MatchLimits.PlayerCount, seen.Length);
+                // FND-UI-018: a seat's portrait is undimmed when the viewer sees one of its gangs.
+                Assert.Equal(
+                    Enumerable.Range(0, MatchLimits.PlayerCount).Select(seat =>
+                        state.FindPlayer(new PlayerId(seat)) is not null
+                        && SectorOpponentGangs.InSector(state, viewer, new PlayerId(seat), sectorId).Count > 0),
+                    seen);
+            }
+        }
+        Assert.Equal([true, true, true, false, false, false],
+            SectorOpponentGangs.SeenSeats(CreateMatch(), viewer, sectorId: 0));
+    }
+
+    [Fact]
     public void PortraitHitTestOnlyAnswersForOverlordsInTheMatch()
     {
         var state = CreateMatch();

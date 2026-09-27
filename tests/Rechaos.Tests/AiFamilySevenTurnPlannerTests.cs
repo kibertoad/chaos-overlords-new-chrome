@@ -79,7 +79,7 @@ public sealed class AiFamilySevenTurnPlannerTests
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Research, command.Action);
@@ -276,7 +276,7 @@ public sealed class AiFamilySevenTurnPlannerTests
         match.AiPlanning.SetFocusValue(player, 0, 0);
         match.Coordinator.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Terminate,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);

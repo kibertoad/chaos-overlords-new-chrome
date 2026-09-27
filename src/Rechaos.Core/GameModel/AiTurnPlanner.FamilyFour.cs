@@ -10,7 +10,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
+        var visibleWeight = state.AiPlanning.SectorWeight(playerId, gang.SectorId);
         var previousAction = state.AiPlanning.PreviousAction(playerId, gangSlot);
         switch (previousAction)
         {

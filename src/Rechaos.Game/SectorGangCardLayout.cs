@@ -8,6 +8,7 @@ public static class SectorGangCardLayout
     public const int Columns = 2;
     public const int Rows = 3;
     public const int VisibleCards = Columns * Rows;
+    public const int ItemSlots = 3;
     public const int Left = 254;
     public const int Top = 80;
     public const int ColumnStride = 76;
@@ -87,9 +88,28 @@ public static class SectorGangCardLayout
     public static Rectangle Portrait(int slot) =>
         At(slot, ContentLeft, PortraitTop, PortraitSize, PortraitSize);
 
+    /// <summary>
+    /// The double-click key of a region of a gang's card: 0 for the gang itself, 1 to 3 for an
+    /// equipment slot. Every card path registers under it, so two targets never share a key.
+    /// </summary>
+    public static int ClickKey(GangId gang, int region)
+    {
+        if (region is < 0 or > ItemSlots) throw new ArgumentOutOfRangeException(nameof(region));
+        return gang.Value * (ItemSlots + 1) + region;
+    }
+
+    /// <summary>The equipment slot of a card under the point, or -1.</summary>
+    public static int ItemSlotAt(int slot, Point point)
+    {
+        for (var itemSlot = 0; itemSlot < ItemSlots; itemSlot++)
+            if (ItemSlot(slot, itemSlot).Contains(point))
+                return itemSlot;
+        return -1;
+    }
+
     public static Rectangle ItemSlot(int slot, int itemSlot)
     {
-        if (itemSlot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(itemSlot));
+        if (itemSlot is < 0 or >= ItemSlots) throw new ArgumentOutOfRangeException(nameof(itemSlot));
         return At(slot, ContentLeft + itemSlot * EquipmentStride,
             EquipmentTop, EquipmentSize, EquipmentSize);
     }

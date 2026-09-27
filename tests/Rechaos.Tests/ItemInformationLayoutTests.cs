@@ -54,9 +54,25 @@ public sealed class ItemInformationLayoutTests
             NativeTwoCellNumberPresentation.Format(0, NativeTwoCellNumberPresentation.Kind.Baseline));
         Assert.Equal(new NativeTwoCellNumberPresentation.Value("9999", false, false),
             NativeTwoCellNumberPresentation.Format(9999, NativeTwoCellNumberPresentation.Kind.Baseline, 4));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            NativeTwoCellNumberPresentation.Format(100));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
+    }
+
+    [Fact]
+    public void PutsTheWholeLeadingQuotientOfAWideValueInTheFirstCell()
+    {
+        // RULE-UI-004: 123 in two cells draws glyph 28, the character '<', and then 3.
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value("<3", false, false),
+            NativeTwoCellNumberPresentation.Format(123, NativeTwoCellNumberPresentation.Kind.Baseline));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value(":0", true, false),
+            NativeTwoCellNumberPresentation.Format(-100, NativeTwoCellNumberPresentation.Kind.Baseline));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value(":5", false, false),
+            NativeTwoCellNumberPresentation.Format(105));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value(":05", false, false),
+            NativeTwoCellNumberPresentation.Format(1005, width: 3));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value(":", false, false),
             NativeTwoCellNumberPresentation.Format(10, width: 1));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value("Z9", false, false),
+            NativeTwoCellNumberPresentation.Format(429));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            NativeTwoCellNumberPresentation.Format(430));
     }
 }
