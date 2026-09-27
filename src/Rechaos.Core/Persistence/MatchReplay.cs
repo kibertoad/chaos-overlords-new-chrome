@@ -26,7 +26,11 @@ public enum ReplayOperationKind : byte
     /// <summary>One authoritative, one-way handover of a departed human seat.</summary>
     TransferPlayerToComputer,
     /// <summary>Returns an AI-held online seat to its authenticated human owner.</summary>
-    TransferPlayerToHuman
+    TransferPlayerToHuman,
+    /// <summary>A local load moves the generator to the run's sequence (RULE-RNG-001).</summary>
+    ContinueRandomStream,
+    /// <summary>A local load empties every Comlink inbox (RULE-COMLINK-004, FMT-STATE-005).</summary>
+    EmptyComlinkInboxes
 }
 
 public sealed record ReplayStep(
@@ -41,7 +45,8 @@ public sealed record ReplayStep(
     int? ValidationCode = null,
     IReadOnlyList<PlayerId>? Recipients = null,
     string? Text = null,
-    long? ComlinkSequence = null);
+    long? ComlinkSequence = null,
+    uint? RandomState = null);
 
 /// <summary>
 /// Records every public match mutation together with its resulting canonical hash.
@@ -287,6 +292,23 @@ public sealed class MatchReplayRecorder
         return changed;
     }
 
+    public void ContinueRandomStream(uint state)
+    {
+        EnsureSynchronized();
+        State.ContinueRandomStream(state);
+        Add(new ReplayStep(
+            ReplayOperationKind.ContinueRandomStream, CurrentHash(), RandomState: state));
+    }
+
+    public bool EmptyComlinkInboxes()
+    {
+        EnsureSynchronized();
+        var changed = State.EmptyComlinkInboxes();
+        Add(new ReplayStep(
+            ReplayOperationKind.EmptyComlinkInboxes, CurrentHash(), Accepted: changed));
+        return changed;
+    }
+
     internal ReplayDocument Capture()
     {
         EnsureSynchronized();
@@ -332,7 +354,7 @@ public static class MatchReplaySerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: a journal is verified step
     // by step against the fingerprint of its day, so a journal from format 31 would diverge on its
     // first step and be reported as damage rather than as an older format.
-    public const int CurrentFormatVersion = 32;
+    public const int CurrentFormatVersion = 46;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -351,7 +373,9 @@ public static class MatchReplaySerializer
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(definitions);
         if (!source.CanRead) throw new ArgumentException("Source stream is not readable.", nameof(source));
-        return ApplyGuarded(Read(source), definitions);
+        var document = ReadCurrentFormat(source, out var declared)
+            ?? throw UnsupportedFormat(declared);
+        return ApplyGuarded(document, definitions);
     }
 
     /// <summary>
@@ -363,7 +387,8 @@ public static class MatchReplaySerializer
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(definitions);
         if (!source.CanRead) throw new ArgumentException("Source stream is not readable.", nameof(source));
-        var document = Read(source);
+        var document = ReadCurrentFormat(source, out var declared)
+            ?? throw UnsupportedFormat(declared);
         ApplyGuarded(document, definitions);
         return new MatchReplayPlayback(document, definitions);
     }
@@ -392,8 +417,9 @@ public static class MatchReplaySerializer
         ArgumentNullException.ThrowIfNull(definitions);
         if (!source.CanRead)
             throw new ArgumentException("Source stream is not readable.", nameof(source));
-        var document = Read(source);
-        if (document.FormatVersion != CurrentFormatVersion) return null;
+        // A journal in any other format, older or newer, is not this build's to continue.
+        var document = ReadCurrentFormat(source, out _);
+        if (document is null) return null;
         var state = ApplyGuarded(document, definitions);
         return MatchReplayRecorder.Resume(
             state, document.InitialSnapshot, document.InitialStateFingerprint, document.Steps);
@@ -435,8 +461,9 @@ public static class MatchReplaySerializer
         ArgumentNullException.ThrowIfNull(resumed);
         if (!source.CanRead)
             throw new ArgumentException("Source stream is not readable.", nameof(source));
-        var document = Read(source);
-        if (document.FormatVersion != CurrentFormatVersion) return null;
+        // A journal in any other format, older or newer, is not this build's to continue.
+        var document = ReadCurrentFormat(source, out _);
+        if (document is null) return null;
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
         var ending = EndingFingerprint(document.InitialStateFingerprint, document.Steps);
@@ -456,12 +483,29 @@ public static class MatchReplaySerializer
             ? initialStateFingerprint
             : steps[^1].ResultingStateFingerprint;
 
-    private static ReplayDocument Read(Stream source)
+    /// <summary>
+    /// Reads a journal written in this build's format, or answers null with the format it declares.
+    /// </summary>
+    /// <remarks>
+    /// The version has to be read before the members are bound, as the native save load does:
+    /// JsonOptions refuses unmapped members, so a journal from a newer build would otherwise fail as
+    /// "JSON is invalid" on the very field that build added. That reads as damage, and
+    /// <see cref="MatchReplayStore.LoadAndReplayRecoveringBackup"/> would then fall back to the
+    /// backup generation and could overwrite the newer primary with it.
+    /// </remarks>
+    private static ReplayDocument? ReadCurrentFormat(Stream source, out int declaredFormatVersion)
     {
         try
         {
             using var bounded = NativeSaveSerializer.ReadBounded(
                 source, MaximumReplayBytes, "Replay exceeds the size limit.");
+            if (NativeSaveSerializer.DeclaredFormatVersion(bounded) is { } declared
+                && declared != CurrentFormatVersion)
+            {
+                declaredFormatVersion = declared;
+                return null;
+            }
+            declaredFormatVersion = CurrentFormatVersion;
             return JsonSerializer.Deserialize<ReplayDocument>(bounded, JsonOptions)
                 ?? throw new InvalidDataException("Replay is empty.");
         }
@@ -470,6 +514,13 @@ public static class MatchReplaySerializer
             throw new InvalidDataException("Replay JSON is invalid.", exception);
         }
     }
+
+    private static InvalidDataException UnsupportedFormat(int declared) =>
+        IncompatibleSave.Create(
+            declared > CurrentFormatVersion
+                ? IncompatibleSaveReason.NewerFormat
+                : IncompatibleSaveReason.OlderFormat,
+            $"Unsupported replay format {declared}.");
 
     /// <summary>
     /// <see cref="Apply"/>, with every way a malformed journal can surface reported as bad data.
@@ -507,11 +558,7 @@ public static class MatchReplaySerializer
     private static MatchState Apply(ReplayDocument document, OriginalData definitions)
     {
         if (document.FormatVersion != CurrentFormatVersion)
-            throw IncompatibleSave.Create(
-                document.FormatVersion > CurrentFormatVersion
-                    ? IncompatibleSaveReason.NewerFormat
-                    : IncompatibleSaveReason.OlderFormat,
-                $"Unsupported replay format {document.FormatVersion}.");
+            throw UnsupportedFormat(document.FormatVersion);
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
         var state = LoadOpeningState(document, definitions);
@@ -620,6 +667,14 @@ public static class MatchReplaySerializer
                         $"Replay step {index} produced a different control-transfer result.");
                 break;
             }
+            case ReplayOperationKind.ContinueRandomStream:
+                state.ContinueRandomStream(Required(step.RandomState, index));
+                break;
+            case ReplayOperationKind.EmptyComlinkInboxes:
+                if (step.Accepted != state.EmptyComlinkInboxes())
+                    throw new InvalidDataException(
+                        $"Replay step {index} produced a different Comlink clearing result.");
+                break;
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }
     }
@@ -637,6 +692,7 @@ public static class MatchReplaySerializer
         if (step.Recipients is not null) actual |= ReplayStepFields.Recipients;
         if (step.Text is not null) actual |= ReplayStepFields.Text;
         if (step.ComlinkSequence is not null) actual |= ReplayStepFields.ComlinkSequence;
+        if (step.RandomState is not null) actual |= ReplayStepFields.RandomState;
 
         var result = ReplayStepFields.Accepted | ReplayStepFields.Validation;
         var expected = step.Kind switch
@@ -658,6 +714,8 @@ public static class MatchReplaySerializer
                 | ReplayStepFields.Accepted | ReplayStepFields.ComlinkSequence,
             ReplayOperationKind.TransferPlayerToComputer or ReplayOperationKind.TransferPlayerToHuman =>
                 ReplayStepFields.Player | ReplayStepFields.Accepted,
+            ReplayOperationKind.ContinueRandomStream => ReplayStepFields.RandomState,
+            ReplayOperationKind.EmptyComlinkInboxes => ReplayStepFields.Accepted,
             ReplayOperationKind.SendComlinkMessage => ReplayStepFields.Player | result
                 | ReplayStepFields.Recipients | ReplayStepFields.Text,
             ReplayOperationKind.FinishUpkeep
@@ -705,7 +763,8 @@ public static class MatchReplaySerializer
         Validation = 1 << 6,
         Recipients = 1 << 7,
         Text = 1 << 8,
-        ComlinkSequence = 1 << 9
+        ComlinkSequence = 1 << 9,
+        RandomState = 1 << 10
     }
 }
 

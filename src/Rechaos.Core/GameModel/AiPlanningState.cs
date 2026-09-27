@@ -19,6 +19,7 @@ public sealed class AiPlanningState
 {
     public const int GangSlotsPerPlayer = 81;
     public const int UnusedFamily = 99;
+    public const int RaiderFamily = 9;
     public const int SectorAnchorOffset = MatchLimits.SectorCount;
     public const int InactiveSectorAnchor = 100 + SectorAnchorOffset;
     public const int InactiveFormationSector = -1;
@@ -42,6 +43,9 @@ public sealed class AiPlanningState
     private readonly short[] _armorCooldowns;
     private readonly short[] _focusValues;
     private readonly short[] _coverageSectors;
+    private readonly bool[] _needsFamily;
+    private readonly bool[] _raiderMode;
+    private byte _firstCombatRecordDefinition;
 
     private AiPlanningState(
         IReadOnlyList<int> currentHireRoles,
@@ -58,7 +62,10 @@ public sealed class AiPlanningState
         IReadOnlyList<short> weaponCooldowns,
         IReadOnlyList<short> armorCooldowns,
         IReadOnlyList<short> focusValues,
-        IReadOnlyList<short> coverageSectors)
+        IReadOnlyList<short> coverageSectors,
+        IReadOnlyList<bool> needsFamily,
+        IReadOnlyList<bool> raiderMode,
+        byte firstCombatRecordDefinition)
     {
         ArgumentNullException.ThrowIfNull(currentHireRoles);
         ArgumentNullException.ThrowIfNull(previousHireRoles);
@@ -75,6 +82,8 @@ public sealed class AiPlanningState
         ArgumentNullException.ThrowIfNull(armorCooldowns);
         ArgumentNullException.ThrowIfNull(focusValues);
         ArgumentNullException.ThrowIfNull(coverageSectors);
+        ArgumentNullException.ThrowIfNull(needsFamily);
+        ArgumentNullException.ThrowIfNull(raiderMode);
         if (currentHireRoles.Count != MatchLimits.PlayerCount
             || previousHireRoles.Count != MatchLimits.PlayerCount)
             throw new ArgumentException("AI hire roles must contain all six original player slots.");
@@ -99,6 +108,10 @@ public sealed class AiPlanningState
             throw new ArgumentException("AI focus values must contain all six-by-81 original planning slots.");
         if (coverageSectors.Count != actionSlotCount)
             throw new ArgumentException("AI coverage sectors must contain all six-by-81 original planning slots.");
+        if (needsFamily.Count != actionSlotCount)
+            throw new ArgumentException("AI family flags must contain all six-by-81 original planning slots.");
+        if (raiderMode.Count != MatchLimits.PlayerCount)
+            throw new ArgumentException("AI raider flags must contain all six original player slots.", nameof(raiderMode));
         if (currentHireRoles.Any(role => role is < 0 or > MaximumHireRole))
             throw new ArgumentOutOfRangeException(nameof(currentHireRoles));
         if (previousHireRoles.Any(role => role is < 0 or > MaximumHireRole))
@@ -133,11 +146,18 @@ public sealed class AiPlanningState
         _armorCooldowns = armorCooldowns.ToArray();
         _focusValues = focusValues.ToArray();
         _coverageSectors = coverageSectors.ToArray();
+        _needsFamily = needsFamily.ToArray();
+        _raiderMode = raiderMode.ToArray();
+        _firstCombatRecordDefinition = RequireUnsignedAgnostic(firstCombatRecordDefinition);
     }
 
     public int CurrentHireRole(PlayerId player) => _currentHireRoles[PlayerIndex(player)];
     public int PreviousHireRole(PlayerId player) => _previousHireRoles[PlayerIndex(player)];
     public int Family(PlayerId player, int gangSlot) => _families[FamilyIndex(player, gangSlot)];
+
+    /// <summary>A live, uncopied view of the player's 81 family bytes in roster slot order.</summary>
+    public IReadOnlyList<int> Families(PlayerId player) =>
+        new ArraySegment<int>(_families, FamilyIndex(player, 0), GangSlotsPerPlayer);
     public int SectorAnchor(PlayerId player) => _sectorAnchors[PlayerIndex(player)];
     public GangAction OlderAction(PlayerId player, int gangSlot) => _olderActions[GangSlotIndex(player, gangSlot)];
     public GangAction PreviousAction(PlayerId player, int gangSlot) => _previousActions[GangSlotIndex(player, gangSlot)];
@@ -152,6 +172,13 @@ public sealed class AiPlanningState
     public int FocusValue(PlayerId player, int gangSlot) => FormationSector(player, gangSlot);
     public int CoverageSector(PlayerId player, int gangSlot) =>
         _coverageSectors[GangSlotIndex(player, gangSlot)];
+
+    /// <summary>RULE-AI-002: whether the slot's next dispatch resets its record and assigns a family.</summary>
+    public bool NeedsFamily(PlayerId player, int gangSlot) =>
+        _needsFamily[GangSlotIndex(player, gangSlot)];
+
+    /// <summary>RULE-AI-001, RULE-AI-027: whether every active gang of the player plans as family 9.</summary>
+    public bool RaiderMode(PlayerId player) => _raiderMode[PlayerIndex(player)];
 
     internal IReadOnlyList<int> CaptureCurrentHireRoles() => _currentHireRoles.ToArray();
     internal IReadOnlyList<int> CapturePreviousHireRoles() => _previousHireRoles.ToArray();
@@ -168,19 +195,105 @@ public sealed class AiPlanningState
     internal IReadOnlyList<short> CaptureArmorCooldowns() => _armorCooldowns.ToArray();
     internal IReadOnlyList<short> CaptureFormationSectors() => _focusValues.ToArray();
     internal IReadOnlyList<short> CaptureCoverageSectors() => _coverageSectors.ToArray();
+    internal IReadOnlyList<bool> CaptureNeedsFamily() => _needsFamily.ToArray();
+    internal IReadOnlyList<bool> CaptureRaiderMode() => _raiderMode.ToArray();
 
+    /// <summary>
+    /// Byte 0, <c>definition</c>, of the first combat record (FMT-STATE-003): player 0's roster
+    /// slot 0. The computer players read it as the owner of sector index 64, one past the last
+    /// sector (RULE-AI-005, RULE-AI-013). It is 0 until that slot's gang fights; RULE-COMBAT-002
+    /// then writes the definition of the gang holding the slot, and the value stays through later
+    /// phases in which the slot does not fight, after the gang dies and after a hire reuses the
+    /// slot (FND-STATE-005).
+    /// FMT-STATE-003 does not record whether the original loads the byte signed. The value is held
+    /// within 0..127, where both readings agree and it is never the neutral owner -1: the gang
+    /// definitions are the 90 records of FMT-DATA-002, and a larger value is refused.
+    /// </summary>
+    public int FirstCombatRecordDefinition => _firstCombatRecordDefinition;
+
+    internal void RecordFirstCombatRecordDefinition(short definitionId) =>
+        // The record stores the low byte of the gang's definition byte (FND-STATE-005).
+        _firstCombatRecordDefinition = RequireUnsignedAgnostic(unchecked((byte)definitionId));
+
+    private static byte RequireUnsignedAgnostic(byte definition) =>
+        definition <= sbyte.MaxValue
+            ? definition
+            : throw new ArgumentOutOfRangeException(
+                nameof(definition), definition,
+                "The first combat record's definition must read the same signed and unsigned.");
+
+    /// <summary>
+    /// RULE-AI-001: on the player's first pass every record is reset, both hire roles become 0
+    /// and only slot 0 is flagged for a family. Then the previous hire role takes the current one.
+    /// </summary>
     internal bool BeginPlanning(PlayerId player)
     {
         var index = PlayerIndex(player);
-        _previousHireRoles[index] = _currentHireRoles[index];
-        if (!_hasPlanned[index])
+        var firstPass = !_hasPlanned[index];
+        if (firstPass)
         {
             for (var gangSlot = 0; gangSlot < GangSlotsPerPlayer; gangSlot++)
                 ResetGangSlot(player, gangSlot);
+            _currentHireRoles[index] = 0;
+            _needsFamily[GangSlotIndex(player, 0)] = true;
             _hasPlanned[index] = true;
-            return true;
         }
-        return false;
+        _previousHireRoles[index] = _currentHireRoles[index];
+        return firstPass;
+    }
+
+    /// <summary>
+    /// RULE-AI-001: a slot with no active gang is flagged for a family; its history stays until
+    /// the new gang's first dispatch wipes it.
+    /// </summary>
+    internal void FlagInactiveSlots(PlayerId player, IReadOnlyList<MatchGangState> gangs)
+    {
+        ArgumentNullException.ThrowIfNull(gangs);
+        for (var gangSlot = 0; gangSlot < GangSlotsPerPlayer; gangSlot++)
+            if (gangSlot >= gangs.Count || !gangs[gangSlot].IsActive)
+                _needsFamily[GangSlotIndex(player, gangSlot)] = true;
+    }
+
+    internal void SetNeedsFamily(PlayerId player, int gangSlot) =>
+        _needsFamily[GangSlotIndex(player, gangSlot)] = true;
+
+    internal void ClearNeedsFamily(PlayerId player, int gangSlot) =>
+        _needsFamily[GangSlotIndex(player, gangSlot)] = false;
+
+    /// <summary>
+    /// RULE-AI-027, FND-AI-043: a computer player taking over a network seat marks the player as
+    /// started and a raider, resets all 81 records and writes family 9 to every active gang's.
+    /// </summary>
+    internal void EnterRaiderMode(PlayerId player, IReadOnlyList<MatchGangState> gangs)
+    {
+        ArgumentNullException.ThrowIfNull(gangs);
+        var index = PlayerIndex(player);
+        _hasPlanned[index] = true;
+        _raiderMode[index] = true;
+        for (var gangSlot = 0; gangSlot < GangSlotsPerPlayer; gangSlot++)
+            ResetGangSlot(player, gangSlot);
+        for (var gangSlot = 0; gangSlot < gangs.Count; gangSlot++)
+            if (gangs[gangSlot].IsActive)
+                _families[FamilyIndex(player, gangSlot)] = RaiderFamily;
+    }
+
+    /// <summary>
+    /// RULE-AI-002: a flagged record is wiped (family 99, no actions or targets, no cooldowns) and
+    /// its flag cleared before the dispatcher gives it a family. The auxiliary values stay.
+    /// </summary>
+    internal void ResetForNewFamily(PlayerId player, int gangSlot)
+    {
+        var index = GangSlotIndex(player, gangSlot);
+        _families[index] = UnusedFamily;
+        _needsFamily[index] = false;
+        _olderActions[index] = GangAction.None;
+        _previousActions[index] = GangAction.None;
+        _plannedActions[index] = GangAction.None;
+        _olderTargets[index] = AiActionTarget.None;
+        _previousTargets[index] = AiActionTarget.None;
+        _plannedTargets[index] = AiActionTarget.None;
+        _weaponCooldowns[index] = 0;
+        _armorCooldowns[index] = 0;
     }
 
     internal void SetCurrentHireRole(PlayerId player, int role)
@@ -189,6 +302,11 @@ public sealed class AiPlanningState
         _currentHireRoles[PlayerIndex(player)] = role;
     }
 
+    /// <summary>
+    /// Stores the family and nothing else. The needs_family flag is left alone, so the RULE-AI-010
+    /// rewrite of a surplus hunter keeps a flag a Greed Terminate set earlier in the pass
+    /// (RULE-AI-025, RULE-AI-030); only <see cref="ResetForNewFamily"/> clears it.
+    /// </summary>
     internal void SetFamily(PlayerId player, int gangSlot, int family)
     {
         if (!IsValidFamily(family))
@@ -320,18 +438,11 @@ public sealed class AiPlanningState
         _plannedTargets[index] = target;
     }
 
+    /// <summary>The first pass's reset of RULE-AI-001, which also clears both auxiliary values.</summary>
     internal void ResetGangSlot(PlayerId player, int gangSlot)
     {
+        ResetForNewFamily(player, gangSlot);
         var index = GangSlotIndex(player, gangSlot);
-        _families[index] = UnusedFamily;
-        _olderActions[index] = GangAction.None;
-        _previousActions[index] = GangAction.None;
-        _plannedActions[index] = GangAction.None;
-        _olderTargets[index] = AiActionTarget.None;
-        _previousTargets[index] = AiActionTarget.None;
-        _plannedTargets[index] = AiActionTarget.None;
-        _weaponCooldowns[index] = 0;
-        _armorCooldowns[index] = 0;
         _focusValues[index] = InactiveFocusValue;
         _coverageSectors[index] = InactiveCoverageSector;
     }
@@ -371,7 +482,10 @@ public sealed class AiPlanningState
             MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray(),
         Enumerable.Repeat(
             checked((short)InactiveCoverageSector),
-            MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray());
+            MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray(),
+        new bool[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+        new bool[MatchLimits.PlayerCount],
+        0);
 
     internal static AiPlanningState Initialize(IReadOnlyList<MatchPlayerState> players)
     {
@@ -451,7 +565,10 @@ public sealed class AiPlanningState
         IReadOnlyList<short>? weaponCooldowns = null,
         IReadOnlyList<short>? armorCooldowns = null,
         IReadOnlyList<short>? formationSectors = null,
-        IReadOnlyList<short>? coverageSectors = null) => new(
+        IReadOnlyList<short>? coverageSectors = null,
+        IReadOnlyList<bool>? needsFamily = null,
+        IReadOnlyList<bool>? raiderMode = null,
+        byte firstCombatRecordDefinition = 0) => new(
             currentHireRoles, previousHireRoles, families, sectorAnchors,
             olderActions, previousActions, plannedActions,
             olderTargets, previousTargets, plannedTargets, hasPlanned,
@@ -462,7 +579,10 @@ public sealed class AiPlanningState
                 MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray(),
             coverageSectors ?? Enumerable.Repeat(
                 checked((short)InactiveCoverageSector),
-                MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray());
+                MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray(),
+            needsFamily ?? new bool[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            raiderMode ?? new bool[MatchLimits.PlayerCount],
+            firstCombatRecordDefinition);
 
     private static bool IsValidFamily(int family) =>
         family == UnusedFamily || family is >= 0 and <= MaximumFamily and not 8;

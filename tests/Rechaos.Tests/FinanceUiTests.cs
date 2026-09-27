@@ -27,6 +27,8 @@ public sealed class FinanceUiTests
             Enumerable.Range(0, FinanceLayout.RowCount).Select(FinanceLayout.ValueY));
         Assert.Throws<ArgumentOutOfRangeException>(() => FinanceLayout.ValueY(8));
         Assert.Throws<ArgumentOutOfRangeException>(() => FinanceLayout.ContractCountWidth(100));
+        // SCR-FINANCE-001, FND-FINANCE-002: the Sector variant's sector code.
+        Assert.Equal(new Point(180, 196), FinanceLayout.SectorName);
     }
 
     [Fact]

@@ -32,7 +32,9 @@ public sealed class SharedPanelLayoutTests
         Assert.Equal(new Rectangle(128, 124, 320, 209), ItemInformationLayout.Panel);
         Assert.Equal(SharedPanelLayout.Y(119), GangInformationLayout.StatisticY(0));
         Assert.Equal(244, SiteInformationLayout.StatisticY(0));
-        Assert.Equal(SharedPanelLayout.At(29, 11, 58, 12), CombatResultsLayout.Page);
-        Assert.Equal(SharedPanelLayout.At(34, 13, 47, 7), LastTurnEventsLayout.Page);
+        Assert.Equal(SharedPanelLayout.At(34, 13, 12, 7), CombatResultsLayout.PageNumber);
+        Assert.Equal(SharedPanelLayout.At(70, 13, 12, 7), CombatResultsLayout.PageCount);
+        Assert.Equal(CombatResultsLayout.PageNumber, LastTurnEventsLayout.PageNumber);
+        Assert.Equal(CombatResultsLayout.PageCount, LastTurnEventsLayout.PageCount);
     }
 }

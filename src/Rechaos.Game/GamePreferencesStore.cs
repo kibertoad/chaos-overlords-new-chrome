@@ -3,6 +3,13 @@ using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
+/// <summary>
+/// The options a fresh start has. RULE-OPTIONS-001 gives the original's initialized values; the
+/// rebuild reads them from its own preferences file (DEV-OPTIONS-001), starts Slide Panels off
+/// (DEV-OPTIONS-002) and starts in a window (DEV-OPTIONS-003). The original saves nothing
+/// (RULE-OPTIONS-002), so its Mentality starts at the initialized value at every start, and so
+/// does the rebuild's, which never stores it.
+/// </summary>
 public static class OriginalOptionsPolicy
 {
     public const bool WarnIfIdleGangsByDefault = true;
@@ -12,9 +19,11 @@ public static class OriginalOptionsPolicy
     public const bool FullscreenByDefault = false;
     public const bool SmoothEventSiteImagesByDefault = false;
     public const AiPolicyMode AiPolicyByDefault = AiPolicyMode.Original;
+    public const AiDifficulty MentalityByDefault = AiDifficulty.Criminal;
 
-    /// <summary>DEV-VIDEO-003: the original plays the intro at every start.</summary>
-    public const bool IntroOnlyOnceByDefault = false;
+    /// <summary>DEV-VIDEO-003: the intro plays on the first start only. The original plays it at
+    /// every start.</summary>
+    public const bool IntroOnlyOnceByDefault = true;
 }
 
 /// <summary>Which coordination service the Online screen uses.</summary>
@@ -47,7 +56,8 @@ public sealed record GamePreferences(
     OnlineServiceMode OnlineService,
     string CustomMultiplayerServer,
     OnlineLobbyPresentation LobbyPresentation = OnlineLobbyPresentation.Modern,
-    bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault)
+    bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault,
+    ScenarioId PreferredScenario = ScenarioId.Greed)
 {
     public const int CurrentFormatVersion = 12;
     public const string DefaultCustomMultiplayerServer = "http://localhost:8787";
@@ -121,11 +131,19 @@ public static class GamePreferencesStore
         }
     }
 
+    /// <summary>Writes the preferences atomically, unless a newer build owns the file.</summary>
+    /// <remarks>
+    /// A file whose <c>FormatVersion</c> is newer than this build's is read as defaults by
+    /// <see cref="LoadOrDefault"/>, and writing those back — the intro's first showing does it
+    /// unasked — replaced every choice the newer build had stored. This build keeps its choices in
+    /// memory for the session instead and leaves the newer file alone.
+    /// </remarks>
     public static bool TrySave(string path, GamePreferences preferences)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(preferences);
         if (!IsValid(preferences)) return false;
+        if (NewerPreferences.IsNewer(path, MaximumFileBytes)) return false;
 
         var temporaryPath = path + ".tmp";
         try
@@ -138,6 +156,7 @@ public static class GamePreferencesStore
                 stream.Flush(flushToDisk: true);
             }
             File.Move(temporaryPath, path, overwrite: true);
+            NewerPreferences.NoteCurrent(path);
             return true;
         }
         catch
@@ -156,6 +175,13 @@ public static class GamePreferencesStore
 
     private static T? Read<T>(byte[] bytes) => JsonSerializer.Deserialize<T>(bytes, JsonOptions);
 
+    /// <summary>
+    /// Whether the file on disk carries a <c>FormatVersion</c> newer than this build's; see
+    /// <see cref="NewerBuildFileGuard"/>.
+    /// </summary>
+    private static readonly NewerBuildFileGuard NewerPreferences = new(
+        nameof(GamePreferences.FormatVersion), GamePreferences.CurrentFormatVersion);
+
     private static bool IsValid(GamePreferences? preferences) =>
         preferences is { FormatVersion: GamePreferences.CurrentFormatVersion }
         && LevelsAreValid(
@@ -165,6 +191,7 @@ public static class GamePreferencesStore
         && Enum.IsDefined(preferences.DefaultAiPolicy)
         && Enum.IsDefined(preferences.OnlineService)
         && Enum.IsDefined(preferences.LobbyPresentation)
+        && Enum.IsDefined(preferences.PreferredScenario)
         && IsServerAddress(preferences.CustomMultiplayerServer);
 
     private static bool LevelsAreValid(int music, int effects, PlanningTimeLimit limit) =>

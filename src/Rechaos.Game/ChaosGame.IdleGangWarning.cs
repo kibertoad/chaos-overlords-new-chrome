@@ -11,6 +11,15 @@ public static class IdleGangWarningLayout
     public static Rectangle Panel => new(104, 124, 344, 209);
     public static Rectangle Cancel => new(137, 261, 49, 22);
     public static Rectangle Ok => new(137, 293, 49, 22);
+
+    /// <summary>The warning line the panel blinks on ticks of the presentation clock.</summary>
+    public static Rectangle BlinkingLine => new(269, 169, 97, 9);
+
+    /// <summary>
+    /// Whether the warning line shows: six ticks of the presentation clock shown, then two filled
+    /// black (RULE-UI-008, FND-UI-024). Which part of the cycle the panel opens on is not recorded.
+    /// </summary>
+    public static bool LineShown(TimeSpan now) => PresentationClock.Ticks(now) % 8 < 6;
 }
 
 public static class IdleGangWarningPolicy
@@ -60,11 +69,20 @@ public sealed partial class ChaosGame
     {
         switch (IdleGangWarningPolicy.KeyboardChoice(keyboard, _previousKeyboard))
         {
+            // FND-UI-024: the keys go through fn_00418CCC, which shows the face pressed for one
+            // tick of the presentation clock before the panel acts (RULE-TIMER-004).
             case IdleGangWarningChoice.Confirm:
-                ConfirmIdleGangWarning();
+                PressKeyFace(PressedKeyFace.Confirm, IdleGangWarningLayout.Ok.Location, () =>
+                {
+                    // The planning timer may have closed the warning during the wait.
+                    if (_idleGangWarningOpen) ConfirmIdleGangWarning();
+                });
                 break;
             case IdleGangWarningChoice.Cancel:
-                CancelIdleGangWarning();
+                PressKeyFace(PressedKeyFace.Cancel, IdleGangWarningLayout.Cancel.Location, () =>
+                {
+                    if (_idleGangWarningOpen) CancelIdleGangWarning();
+                });
                 break;
         }
     }
@@ -114,5 +132,7 @@ public sealed partial class ChaosGame
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Cancel, "CANCEL", false);
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Ok, "OK", true);
         }
+        if (!IdleGangWarningLayout.LineShown(_inputTime))
+            batch.Draw(pixel, IdleGangWarningLayout.BlinkingLine, Color.Black);
     }
 }

@@ -111,6 +111,7 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Contains("notification history is invalid", exception.InnerException!.Message);
     }
 
+    // RULE-COMLINK-007 may drop messages from the front only, so the newest must stay.
     [Fact]
     public void CurrentSaveRejectsComlinkSequenceHoles()
     {
@@ -123,7 +124,7 @@ public sealed partial class NativeSaveSerializerTests
         using var current = new MemoryStream();
         NativeSaveSerializer.Save(current, match);
         var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["runtime"]!["comlink"]![1]!["items"]!.AsArray().RemoveAt(0);
+        document["runtime"]!["comlink"]![1]!["items"]!.AsArray().RemoveAt(1);
         using var modified = new MemoryStream(
             Encoding.UTF8.GetBytes(document.ToJsonString()));
 

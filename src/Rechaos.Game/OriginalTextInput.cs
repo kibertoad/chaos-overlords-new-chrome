@@ -31,7 +31,9 @@ public static class OriginalTextInput
             Keys.OemQuestion => shift ? '?' : '/',
             Keys.OemSemicolon => shift ? ':' : ';',
             Keys.OemQuotes => shift ? '"' : '\'',
-            Keys.OemMinus => shift ? '_' : '-',
+            // The original's shift table covers the digits and ' , . / ; = only (RULE-UI-014), so
+            // Shift with minus still gives the minus sign.
+            Keys.OemMinus => '-',
             Keys.OemPlus => shift ? '+' : '=',
             _ => '\0'
         };

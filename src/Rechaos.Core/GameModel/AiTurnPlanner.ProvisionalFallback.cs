@@ -7,6 +7,8 @@ public static partial class AiTurnPlanner
     /// recovered family record. A prepared native decision never falls through
     /// here merely because modern command validation cannot project it.
     /// These weights are not original-game evidence.
+    /// PLACEHOLDER: RULE-AI-002 — every score below stands in for the family
+    /// handler the dispatcher would run for this gang; none is recovered.
     /// </summary>
     private static GameCommand? SelectProvisionalFallbackCommand(
         MatchState state,
@@ -148,8 +150,6 @@ public static partial class AiTurnPlanner
         var value = sector.Owner == player ? 0 : 100;
         if (scenario == ScenarioId.Siege && sector.IsImportant) value += 300;
         if (scenario == ScenarioId.BigMan && sectorId is 27 or 28 or 35 or 36) value += 300;
-        if (scenario == ScenarioId.Eliminate
-            && OriginalCityGenerator.HeadquartersCandidates.Contains(sectorId)) value += 300;
         return value + sector.Income * 10;
     }
 

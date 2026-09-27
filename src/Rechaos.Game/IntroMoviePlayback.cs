@@ -7,8 +7,9 @@ public static class IntroMoviePolicy
     public static IReadOnlyList<string> FileNames { get; } =
         ["MVLOGOS.smk", "MVINTRO.smk"];
 
-    /// <summary>The intro streams unattended at every start, as in the original, unless Intro
-    /// only once is switched on and a showing has been recorded (DEV-VIDEO-003).</summary>
+    /// <summary>The intro streams unattended until a showing has been recorded while Intro only
+    /// once is on, its default (DEV-VIDEO-003); switched off, it plays at every start, as in the
+    /// original.</summary>
     public static bool PlaysAtStartup(bool introOnlyOnce, bool introMoviesSeen) =>
         !introOnlyOnce || !introMoviesSeen;
 

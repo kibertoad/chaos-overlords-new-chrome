@@ -78,8 +78,14 @@ public sealed class OriginalAiFamilyOneRulesTests
 
         Assert.Equal(GangAction.Move, Select(player, owner: 1, human: true,
             cash: 49, AiDifficulty.Criminal, tolerance: 3));
-        Assert.Equal(GangAction.Move, Select(player, owner: 1, human: true,
+        // FND-AI-057: a human owner that fails the first test still reaches the Goon test.
+        Assert.Equal(GangAction.Chaos, Select(player, owner: 1, human: true,
             cash: 50, AiDifficulty.Goon, tolerance: 3));
+        Assert.Equal(GangAction.Move, Select(player, owner: -2, human: true,
+            cash: 50, AiDifficulty.Goon, tolerance: 3));
+        // A neutral sector that reads as human passes the first test.
+        Assert.Equal(GangAction.Chaos, Select(player, owner: -1, human: true,
+            cash: 50, AiDifficulty.Criminal, tolerance: 3));
         Assert.Equal(GangAction.Chaos, Select(player, owner: 1, human: true,
             cash: 50, AiDifficulty.Criminal, tolerance: 3));
         Assert.Equal(GangAction.Snitch, Select(player, owner: 1, human: true,
@@ -105,6 +111,25 @@ public sealed class OriginalAiFamilyOneRulesTests
         Assert.Throws<ArgumentOutOfRangeException>(() => Select(
             player, owner: 1, human: false,
             cash: 50, (AiDifficulty)99, tolerance: 3));
+    }
+
+    // RULE-AI-020, FND-AI-057: heal, take the sector, then the Snitch gate with cash above 50.
+    [Fact]
+    public void AfterAttackHideOrMoveHealsControlsSnitchesOrMoves()
+    {
+        GangAction After(int force = 9, bool control = false, bool human = true,
+            bool hostile = true, AiDifficulty mentality = AiDifficulty.Criminal, int cash = 51) =>
+            OriginalAiFamilyOneRules.SelectAfterAttackHideOrMove(
+                force, -3, control, human, hostile, mentality, cash);
+
+        Assert.Equal(GangAction.Heal, After(force: 8));
+        Assert.Equal(GangAction.Control, After(control: true));
+        Assert.Equal(GangAction.Snitch, After());
+        Assert.Equal(GangAction.Move, After(cash: 50));
+        Assert.Equal(GangAction.Move, After(human: false));
+        Assert.Equal(GangAction.Move, After(hostile: false));
+        Assert.Equal(GangAction.Snitch, After(hostile: false, mentality: AiDifficulty.CrimeLord));
+        Assert.Equal(GangAction.Move, After(mentality: AiDifficulty.Goon));
     }
 
     private static GangAction Select(

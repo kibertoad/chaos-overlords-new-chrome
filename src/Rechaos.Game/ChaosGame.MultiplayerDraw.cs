@@ -5,8 +5,8 @@ using Rechaos.Core.GameModel;
 namespace Rechaos.Game;
 
 /// <summary>
-/// What an online match draws once it is running: the seats still drafting, the line that says
-/// where the turn stands, and the two modals that take the screen when the server stops answering.
+/// What an online match draws once it is running: the line that says where the turn stands, and
+/// the two modals that take the screen when the server stops answering.
 /// </summary>
 /// <remarks>
 /// The screens that get a player into a match are in <c>ChaosGame.OnlineScreens.cs</c>. They are
@@ -15,35 +15,6 @@ namespace Rechaos.Game;
 /// </remarks>
 public sealed partial class ChaosGame
 {
-    /// <summary>
-    /// Marks every seat still drafting this turn, the player's own included, under its portrait on
-    /// the city top bar.
-    /// </summary>
-    /// <remarks>
-    /// Drawn on black because the eight rows under the portraits are background art, which lime
-    /// text alone is not reliably legible over. Offline there is nobody to wait for, and once the
-    /// match is paused by a desync or over altogether nobody is drafting anything, so the captions
-    /// go with the turn they describe rather than lingering as a state that cannot change.
-    /// </remarks>
-    private void DrawSeatPlanning(SpriteBatch batch, Texture2D pixel, PixelFont font)
-    {
-        if (_session is null) return;
-        var ownTurnSent = _online.PlanningIsSubmitted;
-        var turnIsOpen = _online.PlanningIsOpen || ownTurnSent;
-        for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
-        {
-            if (!SeatPlanningPresentation.IsDrafting(
-                    slot, _session.Slot, turnIsOpen, ownTurnSent,
-                    _online.AwaitedSlots, _online.ReadySlots))
-                continue;
-            var caption = PlayerPortraitLayout.CityCaption(
-                slot, SeatPlanningPresentation.WaitingCaption.Length);
-            batch.Draw(pixel, caption, Color.Black);
-            font.Draw(batch, SeatPlanningPresentation.WaitingCaption,
-                new Vector2(caption.X, caption.Y), SeatPlanningPresentation.WaitingColor, 1);
-        }
-    }
-
     /// <summary>
     /// The countdown for the open turn, or an empty string when the match has no timer or its
     /// deadline has passed.

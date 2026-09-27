@@ -13,9 +13,6 @@ public static partial class AiTurnPlanner
         EquipmentSlot? EquipmentSlot = null);
 
     private readonly record struct ObjectiveTarget(MatchGangState Gang, int Slot);
-    private readonly record struct PreparedObjectiveChoice(
-        GangAction Action,
-        AiActionTarget Target);
 
     public sealed record HireChoice(short GangDefinitionId, int SectorId);
     public sealed record HirePreparation(
@@ -45,7 +42,7 @@ public static partial class AiTurnPlanner
             var choice = SelectRecoveredFamilyCommand(
                 state, player, gang, entry.slot, options);
             if (choice is null
-                && PreservesRecoveredPreparation(state, playerId, entry.slot))
+                && PreservesRecoveredPreparation(state, playerId))
                 continue;
             choice ??= SelectProvisionalFallbackCommand(
                 state, player, gang, options);
@@ -87,12 +84,13 @@ public static partial class AiTurnPlanner
             .FirstOrDefault();
     }
 
-    private static bool PreservesRecoveredPreparation(
-        MatchState state,
-        PlayerId playerId,
-        int gangSlot) =>
-        state.AiPlanning.HasPlanned(playerId)
-        && state.AiPlanning.Family(playerId, gangSlot) != AiPlanningState.UnusedFamily;
+    /// <summary>
+    /// Once a player has a planning pass behind it, its records decide every gang's order. A gang
+    /// its handler left without an action, and a gang left in family 99, which has no handler,
+    /// plans nothing (RULE-AI-002) instead of reaching the provisional fallback.
+    /// </summary>
+    private static bool PreservesRecoveredPreparation(MatchState state, PlayerId playerId) =>
+        state.AiPlanning.HasPlanned(playerId);
 
     private static void PrepareFamilyElevenCommand(
         MatchState state,
@@ -126,14 +124,18 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        if (state.Sectors[gang.SectorId].Owner == playerId)
+        // RULE-AI-029, FND-AI-061: the owned-sector test reads the owner query, so under police
+        // presence a gang in its own sector goes on to the Attack and the block Moves. Every
+        // branch but the leader Move keeps the current sector as the focus written above.
+        if (OwnerQuery(state, gang.SectorId) == playerId.Value)
         {
             PrepareFamilyElevenMove(
                 state, playerId, gang, gangSlot, mode: 10, snapshot);
             return;
         }
+        // FND-AI-024: selector 0xAC takes the first visible gang whose definition byte is 0.
         var target = VisibleOpponentsInSector(state, playerId, gang.SectorId)
-            .FirstOrDefault();
+            .FirstOrDefault(candidate => candidate.Gang.DefinitionId == 0);
         if (target.Gang is not null)
         {
             state.AiPlanning.SetPlannedAction(
@@ -144,13 +146,16 @@ public static partial class AiTurnPlanner
             return;
         }
 
+        // The families as they stand when this gang plans: earlier gangs have been dispatched,
+        // later ones not yet (RULE-AI-002).
         var leaderSlot = OriginalAiFamilyElevenRules.FormationLeaderSlot(
-            snapshot.FamilySlots, gangSlot);
+            state.AiPlanning.Families(playerId), gangSlot);
         var isLeader = leaderSlot == gangSlot;
         PrepareFamilyElevenMove(
             state, playerId, gang, gangSlot, isLeader ? 10 : 16,
             snapshot,
-            isLeader ? null : state.AiPlanning.FormationSector(playerId, leaderSlot));
+            isLeader ? null : state.AiPlanning.FormationSector(playerId, leaderSlot),
+            storesDestination: isLeader);
     }
 
     private static void PrepareFamilyElevenMove(
@@ -160,7 +165,8 @@ public static partial class AiTurnPlanner
         int gangSlot,
         int mode,
         FamilyPlanningSnapshot snapshot,
-        int? formationSectorId = null)
+        int? formationSectorId = null,
+        bool storesDestination = false)
     {
         var target = OriginalAiSectorSelectionRules.Select(
             mode,
@@ -176,16 +182,21 @@ public static partial class AiTurnPlanner
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
             formationSectorId: formationSectorId);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
-        if (mode == 10 && state.Sectors[gang.SectorId].Owner != playerId)
+        if (storesDestination)
             state.AiPlanning.SetFormationSector(playerId, gangSlot, target);
     }
 
+    /// <summary>
+    /// RULE-AI-031, FND-AI-062: families 13 and 14. On an objective the owner query does not give
+    /// to the player, a gang fights on turns with an even number remaining and takes Control
+    /// otherwise; on its own objective it fights anything visible, heals, buys or Influences.
+    /// Off the objectives it moves toward one.
+    /// </summary>
     private static void PrepareObjectiveFamilyCommand(
         MatchState state,
         PlayerId playerId,
@@ -194,49 +205,50 @@ public static partial class AiTurnPlanner
         int family,
         FamilyPlanningSnapshot snapshot)
     {
-        var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
         var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
+        var healOk = OriginalAiObjectiveFamilyRules.CanHeal(gang.Force, effectiveHeal);
         var objectiveSector = OriginalAiObjectiveFamilyRules.IsObjectiveSector(
             state.Setup.Scenario, gang.SectorId);
-        var ownsObjective = objectiveSector
-            && state.Sectors[gang.SectorId].Owner == playerId;
-        var visibleOpponents = objectiveSector
-            ? VisibleOpponentsInSector(state, playerId, gang.SectorId)
-            : [];
-        var hasVisibleOpponent = visibleOpponents.Count > 0;
-        if (objectiveSector && state.Sectors[gang.SectorId].Owner != playerId)
+        if (objectiveSector)
         {
-            var choice = SelectContestedObjectiveChoice(
-                state, playerId, gang, effectiveHeal, visibleOpponents);
-            state.AiPlanning.SetPlannedAction(
-                playerId, gangSlot, choice.Action, choice.Target);
-            plannedAction = choice.Action;
+            var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
+            var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
+            // The human pool is taken on the hostile-owner attitude alone, with no human-owner
+            // test.
+            var humanTargets = UsesHumanTargetPool(
+                state, playerId, gang.SectorId, visibleWeight)
+                    ? HumanTargets(state, visible)
+                    : null;
+            if (OwnerQuery(state, gang.SectorId) != playerId.Value)
+            {
+                var turnsRemaining = ScenarioCatalog.Turns(state.Setup.Duration)
+                    - (state.Coordinator.Turn - 1);
+                if (OriginalAiObjectiveFamilyRules.ShouldScanContestedObjectiveTargets(
+                        turnsRemaining, visibleWeight))
+                {
+                    // Outside the human pool only the owner's gangs are drawn.
+                    var owner = state.Sectors[gang.SectorId].Owner;
+                    PrepareObjectiveFightOrHeal(
+                        state, playerId, gang, gangSlot, healOk, visible,
+                        humanTargets
+                            ?? visible.Where(candidate => candidate.Gang.Owner == owner)
+                                .ToArray());
+                }
+                else
+                    SetRecoveredActionClearingFocus(
+                        state, playerId, gangSlot, GangAction.Control);
+            }
+            else if (visibleWeight > 0)
+                PrepareObjectiveFightOrHeal(
+                    state, playerId, gang, gangSlot, healOk, visible,
+                    humanTargets ?? visible);
+            else if (healOk)
+                SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
+            else
+                PrepareOwnedObjectiveEquipmentOrInfluence(state, playerId, gang, gangSlot);
         }
-        else if (ownsObjective && hasVisibleOpponent)
-        {
-            var choice = SelectObjectiveAttackChoice(
-                state, gang, effectiveHeal, visibleOpponents, visibleOpponents,
-                OriginalAiObjectiveFamilyRules.OwnedObjectiveAttackAttempts);
-            state.AiPlanning.SetPlannedAction(
-                playerId, gangSlot, choice.Action, choice.Target);
-            plannedAction = choice.Action;
-        }
-        if (OriginalAiObjectiveFamilyRules.ShouldHealOwnedObjectiveWithoutVisibleOpponent(
-                state.Setup.Scenario,
-                gang.SectorId,
-                ownsObjective,
-                hasVisibleOpponent,
-                gang.Force,
-                effectiveHeal))
-        {
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
-            plannedAction = GangAction.Heal;
-        }
-        else if (ownsObjective && !hasVisibleOpponent)
-        {
-            plannedAction = PrepareOwnedObjectiveEquipmentOrInfluence(
-                state, playerId, gang, gangSlot);
-        }
+
+        var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
         if (family == 14
             && OriginalAiObjectiveFamilyRules.ShouldFamilyFourteenTerminalHeal(
                 state.Setup.Scenario,
@@ -246,7 +258,7 @@ public static partial class AiTurnPlanner
                 gang.Force,
                 effectiveHeal))
         {
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
             state.AiPlanning.SetFamily(playerId, gangSlot, 13);
             return;
         }
@@ -266,9 +278,9 @@ public static partial class AiTurnPlanner
             owner => state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             owner => state.FindPlayer(new PlayerId(owner))?.Setup.Controller
                 == PlayerController.Human,
-            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
+        state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static int? PreparedCommandTargetId(
@@ -295,66 +307,45 @@ public static partial class AiTurnPlanner
             : -1;
     }
 
-    private static PreparedObjectiveChoice SelectContestedObjectiveChoice(
+    /// <summary>
+    /// RULE-AI-031, FND-AI-062: up to five draws from the pool, made only when the pool is not
+    /// empty. A drawn gang and Force of at least 5 attack; otherwise a gang that passes the Heal
+    /// test heals, and one that fails it gets no write and keeps the action it started the pass
+    /// with.
+    /// </summary>
+    private static void PrepareObjectiveFightOrHeal(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
-        int effectiveHeal,
-        IReadOnlyList<ObjectiveTarget> visible)
-    {
-        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
-        var turnsRemaining = ScenarioCatalog.Turns(state.Setup.Duration)
-            - (state.Coordinator.Turn - 1);
-        if (!OriginalAiObjectiveFamilyRules.ShouldScanContestedObjectiveTargets(
-                turnsRemaining, visibleWeight))
-            return new PreparedObjectiveChoice(GangAction.Control, AiActionTarget.None);
-
-        var owner = state.Sectors[gang.SectorId].Owner;
-        var targetPool = IsHostileOwner(state, playerId, gang.SectorId)
-            && visibleWeight == 10
-                ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
-                        .Setup.Controller == PlayerController.Human)
-                    .ToArray()
-                : visible.Where(candidate => candidate.Gang.Owner == owner)
-                    .ToArray();
-        return SelectObjectiveAttackChoice(
-            state, gang, effectiveHeal, visible, targetPool,
-            OriginalAiObjectiveFamilyRules.ContestedAttackAttempts);
-    }
-
-    private static PreparedObjectiveChoice SelectObjectiveAttackChoice(
-        MatchState state,
-        MatchGangState gang,
-        int effectiveHeal,
+        int gangSlot,
+        bool healOk,
         IReadOnlyList<ObjectiveTarget> visible,
-        IReadOnlyList<ObjectiveTarget> targetPool,
-        int attempts)
+        IReadOnlyList<ObjectiveTarget> targetPool)
     {
-        ObjectiveTarget? selected = null;
-        for (var attempt = 0; attempt < attempts; attempt++)
+        RecoveredAttackDraw? draw = null;
+        for (var attempt = 0;
+             targetPool.Count > 0 && attempt < OriginalAiObjectiveFamilyRules.AttackDraws;
+             attempt++)
         {
-            var ordinal = state.Random.NextInclusive(Math.Max(1, targetPool.Count));
-            selected = ordinal <= targetPool.Count ? targetPool[ordinal - 1] : null;
-            if (selected is null) break;
-            if (ordinal > visible.Count) continue;
-            var retryTarget = visible[ordinal - 1].Gang;
-            var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
-            var targetStats = EffectiveStatisticsCalculator.ForGang(state, retryTarget);
-            if (OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry(
-                    gang.Force, attackerStats.Combat, attackerStats.Defense,
-                    retryTarget.Force, targetStats.Combat, targetStats.Defense)) break;
+            draw = DrawRecoveredAttackTarget(
+                state, gang, visible, targetPool,
+                OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry);
+            if (draw.Value.Accepted) break;
         }
 
-        var action = OriginalAiObjectiveFamilyRules.SelectContestedObjectiveResult(
-            selected.HasValue, gang.Force, effectiveHeal);
-        return action == GangAction.Attack
-            ? new PreparedObjectiveChoice(action, new AiActionTarget(
-                checked((byte)selected!.Value.Gang.Owner.Value),
-                checked((byte)selected.Value.Slot)))
-            : new PreparedObjectiveChoice(action, AiActionTarget.None);
+        switch (OriginalAiObjectiveFamilyRules.SelectContestedObjectiveResult(
+                    draw.HasValue, gang.Force, healOk))
+        {
+            case GangAction.Attack:
+                SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw!.Value.Selected);
+                break;
+            case GangAction.Heal:
+                SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
+                break;
+        }
     }
 
-    private static GangAction PrepareOwnedObjectiveEquipmentOrInfluence(
+    private static void PrepareOwnedObjectiveEquipmentOrInfluence(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
@@ -371,21 +362,23 @@ public static partial class AiTurnPlanner
                 state.AiPlanning.SetEquipmentCooldown(
                     playerId, gangSlot, upgrade.Slot,
                     OriginalAiObjectiveFamilyRules.ObjectiveEquipmentCooldown);
-            return GangAction.Equip;
+            state.AiPlanning.SetFocusValue(
+                playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+            return;
         }
 
         var siteSlot = OriginalAiObjectiveFamilyRules
             .SelectHighestSupportUnfinishedSite(state, gang.SectorId);
         if (siteSlot is not { } slot)
         {
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.None);
-            return GangAction.None;
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.None);
+            return;
         }
 
         state.AiPlanning.SetPlannedAction(
             playerId, gangSlot, GangAction.Influence,
             new AiActionTarget(checked((byte)slot), 0));
-        return GangAction.Influence;
+        state.AiPlanning.SetFocusValue(playerId, gangSlot, gang.SectorId);
     }
 
     private static int VisibleOpponentWeight(
@@ -431,7 +424,7 @@ public static partial class AiTurnPlanner
                 new RecoveredFamilyChoice(OriginalAiFamilyOneRules.SelectNoActionOrChaosContinuation(
                     gang.Force,
                     effectiveHeal,
-                    state.Sectors[gang.SectorId].CrackdownActive,
+                    state.Sectors[gang.SectorId].HasCrackdownTurns,
                     state.AiPlanning.OlderAction(player.Id, gangSlot))),
             GangAction.Heal => new RecoveredFamilyChoice(OriginalAiFamilyOneRules.SelectHealContinuation(
                 gang.Force,
@@ -458,9 +451,8 @@ public static partial class AiTurnPlanner
         return new RecoveredFamilyChoice(
             OriginalAiFamilyOneRules.SelectPostEquipmentContinuation(
                 player.Id,
-                sector.Owner?.Value ?? -1,
-                sector.Owner is { } owner
-                    && state.FindPlayer(owner)?.Setup.Controller == PlayerController.Human,
+                OwnerQuery(state, gang.SectorId),
+                OwnerIsHuman(state, gang.SectorId),
                 player.Cash,
                 state.Setup.AiMentality,
                 sector.Tolerance));
@@ -476,15 +468,25 @@ public static partial class AiTurnPlanner
         if (!state.IsPlannedByComputer(playerId))
             throw new ArgumentException("AI hiring requires a computer-controlled player.", nameof(playerId));
 
-        if (AiPlanningPreparation.SelectHireRole(state, playerId) is not { } selection)
+        var census = AiPlanningPreparation.TakeHireCensus(state, playerId);
+        if (AiPlanningPreparation.SelectHireRole(state, playerId, census) is not { } selection)
             return null;
-        return PrepareHire(state, playerId, selection).Choice;
+        // A preview against the current state: the anchor is refreshed here without being stored,
+        // and the hunter reversion, which follows the choice and cannot change it, is left to
+        // MatchState.PrepareAiHiring.
+        return PrepareHire(
+            state, playerId, selection,
+            AiPlanningPreparation.ResolveHireAnchor(state, playerId)).Choice;
     }
 
+    /// <param name="sectorAnchor">
+    /// The RULE-AI-013 placement anchor in its stored form, as refreshed for this turn.
+    /// </param>
     internal static HirePreparation PrepareHire(
         MatchState state,
         PlayerId playerId,
-        OriginalAiHireRoleSelection selection)
+        OriginalAiHireRoleSelection selection,
+        int sectorAnchor)
     {
         var player = state.FindPlayer(playerId)
             ?? throw new ArgumentOutOfRangeException(nameof(playerId));
@@ -502,7 +504,7 @@ public static partial class AiTurnPlanner
         }
         var definitionId = player.HirePool[offerIndex];
         var placementMode = AiPlanningPreparation.PrepareHirePlacementMode(
-            state, playerId, selection.Role);
+            state, playerId, selection.Role, sectorAnchor);
         var sectorOwners = state.Sectors
             .Select(sector => sector.Owner?.Value ?? -1)
             .ToArray();
@@ -536,7 +538,7 @@ public static partial class AiTurnPlanner
         if (sectorId is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sectorId));
         var sector = state.Sectors[sectorId];
-        if (sector.Owner == playerId || sector.CrackdownActive) return false;
+        if (sector.Owner == playerId || sector.HasCrackdownTurns) return false;
 
         var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var attack = ManualRules.ControlStrength([(gang.Force, statistics.Control)]);

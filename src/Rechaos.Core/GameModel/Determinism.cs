@@ -38,6 +38,12 @@ public sealed class DeterministicRandom
     public static int SeedFromTimerMilliseconds(uint timerMilliseconds) =>
         checked((int)(timerMilliseconds & ushort.MaxValue));
 
+    /// <summary>
+    /// RULE-RNG-001: moves the generator to another point of the run's one sequence, keeping the
+    /// count of draws this match has made.
+    /// </summary>
+    internal void Continue(uint state) => _state = state;
+
     public int NextRaw()
     {
         _state = unchecked(_state * Multiplier + Addend);
@@ -112,7 +118,7 @@ public static class MatchStateHasher
     /// multiplayer session version — so the file is refused as an older format before its
     /// fingerprint is ever compared. <c>StateFingerprintVersionCouplingTests</c> holds the rule.
     /// </remarks>
-    internal const int FormatVersion = 3;
+    internal const int FormatVersion = 9;
 
     /// <summary>The number of lowercase hex characters a fingerprint has.</summary>
     public const int FingerprintLength = 2 * DigestBytes;
@@ -257,6 +263,9 @@ public static class MatchStateHasher
         foreach (var cooldown in planning.CaptureArmorCooldowns()) writer.Write(cooldown);
         foreach (var sector in planning.CaptureFormationSectors()) writer.Write(sector);
         foreach (var sector in planning.CaptureCoverageSectors()) writer.Write(sector);
+        foreach (var needsFamily in planning.CaptureNeedsFamily()) writer.Write(needsFamily);
+        foreach (var raiderMode in planning.CaptureRaiderMode()) writer.Write(raiderMode);
+        writer.Write(checked((byte)planning.FirstCombatRecordDefinition));
     }
 
     private static void WriteOutcome(BinaryWriter writer, MatchOutcome? outcome)
@@ -436,6 +445,9 @@ public static class MatchStateHasher
             writer.Write(gang.Id.Value); writer.Write(gang.Owner.Value); writer.Write(gang.DefinitionId); writer.Write(gang.SectorId);
             writer.Write(gang.Force); writer.Write(gang.Hidden); writer.Write(gang.HiredThisTurn);
             WriteNullableShort(writer, gang.WeaponItemId); WriteNullableShort(writer, gang.ArmorItemId); WriteNullableShort(writer, gang.MiscellaneousItemId);
+            writer.Write(gang.StoredStatistics.HasValue);
+            if (gang.StoredStatistics is { } statistics)
+                NativeStatistics.Write(writer, statistics);
         }
         foreach (var slot in player.HireOfferSlots)
         {
@@ -464,6 +476,9 @@ public static class MatchStateHasher
     private static void WriteSector(BinaryWriter writer, MatchSectorState sector)
     {
         writer.Write(sector.Id); WriteNullableInt(writer, sector.Owner?.Value); writer.Write(sector.Tolerance);
+        writer.Write(sector.BaseTolerance);
+        writer.Write(sector.Support);
+        writer.Write(sector.CashYield);
         writer.Write(sector.CrackdownActive); writer.Write(sector.IsImportant); writer.Write(sector.Sites.Count);
         // A sector orders its sites by slot when it is built, so the list is already in slot order.
         foreach (var site in sector.Sites)

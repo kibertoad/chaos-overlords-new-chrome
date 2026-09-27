@@ -8,7 +8,7 @@ namespace Rechaos.Tests;
 public sealed class AiFamilyFourTurnPlannerTests
 {
     [Fact]
-    public void PreviousNoneUsesHealThenHideBoundary()
+    public void PreviousNoneUsesHealThenChaosBoundary()
     {
         var lowForce = CreateMatch(force: 7);
         var healthy = CreateMatch(force: 8);
@@ -22,7 +22,7 @@ public sealed class AiFamilyFourTurnPlannerTests
 
         Assert.Equal(GangAction.Heal,
             Assert.Single(AiTurnPlanner.Plan(lowForce, new PlayerId(0))).Action);
-        Assert.Equal(GangAction.Hide,
+        Assert.Equal(GangAction.Chaos,
             Assert.Single(AiTurnPlanner.Plan(healthy, new PlayerId(0))).Action);
     }
 
@@ -66,13 +66,13 @@ public sealed class AiFamilyFourTurnPlannerTests
     }
 
     [Fact]
-    public void PreviousHideRetriesFiveFailedDrawsThenAttacks()
+    public void PreviousChaosRetriesFiveFailedDrawsThenAttacks()
     {
         var match = CreateMatch(
             targetSector: 0, force: 8, targetForce: 10, weakAttacker: true);
         var player = new PlayerId(0);
         BeginFamilyFourTurn(match);
-        SetPreviousAction(match, GangAction.Hide);
+        SetPreviousAction(match, GangAction.Chaos);
         match.FinishUpkeep();
         var randomBefore = match.Random.ConsumptionCount;
 
@@ -85,12 +85,12 @@ public sealed class AiFamilyFourTurnPlannerTests
     }
 
     [Fact]
-    public void PreviousHideUsesNearbyDangerEquipmentOpportunity()
+    public void PreviousChaosUsesNearbyDangerEquipmentOpportunity()
     {
         var match = CreateMatch(equipmentOpportunity: true);
         var player = new PlayerId(0);
         BeginFamilyFourTurn(match);
-        SetPreviousAction(match, GangAction.Hide);
+        SetPreviousAction(match, GangAction.Chaos);
         var expected = Assert.IsType<OriginalAiEquipmentRules.Upgrade>(
             OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                 match, match.Players[0], match.Players[0].Gangs[0], 0));
@@ -101,6 +101,73 @@ public sealed class AiFamilyFourTurnPlannerTests
 
         Assert.Equal(GangAction.Equip, command.Action);
         Assert.Equal(CommandTarget.Item(expected.ItemId), command.Target);
+    }
+
+    // RULE-AI-023, FND-AI-046: the count includes the planning gang. After Chaos in an owned
+    // sector the gang raises Chaos again while the count is below 2, so alone it stays, and with
+    // one more gang that raised Chaos there it moves on.
+    [Theory]
+    [InlineData(false, GangAction.Chaos)]
+    [InlineData(true, GangAction.Move)]
+    public void PreviousChaosCountIncludesThePlanningGang(
+        bool secondChaosGang,
+        GangAction expected)
+    {
+        var match = CreateMatch();
+        var player = new PlayerId(0);
+        BeginFamilyFourTurn(match);
+        match.Players[0].AddGang(new MatchGangState(new GangId(11), player, 1, 0, 10));
+        match.AiPlanning.SeedFamily(player, 1, 4);
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Chaos);
+        match.AiPlanning.SetPlannedAction(
+            player, 1, secondChaosGang ? GangAction.Chaos : GangAction.Hide);
+        match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
+        match.FinishUpkeep();
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
+    }
+
+    // RULE-AI-023, FND-AI-049: Attack, Hide and Move share a branch, which raises Chaos in an
+    // owned sector nobody raised Chaos in; Bribe, Research and Snitch plan nothing.
+    [Theory]
+    [InlineData(GangAction.Attack, GangAction.Chaos)]
+    [InlineData(GangAction.Hide, GangAction.Chaos)]
+    [InlineData(GangAction.Move, GangAction.Chaos)]
+    [InlineData(GangAction.Snitch, GangAction.None)]
+    [InlineData(GangAction.Research, GangAction.None)]
+    [InlineData(GangAction.Bribe, GangAction.None)]
+    public void JumpTableGroupsThePreviousActions(GangAction previous, GangAction expected)
+    {
+        var match = CreateMatch();
+        var player = new PlayerId(0);
+        BeginFamilyFourTurn(match);
+        SetPreviousAction(match, previous);
+        match.FinishUpkeep();
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
+    }
+
+    // RULE-AI-023, FND-AI-049: at weight 10 previous Hide takes the Attack/Move branch's single
+    // draw, not the five draws of the Chaos/Equip branch.
+    [Fact]
+    public void PreviousHideMakesTheSingleDrawOfTheAttackBranch()
+    {
+        var match = CreateMatch(
+            targetSector: 0, force: 8, targetForce: 10, weakAttacker: true);
+        var player = new PlayerId(0);
+        BeginFamilyFourTurn(match);
+        SetPreviousAction(match, GangAction.Hide);
+        match.FinishUpkeep();
+        var randomBefore = match.Random.ConsumptionCount;
+
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+
+        Assert.Empty(AiTurnPlanner.Plan(match, player));
+        Assert.Equal(3, match.Random.ConsumptionCount - randomBefore);
     }
 
     [Fact]
@@ -116,7 +183,7 @@ public sealed class AiFamilyFourTurnPlannerTests
         recorder.PrepareAiPlanning(player);
 
         Assert.Equal(4, match.AiPlanning.Family(player, 0));
-        Assert.Equal(GangAction.Hide,
+        Assert.Equal(GangAction.Chaos,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
@@ -143,7 +210,7 @@ public sealed class AiFamilyFourTurnPlannerTests
     {
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 4);
+        match.AiPlanning.SeedFamily(player, 0, 4);
     }
 
     private static void SetPreviousAction(MatchState match, GangAction action)

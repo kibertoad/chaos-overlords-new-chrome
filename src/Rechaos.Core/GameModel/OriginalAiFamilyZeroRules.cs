@@ -6,7 +6,7 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiFamilyZeroRules
 {
-    public const int AttackAttemptsAfterHideOrEquip = 5;
+    public const int AttackAttemptsAfterChaosOrEquip = 5;
     public const int HealForceLimit = 8;
 
     public static bool ShouldHeal(int force, int effectiveHeal) =>
@@ -30,6 +30,6 @@ internal static class OriginalAiFamilyZeroRules
         GangAction plannedAction,
         GangAction olderAction) =>
         plannedAction == GangAction.Move && olderAction == GangAction.Move
-            ? scenario == ScenarioId.Siege ? 11 : 2
+            ? scenario == ScenarioId.Eliminate ? 11 : 2
             : null;
 }

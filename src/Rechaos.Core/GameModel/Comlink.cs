@@ -84,7 +84,9 @@ public sealed class ComlinkInbox
                 || message.Sender.Value is < 0 or >= MatchLimits.PlayerCount
                 || string.IsNullOrWhiteSpace(message.Text)
                 || message.Text.Length > MatchLimits.ComlinkMessageCharacters).Any()
-            || messages.Count != Math.Min(nextSequence, MatchLimits.ComlinkMessagesPerPlayer))
+            // RULE-COMLINK-007 drops read messages from the front, so an inbox can hold fewer
+            // than it has received; what is left is still the newest run of messages.
+            || messages.Count > Math.Min(nextSequence, MatchLimits.ComlinkMessagesPerPlayer))
             throw new ArgumentException("Restored Comlink inbox is invalid.", nameof(messages));
 
         var inbox = new ComlinkInbox
@@ -98,6 +100,13 @@ public sealed class ComlinkInbox
         return inbox;
     }
 
+    /// <summary>
+    /// RULE-COMLINK-001: stores a message, dropping the oldest when the inbox holds 16. The
+    /// original also moves the recipient's View cursor back one place when it drops a message. The
+    /// sender is always the active player and never a recipient, and every other player's cursor
+    /// was set to 0 when its planning ended (RULE-COMLINK-007), so that move changes nothing and
+    /// the View keeps its page on the client instead.
+    /// </summary>
     internal ComlinkMessage Receive(int turn, PlayerId sender, string text)
     {
         if (turn < 1) throw new ArgumentOutOfRangeException(nameof(turn));
@@ -117,6 +126,33 @@ public sealed class ComlinkInbox
     }
 
     public bool IsRead(long sequence) => _readSequences.Contains(sequence);
+
+    /// <summary>
+    /// FMT-STATE-005: empties every record, as the original does when a match is entered. The
+    /// sequence keeps counting, so a message received later never takes an old message's number.
+    /// </summary>
+    internal bool Clear()
+    {
+        if (_messages.Count == 0) return false;
+        _messages.Clear();
+        _readSequences.Clear();
+        return true;
+    }
+
+    /// <summary>
+    /// RULE-COMLINK-007: removes the read messages at the front of the inbox, up to the first
+    /// unread one, when the player's planning ends. Returns how many were removed.
+    /// </summary>
+    internal int DropLeadingRead()
+    {
+        var dropped = 0;
+        while (_messages.TryPeek(out var message) && _readSequences.Remove(message.Sequence))
+        {
+            _messages.Dequeue();
+            dropped++;
+        }
+        return dropped;
+    }
 
     internal bool MarkRead(long sequence)
     {

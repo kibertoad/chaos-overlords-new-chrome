@@ -33,10 +33,11 @@ public sealed class ScenarioCatalogTests
         Assert.Equal(new DominanceWeights(cash, support, sector), ScenarioCatalog.Weights(duration));
     }
 
+    // RULE-OBJECTIVE-004: Kill 'Em All and Eliminate have no test of their own (FND-OBJECTIVE-003).
     [Theory]
-    [InlineData(ScenarioId.KillEmAll, 0, 0, 0, 0, true)]
+    [InlineData(ScenarioId.KillEmAll, 0, 0, 0, 0, false)]
     [InlineData(ScenarioId.Big40, 40, 0, 0, 0, true)]
-    [InlineData(ScenarioId.Eliminate, 0, 0, 0, 0, true)]
+    [InlineData(ScenarioId.Eliminate, 0, 0, 0, 0, false)]
     [InlineData(ScenarioId.Siege, 0, 6, 0, 1, true)]
     [InlineData(ScenarioId.BigMan, 0, 0, 40, 1, true)]
     [InlineData(ScenarioId.Armageddon, 64, 0, 0, 1, true)]
@@ -48,29 +49,8 @@ public sealed class ScenarioCatalogTests
         int opponentsAlive,
         bool expected)
     {
-        var state = new PlayerScoreState(0, 0, sectors, true, opponentsAlive,
-            OpposingRightHandsAlive: opponentsAlive, important, bigManPoints);
+        var state = new PlayerScoreState(0, 0, sectors, opponentsAlive, important, bigManPoints);
         Assert.Equal(expected, ScenarioCatalog.HasObjectiveVictory(scenario, state));
-    }
-
-    [Theory]
-    [InlineData(ScenarioId.KillEmAll, 0, 0, 0, 0)]
-    [InlineData(ScenarioId.Big40, 40, 0, 0, 1)]
-    [InlineData(ScenarioId.Eliminate, 0, 0, 0, 0)]
-    [InlineData(ScenarioId.Siege, 0, 6, 0, 1)]
-    [InlineData(ScenarioId.BigMan, 0, 0, 40, 1)]
-    [InlineData(ScenarioId.Armageddon, 64, 0, 0, 1)]
-    public void EliminatedPlayerCannotCompleteObjectiveFromRetainedProgress(
-        ScenarioId scenario,
-        int sectors,
-        int important,
-        int bigManPoints,
-        int opponentsAlive)
-    {
-        var state = new PlayerScoreState(0, 0, sectors, false, opponentsAlive,
-            OpposingRightHandsAlive: opponentsAlive, important, bigManPoints);
-
-        Assert.False(ScenarioCatalog.HasObjectiveVictory(scenario, state));
     }
 
     [Theory]
@@ -87,8 +67,7 @@ public sealed class ScenarioCatalogTests
         int bigManPoints,
         int opponentsAlive)
     {
-        var state = new PlayerScoreState(0, 0, sectors, true, opponentsAlive,
-            OpposingRightHandsAlive: opponentsAlive, important, bigManPoints);
+        var state = new PlayerScoreState(0, 0, sectors, opponentsAlive, important, bigManPoints);
 
         Assert.False(ScenarioCatalog.HasObjectiveVictory(scenario, state));
     }

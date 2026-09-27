@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -9,7 +10,7 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private AiDifficulty _selectedAiMentality = AiDifficulty.Criminal;
+    private AiDifficulty _selectedAiMentality = OriginalOptionsPolicy.MentalityByDefault;
     private AiPolicyMode _defaultAiPolicy = OriginalOptionsPolicy.AiPolicyByDefault;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
@@ -37,13 +38,126 @@ public sealed partial class ChaosGame
 
     private void UpdateTitle(KeyboardState keyboard)
     {
-        if (Pressed(keyboard, Keys.Enter)) OpenNewGameSetup();
-        if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false, fromTitle: true);
+        var control = keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl);
+        foreach (var key in TitleShortcutKeys)
+        {
+            if (Pressed(keyboard, key) && TitleShortcut(key, control) is { } action)
+            {
+                RunTitleAction(action);
+                return;
+            }
+        }
     }
 
+    private static readonly Keys[] TitleShortcutKeys = [Keys.N, Keys.O, Keys.H, Keys.J, Keys.Enter, Keys.F9];
+
+    /// <summary>
+    /// The title screen's keys. SCR-UI-001: Ctrl+N and Ctrl+O are New Game and Open, and Ctrl+H
+    /// and Ctrl+J are Host and Join, which the rebuild's Online screen offers (DEV-UI-019,
+    /// DEV-NET-001). Enter and F9 are the rebuild's own keys for New Game and Load.
+    /// </summary>
+    internal static TitleAction? TitleShortcut(Keys key, bool control) => key switch
+    {
+        Keys.N when control => TitleAction.NewGame,
+        Keys.O when control => TitleAction.LoadGame,
+        Keys.H or Keys.J when control => TitleAction.Online,
+        Keys.Enter => TitleAction.NewGame,
+        Keys.F9 => TitleAction.LoadGame,
+        _ => null
+    };
+
+    private void RunTitleAction(TitleAction action)
+    {
+        switch (action)
+        {
+            case TitleAction.LoadGame:
+                OpenSaveBrowser(saving: false, fromTitle: true);
+                break;
+            case TitleAction.Online:
+                OpenOnline();
+                break;
+            case TitleAction.Options:
+                OpenOptions();
+                break;
+            case TitleAction.Help:
+                OpenHelp();
+                break;
+            case TitleAction.Intro:
+                ReplayIntroMovies();
+                break;
+            case TitleAction.Quit:
+                Exit();
+                break;
+            default:
+                OpenNewGameSetup();
+                break;
+        }
+    }
+
+    internal enum TitleAction
+    {
+        NewGame,
+        LoadGame,
+        Online,
+        Options,
+        Help,
+        Intro,
+        Quit
+    }
+
+    /// <summary>What a left press at <paramref name="point"/> on the title screen does.</summary>
+    /// <remarks>
+    /// The original's title loop turns a left press anywhere into New Game (RULE-UI-013,
+    /// SCR-UI-001). The rebuild's own buttons keep their commands, and a press anywhere else still
+    /// starts a new game.
+    /// </remarks>
+    internal static TitleAction TitleActionAt(Point point) =>
+        TitleLoadGame.Contains(point) ? TitleAction.LoadGame
+        : TitleOnline.Contains(point) ? TitleAction.Online
+        : TitleOptions.Contains(point) ? TitleAction.Options
+        : TitleHelp.Contains(point) ? TitleAction.Help
+        : TitleIntro.Contains(point) ? TitleAction.Intro
+        : TitleQuit.Contains(point) ? TitleAction.Quit
+        : TitleAction.NewGame;
+
+    /// <summary>
+    /// RULE-SETUP-002: the stored scenario and a one-year limit. RULE-SETUP-010: the roster of the
+    /// last Begin of the session, or one human in slot 0 before the first.
+    /// </summary>
     private void OpenNewGameSetup()
     {
+        _selectedScenario = _preferredScenario;
+        _selectedDuration = GameDuration.OneYear;
+        var roster = _begunLocalSetup ?? LocalSetupSnapshot.Initial;
+        _localSetupRoster.Restore(roster.HumanSlots);
+        for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
+        {
+            _playerPortraits[slot] = roster.Portraits[slot];
+            _playerNames[slot] = roster.Names[slot];
+        }
+        _selectedSetupPlayerSlot = roster.HumanSlots.Min();
         _screens.Show(ClientScreen.Setup);
+    }
+
+    /// <summary>RULE-SETUP-002: a committed scenario choice on the local setup is stored.</summary>
+    private void CommitScenario(ScenarioId scenario)
+    {
+        _selectedScenario = scenario;
+        if (_configuringOnlineLobby) return;
+        _preferredScenario = scenario;
+        // Written once the player leaves setup (FlushScenarioPreference), not on every step of
+        // cycling through the scenarios.
+        _scenarioPreferenceUnsaved = true;
+    }
+
+    /// <summary>
+    /// Stores the scenario chosen in setup once setup is no longer showing, or at shutdown.
+    /// </summary>
+    private void FlushScenarioPreference(bool force = false)
+    {
+        if (!_scenarioPreferenceUnsaved || !force && _screens.Current == ClientScreen.Setup) return;
+        _scenarioPreferenceUnsaved = false;
+        SavePreferences();
     }
 
     private void UpdateSetup(KeyboardState keyboard)
@@ -63,14 +177,64 @@ public sealed partial class ChaosGame
         }
     }
 
-    private readonly int _originalProcessSeed = DeterministicRandom.SeedFromTimerMilliseconds(
-        unchecked((uint)Environment.TickCount));
+    /// <summary>
+    /// RULE-RNG-001, DEV-RNG-001: where the run's one random sequence stands while no local match
+    /// holds it. It starts from the clock once per run; each local match draws on from it and
+    /// hands it back when it is left, so a second New Game continues the sequence as in the
+    /// original.
+    /// </summary>
+    private uint _runRandomState = unchecked((uint)DeterministicRandom.SeedFromTimerMilliseconds(
+        unchecked((uint)Environment.TickCount)));
+
+    /// <summary>Takes the run's sequence back from a local match that is being left.</summary>
+    private void KeepRunRandomState()
+    {
+        if (_state is not null && HotSeatJournal is not null) _runRandomState = _state.Random.State;
+    }
+
+    /// <summary>
+    /// RULE-RNG-001: puts another match in place of the one on screen. Every replacement or
+    /// clearing of the match goes through here or its siblings below, and each first calls
+    /// <see cref="KeepRunRandomState"/>, so a local match that is left hands the run's sequence
+    /// back whichever path leaves it.
+    /// </summary>
+    [MemberNotNull(nameof(_state), nameof(_actions))]
+    private void ReplaceMatch(MatchState next, MatchActions actions)
+    {
+        ReplaceMatchState(next);
+        _actions = actions;
+    }
+
+    /// <summary>
+    /// <see cref="ReplaceMatch"/> for the online paths, which keep the actions for now and close
+    /// them on their own.
+    /// </summary>
+    [MemberNotNull(nameof(_state))]
+    private void ReplaceMatchState(MatchState next)
+    {
+        KeepRunRandomState();
+        _state = next;
+    }
+
+    /// <summary>Leaves the match on screen for none.</summary>
+    private void ClearMatch()
+    {
+        ClearMatchState();
+        _actions = null;
+    }
+
+    /// <summary><see cref="ClearMatch"/> for the online paths that close the actions on their own.</summary>
+    private void ClearMatchState()
+    {
+        KeepRunRandomState();
+        _state = null;
+    }
 
     private void ChangeScenario(int delta)
     {
         var currentButton = SetupScenarioButtons.ButtonForScenario(_selectedScenario);
-        _selectedScenario = SetupScenarioButtons.ScenarioForButton(
-            Mod(currentButton + delta, SetupScenarioButtons.VisualOrder.Count));
+        CommitScenario(SetupScenarioButtons.ScenarioForButton(
+            Mod(currentButton + delta, SetupScenarioButtons.VisualOrder.Count)));
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
     }
@@ -102,7 +266,10 @@ public sealed partial class ChaosGame
 
     private bool AddSetupHuman()
     {
+        // RULE-SETUP-010: the lowest portrait no other human holds; the name stays as it was.
+        var portrait = LocalSetupPolicy.LowestFreePortrait(_playerPortraits, _localSetupRoster.HumanSlots);
         if (_localSetupRoster.AddHuman() is not { } added) return false;
+        _playerPortraits[added] = portrait;
         _selectedSetupPlayerSlot = added;
         return true;
     }
@@ -135,7 +302,7 @@ public sealed partial class ChaosGame
         switch (control.Kind)
         {
             case SetupPanelControlKind.Scenario:
-                _selectedScenario = SetupScenarioButtons.ScenarioForButton(control.Index);
+                CommitScenario(SetupScenarioButtons.ScenarioForButton(control.Index));
                 break;
             case SetupPanelControlKind.Duration:
                 _selectedDuration = Durations[control.Index];
@@ -251,8 +418,8 @@ public sealed partial class ChaosGame
     {
         if (_configuringOnlineLobby) return;
         if (!_localSetupRoster.IsHuman(player)) return;
-        _playerPortraits[player] = checked((short)Mod(
-            _playerPortraits[player] + delta, PlayerPortraitLayout.SelectableCount));
+        _playerPortraits[player] = LocalSetupPolicy.StepPortrait(
+            _playerPortraits, _localSetupRoster.HumanSlots, player, delta);
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
     }
@@ -332,14 +499,21 @@ public sealed partial class ChaosGame
     private void StartMatch()
     {
         if (_definitions is null) return;
+        // RULE-SETUP-010: Begin saves the roster for the next local setup; Cancel saves nothing.
+        _begunLocalSetup = new LocalSetupSnapshot(
+            _localSetupRoster.HumanSlots.ToArray(), _playerPortraits.ToArray(), _playerNames.ToArray());
+        // The original shows the hourglass while it sets up the city (RULE-UI-007).
+        using var busy = _pointer.Busy();
         var players = _localSetupRoster.HumanSlots.Order()
             .Select(slot => new MatchPlayerSetup(
                 new PlayerId(slot), _playerNames[slot],
                 PlayerController.Human,
                 _playerPortraits[slot]))
             .ToArray();
+        // The seed is where the run's sequence stands once the match being left has handed it back.
+        KeepRunRandomState();
         var setup = new MatchSetup(
-            _selectedScenario, _selectedDuration, _originalProcessSeed, players,
+            _selectedScenario, _selectedDuration, unchecked((int)_runRandomState), players,
             _selectedAiMentality, allowSparsePlayerIds: true,
             aiPolicy: _defaultAiPolicy);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
@@ -352,8 +526,8 @@ public sealed partial class ChaosGame
             ["aiPolicy"] = _defaultAiPolicy.ToString(),
             ["seed"] = setup.InitialSeed.ToString()
         });
-        _state = OriginalMatchFactory.Create(_definitions, setup);
-        _actions = new MatchActions(new MatchReplayRecorder(_state));
+        var created = OriginalMatchFactory.Create(_definitions, setup);
+        ReplaceMatch(created, new MatchActions(new MatchReplayRecorder(created)));
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: false);
         if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();
@@ -365,9 +539,8 @@ public sealed partial class ChaosGame
         _siteSearchSelections.Reset();
         _lastTurnEventArchive.Clear();
         _managementReturnScreen = ClientScreen.City;
-        // The original's outer local-player loop shows the privacy card before it enters the
-        // first planner. The planner itself owns the one-time Game Information presentation.
-        _showGameInfoAtPlanningEntry = GameInformationPresentation.OpensAtNewGame(_state.Setup);
+        // RULE-SETUP-008: a new game never opens Game Information; only a loaded one does.
+        _resumedMatchTurn = null;
         _continuePlanningEntryAfterGameInfo = false;
         _deferComlinkAlertUntilPlanningVisible = false;
         PresentHotSeatPlanningEntry();
@@ -550,14 +723,24 @@ public sealed partial class ChaosGame
         {
             var control = SetupPanelLayout.HitTest(hover, timed: true);
             if (control is { Kind: SetupPanelControlKind.Scenario } scenario)
-                DrawHoverTooltip(batch, pixel, font, hover,
-                    ScenarioSetupTooltip.Lines(
-                        SetupScenarioButtons.ScenarioForButton(scenario.Index), _selectedDuration));
+            {
+                var lines = ScenarioSetupTooltip.Lines(
+                    SetupScenarioButtons.ScenarioForButton(scenario.Index), _selectedDuration);
+                DrawHoverTooltip(batch, pixel, font, hover, _configuringOnlineLobby
+                    ? lines
+                    : lines.Append(SetupRosterTooltip.ScenarioRemembered).ToArray());
+            }
             else if (control is { Kind: SetupPanelControlKind.Duration } duration)
                 DrawHoverTooltip(batch, pixel, font, hover,
                     DurationSetupTooltip.Lines(Durations[duration.Index]));
             else if (control is { Kind: SetupPanelControlKind.AiMentality } difficulty)
                 DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)difficulty.Index);
+            else if (!_configuringOnlineLobby && SetupButtonLayout.HitTest(hover) == SetupPushButton.AddPlayer)
+                DrawHoverTooltip(batch, pixel, font, hover, SetupRosterTooltip.AddPlayer);
+            else if (!_configuringOnlineLobby && _localSetupRoster.IsHuman(_selectedSetupPlayerSlot)
+                     && (PlayerPortraitLayout.PreviousHit(_selectedSetupPlayerSlot).Contains(hover)
+                         || PlayerPortraitLayout.NextHit(_selectedSetupPlayerSlot).Contains(hover)))
+                DrawHoverTooltip(batch, pixel, font, hover, SetupRosterTooltip.PortraitArrow);
         }
     }
 

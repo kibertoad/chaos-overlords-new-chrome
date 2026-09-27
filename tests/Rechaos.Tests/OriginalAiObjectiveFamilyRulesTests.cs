@@ -1,3 +1,4 @@
+using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Xunit;
 
@@ -7,9 +8,9 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
 {
     [Theory]
     [InlineData(ScenarioId.BigMan, 13, 12)]
-    [InlineData(ScenarioId.Eliminate, 13, 13)]
+    [InlineData(ScenarioId.Siege, 13, 13)]
     [InlineData(ScenarioId.BigMan, 14, 14)]
-    [InlineData(ScenarioId.Eliminate, 14, 15)]
+    [InlineData(ScenarioId.Siege, 14, 15)]
     public void FamiliesMapToTheirExactObjectiveModes(
         ScenarioId scenario,
         int family,
@@ -21,9 +22,9 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
     [InlineData(ScenarioId.BigMan, 27, true)]
     [InlineData(ScenarioId.BigMan, 36, true)]
     [InlineData(ScenarioId.BigMan, 9, false)]
-    [InlineData(ScenarioId.Eliminate, 9, true)]
-    [InlineData(ScenarioId.Eliminate, 54, true)]
-    [InlineData(ScenarioId.Eliminate, 27, false)]
+    [InlineData(ScenarioId.Siege, 9, true)]
+    [InlineData(ScenarioId.Siege, 54, true)]
+    [InlineData(ScenarioId.Siege, 27, false)]
     [InlineData(ScenarioId.Power, 27, false)]
     public void SelectorOneFRecognizesOnlyScenarioObjectives(
         ScenarioId scenario,
@@ -38,7 +39,7 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
         Assert.True(OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
             ScenarioId.BigMan, 0, GangAction.Attack));
         Assert.True(OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
-            ScenarioId.Eliminate, 0, GangAction.None));
+            ScenarioId.Siege, 0, GangAction.None));
         Assert.False(OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
             ScenarioId.BigMan, 0, GangAction.Equip));
         Assert.False(OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
@@ -47,7 +48,7 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
 
     [Theory]
     [InlineData(ScenarioId.BigMan, 27, GangAction.None, GangAction.Control, 9, -3, true)]
-    [InlineData(ScenarioId.Eliminate, 9, GangAction.None, GangAction.Control, 9, -3, true)]
+    [InlineData(ScenarioId.Siege, 9, GangAction.None, GangAction.Control, 9, -3, true)]
     [InlineData(ScenarioId.BigMan, 0, GangAction.Equip, GangAction.Control, 9, -3, true)]
     [InlineData(ScenarioId.BigMan, 0, GangAction.None, GangAction.Control, 9, -3, false)]
     [InlineData(ScenarioId.BigMan, 27, GangAction.None, GangAction.Attack, 9, -3, false)]
@@ -65,25 +66,13 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
             OriginalAiObjectiveFamilyRules.ShouldFamilyFourteenTerminalHeal(
                 scenario, sector, plannedAction, previousAction, force, effectiveHeal));
 
+    // RULE-AI-031 heal_ok: Force below 10 and effective Heal above -4.
     [Theory]
-    [InlineData(ScenarioId.BigMan, 27, true, false, 9, -3, true)]
-    [InlineData(ScenarioId.Eliminate, 54, true, false, 9, -3, true)]
-    [InlineData(ScenarioId.BigMan, 0, true, false, 9, -3, false)]
-    [InlineData(ScenarioId.BigMan, 27, false, false, 9, -3, false)]
-    [InlineData(ScenarioId.BigMan, 27, true, true, 9, -3, false)]
-    [InlineData(ScenarioId.BigMan, 27, true, false, 10, -3, false)]
-    [InlineData(ScenarioId.BigMan, 27, true, false, 9, -4, false)]
-    public void OwnedObjectiveHealPreservesSelectorNinetyAndStatBoundaries(
-        ScenarioId scenario,
-        int sector,
-        bool ownedByActingPlayer,
-        bool hasVisibleOpponent,
-        int force,
-        int effectiveHeal,
-        bool expected) =>
-        Assert.Equal(expected,
-            OriginalAiObjectiveFamilyRules.ShouldHealOwnedObjectiveWithoutVisibleOpponent(
-                scenario, sector, ownedByActingPlayer, hasVisibleOpponent, force, effectiveHeal));
+    [InlineData(9, -3, true)]
+    [InlineData(10, -3, false)]
+    [InlineData(9, -4, false)]
+    public void HealTestPreservesStatBoundaries(int force, int effectiveHeal, bool expected) =>
+        Assert.Equal(expected, OriginalAiObjectiveFamilyRules.CanHeal(force, effectiveHeal));
 
     [Theory]
     [InlineData(26, 1, true)]
@@ -102,8 +91,8 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
     [InlineData(true, 5, -3, GangAction.Attack)]
     [InlineData(true, 4, -3, GangAction.Heal)]
     [InlineData(false, 9, -3, GangAction.Heal)]
-    [InlineData(false, 10, -3, GangAction.Control)]
-    [InlineData(false, 9, -4, GangAction.Control)]
+    [InlineData(false, 10, -3, GangAction.None)]
+    [InlineData(false, 9, -4, GangAction.None)]
     public void ContestedObjectiveResultPreservesAttackAndHealBoundaries(
         bool selectedTarget,
         int force,
@@ -111,7 +100,8 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
         GangAction expected) =>
         Assert.Equal(expected,
             OriginalAiObjectiveFamilyRules.SelectContestedObjectiveResult(
-                selectedTarget, force, effectiveHeal));
+                selectedTarget, force,
+                OriginalAiObjectiveFamilyRules.CanHeal(force, effectiveHeal)));
 
     [Fact]
     public void AttackRetryUsesQuarterTargetAttackAndInclusiveBoundary()
@@ -120,5 +110,46 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
             4, 2, 1, 8, 0, 5));
         Assert.False(OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry(
             4, 2, 1, 8, 0, 6));
+    }
+
+    // RULE-AI-031, FND-AI-063: the unset threshold always holds 0, so a site needs positive
+    // Support to be chosen, and the first of two equal maxima wins.
+    [Fact]
+    public void SupportScanStartsFromTheZeroTheStackSlotHolds()
+    {
+        var data = BundledOriginalData.Load();
+        var none = data.Sites.First(site => site.Support <= 0).Id;
+        var positive = data.Sites.First(site => site.Support > 0).Id;
+
+        Assert.Null(OriginalAiObjectiveFamilyRules.SelectHighestSupportUnfinishedSite(
+            CreateMatch(data, none, none, none), 0));
+        Assert.Equal(1, OriginalAiObjectiveFamilyRules.SelectHighestSupportUnfinishedSite(
+            CreateMatch(data, none, positive, positive), 0));
+    }
+
+    private static MatchState CreateMatch(OriginalData data, short site0, short site1, short site2)
+    {
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "RIVAL", PlayerController.Human)
+        ];
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20,
+                [new MatchGangState(new GangId(10), setups[0].Id, 4, 0, 10)]),
+            new(setups[1], 20,
+                [new MatchGangState(new GangId(20), setups[1].Id, 2, 63, 10)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, site0, 7),
+                new MatchSiteState(1, site1, 16),
+                new MatchSiteState(2, site2, 15)
+            ], owner: id == 0 ? setups[0].Id : null, income: 3))
+            .ToArray();
+        return new MatchState(data, new MatchSetup(
+            ScenarioId.BigMan, GameDuration.SixMonths, 41, setups), players, sectors);
     }
 }

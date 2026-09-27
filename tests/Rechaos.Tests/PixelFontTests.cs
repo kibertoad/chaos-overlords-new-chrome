@@ -21,6 +21,23 @@ public sealed class PixelFontTests
         Assert.False(OriginalFontLayout.TryGlyph('_', out _));
     }
 
+    /// <summary>
+    /// A negative number formatted under a culture whose minus sign is U+2212 keeps its sign.
+    /// </summary>
+    [Fact]
+    public void NegativeNumbersKeepTheirSignUnderEveryCulture()
+    {
+        Assert.True(OriginalFontLayout.TryGlyph('-', out var hyphen));
+        Assert.True(OriginalFontLayout.TryGlyph('−', out var minus));
+        Assert.Equal(hyphen, minus);
+        // sv-SE formats with U+2212 under ICU; under invariant globalization it falls back to '-'.
+        var swedish = System.Globalization.CultureInfo.GetCultureInfo("sv-SE");
+        var text = string.Format(swedish, "{0} [{1}]", -1250, -3);
+        Assert.All(text, character => Assert.True(OriginalFontLayout.TryGlyph(character, out _)));
+        Assert.Equal("-1250 [-3]", string.Format(
+            System.Globalization.CultureInfo.InvariantCulture, "{0} [{1}]", -1250, -3));
+    }
+
     [Fact]
     public void SupplementalBracketsFollowTheOriginalStripInTheGlyphMask()
     {

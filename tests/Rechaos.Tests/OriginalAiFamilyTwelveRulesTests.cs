@@ -52,7 +52,7 @@ public sealed class OriginalAiFamilyTwelveRulesTests
     [Theory]
     [InlineData(ScenarioId.Greed, 3, true)]
     [InlineData(ScenarioId.Greed, 4, false)]
-    [InlineData(ScenarioId.Siege, 3, false)]
+    [InlineData(ScenarioId.Eliminate, 3, false)]
     public void TerminationOverrideUsesFinalThreeGreedTurns(
         ScenarioId scenario,
         int turnsRemaining,

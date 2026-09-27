@@ -31,7 +31,7 @@ public sealed class StatusConsoleScenarioTooltipTests
             Assert.Equal("SCORE", lines[0]);
             Assert.Contains(PlayerRankingTooltip.Basis(scenario), lines[1]);
             Assert.DoesNotContain(lines, line => line.Contains("VICTORY"));
-            Assert.Equal(scenario is ScenarioId.KillEmAll or ScenarioId.Siege,
+            Assert.Equal(scenario is ScenarioId.KillEmAll or ScenarioId.Eliminate,
                 lines.Contains("SHARED BY EVERY SURVIVING OVERLORD."));
             Assert.True(lines.Max(line => line.Length) * OriginalFontLayout.CellWidth + 16
                 <= VirtualInput.Width - 16);
@@ -65,9 +65,12 @@ public sealed class StatusConsoleScenarioTooltipTests
                 "CONTROLLED: EACH SUCCESS PAYS $1.",
                 "UNCONTROLLED: HALF THE COMBINED",
                 "SUCCESSES, ROUNDED DOWN.",
-                "CRACKDOWN: NO CHAOS CASH PAID.",
+                "CRACKDOWN THIS TURN: NO CHAOS CASH.",
                 "",
                 "YOUR RANGE CANNOT TRIGGER A CRACKDOWN.",
+                "THE THIRD CRACKDOWN IN 5 TURNS MAKES",
+                "THE SECTOR NEUTRAL AND BRINGS POLICE",
+                "FOR 3-5 TURNS. POLICE DO NOT STOP PAY.",
                 "",
                 "CHAOS RANGE BREAKDOWN:",
                 ..breakdown

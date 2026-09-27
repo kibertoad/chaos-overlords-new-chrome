@@ -4,12 +4,11 @@
 
 ## unknown
 
-2 entries.
+1 entries.
 
 | ID | Title |
 |---|---|
 | [BUG-COMBAT-001](../bugs/BUG-COMBAT-001.md) | The game is reported to freeze while presenting a battle with Detailed Combat on |
-| [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z |
 
 ## sourced
 
@@ -17,7 +16,7 @@
 
 ## supported
 
-236 entries.
+237 entries.
 
 | ID | Title |
 |---|---|
@@ -42,6 +41,7 @@
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs |
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS |
 | [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 |
+| [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z |
 | [FMT-GFX-001](../formats/FMT-GFX-001.md) | 16-bit image files in DATA/PX16 |
 | [FMT-GFX-002](../formats/FMT-GFX-002.md) | 8-bit image files in DATA/PX08 |
 | [FMT-GFX-003](../formats/FMT-GFX-003.md) | Palette entry in a PX08 image file |
@@ -277,7 +277,7 @@
 
 ## recorded
 
-318 entries.
+330 entries.
 
 | ID | Title |
 |---|---|
@@ -341,10 +341,11 @@
 | [FND-AI-060](../findings/FND-AI-060.md) | The family-7 handler's Attack test reads the attitude toward the drawn gang's player |
 | [FND-AI-061](../findings/FND-AI-061.md) | The family-11 handler's miscellaneous Equip and Heal also need a previous action other than Attack, and most branches keep the current sector as focus |
 | [FND-AI-062](../findings/FND-AI-062.md) | Families 13 and 14 make up to five draws on a contested objective, can write nothing after a failed attack, and compare Support with an unset value |
+| [FND-AI-063](../findings/FND-AI-063.md) | The unset Support threshold of families 13 and 14 always holds the 0 the selector's prologue leaves at the same stack address |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |
-| [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, plus or its lower face and cancels with Escape or its upper face |
+| [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, Execute or its lower face and cancels with Escape or its upper face |
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | A double-click in the Attack picker opens Item Information for an equipment icon and the gang information panel for a portrait, of the acting gang or of a listed target |
 | [FND-AUDIO-001](../findings/FND-AUDIO-001.md) | Music plays one of three CD track programs, restarts each when it ends, and pauses while the window is inactive |
 | [FND-AUDIO-002](../findings/FND-AUDIO-002.md) | Nine general sound effects load into slots 0 to 9 with slot 5 left empty, and a wrapper plays them only while effects are enabled |
@@ -380,6 +381,7 @@
 | [FND-COMBAT-011](../findings/FND-COMBAT-011.md) | Detailed Combat builds each focal gang's fight list from the combat result entries, resets displayed Force once for every listed gang, and keeps its state in two blocks of globals |
 | [FND-COMBAT-012](../findings/FND-COMBAT-012.md) | Combat Results pages with the left and right arrow keys, closes on Enter or plus but not Escape, and the force selector makes one of the viewer's gangs the focus whose target and attackers are framed |
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | Surfaces 3 and 5 hold PX03000 and PX02000 with PX04999 whenever a combat panel is open, the outline colours are red, green and blue in that order, and the Detailed Combat fight list has room for 36 elements |
+| [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | Detailed Combat draws each gang's header as a colour strip, an Overlord portrait and a name, takes the police header, portrait and items from resource 300, and darkens the last strip frames from tick 12 |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | Each player keeps at most 16 Comlink messages, and a 17th drops the oldest |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send |
@@ -400,6 +402,8 @@
 | [FND-DATA-006](../findings/FND-DATA-006.md) | The Kaitai definitions of the shipped file formats parse every shipped file to its last byte with the documented field values |
 | [FND-DATA-007](../findings/FND-DATA-007.md) | Each match start reads DATA/Gangs, DATA/ITEMS and DATA/SITES whole into fixed tables, and the code reads their fields at the offsets the format entries give |
 | [FND-DATA-008](../findings/FND-DATA-008.md) | No code path in the executable can open DATA/DATA.Z |
+| [FND-DATA-009](../findings/FND-DATA-009.md) | DATA/DATA.Z is an InstallShield 3 archive of 459 files in five directories whose tables account for every byte |
+| [FND-DATA-010](../findings/FND-DATA-010.md) | The 459 blocks of DATA/DATA.Z expand to 449 installed files unchanged, and its remaining header and entry bytes are sizes or constants |
 | [FND-DETECT-001](../findings/FND-DETECT-001.md) | The visibility rebuild takes each sector's best Detect and adds a helper bonus from every other friendly gang there |
 | [FND-DETECT-002](../findings/FND-DETECT-002.md) | The visibility rebuild runs for all six observer slots, writes 0 before 1 for every active opposing gang, and leaves inactive records alone |
 | [FND-EQUIP-001](../findings/FND-EQUIP-001.md) | A Factory lowers an item's price by its cost divided by three, truncated |
@@ -435,13 +439,16 @@
 | [FND-GANG-008](../findings/FND-GANG-008.md) | The Hire input handler opens the gang information panel PX05000 for an offer with a record whose Force is 0, so the panel shows two question marks for Force |
 | [FND-GANG-009](../findings/FND-GANG-009.md) | The compact gang information panel 0x00455B6B is opened only from the Attack, Equip, Research, Sell and Give panels, with a copy of a live gang record |
 | [FND-GANG-010](../findings/FND-GANG-010.md) | The compact gang panel places each value field in its 320-pixel frame, closes only on its face, Enter or Execute, and covers the base values with a black pattern |
+| [FND-GANG-011](../findings/FND-GANG-011.md) | The compact gang panel dims its base values with black through bitmap 143, starting the pattern at each area's corner |
 | [FND-GFX-001](../findings/FND-GFX-001.md) | Every PX16 file is a 16-bit BMP whose width and height are 0 and whose plane count is 255 |
 | [FND-GFX-002](../findings/FND-GFX-002.md) | Every PX08 file is an 8-bit BMP with a 256-colour palette, RLE8 in 207 files and uncompressed in 7 |
 | [FND-GFX-003](../findings/FND-GFX-003.md) | The PX08 line geometry gives every image's width and height, and the PX16 rows are padded to four bytes |
 | [FND-GFX-004](../findings/FND-GFX-004.md) | The display layer draws with GDI into twelve surface slots, copies the 640-by-460 backing surface to the window's client origin, and uses DirectDraw only to take the screen in full screen |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 |
+| [FND-GFX-006](../findings/FND-GFX-006.md) | A pattern fill takes its bitmap from the high byte of a 16-bit grey, starts the pattern at the filled rectangle's corner, and outlines the fill with the scratch surface's own pen |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | The Give panel handler lists the giver's sector mates, accepts a recipient only when its Tech Level covers every selected item, and stores the order in the target bytes |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art |
+| [FND-GIVE-003](../findings/FND-GIVE-003.md) | The Give recipient list fills no background, and dims an ineligible card with black through bitmap 146 from the card's corner |
 | [FND-HEAL-001](../findings/FND-HEAL-001.md) | The Heal case rolls Heal plus 4 dice without testing Force first, caps Force at 10 and records no report |
 | [FND-HELP-001](../findings/FND-HELP-001.md) | The help file's context tree holds 80 hashed names, covers every contents target, and defines no numeric contexts |
 | [FND-HELP-002](../findings/FND-HELP-002.md) | The help text uses nine fonts and 93 internal hotspots, 67 jumps and 26 popups, all resolved through the context tree |
@@ -468,6 +475,7 @@
 | [FND-MOVE-004](../findings/FND-MOVE-004.md) | The Move panel handler shows the city around the gang, blacks out cells beyond the edge, and stores the chosen sector in the target byte |
 | [FND-MOVE-005](../findings/FND-MOVE-005.md) | The Move panel marks the chosen neighbour with one of eight 32-by-32 keyed arrows from PX00129 placed around the centre cell |
 | [FND-MOVE-006](../findings/FND-MOVE-006.md) | The Move repair loop has no bound, and some order sets keep it running for ever |
+| [FND-MOVE-007](../findings/FND-MOVE-007.md) | The Move panel's cell table disables only neighbours beyond the city's edge or with owner byte -2, and its keys draw the pressed faces |
 | [FND-NET-001](../findings/FND-NET-001.md) | The network packet dispatcher reads 16-byte headers and handles sixteen packet types, one set on the joining side and one on the hosting side |
 | [FND-NET-002](../findings/FND-NET-002.md) | The network progress renderer draws one progress bar per remote player and two lines of status text chosen by a code |
 | [FND-NET-003](../findings/FND-NET-003.md) | The network screens build their button rectangles as top, left, bottom, right, and their progress bars are one pixel per unit up to 100 |
@@ -503,6 +511,7 @@
 | [FND-RESEARCH-002](../findings/FND-RESEARCH-002.md) | New-game setup copies each item's research difficulty to every player, or zero for every item in Armageddon |
 | [FND-RESEARCH-003](../findings/FND-RESEARCH-003.md) | The Research list builder lists unresearched items of the chosen category up to the gang type's Tech Level, capped by the sector's research-site level, with each item's remaining research |
 | [FND-RESEARCH-004](../findings/FND-RESEARCH-004.md) | The Research panel selects a row on a press, opens Item Information on a double-clicked row and the gang definition on a double-clicked portrait, and shares the command-panel controls |
+| [FND-RESEARCH-005](../findings/FND-RESEARCH-005.md) | The Research panel's Enter, Execute and Escape draw the pressed confirm and Cancel faces before they act |
 | [FND-RNG-001](../findings/FND-RNG-001.md) | The generator is seeded once per process from the low 16 bits of timeGetTime, and the preference loader may then draw twice |
 | [FND-RNG-002](../findings/FND-RNG-002.md) | The raw step is the statically linked runtime rand, a 32-bit linear congruential generator returning bits 16 to 30 |
 | [FND-RNG-003](../findings/FND-RNG-003.md) | The bounded wrapper makes three raw draws and returns a value from 1 to n |
@@ -595,10 +604,13 @@
 | [FND-UI-034](../findings/FND-UI-034.md) | The pointer is a stock Windows cursor, the arrow or the hourglass, never an image from the game's files |
 | [FND-UI-035](../findings/FND-UI-035.md) | The sector panel shows Income from byte 4 and an owner-only Cash from byte 3 of the sector record |
 | [FND-UI-036](../findings/FND-UI-036.md) | The detailed sector screen draws truncated site progress and six-pixel Force steps, and lists only the active player's gangs |
+| [FND-UI-037](../findings/FND-UI-037.md) | The city-cell, site and sector-cell flashes lighten with white through bitmap 143 and show lit, normal, lit, normal with a one-tick wait after each of the first three copies |
+| [FND-UI-038](../findings/FND-UI-038.md) | The nine-sector display labels its centre row and column and each neighbour's on the frame, the sector view darkens its background with black through bitmap 143, and the Overlord bar animates on timer slot 1 |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | The intro plays MVLOGOS then MVINTRO at (80,102) through smackw32, each ended by the left button at a 10 Hz tick, at the effects volume |
+| [FND-VIDEO-003](../findings/FND-VIDEO-003.md) | smackw32 sets a movie's volume as a linear waveOut volume, clamped to 0xFFFF, both channels equal at the centre pan |
 
 ## reproduced
 
@@ -621,7 +633,6 @@ Entries whose Open questions section says more than None known.
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list | supported |
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 | supported |
 | [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
-| [BUG-AI-006](../bugs/BUG-AI-006.md) | An objective gang with nothing else to do picks its Influence site against a threshold the planner never sets | supported |
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | The turn-start sound plays even with sound effects turned off | supported |
 | [BUG-AWARDS-001](../bugs/BUG-AWARDS-001.md) | The endgame screen shows at most three awards per player though a player can earn five | supported |
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | Bribe costs 3 instead of the manual's 5 | supported |
@@ -637,7 +648,7 @@ Entries whose Open questions section says more than None known.
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | Gang definition records in DATA/Gangs | supported |
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | Item definition records in DATA/ITEMS | supported |
 | [FMT-DATA-004](../formats/FMT-DATA-004.md) | Colour list in DATA/CLT00002 | supported |
-| [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | unknown |
+| [FMT-DATA-005](../formats/FMT-DATA-005.md) | Compressed archive DATA/DATA.Z | supported |
 | [FMT-GFX-001](../formats/FMT-GFX-001.md) | 16-bit image files in DATA/PX16 | supported |
 | [FMT-GFX-002](../formats/FMT-GFX-002.md) | 8-bit image files in DATA/PX08 | supported |
 | [FMT-GFX-003](../formats/FMT-GFX-003.md) | Palette entry in a PX08 image file | supported |

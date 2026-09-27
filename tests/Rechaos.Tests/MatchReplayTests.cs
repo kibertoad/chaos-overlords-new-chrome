@@ -108,7 +108,9 @@ public sealed class MatchReplayTests
                 (ReplayOperationKind.MarkComlinkRead, 14),
                 (ReplayOperationKind.PrepareSimultaneousHireOffers, 15),
                 (ReplayOperationKind.TransferPlayerToComputer, 16),
-                (ReplayOperationKind.TransferPlayerToHuman, 17)
+                (ReplayOperationKind.TransferPlayerToHuman, 17),
+                (ReplayOperationKind.ContinueRandomStream, 18),
+                (ReplayOperationKind.EmptyComlinkInboxes, 19)
             },
             Enum.GetValues<ReplayOperationKind>().Select(kind => (kind, (int)kind)));
     }
@@ -213,6 +215,33 @@ public sealed class MatchReplayTests
         Assert.True(recipients.IsReadOnly);
     }
 
+    // RULE-COMLINK-004, FMT-STATE-005: a local load empties every inbox, and the journal replays it.
+    [Fact]
+    public void ReplaysTheComlinkClearingOfALoad()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch(secondPlayerHuman: true));
+        recorder.FinishUpkeep();
+        Assert.True(recorder.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "TRUCE?").Accepted);
+        Assert.True(recorder.EmptyComlinkInboxes());
+        Assert.False(recorder.EmptyComlinkInboxes());
+        Assert.True(recorder.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "AGAIN").Accepted);
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
+
+        Assert.Equal(["AGAIN"],
+            restored.ComlinkFor(new PlayerId(1)).Messages.Select(message => message.Text));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restored));
+        Assert.Equal([true, false], recorder.Steps
+            .Where(step => step.Kind == ReplayOperationKind.EmptyComlinkInboxes)
+            .Select(step => step.Accepted!.Value));
+    }
+
     [Fact]
     public void CurrentReplayRequiresComlinkSequenceForReadOperation()
     {
@@ -257,7 +286,19 @@ public sealed class MatchReplayTests
     [Fact]
     public void ReplaysCrackdownTriggerCountdownAndFollowingPoliceCombat()
     {
-        var recorder = new MatchReplayRecorder(CreateMatch());
+        // RULE-POLICE-002: only the third Crackdown within five turns brings police, so the sector
+        // starts turn 3 with the Crackdowns of turns 1 and 2 in its history.
+        var match = TestMatches.Create(sectorZeroCrackdowns: [1, 2]);
+        for (var turn = 1; turn < 3; turn++)
+        {
+            var coordinator = match.Coordinator;
+            coordinator.FinishUpkeep();
+            foreach (var player in match.Players) coordinator.FinishCommand(player.Id);
+            while (coordinator.Phase == TurnPhase.Execution) coordinator.FinishExecutionPhase();
+            foreach (var player in match.Players) coordinator.FinishHire(player.Id);
+            coordinator.FinishPlayerElimination();
+        }
+        var recorder = new MatchReplayRecorder(match);
         recorder.FinishUpkeep();
         Assert.True(recorder.Submit(new GameCommand(
             new PlayerId(0), new GangId(0), GangAction.Chaos, CommandTarget.None)).Accepted);
@@ -265,7 +306,7 @@ public sealed class MatchReplayTests
         while (recorder.State.Coordinator.Phase == TurnPhase.Execution)
             recorder.FinishExecutionPhase();
         Assert.True(recorder.State.Sectors[0].CrackdownActive);
-        Assert.Equal([1], recorder.State.Sectors[0].CrackdownHistory);
+        Assert.Equal([3, 3], recorder.State.Sectors[0].CrackdownHistory);
         var initialDuration = recorder.State.Sectors[0].CrackdownTurnsRemaining;
         FinishHireAndElimination(recorder);
 
@@ -439,6 +480,28 @@ public sealed class MatchReplayTests
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Hide, CommandTarget.None)));
     }
 
+    // RULE-RNG-001: a local load moves the generator to the run's sequence, and the journal
+    // replays the move.
+    [Fact]
+    public void ReplaysTheMoveToTheRunsRandomSequence()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        recorder.FinishUpkeep();
+        var consumed = recorder.State.Random.ConsumptionCount;
+        recorder.ContinueRandomStream(0x1234ABCDu);
+        Assert.Equal(0x1234ABCDu, recorder.State.Random.State);
+        Assert.Equal(consumed, recorder.State.Random.ConsumptionCount);
+        FinishCommands(recorder);
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
+
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restored));
+    }
+
     [Fact]
     public void RejectsReplayWhoseExpectedStepHashWasModified()
     {
@@ -591,6 +654,68 @@ public sealed class MatchReplayTests
         {
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
+    }
+
+    /// <summary>
+    /// A journal from a newer build is incompatible, not damaged, even when it carries a field
+    /// this build does not know.
+    /// </summary>
+    /// <remarks>
+    /// The members are bound strictly, so reading them before the version failed as "JSON is
+    /// invalid"; recovery then took the newer primary for damage and fell back to the backup.
+    /// </remarks>
+    [Fact]
+    public void NewerJournalWithAnUnknownFieldIsIncompatibleRatherThanDamaged()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        recorder.FinishUpkeep();
+        var newer = NewerJournal(recorder);
+
+        var exception = Assert.ThrowsAny<InvalidDataException>(() =>
+            MatchReplaySerializer.LoadAndReplay(new MemoryStream(newer), recorder.State.Definitions));
+        Assert.Equal(IncompatibleSaveReason.NewerFormat, IncompatibleSave.ReasonOf(exception));
+        // Both resume paths answer null for a journal this build cannot continue, as documented.
+        Assert.Null(MatchReplaySerializer.TryLoadResumable(
+            new MemoryStream(newer), recorder.State.Definitions));
+        Assert.Null(MatchReplaySerializer.TryResumeOnto(new MemoryStream(newer), recorder.State));
+    }
+
+    [Fact]
+    public void RecoveryLeavesANewerPrimaryJournalInPlace()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(directory, "match.rchreplay");
+        try
+        {
+            var recorder = new MatchReplayRecorder(CreateMatch());
+            recorder.FinishUpkeep();
+            MatchReplayStore.SaveAtomic(path, recorder);
+            recorder.FinishCommand(new PlayerId(0));
+            MatchReplayStore.SaveAtomic(path, recorder);
+            var newer = NewerJournal(recorder);
+            File.WriteAllBytes(path, newer);
+
+            var exception = Assert.ThrowsAny<InvalidDataException>(() =>
+                MatchReplayStore.LoadAndReplayRecoveringBackup(path, recorder.State.Definitions));
+
+            Assert.Equal(IncompatibleSaveReason.NewerFormat, IncompatibleSave.ReasonOf(exception));
+            Assert.Equal(newer, File.ReadAllBytes(path));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    /// <summary>The recorder's journal as a newer build would write it, with a field added.</summary>
+    private static byte[] NewerJournal(MatchReplayRecorder recorder)
+    {
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = MatchReplaySerializer.CurrentFormatVersion + 1;
+        document["addedByANewerBuild"] = true;
+        return System.Text.Encoding.UTF8.GetBytes(document.ToJsonString());
     }
 
     private static void AdvanceToHire(MatchState state)

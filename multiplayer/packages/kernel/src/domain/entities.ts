@@ -108,8 +108,21 @@ export interface Turn {
    * `orderSetHash` does for `turn.sealed`: the caller whose compare-and-swap stamps it is the one
    * that announces. Without it the verdict had to page the whole event log looking for its own
    * announcement, on every sweep, for as long as the match stayed paused.
+   *
+   * It is stamped AFTER `turn.desynced` is durable, not before: a stamp that preceded a publish
+   * which then failed left the divergence unannounced for good, with every client waiting on it.
    */
   desyncedAt: Date | null
+  /**
+   * When everything that follows a confirmation was carried out — `turn.confirmed` announced, a
+   * desync pause lifted, a finished match marked finished and announced — or null while it has not.
+   *
+   * The confirmation's compare-and-swap is not the end of the verdict: a publish that throws after
+   * it used to leave a confirmed turn that no path revisits (`settle` returns early on one and
+   * `listUnsettled` skips it), so a finished match stayed `running` forever. A confirmed turn with
+   * this still null is what `TurnRepository.listUnannouncedVerdicts` hands the sweep to finish.
+   */
+  settledAt: Date | null
 }
 
 /** One player's row for a turn. Rows are pre-created when the turn opens (see TurnRepository). */

@@ -30,6 +30,8 @@ public static class StatusConsoleLayout
 {
     public const int LabelLeft = 480;
     public const int ValueRight = 579;
+    /// <summary>RULE-UI-011: the sector code and the four sector values start at x 568.</summary>
+    public const int SectorValueLeft = 568;
     public const int ScenarioY = 3;
     public const int DateY = 15;
     public const int ScoreY = 24;
@@ -84,7 +86,7 @@ public static class StatusConsoleTooltip
             $"{ScenarioCatalog.Get(mode).Name} RATES: {PlayerRankingTooltip.Basis(mode)}",
             "USED FOR RANKING."
         };
-        if (mode is ScenarioId.KillEmAll or ScenarioId.Siege)
+        if (mode is ScenarioId.KillEmAll or ScenarioId.Eliminate)
             lines.Add("SHARED BY EVERY SURVIVING OVERLORD.");
         return lines;
     }
@@ -96,7 +98,8 @@ public static class StatusConsoleTooltip
         int? tolerance = null,
         ChaosRangeEstimate? chaosEstimate = null,
         IReadOnlyList<string>? chaosBreakdown = null,
-        bool enemyGangsPresent = false)
+        bool enemyGangsPresent = false,
+        ToleranceParts? toleranceParts = null)
     {
         if (scenario is { } mode && StatusConsoleLayout.Scenario.Contains(point))
             return ScenarioSetupTooltip.Lines(mode, duration);
@@ -122,14 +125,22 @@ public static class StatusConsoleTooltip
             ];
         if (StatusConsoleLayout.SectorEntry(2).Contains(point))
             return tolerance is { } value && chaosEstimate is { } estimate
-                ? Tolerance(value, estimate, chaosBreakdown ?? [], enemyGangsPresent)
+                ? Tolerance(value, estimate, chaosBreakdown ?? [], enemyGangsPresent, toleranceParts)
                 : ["TOLERANCE", "CHAOS ABOVE THIS VALUE TRIGGERS A POLICE CRACKDOWN."];
         if (StatusConsoleLayout.SectorEntry(3).Contains(point))
-            return ["SUPPORT", "INFLUENCED-SITE SUPPORT ADDED AGAINST ENEMY CONTROL."];
+            // RULE-CONTROL-001
+            return [
+                "SUPPORT",
+                "COMPLETED-SITE SUPPORT, SET BEFORE PLANNING.",
+                "A CHALLENGER'S CONTROL MUST BEAT INCOME PLUS SUPPORT."
+            ];
         if (StatusConsoleLayout.SectorEntry(4).Contains(point))
+            // RULE-UPKEEP-001, RULE-SITE-001
             return [
                 "SECTOR CASH",
-                "OWNER-ONLY UPKEEP: $1 TAX PLUS COMPLETED-SITE CASH."
+                "OWNER-ONLY UPKEEP: $1 TAX PLUS COMPLETED-SITE CASH,",
+                "SET BEFORE PLANNING. A SECTOR TAKEN THIS TURN STILL",
+                "PAYS ITS NEW OWNER THE OLD SITES' CASH ONCE."
             ];
         return [];
     }
@@ -138,7 +149,8 @@ public static class StatusConsoleTooltip
         int tolerance,
         ChaosRangeEstimate chaosEstimate,
         IReadOnlyList<string> chaosBreakdown,
-        bool enemyGangsPresent = false)
+        bool enemyGangsPresent = false,
+        ToleranceParts? parts = null)
     {
         List<string> lines =
         [
@@ -156,14 +168,30 @@ public static class StatusConsoleTooltip
             "CONTROLLED: EACH SUCCESS PAYS $1.",
             "UNCONTROLLED: HALF THE COMBINED",
             "SUCCESSES, ROUNDED DOWN.",
-            "CRACKDOWN: NO CHAOS CASH PAID.",
+            "CRACKDOWN THIS TURN: NO CHAOS CASH.",
             ""
         ];
         if (enemyGangsPresent) lines.Add(EnemyChaosWarning);
         lines.Add(chaosEstimate.Range.CanTriggerCrackdown(tolerance)
             ? "YOUR RANGE CAN TRIGGER A CRACKDOWN."
             : "YOUR RANGE CANNOT TRIGGER A CRACKDOWN.");
+        // RULE-POLICE-002, RULE-CHAOS-002
+        lines.Add("THE THIRD CRACKDOWN IN 5 TURNS MAKES");
+        lines.Add("THE SECTOR NEUTRAL AND BRINGS POLICE");
+        lines.Add("FOR 3-5 TURNS. POLICE DO NOT STOP PAY.");
         lines.Add("");
+        // RULE-SITE-001, RULE-TOLERANCE-001, RULE-TOLERANCE-002: the value is the base plus the
+        // completed sites, set before planning; the base moves while the orders resolve.
+        if (parts is { } toleranceParts)
+        {
+            lines.Add($"TOLERANCE {tolerance}: BASE {toleranceParts.Base} + SITES {toleranceParts.Sites}.");
+            lines.Add($"BASE MOVES 1 PER TURN TOWARD {toleranceParts.NormalBase}");
+            lines.Add("(17 - INCOME); BRIBE +3, SNITCH -3,");
+            lines.Add("THEN KEPT WITHIN 1..40.");
+            if (toleranceParts.Base + toleranceParts.Sites != tolerance)
+                lines.Add("CHANGES SINCE PLANNING COUNT NEXT TURN.");
+            lines.Add("");
+        }
         lines.Add("CHAOS RANGE BREAKDOWN:");
         lines.AddRange(chaosBreakdown);
         return lines;
@@ -174,6 +202,15 @@ public static class StatusConsoleTooltip
         ChaosRange chaosRange,
         bool enemyGangsPresent = false) =>
         Tolerance(tolerance, new ChaosRangeEstimate(chaosRange, []), [], enemyGangsPresent);
+
+    /// <summary>The two parts a sector's Tolerance is rebuilt from, and where the base returns to.</summary>
+    public readonly record struct ToleranceParts(int Base, int Sites, int NormalBase)
+    {
+        public static ToleranceParts Of(MatchState state, MatchSectorState sector) => new(
+            sector.BaseTolerance,
+            ToleranceResolver.SiteAdjustment(state, sector),
+            ToleranceResolver.NormalBaseTolerance(sector));
+    }
 
     public static Rectangle Bounds(Point point, IReadOnlyList<string> lines) =>
         HoverTooltipLayout.Bounds(point, lines);
@@ -287,6 +324,36 @@ public static class StatusConsolePresentation
 
     public static int SectorCash(PlayerId? owner, PlayerId activePlayer, int cash) =>
         owner == activePlayer ? cash : 0;
+
+    /// <summary>RULE-UI-011: Income, Tolerance, Support and Cash of a sector as the console shows them.</summary>
+    public static (int Income, int Tolerance, int Support, int Cash) SectorValues(
+        MatchState state, PlayerId activePlayer, int sectorId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var sector = state.Sectors[sectorId];
+        var owned = sector.Owner == activePlayer;
+        return (sector.Income, sector.Tolerance,
+            owned ? sector.Support : 0,
+            owned ? SectorIncomeResolver.SectorCash(state, sector) : 0);
+    }
+
+    /// <summary>
+    /// RULE-UI-011: the Income row is string resource <c>0x11 + income</c> cut to two characters.
+    /// Generation gives Income 3 to 7, strings 20 to 24; 0 to 2 reach strings 17 to 19, and a
+    /// value past the strings the table holds is drawn as nothing.
+    /// </summary>
+    public static string IncomeWord(int income) => income switch
+    {
+        0 => "PU",
+        1 => "CY",
+        2 => "CO",
+        3 => "LO",
+        4 => "LM",
+        5 => "MI",
+        6 => "UM",
+        7 => "UP",
+        _ => string.Empty
+    };
 
     public static IReadOnlyList<string> ChaosBreakdown(
         MatchState state,

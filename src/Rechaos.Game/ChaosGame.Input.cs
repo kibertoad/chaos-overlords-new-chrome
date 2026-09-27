@@ -61,6 +61,24 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
+        if (_pressedAttackFace is not null)
+        {
+            CancelAttackFace();
+            _message = string.Empty;
+            return;
+        }
+        if (_pressedEventsButton is not null)
+        {
+            CancelEventsButton();
+            _message = string.Empty;
+            return;
+        }
+        if (_pressedCommandPanelButton is not null)
+        {
+            CancelCommandPanelButton();
+            _message = string.Empty;
+            return;
+        }
         if (_pressedHireRejectSlot is not null)
         {
             CancelHireReject();
@@ -105,7 +123,8 @@ public sealed partial class ChaosGame
                 CloseComlink();
                 break;
             case ClientScreen.Commands:
-                BackFromCommands();
+                // SCR-ATTACK-001 lists no right-button input, so the Attack picker stays open.
+                if (!IsAttackPickerOpen()) BackFromCommands();
                 break;
             case ClientScreen.Hire:
                 _screens.Show(_managementReturnScreen);
@@ -132,9 +151,7 @@ public sealed partial class ChaosGame
             case ClientScreen.Ranking:
                 _screens.Show(_managementReturnScreen);
                 break;
-            case ClientScreen.CombatSummary:
-                CloseCombatResults();
-                break;
+            // Combat Results takes no right-button input (SCR-COMBAT-001).
             case ClientScreen.Items:
                 _screens.Show(ClientScreen.City);
                 break;

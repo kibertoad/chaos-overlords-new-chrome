@@ -35,7 +35,40 @@ public static class BulkGangCommands
 
     private static readonly IReadOnlySet<GangAction> Allowed = Actions.ToHashSet();
 
+    /// <summary>
+    /// RULE-TURN-005, SCR-UI-004: the group order strip's one-off menu, in the original's order.
+    /// </summary>
+    public static readonly IReadOnlyList<GangAction> GroupOneOffActions =
+    [
+        GangAction.Attack, GangAction.Bribe, GangAction.Chaos, GangAction.Control,
+        GangAction.Heal, GangAction.Hide, GangAction.Influence, GangAction.Move,
+        GangAction.Snitch, GangAction.None, GangAction.Terminate
+    ];
+
+    /// <summary>
+    /// RULE-TURN-005, SCR-UI-004: the group order strip's recurring menu, which leaves Research
+    /// out where a gang's own recurring menu offers it.
+    /// </summary>
+    public static readonly IReadOnlyList<GangAction> GroupRecurringActions =
+    [
+        GangAction.Chaos, GangAction.Control, GangAction.Heal, GangAction.Hide,
+        GangAction.Influence, GangAction.None
+    ];
+
+    private static readonly IReadOnlySet<GangAction> GroupAllowed = GroupOneOffActions
+        .Where(action => action != GangAction.None)
+        .ToHashSet();
+
     public static bool Allows(GangAction action) => Allowed.Contains(action);
+
+    /// <summary>Whether a ctrl-picked selection, or a group order when <paramref name="group"/>
+    /// is set, may be given this order.</summary>
+    public static bool Allows(GangAction action, bool group) =>
+        group ? GroupAllowed.Contains(action) : Allowed.Contains(action);
+
+    /// <summary>The group order strip's menu for a recurring or a one-off order.</summary>
+    public static IReadOnlyList<GangAction> GroupActionsFor(bool recurring) =>
+        recurring ? GroupRecurringActions : GroupOneOffActions;
 
     /// <summary>The allowlisted orders a recurring or a one-off bulk command may choose from.</summary>
     public static IReadOnlyList<GangAction> ActionsFor(bool recurring) => recurring
@@ -50,7 +83,8 @@ public static class BulkGangCommands
         MatchState state,
         PlayerId player,
         IReadOnlyList<GangId> gangs,
-        bool recurring)
+        bool recurring,
+        bool group = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gangs);
@@ -59,7 +93,7 @@ public static class BulkGangCommands
         foreach (var gang in gangs)
         foreach (var command in CommandOptionCatalog.LegalCommands(state, player, gang))
         {
-            if (!Allows(command.Action)) continue;
+            if (!Allows(command.Action, group)) continue;
             if (recurring && !CommandRules.CanRepeat(command.Action)) continue;
             if (listed.Add((command.Action, command.Target.Kind, command.Target.Id)))
                 options.Add(command with { Repeat = recurring });
@@ -72,11 +106,12 @@ public static class BulkGangCommands
         MatchState state,
         PlayerId player,
         IReadOnlyList<GangId> gangs,
-        BulkCommandIntent intent)
+        BulkCommandIntent intent,
+        bool group = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gangs);
-        if (!Allows(intent.Action))
+        if (!Allows(intent.Action, group))
             throw new ArgumentOutOfRangeException(nameof(intent), "A selection cannot be given this order.");
         var room = intent.Action == GangAction.Move
             ? RemainingRoom(state, player, intent.Target.Id)

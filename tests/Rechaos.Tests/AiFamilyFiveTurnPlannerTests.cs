@@ -59,10 +59,11 @@ public sealed class AiFamilyFiveTurnPlannerTests
         match.Sectors[16].Owner = player;
         match.Sectors[18].Owner = player;
         match.Players[0].AddGang(
-            new MatchGangState(new GangId(11), player, 4, 18, 10));
+            new MatchGangState(new GangId(11), player, 4, 18, 10,
+                statistics: EffectiveStatistics.From(data.Gang(4).Stats)));
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 5);
-        match.AiPlanning.SetFamily(player, 1, 5);
+        match.AiPlanning.SeedFamily(player, 0, 5);
+        match.AiPlanning.SeedFamily(player, 1, 5);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Snitch);
         match.AiPlanning.SetPlannedAction(
             player, 1, GangAction.Influence, new AiActionTarget(0, 0));
@@ -84,7 +85,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
         var match = CreateMatch(data, ownsSource: true);
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 5);
+        match.AiPlanning.SeedFamily(player, 0, 5);
         match.AiPlanning.SetPlannedAction(
             player, 0, GangAction.Influence, new AiActionTarget(0, 0));
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
@@ -118,7 +119,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
     }
 
     [Theory]
-    [InlineData(ScenarioId.Siege, 11)]
+    [InlineData(ScenarioId.Eliminate, 11)]
     [InlineData(ScenarioId.Acceptance, 2)]
     public void ThirdConsecutiveMoveChangesToScenarioSpecificFamily(
         ScenarioId scenario,
@@ -129,7 +130,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
             ownedSupportSector: 18, scenario: scenario);
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 5);
+        match.AiPlanning.SeedFamily(player, 0, 5);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Move);
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Move);
@@ -166,7 +167,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
         var player = new PlayerId(0);
         AdvanceCoordinatorToTurn(match.Coordinator, 24, match.Players.Count);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 5);
+        match.AiPlanning.SeedFamily(player, 0, 5);
         match.Coordinator.FinishUpkeep();
 
         AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
@@ -175,6 +176,8 @@ public sealed class AiFamilyFiveTurnPlannerTests
         Assert.Equal(GangAction.Terminate, command.Action);
         Assert.Equal(GangAction.Terminate,
             match.AiPlanning.PlannedAction(player, 0));
+        // RULE-AI-001: the Greed Terminate flags the record for a family at the next dispatch.
+        Assert.True(match.AiPlanning.NeedsFamily(player, 0));
     }
 
     private static void BeginFamilyFiveTurn(MatchState match, PlayerId player)
@@ -189,7 +192,7 @@ public sealed class AiFamilyFiveTurnPlannerTests
         GangAction action)
     {
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 5);
+        match.AiPlanning.SeedFamily(player, 0, 5);
         match.AiPlanning.SetPlannedAction(player, 0, action);
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
     }

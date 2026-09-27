@@ -28,8 +28,19 @@ public sealed partial class MatchState
         // or clears Repeat, so a gang the planner leaves idle would otherwise keep running the
         // departed player's Heal or Influence for the rest of the match.
         foreach (var gang in player.Gangs.Where(gang => Commands.TryGet(gang.Id, out _)).ToArray())
+        {
             CancelQueuedCommand(gang);
+            // RULE-HIDE-001: a gang hides only while its order is Hide, and cancelling the order
+            // ends the hiding at once, as the public Cancel does. Without this a departed player's
+            // recurring Hide stayed in force for any gang the planner leaves idle.
+            gang.Hidden = false;
+        }
 
+        // RULE-AI-027 (FND-AI-043): the computer taking over a network seat turns every gang of
+        // it into a raider for the rest of the match. The original then runs the seat's planning
+        // pass at once; here the transfer happens at a clean Command boundary, so the pass is the
+        // one that turn's planning runs.
+        AiPlanning.EnterRaiderMode(playerId, player.Gangs);
         SetController(playerId, PlayerController.Computer);
         return true;
     }
