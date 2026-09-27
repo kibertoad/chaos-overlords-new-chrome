@@ -803,7 +803,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         switch (_screens.Current)
         {
             case ClientScreen.Title:
-                RunTitleAction(TitleActionAt(point));
+                if (TitleActionAt(point) is { } titleAction) RunTitleAction(titleAction);
                 break;
             case ClientScreen.Options:
                 HandleOptionsClick(point);
@@ -917,7 +917,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void CycleGang(int delta)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_state is null || PlanningViewer is not { } playerId) return;
         var gangs = _state.FindPlayer(playerId)!.Gangs.Where(gang => gang.IsActive).ToArray();
         if (gangs.Length == 0) return;
         _selectedGangIndex = Mod(_selectedGangIndex + delta, gangs.Length);

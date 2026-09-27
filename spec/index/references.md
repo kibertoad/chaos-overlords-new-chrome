@@ -151,6 +151,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-COMBAT-012](../findings/FND-COMBAT-012.md) | builds, locations |
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | builds, locations |
 | [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | builds, locations |
+| [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | builds, locations |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | builds, locations |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | builds, locations |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | builds, locations |
@@ -376,6 +377,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-036](../findings/FND-UI-036.md) | builds, locations |
 | [FND-UI-037](../findings/FND-UI-037.md) | builds, locations |
 | [FND-UI-038](../findings/FND-UI-038.md) | builds, locations |
+| [FND-UI-039](../findings/FND-UI-039.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -2275,6 +2277,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | body |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
@@ -2333,6 +2336,12 @@ None.
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 
 ## FND-COMBAT-014
+
+| Cited by | In |
+|---|---|
+| [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
+
+## FND-COMBAT-015
 
 | Cited by | In |
 |---|---|
@@ -2830,6 +2839,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-039](../findings/FND-UI-039.md) | body |
 | glossary: comlink_blink_step | glossary |
 | glossary: events_unviewed | glossary |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | evidence |
@@ -2961,6 +2971,7 @@ None.
 | [FND-UI-027](../findings/FND-UI-027.md) | body |
 | [FND-UI-028](../findings/FND-UI-028.md) | body |
 | [FND-UI-038](../findings/FND-UI-038.md) | body |
+| [FND-UI-039](../findings/FND-UI-039.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -3725,6 +3736,7 @@ None.
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | evidence |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | body, evidence |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-OBJECTIVE-005
 
@@ -4589,9 +4601,11 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-039](../findings/FND-UI-039.md) | body |
 | glossary: no_match_in_play | glossary |
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | body, evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body, evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-STATE-011
 
@@ -4892,6 +4906,7 @@ None.
 |---|---|
 | [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | body |
 | [FND-COMBAT-010](../findings/FND-COMBAT-010.md) | body |
+| [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | body |
 | [RULE-UI-005](../rules/RULE-UI-005.md) | evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 
@@ -5234,6 +5249,12 @@ None.
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
+
+## FND-UI-039
+
+| Cited by | In |
+|---|---|
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UPKEEP-001
 

@@ -780,7 +780,7 @@ Whether the original shows the count is not recorded.
 
 ## DEV-UI-019
 
-- Departs from: SCR-UI-009, SCR-UI-002, SCR-UI-001
+- Departs from: SCR-UI-009, SCR-UI-002, SCR-UI-001, RULE-UI-013
 - Reason: The rebuild has no menu bar. Its commands are reached elsewhere: saving, loading and
   quitting from the Escape menu (DEV-UI-011), the options from the Options screen, Help Topics
   with F1 (DEV-HELP-001), full screen with F11 (DEV-OPTIONS-003), and About, which shows the
@@ -788,11 +788,15 @@ Whether the original shows the count is not recorded.
   Options, Help and Quit stand in for the menu, drawn over the title art with the rebuild's name,
   its credit line and a box for notices left by the previous screen. Ctrl+H and Ctrl+J open the
   Online screen, where hosting and joining happen, and Enter and F9 also start a new game and
-  open a saved one.
+  open a saved one. A left press on the title outside the buttons does nothing, where the
+  original's title loop takes a press anywhere as New Game.
 - Setting: None
 - Default: mandatory
 - Justification: Every command of the menu bar stays reachable, and the drawing area is drawn
-  without the Windows frame above it (DEV-GFX-001), where a menu bar would have no place.
+  without the Windows frame above it (DEV-GFX-001), where a menu bar would have no place. The
+  title buttons are the only way to Online and Options before a match, and the clicks that skip
+  the intro movies land on the title; if a press anywhere started a new game, those clicks would
+  carry a player past the menu into setup. New Game stays one button or one key away.
 - Dropped: no
 
 ## DEV-UI-020
@@ -924,11 +928,12 @@ Whether the original shows the count is not recorded.
 
 ## DEV-NET-001
 
-- Departs from: SCR-NET-001, SCR-NET-002, SCR-NET-003, SCR-NET-004, SCR-NET-005, RULE-COMLINK-001, FMT-SAVE-001
+- Departs from: SCR-NET-001, SCR-NET-002, SCR-NET-003, SCR-NET-004, SCR-NET-005, RULE-COMLINK-001, FMT-SAVE-001, SCR-UI-003
 - Reason: The original's network play, its lobbies, its protocols and its WinSock, TAPI and serial
   paths are not reproduced. Online play uses a new coordination server, so no Comlink message is
   sent to or received from another computer in the original's form, and the network form of the
-  save file has no counterpart.
+  save file has no counterpart. An online match that ends opens the awards without the final view
+  of the city the original gives each player at its own computer.
 - Setting: None
 - Default: mandatory
 - Justification: The original's WinSock, TAPI and serial paths cannot reach anything a current
