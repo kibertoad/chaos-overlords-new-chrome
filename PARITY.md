@@ -418,7 +418,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-TIMER-001` | Planning time limit chosen for a match | supported | complete | None | None | implemented | None |
 | `RULE-TIMER-002` | A human planning turn ends when its time limit passes | supported | complete | None | None | implemented | On expiry the rebuild submits the finish-planning operation without the idle-gang warning. |
 | `RULE-TIMER-003` | The planning clock bar and its warning sounds | supported | complete | None | None | implemented | Checks run every sixth fixed update rather than every sixth presentation tick; the two rates were not compared. |
-| `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | partial | None | `DEV-TIMER-001` | supported | No wait depends on the machine (DEV-TIMER-001). Pressed key faces and the city, site and sector-cell flashes wait on 166 ms ticks. How much lighter the flash copy is, and the order of the city-cell copies, are not recorded, so the rebuild picks them. |
+| `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | complete | None | `DEV-TIMER-001` | implemented | No wait depends on the machine (DEV-TIMER-001). Pressed key faces and the city, site and sector-cell flashes wait on 166 ms ticks. Each flash shows the lit copy, the normal image, the lit copy and the normal image, lightens its area with white through bitmap 143 and its black edge, and draws the labels, frame and meter unlit over it (FND-UI-037). |
 
 ## UI
 
