@@ -111,7 +111,7 @@ public sealed partial class ChaosGame
     private void OpenSellEquipment(ClientScreen returnScreen, bool repeat = false)
     {
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
-            || _state.Coordinator.ActivePlayer is not { } playerId)
+            || _state is null || PlanningViewer is not { } playerId)
         {
             RejectInput("SELL REQUIRES THE COMMAND PHASE");
             return;
@@ -182,7 +182,7 @@ public sealed partial class ChaosGame
 
     private void QueueSelectedSale(bool pointerButton)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId
+        if (_state is null || PlanningViewer is not { } playerId
             || _sellGang is not { } gangId || _actions is null) return;
         var gang = _state.FindGang(gangId);
         if (gang is null) return;
