@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 16 |
+| `supported` | 14 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 197 |
+| `implemented` | 199 |
 | `validated` | 9 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 1 |
-| `partial` | 15 |
-| `complete` | 206 |
+| `partial` | 13 |
+| `complete` | 208 |
 
 ## DATA
 
@@ -452,8 +452,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-OPTIONS-001` | Reading the options from the registry at startup | supported | partial | None | `DEV-OPTIONS-001`, `DEV-OPTIONS-002`, `DEV-OPTIONS-003`, `DEV-RNG-001` | supported | The rebuild reads a per-user preferences file with the same defaults except Slide Panels, and makes no serial-number draws (deviation). |
-| `RULE-OPTIONS-002` | Saving the options to the registry, which always fails | supported | partial | None | `DEV-OPTIONS-001` | supported | The rebuild saves options reliably instead of failing (deviation). |
+| `RULE-OPTIONS-001` | Reading the options from the registry at startup | supported | complete | None | `DEV-OPTIONS-001`, `DEV-OPTIONS-002`, `DEV-OPTIONS-003`, `DEV-RNG-001` | implemented | A fresh start has the initialized values of the entry's table, apart from Slide Panels and Full screen, which DEV-OPTIONS-002 and DEV-OPTIONS-003 start off. The rebuild reads its own preferences file instead of the registry (DEV-OPTIONS-001), so BUG-OPTIONS-002's carried-over value cannot arise, and it makes no serial-number draws (DEV-RNG-001). Mentality is never stored, so it starts at Criminal at every start, as the original's does. |
+| `RULE-OPTIONS-002` | Saving the options to the registry, which always fails | supported | complete | None | `DEV-OPTIONS-001` | implemented | The rebuild writes its preferences file and the write succeeds (DEV-OPTIONS-001), where the original's write always fails. |
 | `RULE-OPTIONS-003` | Warn if Idle Gangs asks before Done ends a turn with a gang left idle | supported | complete | None | None | implemented | The warning is skipped when the planning time runs out. |
 | `SCR-OPTIONS-001` | Idle gang warning panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-010` | implemented | Adds Escape and right-click cancel beyond the original keys. |
 
