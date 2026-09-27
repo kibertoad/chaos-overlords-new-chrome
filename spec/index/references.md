@@ -110,6 +110,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AI-060](../findings/FND-AI-060.md) | builds, locations |
 | [FND-AI-061](../findings/FND-AI-061.md) | builds, locations |
 | [FND-AI-062](../findings/FND-AI-062.md) | builds, locations |
+| [FND-AI-063](../findings/FND-AI-063.md) | builds, locations |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | builds, locations |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | builds, locations |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | builds, locations |
@@ -379,6 +380,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | builds, locations |
+| [FND-VIDEO-003](../findings/FND-VIDEO-003.md) | builds, locations |
 | glossary: fn_0040F63D | glossary |
 | glossary: fn_00451F80 | glossary |
 | glossary: fn_0045519D | glossary |
@@ -632,6 +634,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | Cited by | In |
 |---|---|
 | [FND-AI-062](../findings/FND-AI-062.md) | body |
+| [FND-AI-063](../findings/FND-AI-063.md) | body |
 | [RULE-AI-031](../rules/RULE-AI-031.md) | body |
 
 ## BUG-AUDIO-001
@@ -1787,6 +1790,14 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-006](../bugs/BUG-AI-006.md) | evidence |
+| [FND-AI-063](../findings/FND-AI-063.md) | body |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | body, evidence |
+
+## FND-AI-063
+
+| Cited by | In |
+|---|---|
+| [BUG-AI-006](../bugs/BUG-AI-006.md) | body, evidence |
 | [RULE-AI-031](../rules/RULE-AI-031.md) | body, evidence |
 
 ## FND-ASSET-001
@@ -5271,6 +5282,7 @@ None.
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-UI-023](../findings/FND-UI-023.md) | body |
+| [FND-VIDEO-003](../findings/FND-VIDEO-003.md) | body |
 | glossary: intro_tick_pending | glossary |
 | glossary: IntroPlayed | glossary |
 | glossary: movie_frame_count | glossary |
@@ -5279,6 +5291,12 @@ None.
 | glossary: movie_set_volume | glossary |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | body, evidence |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | evidence |
+
+## FND-VIDEO-003
+
+| Cited by | In |
+|---|---|
+| [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | body, evidence |
 
 ## RULE-AI-001
 

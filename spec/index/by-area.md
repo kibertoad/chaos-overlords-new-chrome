@@ -108,6 +108,7 @@
 | [FMT-VIDEO-001](../formats/FMT-VIDEO-001.md) | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | The intro plays MVLOGOS then MVINTRO at (80,102) through smackw32, each ended by the left button at a 10 Hz tick, at the effects volume | recorded |
+| [FND-VIDEO-003](../findings/FND-VIDEO-003.md) | smackw32 sets a movie's volume as a linear waveOut volume, clamped to 0xFFFF, both channels equal at the centre pan | recorded |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | The intro plays the logos movie and then the intro movie, each ended by the left button | supported |
 
 ## HELP
@@ -573,6 +574,7 @@
 | [FND-AI-060](../findings/FND-AI-060.md) | The family-7 handler's Attack test reads the attitude toward the drawn gang's player | recorded |
 | [FND-AI-061](../findings/FND-AI-061.md) | The family-11 handler's miscellaneous Equip and Heal also need a previous action other than Attack, and most branches keep the current sector as focus | recorded |
 | [FND-AI-062](../findings/FND-AI-062.md) | Families 13 and 14 make up to five draws on a contested objective, can write nothing after a failed attack, and compare Support with an unset value | recorded |
+| [FND-AI-063](../findings/FND-AI-063.md) | The unset Support threshold of families 13 and 14 always holds the 0 the selector's prologue leaves at the same stack address | recorded |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |

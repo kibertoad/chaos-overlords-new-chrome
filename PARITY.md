@@ -67,7 +67,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `FMT-VIDEO-001` | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported | complete | tests/Rechaos.Tests/OriginalMovieFileTests.cs | `DEV-VIDEO-001` | validated | The rebuild decodes only the subset the two shipped movies use. |
-| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | partial | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | supported | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; with Intro only once off, its default, the movies play at every start; switching it on gives DEV-VIDEO-003. The movie sound follows the Sound Effects level; the level-to-volume curve was not compared. |
+| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | complete | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | implemented | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; with Intro only once off, its default, the movies play at every start; switching it on gives DEV-VIDEO-003. The movie sound plays at the Sound Effects level with the library's linear wave-device volume, level * 6400 / 65535 (FND-VIDEO-003). |
 
 ## HELP
 
@@ -284,7 +284,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-COMBAT-001` | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported | complete | None | None | implemented | None |
-| `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | partial | None | None | supported | Damage, deaths and order follow the rule, but the rebuild keeps combat events with combatant details instead of the per-gang combat records and per-sector result rows. |
+| `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | complete | None | None | implemented | Damage, deaths and order follow the rule. The combat records and the per-sector result rows are held as the combat-phase events, field by field as the FMT-STATE-003 and FMT-STATE-008 sections of [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md) give; byte 0 of player 0's first record, which the computer players read, is kept as state. The copy of the fight marks at `0x00498BC0` feeds only the network result sender (FND-STATE-007) and has no counterpart. |
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
 | `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | complete | None | `DEV-COMBAT-002` | implemented | Paging, keys, the opponent and police strips, grid cells with portraits, force_start and force_final tracks and the focus outlines follow FND-COMBAT-007 and FND-COMBAT-012. The pressed Exit face on Enter is not drawn as the panel closes at once, and the pressed arrows are not recorded. |
@@ -346,7 +346,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-028` | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-029` | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-030` | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
-| `RULE-AI-031` | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported | partial | None | `DEV-AI-002`, `DEV-AI-003` | supported | The Support scan starts from 0 behind a PLACEHOLDER: the original starts it from a leftover stack value (BUG-AI-006), which a run of the original has to measure. |
+| `RULE-AI-031` | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | The Support scan starts from 0, the value the original's unset threshold always holds (BUG-AI-006, FND-AI-063). |
 
 ## EVENT
 
@@ -372,7 +372,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-COMLINK-001` | Storing a Comlink message keeps each player's newest 16 messages | supported | partial | None | `DEV-NET-001` | supported | Delivery to a recipient on another computer (packet type 10) is not implemented; the rebuild tracks read state per message rather than through a shifted cursor. |
+| `RULE-COMLINK-001` | Storing a Comlink message keeps each player's newest 16 messages | supported | complete | None | `DEV-NET-001` | implemented | Delivery to a recipient on another computer (packet type 10) is replaced by the coordination server (DEV-NET-001), and Comlink cannot be opened online. The move of the recipient's View cursor when a message is dropped has no counterpart: the recipient is never the active player, whose inbox alone can have a cursor above 0, since RULE-COMLINK-007 sets it to 0 when a player's planning ends. |
 | `RULE-COMLINK-002` | Comlink Send opens only when another human player can receive a message | supported | complete | None | None | implemented | None |
 | `RULE-COMLINK-003` | Sending a Comlink message stores a copy for each selected recipient | supported | complete | None | None | implemented | None |
 | `RULE-COMLINK-004` | Comlink View opens at the oldest unread message and refuses an empty inbox | supported | complete | None | None | implemented | None |
