@@ -8,7 +8,7 @@ public sealed partial class ChaosGame
 {
     private void OpenCombatResults(ClientScreen returnScreen)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (_state is null || PlanningViewer is not { } viewer) return;
         var pages = CombatResultPages(_state, viewer);
         if (pages.Count == 0)
         {
@@ -35,7 +35,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ReplayAllCombatDetail()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (_state is null || PlanningViewer is not { } viewer) return;
         var clips = CombatAnimationRouting.ForPresentation(
             _state, VisibleCombatEvents(_state, viewer), viewer);
         if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
@@ -73,7 +73,7 @@ public sealed partial class ChaosGame
 
     private void ReplaySelectedCombatDetail()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (_state is null || PlanningViewer is not { } viewer) return;
         var pages = CombatResultPages(_state, viewer);
         if (pages.Count == 0)
         {
@@ -122,7 +122,7 @@ public sealed partial class ChaosGame
     /// </summary>
     private void MoveCombatSummary(int delta)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (_state is null || PlanningViewer is not { } viewer) return;
         var pages = CombatResultPages(_state, viewer);
         var count = pages.Count;
         if (count > 0)
@@ -331,7 +331,7 @@ public sealed partial class ChaosGame
     /// </summary>
     private void SelectCombatSummaryEntry(Point point)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (_state is null || PlanningViewer is not { } viewer) return;
         var pages = CombatResultPages(_state, viewer);
         if (pages.Count == 0) return;
         _combatSummaryCursor = Math.Clamp(_combatSummaryCursor, 0, pages.Count - 1);

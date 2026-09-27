@@ -89,9 +89,12 @@ public sealed partial class ChaosGame
         if (_combatSounds.TryGetValue(soundIndex, out var sound)) TryPlaySound(sound);
     }
 
-    /// <summary>The player whose view is drawn: the active one, or the first seat between turns.</summary>
-    private static PlayerId ViewingPlayer(MatchState state) =>
-        state.Coordinator.ActivePlayer ?? new PlayerId(0);
+    /// <summary>
+    /// The player whose view is drawn: the one in its end-of-match final view, else the active one,
+    /// or the first seat between turns.
+    /// </summary>
+    private PlayerId ViewingPlayer(MatchState state) =>
+        PlanningViewer ?? new PlayerId(0);
 
     private void PlayGeneralSound(int slot, bool ignoresEffectsEnabled = false)
     {
