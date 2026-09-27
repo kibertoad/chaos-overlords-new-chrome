@@ -64,27 +64,16 @@ public sealed class SectorOpponentGangsTests
     }
 
     [Fact]
-    public void PortraitHitCellCoversThePortraitAndItsGangBanner()
-    {
-        Assert.Equal(new Rectangle(16, 4, 32, 32), PlayerPortraitLayout.CityTop(0));
-        Assert.Equal(new Rectangle(17, 35, 30, 7), PlayerPortraitLayout.CityGangPresence(0));
-        Assert.Equal(new Rectangle(160, 4, 32, 38), PlayerPortraitLayout.CityPortraitHit(2));
-        // The banner stops on the Sector workspace's top edge rather than bleeding into it.
-        Assert.Equal(SectorDetailLayout.Workspace.Top, PlayerPortraitLayout.CityGangPresence(0).Bottom);
-        Assert.Throws<ArgumentOutOfRangeException>(
-            () => PlayerPortraitLayout.CityGangPresence(MatchLimits.PlayerCount));
-    }
-
-    [Fact]
     public void PortraitHitTestOnlyAnswersForOverlordsInTheMatch()
     {
         var state = CreateMatch();
 
         Assert.Equal(new PlayerId(0),
-            SectorOpponentGangs.PortraitAt(state, PlayerPortraitLayout.CityTop(0).Center));
-        Assert.Equal(new PlayerId(2),
-            SectorOpponentGangs.PortraitAt(state, PlayerPortraitLayout.CityGangPresence(2).Center));
-        Assert.Null(SectorOpponentGangs.PortraitAt(state, PlayerPortraitLayout.CityTop(3).Center));
+            SectorOpponentGangs.PortraitAt(state, OverlordBarLayout.Portrait(0).Center));
+        // FND-UI-015: the press area reaches six pixels left of the portrait and over the marker.
+        Assert.Equal(new PlayerId(2), SectorOpponentGangs.PortraitAt(state, new Point(152, 36)));
+        Assert.Equal(new PlayerId(2), SectorOpponentGangs.PortraitAt(state, new Point(213, 5)));
+        Assert.Null(SectorOpponentGangs.PortraitAt(state, OverlordBarLayout.Portrait(3).Center));
         Assert.Null(SectorOpponentGangs.PortraitAt(state, SectorDetailLayout.Workspace.Center));
     }
 

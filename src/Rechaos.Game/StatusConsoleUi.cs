@@ -30,6 +30,8 @@ public static class StatusConsoleLayout
 {
     public const int LabelLeft = 480;
     public const int ValueRight = 579;
+    /// <summary>RULE-UI-011: the sector code and the four sector values start at x 568.</summary>
+    public const int SectorValueLeft = 568;
     public const int ScenarioY = 3;
     public const int DateY = 15;
     public const int ScoreY = 24;
@@ -322,6 +324,36 @@ public static class StatusConsolePresentation
 
     public static int SectorCash(PlayerId? owner, PlayerId activePlayer, int cash) =>
         owner == activePlayer ? cash : 0;
+
+    /// <summary>RULE-UI-011: Income, Tolerance, Support and Cash of a sector as the console shows them.</summary>
+    public static (int Income, int Tolerance, int Support, int Cash) SectorValues(
+        MatchState state, PlayerId activePlayer, int sectorId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var sector = state.Sectors[sectorId];
+        var owned = sector.Owner == activePlayer;
+        return (sector.Income, sector.Tolerance,
+            owned ? sector.Support : 0,
+            owned ? SectorIncomeResolver.SectorCash(state, sector) : 0);
+    }
+
+    /// <summary>
+    /// RULE-UI-011: the Income row is string resource <c>0x11 + income</c> cut to two characters.
+    /// Generation gives Income 3 to 7, strings 20 to 24; 0 to 2 reach strings 17 to 19, and a
+    /// value past the strings the table holds is drawn as nothing.
+    /// </summary>
+    public static string IncomeWord(int income) => income switch
+    {
+        0 => "PU",
+        1 => "CY",
+        2 => "CO",
+        3 => "LO",
+        4 => "LM",
+        5 => "MI",
+        6 => "UM",
+        7 => "UP",
+        _ => string.Empty
+    };
 
     public static IReadOnlyList<string> ChaosBreakdown(
         MatchState state,

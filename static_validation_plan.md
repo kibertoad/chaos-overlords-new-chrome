@@ -31,7 +31,7 @@ order of priority, unless a group says otherwise.
 ## Computer players
 
 Nothing is left to read statically. The starting threshold of the family-13
-and family-14 Support scan (BUG-AI-006) needs a run of the original.
+and family-14 Support scan (BUG-AI-006) is always 0 (FND-AI-063).
 
 ## Screens, options, planning timer and sound
 
