@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 6 |
+| `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 206 |
+| `implemented` | 207 |
 | `validated` | 10 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 6 |
-| `complete` | 216 |
+| `partial` | 5 |
+| `complete` | 217 |
 
 ## DATA
 
@@ -436,9 +436,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | complete | None | None | implemented | The cards list the viewed player's visible gangs and Gangs in Sector the active player's gangs, both in roster slot order, checked by SectorOpponentGangsTests and GangInformationRosterTests. |
 | `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | The sector code, the Income word of string resource `0x11 + income` and two-cell Tolerance, Support and Cash from x 568; Support and Cash are 0 unless the active player owns the sector. |
 | `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | None | implemented | The pylons are drawn into the prepared city map, so the nine-sector display of SCR-UI-004 shows them as well. |
-| `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | complete | None | `DEV-UI-015`, `DEV-UI-016` | implemented | The title loop starts a new game on a press outside the rebuild's buttons, and the options are read at start and saved at exit. The single-instance check, the command-line file and the image-set choice are deviations. |
+| `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | complete | None | `DEV-UI-015`, `DEV-UI-016`, `DEV-UI-019` | implemented | The options are read at start and saved at exit. The single-instance check, the command-line file and the image-set choice are deviations, and a press on the title outside the rebuild's buttons does nothing (DEV-UI-019). |
 | `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | complete | None | `DEV-GFX-001`, `DEV-UI-016`, `DEV-UI-017`, `DEV-UI-018` | implemented | Input is polled once per frame (DEV-UI-018), and the US shift table and upper-case letters are kept for setup names and Comlink text. |
-| `SCR-UI-001` | Title screen | supported | complete | None | `DEV-UI-012`, `DEV-UI-019`, `DEV-VIDEO-003` | implemented | The title art, the press anywhere that starts a new game, Ctrl+N and Ctrl+O, the title music and the returns to the screen follow the entry. The rebuild's buttons, credit lines and notice box stand in for the menu bar, and Ctrl+H and Ctrl+J open the Online screen (DEV-UI-019); the version and Report Bug are DEV-UI-012, the Intro button DEV-VIDEO-003. |
+| `SCR-UI-001` | Title screen | supported | complete | None | `DEV-UI-012`, `DEV-UI-019`, `DEV-VIDEO-003` | implemented | The title art, Ctrl+N and Ctrl+O, the title music and the returns to the screen follow the entry. The rebuild's buttons, credit lines and notice box stand in for the menu bar, only the buttons take a press, and Ctrl+H and Ctrl+J open the Online screen (DEV-UI-019); the version and Report Bug are DEV-UI-012, the Intro button DEV-VIDEO-003. |
 | `SCR-UI-002` | Credits screen | supported | complete | None | `DEV-UI-019` | implemented | Shift+F1 stands in for Help, About (DEV-UI-019); the credits image covers the screen until any key or click. Whether the music keeps playing is not recorded, and the rebuild keeps it playing. |
 | `SCR-UI-003` | City screen and main console | supported | complete | None | `DEV-NET-001`, `DEV-UI-005`, `DEV-UI-006`, `DEV-UI-020`, `DEV-UI-023` | implemented | The map at `(2,42)` with its press grid, grid tabs, animated selection frame and markers, the Overlord bar with empty seats, the 100 ms marker and the planning lights, the console routes, pressed art, Events, Comlink and Done lights, sector values, planning clock bar and Hire dock follow the entry; the arrows move the selection, and Enter or Execute opens SCR-UI-004. A local match that ends gives each local human still in play the final view (FND-OBJECTIVE-004, FND-UI-039): the city as that player sees it, with the last turn's reports, the Done light blinking and no clock or idle-gang warning, and Done moves on to the next player and then the awards. Orders given there are refused, as the match can no longer take one; in the original they are never resolved. An online match opens the awards without it (DEV-NET-001). Tooltips (DEV-UI-005), the projected cash (DEV-UI-006), the extra single keys (DEV-UI-020) and the message and key lines (DEV-UI-023) are the rebuild's. |
 | `SCR-UI-004` | Detailed sector screen | supported | complete | None | `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-014`, `DEV-UI-021`, `DEV-UI-022`, `DEV-UI-023` | implemented | The darkened enlarged cell, the owner and back strips, the nine-sector display cropped from the prepared map with its frame and labels, the framed sites and their meter for the owner, the cards, the group order strip and the Overlord bar that follows the viewed player follow the entry, with its press formulas for the display, sites, cards and portraits and the back control released inside. The order menus are the rebuild's panel (DEV-UI-021), and dragging a card's portrait onto the display gives a Move or a recurring Control (DEV-UI-022). Tooltips, target highlights, ctrl-picking, the police countdown and the message line are the other listed deviations. |
