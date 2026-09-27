@@ -68,9 +68,9 @@ public sealed partial class ChaosGame
     /// SCR-UI-004, FND-UI-018: the group order strip is drawn when the cards show at least two
     /// gangs of the player whose turn it is, during planning.
     /// </summary>
-    private static bool ShowsGroupOrderStrip(MatchState state, PlayerId viewer, IReadOnlyList<MatchGangState> cards) =>
+    private bool ShowsGroupOrderStrip(MatchState state, PlayerId viewer, IReadOnlyList<MatchGangState> cards) =>
         state.Coordinator.Phase == TurnPhase.Command
-        && state.Coordinator.ActivePlayer == viewer
+        && PlanningViewer == viewer
         && cards.Count >= 2
         && cards[0].Owner == viewer;
 
@@ -465,7 +465,7 @@ public sealed partial class ChaosGame
         var gangId = _draggedGangId;
         ForgetGangDrag();
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang || _actions is null) return;
-        var playerId = _state.Coordinator.ActivePlayer ?? gang.Owner;
+        var playerId = PlanningViewer ?? gang.Owner;
         var visibleGangs = SectorGangView.Visible(_state, playerId, _cursor).ToArray();
         if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, point) is { } enemyId)
         {

@@ -82,11 +82,13 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// SCR-UI-003: the city's keys and sector double-click are enabled during planning only. A
-    /// refused input says why, as the rebuild's message line does for the other refused inputs.
+    /// SCR-UI-003: the city's keys and sector double-click are enabled during planning only, and
+    /// the final view is a planning visit (FND-OBJECTIVE-004). A refused input says why, as the
+    /// rebuild's message line does for the other refused inputs.
     /// </summary>
     private bool CityPlanningInputOpen()
     {
+        if (_finalViewPlayer is not null) return true;
         if (_actions is null)
         {
             RejectInput(OnlinePlanningClosed);
@@ -192,7 +194,7 @@ public sealed partial class ChaosGame
     {
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
+        var playerIndex = PlanningViewer?.Value ?? 0;
         var player = state.Players[playerIndex];
         // FND-UI-017, FND-UI-018: the marker follows the viewed player, which on the sector view is
         // the player whose cards are shown, and there a portrait dims when the active player sees
@@ -205,7 +207,7 @@ public sealed partial class ChaosGame
         else
         {
             _overlordMarkerClock.OtherView();
-            DrawOverlordBar(batch, pixel, state, state.Coordinator.ActivePlayer, seatsSeen: null);
+            DrawOverlordBar(batch, pixel, state, PlanningViewer, seatsSeen: null);
         }
         if (sectorView is null)
         {
@@ -266,14 +268,17 @@ public sealed partial class ChaosGame
         DrawSectorNumber(font, batch, sectorValues.Cash, StatusConsoleLayout.SectorValueY(4), Color.Lime);
         font.Draw(batch, CityStatusMessage.Clip(_message),
             new Vector2(438, 354), Color.Gold, 1);
-        if (state.Coordinator.ActivePlayer is { } reportPlayer
+        if (_state is not null && PlanningViewer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
             && PresentationClock.BlinkLit(_inputTime))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
-        if (state.Coordinator.ActivePlayer is { } activePlayer
+        if (_state is not null && PlanningViewer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
             && PresentationClock.BlinkLit(_inputTime))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
+        // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
+        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(_inputTime))
+            DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
         {
@@ -406,7 +411,7 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawCitySectorCell(
         SpriteBatch batch, Texture2D pixel, MatchState state, int sectorId, Point topLeft) =>
-        DrawPreparedCityMap(batch, pixel, state, state.Players[state.Coordinator.ActivePlayer?.Value ?? 0].Id,
+        DrawPreparedCityMap(batch, pixel, state, state.Players[PlanningViewer?.Value ?? 0].Id,
             CityMapLayout.Source(sectorId), topLeft);
 
     private Rectangle GangStatusSource(

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-005, FND-COMBAT-009, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-COMBAT-014, FND-DATA-003, FND-EXE-004, FND-GFX-005, FND-GFX-006, FND-UI-001, FND-UI-019, FND-UI-010]
+evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-005, FND-COMBAT-009, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-COMBAT-014, FND-COMBAT-015, FND-DATA-003, FND-EXE-004, FND-GFX-005, FND-GFX-006, FND-UI-001, FND-UI-019, FND-UI-010]
 conflicting: []
 split_with: []
 related: [RULE-COMBAT-004]
@@ -30,7 +30,7 @@ presentation is `fn_0042E040` and each clip is played by `fn_00430C23`
 | Owner name | The font of `fn_00413FD5` (FND-UI-019) | The owner's name | Text at `(257, 138)` and `(380, 138)` | During each clip, for a gang | FND-COMBAT-014 |
 | Police header | `DATA/PX16/Px00300` area `(208, 0, 116, 36)` | None | `(326, 135, 116, 36)` | During each clip with the police on the right | FND-COMBAT-014 |
 | Gang portraits | 64-by-64 cell of `DATA/PX16/PX03000` (surface 3), column `n % 10` and row `n / 10`, where `n` is the definition's portrait number; for the police, the area `(0, 0, 64, 64)` of `DATA/PX16/Px00300`, resource 300, loaded into surface 7 | The viewer's gang on the left, the other gang or the police on the right | `(254, 172, 64, 64)` and `(327, 172, 64, 64)` | During each clip | FND-UI-001, FND-UI-010, FND-COMBAT-010, FND-COMBAT-013, FND-COMBAT-014 |
-| Force tracks | `DATA/PX16/PX00129`: the 60-by-3 red track `(354,3)`, then `6 * value` pixels of the green strip `(354,0)` | Two tracks per gang from its copy of the first eight bytes of its `combat_records` entry: the upper shows `force_start`, the lower `force_shown` as RULE-COMBAT-004 lowers it. Each track has a light, a full and a dark row | Left gang `(256, 240, 60, 3)` and `(256, 247, 60, 3)`; right gang `(329, 240, 60, 3)` and `(329, 247, 60, 3)`, from buffer x 152 and 225 and buffer rows 260 and 267 | During each clip | FND-UI-001, FND-UI-010, FND-COMBAT-009, FND-COMBAT-010 |
+| Force tracks | `DATA/PX16/PX00129`: the 60-by-3 red track `(354,3)`, then `6 * value` pixels of the green strip `(354,0)` | Two tracks per gang from its copy of the first eight bytes of its `combat_records` entry: the upper shows `force_start`, the lower `force_shown` as RULE-COMBAT-004 lowers it. Each track has a light, a full and a dark row | Left gang `(256, 240, 60, 3)` and `(256, 247, 60, 3)`; right gang `(329, 240, 60, 3)` and `(329, 247, 60, 3)`, from buffer x 152 and 225 and buffer rows 260 and 267 | During each clip | FND-UI-001, FND-UI-010, FND-COMBAT-009, FND-COMBAT-010, FND-COMBAT-015 |
 | Equipment, left | The item's `PX04xxx` rotation strip, one 48 by 48 frame chosen by the item record's last word; black for an empty slot | The left gang's weapon, armor and miscellaneous item | `(204, 172, 48, 48)`, `(204, 221, 48, 48)`, `(204, 270, 48, 48)` | During each clip | FND-AUDIO-013, FND-COMBAT-014 |
 | Equipment, right | As on the left; for the police, the areas `(64, 0)`, `(112, 0)` and `(160, 0)` of `DATA/PX16/Px00300`, 48 by 48 | The right gang's items, or the police's three pictures | `(393, 172, 48, 48)`, `(393, 221, 48, 48)`, `(393, 270, 48, 48)` | During each clip | FND-AUDIO-013, FND-COMBAT-014 |
 | Attack strip | See below | Eight 64 by 64 frames of the attacker | `(254, 254, 64, 64)` in a clip the viewer's gang makes, `(327, 254, 64, 64)` in a mirrored clip | Ticks 3 to 10 of each clip | FND-AUDIO-013, FND-COMBAT-005, FND-UI-001 |
@@ -111,8 +111,10 @@ None known.
 ## Open questions
 
 - The tracks are drawn at panel-local y 116 and 123 (FND-COMBAT-009,
-  FND-COMBAT-010); the capture of FND-UI-010 measured y 114 and 121. Which is right depends on the
-  capture's unrecorded settings.
+  FND-COMBAT-010), 68 rows below the top of the gang portrait, which the
+  capture of FND-UI-010 places at y 48 as the code does (FND-COMBAT-015). The
+  same capture measured the tracks at y 114 and 121; a capture with recorded
+  settings would show whether its track rows were misread.
 - The sector code's font.
 - A freeze of the original during this presentation has been reported but not
   reproduced (BUG-COMBAT-001).

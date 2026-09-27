@@ -114,7 +114,7 @@ public sealed partial class ChaosGame
     {
         if (_state is null || HireAccess == HireDockAccess.Closed
             || _state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)
-            || _state.Coordinator.ActivePlayer is not { } playerId)
+            || _state is null || PlanningViewer is not { } playerId)
         {
             RejectInput("HIRING REQUIRES A PLANNING TURN");
             return;
@@ -133,7 +133,7 @@ public sealed partial class ChaosGame
 
     private void PrepareCurrentHireOffers()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
+        if (_state is null || PlanningViewer is not { } playerId || _actions is null) return;
         var player = _state.FindPlayer(playerId)!;
         if (player.HireOfferSlots.Any(slot => !slot.GangDefinitionId.HasValue)
             && player.PendingHires.Count == 0
@@ -147,7 +147,7 @@ public sealed partial class ChaosGame
 
     private void BeginHireDrag(int slot, Point point)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId
+        if (_state is null || PlanningViewer is not { } playerId
             || HireAccess == HireDockAccess.Closed
             || _state.Coordinator.Phase != TurnPhase.Command)
         {
@@ -188,7 +188,7 @@ public sealed partial class ChaosGame
         _draggedHireSlot = null;
         _hireDragStarted = false;
         if (definitionId is null || slot is null
-            || _state?.Coordinator.ActivePlayer is not { } playerId)
+            || _state is null || PlanningViewer is not { } playerId)
             return;
         if (_actions is null)
         {
@@ -276,7 +276,7 @@ public sealed partial class ChaosGame
 
     private void MoveHireCursor(int delta)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_state is null || PlanningViewer is not { } playerId) return;
         var offers = _state.FindPlayer(playerId)!.HireOfferSlots;
         _hireCursor = HireDockLayout.MoveCursor(offers, _hireCursor, delta);
     }
@@ -304,7 +304,7 @@ public sealed partial class ChaosGame
 
     private void SnubSelectedHireOffer()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_state is null || PlanningViewer is not { } playerId) return;
         if (_actions is null)
         {
             RejectInput(OnlinePlanningClosed);
@@ -321,7 +321,7 @@ public sealed partial class ChaosGame
 
     private void SnubHireDockOffer(int slot, bool pointerButton = false)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_state is null || PlanningViewer is not { } playerId) return;
         if (_actions is null)
         {
             ReportButtonResult(false, OnlinePlanningClosed, pointerButton);

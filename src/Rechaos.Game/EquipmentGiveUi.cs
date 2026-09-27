@@ -186,7 +186,7 @@ public sealed partial class ChaosGame
     private void OpenGiveEquipment(ClientScreen returnScreen, bool repeat = false)
     {
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
-            || _state.Coordinator.ActivePlayer is not { } playerId)
+            || _state is null || PlanningViewer is not { } playerId)
         {
             RejectInput("GIVE REQUIRES THE COMMAND PHASE");
             return;
@@ -243,7 +243,7 @@ public sealed partial class ChaosGame
         if (_state is null || slot < 0 || slot >= _giveRecipients.Count
             || _giveGang is not { } gangId || _state.FindGang(gangId) is not { } giver
             || _state.FindGang(_giveRecipients[slot]) is not { } recipient
-            || _state.Coordinator.ActivePlayer is not { } playerId) return false;
+            || _state is null || PlanningViewer is not { } playerId) return false;
         var selected = SelectedGiveItems(giver);
         var required = EquipmentGiveSelection.RequiredTechLevel(
             selected.Select(item => _state.Definitions.Items[item]));
@@ -365,7 +365,7 @@ public sealed partial class ChaosGame
                 : "NO EQUIPMENT SELECTED");
             return;
         }
-        if (_actions is null || _state?.Coordinator.ActivePlayer is not { } playerId
+        if (_actions is null || _state is null || PlanningViewer is not { } playerId
             || _giveGang is not { } gangId || _state.FindGang(gangId) is not { } gang) return;
         var command = EquipmentGiveSelection.CreateCommand(
             playerId, gangId, _giveRecipients[_giveCursor], SelectedGiveItems(gang), _giveRepeats);
