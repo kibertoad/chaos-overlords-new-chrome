@@ -801,30 +801,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         switch (_screens.Current)
         {
             case ClientScreen.Title:
-                switch (TitleActionAt(point))
-                {
-                    case TitleAction.LoadGame:
-                        OpenSaveBrowser(saving: false, fromTitle: true);
-                        break;
-                    case TitleAction.Online:
-                        OpenOnline();
-                        break;
-                    case TitleAction.Options:
-                        OpenOptions();
-                        break;
-                    case TitleAction.Help:
-                        OpenHelp();
-                        break;
-                    case TitleAction.Intro:
-                        ReplayIntroMovies();
-                        break;
-                    case TitleAction.Quit:
-                        Exit();
-                        break;
-                    default:
-                        OpenNewGameSetup();
-                        break;
-                }
+                RunTitleAction(TitleActionAt(point));
                 break;
             case ClientScreen.Options:
                 HandleOptionsClick(point);
