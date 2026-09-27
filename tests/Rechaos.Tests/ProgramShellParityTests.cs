@@ -98,10 +98,11 @@ public sealed class ProgramShellParityTests
     [InlineData(639, 459)]
     [InlineData(320, 100)]
     [InlineData(500, 300)]
-    public void ALeftPressOutsideTheTitleButtonsStartsANewGame(int x, int y)
+    public void ALeftPressOutsideTheTitleButtonsDoesNothing(int x, int y)
     {
-        // RULE-UI-013, SCR-UI-001: a left press anywhere on the title acts as New Game.
-        Assert.Equal(ChaosGame.TitleAction.NewGame, ChaosGame.TitleActionAt(new Point(x, y)));
+        // RULE-UI-013, SCR-UI-001: the original's press anywhere acts as New Game. DEV-UI-019: the
+        // rebuild's title is its menu, and only its buttons act.
+        Assert.Null(ChaosGame.TitleActionAt(new Point(x, y)));
     }
 
     [Theory]
