@@ -43,6 +43,11 @@ public sealed class CombatResultProjectionTests
         recorder.FinishCommand(new PlayerId(0));
         Assert.Equal(new PlayerId(1), match.Coordinator.ActivePlayer);
         Assert.Equal(new PlayerId(1), CombatPresentationProgress.Viewer(match));
+
+        // SCR-UI-003: once the match has ended, the human in its final view is the viewer, and a
+        // computer's seat never is.
+        Assert.Equal(new PlayerId(1), CombatPresentationProgress.Viewer(match, new PlayerId(1)));
+        Assert.Null(CombatPresentationProgress.Viewer(match, new PlayerId(0)));
     }
 
     [Theory]
