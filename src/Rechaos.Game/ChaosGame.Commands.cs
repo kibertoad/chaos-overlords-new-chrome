@@ -124,7 +124,12 @@ public sealed partial class ChaosGame
                 }
             }
             else if (_commandTargetOptions.Count > 0)
-                _commandTargetCursor = Mod(_commandTargetCursor + delta, _commandTargetOptions.Count);
+            {
+                _commandTargetCursor = _commandTargetCursor < 0
+                    ? delta > 0 ? 0 : _commandTargetOptions.Count - 1
+                    : Mod(_commandTargetCursor + delta, _commandTargetOptions.Count);
+                if (IsInfluenceCommandPicker()) _commandPanelFace = CommandPanelFaces.AfterChange(true);
+            }
         }
         else
         {
@@ -148,15 +153,9 @@ public sealed partial class ChaosGame
             }
             if (IsInfluenceCommandPicker())
             {
-                if (InfluenceCommandLayout.Cancel.Contains(point))
+                if (CommandPanelFaces.ButtonAt(point) is { } button)
                 {
-                    AcceptInput();
-                    BackFromCommands();
-                    return;
-                }
-                if (InfluenceCommandLayout.Ok.Contains(point))
-                {
-                    ActivateCommandSelection();
+                    BeginCommandPanelButton(button);
                     return;
                 }
                 for (var slot = 0; slot < MatchLimits.SitesPerSector; slot++)
@@ -171,8 +170,15 @@ public sealed partial class ChaosGame
                     for (var candidateIndex = 0; candidateIndex < _commandTargetOptions.Count; candidateIndex++)
                     {
                         if (_commandTargetOptions[candidateIndex].Target.Id != targetId) continue;
+                        // FND-INFLUENCE-003: a double-click opens Site Information and leaves the
+                        // selection as it was; a single click selects the site and enables the face.
+                        if (openDetails)
+                        {
+                            OpenSiteDetails(actor.SectorId, slot, ClientScreen.Commands);
+                            return;
+                        }
                         _commandTargetCursor = candidateIndex;
-                        if (openDetails) OpenSiteDetails(actor.SectorId, slot, ClientScreen.Commands);
+                        _commandPanelFace = CommandPanelFaces.AfterChange(true);
                         return;
                     }
                     return;
@@ -219,7 +225,9 @@ public sealed partial class ChaosGame
                 return;
             }
             if (!CanConfirmCommandTarget())
-                RejectInput(IsMovementCommandPicker() ? "NO DESTINATION CHOSEN" : "NO ITEM CHOSEN");
+                RejectInput(IsMovementCommandPicker() ? "NO DESTINATION CHOSEN"
+                    : IsInfluenceCommandPicker() ? "NO SITE CHOSEN"
+                    : "NO ITEM CHOSEN");
             else
                 SubmitCommand(_commandTargetOptions[_commandTargetCursor], pointerButton);
             return;
@@ -260,6 +268,7 @@ public sealed partial class ChaosGame
             if (action == GangAction.Equip) OpenEquipmentPurchasePanel();
             else if (action == GangAction.Research) SelectEquipmentCategory(0);
             else if (action == GangAction.Move) OpenMovementPanel();
+            else if (action == GangAction.Influence) OpenInfluencePanel();
             if (action == GangAction.Attack) OpenAttackPicker();
             return;
         }
@@ -463,9 +472,28 @@ public sealed partial class ChaosGame
                 batch.Draw(_sitePortraits, destination,
                     OriginalSpriteLayout.SitePortrait(site.DefinitionId), Color.White);
             var targetId = actor.SectorId * MatchLimits.SitesPerSector + slot;
-            if (_commandTargetOptions[_commandTargetCursor].Target.Id == targetId)
+            if (_commandTargetCursor >= 0
+                && _commandTargetOptions[_commandTargetCursor].Target.Id == targetId)
                 DrawBorder(batch, pixel, destination, Color.White, 2);
         }
+        DrawCommandPanelFaces(batch);
+    }
+
+    /// <summary>
+    /// SCR-INFLUENCE-001: nothing is chosen and the panel's own confirm face shows, unless the
+    /// gang already has an Influence order, whose site is chosen with the face drawn enabled
+    /// (FND-INFLUENCE-002, FND-INFLUENCE-003).
+    /// </summary>
+    private void OpenInfluencePanel()
+    {
+        _commandTargetCursor = -1;
+        _commandPanelFace = CommandPanelFaceState.NotDrawn;
+        _influenceSiteClicks.Cancel();
+        if (_state?.FindGang(_commandTargetOptions[0].Gang)?.QueuedCommand?.Command is not
+            { Action: GangAction.Influence } queued) return;
+        _commandPanelFace = CommandPanelFaces.OnOpening(true);
+        _commandTargetCursor = Enumerable.Range(0, _commandTargetOptions.Count)
+            .FirstOrDefault(index => _commandTargetOptions[index].Target.Id == queued.Target.Id, -1);
     }
 
     private void DrawEquipmentCommandTargets(
