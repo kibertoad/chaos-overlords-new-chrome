@@ -804,7 +804,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         switch (_screens.Current)
         {
             case ClientScreen.Title:
-                RunTitleAction(TitleActionAt(point));
+                if (TitleActionAt(point) is { } titleAction) RunTitleAction(titleAction);
                 break;
             case ClientScreen.Options:
                 HandleOptionsClick(point);

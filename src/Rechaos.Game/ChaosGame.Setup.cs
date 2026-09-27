@@ -105,20 +105,23 @@ public sealed partial class ChaosGame
         Quit
     }
 
-    /// <summary>What a left press at <paramref name="point"/> on the title screen does.</summary>
+    /// <summary>What a left press at <paramref name="point"/> on the title screen does, or null
+    /// when it lands outside the buttons.</summary>
     /// <remarks>
     /// The original's title loop turns a left press anywhere into New Game (RULE-UI-013,
-    /// SCR-UI-001). The rebuild's own buttons keep their commands, and a press anywhere else still
-    /// starts a new game.
+    /// SCR-UI-001). The rebuild's title is its menu (DEV-UI-019), and a press outside the buttons
+    /// does nothing, so a click left over from skipping the intro cannot carry the player past
+    /// Online and Options into setup.
     /// </remarks>
-    internal static TitleAction TitleActionAt(Point point) =>
-        TitleLoadGame.Contains(point) ? TitleAction.LoadGame
+    internal static TitleAction? TitleActionAt(Point point) =>
+        TitleNewGame.Contains(point) ? TitleAction.NewGame
+        : TitleLoadGame.Contains(point) ? TitleAction.LoadGame
         : TitleOnline.Contains(point) ? TitleAction.Online
         : TitleOptions.Contains(point) ? TitleAction.Options
         : TitleHelp.Contains(point) ? TitleAction.Help
         : TitleIntro.Contains(point) ? TitleAction.Intro
         : TitleQuit.Contains(point) ? TitleAction.Quit
-        : TitleAction.NewGame;
+        : null;
 
     /// <summary>
     /// RULE-SETUP-002: the stored scenario and a one-year limit. RULE-SETUP-010: the roster of the
