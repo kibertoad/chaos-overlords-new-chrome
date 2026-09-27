@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 14 |
+| `supported` | 13 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 199 |
+| `implemented` | 200 |
 | `validated` | 9 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 1 |
-| `partial` | 13 |
-| `complete` | 208 |
+| `partial` | 12 |
+| `complete` | 209 |
 
 ## DATA
 
@@ -226,7 +226,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | Each rebuilt field keeps its low eight bits, as the original's INT8 fields do; no shipped combination reaches the wrap. |
 | `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | complete | None | None | implemented | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-26 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. |
 | `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | complete | None | `DEV-UI-010` | implemented | Opened from the order panels' portraits with the gang's values, the Force question marks and the recorded positions. The base values are blacked out through bitmap 143 from each area's corner (FND-GANG-011, FND-GFX-006). |
-| `SCR-GANG-002` | Gang information panel for a hired gang | supported | complete | None | `DEV-GANG-001`, `DEV-UI-013` | implemented | Opened for hired gangs and hire offers, with every recorded position, rotating items, base values 18 pixels to the left, and the close face acting on release. |
+| `SCR-GANG-002` | Gang information panel for a hired gang | supported | complete | None | `DEV-GANG-001` | implemented | Opened for hired gangs and hire offers, with every recorded position, rotating items, base values 18 pixels to the left, and the close face acting on release. |
 
 ## EQUIP
 
@@ -434,14 +434,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-008` | The presentation timer | supported | complete | None | `DEV-TIMER-001` | implemented | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). |
 | `RULE-UI-009` | The texts of the Game Information panel | supported | partial | None | `DEV-AI-003` | supported | Game Information appends the AI policy label after Mentality (deviation); the other fields follow the original. |
 | `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | complete | None | None | implemented | The cards list the viewed player's visible gangs and Gangs in Sector the active player's gangs, both in roster slot order, checked by SectorOpponentGangsTests and GangInformationRosterTests. |
-| `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | Income for all and Support and Cash for the owner are shown. |
-| `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | `DEV-UI-002` | implemented | The rebuild also draws the pylons on the detailed-sector minimap (deviation). |
+| `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | The sector code, the Income word of string resource `0x11 + income` and two-cell Tolerance, Support and Cash from x 568; Support and Cash are 0 unless the active player owns the sector. |
+| `RULE-UI-012` | Objective sectors marked on the city map | supported | complete | None | None | implemented | The pylons are drawn into the prepared city map, so the nine-sector display of SCR-UI-004 shows them as well. |
 | `RULE-UI-013` | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported | complete | None | `DEV-UI-015`, `DEV-UI-016` | implemented | The title loop starts a new game on a press outside the rebuild's buttons, and the options are read at start and saved at exit. The single-instance check, the command-line file and the image-set choice are deviations. |
 | `RULE-UI-014` | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported | complete | None | `DEV-GFX-001`, `DEV-UI-016`, `DEV-UI-017`, `DEV-UI-018` | implemented | Input is polled once per frame (DEV-UI-018), and the US shift table and upper-case letters are kept for setup names and Comlink text. |
 | `SCR-UI-001` | Title screen | supported | complete | None | `DEV-UI-012`, `DEV-UI-019`, `DEV-VIDEO-003` | implemented | The title art, the press anywhere that starts a new game, Ctrl+N and Ctrl+O, the title music and the returns to the screen follow the entry. The rebuild's buttons, credit lines and notice box stand in for the menu bar, and Ctrl+H and Ctrl+J open the Online screen (DEV-UI-019); the version and Report Bug are DEV-UI-012, the Intro button DEV-VIDEO-003. |
 | `SCR-UI-002` | Credits screen | supported | complete | None | `DEV-UI-019` | implemented | Shift+F1 stands in for Help, About (DEV-UI-019); the credits image covers the screen until any key or click. Whether the music keeps playing is not recorded, and the rebuild keeps it playing. |
-| `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006` | supported | Console routes and pressed art match; tooltips and projected cashflow are added. |
-| `SCR-UI-004` | Detailed sector screen | supported | partial | None | `DEV-UI-002`, `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-013`, `DEV-UI-014` | supported | Draws the group order strip. Adds tooltips, target highlights, ctrl-picking and minimap pylons. |
+| `SCR-UI-003` | City screen and main console | supported | partial | None | `DEV-UI-005`, `DEV-UI-006`, `DEV-UI-020`, `DEV-UI-023` | supported | The map at `(2,42)` with its press grid, grid tabs, animated selection frame and markers, the Overlord bar with empty seats, the 100 ms marker and the planning lights, the console routes, pressed art, Events and Comlink lights, sector values, planning clock bar and Hire dock follow the entry; the arrows move the selection, and Enter or Execute opens SCR-UI-004. Missing: the Done light, which belongs to the final view of the city that every surviving local human gets before the awards (FND-OBJECTIVE-004), and the rebuild does not run that view. Tooltips (DEV-UI-005), the projected cash (DEV-UI-006), the extra single keys (DEV-UI-020) and the message and key lines (DEV-UI-023) are the rebuild's. |
+| `SCR-UI-004` | Detailed sector screen | supported | complete | None | `DEV-UI-003`, `DEV-UI-005`, `DEV-UI-007`, `DEV-UI-008`, `DEV-UI-014`, `DEV-UI-021`, `DEV-UI-022`, `DEV-UI-023` | implemented | The darkened enlarged cell, the owner and back strips, the nine-sector display cropped from the prepared map with its frame and labels, the framed sites and their meter for the owner, the cards, the group order strip and the Overlord bar that follows the viewed player follow the entry, with its press formulas for the display, sites, cards and portraits and the back control released inside. The order menus are the rebuild's panel (DEV-UI-021), and dragging a card's portrait onto the display gives a Move or a recurring Control (DEV-UI-022). Tooltips, target highlights, ctrl-picking, the police countdown and the message line are the other listed deviations. |
 | `SCR-UI-005` | Gangs in Sector panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | The sector cell, code, portraits and the sixteen rows follow the original in roster order, with Upkeep negated and Base Statistics ignored. A seventh gang is not drawn where the original draws it past the panel's right edge. |
 | `SCR-UI-006` | Item Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-009`, `DEV-UI-010` | implemented | Item Information uses PX05001 with the 15-frame rotation; it can also be opened from Gang Information. |
 | `SCR-UI-007` | Site Information panel | supported | complete | None | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | implemented | None |
