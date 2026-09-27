@@ -219,7 +219,7 @@
 
 ## findings
 
-332 entries.
+333 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -326,6 +326,7 @@
 | [FND-COMBAT-012](../findings/FND-COMBAT-012.md) | Combat Results pages with the left and right arrow keys, closes on Enter or plus but not Escape, and the force selector makes one of the viewer's gangs the focus whose target and attackers are framed | recorded |
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | Surfaces 3 and 5 hold PX03000 and PX02000 with PX04999 whenever a combat panel is open, the outline colours are red, green and blue in that order, and the Detailed Combat fight list has room for 36 elements | recorded |
 | [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | Detailed Combat draws each gang's header as a colour strip, an Overlord portrait and a name, takes the police header, portrait and items from resource 300, and darkens the last strip frames from tick 12 | recorded |
+| [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | Detailed Combat draws each gang portrait and its two Force tracks into the same surface, 68 and 75 rows below the portrait's top | recorded |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | Each player keeps at most 16 Comlink messages, and a 17th drops the oldest | recorded |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls | recorded |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
