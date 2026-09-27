@@ -55,7 +55,7 @@ public sealed partial class ChaosGame
     /// </summary>
     private bool ShowsGroupOrderStrip(MatchState state, PlayerId viewer) =>
         state.Coordinator.Phase == TurnPhase.Command
-        && state.Coordinator.ActivePlayer == viewer
+        && PlanningViewer == viewer
         && SectorCardGangs(state, viewer) is { Count: >= 2 } cards
         && cards[0].Owner == viewer;
 
@@ -423,7 +423,7 @@ public sealed partial class ChaosGame
         var gangId = _draggedGangId;
         ForgetGangDrag();
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang || _actions is null) return;
-        var playerId = _state.Coordinator.ActivePlayer ?? gang.Owner;
+        var playerId = PlanningViewer ?? gang.Owner;
         var visibleGangs = SectorGangView.Visible(_state, playerId, _cursor).ToArray();
         if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, point) is { } enemyId)
         {
