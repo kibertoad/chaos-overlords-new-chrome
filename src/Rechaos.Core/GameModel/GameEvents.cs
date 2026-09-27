@@ -50,6 +50,9 @@ public sealed record CommandResolutionDetails(
 /// where the first hire its owner resolves reuses the slot and its id stops resolving through
 /// <see cref="MatchState.FindGang"/>. The event is then the only place left that knows who fought,
 /// so the combat reports read the retired gang from here rather than dropping the fight.
+/// <see cref="Force"/> is the <c>force_start</c> and <see cref="RosterSlot"/> the roster slot of
+/// the gang's combat record (FMT-STATE-003), which Detailed Combat reads (RULE-COMBAT-004); both
+/// are null in an event recorded before they were kept.
 /// </remarks>
 public sealed record CombatantDetails(
     PlayerId Owner,
@@ -57,7 +60,9 @@ public sealed record CombatantDetails(
     int SectorId,
     short? WeaponItemId,
     short? ArmorItemId,
-    short? MiscellaneousItemId)
+    short? MiscellaneousItemId,
+    int? Force = null,
+    int? RosterSlot = null)
 {
     public static CombatantDetails Of(MatchGangState gang)
     {
@@ -65,6 +70,25 @@ public sealed record CombatantDetails(
         return new(gang.Owner, gang.DefinitionId, gang.SectorId,
             gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId);
     }
+
+    /// <summary>
+    /// A detached gang <paramref name="id"/> for the reports to draw, with no Force left. The event
+    /// does not record statistics and no report reads a retired gang's, so it holds its
+    /// definition's values, which depend on nothing that changes during the match, only because
+    /// every gang must hold stored values (RULE-GANG-001).
+    /// </summary>
+    public MatchGangState ToRetiredGang(MatchState state, GangId id)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return new MatchGangState(
+            id, Owner, DefinitionId, SectorId, force: 0,
+            WeaponItemId, ArmorItemId, MiscellaneousItemId,
+            EffectiveStatistics.From(state.Definitions.Gang(DefinitionId).Stats));
+    }
+
+    /// <summary>The gang as it enters the combat phase, with its Force and roster slot.</summary>
+    public static CombatantDetails Of(MatchGangState gang, int rosterSlot) =>
+        Of(gang) with { Force = gang.Force, RosterSlot = rosterSlot };
 }
 
 public sealed record EconomyResolutionDetails(

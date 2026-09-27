@@ -14,7 +14,9 @@
 // game code when both its ends lie inside game functions; a wider extent, such as the whole image,
 // cites nothing. A function that begins exactly at a range's end is not counted, since such a range
 // stops where the function starts. A constant written as an eight-digit hexadecimal number is read
-// as an address. FND-EXE-004 itself is left out, since it lists every function.
+// as an address. FND-EXE-004 itself is left out, since it lists every function, and so is an entry
+// whose locations all name another file, such as a library the game ships, since its addresses
+// are that file's.
 //
 // The inventory is a tab-separated file with the columns entry, end, bytes, callers, callees,
 // imports (LIBRARY::name), reads and writes. It stays outside the repository like every other
@@ -78,8 +80,14 @@ function containing(addr) {
 
 // Cited code and data addresses per entry.
 const citedData = new Map(); // address -> Set of entry IDs
+const EXE_FILE = "Chaos Overlords.exe";
+function readsAnotherFile(text) {
+  const front = text.startsWith("---\n") ? text.slice(4, text.indexOf("\n---", 4)) : "";
+  const files = [...front.matchAll(/^\s+file:\s*(.+?)\s*$/gm)].map((m) => m[1].replace(/^["']|["']$/g, ""));
+  return files.length > 0 && !files.includes(EXE_FILE);
+}
 for (const e of entries) {
-  if (e.id === MAP_ID) continue;
+  if (e.id === MAP_ID || readsAnotherFile(e.text)) continue;
   for (const m of e.text.matchAll(/\bfn_([0-9A-Fa-f]{8})\b/g)) {
     const f = byEntry.get(parseInt(m[1], 16)) ?? containing(parseInt(m[1], 16));
     if (f) f.citedBy.add(e.id);

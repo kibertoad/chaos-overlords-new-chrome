@@ -445,6 +445,9 @@ public sealed partial class ChaosGame
         _idleGangWarningOpen = false;
         CancelHireReject();
         ForgetGangDrag();
+        _tickedPresentation.Clear();
+        _gangSight.Clear();
+        ForgetHireDrag();
         _combatAnimationPlayer.Clear();
         _automaticDetailedCombatPresentation = false;
         _openEventsAfterCombat = false;
@@ -491,9 +494,8 @@ public sealed partial class ChaosGame
             return false;
         }
         var turn = restored ?? SpeculativeTurn.For(authoritative, _definitions, _session.Slot);
-        _actions = new MatchActions(turn);
+        ReplaceMatch(turn.State, new MatchActions(turn));
         _submittedPlanning = null;
-        _state = turn.State;
         if (authoritative.Coordinator.Turn != _online.PlanningTurn) SetAsideSealedTurnDeadline();
         _online.PlanningTurn = authoritative.Coordinator.Turn;
         _online.Stage = submission?.Ready == true
@@ -513,8 +515,10 @@ public sealed partial class ChaosGame
         _gangSelection.Clear();
         // A drag in progress was aimed at the turn being replaced, and this is the one path that
         // replaces it without going through ResetTransientMatchUi. Left alone it would keep
-        // painting the old turn's destinations over the new board until the button came up.
+        // painting the old turn's destinations over the new board until the button came up. A hire
+        // offer held from the old turn's dock goes the same way.
         ForgetGangDrag();
+        ForgetHireDrag();
         // The idle-gang warning belongs to the turn that is being replaced. Left open, OK on it
         // submits the new turn as ready with no orders, and there is no taking that back.
         _idleGangWarningOpen = false;
@@ -558,7 +562,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ConcludeOnlineMatch(MatchState final)
     {
-        _state = final;
+        ReplaceMatchState(final);
         _online.ConcludeMatch();
         CloseOnlinePlanning();
         ResetTransientMatchUi();
@@ -634,7 +638,7 @@ public sealed partial class ChaosGame
         {
             CloseOnlinePlanning();
             ResetTransientMatchUi();
-            _state = null;
+            ClearMatchState();
         }
         Forget(_session?.StopAsync(), "multiplayer.session.stop.failed");
         Forget(_lobby?.StopAsync(), "multiplayer.lobby.stop.failed");

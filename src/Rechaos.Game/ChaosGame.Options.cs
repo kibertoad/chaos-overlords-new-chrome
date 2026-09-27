@@ -40,6 +40,21 @@ public static class OptionsLayout
         BaseStatistics, DetailedCombat, SlidePanels, WarnIfIdleGangs, EventSiteImages, AdvancedAi,
         IntroOnlyOnce, ExportDiagnostics, OnlineLobbyPresentation
     ];
+
+    /// <summary>The cursor row of <see cref="ExportDiagnostics"/>.</summary>
+    public const int ExportDiagnosticsRow = 9;
+
+    /// <summary>The last cursor row.</summary>
+    public const int LastRow = FirstToggleRow + 8;
+
+    /// <summary>Whether Left and Right flip the setting on <paramref name="row"/>.</summary>
+    /// <remarks>
+    /// Every toggle row flips both ways, so an arrow is a second way to press it. The export row is
+    /// not a setting but an action that writes a zip, and arrowing along the list must not do that;
+    /// Enter, Space or a click still run it.
+    /// </remarks>
+    public static bool ArrowsToggle(int row) =>
+        row is >= FirstToggleRow and <= LastRow && row != ExportDiagnosticsRow;
 }
 
 public static class OptionsTooltip
@@ -55,7 +70,13 @@ public static class OptionsTooltip
         if (OptionsLayout.DetailedCombat.Contains(point))
             return ["DETAILED COMBAT", "ON PLAYS AUTOMATIC COMBAT ANIMATIONS."];
         if (OptionsLayout.SlidePanels.Contains(point))
-            return ["SLIDE PANELS", "OFF MAKES SECTORS AND DETAILS APPEAR IMMEDIATELY."];
+            return [
+                "SLIDE PANELS",
+                "ON SLIDES PANELS IN FROM THE RIGHT AND PLAYS OPEN AND CLOSE SOUNDS.",
+                "EACH STEP SHOWS MORE OF THE PANEL, LEFT COLUMNS FIRST, CUT OFF",
+                "AT ITS RIGHT EDGE. PANELS CLOSE AT ONCE.",
+                "OFF SHOWS PANELS AT ONCE, SILENTLY."
+            ];
         if (OptionsLayout.WarnIfIdleGangs.Contains(point))
             return ["WARN IF IDLE GANGS", "ASKS BEFORE ENDING WITH UNASSIGNED ACTIVE GANGS."];
         if (OptionsLayout.EventSiteImages.Contains(point))
@@ -75,8 +96,8 @@ public static class OptionsTooltip
         if (OptionsLayout.IntroOnlyOnce.Contains(point))
             return [
                 "INTRO ONLY ONCE",
-                "OFF PLAYS THE INTRO AT EVERY START, AS THE ORIGINAL DOES.",
-                "ON PLAYS IT ON THE FIRST START ONLY.",
+                "ON PLAYS THE INTRO ON THE FIRST START ONLY.",
+                "OFF PLAYS IT AT EVERY START, AS THE ORIGINAL DOES.",
                 "INTRO ON THE TITLE SCREEN REPLAYS IT."
             ];
         if (OptionsLayout.ExportDiagnostics.Contains(point))
@@ -164,11 +185,11 @@ public sealed partial class ChaosGame
             return;
         }
         if (Pressed(keyboard, Keys.Up)) _optionsRow = Math.Max(0, _optionsRow - 1);
-        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(10, _optionsRow + 1);
+        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(OptionsLayout.LastRow, _optionsRow + 1);
         if (Pressed(keyboard, Keys.Left)) ChangeSelectedVolume(-1);
         if (Pressed(keyboard, Keys.Right)) ChangeSelectedVolume(1);
         if (_optionsRow >= 2 && Pressed(keyboard, Keys.Space)) ToggleSelectedOption();
-        if (Pressed(keyboard, Keys.Enter) && _optionsRow == 9)
+        if (Pressed(keyboard, Keys.Enter) && _optionsRow == OptionsLayout.ExportDiagnosticsRow)
             ExportDiagnostics();
         else if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Back)
                  || Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.O))
@@ -218,7 +239,7 @@ public sealed partial class ChaosGame
                 _soundEffectVolumeLevel + delta,
                 AudioRouting.MinimumEffectVolumeLevel,
                 AudioRouting.MaximumEffectVolumeLevel));
-        else if (_optionsRow <= 10) ToggleSelectedOption();
+        else if (OptionsLayout.ArrowsToggle(_optionsRow)) ToggleSelectedOption();
     }
 
     private void ToggleSelectedOption()
@@ -230,7 +251,7 @@ public sealed partial class ChaosGame
         else if (_optionsRow == 6) ToggleEventSiteImageFilter();
         else if (_optionsRow == 7) ToggleAdvancedAi();
         else if (_optionsRow == 8) ToggleIntroOnlyOnce();
-        else if (_optionsRow == 9) ExportDiagnostics();
+        else if (_optionsRow == OptionsLayout.ExportDiagnosticsRow) ExportDiagnostics();
         else if (_optionsRow == 10) ToggleOnlineLobbyPresentation();
     }
 
@@ -314,11 +335,32 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
+    /// <summary>The player's own Advanced AI default, which is what the option row shows and flips.</summary>
+    /// <remarks>
+    /// While a joiner sits in someone else's lobby or match, <see cref="_defaultAiPolicy"/> holds that
+    /// session's setting and the player's own is kept in <see cref="_localSetupBeforeLobby"/>, which
+    /// is what <see cref="SavePreferences"/> stores and <see cref="RestoreLocalSetup"/> puts back.
+    /// Flipping the borrowed field instead was undone on the way out, and the choice was never saved.
+    /// </remarks>
+    private AiPolicyMode OwnAiPolicy => _localSetupBeforeLobby?.AiPolicy ?? _defaultAiPolicy;
+
     private void ToggleAdvancedAi()
     {
-        _defaultAiPolicy = _defaultAiPolicy == AiPolicyMode.Original
+        var toggled = OwnAiPolicy == AiPolicyMode.Original
             ? AiPolicyMode.Advanced
             : AiPolicyMode.Original;
+        if (_localSetupBeforeLobby is { } local)
+        {
+            // A joiner: the session's setting is the host's and stays on screen as it is.
+            _localSetupBeforeLobby = local with { AiPolicy = toggled };
+        }
+        else
+        {
+            _defaultAiPolicy = toggled;
+            // A host's default is the lobby's setting, edited like any other setup choice; outside
+            // a lobby the host can still configure, this sends nothing.
+            PushLobbySettings();
+        }
         SavePreferences();
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
@@ -349,7 +391,8 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Writes the player's own preferences.
+    /// Writes the player's own preferences. The original's save always fails (RULE-OPTIONS-002);
+    /// the rebuild's succeeds (DEV-OPTIONS-001).
     /// </summary>
     /// <remarks>
     /// Two of these are borrowed by a lobby, which reads the host's settings into the same fields
@@ -375,7 +418,8 @@ public sealed partial class ChaosGame
                 _online.Service,
                 _online.Server.Value,
                 _onlineLobbyPresentation,
-                _introOnlyOnce));
+                _introOnlyOnce,
+                _preferredScenario));
 
     private void ToggleFullscreen()
     {
@@ -435,7 +479,7 @@ public sealed partial class ChaosGame
         DrawOptionToggle(batch, pixel, font, OptionsLayout.EventSiteImages,
             $"EVENT SITE IMAGES: {(_smoothEventSiteImages ? "SMOOTH" : "ORIGINAL")}", 6);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.AdvancedAi,
-            $"ADVANCED AI: {(_defaultAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 7);
+            $"ADVANCED AI: {(OwnAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 7);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.IntroOnlyOnce,
             $"INTRO ONLY ONCE: {(_introOnlyOnce ? "ON" : "OFF")}", 8);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ExportDiagnostics,

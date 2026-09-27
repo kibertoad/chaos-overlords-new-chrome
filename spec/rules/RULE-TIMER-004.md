@@ -4,7 +4,7 @@ title: Presentation waits last until the next tick of the six-per-second clock, 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-002, FND-UI-020, FND-UI-011, FND-PLATFORM-009, FND-EXE-004]
+evidence: [FND-TIMER-002, FND-UI-020, FND-UI-011, FND-UI-037, FND-GFX-006, FND-PLATFORM-009, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-UI-008, RULE-UI-014, RULE-UI-003]
@@ -58,6 +58,12 @@ dropped, apart from what the step itself handles.
   rectangle for just over one second; RULE-UI-003 takes a quarter of it, at
   least 1, as the slide step.
 - No wait counts processor cycles or loop iterations.
+- The city-cell, site and sector-cell flashes each call the wait three times:
+  the lit copy, a wait, the normal image, a wait, the lit copy, a wait, and the
+  normal image. The lit copy turns every other pixel of the lit area white
+  through bitmap 143, starting at the area's top-left pixel, and the replaced
+  pixels on the area's edge black; the edge labels, frame and meter drawn over
+  it afterwards are not lightened (FND-UI-037, FND-GFX-006).
 
 ## What the sources say
 

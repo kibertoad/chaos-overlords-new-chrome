@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-032, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008]
+evidence: [FND-UI-032, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038]
 conflicting: []
 split_with: []
 related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-UI-012, RULE-TIMER-002, RULE-TIMER-003, RULE-OPTIONS-003, RULE-AUDIO-001, RULE-AUDIO-007, RULE-AUDIO-008, SCR-UI-004, SCR-UI-005, SCR-UI-008, SCR-OPTIONS-001, SCR-HIRE-001, SCR-HIRE-002, SCR-GANG-002]
@@ -23,8 +23,8 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 | Objective pylons | `DATA/PX16/PX00129` crop `(344,15,54,52)`, keyed on exact white | Whether the sector is an objective sector (RULE-UI-012) | The whole cell, map `(4 + 53*column, 3 + 51*row, 54, 52)`, screen `(6 + 53*column, 45 + 51*row)` | Siege and Big Man, on each sector RULE-UI-012 marks | FND-UI-017, FND-UI-033 |
 | Gang-status marker | `DATA/PX16/PX00129` crop `(492, 67 + 20*f, 20, 20)`, keyed on exact white | The frame `f` RULE-UI-006 picks for the sector | `(35 + 53*column, 61 + 51*row, 20, 20)` | When RULE-UI-006 returns a frame | FND-UI-017, FND-UI-031 |
 | Site markers | `DATA/PX16/PX00150` | The sector's sites the player controls or selected in Search | Inside the sector's cell | See the Search panel | FND-SEARCH-001 |
-| Overlord bar portraits | `DATA/PX16/PX00129` portraits at source y 480, 32 by 32, opaque | Each player's Overlord; the row at source y 594 for a player with no gang the active player can see in the sector, on SCR-UI-004 | `(18 + 70*n, 5, 32, 32)` for player `n`; an empty seat shows the 54-by-32 art at `(404,448)`, cycling through three frames 27 pixels apart | Always | FND-UI-017, FND-UI-031 |
-| Active-player marker | `DATA/PX16/PX00129` twelve 20-by-20 frames at source y 626, opaque | The viewed player (`0x00487B8C`), which is the planning player on this screen | `(50 + 70*n, 6, 20, 20)`, frames stepped by the input pump | While player `n` is viewed | FND-UI-017, FND-UI-031 |
+| Overlord bar portraits | `DATA/PX16/PX00129` portraits at source y 480, 32 by 32, opaque | Each player's Overlord; the row at source y 594 for a player with no gang the active player can see in the sector, on SCR-UI-004 | `(18 + 70*n, 5, 32, 32)` for player `n`, with `(50 + 70*n, 5, 20, 20)` filled black; a seat whose `player_active` is 0 shows the 54-by-32 art at `(404 + 27*m, 448)` at `(18 + 70*n, 5)`, `m` stepping 0, 1, 2 every 100 ms | Always | FND-UI-017, FND-UI-031, FND-UI-038 |
+| Active-player marker | `DATA/PX16/PX00129` twelve 20-by-20 frames at source y 626, opaque | The viewed player (`0x00487B8C`), which is the planning player on this screen | `(50 + 70*n, 6, 20, 20)`, one frame every 100 ms (timer slot 1) | While player `n` is viewed | FND-UI-017, FND-UI-031, FND-UI-038 |
 | Planning lights | `DATA/PX16/PX00129` `(66,347,20,6)`, or black | Whether a human seat has yet to complete its orders | `(51 + 70*n, 30, 20, 6)` | For each seat in play | FND-UI-017 |
 | Control lights | `DATA/PX16/PX00129` `(488,512,8,16)`, opaque; the control from the back buffer when dark | Events: `events_unviewed`; Comlink: `comlink_pending`; Done: the end-of-match planning visit | Events `(540,126,8,16)`, Comlink `(592,126,8,16)`, Done `(592,282,8,16)` | While the flag is set, lit on alternate even values of `comlink_blink_step` (see Timing) | FND-EVENT-006 |
 | Sector values | The font strip of `DATA/PX16/PX00129` | Income, Tolerance, Support and Cash of the selected sector (RULE-UI-011) | Sector name, Income word, Tolerance, Support and Cash at x 568, y 60, 69, 78, 87 and 96; Support and Cash show 0 unless the active player owns the sector | When a sector is selected | FND-UI-017, FND-UI-035 |
@@ -86,6 +86,9 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 
 ## Timing
 
+The Overlord bar's marker and empty-seat art step once per tick of timer slot
+1, every 100 ms [FND-UI-038]. The selection frame changes every four
+presentation ticks, about two thirds of a second [FND-UI-017, FND-EVENT-006].
 The planning clock bar is redrawn on every sixth call of the input pump
 (RULE-TIMER-003); how often that is in milliseconds is not recorded. The Comlink
 alert repeats every 24 ticks of `presentation_tick`, about four seconds.

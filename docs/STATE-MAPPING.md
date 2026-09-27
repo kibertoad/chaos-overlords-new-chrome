@@ -1,0 +1,179 @@
+# In-memory state mapping
+
+Status: second pass, 2026-09-25
+
+The 2026-09-26 decision on in-memory layouts in [DECISIONS.md](DECISIONS.md) says a
+`FMT-STATE` entry counts as `complete` in [PARITY.md](../PARITY.md) when every field a rule
+reads or writes is mapped to the rebuild state that holds the same value at the same point. This
+document is that mapping for FMT-STATE-001 to FMT-STATE-009. Each table lists the fields of one
+layout, the rules that read or write them, the rebuild state that holds the value, and one of these
+verdicts:
+
+- `same`: the rebuild holds the same value at the same point.
+- `representation`: the rebuild encodes the value differently, and no rule result can tell.
+- `deviation DEV-...`: a deviation in [DEVIATIONS.md](../DEVIATIONS.md) covers the difference.
+- `differs`: the rebuild holds a different value, or does not hold it where a rule reads it.
+- `not checked`: the mapping was not verified against the code.
+
+Rebuild state is named `Type.Member`; unless a path says otherwise the types are in
+`src/Rechaos.Core/GameModel`. A roster slot is the gang's index in `MatchPlayerState.Gangs`.
+
+## FMT-STATE-001: Gang record
+
+| Field | Offset | Rules | Rebuild state | Match | Notes |
+|---|---|---|---|---|---|
+| roster slot (record index) | | RULE-HIRE-001, RULE-TURN-003, RULE-TURN-004, RULE-DETECT-001, RULE-AI-001 | Index in `MatchPlayerState.Gangs` | same | Right Hands at index 0. A hire reuses the first inactive index, otherwise appends. At most 80 active gangs, so index 80 is never filled, and slot 0 is reused once the Right Hands die. |
+| `player` | `0x00` | RULE-ATTACK-001, RULE-ATTACK-002, RULE-CONTROL-001, RULE-HIRE-001, RULE-CITY-004, RULE-SETUP-006 | `MatchGangState.Owner` | same | |
+| `definition` | `0x01` | RULE-GANG-001, RULE-HIRE-001, RULE-AI-029, RULE-COMBAT-002, RULE-UPKEEP-001, RULE-FINANCE-001 and others | `MatchGangState.DefinitionId` | same | |
+| `sector` | `0x02` | RULE-GANG-002, RULE-HIRE-001, RULE-DETECT-001, RULE-TURN-003, RULE-TURN-004, RULE-MOVE-001, most AI rules | `MatchGangState.SectorId` with `MatchGangState.IsActive` (Force > 0) | representation | The original writes 100 on death; the rebuild keeps the last sector and marks the slot inactive with Force 0 (RULE-GANG-002). Every reader skips inactive records first. RULE-TURN-004 reads `sectors[100]` for a dead gang and discards the result. |
+| `force` | `0x03` | RULE-GANG-002, RULE-HEAL-001, RULE-COMBAT-002, RULE-HIRE-001, RULE-TURN-004, RULE-TURN-005, RULE-AI-004 | `MatchGangState.Force` | representation | Same for live gangs. A dead gang holds 0 where the original keeps 0 or less, and a terminated gang holds 0 where the original keeps its Force. No rule reads the Force of an inactive record for a result. |
+| `weapon` | `0x04` | RULE-EQUIP-001, RULE-EQUIP-002, RULE-GIVE-001, RULE-SELL-001, RULE-GANG-001, RULE-COMBAT-001, RULE-COMBAT-002, RULE-AI-005, RULE-AI-019 to RULE-AI-031 | `MatchGangState.WeaponItemId` | representation | null for -1. Kept on death and Terminate. |
+| `armor` | `0x05` | as `weapon` | `MatchGangState.ArmorItemId` | representation | null for -1. Kept on death. |
+| `misc` | `0x06` | RULE-EQUIP-001, RULE-EQUIP-002, RULE-GIVE-001, RULE-SELL-001, RULE-GANG-001, RULE-COMBAT-002, RULE-AI-005, RULE-AI-028 | `MatchGangState.MiscellaneousItemId` | representation | null for -1. Kept on death. |
+| `action` | `0x07` | RULE-TURN-002 to RULE-TURN-005, RULE-HIDE-001, RULE-ATTACK-001, RULE-COMBAT-002, RULE-AI-004 and the action rules | `MatchGangState.QueuedCommand` (its `GameCommand.Action`) | representation | No command is held for action 0. A one-off order is dropped at the end of resolution, where the original clears it at turn start; no rule reads `action` in between. |
+| Hide in force (`action` 8) | `0x07` | RULE-HIDE-001, RULE-ATTACK-001, RULE-POLICE-001 | `MatchGangState.Hidden` | representation | Set from the command on submit and cancel, and after the turn-start step. It always equals "action is Hide". |
+| `target` | `0x08` | RULE-TURN-005, RULE-ATTACK-001, RULE-MOVE-001, RULE-EQUIP-001, RULE-RESEARCH-001, RULE-INFLUENCE-001, RULE-GIVE-001, RULE-SELL-001, RULE-COMBAT-002, RULE-AI-004 | `GameCommand.Target`, plus `SecondaryTarget` to `QuaternaryTarget` for Give and Sell | representation | Attack names the target by `GangId`. Influence uses the global site number (sector * 3 + slot). Give and Sell name the equipped items where the original holds a slot mask. The mask is handled weapon, armor, miscellaneous: Sell pays the last selected slot in that order whatever order the items are listed in (BUG-SELL-001), and Give equips each item into its own slot, so the order cannot change a result. Two Gives to one recipient slot resolve in roster order and the later one wins, as the pending list does. The rebuild empties every giver before the pass where the original empties it at its roster place; nothing in the pass reads another gang's slots. `TransactionResolutionTests`. |
+| `target_2` | `0x09` | RULE-ATTACK-001, RULE-ATTACK-002, RULE-GIVE-001, RULE-COMBAT-002, RULE-TURN-005, RULE-AI-001, RULE-AI-004 | Folded into the `GangId` of `GameCommand.Target` | representation | Attack target and Give recipient. |
+| `repeat_action` | `0x0A` | RULE-TURN-004, RULE-TURN-005, RULE-HIDE-001, RULE-HIRE-001 | `GameCommand.Repeat` with `GameCommand.Action`; cleared by `MatchState.NormalizeRecurringCommands` | same | The turn-start tests of RULE-TURN-004 decide when a recurring order ends; a recurring Heal that reaches Force 10 is dropped at the next turn start as in the original. DEV-TURN-001 covers the refused recurring Bribe and Snitch. |
+| `repeat_target` | `0x0B` | RULE-TURN-004, RULE-TURN-005, RULE-HIRE-001 | `GameCommand.Target` of a recurring command | representation | Only Influence and Research read it. |
+| `visible_to` | `0x0C` | RULE-DETECT-001 and RULE-HIRE-001 (write), RULE-ATTACK-002, RULE-AI-003, RULE-AI-004, RULE-AI-029, RULE-UI-010 | `MatchState.CanPlayerDetectGang`, computed on each call | representation | Same inputs as RULE-DETECT-001. The original stores a snapshot at planning entry; positions and stored statistics do not change during planning, so every reader sees the same value. |
+| `combat` | `0x12` | RULE-GANG-001, RULE-COMBAT-001, RULE-ATTACK-001, RULE-AI-004, RULE-AI-005, RULE-HIRE-001 | `MatchGangState.StoredStatistics` (`Combat`) | same | Rebuilt for active gangs by `EffectiveStatisticsCalculator.RebuildBeforePlanning` after the site rebuild; a recruit takes its definition's values. |
+| `defense` to `martial_arts` | `0x13` to `0x1F` | RULE-GANG-001, RULE-DETECT-001, RULE-CHAOS-001, RULE-CONTROL-001, RULE-HEAL-001, RULE-INFLUENCE-001, RULE-RESEARCH-001, RULE-COMBAT-001, RULE-AI-004, RULE-AI-005, RULE-HIRE-001 | `MatchGangState.StoredStatistics` (the other thirteen members) | same | Written only by the rebuild before planning and at hire. The INT8 wrap of a total outside -128 to 127 is not reproduced (see the RULE-GANG-001 row). |
+
+Verdict: every field is `same` or `representation`, so this row can be `complete`.
+
+## FMT-STATE-002: Sector record
+
+| Field | Offset | Rules | Rebuild state | Match | Notes |
+|---|---|---|---|---|---|
+| `owner` | `0x00` | RULE-CONTROL-001, RULE-POLICE-002, RULE-SITE-001, RULE-UPKEEP-001, RULE-EQUIP-003, RULE-HIRE-003, RULE-CITY-003, RULE-TURN-006, most AI rules | `MatchSectorState.Owner` | representation | null for -1. |
+| `base_income` | `0x01` | RULE-CITY-001, RULE-SITE-001, RULE-TOLERANCE-001 | `MatchSectorState.Income` | representation | Nothing writes `base_income` or `income` after generation, so one member holds both. |
+| `base_tolerance` | `0x02` | RULE-CITY-001, RULE-BRIBE-001, RULE-SNITCH-001, RULE-TOLERANCE-001, RULE-TOLERANCE-002, RULE-SITE-001 | `MatchSectorState.BaseTolerance` | same | Bribe and Snitch store the low byte (`ToleranceResolver.ApplyBribe`, `ApplySnitch`). |
+| `cash_yield` | `0x03` | RULE-SITE-001 (writes), RULE-UPKEEP-001, RULE-FINANCE-001, RULE-UI-011 | `MatchSectorState.CashYield`, rewritten by `SectorRecordRebuild.BeforePlanning` after Upkeep | same | Upkeep reads the yield of the last rebuild, so after a Control takeover the new owner collects the old yield once, including the Cash of the sites just reset. |
+| `income` | `0x04` | RULE-SITE-001 (writes), RULE-CHAOS-001, RULE-CHAOS-002, RULE-CONTROL-001, RULE-UI-011 | `MatchSectorState.Income` | same | |
+| `tolerance` | `0x05` | RULE-SITE-001 (writes), RULE-CHAOS-002, RULE-AI-004, RULE-UI-011 | `MatchSectorState.Tolerance` | same | Rebuilt before planning by `SectorRecordRebuild.BeforePlanning`, which writes `cash_yield`, `tolerance` and `support` from one loop. `SiteControlRules.IsComplete` counts a site with an influencer or with definition Resistance 0, so a neutral headquarters sector keeps the +2. RULE-CHAOS-001 reads the value. |
+| `support` | `0x06` | RULE-SITE-001 (writes), RULE-CONTROL-001, RULE-UI-011 | `MatchSectorState.Support` | same | Written with `tolerance` by the same rebuild and completion test. |
+| `sites` | `0x07` | see FMT-STATE-004 | `MatchSectorState.Sites` | same | Three slots in slot order. |
+| `research_level` | `0x0D` | RULE-SITE-001 (writes), RULE-AI-005 and RULE-AI-026 (through `local_tech_cap`), SCR-RESEARCH-001 | `SectorSiteTotals.ResearchLevel` of `SectorRecordRebuild.Rebuilt`, read by `SpecialSiteRules.ComputerTechLimit` for the computer players; `SpecialSiteRules.ResearchTechLimit` for the Research list | same | Not stored: the computer reads it only while planning, when the rebuild's completion test gives the value the original wrote before planning. The computer's `local_tech_cap` reads the byte whoever owns the sector (FND-AI-054). The Research list keeps the owner test FND-RESEARCH-003 records. |
+| `factory` | `0x0E` | RULE-SITE-001 (writes), RULE-EQUIP-003, RULE-FINANCE-001 | `SpecialSiteRules.EquipmentCost`, from sites whose `InfluencedBy` is the buyer | representation | RULE-EQUIP-003 also requires the buyer to own the sector. `InfluencedBy` is set at the same rebuild and cleared only when the owner changes, and then the owner test fails in both. |
+| `crackdown_turns` | `0x0F` | RULE-SETUP-005, RULE-POLICE-001, RULE-POLICE-002, RULE-POLICE-003, RULE-CONTROL-001, RULE-TURN-004, RULE-AI-004, RULE-AI-006, RULE-AI-011, RULE-AI-013 | `MatchSectorState.CrackdownTurnsRemaining` | same | `CrackdownResolver.FinishCombat` lowers only values from 1 to 99, so the permanent police of RULE-SETUP-005 stay. `CrackdownResolver.Trigger` stores the sum as a signed byte, so repeated neutralizations wrap it past 127 to a negative value. `MatchSectorState.CrackdownActive` is the "above 0" test of RULE-POLICE-001, RULE-TURN-004 and the order menus; `MatchSectorState.HasCrackdownTurns` is the "not 0" test of RULE-CONTROL-001 and the computer players. `SectorRecordParityTests`. |
+| `gangs_seen` | `0x10` | RULE-HIRE-003, RULE-UI-006, RULE-UI-010 | Computed on demand from `MatchState.CanPlayerDetectGang` (`SectorGangView.Visible` in `src/Rechaos.Game/UiNavigation.cs`); the hire drop test in `HireResolution` checks the player's own active gangs | representation | The player's own byte is set exactly when it has a living gang there, which the hire test reads directly. The other bytes follow `visible_to` (FMT-STATE-001). |
+| `site_combat` to `site_martial_arts` | `0x16` to `0x23` | RULE-SITE-001 (writes), RULE-GANG-001 | Not stored; `EffectiveStatisticsCalculator` adds each completed site's modifiers into `MatchGangState.StoredStatistics` | representation | Only RULE-GANG-001 reads the sums. The headquarters site has no modifiers, so the owner test does not matter here. Per-sector sums stay within six either way (RULE-CITY-002), so the byte wrap is never reached. |
+
+Verdict: every field is `same` or `representation`, so this row can be `complete`.
+
+## FMT-STATE-003: Per-gang combat record
+
+Detailed Combat (RULE-COMBAT-004) is the only reader of these records for presentation. The
+computer players read two bytes of them through the sector index 64, which lies past the sector
+list (RULE-AI-005, RULE-AI-013). The rebuild keeps no records; it derives the presentation from
+the combat-phase `GameEvent`s.
+
+| Field | Offset | Rules | Rebuild state | Match | Notes |
+|---|---|---|---|---|---|
+| `definition` | `0x00` | RULE-COMBAT-002 (writes), RULE-COMBAT-004 | `CombatantDetails.DefinitionId` on the attack or police event | same | Recorded when the gang fought. |
+| `definition` of record 0, as owner at sector 64 | `0x00` | RULE-AI-005, RULE-AI-013 | `AiPlanningState.FirstCombatRecordDefinition`, set when player 0's slot 0 gang fights or is found by the police | same | Both the danger check and the hire anchor read it at sector 64. RULE-AI-005 calls the reading of byte 0 disputed. Whether the original loads the byte signed is not recorded; the value is held within 0..127 (the 90 gang definitions of FMT-DATA-002), where both readings agree and it never reads as the neutral owner -1. |
+| `force_start` | `0x01` | RULE-COMBAT-002 (writes), RULE-COMBAT-004 | The Force each combat event records for every gang at the start of the phase | same | `CombatForceTimeline` reads it from the event; events from before the field existed fall back to the old estimate. |
+| `force_final` | `0x02` | RULE-COMBAT-002 (writes), RULE-COMBAT-004 | `MatchGangState.Force` after the phase | representation | Floored at 0 where the original may go below 0; the bar draws nothing below 0 in either. Not checked on screen. |
+| `force_shown` | `0x03` | RULE-COMBAT-004 | `CombatForceTimeline.Forces` | same | Starts at the phase-start force and moves only by the clips shown, as the rule says. Inherits the `force_start` difference. |
+| `damage_dealt` | `0x04` | RULE-COMBAT-002 (writes), RULE-COMBAT-004 | `CommandResolutionDetails.Damage`, with `CommandResolutionCode.TargetEvaded` for -1 | representation | The undefined value for a gang that did not attack has no counterpart; RULE-COMBAT-004 does not read it for such a gang. Not checked in detail. |
+| `retaliation_taken` | `0x05` | RULE-COMBAT-002 (writes), RULE-COMBAT-004, RULE-AI-013 (record 1, as Crackdown at sector 64) | `CommandResolutionDetails.RetaliationDamage`; constant 0 for the AI read | representation | RULE-AI-013 reads the aliased byte only for a cell whose owner is -1, and the owner read at sector 64 is never -1, so the value cannot reach a result. |
+| `weapon`, `armor`, `misc` | `0x06` | RULE-COMBAT-002 (writes), RULE-COMBAT-004 | `CombatantDetails.WeaponItemId`, `ArmorItemId`, `MiscellaneousItemId` | representation | null for -1. |
+| `police_damage` | `0x09` | RULE-POLICE-001 (writes), RULE-COMBAT-004 | `PoliceAttackResolutionDetails.Detected` and `Damage` | representation | -1 becomes `Detected` false. |
+
+Verdict: every field a rule reads is `same` or `representation`, so this row can be
+`complete`.
+
+## FMT-STATE-004: Site slot
+
+| Field | Offset | Rules | Rebuild state | Match | Notes |
+|---|---|---|---|---|---|
+| `definition` | `0x00` | RULE-CITY-002, RULE-CITY-003, RULE-SITE-001, RULE-SEARCH-002, RULE-AI-004, RULE-AI-006, RULE-AI-022, RULE-AI-026, RULE-AI-028 | `MatchSiteState.DefinitionId` | same | |
+| `progress` | `0x01` | RULE-INFLUENCE-001, RULE-SITE-001, RULE-CONTROL-001, RULE-POLICE-002, RULE-TURN-004, RULE-TURN-006, RULE-OBJECTIVE-003, RULE-SEARCH-002, RULE-AI-004 | `MatchSiteState.Resistance` (the Resistance still needed) | representation | `progress` = definition Resistance minus `Resistance`. Influence caps progress at the Resistance in both, so every test (complete, not complete, remaining at least 1) reads the same. A reset writes the definition's Resistance. |
+| influencer (not in the original) | | none | `MatchSiteState.InfluencedBy` | representation | Set to the owner at the rebuild before planning for a site completed in the last turn, cleared when the sector changes hands. It equals "complete and counted since the last rebuild" except for a site whose definition has Resistance 0 (the headquarters), which it never names. `SiteControlRules.IsComplete` counts that site by its definition instead, so every rebuilt field and the gang statistics of RULE-GANG-001 read the same as the original's. |
+
+Verdict: every field is `same` or `representation`, so this row can be `complete`.
+
+## FMT-STATE-005: Comlink message record
+
+| Field | Offset | Rules | Rebuild state | Match | Notes |
+|---|---|---|---|---|---|
+| `occupied` | `0x00` | RULE-COMLINK-001, RULE-COMLINK-004, RULE-COMLINK-005, RULE-COMLINK-007 | Membership in `ComlinkInbox.Messages` | same | Same during play: 16 per player, the oldest dropped when full. A local load empties every inbox, as the original does when a match is entered (FND-COMLINK-006, FND-SEARCH-005), and the journal records it. Online matches never load this way and have no Comlink. |
+| `read` | `0x01` | RULE-COMLINK-004, RULE-COMLINK-005, RULE-COMLINK-007 | `ComlinkInbox.IsRead` (`ReadSequences`) | representation | Per message; an empty record has no entry. |
+| `turn` | `0x02` | RULE-COMLINK-003 (writes), RULE-COMLINK-005 | `ComlinkMessage.Turn` | representation | One-based; the View date subtracts 1 (`MatchDate` in `src/Rechaos.Game/ChaosGame.City.cs`). The 16-bit wrap is not reproduced; a match does not reach turn 32,768. |
+| `sender` | `0x04` | RULE-COMLINK-003 (writes), RULE-COMLINK-005 | `ComlinkMessage.Sender` | same | |
+| `text` | `0x05` | RULE-COMLINK-003, RULE-COMLINK-005, RULE-COMLINK-006 | `ComlinkMessage.Text` | representation | The 160 cells of the Send grid (`ComlinkTextEditor`) with the trailing spaces removed. Every cell is a character from space to `Z`, so padding the text back to 160 with spaces gives the original's bytes, and the View draws a missing trailing cell as it draws a space. A draft of spaces only is stored for no one, and with a recipient chosen the panel closes as if it had been sent (RULE-COMLINK-003). `ComlinkUiTests`. |
+| `unk_A5` | `0xA5` | none | none | representation | No rule reads it. |
+
+Verdict: every field is `same` or `representation`, so this row can be `complete`.
+
+## FMT-STATE-006: Last Turn report record
+
+The rebuild keeps `MatchState` notifications (`GameNotification`) and events, and
+`LastTurnEventProjection.Select` in `src/Rechaos.Game/ChaosGame.EventsPanel.cs` derives the reports of
+the completed turn from them, keeping the first 32.
+
+| Field | Offset | Rules | Rebuild state | Match | Notes |
+|---|---|---|---|---|---|
+| `occupied` | `0x00` | RULE-EVENT-001, RULE-EVENT-002, RULE-EVENT-005 | Presence in the derived list | same | `Select` keeps one Influence report per completed site, as RULE-INFLUENCE-001 and RULE-EVENT-006 record, and one Control report per sector. |
+| `unk_01` | `0x01` | none | none | representation | Padding. |
+| `report_type` | `0x02` | RULE-EVENT-002, RULE-EVENT-005, RULE-EVENT-004, RULE-EVENT-006 to RULE-EVENT-014 | `LastTurnEventPresentation.ReportType`, from `GameNotification.Kind` with the related `GameEvent` for failed Bribe and Equip | representation | Filtered by `NotificationPresentation.IsLastTurnReport`. The illustration is resource 6000 plus the type for types 1 to 9. |
+| `arg1` to `arg3` | `0x04` | RULE-EVENT-002, RULE-EVENT-005, RULE-EVENT-003, RULE-EVENT-004, RULE-EVENT-006 to RULE-EVENT-014 | `LastTurnEventPresentation.Record`, from `GameNotification.SectorId` and the related `GameEvent` (site or item target, `Hire`, `Elimination`, the gang's definition) | representation | Every argument the panel reads is carried: the sector of types 1, 2, 3 and 7, sector and slot of type 4, the item of type 5, the order, sector and gang definition of type 6, the definition of type 8 and the player of type 9. `arg2` of types 2 and 3, the other player, is carried only where the Control event holds it; SCR-EVENT-001 never reads it. The subject and the illustration are drawn from the record. `LastTurnReportRecordTests`. |
+
+The counts `last_turn_report_count` are not part of the record and are not saved; the rebuild has
+no count and no clearing step, since the list is derived.
+
+Verdict: every field is `same` or `representation`, so this row can be `complete`.
+
+## FMT-STATE-007: Computer player planning record
+
+The rebuild keeps this record as parallel arrays in `AiPlanningState`, 6 x 81 entries each,
+indexed by `player * 81 + slot`. `NativeSaveSerializer` saves every array and the state
+fingerprint includes them.
+
+| Field | Offset | Rules | Rebuild state | Match | Notes |
+|---|---|---|---|---|---|
+| `family` | `0x00` | RULE-AI-001, RULE-AI-002, RULE-AI-006, RULE-AI-010, RULE-AI-019, RULE-AI-022, RULE-AI-025, RULE-AI-026, RULE-AI-031 | `AiPlanningState.Family` | same | The reset writes `UnusedFamily` (99). `SetRaiderFamily` writes 9 before the dispatch, as in RULE-AI-001. |
+| `needs_family` | `0x01` | RULE-AI-001, RULE-AI-002, RULE-AI-003, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-025, RULE-AI-026, RULE-AI-030 | `AiPlanningState.NeedsFamily` (bool) | same | Set for slot 0 on the first pass, for empty slots and by the Greed Terminate branch, and cleared by the reset, as in the original. `SetFamily`, which the RULE-AI-010 rewrite uses, leaves the flag alone, so a flag the Greed Terminate branch set earlier in the pass stays set. |
+| `older_action`, `older_target`, `older_target_2` | `0x02` | RULE-AI-001, RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-022, RULE-AI-023 | `AiPlanningState.OlderAction`, `OlderTarget` | same | Rolled from the previous triplet for active gangs only. |
+| `previous_action`, `previous_target`, `previous_target_2` | `0x05` | RULE-AI-001, RULE-AI-004, RULE-AI-006, RULE-AI-019 to RULE-AI-026, RULE-AI-031 | `AiPlanningState.PreviousAction`, `PreviousTarget` | same | Includes the duplicate cleanup and the RULE-AI-026 write. The target bytes are unsigned in the rebuild; every value stored is below 128. |
+| `planned_action`, `planned_target`, `planned_target_2` | `0x08` | RULE-AI-001, RULE-AI-002, RULE-AI-004, RULE-AI-010, RULE-AI-019, RULE-AI-022, RULE-AI-031 | `AiPlanningState.PlannedAction`, `PlannedTarget` | same | `GangAction` numbers equal the FMT-STATE-001 action numbers. The target bytes of each family handler rest on the RULE-AI-019 to RULE-AI-031 rows. |
+| `unk_0B` | `0x0B` | none | none | representation | Padding. |
+| `weapon_cooldown` | `0x0C` | RULE-AI-001, RULE-AI-002, RULE-AI-019 to RULE-AI-023, RULE-AI-025 to RULE-AI-027 | `AiPlanningState.WeaponCooldown` (short) | same | Set to 0 with no weapon or no active gang, otherwise lowered by 1 with a 16-bit wrap. |
+| `armor_cooldown` | `0x0E` | RULE-AI-001, RULE-AI-002, RULE-AI-019 to RULE-AI-023, RULE-AI-025 to RULE-AI-028 | `AiPlanningState.ArmorCooldown` (short) | same | As `weapon_cooldown`. The value 2 that RULE-AI-028 writes was not checked. |
+
+Verdict: every field is `same` or `representation`, so this row can be `complete`.
+
+## FMT-STATE-008: Combat result row of one sector
+
+The Combat Results panel and Detailed Combat read these rows; no rule reads them for a game
+result. The rebuild groups the combat-phase `GameEvent`s by sector instead
+(`CombatResultProjection` in `src/Rechaos.Game/ChaosGame.CombatResults.cs`,
+`CombatPresentationOrder` in `src/Rechaos.Game/CombatPresentationOrder.cs`).
+
+| Field | Offset | Rules | Rebuild state | Match | Notes |
+|---|---|---|---|---|---|
+| `players[p][k].gang` | `0x00` | RULE-COMBAT-002 (writes), RULE-COMBAT-004 | `GameEvent.Gang` of attack and police events, grouped by `CombatantDetails.SectorId`, ordered by roster slot | not checked | RULE-COMBAT-004 plays only the viewer's gangs that fought. `CombatPresentationOrder.Order` follows that order, then also plays every other event of the phase the viewer can see. Whether that matches the rule was not checked. |
+| `players[p][k].target` | `0x02` | RULE-COMBAT-002 (writes), RULE-COMBAT-004 | `GameEvent.Target` of the attack event | representation | -1 when the gang did not attack: no attack event. |
+| `police_hit` | `0x90` | RULE-POLICE-001 (writes), RULE-COMBAT-004 | `PoliceAttackResolutionDetails.Detected` | representation | |
+
+Verdict: the gang entries follow RULE-COMBAT-004: sector order, the viewer's own attack and
+its reply, other attackers by player then roster slot, and police last. A gang that died and
+whose slot a hire reused is ordered by the slot it held when it fought. This row can be
+`complete`.
+
+## FMT-STATE-009: Input event record
+
+RULE-UI-014 is the only rule that reads this record, and it decides only how input reaches the
+screen loops; no game result depends on it. The rebuild polls MonoGame keyboard and mouse state in
+`src/Rechaos.Game` and has no record of this shape.
+
+| Field | Offset | Rules | Rebuild state | Match | Notes |
+|---|---|---|---|---|---|
+| `type` | `0x00` | RULE-UI-014 | MonoGame input polling in `ChaosGame` | not checked | |
+| `a` | `0x04` | RULE-UI-014 | as above | not checked | Menu group, character or surface slot. |
+| `b` | `0x08` | RULE-UI-014 | as above | not checked | Menu item, virtual key or client x. |
+| `c` | `0x0C` | RULE-UI-014 | as above | not checked | Client y. |
+
+Verdict: stays `missing` until RULE-UI-014 is compared with the rebuild; the fields affect input
+handling only.

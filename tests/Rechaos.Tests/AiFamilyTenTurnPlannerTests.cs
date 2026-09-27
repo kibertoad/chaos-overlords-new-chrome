@@ -23,7 +23,8 @@ public sealed class AiFamilyTenTurnPlannerTests
 
         Assert.Equal(10, match.AiPlanning.Family(player, 0));
         Assert.Equal(GangAction.Equip, command.Action);
-        Assert.Equal(CommandTarget.Item(33), command.Target);
+        // RULE-AI-005, FND-AI-055: family 10 chooses armor by Stealth.
+        Assert.Equal(CommandTarget.Item(28), command.Target);
         Assert.Equal(OriginalAiFamilyTenRules.ArmorCooldown,
             match.AiPlanning.ArmorCooldown(player, 0));
 
@@ -32,7 +33,7 @@ public sealed class AiFamilyTenTurnPlannerTests
         recorder.FinishCommand(new PlayerId(1));
         while (match.Coordinator.Phase == TurnPhase.Execution)
             recorder.FinishExecutionPhase();
-        Assert.Equal((short)33, match.Players[0].Gangs[0].ArmorItemId);
+        Assert.Equal((short)28, match.Players[0].Gangs[0].ArmorItemId);
 
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
@@ -122,7 +123,7 @@ public sealed class AiFamilyTenTurnPlannerTests
         var match = CreateMatch(data, cash: 20, force: 10, researched: []);
         var player = new PlayerId(0);
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 10);
+        match.AiPlanning.SeedFamily(player, 0, 10);
         match.AiPlanning.SetPlannedAction(player, 0, GangAction.Chaos);
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.Coordinator.FinishUpkeep();
@@ -178,6 +179,6 @@ public sealed class AiFamilyTenTurnPlannerTests
                 owner: id == 0 ? setups[0].Id : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Siege, GameDuration.SixMonths, seed, setups), players, sectors);
+            ScenarioId.Eliminate, GameDuration.SixMonths, seed, setups), players, sectors);
     }
 }

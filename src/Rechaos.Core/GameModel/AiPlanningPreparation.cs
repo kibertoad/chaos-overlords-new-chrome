@@ -2,6 +2,26 @@ namespace Rechaos.Core.GameModel;
 
 internal static class AiPlanningPreparation
 {
+    /// <summary>
+    /// The counts the hire choice (RULE-AI-010) and the hunter reversion (FND-AI-050) both read,
+    /// taken once per hire step. Neither the choice nor the placement changes them.
+    /// </summary>
+    public readonly record struct HireCensus(
+        int ActiveGangCount,
+        int OwnedSectorCount,
+        int HunterCount);
+
+    public static HireCensus TakeHireCensus(MatchState state, PlayerId player)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var playerState = state.FindPlayer(player)
+            ?? throw new ArgumentOutOfRangeException(nameof(player));
+        return new HireCensus(
+            playerState.Gangs.Count(gang => gang.IsActive),
+            state.Sectors.Count(sector => sector.Owner == player),
+            CountFamilies(state, player, playerState, 6, 12));
+    }
+
     public static void ApplyFamilyAssignments(MatchState state, PlayerId player)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -10,31 +30,49 @@ internal static class AiPlanningPreparation
         var firstPlanningPass = state.AiPlanning.BeginPlanning(player);
         if (!firstPlanningPass)
             state.AiPlanning.RollActiveGangActions(player, gangs);
+        state.AiPlanning.FlagInactiveSlots(player, gangs);
         state.AiPlanning.RefreshEquipmentCooldowns(player, gangs);
-        state.AiPlanning.CleanupDuplicatePreviousActions(player, gangs);
+        // RULE-AI-003: a gang flagged for a family loses both auxiliary values.
         for (var gangSlot = 0; gangSlot < gangs.Count; gangSlot++)
         {
-            if (!gangs[gangSlot].IsActive) continue;
-            var selection = OriginalAiFamilyRules.Select(
-                state.Setup.Scenario,
-                state.AiPlanning.CurrentHireRole(player),
-                state.AiPlanning.Family(player, gangSlot));
-            state.AiPlanning.SetFamily(player, gangSlot, selection.Family);
-            if (selection.CopiesProjectedGangValue)
-                state.AiPlanning.SetCoverageSector(
-                    player, gangSlot, gangs[gangSlot].SectorId);
+            if (!gangs[gangSlot].IsActive || !state.AiPlanning.NeedsFamily(player, gangSlot)) continue;
+            state.AiPlanning.SetFocusValue(player, gangSlot, AiPlanningState.InactiveFocusValue);
+            state.AiPlanning.SetCoverageSector(player, gangSlot, AiPlanningState.InactiveCoverageSector);
         }
+        state.AiPlanning.CleanupDuplicatePreviousActions(player, gangs);
     }
 
-    public static OriginalAiHireRoleSelection? SelectHireRole(MatchState state, PlayerId player)
+    /// <summary>
+    /// RULE-AI-002: a gang flagged for a family has its record wiped and takes the family its
+    /// player's hire role stands for in this scenario; every other gang keeps its family. In Big
+    /// Man the first turn forces hire role 1.
+    /// </summary>
+    public static void AssignFamilyIfNeeded(
+        MatchState state, PlayerId player, MatchGangState gang, int gangSlot)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(gang);
+        if (!state.AiPlanning.NeedsFamily(player, gangSlot)) return;
+        state.AiPlanning.ResetForNewFamily(player, gangSlot);
+        if (state.Setup.Scenario == ScenarioId.BigMan && state.Coordinator.Turn == 1)
+            state.AiPlanning.SetCurrentHireRole(player, 1);
+        var role = state.AiPlanning.CurrentHireRole(player);
+        if (OriginalAiFamilyRules.FamilyFor(state.Setup.Scenario, role) is not { } family) return;
+        state.AiPlanning.SetFamily(player, gangSlot, family);
+        if (role == 4)
+            state.AiPlanning.SetCoverageSector(player, gangSlot, gang.SectorId);
+    }
+
+    public static OriginalAiHireRoleSelection? SelectHireRole(
+        MatchState state, PlayerId player, HireCensus census)
     {
         ArgumentNullException.ThrowIfNull(state);
         var playerState = state.FindPlayer(player)
             ?? throw new ArgumentOutOfRangeException(nameof(player));
-        var activeGangCount = playerState.Gangs.Count(gang => gang.IsActive);
-        var ownedSectorCount = state.Sectors.Count(sector => sector.Owner == player);
+        var activeGangCount = census.ActiveGangCount;
+        var ownedSectorCount = census.OwnedSectorCount;
         var hasNeutralSector = state.Sectors.Any(sector =>
-            sector.Owner is null && !sector.CrackdownActive);
+            sector.Owner is null && !sector.HasCrackdownTurns);
         var hireGangLimit = OriginalAiHireRoleRules.CalculateHireGangLimit(
             state.Setup.Scenario, activeGangCount, ownedSectorCount,
             playerState.Cash, hasNeutralSector);
@@ -59,11 +97,36 @@ internal static class AiPlanningPreparation
             state.AiPlanning.PreviousHireRole(player),
             CountFamilies(state, player, playerState, 2),
             CountFamilies(state, player, playerState, 3),
-            CountFamilies(state, player, playerState, 6, 12),
+            census.HunterCount,
             CountFamilies(state, player, playerState, 0, 4),
             state.Setup.Duration);
         return OriginalAiHireRoleRules.SelectAdjusted(
             state.Setup.Scenario, elapsedTurns, inputs);
+    }
+
+    /// <summary>
+    /// RULE-AI-010, FND-AI-050: after the hire choice, whether or not the player may hire, a player
+    /// owning more than six sectors whose hunters (families 6 and 12) outnumber a quarter of them
+    /// sends the first hunter in slot order back to family 0. The Attack test that spares it reads
+    /// the planning record of the slot numbered by the sector count, whichever hunter is visited.
+    /// </summary>
+    public static void RevertSurplusHunter(MatchState state, PlayerId player, HireCensus census)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var playerState = state.FindPlayer(player)
+            ?? throw new ArgumentOutOfRangeException(nameof(player));
+        var ownedSectorCount = census.OwnedSectorCount;
+        if (ownedSectorCount <= 6 || ownedSectorCount / 4 >= census.HunterCount)
+            return;
+        if (state.AiPlanning.PlannedAction(player, ownedSectorCount) == GangAction.Attack) return;
+        for (var gangSlot = 0; gangSlot < playerState.Gangs.Count; gangSlot++)
+        {
+            if (!playerState.Gangs[gangSlot].IsActive
+                || state.AiPlanning.Family(player, gangSlot) is not (6 or 12))
+                continue;
+            state.AiPlanning.SetFamily(player, gangSlot, 0);
+            return;
+        }
     }
 
     private static int CountFamilies(
@@ -75,53 +138,59 @@ internal static class AiPlanningPreparation
         .Count(entry => entry.gang.IsActive
             && families.Contains(state.AiPlanning.Family(player, entry.slot)));
 
-    public static int PrepareHirePlacementMode(
-        MatchState state,
-        PlayerId player,
-        int adjustedRole)
+    /// <summary>
+    /// RULE-AI-013: after every gang has been dispatched and before the gang limit, the placement
+    /// anchor is kept or replaced by the fixed scans.
+    /// </summary>
+    public static void RefreshHireAnchor(MatchState state, PlayerId player) =>
+        state.AiPlanning.SetSectorAnchor(player, ResolveHireAnchor(state, player));
+
+    /// <summary>
+    /// RULE-AI-013 refresh_anchor against the current state, returning the stored form (a sector
+    /// plus <see cref="AiPlanningState.SectorAnchorOffset"/>) without storing it.
+    /// </summary>
+    public static int ResolveHireAnchor(MatchState state, PlayerId player)
     {
         ArgumentNullException.ThrowIfNull(state);
         var playerState = state.FindPlayer(player)
             ?? throw new ArgumentOutOfRangeException(nameof(player));
         var owners = state.Sectors.Select(sector => sector.Owner?.Value ?? -1)
-            // Sector index 64 aliases player 0 gang slot 0's owner byte. In a
-            // fresh game that byte is initialized to zero and remains stale at
-            // zero if the Right Hands slot later becomes inactive.
-            .Append(0)
+            // RULE-AI-013: the owner read at sector index 64 is byte 0 of the first combat record,
+            // the definition of the last gang in player 0's roster slot 0 that fought
+            // (FMT-STATE-003).
+            .Append(state.AiPlanning.FirstCombatRecordDefinition)
             .ToArray();
         var availability = state.Sectors
-            // Clamped, not checked. The original held this counter in a byte; here it is an int
-            // that Trigger adds three to five to and FinishCombat takes one off, so a sector that
-            // is crackdown-triggered most turns crosses 255 in a long game. Everything downstream
-            // reads it as "how long this sector stays shut", and 255 turns is already forever.
-            .Select(sector => (byte)Math.Clamp(sector.CrackdownTurnsRemaining, 0, byte.MaxValue))
-            // The aliased retaliation byte is irrelevant while owner[64] != -1.
+            // RULE-AI-013: the scans compare the signed byte with 0, so a value wrapped below 0
+            // still reads as a Crackdown (FMT-STATE-002).
+            .Select(sector => unchecked((byte)(sbyte)sector.CrackdownTurnsRemaining))
+            // The aliased retaliation byte is irrelevant: owner[64] is a definition in 0..127, never
+            // -1 (AiPlanningState.FirstCombatRecordDefinition).
             .Append((byte)0)
             .ToArray();
-        var anchorSector = state.AiPlanning.SectorAnchor(player)
-            - AiPlanningState.SectorAnchorOffset;
+        var storedAnchor = state.AiPlanning.SectorAnchor(player);
+        var anchorSector = storedAnchor - AiPlanningState.SectorAnchorOffset;
         var activeGangCount = (int sectorId) => playerState.Gangs.Count(gang =>
             gang.IsActive && gang.SectorId == sectorId);
-        var priorChaosCount = (int sectorId) => playerState.Gangs
-            .Select((gang, slot) => (gang, slot))
-            .Count(entry => entry.gang.IsActive
-                && entry.gang.SectorId == sectorId
-                && state.AiPlanning.PreviousAction(player, entry.slot) == GangAction.Chaos);
-        var retainsAnchor = state.Setup.Scenario != ScenarioId.BigMan
-            && anchorSector is >= 0 and < MatchLimits.SectorCount
-            && owners[anchorSector] == player.Value
-            && activeGangCount(anchorSector) < MatchLimits.FriendlyGangsPerSector
-            && OriginalAiHireAnchorRules.CountAvailableNeutralNeighbors(
-                player, anchorSector, owners, availability) > 0;
-        if (!retainsAnchor)
-        {
-            anchorSector = OriginalAiHireAnchorRules.Select(
-                player, state.Setup.Scenario, anchorSector, owners, availability,
-                activeGangCount, priorChaosCount);
-            state.AiPlanning.SetSectorAnchor(
-                player, checked(anchorSector + AiPlanningState.SectorAnchorOffset));
-        }
+        if (OriginalAiHireAnchorRules.KeepsAnchor(
+                player, state.Setup.Scenario, anchorSector, owners, availability, activeGangCount))
+            return storedAnchor;
+        anchorSector = OriginalAiHireAnchorRules.Select(
+            player, state.Setup.Scenario, anchorSector, owners, availability,
+            activeGangCount,
+            sectorId => AiTurnPlanner.CountPreviousChaosInSector(state, player, sectorId));
+        return checked(anchorSector + AiPlanningState.SectorAnchorOffset);
+    }
 
+    public static int PrepareHirePlacementMode(
+        MatchState state,
+        PlayerId player,
+        int adjustedRole,
+        int sectorAnchor)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var playerState = state.FindPlayer(player)
+            ?? throw new ArgumentOutOfRangeException(nameof(player));
         var firstHostileSector = FirstVisibleHostileSector(state, player)
             ?? OriginalAiHirePlacementRules.InactiveGangSector;
         var gangSlotZeroSector = playerState.Gangs.Count > 0 && playerState.Gangs[0].IsActive
@@ -129,7 +198,7 @@ internal static class AiPlanningPreparation
             : OriginalAiHirePlacementRules.InactiveGangSector;
         return OriginalAiHirePlacementModeRules.Select(
             state.Setup.Scenario, adjustedRole,
-            state.AiPlanning.SectorAnchor(player), firstHostileSector,
+            sectorAnchor, firstHostileSector,
             gangSlotZeroSector);
     }
 

@@ -513,7 +513,8 @@ public static class PxDimensions
             _ when bytes == 24_694 => new(220, 56),
             "PX00200" => new(428, 410),
             "PX00201" => new(320, 240),
-            "PX00202" or "PX00203" => new(312, 393),
+            // FMT-GFX-001: 311 wide, the row padding making the 312th column.
+            "PX00202" or "PX00203" => new(311, 393),
             "PX00300" => new(324, 64),
             "PX02000" => new(120, 1408),
             "PX03000" => new(640, 576),

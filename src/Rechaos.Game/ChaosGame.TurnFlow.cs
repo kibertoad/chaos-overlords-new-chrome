@@ -31,8 +31,10 @@ public sealed partial class ChaosGame
         // gang warning has already had its say, and a turn it sends back keeps its selection.
         _gangSelection.Clear();
         // Including a gang still held under the pointer: the planning clock can end the turn from
-        // under a drag, and the next player must not inherit it.
+        // under a drag, and the next player must not inherit it — nor a hire offer held from the
+        // dock of the player whose turn this was.
         ForgetGangDrag();
+        ForgetHireDrag();
         StopPlanningTimer();
         if (_state.Outcome is not null)
         {
@@ -51,7 +53,10 @@ public sealed partial class ChaosGame
             return;
         }
 
-        var advance = GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
+        PlanningAdvance advance;
+        // The original shows the hourglass while it resolves a turn (RULE-UI-007).
+        using (_pointer.Busy())
+            advance = GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
         QueueHotSeatEliminations(advance);
         _diagnostics?.Write("planning.finished", new Dictionary<string, string?>
         {
@@ -64,7 +69,7 @@ public sealed partial class ChaosGame
         CompleteTurnAdvance(previousTurn);
 
         if (_state.Outcome is not null)
-            _screens.Show(ClientScreen.Endgame);
+            ShowMatchEnd();
         else if (ShowPendingHotSeatElimination())
         {
             _selectedGangIndex = 0;
@@ -92,29 +97,12 @@ public sealed partial class ChaosGame
         _autoSave.Capture(_state);
     }
 
-    /// <summary>Autosaves and cues the turn that has just begun, if one has.</summary>
+    /// <summary>Autosaves the turn that has just begun, if one has.</summary>
     private void CompleteTurnAdvance(int previousTurn)
     {
         if (_state is null || _state.Coordinator.Turn == previousTurn) return;
+        // RULE-AUDIO-006: a local game has no turn-start sound.
         WriteAutoSave();
-        PlayTurnStartCue(previousTurn);
-    }
-
-    /// <summary>Plays the recovered later-turn cue when a local turn has just begun.</summary>
-    /// <remarks>
-    /// Once every local human is out, the computers play on at one turn per frame; restarting the
-    /// cue on each of those frames would only stutter its first few milliseconds, so it waits for a
-    /// turn someone is still planning.
-    /// </remarks>
-    private void PlayTurnStartCue(int previousTurn)
-    {
-        if (_state is not { } state) return;
-        var humanPlaying = state.Players.Any(player =>
-            player.Setup.Controller == PlayerController.Human
-            && player.Status == PlayerStatus.Active);
-        if (AudioRouting.TurnStartSound(previousTurn, state.Coordinator.Turn,
-                state.Outcome is not null, humanPlaying) is { } cue)
-            PlayGeneralSound(cue);
     }
 
     /// <summary>
@@ -142,6 +130,7 @@ public sealed partial class ChaosGame
         if (_state is null) return;
         _gangSelection.Clear();
         ForgetGangDrag();
+        ForgetHireDrag();
         if (_state.Outcome is not null)
         {
             _message = string.Empty;
@@ -163,10 +152,9 @@ public sealed partial class ChaosGame
         if (completedTurn)
         {
             WriteAutoSave();
-            PlayTurnStartCue(previousTurn);
         }
         if (_state.Outcome is not null)
-            _screens.Show(ClientScreen.Endgame);
+            ShowMatchEnd();
         else if (transition.ActivePlayer is not null && transition.ActivePlayer != previousActivePlayer)
         {
             _selectedGangIndex = 0;
@@ -192,6 +180,13 @@ public sealed partial class ChaosGame
             || _eliminationHandoffPlayer is not null) return;
         var acted = false;
         var startingTurn = _state.Coordinator.Turn;
+        // A computer's planning and the resolution it ends in run below in this one update, under
+        // the hourglass the original shows while it resolves a turn (RULE-UI-007).
+        using var busy = _state.Coordinator.Phase == TurnPhase.Command
+            && _state.Coordinator.ActivePlayer is { } firstPlayer
+            && _state.FindPlayer(firstPlayer)!.Setup.Controller == PlayerController.Computer
+                ? _pointer.Busy()
+                : null;
         while (_state.Coordinator.ActivePlayer is { } playerId)
         {
             var player = _state.FindPlayer(playerId)!;
@@ -249,7 +244,7 @@ public sealed partial class ChaosGame
         CompleteTurnAdvance(startingTurn);
         if (_state.Outcome is not null)
         {
-            _screens.Show(ClientScreen.Endgame);
+            ShowMatchEnd();
         }
         else if (!ShowPendingHotSeatElimination()
                  && _state.Coordinator.ActivePlayer is { } nextPlayer

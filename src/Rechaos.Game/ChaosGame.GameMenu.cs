@@ -98,6 +98,8 @@ public sealed partial class ChaosGame
     private int _saveSlotCursor;
     /// <summary>The nine manual slots, then the autosave in <see cref="SaveSlotCatalog.AutoSaveRow"/>.</summary>
     private SaveSlotSummary?[] _saveSlots = new SaveSlotSummary?[SaveSlotCatalog.BrowserRowCount];
+    /// <summary>The file the automatic row was read from: the autosave or the crash-recovery save.</summary>
+    private string? _automaticRowPath;
     private readonly TextField _saveName = new("SAVE NAME", 48);
     private bool _editingSaveName;
 
@@ -152,8 +154,10 @@ public sealed partial class ChaosGame
         FlushAutoSaves();
         for (var slot = 0; slot < SaveSlotCatalog.SlotCount; slot++)
             _saveSlots[slot] = SaveSlotCatalog.Read(_saveDirectory, slot, _definitions);
-        _saveSlots[SaveSlotCatalog.AutoSaveRow] =
-            SaveSlotCatalog.ReadAutoSave(_autoSavePath, _definitions);
+        var automatic = SaveSlotCatalog.ReadAutomatic(
+            _autoSavePath, SaveSlotCatalog.CrashRecoveryPath(_saveDirectory), _definitions);
+        _saveSlots[SaveSlotCatalog.AutoSaveRow] = automatic?.Row;
+        _automaticRowPath = automatic?.Path;
     }
 
     private void UpdateGameMenu(KeyboardState keyboard)
@@ -367,8 +371,7 @@ public sealed partial class ChaosGame
             LeaveOnlineMatch();
             return;
         }
-        _state = null;
-        _actions = null;
+        ClearMatch();
         _message = string.Empty;
         _screens.Show(ClientScreen.Title);
     }

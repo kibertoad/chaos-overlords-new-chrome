@@ -338,9 +338,9 @@ the exact RNG consumption order.
   storage, and may trigger a crackdown. Owner Cash remains a separate Upkeep/UI
   value computed from the controlled-sector tax and influenced sites.
 - Attack is simultaneous. Contrary to the original manual's abbreviated
-  description, the attack pool is `current Force + CombatRating - Defense`,
-  where CombatRating includes the applicable weapon skill and Defense includes
-  item defense. This correction is corroborated by the
+  description, the attack pool is `current Force + Combat - Defense`, where
+  Combat is the stored value that already holds the applicable weapon skills
+  (RULE-COMBAT-001) and Defense includes item defense. This correction is corroborated by the
   [1997 Russell Webb et al. FAQ](https://gamefaqs.gamespot.com/pc/196900-chaos-overlords/faqs/1684)
   and the recovered executable formula. Both the opening attack and retaliation
   use start-of-round Force snapshots, so a gang eliminated by the opening roll
@@ -886,7 +886,7 @@ proprietary contents.
 | M7 | Foundation started | Original city ownership layers and site/gang portraits are rendered; Item Information and completed-Research reports play the dedicated 15-frame `PX04xxx` item rotations in measured apertures, management-panel artwork uses measured template apertures, setup highlights use inset button faces, and the city/sector player bar plays the twelve-frame original active-player marker; Detailed Combat synchronizes equipped, unarmed and detected-police sounds to their attack clips, and retaliation lands inside the attack's clip with no cue of its own (FND-COMBAT-005, FND-COMBAT-006); all nine recovered general-effect slots load and proven setup selection/rejection cues play; recovered title/setup Track 2, gameplay Tracks 3-8, and endgame Track 9 programs use the exhaustive static menu/restart boundaries with repeat and focus pause/resume; Options persists recovered presentation/audio defaults plus recreation-native display mode; panel entrances use the recovered 344-pixel travel and quarter-second target; bounded local WinHelp decoding and a cross-platform F1 viewer navigate 59 listed topics from 80 decoded records, preserve 80 native context hashes/targets and 779 styled runs, verify every contents symbol, record the empty numeric map, route screens through exact context symbols, and expose all 67 internal jumps plus 26 popups | Complete atlas/event integration, animations, remaining sound-effect triggers, validate original Options close/adjacent-panel/combat cadence, timer/native playback and WinHelp paragraph geometry, video, golden screens and M1-M6 dependencies |
 | M8 | Foundation started | Windows local launcher; legal-copy extraction; self-contained Windows package and GOG-aware Inno installer with an always-visible New Chrome destination page, separate original-asset source page, visible import stages, retryable source selection, nonzero failure exit and runtime error dialog; Linux amd64 `.deb`; macOS arm64/x64 application-bundle `.pkg`; manually dispatched validation and selectable Windows-only (default) or all-platform GitHub Release workflow; pull-request/manual zizmor gate; clean-room run `34403047147` passed Windows, Linux, both macOS architectures, and all installer jobs; zizmor run `34403047115` passed | macOS signing/notarization, native interactive tests, accuracy audit, compatibility and full release gate |
 
-Current automated baseline: the solution builds successfully, 1522 focused
+Current automated baseline: the solution builds successfully, 3060 focused
 tests pass in the default gate, and the complete gate contains those plus 53 independently passing
 long-running AI campaign cases. The inspected legal-copy output
 contains 686 size/SHA-256-verified

@@ -23,6 +23,10 @@ public static class ManualRules
     public const int PoliceSuccessThreshold = 5;
     public const int MinimumCrackdownTurns = 3;
     public const int MaximumCrackdownTurns = 5;
+    // RULE-POLICE-003: CRACKDOWN_PERMANENT. A sector's police presence at this value or above never
+    // counts down (the native test is `c < 100`, so a presence raised to 103-105 stays too, per
+    // RULE-POLICE-002); the island rule starts every unowned sector at it (FND-SETUP-003).
+    public const int PermanentCrackdownTurns = 100;
     public const int HealBaseDice = 4;
     public const int ControlledSectorTax = 1;
     public const int MinimumSectorIncome = 3;
@@ -136,18 +140,19 @@ public static class ManualRules
         return chaos > tolerance;
     }
 
-    public static int CombatRating(EffectiveStatistics statistics, short? weaponType)
+    /// <summary>
+    /// RULE-COMBAT-001: the skills a gang's rebuilt Combat takes for its weapon type: Strength,
+    /// Fighting and Martial Arts bare handed, Strength for type 0, Strength and Blade for type 1,
+    /// Range for type 2, and none for any other type.
+    /// </summary>
+    public static int WeaponSkills(EffectiveStatistics statistics, short? weaponType) => weaponType switch
     {
-        var skill = weaponType switch
-        {
-            null => checked(statistics.Strength + statistics.Fighting + statistics.MartialArts),
-            0 => statistics.Strength,
-            1 => checked(statistics.Strength + statistics.Blade),
-            2 => statistics.Range,
-            _ => throw new ArgumentOutOfRangeException(nameof(weaponType), weaponType, "A weapon type must be melee, blade, or ranged.")
-        };
-        return checked(statistics.Combat + skill);
-    }
+        null => checked(statistics.Strength + statistics.Fighting + statistics.MartialArts),
+        0 => statistics.Strength,
+        1 => checked(statistics.Strength + statistics.Blade),
+        2 => statistics.Range,
+        _ => 0
+    };
 
     public static int AttackDiceCount(int force, int combatRating, int defense)
     {
@@ -161,8 +166,19 @@ public static class ManualRules
         return successes / 2;
     }
 
-    public static bool SuppressesRetaliation(EffectiveStatistics attacker, short? attackerWeaponType) =>
-        attackerWeaponType is null && attacker.MartialArts > 0;
+    /// <summary>
+    /// RULE-ATTACK-001: the target does not strike back when the attacker is unarmed with a Martial
+    /// Arts other than 0, unless the target is unarmed with a Martial Arts above 0. The attacker's
+    /// test is <c>== 0</c> and the target's <c>&gt; 0</c> [FND-COMBAT-008], so an unarmed attacker
+    /// with a negative Martial Arts counts as a Martial Artist.
+    /// </summary>
+    public static bool SuppressesRetaliation(
+        EffectiveStatistics attacker,
+        short? attackerWeaponType,
+        EffectiveStatistics target,
+        short? targetWeaponType) =>
+        attackerWeaponType is null && attacker.MartialArts != 0
+        && !(targetWeaponType is null && target.MartialArts > 0);
 
     public static int HiddenAttackHitPercent(int detect, int stealth)
     {

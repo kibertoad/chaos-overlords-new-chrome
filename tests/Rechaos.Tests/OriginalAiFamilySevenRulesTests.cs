@@ -136,6 +136,6 @@ public sealed class OriginalAiFamilySevenRulesTests
             })
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Siege, GameDuration.SixMonths, 41, setups), players, sectors);
+            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups), players, sectors);
     }
 }

@@ -17,7 +17,9 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-26 | [Keep a replay load's random state and inboxes](#2026-09-26--keep-a-replay-loads-random-state-and-inboxes) |
 | 2026-09-26 | [Keep the original hunter guard and drop DEV-AI-001](#2026-09-26--keep-the-original-hunter-guard-and-drop-dev-ai-001) |
+| 2026-09-26 | [Keep the rule and AI corrections mandatory](#2026-09-26--keep-the-rule-and-ai-corrections-mandatory) |
 | 2026-09-25 | [Play the intro at every start unless Intro only once is on](#2026-09-25--play-the-intro-at-every-start-unless-intro-only-once-is-on) |
 | 2026-09-24 | [Record the gangs that fought in each combat event](#2026-09-24--record-the-gangs-that-fought-in-each-combat-event) |
 | 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
@@ -37,6 +39,24 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-26 — Keep a replay load's random state and inboxes
+
+- Decision: F10 rebuilds the match from the F6 journal and plays on with the
+  random state and Comlink inboxes the journal reached. It does not do what a
+  save load does: draw on from the run's sequence (RULE-RNG-001) and empty every
+  inbox (RULE-COMLINK-004).
+- Reason: a replay exists to reproduce a session exactly. Reseeding would make
+  the turn after the load differ from the recorded one, and emptying the inboxes
+  would throw away part of the state being reproduced, so a bug seen after the
+  load could no longer be followed. RULE-RNG-001 and RULE-COMLINK-004 describe
+  how the original enters a loaded game; the original has no replay load, so
+  they do not govern this one.
+- Open: F6 and F10 are available to players in every local match. Together they
+  act as a quick save and quick load that keeps the luck, which is exactly what
+  RULE-RNG-001's reload behaviour prevents for F5 and F9. The keys should later
+  move behind a debug setting. Players lose nothing by that, since F5 and F9
+  already save and load, and the replay stays a reproduction tool.
 
 ## 2026-09-26 — Keep the original hunter guard and drop DEV-AI-001
 
@@ -81,6 +101,50 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   hires is itself suspect and is recorded as an open claim on RULE-AI-010,
   with its follow-up in step 8 of
   [parity-achievement-plan.md](../parity-achievement-plan.md).
+
+## 2026-09-26 — Keep the rule and AI corrections mandatory
+
+- Decision: DEV-EQUIP-001 (Equip and Sell change cash in the order the player scheduled them)
+  and DEV-AI-002 (a planned AI action with no legal command is dropped) stay `mandatory`, with no
+  setting that restores the original. The rebuild keeps one code path for each. This upholds the
+  decisions of 2026-09-17 and 2026-09-24 against a proposal to put them behind a Revised rules
+  setting that starts off. The same proposal covered DEV-AI-001 (the corrected hunter guard),
+  which was dropped instead (the entry above).
+- Reason for DEV-EQUIP-001: the original scans roster slots, an order with no meaning in play.
+  The player never sees a gang's roster slot while giving orders, so whether a Sell pays for an
+  Equip turns on a number the player cannot read. Resolving in the order the player scheduled is
+  strictly better: the player controls it and the cash row of the console shows it.
+- Reason for DEV-AI-002: the 2026-09-17 decision stands. A computer gang is held to the same
+  legal orders as a human's.
+- DEV-CONTROL-001 (only players who ordered Control compete for the sector) is also mandatory.
+  The original's behaviour is a bug (BUG-CONTROL-001): every player slot enters the Control pass,
+  so a player with no order starts at 0 and has a positive margin when the sector's Income plus
+  Support is negative, which hands the sector to a bystander or lets one tie with a real
+  challenger. The manual describes the comparison only among players who try to control the
+  sector, and no player source relies on the case. Step 3 of the parity achievement plan keeps
+  the correction when it brings Control in line with FND-CONTROL-003.
+- Interface additions stay `mandatory` with no setting to hide them: the cash row of the console
+  (DEV-UI-006), the Tolerance warning (DEV-UI-007), the order targets (DEV-UI-008), the minimap
+  pylons (DEV-UI-002), the police-turn count (DEV-UI-014), the opponent strip (DEV-UI-013), the
+  research progress (DEV-RESEARCH-001) and the title screen's version label (DEV-UI-012). The
+  held-item boxes of the Equip panel were listed here as DEV-EQUIP-002 until FND-EQUIP-010 showed
+  that the original draws them too, and that deviation is dropped. Each shows only what the player already knows or
+  could work out, removes no control and changes no rule, so each is a quality-of-life improvement
+  with no downside. Each entry's Justification says what it saves the player. Screen tests allow
+  for them by ID.
+- Intro only once (DEV-VIDEO-003) starts on. Players rarely want to watch the intro again and
+  again, and one showing is plenty; the INTRO button replays it on request and a player who wants
+  it at every start switches the option off. This reverses the default of the 2026-09-25 entry
+  below. Preferences format v12 has not been released, so no format moves: a v11 file migrates
+  with the option on. DEV-UI-004, which described the same behaviour without a setting, is
+  dropped.
+- In-memory layouts: a FMT-STATE entry counts as `complete` when its row's notes, or a document
+  they link, map every field a rule reads or writes to the rebuild state that holds the same
+  value at the same point. A difference of representation that no rule result can observe, such
+  as the Force-0 marker of an empty roster slot where the original writes sector 100
+  (RULE-GANG-002), needs no deviation. A field the rebuild holds with a different value, or does
+  not hold where a rule reads it, keeps the row `partial` until the rule is fixed or a deviation
+  covers it.
 
 ## 2026-09-25 — Play the intro at every start unless Intro only once is on
 
@@ -216,11 +280,11 @@ the panel came from.
 it a cue that the original separated in time now starts in the same frame and
 cuts off the one before it. This is accepted rather than covered with delays or
 with overlapping voices, which would add behavior the original never had.
-Only the Slide Panels-gated cues are affected:
-
-- a panel-to-panel change plays slot 1 and then slot 0, and the slot-1 close cue
-  is not heard;
-- confirming the idle-gang warning plays slot 1 and then the turn-start slot 9.
+Only the Slide Panels-gated cues are affected: a panel-to-panel change plays slot 1
+and then slot 0, and the slot-1 close cue is not heard. Confirming the idle-gang
+warning used to play slot 1 and then the turn-start slot 9; slot 9 now plays only
+in an online match, when the server seals the turn (RULE-AUDIO-006), so nothing
+follows slot 1 on confirm.
 
 With Slide Panels off, the original plays neither slot 0 nor slot 1, and the
 recreation matches it exactly.

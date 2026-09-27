@@ -30,10 +30,30 @@ public sealed partial class ChaosGame
     private void OpenBulkCommands(bool repeat)
     {
         if (!CanOpenCommands(out var playerId)) return;
+        _bulkCommandGangs = _gangSelection.Gangs.ToArray();
         _commandOptions = BulkGangCommands.Options(
-            _state!, playerId, _gangSelection.Gangs, repeat);
+            _state!, playerId, _bulkCommandGangs, repeat);
         ShowCommandOverlay(repeat, ClientScreen.Sector, bulk: true);
     }
+
+    /// <summary>
+    /// RULE-TURN-005, SCR-UI-004: the group order strip gives one order to every one of the
+    /// player's gangs in the sector, hiding or not, from the original's group menus.
+    /// </summary>
+    private void OpenGroupCommands(MatchState state, PlayerId playerId, bool repeat)
+    {
+        if (!CanOpenCommands(out _)) return;
+        _bulkCommandGangs = GroupOrderGangs(state, playerId).Select(gang => gang.Id).ToArray();
+        _commandOptions = BulkGangCommands.Options(
+            state, playerId, _bulkCommandGangs, repeat, group: true);
+        ShowCommandOverlay(repeat, ClientScreen.Sector, bulk: true, group: true);
+    }
+
+    /// <summary>FND-TURN-009: every one of the player's gangs in the sector, in roster order.</summary>
+    private IReadOnlyList<MatchGangState> GroupOrderGangs(MatchState state, PlayerId playerId) =>
+        state.FindPlayer(playerId)!.Gangs
+            .Where(gang => gang.IsActive && gang.SectorId == _cursor)
+            .ToArray();
 
     private bool CanOpenCommands(out PlayerId playerId)
     {
@@ -48,7 +68,8 @@ public sealed partial class ChaosGame
         return false;
     }
 
-    private void ShowCommandOverlay(bool repeat, ClientScreen returnScreen, bool bulk)
+    private void ShowCommandOverlay(
+        bool repeat, ClientScreen returnScreen, bool bulk, bool group = false)
     {
         _commandCursor = 0;
         _commandTargetOptions = [];
@@ -56,14 +77,18 @@ public sealed partial class ChaosGame
         _choosingCommandTarget = false;
         _commandRepeats = repeat;
         _bulkCommand = bulk;
+        if (!bulk) _bulkCommandGangs = [];
+        _groupCommand = group;
         _commandReturnScreen = returnScreen;
         _screens.Show(ClientScreen.Commands);
     }
 
     /// <summary>The orders the overlay lists, which a bulk order shortens to its allowlist.</summary>
-    private IReadOnlyList<GangAction> CommandOverlayActions => _bulkCommand
-        ? BulkGangCommands.ActionsFor(_commandRepeats)
-        : CommandOverlayLayout.ActionsFor(_commandRepeats);
+    private IReadOnlyList<GangAction> CommandOverlayActions => _groupCommand
+        ? BulkGangCommands.GroupActionsFor(_commandRepeats)
+        : _bulkCommand
+            ? BulkGangCommands.ActionsFor(_commandRepeats)
+            : CommandOverlayLayout.ActionsFor(_commandRepeats);
 
     /// <summary>
     /// Feeds the hovered action row to the dwell tracker so the command overlay can explain
@@ -92,7 +117,10 @@ public sealed partial class ChaosGame
                 if (indices.Count > 0)
                 {
                     var position = indices.IndexOf(_commandTargetCursor);
-                    _commandTargetCursor = indices[Mod(position + delta, indices.Count)];
+                    _commandTargetCursor = position < 0
+                        ? indices[delta > 0 ? 0 : indices.Count - 1]
+                        : indices[Mod(position + delta, indices.Count)];
+                    _commandPanelFace = CommandPanelFaces.AfterChange(true);
                 }
             }
             else if (_commandTargetOptions.Count > 0)
@@ -154,48 +182,7 @@ public sealed partial class ChaosGame
             }
             if (IsEquipmentCommandPicker())
             {
-                if (EquipmentCommandLayout.Cancel.Contains(point))
-                {
-                    AcceptInput();
-                    BackFromCommands();
-                    return;
-                }
-                if (EquipmentCommandLayout.Ok.Contains(point))
-                {
-                    ActivateCommandSelection();
-                    return;
-                }
-                for (var category = 0; category < EquipmentCommandLayout.CategoryCount; category++)
-                {
-                    if (!EquipmentCommandLayout.CategoryHit(category).Contains(point)) continue;
-                    SelectEquipmentCategory(category);
-                    return;
-                }
-                if (_state is null) return;
-                if (EquipmentCommandLayout.Portrait.Contains(point))
-                {
-                    // One target only, so every portrait click registers the same index.
-                    if (_equipmentPortraitClicks.Register(0, _inputTime)
-                        && _state.FindGang(_commandTargetOptions[0].Gang) is { } actor)
-                        OpenGangDetails(actor, ClientScreen.Commands);
-                    return;
-                }
-                var indices = EquipmentCommandIndices(_state);
-                var position = indices.IndexOf(_commandTargetCursor);
-                var itemFirst = EquipmentCommandLayout.FirstVisibleItem(indices.Count, position);
-                var itemVisible = Math.Min(
-                    EquipmentCommandLayout.VisibleItemCount, indices.Count - itemFirst);
-                var itemRow = _commandTargetOptions[0].Action == GangAction.Research
-                    ? EquipmentCommandLayout.ResearchItemRowAt(point)
-                    : EquipmentCommandLayout.ItemRowAt(point);
-                if (itemRow >= itemVisible) itemRow = -1;
-                if (itemRow >= 0)
-                {
-                    _commandTargetCursor = indices[itemFirst + itemRow];
-                    var itemId = _commandTargetOptions[_commandTargetCursor].Target.Id;
-                    if (_equipmentItemClicks.Register(itemId, _inputTime)) OpenItemDetails((short)itemId);
-                }
-                else if (!EquipmentCommandLayout.Panel.Contains(point)) BackFromCommands();
+                HandleEquipmentCommandClick(point);
                 return;
             }
             var first = Math.Max(0, _commandTargetCursor - 6);
@@ -219,19 +206,22 @@ public sealed partial class ChaosGame
         else if (!CommandOverlayLayout.Panel.Contains(point)) BackFromCommands();
     }
 
-    private void ActivateCommandSelection()
+    private void ActivateCommandSelection() => ActivateCommandSelection(pointerButton: false);
+
+    private void ActivateCommandSelection(bool pointerButton)
     {
         if (_actions is null) return;
         if (_choosingCommandTarget)
         {
-            if (IsEquipmentCommandPicker() && (_state is null
-                || !EquipmentCommandLayout.CanConfirm(
-                    _commandTargetCursor, EquipmentCommandIndices(_state))))
+            if (IsAttackCommandPicker())
             {
-                RejectInput("NO ITEMS IN THIS CATEGORY");
+                ConfirmAttack();
+                return;
             }
-            else if (_commandTargetOptions.Count > 0)
-                SubmitCommand(_commandTargetOptions[_commandTargetCursor]);
+            if (!CanConfirmCommandTarget())
+                RejectInput(IsMovementCommandPicker() ? "NO DESTINATION CHOSEN" : "NO ITEM CHOSEN");
+            else
+                SubmitCommand(_commandTargetOptions[_commandTargetCursor], pointerButton);
             return;
         }
 
@@ -265,14 +255,18 @@ public sealed partial class ChaosGame
             _commandTargetCursor = 0;
             _equipmentCategory = 0;
             _choosingCommandTarget = true;
-            if (action is GangAction.Equip or GangAction.Research)
-                SelectEquipmentCategory(0);
+            _commandPanelFace = CommandPanelFaceState.NotDrawn;
+            _pressedCommandPanelButton = null;
+            if (action == GangAction.Equip) OpenEquipmentPurchasePanel();
+            else if (action == GangAction.Research) SelectEquipmentCategory(0);
+            else if (action == GangAction.Move) OpenMovementPanel();
+            if (action == GangAction.Attack) OpenAttackPicker();
             return;
         }
         SubmitCommand(options[0]);
     }
 
-    private void SubmitCommand(GameCommand selection)
+    private void SubmitCommand(GameCommand selection, bool pointerButton = false)
     {
         if (_actions is null) return;
         if (_bulkCommand)
@@ -282,7 +276,7 @@ public sealed partial class ChaosGame
         }
         var command = selection with { Repeat = _commandRepeats };
         var result = _actions.Submit(command);
-        ReportInputResult(result.Accepted, result.Validation.Message);
+        ReportButtonResult(result.Accepted, result.Validation.Message, pointerButton);
         if (result.Accepted) _screens.Show(_commandReturnScreen);
     }
 
@@ -290,18 +284,43 @@ public sealed partial class ChaosGame
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
         var intent = new BulkCommandIntent(action, target, _commandRepeats);
-        if (ApplyBulkCommand(playerId, intent, BulkGangCommands.Rejection(action)))
+        if (ApplyBulkCommand(playerId, _bulkCommandGangs, _groupCommand, intent, BulkGangCommands.Rejection(action)))
             _screens.Show(_commandReturnScreen);
     }
 
     private void CancelSelectedCommand()
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
+        if (_groupCommand)
+        {
+            CancelGroupCommands(playerId);
+            return;
+        }
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null) return;
         var result = _actions.Cancel(playerId, gang.Id);
         ReportInputResult(result.Accepted, result.Validation.Message);
         if (result.Accepted) _screens.Show(_commandReturnScreen);
+    }
+
+    /// <summary>
+    /// RULE-TURN-005: None from a group menu clears the order of every gang in the sector.
+    /// </summary>
+    private void CancelGroupCommands(PlayerId playerId)
+    {
+        var cancelled = 0;
+        foreach (var gang in _bulkCommandGangs)
+            if (_state!.FindGang(gang)?.QueuedCommand is not null
+                && _actions!.Cancel(playerId, gang).Accepted)
+                cancelled++;
+        if (cancelled == 0)
+        {
+            RejectInput("NO ORDERS TO CANCEL");
+            return;
+        }
+        AcceptInput();
+        _message = CityStatusMessage.RequireFit($"ORDERS CANCELLED FOR {cancelled}");
+        _screens.Show(_commandReturnScreen);
     }
 
     private void BackFromCommands()
@@ -318,19 +337,24 @@ public sealed partial class ChaosGame
     private void DrawCommands(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         DrawMapBackdrop(batch, pixel, font, state, _commandReturnScreen);
-        var playerId = ViewingPlayer(state);
-        var gang = SelectedGang(state.FindPlayer(playerId)!);
         if (_choosingCommandTarget)
         {
             DrawCommandTargets(batch, pixel, font, state);
             return;
         }
+        // RULE-TURN-005: a group order speaks for the sector's gangs, not the roster's selection.
+        var gang = _groupCommand
+            ? _bulkCommandGangs.Select(state.FindGang).FirstOrDefault(found => found is not null)
+            : SelectedGang(state.FindPlayer(ViewingPlayer(state))!);
+        var canCancel = _groupCommand
+            ? _bulkCommandGangs.Any(id => state.FindGang(id)?.QueuedCommand is not null)
+            : gang?.QueuedCommand is not null;
 
         var panel = CommandOverlayLayout.Panel;
         batch.Draw(pixel, panel, new Color(12, 18, 18, 246));
         DrawBorder(batch, pixel, panel, new Color(0, 190, 65), 2);
         var heading = _commandRepeats ? "RECURRING ACTION" : "ONE-OFF ACTION";
-        if (_bulkCommand) heading += $" X{_gangSelection.Count}";
+        if (_bulkCommand) heading += $" X{_bulkCommandGangs.Count}";
         font.Draw(batch, heading, new Vector2(panel.X + 8, panel.Y + 5), Color.Gold, 1);
         var actions = CommandOverlayActions;
         for (var index = 0; index < actions.Count; index++)
@@ -338,7 +362,7 @@ public sealed partial class ChaosGame
             var action = actions[index];
             var row = CommandOverlayLayout.ActionRow(index);
             var available = action == GangAction.None
-                ? gang?.QueuedCommand is not null
+                ? canCancel
                 : _commandOptions.Any(command => command.Action == action);
             if (index == _commandCursor)
                 batch.Draw(pixel, row, new Color(65, 35, 25));
@@ -379,7 +403,7 @@ public sealed partial class ChaosGame
         }
         if (IsAttackCommandPicker())
         {
-            DrawAttackCommandTargets(batch, pixel, font, state);
+            DrawAttackCommandTargets(batch, pixel, state);
             return;
         }
         var panel = CommandOverlayLayout.TargetPanel;
@@ -462,45 +486,71 @@ public sealed partial class ChaosGame
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, EquipmentCommandLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actor.DefinitionId), Color.White);
-        if (action == GangAction.Equip) DrawEquipmentCommandHeldItems(batch, pixel, actor);
+        if (action == GangAction.Equip) DrawEquipmentCommandHeldItems(batch, actor);
 
         var indices = EquipmentCommandIndices(state);
         var position = indices.IndexOf(_commandTargetCursor);
-        var first = EquipmentCommandLayout.FirstVisibleItem(indices.Count, position);
+        var first = EquipmentCommandLayout.FirstVisibleItem(indices.Count, Math.Max(0, position));
         foreach (var entry in indices.Skip(first).Take(EquipmentCommandLayout.VisibleItemCount)
                      .Select((index, row) => (index, row)))
         {
             var command = _commandTargetOptions[entry.index];
             var item = state.Definitions.Items[command.Target.Id];
             var rectangle = EquipmentCommandLayout.ItemRow(entry.row);
-            if (entry.index == _commandTargetCursor)
-                batch.Draw(pixel, rectangle, new Color(55, 65, 25));
-            font.Draw(batch, item.Name, new Vector2(rectangle.X + 2, rectangle.Y + 1), Color.Lime, 1);
-            var value = action == GangAction.Equip
-                ? SpecialSiteRules.EquipmentCost(state, actor, item).ToString()
-                : EquipmentCommandLayout.ResearchProgress(item.ResearchDifficulty,
-                    state.FindPlayer(actor.Owner)!.RemainingResearch(state.Definitions, item.Id));
-            font.Draw(batch, value, new Vector2(rectangle.Right - value.Length * 6 - 2, rectangle.Y + 1),
+            font.Draw(batch, item.Name, EquipmentCommandLayout.ItemNameOrigin(entry.row).ToVector2(),
                 Color.Lime, 1);
+            if (action == GangAction.Equip)
+            {
+                // SCR-EQUIP-001: the Factory-adjusted price in two number cells from x 420.
+                var price = SpecialSiteRules.EquipmentCost(state, actor, item).ToString();
+                font.Draw(batch, price,
+                    new Vector2(EquipmentCommandLayout.PriceLeft(price), rectangle.Y + 1), Color.Lime, 1);
+            }
+            else
+            {
+                var value = EquipmentCommandLayout.ResearchProgress(item.ResearchDifficulty,
+                    state.FindPlayer(actor.Owner)!.RemainingResearch(state.Definitions, item.Id));
+                font.Draw(batch, value,
+                    new Vector2(rectangle.Right - value.Length * 6 - 2, rectangle.Y + 1), Color.Lime, 1);
+            }
+            if (entry.index == _commandTargetCursor)
+                DrawEquipmentChosenRow(batch, pixel, entry.row, item.Name);
         }
-        DrawBorder(batch, pixel, EquipmentCommandLayout.Category(_equipmentCategory), Color.White, 2);
-        DrawButton(batch, pixel, font, EquipmentCommandLayout.Ok, "OK",
-            EquipmentCommandLayout.CanConfirm(_commandTargetCursor, indices));
+        if (_uiKeyedSprites is not null)
+            batch.Draw(_uiKeyedSprites, EquipmentCommandLayout.Category(_equipmentCategory),
+                EquipmentCommandLayout.CategoryFrameSource, Color.White);
+        DrawCommandPanelFaces(batch);
     }
 
-    private void DrawEquipmentCommandHeldItems(SpriteBatch batch, Texture2D pixel, MatchGangState gang)
+    /// <summary>
+    /// The chosen row mark of <c>fn_0043EFE5</c>: the row's 30-character text in the second
+    /// font row of PX00129 inside a one-pixel (0,255,0) frame, covering the price
+    /// (SCR-EQUIP-001, FND-EQUIP-010).
+    /// </summary>
+    private void DrawEquipmentChosenRow(SpriteBatch batch, Texture2D pixel, int row, string name)
     {
-        var itemIds = EquippedItems(gang);
-        if (itemIds.All(itemId => itemId is null)) return;
-        for (var slot = 0; slot < itemIds.Length; slot++)
+        var strip = EquipmentCommandLayout.ItemRow(row);
+        if (_uiSprites is not null)
         {
-            var destination = EquipmentCommandLayout.EquippedItem(slot);
-            batch.Draw(pixel, destination, Color.Black);
-            DrawBorder(batch, pixel, destination, Color.LightGray, 1);
-            if (_itemPortraits is not null && itemIds[slot] is { } itemId)
-                batch.Draw(_itemPortraits, destination,
-                    OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
+            var origin = EquipmentCommandLayout.ItemNameOrigin(row);
+            var text = EquipmentCommandLayout.ChosenRowText(name);
+            for (var index = 0; index < text.Length; index++)
+                batch.Draw(_uiSprites,
+                    new Rectangle(origin.X + index * OriginalFontLayout.CellWidth, origin.Y,
+                        OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight),
+                    EquipmentCommandLayout.ChosenRowGlyphSource(text[index]), Color.White);
         }
+        DrawBorder(batch, pixel, strip, EquipmentCommandLayout.ChosenRowFrame, 1);
+    }
+
+    private void DrawEquipmentCommandHeldItems(SpriteBatch batch, MatchGangState gang)
+    {
+        if (_itemPortraits is null) return;
+        var itemIds = EquippedItems(gang);
+        for (var slot = 0; slot < itemIds.Length; slot++)
+            if (itemIds[slot] is { } itemId)
+                batch.Draw(_itemPortraits, EquipmentCommandLayout.EquippedItem(slot),
+                    OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
     }
 
     private List<int> EquipmentCommandIndices(MatchState state) => Enumerable.Range(0, _commandTargetOptions.Count)
@@ -513,6 +563,13 @@ public sealed partial class ChaosGame
         if (category is < 0 or >= EquipmentCommandLayout.CategoryCount)
             throw new ArgumentOutOfRangeException(nameof(category));
         _equipmentCategory = category;
+        if (_commandTargetOptions.Count > 0 && _commandTargetOptions[0].Action == GangAction.Equip)
+        {
+            // SCR-EQUIP-001: a category clears the chosen item and draws the face disabled.
+            _commandTargetCursor = -1;
+            _commandPanelFace = CommandPanelFaceState.Disabled;
+            return;
+        }
         if (_state is null) return;
         var indices = EquipmentCommandIndices(_state);
         if (indices.Count > 0) _commandTargetCursor = indices[0];

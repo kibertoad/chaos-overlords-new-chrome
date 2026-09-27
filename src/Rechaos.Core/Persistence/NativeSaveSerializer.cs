@@ -14,7 +14,7 @@ public static class NativeSaveSerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
-    public const int CurrentFormatVersion = 28;
+    public const int CurrentFormatVersion = 34;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -109,7 +109,7 @@ public static class NativeSaveSerializer
 
     /// <summary>The envelope's <c>formatVersion</c>, or null when the bytes are not readable JSON.</summary>
     /// <remarks>Leaves the stream rewound for the real deserialization pass.</remarks>
-    private static int? DeclaredFormatVersion(MemoryStream bounded)
+    internal static int? DeclaredFormatVersion(MemoryStream bounded)
     {
         try
         {
@@ -203,7 +203,13 @@ public static class NativeSaveSerializer
                 savedPlanning.FormationSectors
                     ?? throw new InvalidDataException("Native save AI formation sectors are missing."),
                 savedPlanning.CoverageSectors
-                    ?? throw new InvalidDataException("Native save AI coverage sectors are missing."))
+                    ?? throw new InvalidDataException("Native save AI coverage sectors are missing."),
+                savedPlanning.NeedsFamily
+                    ?? throw new InvalidDataException("Native save AI family flags are missing."),
+                savedPlanning.RaiderMode
+                    ?? throw new InvalidDataException("Native save AI raider flags are missing."),
+                savedPlanning.FirstCombatRecordDefinition
+                    ?? throw new InvalidDataException("Native save first combat record definition is missing."))
             : throw new InvalidDataException("Native save AI planning state is missing.");
         var runtime = new MatchRuntimeRestore(
             document.Runtime.Turn,
@@ -298,7 +304,10 @@ public static class NativeSaveSerializer
                 state.AiPlanning.CaptureWeaponCooldowns(),
                 state.AiPlanning.CaptureArmorCooldowns(),
                 state.AiPlanning.CaptureFormationSectors(),
-                state.AiPlanning.CaptureCoverageSectors()),
+                state.AiPlanning.CaptureCoverageSectors(),
+                state.AiPlanning.CaptureNeedsFamily(),
+                state.AiPlanning.CaptureRaiderMode(),
+                checked((byte)state.AiPlanning.FirstCombatRecordDefinition)),
             state.Players.Select(player => new PlayerComlinkDocument(
                 player.Id.Value,
                 state.ComlinkFor(player.Id).NextSequence,
@@ -315,7 +324,8 @@ public static class NativeSaveSerializer
         player.Gangs.Select(gang => new GangDocument(
             gang.Id.Value, gang.DefinitionId, gang.SectorId, gang.Force,
             gang.Hidden, gang.HiredThisTurn,
-            gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId)).ToArray(),
+            gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId,
+            gang.StoredStatistics is { } statistics ? NativeStatistics.ToArray(statistics) : null)).ToArray(),
         player.HirePool.ToArray(),
         player.PendingHires.ToArray(),
         player.ResearchProgress.OrderBy(entry => entry.Key).ToDictionary(),
@@ -344,7 +354,11 @@ public static class NativeSaveSerializer
         {
             var restored = new MatchGangState(
                 new GangId(gang.Id), playerId, gang.DefinitionId, gang.SectorId, gang.Force,
-                gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId)
+                gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId,
+                // RULE-GANG-001: every gang in a match holds stored values, and the current format
+                // writes them, so a gang without them is a malformed save rather than one to rebuild.
+                NativeStatistics.FromArray(gang.Statistics
+                    ?? throw new InvalidDataException("Native save gang statistics are missing.")))
             {
                 Hidden = gang.Hidden,
                 HiredThisTurn = gang.HiredThisTurn
@@ -380,7 +394,10 @@ public static class NativeSaveSerializer
         sector.Income,
         sector.CrackdownTurnsRemaining,
         sector.CrackdownHistory.ToArray(),
-        Chaos: null);
+        Chaos: null,
+        BaseTolerance: sector.BaseTolerance,
+        Support: sector.Support,
+        CashYield: sector.CashYield);
 
     private static MatchSectorState RestoreSector(SectorDocument sector) => new(
         sector.Id,
@@ -398,7 +415,14 @@ public static class NativeSaveSerializer
         sector.CrackdownTurnsRemaining
             ?? throw new InvalidDataException("Native save crackdown duration is missing."),
         sector.CrackdownHistory
-            ?? throw new InvalidDataException("Native save crackdown history is missing."));
+            ?? throw new InvalidDataException("Native save crackdown history is missing."),
+        sector.BaseTolerance
+            ?? throw new InvalidDataException("Native save base Tolerance is missing."),
+        sector.Support
+            ?? throw new InvalidDataException("Native save sector Support is missing."),
+        // FMT-STATE-002 `cash_yield`. A save without it is filled in from the sites when the match
+        // is built, which gives the value of the last rebuild at every planning boundary.
+        sector.CashYield);
 
     /// <summary>
     /// Copies <paramref name="source"/> into memory and rewinds the copy, throwing
@@ -538,7 +562,8 @@ internal sealed record GangDocument(
     bool HiredThisTurn,
     short? WeaponItemId,
     short? ArmorItemId,
-    short? MiscellaneousItemId);
+    short? MiscellaneousItemId,
+    IReadOnlyList<int>? Statistics = null);
 
 internal sealed record StatisticsDocument(
     long CashEarned,
@@ -558,7 +583,10 @@ internal sealed record SectorDocument(
     int? Income = null,
     int? CrackdownTurnsRemaining = null,
     IReadOnlyList<int>? CrackdownHistory = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Chaos = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Chaos = null,
+    int? BaseTolerance = null,
+    int? Support = null,
+    int? CashYield = null);
 
 internal sealed record SiteDocument(int Slot, short DefinitionId, int Resistance, int? InfluencedBy);
 
@@ -599,7 +627,10 @@ internal sealed record AiPlanningDocument(
     IReadOnlyList<short>? WeaponCooldowns = null,
     IReadOnlyList<short>? ArmorCooldowns = null,
     IReadOnlyList<short>? FormationSectors = null,
-    IReadOnlyList<short>? CoverageSectors = null);
+    IReadOnlyList<short>? CoverageSectors = null,
+    IReadOnlyList<bool>? NeedsFamily = null,
+    IReadOnlyList<bool>? RaiderMode = null,
+    byte? FirstCombatRecordDefinition = null);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,

@@ -10,12 +10,50 @@ public static partial class AiTurnPlanner
     internal static int OwnerQuery(MatchState state, int sectorId)
     {
         var sector = state.Sectors[sectorId];
-        return sector.CrackdownActive ? -2 : sector.Owner?.Value ?? -1;
+        return sector.HasCrackdownTurns ? -2 : sector.Owner?.Value ?? -1;
+    }
+
+    /// <summary>
+    /// RULE-AI-004 owner_is_human (selector 0x35, FND-AI-057): the raw owner byte indexes the
+    /// controllers with no range test, so for a neutral sector the read lands on player 5's
+    /// casualty count, and a count of 0 or 3 reads as human. Both tables hold 32-bit entries
+    /// (FMT-SAVE-001), so the whole count is compared, not its low byte.
+    /// </summary>
+    internal static bool OwnerIsHuman(MatchState state, int sectorId)
+    {
+        if (state.Sectors[sectorId].Owner is { } owner)
+            return state.FindPlayer(owner)?.Setup.Controller == PlayerController.Human;
+        var casualties = state.FindPlayer(new PlayerId(MatchLimits.PlayerCount - 1))?
+            .Statistics.Casualties ?? 0;
+        return casualties is 0 or 3;
     }
 
     /// <summary>RULE-AI-004 hostile_owner, with the original's out-of-row reads (FND-AI-048).</summary>
     internal static bool IsHostileOwner(MatchState state, PlayerId playerId, int sectorId) =>
         state.AiStrategy.IsHostileToOwnerQuery(playerId, OwnerQuery(state, sectorId));
+
+    /// <summary>
+    /// FND-AI-046: selector 0x5B counts the player's active gangs in the sector whose previous
+    /// action was Chaos, the planning gang included. Callers compare the count with the threshold
+    /// the FND-AI-046 table gives for their call site (0, below 1 or below 2).
+    /// </summary>
+    internal static int CountPreviousChaosInSector(
+        MatchState state,
+        PlayerId playerId,
+        int sectorId)
+    {
+        var gangs = state.FindPlayer(playerId)!.Gangs;
+        var count = 0;
+        for (var slot = 0; slot < gangs.Count; slot++)
+        {
+            var gang = gangs[slot];
+            if (gang.IsActive
+                && gang.SectorId == sectorId
+                && state.AiPlanning.PreviousAction(playerId, slot) == GangAction.Chaos)
+                count++;
+        }
+        return count;
+    }
 
     private static IReadOnlyList<ObjectiveTarget> SelectHumanWeightedTargetPool(
         MatchState state,
@@ -24,13 +62,29 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> visible,
         int visibleWeight)
     {
-        return IsHostileOwner(state, playerId, sectorId)
-            && visibleWeight == 10
-                ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
-                        .Setup.Controller == PlayerController.Human)
-                    .ToArray()
-                : visible;
+        return UsesHumanTargetPool(state, playerId, sectorId, visibleWeight)
+            ? HumanTargets(state, visible)
+            : visible;
     }
+
+    /// <summary>
+    /// A draw takes only human players' gangs at weight 10 when the player's attitude toward the
+    /// owner query is hostile (FND-AI-048).
+    /// </summary>
+    private static bool UsesHumanTargetPool(
+        MatchState state,
+        PlayerId playerId,
+        int sectorId,
+        int visibleWeight) =>
+        visibleWeight == 10 && IsHostileOwner(state, playerId, sectorId);
+
+    /// <summary>The visible gangs of human players, in the order they were seen.</summary>
+    private static ObjectiveTarget[] HumanTargets(
+        MatchState state,
+        IReadOnlyList<ObjectiveTarget> visible) =>
+        visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
+                .Setup.Controller == PlayerController.Human)
+            .ToArray();
 
     /// <summary>Weight of the first visible opponent's owner, or 0 when nobody is visible.</summary>
     private static int FirstVisibleOpponentWeight(
@@ -89,14 +143,19 @@ public static partial class AiTurnPlanner
             playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
-    /// <summary>Replaces the planned action with Terminate in the last turns of a Greed match.</summary>
+    /// <summary>
+    /// Replaces the planned action with Terminate in the last turns of a Greed match, and flags the
+    /// record for a family at its next dispatch (FND-AI-042).
+    /// </summary>
     private static void TerminateForGreed(MatchState state, PlayerId playerId, int gangSlot)
     {
         var turnsRemaining = Math.Max(0,
             ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
-        if (OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
+        if (!OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
                 state.Setup.Scenario, turnsRemaining))
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
+            return;
+        state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
+        state.AiPlanning.SetNeedsFamily(playerId, gangSlot);
     }
 
     private static void SetRecoveredAttackAction(

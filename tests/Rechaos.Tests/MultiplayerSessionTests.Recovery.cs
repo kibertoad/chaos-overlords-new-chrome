@@ -333,7 +333,7 @@ public sealed partial class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
-        server.Answer(HttpMethod.Put, "/orders", Envelope("revoked"), HttpStatusCode.Unauthorized);
+        server.Answer(HttpMethod.Put, "/orders", Envelope("invalid_token"), HttpStatusCode.Unauthorized);
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
         var seen = new List<MultiplayerNotice>();
 

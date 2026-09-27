@@ -14,28 +14,41 @@ public sealed partial class ChaosGame
 
         var transform = Matrix.CreateTranslation(slideOffset, 0, 0)
             * VirtualInput.Transform(viewport);
-        _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
+        if (slideOffset > 0)
+        {
+            // RULE-UI-003: the panel's left columns come in over the screen it opened from.
+            _batch.Begin(samplerState: SamplerState.PointClamp,
+                transformMatrix: VirtualInput.Transform(viewport));
+            DrawSlideBackdrop();
+            _batch.End();
+        }
+        var clip = SlideClip(viewport, slideOffset);
+        _batch.Begin(samplerState: SamplerState.PointClamp, rasterizerState: clip,
+            transformMatrix: transform);
         _batch.Draw(_pixel, new Rectangle(0, 0, 640, 460), new Color(8, 10, 12));
         DrawLastTurnEventsFrame(_batch, _pixel, _font, _state);
         _batch.End();
 
         var notification = CurrentEventReport(_state);
+        // The report's event, found once for every field the frame draws from it.
+        var related = notification is null ? null : RelatedEvent(_state, notification);
         if (notification is not null)
         {
             var siteSampler = _smoothEventSiteImages
                 ? SamplerState.LinearClamp
                 : SamplerState.PointClamp;
-            _batch.Begin(samplerState: siteSampler, transformMatrix: transform);
-            var drewSiteBackground = DrawInfluenceSiteBackground(_batch, _state, notification);
+            _batch.Begin(samplerState: siteSampler, rasterizerState: clip,
+                transformMatrix: transform);
+            var drewSiteBackground = DrawInfluenceSiteBackground(_batch, _state, notification, related);
             if (drewSiteBackground && !_smoothEventSiteImages
                 && _eventSiteDitherOverlay is not null)
                 _batch.Draw(_eventSiteDitherOverlay, LastTurnEventsLayout.Artwork, Color.White);
             _batch.End();
         }
 
-        _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
-        DrawLastTurnEventContent(_batch, _pixel, _font, _state, notification);
-        DrawButton(_batch, _pixel, _font, LastTurnEventsLayout.Ok, "OK", true);
+        _batch.Begin(samplerState: SamplerState.PointClamp, rasterizerState: clip,
+            transformMatrix: transform);
+        DrawLastTurnEventContent(_batch, _pixel, _font, _state, notification, related);
         if (_combatAnimationPlayer.IsPlaying)
             DrawCombatPanel(_batch, _pixel, _font, _state);
         DrawPlanningTimer(_batch, _pixel);
@@ -62,7 +75,8 @@ public sealed partial class ChaosGame
         _batch.End();
 
         var panelTransform = Matrix.CreateTranslation(slideOffset, 0, 0) * fixedTransform;
-        _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: panelTransform);
+        _batch.Begin(samplerState: SamplerState.PointClamp,
+            rasterizerState: SlideClip(viewport, slideOffset), transformMatrix: panelTransform);
         switch (_screens.Current)
         {
             case ClientScreen.Hire:

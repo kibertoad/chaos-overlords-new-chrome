@@ -70,6 +70,30 @@ public sealed class ComlinkUiTests
         Assert.False(editor.TryAppend('~'));
     }
 
+    // RULE-COMLINK-003, RULE-COMLINK-006, FMT-STATE-005: the editor's text of a draft of spaces
+    // only is the blank the send drops. The stored text drops trailing spaces and keeps the
+    // others, so padding it back to 160 gives the original's record.
+    [Fact]
+    public void BlankDraftIsDroppedAndTextPadsBackToTheOriginalRecord()
+    {
+        var editor = new ComlinkTextEditor();
+        Assert.True(editor.IsBlank);
+        Assert.True(MatchState.IsBlankComlinkDraft(editor.Text));
+        Assert.True(editor.TryAppend(' '));
+        Assert.True(editor.IsBlank);
+        Assert.True(MatchState.IsBlankComlinkDraft(editor.Text));
+
+        editor.MoveNextRow();
+        Assert.True(editor.TryAppend(' '));
+        Assert.True(editor.TryAppend('h'));
+        Assert.True(editor.TryAppend(' '));
+        Assert.False(editor.IsBlank);
+        Assert.False(MatchState.IsBlankComlinkDraft(editor.Text));
+        var expected = new string(' ', 40) + " H" + new string(' ', 118);
+        Assert.Equal(expected.TrimEnd(), editor.Text);
+        Assert.Equal(expected, editor.Text.PadRight(MatchLimits.ComlinkMessageCharacters));
+    }
+
     [Fact]
     public void EditorWrapsColumnsAndClampsRowsLikeOriginalHandler()
     {
