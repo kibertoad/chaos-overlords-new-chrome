@@ -114,18 +114,19 @@ public sealed class AiStrategicStateTests
     }
 
     [Fact]
-    public void PlannerAttacksOnlyVisibleOwnersWithNegativeAttitude()
+    public void PlanningPassLeavesCriminalNeutralAndTurnsTheManiacHostile()
     {
+        // RULE-AI-003. Whether hostility then decides an attack is the family handlers' to test;
+        // AiFamilySevenTurnPlannerTests plans the same accepted draw with and without it.
         var neutral = CreateAttackPlannerMatch(AiDifficulty.Criminal);
         var hostile = CreateAttackPlannerMatch(AiDifficulty.HomicidalManiac);
         neutral.FinishUpkeep();
         hostile.FinishUpkeep();
+        neutral.PrepareAiPlanning(new PlayerId(0));
+        hostile.PrepareAiPlanning(new PlayerId(0));
 
-        Assert.DoesNotContain(AiTurnPlanner.Plan(neutral, new PlayerId(0)),
-            command => command.Action == GangAction.Attack);
-        Assert.Contains(AiTurnPlanner.Plan(hostile, new PlayerId(0)),
-            command => command.Action == GangAction.Attack
-                && command.Target == CommandTarget.Gang(new GangId(20)));
+        Assert.False(neutral.AiStrategy.IsHostile(new PlayerId(0), new PlayerId(1)));
+        Assert.True(hostile.AiStrategy.IsHostile(new PlayerId(0), new PlayerId(1)));
     }
 
     // RULE-AI-003: the pass caches the sector weights before its hostility step, so the turn a

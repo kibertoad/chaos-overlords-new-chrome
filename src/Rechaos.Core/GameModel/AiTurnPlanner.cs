@@ -1,9 +1,9 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Deterministic planner for computer-controlled command turns. Recovered
-/// family decisions are authoritative; the recreation-native fallback used
-/// outside a prepared family trace is isolated in AiTurnPlanner.ProvisionalFallback.cs.
+/// Deterministic planner for computer-controlled command turns. The planning pass
+/// (<see cref="MatchState.PrepareAiPlanning"/>) runs every gang's family handler, and each gang
+/// takes the order its record holds (RULE-AI-002).
 /// </summary>
 public static partial class AiTurnPlanner
 {
@@ -27,70 +27,56 @@ public static partial class AiTurnPlanner
         var player = state.FindPlayer(playerId) ?? throw new ArgumentOutOfRangeException(nameof(playerId));
         if (!state.IsPlannedByComputer(playerId))
             throw new ArgumentException("AI planning requires a computer-controlled player.", nameof(playerId));
+        if (!state.IsAiPlanningPrepared(playerId))
+            throw new InvalidOperationException(
+                "AI planning requires the player's planning pass for this turn first.");
 
         var cashBudget = Math.Max(0, player.Cash);
         var commands = new List<GameCommand>();
-        var targets = new CommandOptionCatalog.TargetLists(state);
-        foreach (var entry in player.Gangs
-                     .Select((gang, slot) => (gang, slot))
-                     .Where(entry => entry.gang.IsActive))
+        for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
         {
-            var gang = entry.gang;
-            var options = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id, targets)
-                .Where(command => EstimatedCost(state, command) <= cashBudget)
-                .ToArray();
-            var choice = SelectRecoveredFamilyCommand(
-                state, player, gang, entry.slot, options);
-            if (choice is null
-                && PreservesRecoveredPreparation(state, playerId))
-                continue;
-            choice ??= SelectProvisionalFallbackCommand(
-                state, player, gang, options);
-            if (choice is null) continue;
-            commands.Add(choice);
-            cashBudget -= EstimatedCost(state, choice);
+            var gang = player.Gangs[gangSlot];
+            if (!gang.IsActive) continue;
+            if (PreparedCommand(state, player.Id, gang, gangSlot) is not { } command) continue;
+            var cost = EstimatedCost(state, command);
+            if (cost > cashBudget) continue;
+            commands.Add(command);
+            cashBudget -= cost;
         }
         return commands;
     }
 
-    private static GameCommand? SelectRecoveredFamilyCommand(
-        MatchState state,
-        MatchPlayerState player,
-        MatchGangState gang,
-        int gangSlot,
-        IReadOnlyList<GameCommand> options)
-    {
-        var family = state.AiPlanning.Family(player.Id, gangSlot);
-        var preparedAction = state.AiPlanning.PlannedAction(player.Id, gangSlot);
-        var choice = preparedAction != GangAction.None
-            ? new RecoveredFamilyChoice(preparedAction,
-                PreparedCommandTargetId(state, player.Id, gangSlot, preparedAction))
-            : family == 1
-                ? DesiredRecoveredFamilyChoice(state, player, gang, gangSlot)
-                : default;
-        if (choice.Action == GangAction.None) return null;
-
-        var candidates = options.Where(command => command.Action == choice.Action);
-        if (choice.TargetId is { } targetId)
-            candidates = candidates.Where(command => command.Target.Id == targetId);
-        candidates = candidates.Where(command => IsDetectableAttack(state, player.Id, command));
-        return candidates
-            // Prepared live turns use the recovered mode-5 target. Retain the
-            // recreation's deterministic target ranking only when this pure
-            // query is invoked without its replay-recorded preparation boundary.
-            .OrderByDescending(command =>
-                ScoreProvisionalCommand(state, player, gang, command))
-            .ThenBy(command => command.Target.Id)
-            .FirstOrDefault();
-    }
-
     /// <summary>
-    /// Once a player has a planning pass behind it, its records decide every gang's order. A gang
-    /// its handler left without an action, and a gang left in family 99, which has no handler,
-    /// plans nothing (RULE-AI-002) instead of reaching the provisional fallback.
+    /// RULE-AI-002: the command the gang's record holds after the planning pass, when it is legal.
+    /// A gang its handler left without an action, and a gang left in family 99, which has no
+    /// handler, plans nothing. The record names the action and, for an action that takes one, its
+    /// only target, so it describes exactly one command; a record that lacks the target its action
+    /// needs plans nothing rather than having one picked for it. Give and Sell, the actions whose
+    /// command needs more than the record holds, are never planned.
     /// </summary>
-    private static bool PreservesRecoveredPreparation(MatchState state, PlayerId playerId) =>
-        state.AiPlanning.HasPlanned(playerId);
+    private static GameCommand? PreparedCommand(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int gangSlot)
+    {
+        var action = state.AiPlanning.PlannedAction(playerId, gangSlot);
+        if (action == GangAction.None
+            || !CommandRules.ByAction.TryGetValue(action, out var rule)
+            || rule.SecondaryTarget != CommandTargetKind.None)
+            return null;
+        var targetId = rule.PrimaryTarget == CommandTargetKind.None
+            ? -1
+            : PreparedCommandTargetId(state, playerId, gangSlot, action);
+        if (targetId is not { } id
+            || !CommandTarget.TryCreate(rule.PrimaryTarget, id, out var target))
+            return null;
+        var command = new GameCommand(playerId, gang.Id, action, target);
+        return CommandValidator.Validate(state, command).IsValid
+            && IsDetectableAttack(state, playerId, command)
+                ? command
+                : null;
+    }
 
     private static void PrepareFamilyElevenCommand(
         MatchState state,

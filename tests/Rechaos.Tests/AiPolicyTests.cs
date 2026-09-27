@@ -226,6 +226,8 @@ public sealed class AiPolicyTests
             match.AiPlanning.SeedFamily(setups[0].Id, slot, 0);
             match.AiPlanning.SetPlannedAction(setups[0].Id, slot, GangAction.None);
         }
+        // The records stand in for the family dispatch's output this turn (RULE-AI-002).
+        match.MarkAiPlanningPrepared(setups[0].Id);
         return match;
     }
 }
