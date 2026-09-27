@@ -11,7 +11,10 @@ the original's behaviour, unless the entry's Justification argues that the rebui
 strictly better; then it starts `on`, and a player who wants the original switches it off. A
 deviation with no setting is `mandatory`, and its Justification also says why the original's
 behaviour is not worth a setting. The validation suite runs with every setting switched off, and a
-test that reaches a mandatory deviation cites its ID and allows for it.
+test that reaches a mandatory deviation cites its ID and allows for it. Default always describes
+the deviation, never the option it is carried by: when the deviation is to start an option off
+that the original starts on, the Setting item says the setting is inverted and which value is the
+original's.
 
 Dated product decisions behind many of these entries, with their full reasoning, are in
 [docs/DECISIONS.md](docs/DECISIONS.md).
@@ -78,19 +81,22 @@ Decided 2026-09-13.
 
 ## DEV-VIDEO-003
 
-- Departs from: RULE-VIDEO-001
+- Departs from: RULE-VIDEO-001, SCR-UI-001
 - Reason: With Intro only once switched on, the rebuild plays the two movies unattended only until
   it has recorded a showing: its preferences file keeps `IntroMoviesSeen`, set once the queue
   drains after at least one movie opened, and every later start goes straight to the title screen.
   The title screen gains an INTRO button that plays the movies again on request. The original plays
   both movies at every start that does not load a saved game.
 - Setting: Intro only once
-- Default: off
+- Default: on
+- Justification: Players rarely want to watch the intro again and again; one showing is plenty.
+  Playing it at every start makes the player wait through or click past the same two movies each
+  time before reaching the title screen, and nothing in a match depends on it. The INTRO button
+  plays the movies whenever the player asks, and a player who wants the original's intro at every
+  start switches Intro only once off.
 - Dropped: no
 
-Showing the movies once is a convenience some players will want, but a player who expects the
-intro at every start, as the original gives it, is not better served, so the original's behaviour
-is the default.
+Made a setting that starts off on 2026-09-25, and switched to start on on 2026-09-26.
 
 ## DEV-AUDIO-001
 
@@ -122,8 +128,9 @@ Decided 2026-09-10 ("Save compatibility scope").
 ## DEV-RNG-001
 
 - Departs from: RULE-RNG-001, RULE-OPTIONS-001
-- Reason: A local game is seeded from the low 16 bits of the rebuild's own uptime clock when the
-  game object is created, in place of `timeGetTime` at process start. Replays, tests and online
+- Reason: The run's sequence is seeded from the low 16 bits of the rebuild's own uptime clock when
+  the game object is created, in place of `timeGetTime` at process start. Later local games and
+  loads draw on from it, as in the original. Replays, tests and online
   matches take an explicit seed of full width. The rebuild never makes the options loader's two
   `serialNum` draws, so an installation-wide value cannot shift a match's random sequence.
 - Setting: None
@@ -216,15 +223,19 @@ The reasoning is in `docs/MULTIPLAYER.md`.
 - Reason: The Research panel shows the research accumulated so far beside each item's total.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information to the panel and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. The original shows only
+  each item's total, so a player choosing what to fund cannot tell how close an item is to
+  completion without writing it down turn by turn. The figure is the progress the game already
+  keeps, it is shown only to the player who owns it, and it removes no control and changes no
+  rule, so a player loses nothing by seeing it.
 - Dropped: no
 
 ## DEV-MOVE-001
 
 - Departs from: RULE-MOVE-001, SCR-MOVE-001
 - Reason: The rebuild refuses a Move, when it is ordered, into a sector that already holds six
-  of the player's gangs. Whether the original's panel refuses it too is not recorded; if it does
-  not, the original accepts the order and RULE-MOVE-002 sends the gang back at resolution.
+  of the player's gangs. The original's panel has no capacity test (FND-MOVE-007): it accepts the
+  order, and RULE-MOVE-002 sends the gang back at resolution.
 - Setting: None
 - Default: mandatory
 - Justification: The player learns at once that the gang cannot enter, where the original accepts
@@ -255,25 +266,33 @@ destination, as DEV-HIRE-001 does, would remove that difference.
 ## DEV-CONTROL-001
 
 - Departs from: RULE-CONTROL-001, BUG-CONTROL-001
-- Reason: Only players who ordered Control in the sector compete for it, with the original's
-  arithmetic and tie draw among them. In the original a player with no Control order can take a
-  sector when its defence sum is negative.
+- Reason: Only the players who ordered Control in the sector, and its owner, enter the
+  comparison, with the original's arithmetic and tie draw among them. The original compares every
+  player, so a player with no Control order there has the margin -(Income + Support) and is handed
+  the sector, or drawn with the real challenger, when that sum is negative. The shipped site table
+  has sites with negative Support, so the case can arise.
 - Setting: None
 - Default: mandatory
-- Justification: A sector goes only to a player who ordered Control of it, as the manual describes
-  the rule. In the original, a player with no order there is handed the sector when negative Support
-  drags its sum below zero, and ties with a real challenger who would otherwise win. No player
-  source relies on it, and a player who wants the sector can still order Control.
+- Justification: The original's behaviour is a bug (BUG-CONTROL-001). The pass gives every player
+  slot a pool, and a player with no order there starts at 0, so when the sector's Income plus
+  Support is negative that player's margin comes out positive. The player is then handed a sector
+  they never tried to take, or ties with and can beat a challenger who would otherwise win alone.
+  Nothing about it reads as design: the manual describes the comparison only among players who
+  try to control the sector, the case needs completed sites with negative Support and no police,
+  the player gets no cue that it can happen, and no player source relies on it. Restoring it
+  would only hand sectors to bystanders by accident, so it gets no setting. A player who wants
+  the sector can still order Control.
 - Dropped: no
 
-The fix changes which player owns the sector when the case arises.
+The fix changes which player owns the sector when the case arises. Decided as mandatory on
+2026-09-26.
 
 ## DEV-CONTROL-002
 
 - Departs from: RULE-CONTROL-001
-- Reason: When a Crackdown made by this turn's Chaos is in force as the Control pass runs, the
-  original leaves the sector out of Control without a word. The rebuild records a failed Control
-  result for it. The owner does not change in either case.
+- Reason: When police are present in a sector as the Control pass runs, the original leaves the
+  sector out of Control without a word. The rebuild records a failed Control result for each
+  gang ordered to Control it. The owner does not change in either case.
 - Setting: None
 - Default: mandatory
 - Justification: It adds a report of what happened. The owner of the sector is the same in both.
@@ -282,7 +301,7 @@ The fix changes which player owns the sector when the case arises.
 ## DEV-GANG-001
 
 - Departs from: SCR-GANG-002
-- Reason: Hovering one of a live gang's fourteen statistics shows its base value and one signed
+- Reason: Hovering one of the fourteen statistics of a live gang or a hire offer shows its base value and one signed
   line for each item and site that changes it.
 - Setting: None
 - Default: mandatory
@@ -299,10 +318,16 @@ The fix changes which player owns the sector when the case arises.
   deferred deliveries in roster order, and a buyer whose cash exactly equals the price still buys.
 - Setting: None
 - Default: mandatory
-- Justification: The original's result depends on roster slots the player cannot see while giving
-  orders; the rebuild's follows the order the player gave. Every outcome of the original stays
-  reachable, since giving Sell and Equip in slot order reproduces the original's scan.
+- Justification: The roster-slot order has no meaning in play. The player never sees a gang's
+  roster slot while giving orders, so whether a Sell pays for an Equip is decided by a number the
+  player cannot read, and an order that looks affordable fails for no visible reason. The rebuild
+  resolves Equip and Sell in the order the player scheduled them, which the player controls and
+  the cash row of the console shows, so this is strictly better and needs no setting to restore
+  the original. Every outcome of the original stays reachable, since giving Sell and Equip in slot
+  order reproduces the original's scan.
 - Dropped: no
+
+Kept mandatory on 2026-09-26, after a proposal to put it behind a setting that starts off.
 
 ## DEV-EQUIP-002
 
@@ -312,9 +337,12 @@ The fix changes which player owns the sector when the case arises.
   the same selection.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a display of the items the gang holds and a shortcut, and takes nothing
-  away.
-- Dropped: no
+- Justification: A quality-of-life improvement that is strictly better. Buying an item replaces
+  and destroys the one the gang holds in that slot, and the boxes keep the held items in sight
+  while the player chooses, so a better item is not thrown away by accident. They show the gang's
+  own items, which the gang information panel already shows, and the double-click only opens that
+  panel and comes back. Every original control works as before and no rule changes.
+- Dropped: 2026-09-25, the original draws the held items and opens the gang panel on a portrait double-click (FND-EQUIP-010).
 
 ## DEV-GIVE-001
 
@@ -347,7 +375,7 @@ The fix changes which player owns the sector when the case arises.
 - Setting: None
 - Default: mandatory
 - Justification: It adds a shortcut to a panel the player can already open.
-- Dropped: no
+- Dropped: 2026-09-25, the original opens the same panels on a double-click (FND-ATTACK-004).
 
 ## DEV-ATTACK-002
 
@@ -406,24 +434,31 @@ The fix changes which player owns the sector when the case arises.
   Armageddon, and the scenario's later adjustments overwrote every slot the two comparisons
   disagreed on. With no measured gain, the Fidelity rules keep the original, and the rebuild
   compares with the hunter slot number again (BUG-AI-001, RULE-AI-010). The measurements are in
-  the 2026-09-26 entry of docs/DECISIONS.md.
+  the 2026-09-26 entry "Keep the original hunter guard and drop DEV-AI-001" of docs/DECISIONS.md.
 
 The correction applied under the Original AI policy as well. Decided 2026-09-17.
 
 ## DEV-AI-002
 
-- Departs from: RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-MOVE-002
-- Reason: When a family handler plans an action that has no legal equivalent in the rebuild's
-  command queue, the rebuild gives the gang no command and keeps the planned action in its
-  planning state. The original stores the action in the gang record and resolves it. The usual
-  case is a Move to the gang's own sector, which the sector selector returns when capacity blocks
-  every step. The gang's planning history is the same; its resolved action can differ.
+- Departs from: RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-MOVE-002, RULE-EQUIP-001, RULE-INFLUENCE-001
+- Reason: A computer player's planned action becomes a command only when a human could give the
+  same order and the planner's running total of this turn's costs leaves cash for it; any other
+  planned action is kept in the planning state and gives the gang no command. The original stores
+  every planned action in the gang record and resolves it: a Move to the gang's own sector or
+  into a full sector goes to the six-gang repair (RULE-MOVE-002), an Equip the player can no
+  longer pay for is refused when it resolves (RULE-EQUIP-001), and an Influence in a sector the
+  player does not control rolls with no owner test (RULE-INFLUENCE-001). In 21 computer-only
+  matches of 26 turns those three kinds came to 478 orders, and no other planned action a human
+  could not order was seen. A fourth kind follows from `local_tech_cap` reading the research
+  level of a sector whoever owns it (RULE-AI-026): a Research above the Tech limit the Research
+  list allows there, which the original resolves because RULE-RESEARCH-001 tests no Tech Level.
+  The gang's planning history is the same; its resolved action can differ.
 - Setting: None
 - Default: mandatory
 - Justification: A computer player's gang is held to the same legal orders as a human's, so it
-  cannot carry out an action no player could order. In the usual case, a Move to the gang's own
-  sector, the gang stays where it is either way, and its planning history, which later turns read,
-  is kept.
+  cannot carry out an action no player could order. When the dropped action is a Move to the
+  gang's own sector the gang stays where it is either way, and in every case its planning history,
+  which later turns read, is kept.
 - Dropped: no
 
 The resolved action can differ from the original's, which changes the match when it does. Decided
@@ -442,6 +477,22 @@ The resolved action can differ from the original's, which changes the match when
 
 The policy is chosen for a new match and kept by it; loaded saves keep the policy they were
 started with.
+
+## DEV-AI-004
+
+- Departs from: RULE-AI-013
+- Reason: A hire placement anchor of 164 (sector 100) always fails the rebuild's keep test, so the
+  fixed scans replace it at the next refresh. The original's keep test reads the owner byte of
+  sector 100, which lies past the end of the sector list, and keeps the anchor or not by whatever
+  that byte holds.
+- Setting: None
+- Default: mandatory
+- Justification: Anchor 164 is stored only for a player whose Right Hands slot is empty when the
+  match is set up, which the original's setup never produces, so no match the original can play
+  reaches the read. What the stray byte holds depends on memory outside the sector list that the
+  rebuild does not lay out, and keeping an anchor that names no sector is logic that plainly does
+  not do what it was written to do; a setting would choose between a rescan and a guess.
+- Dropped: no
 
 ## DEV-EVENT-001
 
@@ -488,7 +539,8 @@ it.
 
 ## DEV-UI-001
 
-- Departs from: RULE-UI-003, SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-OPTIONS-001
+- Departs from: RULE-UI-003, SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-OPTIONS-001,
+  SCR-GANG-001, SCR-GANG-002, SCR-FINANCE-001
 - Reason: With Slide Panels on, a panel slides in as in the original but closes at once. The
   original's closing slide holds input for about a quarter of a second, and without it the close
   cue and the next cue start in the same frame, so the next cue cuts the close cue off.
@@ -507,15 +559,22 @@ it.
   the city map.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information to the minimap and changes nothing else.
-- Dropped: no
+- Justification: A quality-of-life improvement that is strictly better. The Siege and Big Man
+  sectors are already marked on the city map, so the minimap tells the player nothing new; it
+  saves leaving the sector view to find out whether a neighbour is an objective. It is drawn only
+  from what the city map shows, removes no control and changes no rule.
+- Dropped: 2026-09-27. FND-UI-018 shows that the original's nine-sector display is a crop
+  of the prepared city map, which already carries the pylons, so the rebuild draws them there
+  as the original does.
 
 ## DEV-UI-003
 
-- Departs from: SCR-UI-004, SCR-MOVE-001
+- Departs from: SCR-UI-004, SCR-MOVE-001, RULE-TURN-005
 - Reason: A ctrl-click picks several gang cards, and Attack, Control, Heal, Hide, Influence or
   Move is then given to all of them at once. Each gang is validated on its own, and a bulk Move
-  counts the whole selection against the destination's room before queueing.
+  counts the whole selection against the destination's room before queueing. The original's group
+  order strip goes through the same checks, so a gang that could not take the order on its own
+  keeps its previous one where the original would write the order anyway.
 - Setting: None
 - Default: mandatory
 - Justification: Each gang receives the order the player could give it on its own, validated on its
@@ -531,9 +590,8 @@ it.
 - Default: mandatory
 - Justification: The movies stay available from the title screen, and a player who has already
   watched them is not made to sit through them again.
-- Dropped: no
-
-When the original plays the movies is not yet recorded (`manual_validation_plan.md`).
+- Dropped: 2026-09-26, DEV-VIDEO-003 covers the same behaviour and the INTRO button as a setting
+  that starts on (the 2026-09-25 and 2026-09-26 decisions in `docs/DECISIONS.md`).
 
 ## DEV-UI-005
 
@@ -553,8 +611,11 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   over the whole cycle, with a breakdown on hover.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a projection the player could work out from the Finance panel, and changes
-  nothing else.
+- Justification: A quality-of-life improvement that is strictly better. Every figure is one the
+  player could work out from the Finance panel and the orders already queued, and the original makes
+  the player do that sum by hand before each purchase. Showing it at a glance helps the player avoid
+  Equips that fail for lack of cash, and it is the display that makes the order of purchases
+  (DEV-EQUIP-001) readable. It removes no control and changes no rule.
 - Dropped: no
 
 ## DEV-UI-007
@@ -564,8 +625,11 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   the value turns orange when that range can set off a Crackdown.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information the player could work out from the queued orders, and changes
-  nothing else.
+- Justification: A quality-of-life improvement that is strictly better. A Crackdown follows from
+  Tolerance and the Chaos the player queued, both known to the player, but the original leaves the
+  player to work out the range by hand, and a miscalculation sets off a Crackdown the player did not
+  intend. The warning only states that result in advance, removes no control and changes no rule;
+  the player can still order the Chaos.
 - Dropped: no
 
 ## DEV-UI-008
@@ -575,8 +639,10 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
   Influence or Attack highlights its target on the board.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information about orders the player has already given, and changes nothing
-  else.
+- Justification: A quality-of-life improvement that is strictly better. In the original a queued
+  order's target is not drawn on the board, so checking a turn's plan means recalling or reopening
+  each gang's order. The pickers and highlights show only orders the player has given and targets
+  the player may choose, remove no control and change no rule.
 - Dropped: no
 
 ## DEV-UI-009
@@ -591,8 +657,12 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 
 ## DEV-UI-010
 
-- Departs from: SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-OPTIONS-001
-- Reason: Panels accept keyboard navigation, and Escape and the right mouse button cancel them.
+- Departs from: SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-OPTIONS-001, SCR-GANG-001,
+  SCR-GANG-002, SCR-FINANCE-001, SCR-EQUIP-001, SCR-GIVE-001, SCR-SELL-001, SCR-MOVE-001
+- Reason: Panels accept keyboard navigation, and Escape, Backspace and the right mouse button
+  cancel them; the arrow keys cycle gangs on the gang information panel, pick a cell on
+  the Move panel and a row on the Equip panel, and the keys 1 to 3 toggle items on the Give and
+  Sell panels.
   The original's panels take Enter and Execute and, on the idle-gang warning, Escape.
 - Setting: None
 - Default: mandatory
@@ -616,20 +686,30 @@ When the original plays the movies is not yet recorded (`manual_validation_plan.
 - Reason: The title screen shows the build version and a Report Bug control.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a version label and a way to report a bug, and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. A bug report is useful only
+  when it names the build it came from, and the original gives the player no way to report a
+  problem from inside the game. The label and the control sit on the title screen, before any
+  match, so they touch no rule and nothing a match starts from, and every original control works
+  as before.
 - Dropped: no
 
 ## DEV-UI-013
 
-- Departs from: SCR-UI-004
+- Departs from: SCR-UI-004, SCR-GANG-002
 - Reason: The detailed-sector screen's portrait strip marks each opponent with detected gangs in
-  the sector, and the player can page that opponent's detected gangs on the cards. The original
+  the sector, and the player can page that opponent's detected gangs on the cards and open their
+  gang information panels. The original
   lists only the viewer's own gangs.
 - Setting: None
 - Default: mandatory
-- Justification: Only gangs the player has detected are shown, so what the player can know is
-  unchanged; it saves looking them up elsewhere.
-- Dropped: no
+- Justification: A quality-of-life improvement that is strictly better. Only gangs the player has
+  already detected are shown, so what the player can know is unchanged; the original makes the
+  player leave the sector view to look them up before ordering an Attack or a Move. It removes no
+  control and changes no rule.
+- Dropped: 2026-09-27. FND-UI-015 and FND-UI-018 show that the original does this: a press on
+  a portrait of the Overlord bar shows that player's gangs in the sector that the active player
+  can see, the portrait of a player with none is drawn from the dimmed row, and a double-click on
+  another player's card opens the gang or item panels. The rebuild does the same.
 
 Decided 2026-09-18.
 
@@ -639,10 +719,170 @@ Decided 2026-09-18.
 - Reason: The detailed-sector screen shows how many police turns remain in the sector.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information and changes nothing else.
+- Justification: A quality-of-life improvement that is strictly better. Control does not settle a
+  sector while police are there (RULE-CONTROL-001), so how long they stay decides when a Control
+  order there can succeed; without the count the player has to track the turns by hand. The count
+  is the value the game already keeps for the sector. It removes no control and changes no rule.
 - Dropped: no
 
 Whether the original shows the count is not recorded.
+
+## DEV-UI-015
+
+- Departs from: RULE-UI-013
+- Reason: A second copy of the rebuild starts and runs beside the first, and a file named on the
+  command line is not opened. The original refuses a second copy, bringing the running one to the
+  front, and opens a save named on its command line.
+- Setting: None
+- Default: mandatory
+- Justification: A second copy is how one computer holds two seats of an online match. Nothing
+  associates saves with the program, and the save browser reaches every save (DEV-UI-011), so the
+  command line has nothing to open.
+- Dropped: no
+
+## DEV-UI-016
+
+- Departs from: RULE-UI-013, RULE-UI-014, SCR-UI-009, FMT-DATA-004
+- Reason: Only the 16-bit image set is drawn, and there is no Thousands of Colors option. The
+  original draws the same set at any display deeper than 8 bits, and loads the 256-colour palette
+  of `DATA/CLT00002` and the 8-bit set only on an 8-bit display, so the rebuild never reads either.
+- Setting: None
+- Default: mandatory
+- Justification: The original defaults to the 16-bit set. The 8-bit set holds the same pictures
+  reduced for 256-colour displays, which no current display is, so a setting would switch to a
+  poorer copy of the same pictures.
+- Dropped: no
+
+## DEV-UI-017
+
+- Departs from: RULE-UI-014
+- Reason: Closing the window ends the program after the rolling autosave is written. The original
+  treats a close as File, Exit and offers to save during a game.
+- Setting: None
+- Default: mandatory
+- Justification: The rolling autosave keeps the match as it stood at the start of the turn, and
+  orders given since then can be saved from the Escape menu before closing. The rebuild's saves go
+  to named slots, so the original's save dialog has no counterpart to offer.
+- Dropped: no
+
+## DEV-UI-018
+
+- Departs from: RULE-UI-014, FMT-STATE-009
+- Reason: Keyboard and mouse state is read once per frame, 60 times a second, and each screen acts
+  on what changed since the last frame. There is no event queue, accelerator table or menu command
+  event; the options are on the Options screen. A double-click is two presses on the same target
+  within 500 ms. Online text fields take characters from the platform keyboard layout.
+- Setting: None
+- Default: mandatory
+- Justification: It changes how commands are reached and leaves what they do alone. Every option
+  and command the original's event step handles stays reachable.
+- Dropped: no
+
+## DEV-UI-019
+
+- Departs from: SCR-UI-009, SCR-UI-002, SCR-UI-001
+- Reason: The rebuild has no menu bar. Its commands are reached elsewhere: saving, loading and
+  quitting from the Escape menu (DEV-UI-011), the options from the Options screen, Help Topics
+  with F1 (DEV-HELP-001), full screen with F11 (DEV-OPTIONS-003), and About, which shows the
+  credits screen, with Shift+F1. On the title screen, buttons for New Game, Load, Online,
+  Options, Help and Quit stand in for the menu, drawn over the title art with the rebuild's name,
+  its credit line and a box for notices left by the previous screen. Ctrl+H and Ctrl+J open the
+  Online screen, where hosting and joining happen, and Enter and F9 also start a new game and
+  open a saved one.
+- Setting: None
+- Default: mandatory
+- Justification: Every command of the menu bar stays reachable, and the drawing area is drawn
+  without the Windows frame above it (DEV-GFX-001), where a menu bar would have no place.
+- Dropped: no
+
+## DEV-UI-020
+
+- Departs from: SCR-UI-003
+- Reason: The city screen takes single keys the original does not: W, A, S and D move the selected
+  sector as the arrows do; C opens the orders of the selected gang, G selects the next gang, I
+  opens the detailed sector screen, F the City Financial panel, R Player Ranking, T the item list,
+  B Combat Results, X Search, H the Hire panel, M Comlink View, N Comlink Send and J Game
+  Information; Space ends the player's planning; and in a local match F5 and F9 open the save
+  browser to save or load, and F6 and F10 save and load a replay.
+- Setting: None
+- Default: mandatory
+- Justification: Each key reaches a panel or command the console already offers, so it adds
+  keyboard input beside the original's mouse input and changes no order or result. The original's
+  keys, the arrows and Enter, work as they do in the original, and a setting that took the extra
+  keys away would give the player nothing.
+- Dropped: no
+
+## DEV-UI-021
+
+- Departs from: SCR-UI-004
+- Reason: The order menus of a gang card and of the group order strip are a panel the rebuild
+  draws at (248,50,174,400), listing the same orders, where the original opens a Windows popup
+  menu at the card's corner or at (290,65). An order the rules refuse for the gang is refused when
+  it is chosen, with a message on the console.
+- Setting: None
+- Default: mandatory
+- Justification: The rebuild draws the whole game in its own window without the Windows frame
+  (DEV-GFX-001), where a native popup menu would appear outside the game's picture and ignore its
+  scaling. The panel offers the orders the original's menus offer, for the same gangs, so the
+  player can do nothing new, and there is no original form to switch back to.
+- Dropped: no
+
+## DEV-UI-022
+
+- Departs from: SCR-UI-004
+- Reason: Dragging the portrait of one of the player's gang cards onto the 3-by-3 display gives
+  that gang a Move to the neighbouring sector it is dropped on, or a recurring Control when it is
+  dropped on its own sector. The sectors the gang may move to are highlighted during the drag.
+- Setting: None
+- Default: mandatory
+- Justification: It adds a shortcut to orders the card's menu already gives, and each drop is
+  validated as the menu's order would be. The original has a second input path for gang orders
+  that the spec has not read (RULE-TURN-005), so this drag is the rebuild's own until it is.
+- Dropped: no
+
+## DEV-UI-023
+
+- Departs from: SCR-UI-003, SCR-UI-004
+- Reason: A line at `(438,354)`, between the console and the Hire dock, says in words why an
+  order, a drop or a key was refused. A line along the bottom of the city map lists the rebuild's
+  keys, and in an online match says where the turn stands instead.
+- Setting: None
+- Default: mandatory
+- Justification: Both lines add information and change nothing the player can do. The original
+  answers a refused order with the reject sound alone, which the rebuild still plays; the line
+  says which rule refused it. The key line names keys DEV-UI-020 adds, which the original's
+  screens cannot show, and online it replaces them with the turn's state, which a player waiting
+  on others needs. A setting that hid them would only take information away.
+- Dropped: no
+
+## DEV-GFX-001
+
+- Departs from: RULE-GFX-002, RULE-UI-014
+- Reason: The 640-by-460 drawing area is drawn into a resizable window, scaled by the largest
+  whole multiple up to 2 that fits, and letterboxed. Full screen is a borderless window at the
+  desktop's mode in 32-bit colour, with no menu bar above the area, and it stays open when it
+  loses focus. The original sizes a window under the Windows menu bar, or switches the display to
+  640 by 480 at 8 or 16 bits and minimizes itself when it loses focus.
+- Setting: None
+- Default: mandatory
+- Justification: Every pixel of the drawing area is the original's, repeated at a whole multiple.
+  At one to one the area is a small patch on a current display, and many current drivers no longer
+  offer 640 by 480 at 8 or 16 bits, so a mode-switch setting would offer a mode the display may
+  refuse. No rule depends on the window.
+- Dropped: no
+
+## DEV-TIMER-001
+
+- Departs from: RULE-TIMER-004, RULE-UI-008, RULE-UI-003
+- Reason: The panel slide takes its step from a fixed benchmark of 84 copies a second where the
+  original measures the machine for one second at startup. Presentation ticks are counted from the
+  game clock, so a tick that falls during a long frame is counted rather than lost.
+- Setting: None
+- Default: mandatory
+- Justification: The original's slide speed depends on the machine it runs on, which AGENTS.md
+  lets the rebuild fix; 84 copies a second gives the original's 16-pixel step. A tick is lost in
+  the original only when the machine stalls, and no rule reads the ticks.
+- Dropped: no
 
 ## DEV-OPTIONS-001
 
@@ -662,7 +902,8 @@ Whether the original shows the count is not recorded.
 - Departs from: RULE-OPTIONS-001
 - Reason: Slide Panels starts off. The original initializes it to on, and panel motion holds
   input for about a quarter of a second on every panel change.
-- Setting: Slide Panels
+- Setting: Slide Panels, inverted (the deviation on starts Slide Panels off; Slide Panels on is the
+  original's motion)
 - Default: on
 - Justification: Panel motion holds input for about a quarter of a second on every panel change and
   changes nothing in the match. A player who wants the original's motion switches Slide Panels on.
@@ -673,7 +914,8 @@ Whether the original shows the count is not recorded.
 - Departs from: RULE-OPTIONS-001, SCR-UI-009
 - Reason: The rebuild starts in a window, and F11 or Alt+Enter switches to borderless full screen
   from any screen; the choice is kept for every match. The original initializes full screen to on.
-- Setting: Full screen (F11)
+- Setting: Full screen (F11), inverted (the deviation on starts the rebuild in a window; full
+  screen is the original's start)
 - Default: on
 - Justification: A window leaves the player's other programs reachable, full screen is one key away
   from any screen, and nothing in the match depends on it. A player who wants the original's start

@@ -10,7 +10,7 @@ public sealed class ChaosResolutionTests
     [Fact]
     public void NewCrackdownRetainsTwoToFourFuturePoliceCombatPhasesAfterImmediateCombat()
     {
-        var match = CreateMatch(tolerance: 0);
+        var match = CreateMatch(tolerance: 0, twoEarlierCrackdowns: true);
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
 
         match.FinishExecutionPhase();
@@ -29,10 +29,32 @@ public sealed class ChaosResolutionTests
         Assert.Equal(0, match.Sectors[0].CrackdownTurnsRemaining);
     }
 
+    /// <summary>
+    /// RULE-POLICE-003: only a presence between 1 and 99 counts down; the permanent value 100
+    /// (the island rule's, FND-SETUP-003) and anything a Crackdown raised above it never change.
+    /// </summary>
+    [Fact]
+    public void PermanentPolicePresenceDoesNotCountDown()
+    {
+        var match = CreateMatch();
+        match.Sectors[0].CrackdownTurnsRemaining = ManualRules.PermanentCrackdownTurns;
+        match.Sectors[1].CrackdownTurnsRemaining = ManualRules.PermanentCrackdownTurns - 1;
+        // RULE-POLICE-002: a neutralizing Crackdown adds 3 to 5 to a permanent presence.
+        match.Sectors[2].CrackdownTurnsRemaining = ManualRules.PermanentCrackdownTurns + 3;
+        match.Sectors[3].CrackdownTurnsRemaining = 1;
+
+        CrackdownResolver.FinishCombat(match);
+
+        Assert.Equal(100, match.Sectors[0].CrackdownTurnsRemaining);
+        Assert.Equal(98, match.Sectors[1].CrackdownTurnsRemaining);
+        Assert.Equal(103, match.Sectors[2].CrackdownTurnsRemaining);
+        Assert.Equal(0, match.Sectors[3].CrackdownTurnsRemaining);
+    }
+
     [Fact]
     public void AnotherCrackdownExtendsExistingPolicePresenceBeforeSameTurnDurationTick()
     {
-        var match = CreateMatch(tolerance: 0, crackdownActive: true);
+        var match = CreateMatch(tolerance: 0, crackdownActive: true, twoEarlierCrackdowns: true);
         var remainingBeforeChaos = match.Sectors[0].CrackdownTurnsRemaining;
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
 
@@ -53,7 +75,6 @@ public sealed class ChaosResolutionTests
         var definition = match.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
         site.InfluencedBy = new PlayerId(0);
         site.Resistance = 0;
-        sector.Tolerance += definition.Tolerance;
         match.Players[0].Support = definition.Support;
 
         CrackdownResolver.Trigger(match, sector);
@@ -71,6 +92,7 @@ public sealed class ChaosResolutionTests
         Assert.Null(site.InfluencedBy);
         Assert.Equal(definition.Resistance, site.Resistance);
         Assert.Equal(0, match.Players[0].Support);
+        // RULE-SITE-001: the site's Tolerance leaves at the next rebuild before planning.
         Assert.Equal(20, sector.Tolerance);
         Assert.Equal([5, 5], sector.CrackdownHistory);
         Assert.Contains(match.NotificationsFor(new PlayerId(0)), notification =>
@@ -234,7 +256,7 @@ public sealed class ChaosResolutionTests
     [Fact]
     public void NewlyTriggeredCrackdownParticipatesInSameTurnCombatAndDurationTick()
     {
-        var match = CreateMatch(tolerance: 0);
+        var match = CreateMatch(tolerance: 0, twoEarlierCrackdowns: true);
         match.FinishUpkeep();
         Assert.True(match.Submit(Chaos(0, 10)).Accepted);
         match.FinishCommand(new PlayerId(0));
@@ -341,7 +363,7 @@ public sealed class ChaosResolutionTests
         Assert.True(totalSuccesses > 0);
         Assert.All(match.LastPhaseResolutions,
             result => Assert.Equal(totalSuccesses, result.Event!.Resolution!.ResultValue));
-        Assert.True(match.Sectors[0].CrackdownActive);
+        Assert.Equal([match.Coordinator.Turn], match.Sectors[0].CrackdownHistory);
         Assert.Equal(cashBefore, match.Players.Select(player => player.Cash));
         Assert.All(match.Players, player => Assert.Contains(
             match.NotificationsFor(player.Id),
@@ -400,8 +422,9 @@ public sealed class ChaosResolutionTests
             reports.Select(notification => notification.Kind));
     }
 
+    // RULE-CHAOS-002: no test of police presence is made at payout [FND-CHAOS-002].
     [Fact]
-    public void ExistingCrackdownSuppressesIncomeWhileChaosStillRolls()
+    public void PolicePresenceFromEarlierTurnsDoesNotStopChaosPay()
     {
         var match = CreateMatch(tolerance: 40, crackdownActive: true);
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
@@ -410,26 +433,89 @@ public sealed class ChaosResolutionTests
         match.FinishExecutionPhase();
 
         var successes = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.Successes;
-        Assert.Equal(cashBefore, match.Players[0].Cash);
+        var paid = match.FindGang(new GangId(10))!.IsActive ? successes / 2 : 0;
+        Assert.Equal(cashBefore + paid, match.Players[0].Cash);
         Assert.Equal(successes,
             Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.ResultValue);
         Assert.DoesNotContain(match.NotificationsFor(new PlayerId(0)),
             notification => notification.Kind == GameNotificationKind.Crackdown);
     }
 
+    // RULE-TOLERANCE-002 clamps the base, and RULE-CHAOS-001 compares with the Tolerance rebuilt
+    // before planning, so a negative Tolerance cracks down although nobody ordered Chaos.
     [Fact]
-    public void InstantPhaseClampsNegativeToleranceBeforeCommandlessChaosCheck()
+    public void ANegativeToleranceCracksDownWithoutAnyChaos()
     {
         var match = CreateMatch(tolerance: -2);
         match.FinishUpkeep();
-        Assert.Equal(-1, match.Sectors[0].Tolerance);
+        Assert.Equal(-2, match.Sectors[0].Tolerance);
         match.FinishCommand(new PlayerId(0));
         match.FinishCommand(new PlayerId(1));
-        for (var index = 0; index < 3; index++) match.FinishExecutionPhase();
 
         match.FinishExecutionPhase();
 
-        Assert.Equal(1, match.Sectors[0].Tolerance);
+        Assert.Equal(1, match.Sectors[0].BaseTolerance);
+        Assert.Equal(-2, match.Sectors[0].Tolerance);
+        Assert.Equal([1], match.Sectors[0].CrackdownHistory);
+    }
+
+    // RULE-POLICE-002: the first and second Crackdown in five turns bring no police and make no
+    // draw; only the third does [FND-POLICE-004].
+    [Fact]
+    public void AFirstCrackdownBringsNoPoliceAndKeepsTheOwner()
+    {
+        var match = CreateMatch(owner: new PlayerId(0), tolerance: 0);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+
+        Assert.Equal([1], match.Sectors[0].CrackdownHistory);
+        Assert.False(match.Sectors[0].CrackdownActive);
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
+        Assert.Contains(match.NotificationsFor(new PlayerId(0)),
+            notification => notification.Kind == GameNotificationKind.Crackdown);
+        Assert.DoesNotContain(match.NotificationsFor(new PlayerId(0)),
+            notification => notification.Kind == GameNotificationKind.ControlLost);
+    }
+
+    [Fact]
+    public void AThirdCrackdownInANeutralSectorBringsPolice()
+    {
+        var match = CreateMatch(tolerance: 0, twoEarlierCrackdowns: true);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+
+        Assert.True(match.Sectors[0].CrackdownActive);
+        Assert.Equal([match.Coordinator.Turn, match.Coordinator.Turn], match.Sectors[0].CrackdownHistory);
+    }
+
+    // RULE-CHAOS-002: a Chaos gang killed in this turn's Combat is not paid, and the survivors'
+    // successes are still added up for the sector [FND-CHAOS-002].
+    [Fact]
+    public void AChaosGangKilledBeforeThePayoutIsNotPaid()
+    {
+        var match = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+        var killed = match.FindGang(new GangId(11))!;
+        match.Commands.Cancel(killed.Id);
+        killed.QueuedCommand = null;
+        killed.Force = 0;
+        var cashBefore = match.Players[0].Cash;
+
+        match.FinishExecutionPhase();
+
+        var survivor = Assert.Single(match.LastPhaseResolutions,
+            result => result.Command.Gang == new GangId(10)).Event!.Resolution!;
+        Assert.Equal(cashBefore + survivor.PreviousValue!.Value, match.Players[0].Cash);
+    }
+
+    [Fact]
+    public void AToleranceOfZeroDoesNotCrackDownWithoutChaos()
+    {
+        var match = CreateMatch(tolerance: 0);
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+
+        match.FinishExecutionPhase();
+
         Assert.False(match.Sectors[0].CrackdownActive);
         Assert.All(match.Players, player => Assert.DoesNotContain(
             match.NotificationsFor(player.Id),
@@ -563,7 +649,8 @@ public sealed class ChaosResolutionTests
         PlayerId? owner = null,
         int tolerance = 20,
         bool crackdownActive = false,
-        int income = 2)
+        int income = 2,
+        bool twoEarlierCrackdowns = false)
     {
         var data = BundledOriginalData.Load();
         var chaosGang = data.Gangs.OrderByDescending(gang => gang.Stats.Chaos).First().Id;
@@ -593,8 +680,13 @@ public sealed class ChaosResolutionTests
                 new MatchSiteState(2, 2, 4)
             ], id == 0 ? owner : null, id == 0 ? tolerance : 20,
                 crackdownActive: id == 0 && crackdownActive,
-                income: id == 0 ? income : 2))
+                income: id == 0 ? income : 2,
+                crackdownHistory: id == 0 && twoEarlierCrackdowns ? [1, 2] : null))
             .ToArray();
-        return new MatchState(data, setup, players, sectors);
+        var match = new MatchState(data, setup, players, sectors);
+        // The Crackdowns of turns 1 and 2 are in the window, so the next one is the third.
+        if (twoEarlierCrackdowns)
+            for (var turn = 1; turn < 3; turn++) AdvanceCoordinatorTurn(match);
+        return match;
     }
 }

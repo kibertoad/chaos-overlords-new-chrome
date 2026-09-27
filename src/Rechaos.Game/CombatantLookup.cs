@@ -16,7 +16,8 @@ namespace Rechaos.Game;
 internal static class CombatantLookup
 {
     // Drawn every frame while a fight is on screen, so each retired stand-in is built once. Events
-    // are immutable, and a record belongs to a single gang, so the stand-in can never go stale.
+    // are immutable, a record belongs to a single gang, and the stand-in reads nothing but the
+    // record and the gang definitions, so it can never go stale.
     private static readonly ConditionalWeakTable<CombatantDetails, MatchGangState> Retired = new();
 
     /// <summary>
@@ -27,18 +28,17 @@ internal static class CombatantLookup
     {
         ArgumentNullException.ThrowIfNull(state);
         if (state.FindGang(id) is { } live) return live;
-        if (gameEvent is null || Recorded(gameEvent, id) is not { } recorded) return null;
+        if (gameEvent is null || RecordedCombatant(gameEvent, id) is not { } recorded) return null;
         if (!Retired.TryGetValue(recorded, out var retired))
         {
-            retired = new MatchGangState(
-                id, recorded.Owner, recorded.DefinitionId, recorded.SectorId, force: 0,
-                recorded.WeaponItemId, recorded.ArmorItemId, recorded.MiscellaneousItemId);
+            retired = recorded.ToRetiredGang(state, id);
             Retired.AddOrUpdate(recorded, retired);
         }
         return retired;
     }
 
-    private static CombatantDetails? Recorded(GameEvent gameEvent, GangId id)
+    /// <summary>The gang <paramref name="id"/> as <paramref name="gameEvent"/> recorded it, if it fought there.</summary>
+    public static CombatantDetails? RecordedCombatant(GameEvent gameEvent, GangId id)
     {
         if (gameEvent.PoliceAttack is { } police) return gameEvent.Gang == id ? police.Target : null;
         if (gameEvent.Resolution is not { } resolution) return null;

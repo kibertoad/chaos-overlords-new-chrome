@@ -9,12 +9,11 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiFamilyRules
 {
-    public static OriginalAiFamilySelection Select(
-        ScenarioId scenario,
-        int hireRole,
-        int currentFamily)
-    {
-        int? family = scenario switch
+    /// <summary>
+    /// RULE-AI-002: the family a gang new to its slot takes for the scenario and hire role, or none
+    /// where the table cell is blank.
+    /// </summary>
+    public static int? FamilyFor(ScenarioId scenario, int hireRole) => scenario switch
         {
             ScenarioId.Greed => hireRole switch
             {
@@ -36,11 +35,11 @@ internal static class OriginalAiFamilyRules
             {
                 0 => 0, 1 => 1, 2 => 3, 3 => 2, 4 => 6, 5 => 5, 6 => 7, _ => null
             },
-            ScenarioId.Eliminate => hireRole switch
+            ScenarioId.Siege => hireRole switch
             {
                 0 => 0, 1 => 13, 2 => 14, 4 => 6, 5 => 5, 6 => 7, _ => null
             },
-            ScenarioId.Siege => hireRole switch
+            ScenarioId.Eliminate => hireRole switch
             {
                 0 => 10, 1 => 0, 2 => 3, 3 => 11, 4 => 12, 6 => 7, _ => null
             },
@@ -54,16 +53,4 @@ internal static class OriginalAiFamilyRules
             },
             _ => null
         };
-
-        if (family is null)
-            return new OriginalAiFamilySelection(currentFamily, CopiesProjectedGangValue: false);
-
-        // Every mode-4 branch which assigns a family also copies selector 0x5a's
-        // signed 16-bit projection into the planning record's +12 word.
-        return new OriginalAiFamilySelection(family.Value, CopiesProjectedGangValue: hireRole == 4);
-    }
 }
-
-internal readonly record struct OriginalAiFamilySelection(
-    int Family,
-    bool CopiesProjectedGangValue);

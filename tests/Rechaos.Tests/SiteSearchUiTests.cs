@@ -89,9 +89,11 @@ public sealed class SiteSearchUiTests
         Assert.Equal(new Rectangle(x, y, 20, 14), CitySiteMarkerProjection.Source(marker));
     }
 
+    // Map (9 + 53c, 7 + 51r + 15k), the lowest row ending at map y 408 (FND-UI-025), on the map
+    // copied to (2,42) (SCR-UI-003).
     [Theory]
-    [InlineData(0, 0, 11, 51)]
-    [InlineData(63, 2, 382, 438)]
+    [InlineData(0, 0, 11, 49)]
+    [InlineData(63, 2, 382, 436)]
     public void MarkerDestinationMatchesRecoveredCityRenderer(
         int sectorId, int visibleSlot, int x, int y)
     {

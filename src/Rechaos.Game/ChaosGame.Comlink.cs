@@ -100,7 +100,13 @@ public sealed partial class ChaosGame
         // four-row editor cursor, so it must never dispatch a message here.
         if (Pressed(keyboard, Keys.Execute))
         {
-            SendComlink();
+            // FND-COMLINK-007: with a recipient chosen, Execute presses the Send face for one tick
+            // of the presentation clock before sending (fn_00418CCC, RULE-TIMER-004).
+            if (_comlinkRecipients.Any(selected => selected))
+                PressKeyFace(PressedKeyFace.Confirm, ComlinkSendLayout.Ok.Location,
+                    () => SendComlink(pointerButton: true));
+            else
+                SendComlink();
             return;
         }
         if (Pressed(keyboard, Keys.Back))
@@ -291,7 +297,18 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.OverlordPortrait(sender.Setup.PortraitId), Color.White);
         DrawComlinkLines(batch, font, ComlinkTextEditor.DisplayLines(message.Text),
             ComlinkViewLayout.Message.Location, Color.Lime);
+        if (_hoverPoint is { } hover && ComlinkViewLayout.Page.Contains(hover))
+            DrawHoverTooltip(batch, pixel, font, hover, ComlinkInboxTooltip);
     }
+
+    // RULE-COMLINK-007
+    internal static readonly IReadOnlyList<string> ComlinkInboxTooltip =
+    [
+        "INBOX",
+        "WHEN YOU END PLANNING, THE READ MESSAGES",
+        "AT THE FRONT OF THE INBOX ARE REMOVED.",
+        "THE FIRST UNREAD MESSAGE AND ALL AFTER IT STAY."
+    ];
 
     private void DrawComlinkSend(
         SpriteBatch batch,

@@ -64,26 +64,11 @@ public static partial class CommandResolver
         MatchState state,
         IReadOnlyList<QueuedCommand> commands)
     {
+        // RULE-TOLERANCE-001: resolution opens by moving every base Tolerance one point back.
+        ToleranceResolver.StepTowardNormal(state);
         var ordered = InRosterOrder(state, commands);
-        var statistics = ordered
-            .Select(queued => queued.Command.Gang)
-            .Distinct()
-            .ToDictionary(gangId => gangId,
-                gangId => EffectiveStatisticsCalculator.ForGang(state, state.FindGang(gangId)!));
         var results = new List<CommandResolutionResult>(ordered.Length);
-        foreach (var queued in ordered)
-        {
-            results.Add(queued.Command.Action switch
-            {
-                GangAction.Heal => ResolveHeal(
-                    state, queued.Command, statistics[queued.Command.Gang]),
-                GangAction.Influence => ResolveInfluence(
-                    state, queued.Command, statistics[queued.Command.Gang]),
-                GangAction.Research => ResolveResearch(
-                    state, queued.Command, statistics[queued.Command.Gang]),
-                _ => Resolve(state, queued)
-            });
-        }
+        foreach (var queued in ordered) results.Add(Resolve(state, queued));
         ToleranceResolver.ClampAfterInstant(state);
         return results;
     }
@@ -101,7 +86,7 @@ public static partial class CommandResolver
             GangAction.Attack => ResolveCombatPhase(state, [queued]).Commands.Single(),
             GangAction.Bribe => ResolveBribe(state, queued.Command),
             GangAction.Chaos => ResolveChaosPhase(state, [queued]).Single(),
-            GangAction.Control => ResolveControl(state, [queued]).Single(),
+            GangAction.Control => ResolveControlPhase(state, [queued]).Single(),
             GangAction.Equip => ResolveEquip(state, queued.Command),
             GangAction.Give => ResolveGive(state, queued.Command),
             GangAction.Heal => ResolveHeal(state, queued.Command),
@@ -122,7 +107,7 @@ public static partial class CommandResolver
         var cost = CommandRules.ByAction[GangAction.Bribe].CashCost;
         if (player.Cash < cost)
         {
-            var tolerance = state.Sectors[state.FindGang(command.Gang)!.SectorId].Tolerance;
+            var tolerance = state.Sectors[state.FindGang(command.Gang)!.SectorId].BaseTolerance;
             return Complete(state, command, GameEventKind.CommandFailed,
                 new CommandResolutionDetails(CommandResolutionCode.InsufficientCash, [], 0, tolerance, tolerance));
         }
@@ -131,9 +116,9 @@ public static partial class CommandResolver
         var sector = state.Sectors[gang.SectorId];
         player.Cash -= cost;
         player.Statistics.CashSpent += cost;
-        var before = sector.Tolerance;
+        var before = sector.BaseTolerance;
         var after = ToleranceResolver.ApplyBribe(state, sector);
-        sector.Tolerance = after;
+        sector.BaseTolerance = after;
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after, -cost));
     }
@@ -151,8 +136,11 @@ public static partial class CommandResolver
             throw new ArgumentException("Every command must belong to Combat.", nameof(commands));
 
         var orderedCommands = InRosterOrder(state, commands);
-        var snapshots = state.Players.SelectMany(player => player.Gangs)
-            .ToDictionary(gang => gang.Id, gang => CombatSnapshot.For(state, gang));
+        // The rosters are enumerated in slot order, so each gang's index is its roster slot.
+        var snapshots = state.Players
+            .SelectMany(player => player.Gangs.Select((gang, slot) => (gang, slot)))
+            .ToDictionary(
+                entry => entry.gang.Id, entry => CombatSnapshot.For(state, entry.gang, entry.slot));
         var outcomes = new List<CombatOutcome>(orderedCommands.Length);
         // Every Attack order rolls its own attack and retaliation, including two gangs that attack
         // each other: the original resolver has no branch that merges such a pair
@@ -179,9 +167,10 @@ public static partial class CommandResolver
                 }
             }
 
+            // RULE-COMBAT-001: the stored Combat already holds the weapon skills.
             var attackDice = ManualRules.AttackDiceCount(
                 attacker.Force,
-                ManualRules.CombatRating(attacker.Statistics, attacker.WeaponType),
+                attacker.Statistics.Combat,
                 OriginalResolutionRules.AdjustDefense(
                     OriginalResolutionRules.Band(state, target.Owner),
                     target.Statistics.Defense));
@@ -193,13 +182,13 @@ public static partial class CommandResolver
             var attackDamage = OriginalResolutionRules.MainAttackDamage(
                 attackDice, attackSuccesses);
             var suppressesRetaliation = target.Hidden
-                || ManualRules.SuppressesRetaliation(attacker.Statistics, attacker.WeaponType)
-                && !ManualRules.SuppressesRetaliation(target.Statistics, target.WeaponType);
+                || ManualRules.SuppressesRetaliation(
+                    attacker.Statistics, attacker.WeaponType, target.Statistics, target.WeaponType);
             var retaliationDice = suppressesRetaliation
                 ? 0
                 : ManualRules.AttackDiceCount(
                     target.Force,
-                    ManualRules.CombatRating(target.Statistics, target.WeaponType),
+                    target.Statistics.Combat,
                     attacker.Statistics.Defense);
             var retaliationRolls = DiceRoller.RollD6(state.Random, retaliationDice);
             var retaliationSuccesses = OriginalResolutionRules.CountSuccesses(
@@ -217,21 +206,29 @@ public static partial class CommandResolver
         var policeOutcomes = snapshots.Values
             .Where(snapshot => snapshot.Force > 0 && state.Sectors[snapshot.SectorId].CrackdownActive)
             .OrderBy(snapshot => snapshot.Owner.Value)
-            .ThenBy(snapshot => GangSlot(state, snapshot.Owner, snapshot.Id))
+            .ThenBy(snapshot => snapshot.RosterSlot)
             .Select(snapshot => RollPoliceAttack(state, snapshot))
             .ToArray();
 
+        // RULE-AI-016: every Attack order lowers the target player's attitude, an evaded one by the
+        // reaction alone, since its opening damage is -1 [FND-AI-047].
+        foreach (var outcome in outcomes)
+            state.AiStrategy.RecordCombat(outcome.Attacker.Owner, outcome.Target.Owner,
+                outcome.Code == CommandResolutionCode.Resolved ? outcome.Damage : -1);
         var incomingDamage = new Dictionary<GangId, int>();
         foreach (var outcome in outcomes.Where(outcome => outcome.Code == CommandResolutionCode.Resolved))
         {
-            state.AiStrategy.RecordCombat(
-                outcome.Attacker.Owner, outcome.Target.Owner, outcome.Damage);
             AddDamage(incomingDamage, outcome.Target.Id, outcome.Damage);
             AddDamage(incomingDamage, outcome.Attacker.Id, outcome.RetaliationDamage);
         }
         foreach (var outcome in policeOutcomes.Where(outcome => outcome.Detected))
             AddDamage(incomingDamage, outcome.Target.Id, outcome.Successes);
+        RecordFirstCombatRecord(state, snapshots, outcomes, policeOutcomes);
 
+        // RULE-COMBAT-002: the damage is taken off only after every attack and the police have
+        // rolled from the Forces at the start of the phase. The original caps each gang's damage at
+        // 10 and lets a dead gang's Force go below 0; flooring at 0 gives the same Force for every
+        // gang that lives and the same deaths.
         foreach (var (gangId, damage) in incomingDamage)
         {
             var gang = state.FindGang(gangId)!;
@@ -308,6 +305,26 @@ public static partial class CommandResolver
         return new CombatPhaseResolution(results, policeResults);
     }
 
+    /// <summary>
+    /// RULE-COMBAT-002 writes byte 0 of the combat record of every gang that fought: an attacker,
+    /// an attack's target (evaded or not) or a gang the police found. Only the first record,
+    /// player 0's roster slot 0, is kept, because the computer players read its byte as the owner
+    /// of sector index 64 (RULE-AI-005, RULE-AI-013, FMT-STATE-003).
+    /// </summary>
+    private static void RecordFirstCombatRecord(
+        MatchState state,
+        IReadOnlyDictionary<GangId, CombatSnapshot> snapshots,
+        IReadOnlyList<CombatOutcome> outcomes,
+        IReadOnlyList<PoliceCombatOutcome> policeOutcomes)
+    {
+        if (state.FindPlayer(new PlayerId(0)) is not { Gangs.Count: > 0 } firstPlayer) return;
+        var gang = firstPlayer.Gangs[0].Id;
+        var fought = outcomes.Any(outcome => outcome.Attacker.Id == gang || outcome.Target.Id == gang)
+            || policeOutcomes.Any(outcome => outcome.Detected && outcome.Target.Id == gang);
+        if (fought)
+            state.AiPlanning.RecordFirstCombatRecordDefinition(snapshots[gang].Details.DefinitionId);
+    }
+
     private static PoliceCombatOutcome RollPoliceAttack(MatchState state, CombatSnapshot target)
     {
         var detectionChance = ManualRules.PoliceDetectionPercent(
@@ -371,12 +388,14 @@ public static partial class CommandResolver
         short? WeaponItemId,
         CombatantDetails Details)
     {
-        public static CombatSnapshot For(MatchState state, MatchGangState gang) => new(
+        public static CombatSnapshot For(MatchState state, MatchGangState gang, int rosterSlot) => new(
             gang.Id, gang.Owner, gang.SectorId, gang.Force, gang.Hidden,
             EffectiveStatisticsCalculator.ForGang(state, gang),
             gang.WeaponItemId is { } weapon ? state.Definitions.Items[weapon].Type : null,
             gang.WeaponItemId,
-            CombatantDetails.Of(gang));
+            CombatantDetails.Of(gang, rosterSlot));
+
+        public int RosterSlot => Details.RosterSlot!.Value;
     }
 
     private sealed record CombatOutcome(
@@ -523,6 +542,10 @@ public static partial class CommandResolver
         }
     }
 
+    /// <summary>
+    /// RULE-CONTROL-001: each player's Control gangs pool their Force and Control per sector, and
+    /// every sector with a Control order and no police is settled in ascending order.
+    /// </summary>
     private static IReadOnlyList<CommandResolutionResult> ResolveControlPhase(
         MatchState state,
         IReadOnlyList<QueuedCommand> commands)
@@ -540,132 +563,98 @@ public static partial class CommandResolver
                     .ToArray())
                 .ToArray();
             var sector = state.Sectors[sectorCommands.Key];
-            if (groups.Length > 1)
-                results.AddRange(ResolveControlConflict(state, sector, groups));
-            else
-                foreach (var group in groups) results.AddRange(ResolveControl(state, group));
+            // RULE-CONTROL-001 skips a sector whose `crackdown_turns` is not 0, including a value
+            // wrapped below 0. DEV-CONTROL-002: the original leaves such a sector out of the pass
+            // without a word; the rebuild records a failed result for each participant.
+            results.AddRange(sector.HasCrackdownTurns
+                ? RefuseForCrackdown(state, sector, groups.SelectMany(group => group))
+                : SettleControl(state, sector, groups));
         }
         return results;
     }
 
-    private static IReadOnlyList<CommandResolutionResult> ResolveControlConflict(
+    private static IReadOnlyList<CommandResolutionResult> SettleControl(
         MatchState state,
         MatchSectorState sector,
         IReadOnlyList<QueuedCommand[]> groups)
     {
-        if (sector.CrackdownActive)
-            return RefuseForCrackdown(state, sector, groups.SelectMany(group => group));
-
         var previousOwner = sector.Owner;
-        var sectorIncome = sector.Income;
-        var defense = 0;
-        var support = 0;
-        if (previousOwner is { } owner)
-            (defense, support) = OwnerDefense(state, sector, owner);
-        var totalDefense = checked(sectorIncome + defense + support);
-        var attempts = groups.Select(participants =>
+        // Income and the sector's Support, rebuilt before planning, are added to the owner's pool
+        // and taken from every pool, so the owner's margin is its own Control plus its defense
+        // [FND-CONTROL-003].
+        var threshold = checked(sector.Income + sector.Support);
+        var defense = previousOwner is { } owner ? OwnerDefense(state, sector, owner) : 0;
+        var attacks = groups.ToDictionary(
+            group => group[0].Command.Player,
+            group => ManualRules.ControlStrength(ControlAttackers(state, group)));
+
+        var best = 0;
+        var candidates = new List<PlayerId?> { null };
+        foreach (var player in state.Players.OrderBy(value => value.Id.Value))
         {
-            var attack = ManualRules.ControlStrength(ControlAttackers(state, participants));
-            return (Participants: participants, Attack: attack,
-                Margin: ManualRules.ControlMargin(
-                    attack, sectorIncome, defense, support));
-        }).ToArray();
-        var bestMargin = attempts.Max(attempt => attempt.Margin);
-        var leaders = attempts
-            .Where(attempt => attempt.Margin == bestMargin)
-            .OrderBy(attempt => attempt.Participants[0].Command.Player.Value)
-            .ToArray();
-        var winner = bestMargin >= 0 && leaders.Length == 1 ? leaders[0] : default;
+            var ordered = attacks.TryGetValue(player.Id, out var attack);
+            // BUG-CONTROL-001: the original compares every player, so one with no order has the
+            // margin -(Income + Support). DEV-CONTROL-001 leaves out such a player unless it owns
+            // the sector.
+            if (!ordered && player.Id != previousOwner) continue;
+            var margin = player.Id == previousOwner
+                ? checked(attack + defense)
+                : checked(attack - threshold);
+            if (margin == best) candidates.Add(player.Id);
+            if (margin > best)
+            {
+                best = margin;
+                candidates = [player.Id];
+            }
+        }
+        var winner = candidates[0];
         int? chanceRoll = null;
-        int? chanceSides = null;
-        if (bestMargin == 0)
+        if (candidates.Count > 1)
         {
-            chanceSides = leaders.Length + 1;
-            chanceRoll = state.Random.NextInclusive(chanceSides.Value);
-            winner = chanceRoll == 1 ? default : leaders[chanceRoll.Value - 2];
+            chanceRoll = state.Random.NextInclusive(candidates.Count);
+            winner = candidates[chanceRoll.Value - 1];
         }
-        else if (bestMargin > 0 && leaders.Length > 1)
-        {
-            chanceSides = leaders.Length;
-            chanceRoll = state.Random.NextInclusive(chanceSides.Value);
-            winner = leaders[chanceRoll.Value - 1];
-        }
-        var captured = winner.Participants is not null;
+        var captured = winner is not null && winner != previousOwner;
         if (captured)
         {
-            var newOwner = winner.Participants![0].Command.Player;
             if (previousOwner is { } oldOwner)
             {
-                state.FindPlayer(newOwner)!.Statistics.Overthrows++;
-                state.AiStrategy.RecordControl(oldOwner, newOwner);
+                state.FindPlayer(winner!.Value)!.Statistics.Overthrows++;
+                state.AiStrategy.RecordControl(oldOwner, winner.Value);
                 SectorControlResolver.ResetInfluencedSites(state, sector, oldOwner);
             }
-            sector.Owner = newOwner;
+            else
+            {
+                SectorControlResolver.ResetSiteProgress(state, sector);
+            }
+            sector.Owner = winner;
         }
 
         var results = new List<CommandResolutionResult>(groups.Sum(group => group.Length));
-        foreach (var attempt in attempts)
-        foreach (var participant in attempt.Participants)
+        foreach (var group in groups)
         {
-            var won = captured && ReferenceEquals(attempt.Participants, winner.Participants);
-            var sharedTieBreak = chanceRoll is not null &&
-                leaders.Any(leader => ReferenceEquals(leader.Participants, attempt.Participants));
-            results.Add(Complete(state, participant.Command, GameEventKind.CommandResolved,
-                new CommandResolutionDetails(
-                    CommandResolutionCode.Resolved, [], won ? 1 : 0,
-                    PreviousValue: previousOwner?.Value, ResultValue: sector.Owner?.Value,
-                    AttackValue: attempt.Attack, DefenseValue: totalDefense,
-                    ChanceRoll: sharedTieBreak ? chanceRoll : null,
-                    ChanceSides: sharedTieBreak ? chanceSides : null),
-                GameNotificationKind.Control));
+            var player = group[0].Command.Player;
+            var drawn = chanceRoll is not null && candidates.Contains(player);
+            foreach (var participant in group)
+                results.Add(Complete(state, participant.Command, GameEventKind.CommandResolved,
+                    new CommandResolutionDetails(
+                        CommandResolutionCode.Resolved, [], captured && winner == player ? 1 : 0,
+                        PreviousValue: previousOwner?.Value, ResultValue: sector.Owner?.Value,
+                        AttackValue: attacks[player],
+                        DefenseValue: checked(threshold + (player == previousOwner ? 0 : defense)),
+                        ChanceRoll: drawn ? chanceRoll : null,
+                        ChanceSides: drawn ? candidates.Count : null),
+                    GameNotificationKind.Control));
         }
-        return results;
-    }
-
-    private static IReadOnlyList<CommandResolutionResult> ResolveControl(
-        MatchState state,
-        IReadOnlyList<QueuedCommand> participants)
-    {
-        if (participants.Count == 0) throw new ArgumentException("At least one participant is required.", nameof(participants));
-        var first = participants[0].Command;
-        var player = state.FindPlayer(first.Player)!;
-        var sector = state.Sectors[state.FindGang(first.Gang)!.SectorId];
-        if (sector.CrackdownActive)
-            return RefuseForCrackdown(state, sector, participants);
-        var attack = ManualRules.ControlStrength(ControlAttackers(state, participants));
-        var sectorIncome = sector.Income;
-        var defense = 0;
-        var support = 0;
-        if (sector.Owner is { } owner && owner != first.Player)
-            (defense, support) = OwnerDefense(state, sector, owner);
-        var margin = ManualRules.ControlMargin(attack, sectorIncome, defense, support);
-        var previousOwner = sector.Owner;
-        int? chanceRoll = null;
-        if (previousOwner != first.Player && margin == 0)
-            chanceRoll = state.Random.NextInclusive(2);
-        var captured = previousOwner != first.Player && (margin > 0 || chanceRoll == 2);
-        if (captured)
-        {
-            if (previousOwner is { } oldOwner)
-            {
-                player.Statistics.Overthrows++;
-                state.AiStrategy.RecordControl(oldOwner, first.Player);
-                SectorControlResolver.ResetInfluencedSites(state, sector, oldOwner);
-            }
-            sector.Owner = first.Player;
-        }
-
-        var results = new List<CommandResolutionResult>(participants.Count);
-        foreach (var participant in participants)
-        {
-            results.Add(Complete(state, participant.Command, GameEventKind.CommandResolved,
-                new CommandResolutionDetails(
-                    CommandResolutionCode.Resolved, [], captured ? 1 : 0,
-                    PreviousValue: previousOwner?.Value, ResultValue: sector.Owner?.Value,
-                    AttackValue: attack, DefenseValue: checked(sectorIncome + defense + support),
-                    ChanceRoll: chanceRoll, ChanceSides: chanceRoll is null ? null : 2),
-                GameNotificationKind.Control));
-        }
+        // RULE-EVENT-012: a winner without a Control order here (BUG-CONTROL-001) has no result of
+        // its own, so its report carries no event.
+        if (captured && !attacks.ContainsKey(winner!.Value))
+            state.QueueNotification(winner.Value, GameNotificationKind.Control,
+                sectorId: sector.Id, executionPhase: ExecutionPhase.Control);
+        // RULE-EVENT-013: the previous owner is told it lost the sector.
+        if (captured && previousOwner is { } loser)
+            state.QueueNotification(loser, GameNotificationKind.ControlLost,
+                sectorId: sector.Id, executionPhase: ExecutionPhase.Control);
         return results;
     }
 
@@ -691,18 +680,16 @@ public static partial class CommandResolver
             GameNotificationKind.Control)).ToArray();
 
     /// <summary>
-    /// What the owner adds to the sector's Control defense: the strength of its visible gangs
-    /// there, and the Support of the sites it has influenced.
+    /// What the owner adds to its own Control pool besides Income and Support: the Force and
+    /// Control of each of its gangs in the sector that is not hiding (RULE-CONTROL-001).
     /// </summary>
-    private static (int Defense, int Support) OwnerDefense(
+    private static int OwnerDefense(
         MatchState state,
         MatchSectorState sector,
         PlayerId owner) =>
-        (ManualRules.ControlStrength(state.FindPlayer(owner)!.Gangs
-                .Where(gang => gang.IsActive && !gang.Hidden && gang.SectorId == sector.Id)
-                .Select(gang => (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Control))),
-            sector.Sites.Where(site => site.InfluencedBy == owner).Sum(site =>
-                state.Definitions.Site(site.DefinitionId).Support));
+        ManualRules.ControlStrength(state.FindPlayer(owner)!.Gangs
+            .Where(gang => gang.IsActive && !gang.Hidden && gang.SectorId == sector.Id)
+            .Select(gang => (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Control)));
 
     private static IEnumerable<(int Force, int Control)> ControlAttackers(
         MatchState state,
@@ -728,13 +715,10 @@ public static partial class CommandResolver
             rolls, OriginalResolutionRules.SuccessThreshold(band, action)));
     }
 
-    private static CommandResolutionResult ResolveHeal(
-        MatchState state,
-        GameCommand command,
-        EffectiveStatistics? phaseStatistics = null)
+    private static CommandResolutionResult ResolveHeal(MatchState state, GameCommand command)
     {
         var gang = state.FindGang(command.Gang)!;
-        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var (rolls, successes) = RollAction(
             state, band, GangAction.Heal, ManualRules.HealDiceCount(statistics.Heal));
@@ -754,10 +738,7 @@ public static partial class CommandResolver
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before ? 1 : 0, 1));
     }
 
-    private static CommandResolutionResult ResolveInfluence(
-        MatchState state,
-        GameCommand command,
-        EffectiveStatistics? phaseStatistics = null)
+    private static CommandResolutionResult ResolveInfluence(MatchState state, GameCommand command)
     {
         var site = state.FindSite(command.Target.Id)!;
         var before = site.Resistance;
@@ -767,7 +748,7 @@ public static partial class CommandResolver
                 GameNotificationKind.Influence);
 
         var gang = state.FindGang(command.Gang)!;
-        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var pool = OriginalResolutionRules.ActionPool(
             band, GangAction.Influence,
@@ -785,17 +766,14 @@ public static partial class CommandResolver
     {
         var gang = state.FindGang(command.Gang)!;
         var sector = state.Sectors[gang.SectorId];
-        var before = sector.Tolerance;
+        var before = sector.BaseTolerance;
         var after = ToleranceResolver.ApplySnitch(state, sector);
-        sector.Tolerance = after;
+        sector.BaseTolerance = after;
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after));
     }
 
-    private static CommandResolutionResult ResolveResearch(
-        MatchState state,
-        GameCommand command,
-        EffectiveStatistics? phaseStatistics = null)
+    private static CommandResolutionResult ResolveResearch(MatchState state, GameCommand command)
     {
         var gang = state.FindGang(command.Gang)!;
         var player = state.FindPlayer(command.Player)!;
@@ -808,7 +786,7 @@ public static partial class CommandResolver
                 GameNotificationKind.Research);
         }
 
-        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var pool = OriginalResolutionRules.ActionPool(
             band, GangAction.Research,

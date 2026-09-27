@@ -118,14 +118,17 @@ public sealed class InstantResolutionTests
         Assert.Null(match.FindSite(0)!.InfluencedBy);
         Assert.Equal(0, match.Players[0].Support);
         Assert.Equal(toleranceBefore, match.Sectors[0].Tolerance);
-        var preActivationNormal = ToleranceResolver.NormalTolerance(match, match.Sectors[0]);
+        var siteToleranceBefore = ToleranceResolver.SiteAdjustment(match, match.Sectors[0]);
 
         AdvanceToNextPlanning(match);
 
+        // RULE-SITE-001: the completed site joins the Tolerance at the rebuild before planning.
         Assert.Equal(new PlayerId(0), match.FindSite(0)!.InfluencedBy);
         Assert.Equal(siteDefinition.Support, match.Players[0].Support);
-        Assert.Equal(ToleranceResolver.MoveOnePointToward(toleranceBefore, preActivationNormal)
-            + siteDefinition.Tolerance, match.Sectors[0].Tolerance);
+        Assert.Equal(siteToleranceBefore + siteDefinition.Tolerance,
+            ToleranceResolver.SiteAdjustment(match, match.Sectors[0]));
+        Assert.Equal(match.Sectors[0].BaseTolerance + siteToleranceBefore + siteDefinition.Tolerance,
+            match.Sectors[0].Tolerance);
     }
 
     [Fact]

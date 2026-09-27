@@ -34,6 +34,13 @@ updates:
     groups:
       multiplayer:
         patterns: ["*"]
+    # @cloudflare/vitest-pool-workers 0.22.0 accepts vitest ^4.1 only, and under vitest 5 its worker
+    # pool fails to start. Drop these entries once a pool release accepts vitest 5.
+    ignore:
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/*"
+        update-types: ["version-update:semver-major"]
     cooldown:
       default-days: 7
 

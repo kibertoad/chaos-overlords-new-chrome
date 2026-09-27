@@ -81,3 +81,20 @@ screenshots/
 /*-review-*.md
 /*-review-*/
 /*-findings-*.md
+
+# Decompiler output, disassembly listings and analysis databases never go into the repository
+# (AGENTS.md; docs/GHIDRA.md). Verify-Repository.ps1 rejects them if they are staged anyway.
+*.gpr
+*.rep/
+*.gzf
+*.gar
+*.gdt
+*.idb
+*.i64
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+*.bndb
+*.lst

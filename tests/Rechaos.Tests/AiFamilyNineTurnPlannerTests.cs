@@ -113,7 +113,7 @@ public sealed class AiFamilyNineTurnPlannerTests
     private static void BeginFamilyNineTurn(MatchState match, PlayerId player)
     {
         match.AiPlanning.BeginPlanning(player);
-        match.AiPlanning.SetFamily(player, 0, 9);
+        match.AiPlanning.SeedFamily(player, 0, 9);
         match.AiPlanning.SetCurrentHireRole(player, 5);
     }
 
@@ -156,7 +156,7 @@ public sealed class AiFamilyNineTurnPlannerTests
                 income: 0))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Siege, GameDuration.SixMonths, 41, setups, mentality),
+            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups, mentality),
             players, sectors);
     }
 }

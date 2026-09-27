@@ -115,18 +115,39 @@ public sealed class ManualRulesTests
     public void CrackdownRequiresChaosStrictlyAboveTolerance(int chaos, int tolerance, bool expected) =>
         Assert.Equal(expected, ManualRules.TriggersCrackdown(chaos, tolerance));
 
+    // RULE-COMBAT-001
     [Fact]
-    public void CombatRatingUsesCumulativeSkillsForWeaponClass()
+    public void WeaponSkillsFollowTheWeaponType()
     {
         var statistics = new EffectiveStatistics(
             Combat: 3, Defense: 0, Stealth: 0, Detect: 0, Chaos: 0, Control: 0,
             Heal: 0, Influence: 0, Research: 0, Strength: 2, Blade: 4, Range: 5,
             Fighting: 6, MartialArts: 7);
 
-        Assert.Equal(18, ManualRules.CombatRating(statistics, null));
-        Assert.Equal(5, ManualRules.CombatRating(statistics, 0));
-        Assert.Equal(9, ManualRules.CombatRating(statistics, 1));
-        Assert.Equal(8, ManualRules.CombatRating(statistics, 2));
+        Assert.Equal(15, ManualRules.WeaponSkills(statistics, null));
+        Assert.Equal(2, ManualRules.WeaponSkills(statistics, 0));
+        Assert.Equal(6, ManualRules.WeaponSkills(statistics, 1));
+        Assert.Equal(5, ManualRules.WeaponSkills(statistics, 2));
+        Assert.Equal(0, ManualRules.WeaponSkills(statistics, 3));
+    }
+
+    // RULE-ATTACK-001: the attacker's test is == 0 and the target's > 0 [FND-COMBAT-008].
+    [Theory]
+    [InlineData(0, 0, false)]
+    [InlineData(2, 0, true)]
+    [InlineData(-1, 0, true)]
+    [InlineData(-1, -1, true)]
+    [InlineData(2, 1, false)]
+    public void AnUnarmedAttackerWithMartialArtsOtherThanZeroSuppressesRetaliation(
+        int attackerMartialArts, int targetMartialArts, bool expected)
+    {
+        static EffectiveStatistics With(int martialArts) => new(
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, martialArts);
+
+        Assert.Equal(expected, ManualRules.SuppressesRetaliation(
+            With(attackerMartialArts), null, With(targetMartialArts), null));
+        Assert.False(ManualRules.SuppressesRetaliation(
+            With(attackerMartialArts), 0, With(targetMartialArts), null));
     }
 
     [Theory]

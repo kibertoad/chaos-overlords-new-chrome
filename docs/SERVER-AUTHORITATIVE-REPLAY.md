@@ -321,11 +321,11 @@ Ordering choices worth stating:
   call that created the turn or advanced `currentTurn` onto it arms the deadline. Resolution follows
   the same rule. The `match_states` insert is keyed on `(match_id, turn)` and refused when the row
   exists; `resolved_turn` advances through one conditional write that is refused unless it moves
-  forward; and `turn.resolved` is announced under its own claim on the turn row, as `turn.desynced`
-  already is through `claimDesyncAnnouncement`, so a process that dies between the write and the
-  announcement leaves it for the sweep and the event is never published twice. A sweep that finds a
-  resolution already written skips straight to the announcement claim and the idempotent
-  `openTurn`. Because the next turn now opens after resolution, its deadline is armed
+  forward; and `turn.resolved` is announced the way `turn.desynced` already is — appended under
+  a dedupe key (`appendOnce`) and only then stamped on the turn row (`claimDesyncAnnouncement`) —
+  so a process that dies between the write and the announcement leaves it for the sweep and the
+  event is never published twice. A sweep that finds a resolution already written skips straight to
+  the announcement and the idempotent `openTurn`. Because the next turn now opens after resolution, its deadline is armed
   after resolution too, so the time the server spends resolving never comes out of a player's clock.
 
 The verdict logic changes from a consensus to a comparison. A report equal to `resolved_state_hash`

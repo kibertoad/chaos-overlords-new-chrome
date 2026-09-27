@@ -38,8 +38,15 @@ public static class OriginalFontLayout
     public static int MaskWidth => AtlasBounds.Width + SupplementalFontGlyphs.Characters.Length * CellWidth;
 
     /// <summary>Source cell of <paramref name="character"/> in the glyph mask.</summary>
+    /// <remarks>
+    /// U+2212 MINUS SIGN is drawn as the hyphen-minus the strip has. Cultures whose number format
+    /// uses it (Swedish, Norwegian and others under ICU) otherwise lost the sign of every negative
+    /// number on screen. The game formats with the invariant culture (<see cref="GameCulture"/>);
+    /// this keeps a stray culture-formatted number readable all the same.
+    /// </remarks>
     public static bool TryGlyph(char character, out Rectangle source)
     {
+        if (character == '\u2212') character = '-';
         character = char.ToUpperInvariant(character);
         if (character is >= FirstCharacter and <= LastCharacter)
         {
@@ -178,6 +185,22 @@ public static class VirtualInput
             0);
     }
 
+    /// <summary>
+    /// The window pixels a virtual rectangle covers, for a scissor rectangle. Both edges are
+    /// rounded to the nearest pixel, so two rectangles that share an edge share it on screen too.
+    /// </summary>
+    public static Rectangle ToPhysical(Viewport viewport, Rectangle area)
+    {
+        var scale = MathF.Min(viewport.Width / (float)Width, viewport.Height / (float)Height);
+        var left = (viewport.Width - Width * scale) / 2;
+        var top = (viewport.Height - Height * scale) / 2;
+        var x0 = (int)MathF.Round(left + area.Left * scale);
+        var y0 = (int)MathF.Round(top + area.Top * scale);
+        var x1 = (int)MathF.Round(left + area.Right * scale);
+        var y1 = (int)MathF.Round(top + area.Bottom * scale);
+        return new Rectangle(x0, y0, Math.Max(0, x1 - x0), Math.Max(0, y1 - y0));
+    }
+
     public static bool TryMap(Viewport viewport, Point physical, out Point virtualPoint)
     {
         var scale = MathF.Min(viewport.Width / (float)Width, viewport.Height / (float)Height);
@@ -276,17 +299,21 @@ public sealed class HoverDwellTracker
     }
 }
 
-/// <summary>Native layout of the 8x8 sector cells in the PX10000-PX10006 city layers.</summary>
+/// <summary>
+/// The city map of SCR-UI-003: the prepared map surface copied to <c>(2,42)</c>, with the 8-by-8
+/// grid of 54-by-52 cells on a 53-by-51 stride from map <c>(4,3)</c> (FND-UI-017, FND-UI-033).
+/// </summary>
 public static class CityMapLayout
 {
     public const int Left = 2;
-    public const int Top = 44;
+    public const int Top = 42;
     public const int GridInsetX = 4;
     public const int GridInsetY = 3;
     public const int ColumnStride = 53;
     public const int RowStride = 51;
     public const int TileWidth = 54;
     public const int TileHeight = 52;
+    public const int SelectionFrameCount = 2;
     public static Rectangle Bounds => new(
         Left, Top, TileWidth * MatchLimits.BoardWidth, TileHeight * MatchLimits.BoardWidth);
 
@@ -313,19 +340,55 @@ public static class CityMapLayout
 
     public static int OwnershipSheet(PlayerId? owner) => owner?.Value + 1 ?? 0;
 
+    /// <summary>
+    /// FND-UI-015: a press on the map takes the sector <c>(x - 2) / 54 + ((y - 42) / 52) * 8</c>,
+    /// a grid that drifts up to four pixels from the drawn 53-by-51 one toward the bottom right.
+    /// </summary>
     public static bool TrySectorAt(Point point, out int sectorId)
     {
-        var x = point.X - Left - GridInsetX;
-        var y = point.Y - Top - GridInsetY;
-        if (x < 0 || x > ColumnStride * 8 || y < 0 || y > RowStride * 8)
+        if (!Bounds.Contains(point))
         {
             sectorId = -1;
             return false;
         }
-        var column = Math.Min(x / ColumnStride, MatchLimits.BoardWidth - 1);
-        var row = Math.Min(y / RowStride, MatchLimits.BoardWidth - 1);
-        sectorId = row * MatchLimits.BoardWidth + column;
+        sectorId = (point.X - Left) / TileWidth + (point.Y - Top) / TileHeight * MatchLimits.BoardWidth;
         return true;
+    }
+
+    /// <summary>
+    /// FND-UI-017: the keyed selection frame, <c>f</c> being the pump's counter <c>0x00487804</c>
+    /// divided by 4. The counter steps once a presentation tick and wraps at 8 (FND-EVENT-006).
+    /// </summary>
+    public static Rectangle SelectionFrameSource(int frame)
+    {
+        if (frame is < 0 or >= SelectionFrameCount) throw new ArgumentOutOfRangeException(nameof(frame));
+        return new Rectangle(236 + frame * TileWidth, 15, TileWidth, TileHeight);
+    }
+
+    public static int SelectionFrame(TimeSpan now) => (int)(PresentationClock.Ticks(now) % 8 / 4);
+
+    /// <summary>
+    /// FND-UI-017: the column letter tabs above and below the map and the row number tabs left and
+    /// right of it, each with the glyph's offset inside the tab.
+    /// </summary>
+    public static IEnumerable<GridLabel> GridLabels()
+    {
+        for (var column = 0; column < MatchLimits.BoardWidth; column++)
+        {
+            var letter = ((char)('A' + column)).ToString();
+            yield return new GridLabel(new Point(21 + column * ColumnStride, 42),
+                new Rectangle(276, 448, 23, 13), new Point(9, 1), letter);
+            yield return new GridLabel(new Point(21 + column * ColumnStride, 444),
+                new Rectangle(276, 461, 23, 13), new Point(9, 5), letter);
+        }
+        for (var row = 0; row < MatchLimits.BoardWidth; row++)
+        {
+            var number = (row + 1).ToString();
+            yield return new GridLabel(new Point(3, 59 + row * RowStride),
+                new Rectangle(299, 448, 13, 23), new Point(1, 8), number);
+            yield return new GridLabel(new Point(421, 59 + row * RowStride),
+                new Rectangle(312, 448, 13, 23), new Point(7, 8), number);
+        }
     }
 
     private static void ValidateSector(int sectorId)
@@ -354,9 +417,9 @@ public static class ObjectiveSectorMarkerPresentation
 public static partial class OriginalSpriteLayout
 {
     public const int ActivePlayerMarkerFrameCount = 12;
-    public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);
-    public static Rectangle HiredStamp => new(120, 300, 60, 60);
-    public static Rectangle SnubbedStamp => new(180, 300, 60, 60);
+    /// <summary>SCR-HIRE-002, FND-HIRE-008: the 64-by-64 hire and snub marks.</summary>
+    public static Rectangle HiredStamp => new(114, 299, 64, 64);
+    public static Rectangle SnubbedStamp => new(178, 299, 64, 64);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
     public static Rectangle SectorBackArrow => new(120, 211, 30, 47);
@@ -393,98 +456,21 @@ public static partial class OriginalSpriteLayout
     }
 }
 
+/// <summary>A keyed tab of the grid's edge labels and the glyph written into it.</summary>
+public readonly record struct GridLabel(Point Destination, Rectangle Source, Point GlyphOffset, string Text);
+
+/// <summary>
+/// FND-UI-017: the gang-status marker sits at map <c>(33 + 53c, 19 + 51r)</c>, 29 pixels right
+/// of and 16 below the corner of its cell.
+/// </summary>
 public static class GangStatusMarkerLayout
 {
+    public static Point CellOffset => new(29, 16);
+
     public static Rectangle Destination(int sectorId)
     {
         var sector = CityMapLayout.Destination(sectorId);
-        return new Rectangle(sector.Right - 22, sector.Y + 20, 20, 20);
-    }
-}
-
-public static partial class SectorDetailLayout
-{
-    public const int Left = 61;
-    public const int Top = 48;
-    public const int Columns = 3;
-    public const int Rows = 3;
-    public static Rectangle Back => new(4, 394, 28, 66);
-    public static Rectangle Workspace => new(32, 42, 406, 418);
-
-    public static Rectangle Cell(int column, int row)
-    {
-        if (column is < 0 or >= Columns) throw new ArgumentOutOfRangeException(nameof(column));
-        if (row is < 0 or >= Rows) throw new ArgumentOutOfRangeException(nameof(row));
-        return new Rectangle(
-            Left + column * CityMapLayout.TileWidth,
-            Top + row * CityMapLayout.TileHeight,
-            CityMapLayout.TileWidth,
-            CityMapLayout.TileHeight);
-    }
-
-    public static int? SectorAt(int centerSectorId, int column, int row)
-    {
-        _ = CityMapLayout.Source(centerSectorId);
-        _ = Cell(column, row);
-        var centerColumn = centerSectorId % 8;
-        var centerRow = centerSectorId / 8;
-        var sectorColumn = centerColumn + column - 1;
-        var sectorRow = centerRow + row - 1;
-        return sectorColumn is < 0 or >= 8 || sectorRow is < 0 or >= 8
-            ? null
-            : sectorRow * 8 + sectorColumn;
-    }
-
-    public static bool TrySectorAt(Point point, int centerSectorId, out int sectorId)
-    {
-        var column = (point.X - Left) / CityMapLayout.TileWidth;
-        var row = (point.Y - Top) / CityMapLayout.TileHeight;
-        if (point.X < Left || point.Y < Top || column is < 0 or >= Columns || row is < 0 or >= Rows
-            || SectorAt(centerSectorId, column, row) is not { } mapped)
-        {
-            sectorId = -1;
-            return false;
-        }
-        sectorId = mapped;
-        return true;
-    }
-
-    public static Rectangle? Marker(int centerSectorId, int sectorId)
-    {
-        _ = CityMapLayout.Source(centerSectorId);
-        _ = CityMapLayout.Source(sectorId);
-        var deltaColumn = sectorId % 8 - centerSectorId % 8;
-        var deltaRow = sectorId / 8 - centerSectorId / 8;
-        if (deltaColumn is < -1 or > 1 || deltaRow is < -1 or > 1) return null;
-        var cell = Cell(deltaColumn + 1, deltaRow + 1);
-        return new Rectangle(cell.Right - 22, cell.Y + 20, 20, 20);
-    }
-
-    public static Rectangle SitePortrait(int slot)
-    {
-        if (slot is < 0 or >= MatchLimits.SitesPerSector)
-            throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(83, 226 + slot * 66, 120, 64);
-    }
-
-    public static Rectangle SiteControlBar(int slot)
-    {
-        var portrait = SitePortrait(slot);
-        return new Rectangle(portrait.X + 10, portrait.Y + 59, 100, 3);
-    }
-
-    public static Color SiteControlColor(PlayerId? influencedBy, PlayerId viewer) =>
-        influencedBy is { } owner && owner != viewer
-            ? new Color(190, 0, 220)
-            : new Color(0, 247, 0);
-
-    public static PlayerId? SiteControlOwner(
-        PlayerId? influencedBy,
-        PlayerId? sectorOwner,
-        int resistance)
-    {
-        if (resistance < 0) throw new ArgumentOutOfRangeException(nameof(resistance));
-        return influencedBy ?? (resistance == 0 ? sectorOwner : null);
+        return new Rectangle(sector.X + CellOffset.X, sector.Y + CellOffset.Y, 20, 20);
     }
 }
 
@@ -537,48 +523,6 @@ public static class CommandOverlayLayout
     public static IReadOnlyList<GangAction> ActionsFor(bool recurring) => recurring
         ? Actions.Where(action => action == GangAction.None || CommandRules.CanRepeat(action)).ToArray()
         : Actions;
-}
-
-public static class GangInformationLayout
-{
-    public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static int LeftValueLeft => SharedPanelLayout.X(172);
-    public static int RightValueLeft => SharedPanelLayout.X(268);
-
-    // PX05000/PX05022 reserve exactly two opaque glyph cells for each live value.
-    public static Rectangle ValueField(int left, int y) => new(
-        left, y,
-        2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
-
-    public static int ValueTextLeft(int left, string text) =>
-        left + (2 - text.Length) * OriginalFontLayout.CellWidth;
-
-    public static Rectangle Equipment(int slot)
-    {
-        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return SharedPanelLayout.At(290, 21 + slot * 64, 40, 40);
-    }
-
-    public static int? EquipmentSlotAt(Point point)
-    {
-        for (var slot = 0; slot < 3; slot++)
-            if (Equipment(slot).Contains(point)) return slot;
-        return null;
-    }
-
-    public static int StatisticY(int row) => row switch
-    {
-        0 => SharedPanelLayout.Y(119),
-        1 => SharedPanelLayout.Y(128),
-        2 => SharedPanelLayout.Y(146),
-        3 => SharedPanelLayout.Y(155),
-        4 => SharedPanelLayout.Y(164),
-        5 => SharedPanelLayout.Y(173),
-        6 => SharedPanelLayout.Y(182),
-        _ => throw new ArgumentOutOfRangeException(nameof(row))
-    };
 }
 
 public static class SiteInformationLayout
@@ -758,70 +702,6 @@ public static class InfluenceCommandLayout
     };
 }
 
-public static class AttackCommandLayout
-{
-    public const int VisibleTargets = 6;
-    public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle ActorPortrait => EquipmentCommandLayout.Portrait;
-    public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static Rectangle ActorForceBar => SharedPanelLayout.At(26, 103, 64, 3);
-
-    public static Rectangle ActorItem(int slot)
-    {
-        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return SharedPanelLayout.At(26 + slot * 22, 82, 20, 20);
-    }
-
-    public static Rectangle Opponent(int slot)
-    {
-        if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
-        return SharedPanelLayout.At(98, 16 + slot * 36, 32, 32);
-    }
-
-    public static Rectangle TargetCard(int targetSlot)
-    {
-        var portrait = TargetPortrait(targetSlot);
-        return new Rectangle(portrait.X, portrait.Y, 64, 90);
-    }
-
-    /// <summary>
-    /// Native Attack handler 0x0043b290 partitions one six-cell target region
-    /// for pointer selection; its regions are wider than the gang-card art.
-    /// </summary>
-    public static Rectangle TargetHit(int targetSlot)
-    {
-        if (targetSlot is < 0 or >= VisibleTargets)
-            throw new ArgumentOutOfRangeException(nameof(targetSlot));
-        var column = targetSlot % 3;
-        var row = targetSlot / 3;
-        var x = column switch { 0 => 135, 1 => 202, _ => 270 };
-        var width = column switch { 0 => 67, 1 => 68, _ => 67 };
-        return SharedPanelLayout.At(x, 16 + row * 89, width, row == 0 ? 89 : 88);
-    }
-
-    public static Rectangle TargetPortrait(int targetSlot)
-    {
-        if (targetSlot is < 0 or >= VisibleTargets)
-            throw new ArgumentOutOfRangeException(nameof(targetSlot));
-        return SharedPanelLayout.At(136 + targetSlot % 3 * 66,
-            16 + targetSlot / 3 * 90, 64, 64);
-    }
-
-    public static Rectangle TargetForceBar(int targetSlot)
-    {
-        var portrait = TargetPortrait(targetSlot);
-        return new Rectangle(portrait.X, portrait.Y + 87, 64, 3);
-    }
-
-    public static Rectangle TargetItem(int targetSlot, int itemSlot)
-    {
-        if (itemSlot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(itemSlot));
-        var portrait = TargetPortrait(targetSlot);
-        return new Rectangle(portrait.X + itemSlot * 22, portrait.Y + 66, 20, 20);
-    }
-}
-
 public static class AttackTargetRoster
 {
     /// <summary>
@@ -870,59 +750,10 @@ public static partial class PlayerPortraitLayout
     public const int Count = 16;
     public const int SelectableCount = 15;
 
-    /// <summary>The label the Sector workspace flags a gang-holding opponent with.</summary>
-    public const string GangPresenceLabel = "GANGS";
-
     public static Rectangle SetupTop(int player)
     {
         Validate(player);
         return new Rectangle(360 + player * 36, 38, 32, 32);
-    }
-
-    public static Rectangle CityTop(int player)
-    {
-        Validate(player);
-        return new Rectangle(16 + player * 72, 4, 32, 32);
-    }
-
-    public static Rectangle CityActiveMarker(int player)
-    {
-        Validate(player);
-        return new Rectangle(48 + player * 72, 4, 20, 20);
-    }
-
-    /// <summary>
-    /// The strip under a city-row portrait carrying <see cref="GangPresenceLabel"/>. One glyph row
-    /// starting a pixel into the portrait stops exactly on the Sector workspace's top edge.
-    /// </summary>
-    public static Rectangle CityGangPresence(int player)
-    {
-        var portrait = CityTop(player);
-        return new Rectangle(
-            portrait.X + 1,
-            portrait.Bottom - 1,
-            GangPresenceLabel.Length * OriginalFontLayout.CellWidth,
-            OriginalFontLayout.GlyphHeight);
-    }
-
-    /// <summary>
-    /// Where a caption of <paramref name="columns"/> characters goes under a top-bar portrait.
-    /// </summary>
-    /// <remarks>
-    /// The eight rows between the portraits and the top of the map at y 44 are all the space the
-    /// top bar has, so a caption takes one glyph row of it and is centred on the portrait it
-    /// belongs to rather than on the wider cell the portrait shares with the active-player marker.
-    /// </remarks>
-    public static Rectangle CityCaption(int player, int columns)
-    {
-        if (columns <= 0) throw new ArgumentOutOfRangeException(nameof(columns));
-        var portrait = CityTop(player);
-        var width = columns * OriginalFontLayout.CellWidth;
-        return new Rectangle(
-            portrait.X + (portrait.Width - width) / 2,
-            portrait.Bottom + 1,
-            width,
-            OriginalFontLayout.GlyphHeight);
     }
 
     public static Rectangle SetupLarge(int player) => Player(player, 397, 89, 83, 64, 64, rowStride: 74);

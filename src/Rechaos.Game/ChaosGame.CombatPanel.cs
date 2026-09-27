@@ -23,16 +23,30 @@ public sealed partial class ChaosGame
 
         var attackerOnRight = clip.Reversed;
         if (clip.Police)
-            DrawPoliceCombatant(batch, pixel, font, rightSide: attackerOnRight);
+            DrawPoliceCombatant(batch, pixel, rightSide: attackerOnRight);
         else if (attacker is not null && clip.Forces.AttackerAfter is { } attackerForce)
             DrawCombatant(batch, pixel, font, state, attacker, rightSide: attackerOnRight,
-                gameEvent?.Resolution?.ItemId, attackerForce, clip.Forces.AttackerDamage);
+                gameEvent?.Resolution?.ItemId,
+                clip.AttackerStart ?? clip.Forces.AttackerBefore ?? attackerForce,
+                attackerForce, clip.Forces.AttackerDamage);
         if (defender is not null)
             DrawCombatant(batch, pixel, font, state, defender, rightSide: !attackerOnRight,
                 gameEvent?.Resolution?.RetaliationItemId,
+                clip.DefenderStart ?? clip.Forces.DefenderBefore,
                 clip.Forces.DefenderAfter, clip.Forces.DefenderDamage);
 
         DrawCombatFrames(batch, pixel, clip);
+        DrawPressedCombatExit(batch);
+    }
+
+    /// <summary>
+    /// The pressed Exit face while a press that started on it is held over it; the release there
+    /// ends the whole presentation (SCR-COMBAT-002, FND-COMBAT-010).
+    /// </summary>
+    private void DrawPressedCombatExit(SpriteBatch batch)
+    {
+        if (!_combatExit.ShowsPressed || _uiSprites is null) return;
+        batch.Draw(_uiSprites, CombatPanelLayout.Exit, CombatPanelLayout.ExitPressedSource, Color.White);
     }
 
     private void DrawCombatSector(SpriteBatch batch, PixelFont font, MatchState state, int sectorId)
@@ -53,42 +67,65 @@ public sealed partial class ChaosGame
         MatchGangState gang,
         bool rightSide,
         short? eventWeapon,
+        int start,
         int force,
         int damage)
     {
+        // SCR-COMBAT-002, FND-COMBAT-014: the side clears its name field (left) or its whole
+        // header (right) in black, fills the colour strip with the owner's colour, copies the
+        // Overlord portrait and writes the owner's name with fn_00413FD5.
         var player = state.FindPlayer(gang.Owner)!;
+        batch.Draw(pixel, CombatPanelLayout.HeaderClear(rightSide), Color.Black);
         batch.Draw(pixel, CombatPanelLayout.HeaderColor(rightSide), PlayerColors[gang.Owner.Value]);
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, CombatPanelLayout.HeaderPortrait(rightSide),
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         var name = player.Setup.Name.ToUpperInvariant();
         if (name.Length > 10) name = name[..10];
-        font.Draw(batch, name, CombatPanelLayout.HeaderName(rightSide).ToVector2(),
-            PlayerColors[gang.Owner.Value], 1);
+        font.Draw(batch, name, CombatPanelLayout.HeaderName(rightSide).ToVector2(), Color.Lime, 1);
 
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, CombatPanelLayout.GangPortrait(rightSide),
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
-        DrawDetailedCombatForce(batch, pixel, rightSide, force, damage);
+        DrawDetailedCombatForce(batch, pixel, rightSide, start, force, damage);
 
         DrawCombatItem(batch, state, eventWeapon ?? gang.WeaponItemId, CombatPanelLayout.EquipmentItem(rightSide, 0));
         DrawCombatItem(batch, state, gang.ArmorItemId, CombatPanelLayout.EquipmentItem(rightSide, 1));
         DrawCombatItem(batch, state, gang.MiscellaneousItemId, CombatPanelLayout.EquipmentItem(rightSide, 2));
     }
 
-    private void DrawPoliceCombatant(SpriteBatch batch, Texture2D pixel, PixelFont font, bool rightSide)
+    /// <summary>
+    /// SCR-COMBAT-002, FND-COMBAT-014: the police opponent, always on the right. The side clears
+    /// its header in black and copies the header, the portrait and the three item pictures from
+    /// <c>PX00300</c>.
+    /// </summary>
+    private void DrawPoliceCombatant(SpriteBatch batch, Texture2D pixel, bool rightSide)
     {
-        font.Draw(batch, "POLICE", CombatPanelLayout.PoliceName(rightSide).ToVector2(), Color.LightBlue, 1);
+        batch.Draw(pixel, CombatPanelLayout.HeaderClear(rightSide), Color.Black);
         batch.Draw(pixel, CombatPanelLayout.GangPortrait(rightSide), Color.Black);
         if (_policeSprites is not null)
-            batch.Draw(_policeSprites, CombatPanelLayout.PolicePortrait(rightSide),
-                OriginalSpriteLayout.PolicePatrolCar, Color.White);
-        DrawDetailedCombatForce(batch, pixel, rightSide, ManualRules.MaximumForce, 0);
+        {
+            batch.Draw(_policeSprites, CombatPanelLayout.PoliceHeader,
+                CombatPanelLayout.PoliceHeaderSource, Color.White);
+            batch.Draw(_policeSprites, CombatPanelLayout.GangPortrait(rightSide),
+                CombatPanelLayout.PolicePortraitSource, Color.White);
+            for (var slot = 0; slot < 3; slot++)
+                batch.Draw(_policeSprites, CombatPanelLayout.EquipmentItem(rightSide, slot),
+                    CombatPanelLayout.PoliceItemSource(slot), Color.White);
+        }
+        // The police are drawn with Force 10 on both tracks (RULE-COMBAT-004).
+        DrawDetailedCombatForce(batch, pixel, rightSide,
+            ManualRules.MaximumForce, ManualRules.MaximumForce, 0);
     }
 
     private void DrawCombatItem(SpriteBatch batch, MatchState state, short? itemId, Rectangle aperture)
     {
-        if (itemId is not { } resolved || resolved < 0 || resolved >= state.Definitions.Items.Count) return;
+        // FND-COMBAT-014: an empty slot is filled with black.
+        if (itemId is not { } resolved || resolved < 0 || resolved >= state.Definitions.Items.Count)
+        {
+            if (_pixel is not null) batch.Draw(_pixel, aperture, Color.Black);
+            return;
+        }
         var item = state.Definitions.Items[resolved];
         if (resolved < _itemRotationTextures.Length && _itemRotationTextures[resolved] is { } rotation)
         {
@@ -102,37 +139,67 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.ItemPortrait(resolved), Color.White);
     }
 
-    private void DrawCombatForce(
+    /// <summary>
+    /// The lower track of SCR-COMBAT-002, <c>force_shown</c>: the Force before the clip until its
+    /// hits land, the part lost in white on ticks 13 and 15, and the new Force after
+    /// (FND-COMBAT-010).
+    /// </summary>
+    private void DrawShownCombatForce(
         SpriteBatch batch,
         Texture2D pixel,
         Rectangle bar,
         int force,
-        int damage = 0)
+        int damage)
     {
-        DrawBeveledForce(batch, pixel, bar, 0, bar.Width, red: true);
-        var width = Math.Clamp(bar.Width * force / ManualRules.MaximumForce, 0, bar.Width);
-        if (width > 0)
-            DrawBeveledForce(batch, pixel, bar, 0, width, red: false);
-
-        var previousForce = Math.Clamp(force + damage, 0, ManualRules.MaximumForce);
-        var previousWidth = Math.Clamp(
-            bar.Width * previousForce / ManualRules.MaximumForce, width, bar.Width);
-        if (previousWidth <= width) return;
-        if (_combatAnimationPlayer.ShowsPreDamageForce)
-            DrawBeveledForce(batch, pixel, bar, width, previousWidth - width, red: false);
-        else if (_combatAnimationPlayer.ShowsDamageFlash)
+        var width = CombatPanelLayout.TrackFill(force);
+        var previousWidth = Math.Max(width,
+            CombatPanelLayout.TrackFill(Math.Min(force + damage, ManualRules.MaximumForce)));
+        if (previousWidth > width && _combatAnimationPlayer.ShowsPreDamageForce)
+        {
+            DrawForceTrack(batch, pixel, bar, previousWidth);
+            return;
+        }
+        DrawForceTrack(batch, pixel, bar, width);
+        if (previousWidth > width && _combatAnimationPlayer.ShowsDamageFlash)
             batch.Draw(pixel, new Rectangle(bar.X + width, bar.Y, previousWidth - width, bar.Height), Color.White);
     }
 
+    /// <summary>
+    /// The two tracks of one gang in SCR-COMBAT-002: <c>force_start</c> above, which does not
+    /// move, and <c>force_shown</c> below (FND-COMBAT-009, FND-COMBAT-010).
+    /// </summary>
     private void DrawDetailedCombatForce(
         SpriteBatch batch,
         Texture2D pixel,
         bool rightSide,
+        int start,
         int force,
         int damage)
     {
-        for (var track = 0; track < CombatPanelLayout.ForceBarTracks; track++)
-            DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide, track), force, damage);
+        DrawForceTrack(batch, pixel, CombatPanelLayout.ForceBar(rightSide, 0),
+            CombatPanelLayout.TrackFill(start));
+        DrawShownCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide, 1), force, damage);
+    }
+
+    /// <summary>
+    /// One Force track as the original copies it from <c>PX00129</c>: the red track across the
+    /// whole width, then <paramref name="fill"/> pixels of the green strip from its left edge
+    /// (FND-COMBAT-009). Without the sheet the rows are drawn in the art's three intensities.
+    /// </summary>
+    private void DrawForceTrack(SpriteBatch batch, Texture2D pixel, Rectangle bar, int fill)
+    {
+        fill = Math.Clamp(fill, 0, bar.Width);
+        if (_uiSprites is not null)
+        {
+            var red = CombatPanelLayout.RedTrackSource;
+            batch.Draw(_uiSprites, bar, red with { Width = bar.Width }, Color.White);
+            if (fill > 0)
+                batch.Draw(_uiSprites, bar with { Width = fill },
+                    CombatPanelLayout.GreenTrackSource(fill), Color.White);
+            return;
+        }
+        DrawBeveledForce(batch, pixel, bar, 0, bar.Width, red: true);
+        DrawBeveledForce(batch, pixel, bar, 0, fill, red: false);
     }
 
     private static void DrawBeveledForce(
@@ -173,5 +240,22 @@ public sealed partial class ChaosGame
         if (_combatAnimationTextures.TryGetValue(
                 CombatAnimationRouting.AttackFile(clip.AttackAnimation, clip.Reversed), out var attackTexture))
             batch.Draw(attackTexture, attackDestination, frame, Color.White);
+        if (!_combatAnimationPlayer.ShowsDimmedFrames) return;
+        // FND-COMBAT-014: from tick 12 the last frames are darkened with black through bitmap
+        // 143, anchored at the corner of the two stacked 64-by-64 frames.
+        _combatFrameDimPattern ??= CreateCombatFrameDimPattern(GraphicsDevice);
+        batch.Draw(_combatFrameDimPattern, attackDestination, Color.White);
+        batch.Draw(_combatFrameDimPattern, hitDestination, Color.White);
+    }
+
+    private Texture2D? _combatFrameDimPattern;
+
+    private static Texture2D CreateCombatFrameDimPattern(GraphicsDevice graphicsDevice)
+    {
+        var size = CombatAnimationRouting.FrameSize;
+        var texture = new Texture2D(graphicsDevice, size, size);
+        texture.SetData(OriginalPatternMask.ShadedRectangle(
+            OriginalPatternMask.ForGrey(0x7fff), size, size, Color.Black, Color.Black));
+        return texture;
     }
 }

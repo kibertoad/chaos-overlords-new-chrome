@@ -103,7 +103,8 @@ public static class OriginalCityGenerator
                 sector.Id, sites, tolerance: sector.Tolerance, chaos: sector.LegacyChaos,
                 crackdownActive: sector.CrackdownActive, isImportant: sector.IsImportant,
                 income: sector.Income, crackdownTurnsRemaining: sector.CrackdownTurnsRemaining,
-                crackdownHistory: sector.CrackdownHistory);
+                crackdownHistory: sector.CrackdownHistory, baseTolerance: sector.BaseTolerance,
+                support: sector.Support, cashYield: sector.StoredCashYield);
         }
         return assigned;
     }
@@ -215,7 +216,7 @@ public static class OriginalMatchFactory
         AddNameModifierStartingGangs(foundation.Players);
         if (setup.Players.Any(player => OriginalSetupNameRules.EnablesIslands(player.Name)))
             foreach (var sector in foundation.Sectors.Where(sector => sector.Owner is null))
-                sector.CrackdownTurnsRemaining = 100;
+                sector.CrackdownTurnsRemaining = ManualRules.PermanentCrackdownTurns;
         return new MatchState(
             definitions, setup, foundation.Players, foundation.Sectors, random, aiStrategy);
     }

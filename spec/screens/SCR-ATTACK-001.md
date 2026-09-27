@@ -52,7 +52,7 @@ FND-EXE-004).
 
 | Key | Enabled when | Effect | Evidence |
 |---|---|---|---|
-| Enter or plus (`0x0D`, `0x2B`) | Always; without an opponent and a target it plays the rejected sound | Confirm | FND-ATTACK-003 |
+| Enter or Execute (virtual keys `0x0D`, `0x2B`) | Always; without an opponent and a target it plays the rejected sound | Confirm | FND-ATTACK-003 |
 | Escape (`0x1B`) | Always | Draws the pressed Cancel face and closes without an order | FND-ATTACK-003 |
 
 ## Other input

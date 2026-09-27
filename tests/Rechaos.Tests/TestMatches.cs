@@ -8,7 +8,8 @@ internal static class TestMatches
 {
     internal static MatchState Create(
         string firstPlayerName = "ONE",
-        bool secondPlayerHuman = false)
+        bool secondPlayerHuman = false,
+        IReadOnlyList<int>? sectorZeroCrackdowns = null)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
@@ -25,7 +26,8 @@ internal static class TestMatches
                     id is 0 or 63 ? 0 : 7),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ], tolerance: ManualRules.MinimumTolerance))
+            ], tolerance: ManualRules.MinimumTolerance,
+                crackdownHistory: id == 0 ? sectorZeroCrackdowns : null))
             .ToArray();
         return MatchBootstrap.Create(data, setup, sectors,
         [

@@ -1,14 +1,14 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Previous-action and Hide-allocation boundaries recovered from original AI
+/// Previous-action and Chaos-allocation boundaries recovered from original AI
 /// family 4 at 0x00401000.
 /// </summary>
 internal static class OriginalAiFamilyFourRules
 {
-    public const int AttackAttemptsAfterHideOrEquip = 5;
+    public const int AttackAttemptsAfterChaosOrEquip = 5;
     public const int HealForceLimit = 8;
-    public const int MaximumPreviousHidesInOwnedSector = 1;
+    public const int MaximumPreviousChaosInOwnedSector = 1;
 
     public static bool ShouldHeal(int force, int effectiveHeal) =>
         force < HealForceLimit

@@ -48,11 +48,16 @@ public static class InformationEffectTooltips
 
     /// <param name="modifiers">
     /// Optional per-statistic breakdown appended to a hovered statistic, used by live gangs to
-    /// name the equipment and influenced sites behind the displayed value.
+    /// name the equipment and completed sites behind the displayed value.
+    /// </param>
+    /// <param name="showsRebuiltValues">
+    /// Whether the panel shows the values stored at the rebuild, whose Combat holds the weapon
+    /// skills, rather than the definition's.
     /// </param>
     public static IReadOnlyList<string> GangAt(
         Point point,
-        Func<InformationEffect, IReadOnlyList<string>>? modifiers = null)
+        Func<InformationEffect, IReadOnlyList<string>>? modifiers = null,
+        bool showsRebuiltValues = false)
     {
         if (Field(SharedPanelLayout.X(94), SharedPanelLayout.Y(92), 90).Contains(point))
             return ["FORCE", "CURRENT HEALTH AND THE BASE FOR MOST ACTION DICE.",
@@ -61,8 +66,10 @@ public static class InformationEffectTooltips
             return ["UPKEEP", "CASH PAID FOR THIS GANG DURING EACH UPKEEP."];
         if (Field(SharedPanelLayout.X(190), SharedPanelLayout.Y(101), 90).Contains(point))
             return ["TECH LEVEL", "LIMITS WHICH ITEMS THIS GANG CAN USE OR RESEARCH."];
+        // RULE-GANG-001: items, and the completed sites of the sector when its player owns it.
         return StatisticAt(point, GangInformationLayout.StatisticY,
-            "GANG STAT; EQUIPMENT AND OWNED LOCAL SITES CAN MODIFY IT.", modifiers);
+            "GANG STAT; ITEMS AND AN OWNED SECTOR'S SITES MODIFY IT.",
+            showsRebuiltValues ? WithWeaponSkillsNote(modifiers) : modifiers);
     }
 
     /// <param name="special">
@@ -77,13 +84,19 @@ public static class InformationEffectTooltips
             return ["RESISTANCE", "INFLUENCE SUCCESSES REDUCE THIS VALUE.",
                 "AT ZERO, THE ACTING PLAYER INFLUENCES THE SITE."];
         if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(1), 122).Contains(point))
-            return ["TOLERANCE", "WHEN INFLUENCED, ADDED TO THE SECTOR'S NORMAL TOLERANCE."];
+            // RULE-SITE-001
+            return ["TOLERANCE", "ONCE COMPLETED, ADDED TO THE SECTOR'S BASE TOLERANCE",
+                "WHEN THE SECTOR IS REBUILT BEFORE PLANNING."];
         if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(2), 122).Contains(point))
-            return ["SUPPORT", "WHEN INFLUENCED, ADDED AGAINST HOSTILE CONTROL ATTEMPTS."];
+            // RULE-CONTROL-001
+            return ["SUPPORT", "ONCE COMPLETED, ADDED TO THE SECTOR'S SUPPORT",
+                "WHEN THE SECTOR IS REBUILT BEFORE PLANNING."];
         if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(3), 122).Contains(point))
             return ["CASH", "WHEN INFLUENCED, PAID TO THE SITE OWNER EACH UPKEEP."];
+        // RULE-GANG-001: the gangs of the sector's owner, whoever completed the site, from the
+        // rebuild before the next planning phase.
         return StatisticAt(point, SiteInformationLayout.StatisticY,
-            "WHILE INFLUENCED, MODIFIES THE OWNER'S GANGS IN THIS SECTOR.",
+            "ONCE COMPLETED, MODIFIES THE SECTOR OWNER'S GANGS NEXT TURN.",
             leftLabelLeft: SiteInformationLayout.LeftStatisticLabelLeft,
             rightLabelLeft: SiteInformationLayout.RightStatisticLabelLeft);
     }
@@ -168,6 +181,15 @@ public static class InformationEffectTooltips
         return breakdown.Count == 0 ? description : [.. description, .. breakdown];
     }
 
+    // RULE-GANG-001, RULE-COMBAT-001: only the rebuilt Combat holds the weapon skills; the
+    // definition, item and site values the other panels show do not.
+    private static Func<InformationEffect, IReadOnlyList<string>> WithWeaponSkillsNote(
+        Func<InformationEffect, IReadOnlyList<string>>? modifiers) => effect =>
+    {
+        var breakdown = modifiers?.Invoke(effect) ?? [];
+        return effect == InformationEffect.Combat ? ["INCLUDES THE WEAPON SKILLS.", .. breakdown] : breakdown;
+    };
+
     private static Rectangle Field(int x, int y, int width) => new(x, y - 1, width, 9);
 
     private static string Name(InformationEffect effect) => effect switch
@@ -178,20 +200,21 @@ public static class InformationEffectTooltips
 
     private static string Effect(InformationEffect effect) => effect switch
     {
-        InformationEffect.Combat => "ADDS TO FORCE WHEN ROLLING ATTACK DICE.",
+        InformationEffect.Combat => "ADDS TO FORCE FOR ATTACK DICE.",
         InformationEffect.Defense => "SUBTRACTED FROM AN ENEMY'S ATTACK DICE.",
         InformationEffect.Chaos => "ADDS TO FORCE FOR THE CHAOS ACTION'S DICE.",
-        InformationEffect.Control => "ADDS ITS VALUE TO FORCE FOR CONTROL AND SECTOR DEFENSE.",
+        InformationEffect.Control => "ADDS ITS VALUE TO FORCE FOR CONTROL AND THE OWNER'S DEFENSE.",
         InformationEffect.Heal => "MODIFIES THE HEAL ACTION'S BASE FOUR DICE.",
         InformationEffect.Influence => "ADDS ITS VALUE TO DICE FOR THE INFLUENCE ACTION.",
         InformationEffect.Research => "ADDS TO FORCE WHEN RESEARCHING AN ITEM.",
         InformationEffect.Stealth => "OPPOSES DETECT AND MAKES HIDDEN GANGS HARDER TO HIT.",
         InformationEffect.Detect => "HELPS REVEAL GANGS AND HIT HIDDEN TARGETS.",
-        InformationEffect.Strength => "ADDS TO ATTACK DICE UNARMED OR WITH STRENGTH/BLADE TYPES.",
-        InformationEffect.Blade => "ADDS ITS VALUE TO ATTACK DICE WITH A BLADE-TYPE WEAPON.",
-        InformationEffect.Range => "ADDS ITS VALUE TO ATTACK DICE WITH A RANGE-TYPE WEAPON.",
-        InformationEffect.Fighting => "ADDS ITS VALUE TO ATTACK DICE WHILE UNARMED.",
-        InformationEffect.MartialArts => "ADDS UNARMED ATTACK DICE AND MAY BLOCK RETALIATION.",
+        InformationEffect.Strength => "ADDED TO COMBAT UNARMED OR WITH STRENGTH/BLADE TYPES.",
+        InformationEffect.Blade => "ADDED TO COMBAT WITH A BLADE-TYPE WEAPON.",
+        InformationEffect.Range => "ADDED TO COMBAT WITH A RANGE-TYPE WEAPON.",
+        InformationEffect.Fighting => "ADDED TO COMBAT WHILE UNARMED.",
+        // RULE-ATTACK-001: any value but 0 blocks retaliation for an unarmed attacker.
+        InformationEffect.MartialArts => "ADDED TO COMBAT UNARMED; IF NOT 0, MAY BLOCK RETALIATION.",
         _ => throw new ArgumentOutOfRangeException(nameof(effect))
     };
 }

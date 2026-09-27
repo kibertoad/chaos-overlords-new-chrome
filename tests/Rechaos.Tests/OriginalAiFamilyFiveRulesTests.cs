@@ -56,7 +56,7 @@ public sealed class OriginalAiFamilyFiveRulesTests
             targetForce, targetCombat, targetDefense));
 
     [Theory]
-    [InlineData(ScenarioId.Siege, 11)]
+    [InlineData(ScenarioId.Eliminate, 11)]
     [InlineData(ScenarioId.Acceptance, 2)]
     public void ThreeMovesTransitionToScenarioSpecificFamily(
         ScenarioId scenario,

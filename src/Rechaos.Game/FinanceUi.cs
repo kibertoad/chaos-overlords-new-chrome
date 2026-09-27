@@ -20,6 +20,9 @@ public static class FinanceLayout
     public static Rectangle Portrait => new(154, 141, 64, 64);
     public static Rectangle Ok => new(161, 293, 49, 22);
 
+    /// <summary>SCR-FINANCE-001, FND-FINANCE-002: the Sector variant's sector code, buffer (396,216).</summary>
+    public static Point SectorName => new(180, 196);
+
     public static int ValueY(int row) => row switch
     {
         0 => SharedPanelLayout.Y(27),
@@ -105,9 +108,10 @@ public sealed record FinanceProjection(
         var sectors = state.Sectors.Where(sector => Includes(sector.Id)).ToArray();
         var sectorTax = sectors.Count(sector => sector.Owner == player.Id)
             * ManualRules.ControlledSectorTax;
-        var siteProtection = sectors.SelectMany(sector => sector.Sites)
-            .Where(site => site.InfluencedBy == player.Id)
-            .Sum(site => state.Definitions.Site(site.DefinitionId).Cash);
+        // RULE-UPKEEP-001: the sites' part of each owned sector's Cash yield (RULE-SITE-001).
+        var siteProtection = sectors.Where(sector => sector.Owner == player.Id)
+            .Sum(sector => SectorIncomeResolver.SectorCash(state, sector)
+                - ManualRules.ControlledSectorTax);
         var chaosEstimate = commands
             .Where(command => command.Action == GangAction.Chaos)
             .Sum(command => EstimateChaos(state, player, state.FindGang(command.Gang)!, sectorId is null));

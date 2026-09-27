@@ -171,6 +171,10 @@ public sealed class CombatAnimationTests
         Assert.Equal(new CombatClipForces(10, 0, 10, 10), firstForces);
         Assert.Equal((0, 0), (secondForces.DefenderBefore, secondForces.DefenderAfter));
         Assert.Equal(0, secondForces.DefenderDamage);
+        // RULE-COMBAT-002: the phase's 18 damage is capped at 10 for force_final.
+        var timeline = CombatForceTimeline.For(state, events, first);
+        Assert.Equal(10, timeline.PhaseStartForce(target.Id));
+        Assert.Equal(0, timeline.PhaseFinalForce(target.Id));
     }
 
     [Fact]
@@ -196,6 +200,11 @@ public sealed class CombatAnimationTests
             timeline.Forces(1, new GangId(10), new GangId(20)));
         Assert.Equal(new CombatClipForces(5, 3, null, null),
             timeline.Forces(2, null, new GangId(20)));
+        // The force_start and force_final of each gang's combat record (RULE-COMBAT-002).
+        Assert.Equal((10, 4), (timeline.PhaseStartForce(new GangId(10)),
+            timeline.PhaseFinalForce(new GangId(10))));
+        Assert.Equal((10, 3), (timeline.PhaseStartForce(new GangId(20)),
+            timeline.PhaseFinalForce(new GangId(20))));
     }
 
     [Fact]
@@ -209,6 +218,8 @@ public sealed class CombatAnimationTests
             RetaliationRolls: [6], Damage: 3, RetaliationDamage: 2)), Attacker));
 
         Assert.Equal(new CombatClipForces(10, 7, 10, 8), clip.Forces);
+        // SCR-COMBAT-002: the upper tracks keep each gang's force_start.
+        Assert.Equal((10, 10), (clip.AttackerStart, clip.DefenderStart));
     }
 
     [Fact]
@@ -230,6 +241,8 @@ public sealed class CombatAnimationTests
         var policeClip = Assert.Single(
             CombatAnimationRouting.ForEvent(state, police, Defender, timeline));
         Assert.Equal(new CombatClipForces(5, 3, null, null), policeClip.Forces);
+        Assert.Equal(10, policeClip.DefenderStart);
+        Assert.Null(policeClip.AttackerStart);
     }
 
     [Fact]
@@ -375,6 +388,56 @@ public sealed class CombatAnimationTests
         Assert.Equal([4L, 1L, 2L, 3L, 5L], presented.Select(entry => entry.Event.Sequence).ToArray());
         Assert.Equal([false, true, false, false, false],
             presented.Select(entry => entry.HandsOff).ToArray());
+    }
+
+    // RULE-COMBAT-004, FMT-STATE-008: the viewer's gangs play in the order of their row entries,
+    // which the combat phase writes in roster slot order. Gang 12 held slot 0 when it fought and
+    // died, and a hire has since reused the slot, so the roster no longer places it; the event's
+    // record of the slot still plays it before gang 14 in slot 1.
+    [Fact]
+    public void PresentationOrdersTheViewersGangsByTheSlotTheyHeldWhenTheyFought()
+    {
+        var state = CreateState();
+        state.FindPlayer(Attacker)!.AddGang(new MatchGangState(new GangId(14), Attacker, 0, 5, 10));
+        GameEvent Incoming(long sequence, int gang, int target, int slot) =>
+            AttackEvent(new CommandResolutionDetails(
+                CommandResolutionCode.Resolved, [], 0, Damage: 1,
+                Attacker: new CombatantDetails(Defender, 0, 5, null, null, null, 10, 0),
+                Defender: new CombatantDetails(Attacker, 0, 5, null, null, null, 10, slot))) with
+            {
+                Sequence = sequence,
+                Player = Defender,
+                Gang = new GangId(gang),
+                Target = CommandTarget.Gang(new GangId(target)),
+            };
+        GameEvent[] phase = [Incoming(1, 20, 14, slot: 1), Incoming(2, 21, 12, slot: 0)];
+
+        var presented = CombatPresentationOrder.Order(state, phase, Attacker);
+
+        Assert.Equal([2L, 1L], presented.Select(entry => entry.Event.Sequence).ToArray());
+    }
+
+    // RULE-COMBAT-004 starts every bar at force_start (FMT-STATE-003). An attacker nothing attacked
+    // that a retaliation of 7 killed entered with 3: the start is read from the event, since
+    // recovering it from the Force left (0) plus the phase's damage would give 7.
+    [Fact]
+    public void AnAttackerKilledByALargerRetaliationStartsFromItsRecordedForce()
+    {
+        var state = CreateState();
+        state.FindGang(new GangId(10))!.Force = 0;
+        state.FindGang(new GangId(20))!.Force = 8;
+        var attack = AttackEvent(new CommandResolutionDetails(
+            CommandResolutionCode.Resolved, [], 0, PreviousValue: 10, ResultValue: 8,
+            RetaliationRolls: [6], Damage: 2, RetaliationDamage: 7,
+            Attacker: new CombatantDetails(Attacker, 0, 0, null, null, null, 3, 0),
+            Defender: new CombatantDetails(Defender, 1, 0, null, null, null, 10, 0)));
+        var timeline = CombatForceTimeline.For(state, [attack], attack);
+
+        Assert.Equal(3, timeline.PhaseStartForce(new GangId(10)));
+        // force_final is not clamped at 0 (RULE-COMBAT-002).
+        Assert.Equal(-4, timeline.PhaseFinalForce(new GangId(10)));
+        Assert.Equal(new CombatClipForces(10, 8, 3, 0),
+            timeline.Forces(attack.Sequence, new GangId(10), new GangId(20)));
     }
 
     [Fact]

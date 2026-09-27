@@ -23,7 +23,7 @@ public sealed partial class ChaosGame
             if (_gangPortraits is not null)
                 batch.Draw(_gangPortraits, HireDockLayout.Portrait(slot),
                     OriginalSpriteLayout.GangPortrait(entry.GangDefinitionId), Color.White);
-            DrawHireDockMark(batch, entry.Mark, HireDockLayout.Stamp(slot));
+            DrawHireDockMark(batch, entry.Mark, HireDockLayout.Portrait(slot));
             if (!entry.Hired)
             {
                 var definition = state.Definitions.Gang(entry.GangDefinitionId);
@@ -222,14 +222,37 @@ public sealed partial class ChaosGame
         }
         var result = _actions.QueueHire(playerId, definitionId.Value, sectorId);
         ReportHireSubmission(result, _state.FindPlayer(playerId)!);
+        if (!result.Accepted) return;
+        // The Hire handler flashes the cell the portrait was dropped on: the city cell with
+        // fn_0041ACE6 (FND-UI-017), or the cell of the nine-sector display with fn_0041A0D4 on the
+        // sector view (FND-UI-018), pausing on the presentation clock (RULE-TIMER-004, FND-UI-037).
+        if (_screens.Current == ClientScreen.Sector)
+        {
+            if (SectorDetailLayout.CellOf(_cursor, sectorId) is { } cell)
+                StartFlash(TickedPresentationKind.SectorDisplayCellFlash, cell);
+        }
+        else
+            StartFlash(TickedPresentationKind.CityCellFlash, CityMapLayout.Destination(sectorId));
     }
 
     private void CancelHireDrag()
     {
+        ForgetHireDrag();
+        _message = string.Empty;
+    }
+
+    /// <summary>Lets go of a hire offer held under the pointer, without a word to the player.</summary>
+    /// <remarks>
+    /// The hire counterpart of <see cref="ForgetGangDrag"/>, called from the same paths. An offer
+    /// picked up on a turn that has ended (or in a match that has been replaced) belongs to that
+    /// turn's dock: released afterwards it queued a hire for the next player, or into a state the
+    /// offer never came from.
+    /// </remarks>
+    private void ForgetHireDrag()
+    {
         _draggedHireDefinitionId = null;
         _draggedHireSlot = null;
         _hireDragStarted = false;
-        _message = string.Empty;
     }
 
     private void BeginHireReject(int slot, ClientScreen screen)

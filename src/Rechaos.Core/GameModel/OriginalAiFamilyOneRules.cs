@@ -56,28 +56,57 @@ internal static class OriginalAiFamilyOneRules
         return canSoloControl ? GangAction.Control : GangAction.Move;
     }
 
+    /// <summary>
+    /// FND-AI-057: the crime gate makes two tests in sequence. An owner that reads as human
+    /// (selector 0x35) with cash of at least 50 at Criminal or above passes the first; anything
+    /// else, a human owner included, gets the second, which needs an owner query other than the
+    /// player and above 0, cash above 49 and Mentality Goon.
+    /// </summary>
     public static GangAction SelectPostEquipmentContinuation(
         PlayerId actingPlayer,
-        int sectorOwner,
-        bool sectorOwnerIsHuman,
+        int ownerQuery,
+        bool ownerIsHuman,
         int cash,
         AiDifficulty mentality,
         int tolerance)
     {
-        if (sectorOwner is < MinimumRawSectorOwner or >= MatchLimits.PlayerCount)
-            throw new ArgumentOutOfRangeException(nameof(sectorOwner));
+        if (ownerQuery is < MinimumRawSectorOwner or >= MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(ownerQuery));
         if (!Enum.IsDefined(mentality))
             throw new ArgumentOutOfRangeException(nameof(mentality));
 
-        var choosesCrime = sectorOwnerIsHuman
-            ? cash >= CrimeCashThreshold && mentality >= AiDifficulty.Criminal
-            : sectorOwner != actingPlayer.Value
-                && sectorOwner > 0
+        var choosesCrime =
+            (ownerIsHuman && cash >= CrimeCashThreshold && mentality >= AiDifficulty.Criminal)
+            || (ownerQuery != actingPlayer.Value
+                && ownerQuery > 0
                 && cash >= CrimeCashThreshold
-                && mentality == AiDifficulty.Goon;
+                && mentality == AiDifficulty.Goon);
         if (!choosesCrime) return GangAction.Move;
         return tolerance < ChaosToleranceThreshold
             ? GangAction.Chaos
             : GangAction.Snitch;
+    }
+
+    /// <summary>
+    /// FND-AI-057: after previous Attack, Hide or Move, a gang that neither attacks nor moves off
+    /// its own sector heals, takes the sector or passes the Snitch gate: an owner that reads as
+    /// human, and either a hostile owner at Criminal or above or Mentality Crime Lord. A passing
+    /// gate with cash above 50 snitches; everything else moves.
+    /// </summary>
+    public static GangAction SelectAfterAttackHideOrMove(
+        int force,
+        int effectiveHeal,
+        bool canSoloControl,
+        bool ownerIsHuman,
+        bool ownerIsHostile,
+        AiDifficulty mentality,
+        int cash)
+    {
+        if (CanHeal(force, effectiveHeal, CommonHealForceLimit)) return GangAction.Heal;
+        if (canSoloControl) return GangAction.Control;
+        var snitchGate = ownerIsHuman
+            && ((ownerIsHostile && mentality >= AiDifficulty.Criminal)
+                || mentality == AiDifficulty.CrimeLord);
+        return snitchGate ? SelectStrictCashContinuation(cash) : GangAction.Move;
     }
 }

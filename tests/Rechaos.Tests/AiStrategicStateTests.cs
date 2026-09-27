@@ -172,6 +172,7 @@ public sealed class AiStrategicStateTests
     {
         var match = CreateOnePlayerMatch();
         var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 4);
         match.FinishUpkeep();
 

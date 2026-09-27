@@ -14,8 +14,14 @@ public sealed record CombatAnimationClip(
     CombatClipForces Forces,
     bool Police = false,
     short? Sound = null,
-    bool HandsOff = false)
+    bool HandsOff = false,
+    int? AttackerStart = null,
+    int? DefenderStart = null)
 {
+    // AttackerStart and DefenderStart are the gangs' force_start, which their upper tracks keep
+    // through the presentation (SCR-COMBAT-002, FND-COMBAT-009). Null draws the track from the
+    // clip's own starting Force.
+
     /// <summary>
     /// The tick the clip ends on: the final-result tick when it hands off to the reply of a gang it
     /// attacked, which the original plays without holding the result (SCR-COMBAT-002).
@@ -29,10 +35,17 @@ public static class CombatAnimationRouting
 {
     public const int FrameCount = 8;
     public const int FrameSize = 64;
-    public const int FrameMilliseconds = 166;
+    public const int FrameMilliseconds = PresentationClock.PeriodMilliseconds;
     public const int FirstAnimationTick = 3;
     public const int LastAnimationTick = 10;
     public const int PreDamageTick = 12;
+
+    /// <summary>
+    /// FND-COMBAT-014: on tick 12 the clip player draws black through bitmap 143 over the last
+    /// frame of both strips and shows them, so the two apertures stay darkened until the clip
+    /// ends.
+    /// </summary>
+    public const int DimmedFramesTick = 12;
     public const int FirstDamageFlashTick = 13;
     public const int SecondDamageFlashTick = 15;
     public const int FinalResultTick = 16;
@@ -69,7 +82,8 @@ public static class CombatAnimationRouting
             return [new CombatAnimationClip(gameEvent.Sequence, null, policeTarget,
                 PoliceAttackAnimation, HitAnimation(PoliceHitAnimation, police.Damage),
                 Reversed: true, timeline.Forces(gameEvent.Sequence, null, policeTarget),
-                Police: true, Sound: AudioRouting.PoliceSound)];
+                Police: true, Sound: AudioRouting.PoliceSound,
+                DefenderStart: timeline.PhaseStartForce(policeTarget))];
         }
         if (gameEvent.Action != GangAction.Attack
             || gameEvent.Gang is not { } attacker
@@ -90,14 +104,18 @@ public static class CombatAnimationRouting
             return [];
         var incoming = attackingGang.Owner != viewer && defendingGang.Owner == viewer;
         var forces = timeline.Forces(gameEvent.Sequence, attacker, defender);
+        var attackerStart = timeline.PhaseStartForce(attacker);
+        var defenderStart = timeline.PhaseStartForce(defender);
         if (resolution.Code == CommandResolutionCode.TargetEvaded)
             return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
-                EvadedAnimation, 0, Reversed: incoming, forces)];
+                EvadedAnimation, 0, Reversed: incoming, forces,
+                AttackerStart: attackerStart, DefenderStart: defenderStart)];
 
         var attack = AnimationPair(state, attackingGang, resolution.ItemId, resolution.Damage);
         return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
             attack.Attack, attack.Hit, Reversed: incoming, forces,
-            Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId))];
+            Sound: AudioRouting.GangAttackSound(state, attackingGang, resolution.ItemId),
+            AttackerStart: attackerStart, DefenderStart: defenderStart)];
     }
 
     /// <summary>
@@ -221,6 +239,7 @@ public sealed class CombatAnimationPlayer
         0,
         CombatAnimationRouting.FrameCount - 1);
     public bool ShowsPreDamageForce => TimelineTick <= CombatAnimationRouting.PreDamageTick;
+    public bool ShowsDimmedFrames => TimelineTick >= CombatAnimationRouting.DimmedFramesTick;
     public bool ShowsDamageFlash => TimelineTick is
         CombatAnimationRouting.FirstDamageFlashTick or
         CombatAnimationRouting.SecondDamageFlashTick;

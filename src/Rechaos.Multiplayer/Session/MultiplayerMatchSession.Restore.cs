@@ -44,6 +44,17 @@ public sealed partial class MultiplayerMatchSession
     private readonly List<TurnReport> _unreportedSeals = [];
 
     /// <summary>
+    /// The turn the event log is on at the event being replayed: one past the last turn it sealed.
+    /// </summary>
+    /// <remarks>
+    /// A handover or a late join carries no turn, and the state is no guide to it once a snapshot
+    /// has been adopted — the replay still walks the log from its start, past handovers the
+    /// snapshot already holds. This is the turn such an event took effect before, and the one it is
+    /// judged against exactly as a seal is; see <see cref="HandOverSeat"/>.
+    /// </remarks>
+    private int _historyTurn = 1;
+
+    /// <summary>
     /// Fetches the match, adopts the newest snapshot the local state is behind, replays the log
     /// gaplessly to the view's sequence, and hands the interface the result.
     /// </summary>
@@ -73,6 +84,10 @@ public sealed partial class MultiplayerMatchSession
     /// <returns>False when the match is over and there is nothing left to pump.</returns>
     private async Task<bool> RebuildFromHistoryAsync(int replayFromSeq, CancellationToken cancellationToken)
     {
+        // Where the log stands at the sequence the replay starts after, read BEFORE a snapshot can
+        // move the state past it: a match starts on turn 1, and a resync starts where the live
+        // state is. See `_historyTurn`.
+        _historyTurn = replayFromSeq == 0 ? 1 : _replay.State.Coordinator.Turn;
         var (view, snapshot) = await ReadViewAndLatestSnapshotAsync(cancellationToken).ConfigureAwait(false);
         if (view.Status == MatchStatus.Abandoned)
         {
@@ -156,8 +171,11 @@ public sealed partial class MultiplayerMatchSession
         foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
             PublishTakeoverVote(vote);
         // The interface counts the seats from the roster alone, which cannot see a departed seat the
-        // server is still holding the turn for while the vote on it is open.
-        if (_takeoverVotes.Keys.Any(_departedPlayerIds.Contains)) PublishReadiness();
+        // server is still holding the turn for while the vote on it is open — nor, without being
+        // told, which seats finished the open turn while this client was away. The view is the
+        // authority on the latter, read at the same sequence the replay stopped at.
+        if (SeedReadiness(view) | _takeoverVotes.Keys.Any(_departedPlayerIds.Contains))
+            PublishReadiness();
         // Last, on a state that is now caught up, the caller resolves a pause the history carried
         // — adopt a repair somebody posted while this client was away, or post one if this client
         // turns out to be holding the state the others agreed on. Until that existed, every
@@ -266,6 +284,21 @@ public sealed partial class MultiplayerMatchSession
             TaskContinuationOptions.OnlyOnFaulted,
             TaskScheduler.Default);
 
+    /// <summary>Applies the event history after <paramref name="after"/>, through <paramref name="throughSeq"/>.</summary>
+    /// <remarks>
+    /// The server stores its log without gaps but withholds, from both this read and the stream,
+    /// any row its own build cannot validate — a payload reshaped by another server build — so a
+    /// forward jump in a page, and an empty page before <paramref name="throughSeq"/>, are rows it
+    /// withheld rather than rows that were lost. Both are stepped over. Treating them as fatal made
+    /// one unreadable row end every session of its match for good, since the stream resynchronises
+    /// through here on a gap. Nothing that matters is stepped over: the server withholds only rows
+    /// the replay can do without (readiness, deadlines, vote tallies) and refuses the page with
+    /// <c>unreadable_event</c> when the row is a seal, a verdict, a pause or a seat changing hands,
+    /// none of which a gap could be told apart from. The turn checks stay behind that: a seal
+    /// naming a turn ahead of the reconstructed state is refused by
+    /// <see cref="ApplyHistoricalEventAsync"/>, and the caller refuses a replay that ends on a turn
+    /// other than the server's.
+    /// </remarks>
     private async Task ReplayPagesAsync(
         int after,
         int throughSeq,
@@ -277,22 +310,21 @@ public sealed partial class MultiplayerMatchSession
                 token => _match.EventsAsync(after, EventHistoryPageSize, token),
                 _pumpLane,
                 cancellationToken).ConfigureAwait(false);
-            if (page.Events.Count == 0)
-            {
-                throw new MultiplayerProtocolException(
-                    $"the event history ended at sequence {after}, before sequence {throughSeq}");
-            }
+            // Every row left before `throughSeq` was withheld: the server reads past a page of
+            // withheld rows rather than answer an empty one, so an empty page is the log's end.
+            if (page.Events.Count == 0) return;
             // The page names every turn this replay is about to apply, so the fetches for the first
             // few can start now rather than one at a time as each turn comes round.
             PrefetchSealedSets(page, throughSeq, cancellationToken);
 
             foreach (var @event in page.Events)
             {
-                var expected = after + 1;
-                if (@event.Seq != expected)
+                // Forward only. A jump is a withheld row; a repeat or a step back is not something
+                // a gapless log read in order can produce.
+                if (@event.Seq <= after)
                 {
                     throw new MultiplayerProtocolException(
-                        $"the event history jumped from sequence {after} to {@event.Seq}");
+                        $"the event history went back from sequence {after} to {@event.Seq}");
                 }
                 if (!string.Equals(@event.MatchId, _match.MatchId, StringComparison.Ordinal))
                 {
@@ -362,17 +394,27 @@ public sealed partial class MultiplayerMatchSession
                 return;
             case MatchPlayerTakenOverEvent takenOver:
                 _takeoverVotes.Remove(takenOver.Payload.PlayerId);
-                TransferPlayerToComputer(takenOver.Payload.PlayerId);
+                HandOverSeat(takenOver.Payload.PlayerId, PlayerController.Computer, _historyTurn);
                 return;
             case MatchPlayerReturnedEvent returned:
                 _takeoverVotes.Remove(returned.Payload.PlayerId);
                 if (returned.Payload.ReplacedComputer)
-                    TransferPlayerToHuman(returned.Payload.PlayerId);
+                    HandOverSeat(returned.Payload.PlayerId, PlayerController.Human, _historyTurn);
                 return;
             case MatchLatePlayerJoinedEvent joined:
-                AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot);
+                AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot, _historyTurn);
+                return;
+            case TurnOpenedEvent opened:
+                _historyTurn = Math.Max(_historyTurn, opened.Payload.Turn);
+                return;
+            // Kept, not announced: the replay says readiness once, after `Resumed`.
+            case TurnReadinessEvent readiness:
+                RecordReadiness(
+                    readiness.Payload.Turn, readiness.Payload.PlayerId, readiness.Payload.Ready);
                 return;
             case TurnSealedEvent sealedTurn:
+                // Whether or not the state already holds it, the log has moved past this turn.
+                _historyTurn = Math.Max(_historyTurn, sealedTurn.Payload.Turn + 1);
                 if (sealedTurn.Payload.Turn < _replay.State.Coordinator.Turn) return;
                 if (sealedTurn.Payload.Turn > _replay.State.Coordinator.Turn)
                 {

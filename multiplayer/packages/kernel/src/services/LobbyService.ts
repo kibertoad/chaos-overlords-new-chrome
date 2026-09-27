@@ -253,10 +253,14 @@ export class LobbyService {
     // event, the client's recovery file and any log line — so looking one up by id would make a
     // code-gated lobby joinable by anyone who ever saw the id. A public match is listed with both,
     // so there is nothing left for the code to gate there.
+    //
+    // The code is normalised the way the lobby door's `joinCodeInputSchema` does it: players type a
+    // code back in whatever case they read it, and this field cannot carry that schema because it
+    // may be an id, which is case-sensitive. Only the join-code lookup sees the normalised form.
     const match =
       byId?.settings.visibility === 'public'
         ? byId
-        : await this.deps.storage.matches.getByJoinCode(request.match)
+        : await this.deps.storage.matches.getByJoinCode(request.match.trim().toUpperCase())
     if (!match)
       throw new NotFoundError('No match with that id or join code', { reason: 'unknown_match' })
     if (match.status !== 'running') {

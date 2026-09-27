@@ -38,9 +38,9 @@ public sealed class EventReviewProgressTests
         Assert.Equal(new Rectangle(0, 0, 48, 48),
             ItemRotationPresentation.Frame(TimeSpan.Zero));
         Assert.Equal(new Rectangle(14 * 48, 0, 48, 48),
-            ItemRotationPresentation.Frame(TimeSpan.FromMilliseconds(14 * 80)));
+            ItemRotationPresentation.Frame(TimeSpan.FromMilliseconds(14 * 166)));
         Assert.Equal(new Rectangle(0, 0, 48, 48),
-            ItemRotationPresentation.Frame(TimeSpan.FromMilliseconds(15 * 80)));
+            ItemRotationPresentation.Frame(TimeSpan.FromMilliseconds(15 * 166)));
         Assert.Equal(new Rectangle(5 * 48, 0, 48, 48), ItemRotationPresentation.Frame(5));
     }
 
@@ -65,8 +65,10 @@ public sealed class EventReviewProgressTests
             value.Id == state.FindSite(siteId)!.DefinitionId);
 
         Assert.Equal(siteId, LastTurnEventPresentation.InfluenceSiteId(notification, related));
-        Assert.Equal($"04:{definition.Name}",
-            LastTurnEventPresentation.InfluenceSiteObject(state, notification, related));
+        // FMT-STATE-006, SCR-EVENT-001: site 4 is slot 1 of sector 1, labelled B1.
+        var record = LastTurnEventPresentation.Record(state, notification, related);
+        Assert.Equal(new LastTurnReportRecord(4, 1, 1, 0), record);
+        Assert.Equal($"B1:{definition.Name}", LastTurnEventPresentation.Subject(state, record));
         Assert.Equal(4, LastTurnEventPresentation.ArtworkIndex(notification, related));
         Assert.Equal("SITE COOPERATION ACHIEVED.",
             NotificationPresentation.LastTurnStatus(notification));
@@ -113,6 +115,44 @@ public sealed class EventReviewProgressTests
         Assert.Equal(MatchLimits.LastTurnReportsPerPlayer, projected.Count);
         Assert.Equal(0, projected[0].Sequence);
         Assert.Equal(MatchLimits.LastTurnReportsPerPlayer - 1, projected[^1].Sequence);
+    }
+
+    // RULE-EVENT-006, RULE-EVENT-005: each completed site records its own report, so two sites of
+    // one sector completed in one resolution give two pages. Every Control participant of the
+    // winner has a result, and the sector gives one report.
+    [Fact]
+    public void TwoSitesCompletedInOneSectorGiveTwoReportsAndControlGivesOne()
+    {
+        const int turn = 4;
+        const int sector = 5;
+        GameEvent Resolved(long sequence, int gang, GangAction action, CommandTarget target,
+            int previous, int result) =>
+            new(sequence, turn, TurnPhase.Execution, ExecutionPhase.Instant,
+                GameEventKind.CommandResolved, new PlayerId(0), new GangId(gang), action, target,
+                Resolution: new CommandResolutionDetails(
+                    CommandResolutionCode.Resolved, [], 1, previous, result));
+        GameEvent[] events =
+        [
+            Resolved(0, 10, GangAction.Influence, CommandTarget.Site(sector * 3), 2, 0),
+            Resolved(1, 11, GangAction.Influence, CommandTarget.Site(sector * 3 + 2), 3, 0),
+            Resolved(2, 12, GangAction.Influence, CommandTarget.Site(sector * 3 + 2), 0, 0),
+            Resolved(3, 10, GangAction.Control, CommandTarget.None, 1, 0),
+            Resolved(4, 11, GangAction.Control, CommandTarget.None, 1, 0)
+        ];
+        var reports = events.Select(gameEvent => new GameNotification(
+                gameEvent.Sequence, turn, TurnPhase.Execution, gameEvent.ExecutionPhase,
+                gameEvent.Action == GangAction.Control
+                    ? GameNotificationKind.Control
+                    : GameNotificationKind.Influence,
+                gameEvent.Gang, sector, gameEvent.Sequence))
+            .ToArray();
+
+        var projected = LastTurnEventProjection.Select(reports, events, completedTurn: turn);
+
+        Assert.Equal(new long[] { 0, 1, 3 }, projected.Select(report => report.Sequence));
+        Assert.Equal(new int?[] { sector * 3, sector * 3 + 2 },
+            projected.Take(2).Select(report => LastTurnEventPresentation.InfluenceSiteId(
+                report, events[report.RelatedEventSequence!.Value])));
     }
 
     [Theory]

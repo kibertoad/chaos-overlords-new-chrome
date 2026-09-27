@@ -162,151 +162,11 @@ public sealed partial class MatchPlayerState
     }
 }
 
-public sealed class MatchGangState
-{
-    public MatchGangState(
-        GangId id,
-        PlayerId owner,
-        short definitionId,
-        int sectorId,
-        int force,
-        short? weaponItemId = null,
-        short? armorItemId = null,
-        short? miscellaneousItemId = null)
-    {
-        if (sectorId is < 0 or >= MatchLimits.SectorCount)
-            throw new ArgumentOutOfRangeException(nameof(sectorId));
-        if (force is < 0 or > ManualRules.MaximumForce)
-            throw new ArgumentOutOfRangeException(nameof(force));
-        Id = id;
-        Owner = owner;
-        DefinitionId = definitionId;
-        SectorId = sectorId;
-        Force = force;
-        WeaponItemId = weaponItemId;
-        ArmorItemId = armorItemId;
-        MiscellaneousItemId = miscellaneousItemId;
-    }
-
-    public GangId Id { get; }
-    public PlayerId Owner { get; }
-    public short DefinitionId { get; }
-    public int SectorId { get; internal set; }
-    public int Force { get; internal set; }
-    public bool Hidden { get; internal set; }
-    public bool HiredThisTurn { get; internal set; }
-    public short? WeaponItemId { get; internal set; }
-    public short? ArmorItemId { get; internal set; }
-    public short? MiscellaneousItemId { get; internal set; }
-    public QueuedCommand? QueuedCommand { get; internal set; }
-    public bool IsActive => Force > 0;
-}
-
 public sealed record PendingHireState(
     short GangDefinitionId,
     int TargetSectorId,
     int OfferSlot = -1,
     bool InitialCostPaid = false);
-
-public sealed class MatchSectorState
-{
-    private readonly List<int> _crackdownHistory;
-
-    public MatchSectorState(
-        int id,
-        IReadOnlyList<MatchSiteState> sites,
-        PlayerId? owner = null,
-        int tolerance = ManualRules.MinimumTolerance,
-        int chaos = 0,
-        bool crackdownActive = false,
-        bool isImportant = false,
-        int income = ManualRules.MinimumSectorIncome,
-        int crackdownTurnsRemaining = 0,
-        IReadOnlyList<int>? crackdownHistory = null)
-    {
-        if (id is < 0 or >= MatchLimits.SectorCount)
-            throw new ArgumentOutOfRangeException(nameof(id));
-        ArgumentNullException.ThrowIfNull(sites);
-        if (sites.Count != MatchLimits.SitesPerSector)
-            throw new ArgumentException($"A sector must contain exactly {MatchLimits.SitesPerSector} sites.", nameof(sites));
-        if (sites.Select(site => site.Slot).Order().SequenceEqual(Enumerable.Range(0, MatchLimits.SitesPerSector)) is false)
-            throw new ArgumentException("Site slots must be exactly 0, 1, and 2.", nameof(sites));
-        if (chaos < 0) throw new ArgumentOutOfRangeException(nameof(chaos));
-        if (income < 0) throw new ArgumentOutOfRangeException(nameof(income));
-        if (crackdownTurnsRemaining < 0) throw new ArgumentOutOfRangeException(nameof(crackdownTurnsRemaining));
-        if (!crackdownActive && crackdownTurnsRemaining != 0)
-            throw new ArgumentException("Inactive police cannot have turns remaining.", nameof(crackdownTurnsRemaining));
-        if (crackdownHistory is { Count: > 2 }
-            || crackdownHistory?.Any(turn => turn < 1) == true
-            || crackdownHistory?.Zip(crackdownHistory.Skip(1), (left, right) => left > right).Any(invalid => invalid) == true)
-            throw new ArgumentException("Crackdown history must contain at most two nondecreasing positive turns.", nameof(crackdownHistory));
-        Id = id;
-        Sites = sites.OrderBy(site => site.Slot).ToArray();
-        Owner = owner;
-        Tolerance = tolerance;
-        LegacyChaos = chaos;
-        // Only a newly activated sector needs the minimum; restores preserve a decayed duration.
-        CrackdownTurnsRemaining = crackdownActive
-            ? crackdownTurnsRemaining > 0 ? crackdownTurnsRemaining : ManualRules.MinimumCrackdownTurns
-            : 0;
-        IsImportant = isImportant;
-        Income = income;
-        _crackdownHistory = crackdownHistory?.ToList() ?? [];
-    }
-
-    public int Id { get; }
-    public IReadOnlyList<MatchSiteState> Sites { get; }
-    public PlayerId? Owner { get; internal set; }
-    public int Tolerance { get; internal set; }
-    // Retained only so pre-v24 saves/replays can verify their historical fingerprints.
-    // The original executable has no persistent sector-Chaos accumulator.
-    internal int LegacyChaos { get; }
-    public bool CrackdownActive
-    {
-        get => CrackdownTurnsRemaining > 0;
-        internal set => CrackdownTurnsRemaining = value
-            ? Math.Max(ManualRules.MinimumCrackdownTurns, CrackdownTurnsRemaining)
-            : 0;
-    }
-    public int CrackdownTurnsRemaining { get; internal set; }
-    public IReadOnlyList<int> CrackdownHistory => _crackdownHistory;
-    public bool IsImportant { get; }
-    public int Income { get; }
-
-    internal bool RecordCrackdown(int turn)
-    {
-        if (turn < 1) throw new ArgumentOutOfRangeException(nameof(turn));
-        if (_crackdownHistory.Count > 0 && turn <= _crackdownHistory[^1])
-            throw new InvalidOperationException("A sector can record at most one Crackdown per turn.");
-        _crackdownHistory.RemoveAll(previous => previous < turn - 5);
-        var losesControl = _crackdownHistory.Count >= 2;
-        if (losesControl)
-        {
-            _crackdownHistory.Clear();
-            _crackdownHistory.Add(turn);
-        }
-        _crackdownHistory.Add(turn);
-        return losesControl;
-    }
-}
-
-public sealed class MatchSiteState
-{
-    public MatchSiteState(int slot, short definitionId, int resistance, PlayerId? influencedBy = null)
-    {
-        if (slot is < 0 or >= MatchLimits.SitesPerSector) throw new ArgumentOutOfRangeException(nameof(slot));
-        if (resistance < 0) throw new ArgumentOutOfRangeException(nameof(resistance));
-        Slot = slot;
-        DefinitionId = definitionId;
-        Resistance = resistance;
-        InfluencedBy = influencedBy;
-    }
-
-    public int Slot { get; }
-    public short DefinitionId { get; }
-    public int Resistance { get; internal set; }
-    public PlayerId? InfluencedBy { get; internal set; }
-}
 
 public sealed class MatchStatistics
 {
@@ -411,7 +271,16 @@ public sealed partial class MatchState
         _notifications = Players.ToDictionary(player => player.Id, _ => new NotificationQueue());
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         _comlinkInboxes = Players.ToDictionary(player => player.Id, _ => new ComlinkInbox());
+        // FMT-STATE-002 `cash_yield`: a sector built or restored without one takes the value the
+        // rebuild before planning would give it (RULE-SITE-001).
+        foreach (var sector in Sectors.Where(sector => sector.StoredCashYield is null))
+            sector.CashYield = SectorRecordRebuild.Rebuilt(definitions, sector).CashYield;
         if (restore is not null) RestoreRuntime(restore);
+        // RULE-GANG-001 runs before the first planning phase; a gang joining without stored values
+        // (a new match, including the generator's, which passes a synthetic restore) stores them
+        // now so resolution never meets a gang without them. A saved gang keeps what it saved.
+        foreach (var gang in Players.SelectMany(player => player.Gangs))
+            gang.StoredStatistics ??= EffectiveStatisticsCalculator.Rebuilt(this, gang);
     }
     internal MatchState(
         OriginalData definitions,
@@ -440,6 +309,12 @@ public sealed partial class MatchState
     public IReadOnlyList<MatchSectorState> Sectors { get; }
     public TurnCoordinator Coordinator { get; }
     public DeterministicRandom Random { get; }
+
+    /// <summary>
+    /// RULE-RNG-001: the original never reseeds, so a match loaded from a save draws on from
+    /// wherever the run's sequence stands, and the generator state in the save is not used.
+    /// </summary>
+    public void ContinueRandomStream(uint state) => Random.Continue(state);
     public TurnCommandQueue Commands { get; }
     public AiStrategicState AiStrategy { get; }
     public AiPlanningState AiPlanning { get; }
@@ -527,13 +402,16 @@ public sealed partial class MatchState
             gang.HiredThisTurn = false;
         }
         CrackdownResolver.ResolveUpkeep(this);
-        ToleranceResolver.ResolveUpkeep(this);
         LastUpkeepResolutions = Coordinator.Turn == 1 ? [] : EconomyResolver.ResolveUpkeep(this);
         SectorBenefitResolver.ActivatePending(this);
+        SectorRecordRebuild.BeforePlanning(this);
+        EffectiveStatisticsCalculator.RebuildBeforePlanning(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }
     public TurnTransition FinishCommand(PlayerId player)
     {
+        if (Coordinator.Phase == TurnPhase.Command && Coordinator.ActivePlayer == player)
+            GetComlinkInbox(player).DropLeadingRead();
         var transition = Coordinator.FinishCommand(player);
         if (transition.Phase == TurnPhase.Execution
             && Setup.AiMentality != AiDifficulty.HomicidalManiac)
@@ -611,9 +489,11 @@ public sealed partial class MatchState
     {
         if (Coordinator.Phase != TurnPhase.PlayerElimination)
             return CaptureBoundary(Coordinator.FinishPlayerElimination());
+        var humanActiveAtTurnStart = Players.Any(player =>
+            player.Setup.Controller == PlayerController.Human && player.Status == PlayerStatus.Active);
         ResolvePlayerEliminations();
         AwardBigManPoints();
-        if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this) is { } outcome)
+        if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this, humanActiveAtTurnStart) is { } outcome)
         {
             Outcome = MatchOutcomeValidator.Freeze(outcome);
             AppendMatchEndedEvent(Outcome);
@@ -877,7 +757,7 @@ public sealed partial class MatchState
             foreach (var site in sector.Sites.Where(site => site.InfluencedBy == player.Id))
             {
                 var definition = Definitions.Site(site.DefinitionId);
-                sector.Tolerance = checked(sector.Tolerance - definition.Tolerance);
+                // The sector's Tolerance drops the site's part at the next rebuild (RULE-SITE-001).
                 // As SectorControlResolver.ResetInfluencedSites does when a sector changes hands:
                 // the site stops being influenced, so the Support it granted stops counting.
                 player.Support -= definition.Support;
@@ -889,7 +769,8 @@ public sealed partial class MatchState
                 player.Id,
                 Players.Count(candidate => candidate.Status == PlayerStatus.Active));
             var gameEvent = AppendEliminationEvent(player.Id, details);
-            foreach (var recipient in Players.Where(candidate => candidate.Status == PlayerStatus.Active || candidate.Id == player.Id))
+            // RULE-EVENT-003: every slot is told, the eliminated player and earlier losers included.
+            foreach (var recipient in Players)
                 QueueNotification(recipient.Id, GameNotificationKind.Elimination,
                     relatedEventSequence: gameEvent.Sequence);
         }

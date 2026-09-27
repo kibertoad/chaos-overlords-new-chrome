@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EQUIP-003, FND-GIVE-001, FND-GIVE-002, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-EQUIP-003, FND-GIVE-001, FND-GIVE-002, FND-GIVE-003, FND-GFX-006, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-GIVE-001, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
@@ -18,11 +18,12 @@ related: [RULE-GIVE-001, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
 | Panel | `DATA/PX08/PX05015` | None | `(104, 124, 344, 209)`, the shared panel position | While the panel is open | FND-EQUIP-003, FND-OPTIONS-001 |
 | Giver portrait | `DATA/PX08/Px03000` 64-by-64 cell of the giver's definition | None | `(130, 141, 64, 64)` | While the panel is open | FND-GIVE-001 |
 | Item pictures | The item's 720-by-48 strip `PX04xxx` (resource 4000 plus the item's `id`), 15 frames of 48 by 48 | The acting gang's weapon, armor and miscellaneous item, each one pixel inside its target cell, animated | `(209, 141, 48, 48)`, `(209, 205, 48, 48)` and `(209, 269, 48, 48)` | For each filled slot | FND-EQUIP-003, FND-GIVE-001 |
+| Recipient list | None: nothing fills the list area, so the panel image shows where no card is drawn | None | `(312, 139, 97, 178)` | While the panel is open | FND-GIVE-003 |
 | Recipient card | `DATA/PX16/PX00129` card `(0,560,97,34)` | Up to five of the player's other gangs in the giver's sector, in roster order | `(312, 139 + 36 * n, 97, 34)`, `n` from 0 to 4 | While the panel is open | FND-EQUIP-003, FND-GIVE-001, FND-GIVE-002 |
 | Recipient portrait | `DATA/PX16/PX03000` 64-by-64 cell of the gang's definition, scaled to 32 by 32 | None | `(313, 140 + 36 * n, 32, 32)` | For each card | FND-GIVE-002 |
 | Recipient Force meter | `DATA/PX16/PX00129` green strip `(354,0)`, `6 * force` pixels long, 3 rows | The gang's `force` | From `(347, 143 + 36 * n)` | For each card | FND-GIVE-002 |
 | Recipient item icons | `DATA/PX16/PX04999` 20-by-20 cells | The gang's `weapon`, `armor` and `misc` | `(346, 150 + 36 * n)`, `(367, 150 + 36 * n)`, `(388, 150 + 36 * n)`, each 20 by 20 | For each item that is not -1 | FND-GIVE-002 |
-| Dimmed card | Black drawn through a pattern over the card | A recipient whose gang definition's `tech_level` is below the highest Tech Level of the selected items | Over the card | While that holds | FND-GIVE-002 |
+| Dimmed card | Black drawn through bitmap 146 (rows `0x88` and `0x22`), the pattern the grey 48,000 selects, so 48 of every 64 pixels turn black | A recipient whose gang definition's `tech_level` is below the highest Tech Level of the selected items | Over the 97-by-34 card, the pattern starting at its top-left corner, whose own pixel keeps the card | While that holds | FND-GIVE-002, FND-GIVE-003, FND-GFX-006 |
 | Item selection frame | `DATA/PX16/PX00129` crop `(414,13,54,54)`, keyed on exact white | Which items are selected | `(206, 138 + 64 * r, 54, 54)` for row `r` | For each selected item | FND-GIVE-002 |
 | Recipient marker | `DATA/PX16/PX00129` crop `(128,448,32,32)`, keyed on exact white, the arrow the Move panel uses for +1 | The chosen recipient | `(274, 140 + 36 * n, 32, 32)`, left of card `n` | Once a recipient is chosen | FND-GIVE-002 |
 | Confirm face | Enabled or disabled state drawn by `fn_00418E66` | Whether the order can be confirmed | `(137, 293, 50, 23)` | Enabled in Ready, and on opening when the gang already has a Give order | FND-GIVE-001 |
@@ -81,9 +82,8 @@ None known.
 
 ## Open questions
 
-- The colour of the list background and the pattern of the dimmed card have
-  not been read, and the art of the frames and the marker has not been checked
-  against the image (FND-GIVE-002).
+- The art of the frames and the marker has not been checked against the image
+  (FND-GIVE-002).
 - The handler stores every gang of the player in the giver's sector in a
   five-entry list without a count check (FND-GIVE-001); whether more than five
   can qualify is not recorded.
