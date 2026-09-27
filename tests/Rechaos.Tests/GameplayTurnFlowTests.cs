@@ -106,6 +106,29 @@ public sealed class GameplayTurnFlowTests
         Assert.False(HotSeatHandoffPresentation.RequiresPrivateHandoff(state));
     }
 
+    // FND-OBJECTIVE-004: the end sequence visits, in slot order, every local human still seated
+    // and every one whose elimination card has not been shown, and passes over the computer
+    // players and the humans whose card was shown in an earlier round.
+    [Fact]
+    public void FinalViewsVisitTheLocalHumansStillSeatedInSlotOrder()
+    {
+        var definitions = BundledOriginalData.Load();
+        MatchPlayerSetup[] players =
+        [
+            new(new PlayerId(0), "RETIRED", PlayerController.Human),
+            new(new PlayerId(1), "CPU", PlayerController.Computer),
+            new(new PlayerId(2), "LAST TURN", PlayerController.Human),
+            new(new PlayerId(3), "SURVIVOR", PlayerController.Human)
+        ];
+        var state = OriginalMatchFactory.Create(definitions,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+        state.Players[0].Status = PlayerStatus.Eliminated;
+        state.Players[2].Status = PlayerStatus.Eliminated;
+
+        Assert.Equal([new PlayerId(2), new PlayerId(3)],
+            FinalViewPresentation.Seats(state, new HashSet<PlayerId> { new(0) }));
+    }
+
     private static void FinishWholeTurn(MatchState state)
     {
         state.FinishUpkeep();

@@ -31,7 +31,7 @@ public sealed partial class ChaosGame
 
     private void OpenComlinkView(ClientScreen returnScreen)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_state is null || PlanningViewer is not { } playerId) return;
         if (!ComlinkAvailable()) return;
         _managementReturnScreen = returnScreen;
         var inbox = _state.ComlinkFor(playerId);
@@ -64,7 +64,7 @@ public sealed partial class ChaosGame
 
     private void OpenComlinkSend(ClientScreen returnScreen)
     {
-        if (_state?.Coordinator.ActivePlayer is null) return;
+        if (_state is null || PlanningViewer is null) return;
         if (!ComlinkAvailable()) return;
         _managementReturnScreen = returnScreen;
         Array.Fill(_comlinkRecipients, false);
@@ -218,7 +218,7 @@ public sealed partial class ChaosGame
 
     private bool EligibleComlinkRecipient(int playerIndex)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } sender) return false;
+        if (_state is null || PlanningViewer is not { } sender) return false;
         var player = _state.Players.FirstOrDefault(value => value.Id.Value == playerIndex);
         return player is not null && player.Id != sender
             && player.Setup.Controller == PlayerController.Human;
@@ -226,7 +226,7 @@ public sealed partial class ChaosGame
 
     private void MoveComlinkCursor(int delta)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_state is null || PlanningViewer is not { } playerId) return;
         var count = _state.ComlinkFor(playerId).Count;
         if (count > 0)
         {
@@ -246,7 +246,7 @@ public sealed partial class ChaosGame
 
     private void SendComlink(bool pointerButton = false)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } sender || _actions is null) return;
+        if (_state is null || PlanningViewer is not { } sender || _actions is null) return;
         var recipients = Enumerable.Range(0, MatchLimits.PlayerCount)
             .Where(index => _comlinkRecipients[index])
             .Select(index => new PlayerId(index))
