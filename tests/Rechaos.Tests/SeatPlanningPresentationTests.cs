@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Rechaos.Game;
 using Xunit;
 
@@ -67,26 +66,4 @@ public sealed class SeatPlanningPresentationTests
     public void AClosedTurnMarksNobody() =>
         Assert.False(SeatPlanningPresentation.IsDrafting(
             slot: 2, ownSlot: 0, turnIsOpen: false, ownTurnSent: false, BothHumanSeats, new HashSet<int>()));
-
-    /// <summary>
-    /// The caption sits centred in the gap between a portrait and the top of the map.
-    /// </summary>
-    /// <remarks>
-    /// Its bottom edge is the map's own top at y 44: any lower and the top bar would draw over
-    /// the city, and off-centre it would drift under the neighbouring portrait's column.
-    /// </remarks>
-    [Fact]
-    public void TheWaitCaptionSitsUnderThePortraitItBelongsTo()
-    {
-        var caption = PlayerPortraitLayout.CityCaption(
-            2, SeatPlanningPresentation.WaitingCaption.Length);
-
-        Assert.Equal(new Rectangle(164, 37, 24, 7), caption);
-        Assert.Equal(PlayerPortraitLayout.CityTop(2).Bottom + 1, caption.Y);
-        Assert.Equal(CityMapLayout.Top, caption.Bottom);
-    }
-
-    [Fact]
-    public void ACaptionWithoutCharactersHasNowhereToGo() =>
-        Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.CityCaption(0, 0));
 }

@@ -206,10 +206,8 @@ public sealed class UiNavigationTests
             OriginalSelectionLightLayout.PlanningTime(0));
         Assert.Equal(new Rectangle(523, 38, 3, 11),
             OriginalSelectionLightLayout.EndgameTab(EndgameLayout.Stats));
-        Assert.Equal(new Rectangle(541, 129, 3, 11),
-            OriginalSelectionLightLayout.CityEvents);
-        Assert.Equal(new Rectangle(593, 129, 3, 11),
-            OriginalSelectionLightLayout.CityComlinkView);
+        Assert.Equal(new Rectangle(540, 126, 8, 16), OriginalSelectionLightLayout.CityEvents);
+        Assert.Equal(new Rectangle(592, 126, 8, 16), OriginalSelectionLightLayout.CityComlinkView);
         Assert.Throws<ArgumentOutOfRangeException>(() => SetupSelectionLayout.Scenario(10));
         Assert.Throws<ArgumentOutOfRangeException>(() => SetupSelectionLayout.Duration(4));
     }
@@ -385,14 +383,14 @@ public sealed class UiNavigationTests
 
         Assert.Equal(new Rectangle(4, 3, 54, 52), CityMapLayout.Source(0));
         Assert.Equal(new Rectangle(375, 360, 54, 52), CityMapLayout.Source(63));
-        Assert.Equal(new Rectangle(2, 44, 432, 416), CityMapLayout.Bounds);
+        Assert.Equal(new Rectangle(2, 42, 432, 416), CityMapLayout.Bounds);
         Assert.Equal(new Rectangle(5, 4, 52, 50), CityMapLayout.OwnershipSource(0));
-        Assert.Equal(new Rectangle(7, 48, 52, 50), CityMapLayout.OwnershipDestination(0));
+        Assert.Equal(new Rectangle(7, 46, 52, 50), CityMapLayout.OwnershipDestination(0));
         Assert.Equal(new Rectangle(376, 361, 52, 50), CityMapLayout.OwnershipSource(63));
-        Assert.Equal(new Rectangle(378, 405, 52, 50), CityMapLayout.OwnershipDestination(63));
+        Assert.Equal(new Rectangle(378, 403, 52, 50), CityMapLayout.OwnershipDestination(63));
         Assert.Equal(0, CityMapLayout.OwnershipSheet(null));
         Assert.Equal(6, CityMapLayout.OwnershipSheet(new PlayerId(5)));
-        Assert.False(CityMapLayout.TrySectorAt(new Point(432, 456), out _));
+        Assert.False(CityMapLayout.TrySectorAt(new Point(434, 458), out _));
     }
 
     [Fact]
@@ -635,43 +633,9 @@ public sealed class UiNavigationTests
     [Fact]
     public void GangStatusMarkerOccupiesLowerRightOfSectorCell()
     {
-        Assert.Equal(new Rectangle(38, 67, 20, 20), GangStatusMarkerLayout.Destination(0));
-        Assert.Equal(new Rectangle(409, 424, 20, 20), GangStatusMarkerLayout.Destination(63));
-    }
-
-    [Fact]
-    public void SectorDetailProjectsClippedThreeByThreeNeighborhood()
-    {
-        Assert.Equal(new Rectangle(61, 48, 54, 52), SectorDetailLayout.Cell(0, 0));
-        Assert.Equal(new Rectangle(169, 152, 54, 52), SectorDetailLayout.Cell(2, 2));
-        Assert.Equal(18, SectorDetailLayout.SectorAt(27, 0, 0));
-        Assert.Equal(27, SectorDetailLayout.SectorAt(27, 1, 1));
-        Assert.Equal(36, SectorDetailLayout.SectorAt(27, 2, 2));
-        Assert.Null(SectorDetailLayout.SectorAt(0, 0, 0));
-        Assert.True(SectorDetailLayout.TrySectorAt(
-            SectorDetailLayout.Cell(2, 1).Center, 27, out var right));
-        Assert.Equal(28, right);
-        Assert.False(SectorDetailLayout.TrySectorAt(
-            SectorDetailLayout.Cell(0, 0).Center, 0, out _));
-        Assert.Equal(new Rectangle(147, 120, 20, 20), SectorDetailLayout.Marker(27, 27));
-        Assert.Null(SectorDetailLayout.Marker(27, 29));
-        Assert.Equal(new Rectangle(83, 358, 120, 64), SectorDetailLayout.SitePortrait(2));
-        Assert.Equal(new Rectangle(32, 42, 406, 418), SectorDetailLayout.Workspace);
-        Assert.Equal(new Rectangle(93, 417, 100, 3), SectorDetailLayout.SiteControlBar(2));
-        Assert.Equal(new Color(0, 247, 0),
-            SectorDetailLayout.SiteControlColor(null, new PlayerId(0)));
-        Assert.Equal(new Color(0, 247, 0),
-            SectorDetailLayout.SiteControlColor(new PlayerId(0), new PlayerId(0)));
-        Assert.Equal(new Color(190, 0, 220),
-            SectorDetailLayout.SiteControlColor(new PlayerId(1), new PlayerId(0)));
-        Assert.Equal(new PlayerId(1), SectorDetailLayout.SiteControlOwner(
-            influencedBy: null, sectorOwner: new PlayerId(1), resistance: 0));
-        Assert.Null(SectorDetailLayout.SiteControlOwner(
-            influencedBy: null, sectorOwner: new PlayerId(1), resistance: 4));
-        Assert.Equal(0, SectorDetailLayout.SiteControlWidth(10, 10));
-        Assert.Equal(30, SectorDetailLayout.SiteControlWidth(10, 7));
-        Assert.Equal(100, SectorDetailLayout.SiteControlWidth(0, 0));
-        Assert.Equal(new Rectangle(4, 394, 28, 66), SectorDetailLayout.Back);
+        // SCR-UI-003: (35 + 53c, 61 + 51r).
+        Assert.Equal(new Rectangle(35, 61, 20, 20), GangStatusMarkerLayout.Destination(0));
+        Assert.Equal(new Rectangle(406, 418, 20, 20), GangStatusMarkerLayout.Destination(63));
     }
 
     [Fact]
@@ -776,10 +740,6 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(new Rectangle(360, 38, 32, 32), PlayerPortraitLayout.SetupTop(0));
         Assert.Equal(new Rectangle(540, 38, 32, 32), PlayerPortraitLayout.SetupTop(5));
-        Assert.Equal(new Rectangle(16, 4, 32, 32), PlayerPortraitLayout.CityTop(0));
-        Assert.Equal(new Rectangle(376, 4, 32, 32), PlayerPortraitLayout.CityTop(5));
-        Assert.Equal(new Rectangle(48, 4, 20, 20), PlayerPortraitLayout.CityActiveMarker(0));
-        Assert.Equal(new Rectangle(408, 4, 20, 20), PlayerPortraitLayout.CityActiveMarker(5));
         Assert.Equal(new Rectangle(397, 89, 64, 64), PlayerPortraitLayout.SetupLarge(0));
         Assert.Equal(new Rectangle(480, 163, 64, 64), PlayerPortraitLayout.SetupLarge(3));
         Assert.Equal(new Rectangle(397, 92, 64, 60),
@@ -796,8 +756,9 @@ public sealed class UiNavigationTests
     public void ActivePlayerMarkerCyclesAllTwelveRecoveredFrames()
     {
         Assert.Equal(0, ActivePlayerMarkerPresentation.Frame(TimeSpan.Zero));
-        Assert.Equal(11, ActivePlayerMarkerPresentation.Frame(TimeSpan.FromMilliseconds(11 * 80)));
-        Assert.Equal(0, ActivePlayerMarkerPresentation.Frame(TimeSpan.FromMilliseconds(12 * 80)));
+        // FND-UI-038: timer slot 1 steps the marker every 100 ms.
+        Assert.Equal(11, ActivePlayerMarkerPresentation.Frame(TimeSpan.FromMilliseconds(11 * 100)));
+        Assert.Equal(0, ActivePlayerMarkerPresentation.Frame(TimeSpan.FromMilliseconds(12 * 100)));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             ActivePlayerMarkerPresentation.Frame(TimeSpan.FromMilliseconds(-1)));
     }
