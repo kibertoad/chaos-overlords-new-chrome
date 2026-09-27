@@ -70,8 +70,7 @@ public sealed class EventReviewProgressTests
         Assert.Equal(new LastTurnReportRecord(4, 1, 1, 0), record);
         Assert.Equal($"B1:{definition.Name}", LastTurnEventPresentation.Subject(state, record));
         Assert.Equal(4, LastTurnEventPresentation.ArtworkIndex(notification, related));
-        Assert.Equal("SITE COOPERATION ACHIEVED.",
-            NotificationPresentation.LastTurnStatus(notification));
+        Assert.Equal("SITE COOPERATION ACHIEVED.", LastTurnEventPresentation.Caption(record));
         Assert.Equal(new Rectangle(12, definition.Id * 64 + 1, 94, 62),
             LastTurnEventPresentation.SiteBackgroundSource(definition.Id));
     }
