@@ -17,8 +17,8 @@ public sealed class AiFamilyFourTurnPlannerTests
         lowForce.FinishUpkeep();
         healthy.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(lowForce, new PlayerId(0));
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(healthy, new PlayerId(0));
+        AiHandlerPass.Run(lowForce, new PlayerId(0));
+        AiHandlerPass.Run(healthy, new PlayerId(0));
 
         Assert.Equal(GangAction.Heal,
             Assert.Single(AiTurnPlanner.Plan(lowForce, new PlayerId(0))).Action);
@@ -35,7 +35,7 @@ public sealed class AiFamilyFourTurnPlannerTests
         SetPreviousAction(match, GangAction.Move);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, new PlayerId(0));
+        AiHandlerPass.Run(match, new PlayerId(0));
         var command = Assert.Single(AiTurnPlanner.Plan(match, new PlayerId(0)));
 
         Assert.Equal(GangAction.Move, command.Action);
@@ -55,7 +55,7 @@ public sealed class AiFamilyFourTurnPlannerTests
         match.AiPlanning.SetCoverageSector(player, 0, 23);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Empty(AiTurnPlanner.Plan(match, player));
         Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(player, 0));
@@ -76,7 +76,7 @@ public sealed class AiFamilyFourTurnPlannerTests
         match.FinishUpkeep();
         var randomBefore = match.Random.ConsumptionCount;
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Attack, command.Action);
@@ -96,7 +96,7 @@ public sealed class AiFamilyFourTurnPlannerTests
                 match, match.Players[0], match.Players[0].Gangs[0], 0));
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Equip, command.Action);
@@ -124,7 +124,7 @@ public sealed class AiFamilyFourTurnPlannerTests
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
     }
@@ -146,7 +146,7 @@ public sealed class AiFamilyFourTurnPlannerTests
         SetPreviousAction(match, previous);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
     }
@@ -164,7 +164,7 @@ public sealed class AiFamilyFourTurnPlannerTests
         match.FinishUpkeep();
         var randomBefore = match.Random.ConsumptionCount;
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Empty(AiTurnPlanner.Plan(match, player));
         Assert.Equal(3, match.Random.ConsumptionCount - randomBefore);
