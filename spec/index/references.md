@@ -150,6 +150,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-COMBAT-012](../findings/FND-COMBAT-012.md) | builds, locations |
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | builds, locations |
 | [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | builds, locations |
+| [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | builds, locations |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | builds, locations |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | builds, locations |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | builds, locations |
@@ -2262,6 +2263,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | body |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
@@ -2320,6 +2322,12 @@ None.
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 
 ## FND-COMBAT-014
+
+| Cited by | In |
+|---|---|
+| [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
+
+## FND-COMBAT-015
 
 | Cited by | In |
 |---|---|
@@ -4869,6 +4877,7 @@ None.
 |---|---|
 | [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | body |
 | [FND-COMBAT-010](../findings/FND-COMBAT-010.md) | body |
+| [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | body |
 | [RULE-UI-005](../rules/RULE-UI-005.md) | evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 

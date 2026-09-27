@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 17 |
+| `supported` | 16 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 196 |
+| `implemented` | 197 |
 | `validated` | 9 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 1 |
-| `partial` | 16 |
-| `complete` | 205 |
+| `partial` | 15 |
+| `complete` | 206 |
 
 ## DATA
 
@@ -288,7 +288,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
 | `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | complete | None | `DEV-COMBAT-002` | implemented | Paging, keys, the opponent and police strips, grid cells with portraits, force_start and force_final tracks and the focus outlines follow FND-COMBAT-007 and FND-COMBAT-012. The pressed Exit face on Enter is not drawn as the panel closes at once, and the pressed arrows are not recorded. |
-| `SCR-COMBAT-002` | Detailed Combat panel | supported | partial | None | `DEV-COMBAT-001` | supported | Layout, strips, 166 ms cadence, the Exit face on release, the refused press outside the panel and Escape follow FND-COMBAT-009 and FND-COMBAT-010; the header strips, police art and the darkening from tick 12 follow FND-COMBAT-014. The entry's open question gives the tracks at y 114 and 121, where the rebuild draws them at 116 and 123; a run of the original settles it. |
+| `SCR-COMBAT-002` | Detailed Combat panel | supported | complete | None | `DEV-COMBAT-001` | implemented | Layout, strips, 166 ms cadence, the Exit face on release, the refused press outside the panel and Escape follow FND-COMBAT-009 and FND-COMBAT-010; the header strips, police art and the darkening from tick 12 follow FND-COMBAT-014. The tracks are drawn at local y 116 and 123, the rows the code writes, 68 rows below the portrait (FND-COMBAT-015). |
 
 ## DETECT
 
