@@ -236,21 +236,10 @@ The game keeps up to five small local session logs and ten crash reports in
 and match-flow details, but no player names, commands, save contents, or asset
 paths. Nothing is uploaded automatically.
 
-## Documentation
+## Developer documentation
 
-[docs/README.md](docs/README.md) catalogs every technical document by purpose
-and indexes them by game subsystem. The most-used entry points:
-
-| If you want to… | Read |
-|---|---|
-| Build, run, and test from source | [Development guide](docs/DEVELOPMENT.md), [Validation procedure](docs/VALIDATION.md) |
-| Resume development at the current checkpoint | [Handover](docs/HANDOVER.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Static validation plan](static_validation_plan.md), [Manual validation plan](manual_validation_plan.md) |
-| Know how faithful each system is | [Parity matrix](PARITY.md), [Deviation log](DEVIATIONS.md), [Project decisions](docs/DECISIONS.md) |
-| Understand the code layout | [Architecture](docs/ARCHITECTURE.md) |
-| Look up a game rule or an executable finding | [Spec](spec/README.md) and its [indexes](spec/index/by-area.md), [AI specification](docs/AI-SPEC.md) |
-| Work on the original file formats or assets | `FMT-*` and `SCR-*` entries in the [spec](spec/README.md), [Asset pack](docs/ASSET-PACK.md), [Asset catalog](docs/ASSET-CATALOG.md), [Audio and video](docs/AUDIO-VIDEO.md) |
-| Host or extend online play | [Multiplayer](docs/MULTIPLAYER.md), [Server operator manual](multiplayer/README.md) |
-| Cut a release | [Building and releasing installers](docs/RELEASING.md) |
+Building from source, the specification of the original game, and the rest of
+the technical documentation are indexed in [docs/README.md](docs/README.md).
 
 ## Acknowledgements
 
