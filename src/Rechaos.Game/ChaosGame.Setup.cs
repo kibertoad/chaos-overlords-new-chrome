@@ -10,7 +10,7 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private AiDifficulty _selectedAiMentality = AiDifficulty.Criminal;
+    private AiDifficulty _selectedAiMentality = OriginalOptionsPolicy.MentalityByDefault;
     private AiPolicyMode _defaultAiPolicy = OriginalOptionsPolicy.AiPolicyByDefault;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
@@ -38,8 +38,60 @@ public sealed partial class ChaosGame
 
     private void UpdateTitle(KeyboardState keyboard)
     {
-        if (Pressed(keyboard, Keys.Enter)) OpenNewGameSetup();
-        if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false, fromTitle: true);
+        var control = keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl);
+        foreach (var key in TitleShortcutKeys)
+        {
+            if (Pressed(keyboard, key) && TitleShortcut(key, control) is { } action)
+            {
+                RunTitleAction(action);
+                return;
+            }
+        }
+    }
+
+    private static readonly Keys[] TitleShortcutKeys = [Keys.N, Keys.O, Keys.H, Keys.J, Keys.Enter, Keys.F9];
+
+    /// <summary>
+    /// The title screen's keys. SCR-UI-001: Ctrl+N and Ctrl+O are New Game and Open, and Ctrl+H
+    /// and Ctrl+J are Host and Join, which the rebuild's Online screen offers (DEV-UI-019,
+    /// DEV-NET-001). Enter and F9 are the rebuild's own keys for New Game and Load.
+    /// </summary>
+    internal static TitleAction? TitleShortcut(Keys key, bool control) => key switch
+    {
+        Keys.N when control => TitleAction.NewGame,
+        Keys.O when control => TitleAction.LoadGame,
+        Keys.H or Keys.J when control => TitleAction.Online,
+        Keys.Enter => TitleAction.NewGame,
+        Keys.F9 => TitleAction.LoadGame,
+        _ => null
+    };
+
+    private void RunTitleAction(TitleAction action)
+    {
+        switch (action)
+        {
+            case TitleAction.LoadGame:
+                OpenSaveBrowser(saving: false, fromTitle: true);
+                break;
+            case TitleAction.Online:
+                OpenOnline();
+                break;
+            case TitleAction.Options:
+                OpenOptions();
+                break;
+            case TitleAction.Help:
+                OpenHelp();
+                break;
+            case TitleAction.Intro:
+                ReplayIntroMovies();
+                break;
+            case TitleAction.Quit:
+                Exit();
+                break;
+            default:
+                OpenNewGameSetup();
+                break;
+        }
     }
 
     internal enum TitleAction
