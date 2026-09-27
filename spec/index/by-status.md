@@ -341,6 +341,7 @@
 | [FND-AI-060](../findings/FND-AI-060.md) | The family-7 handler's Attack test reads the attitude toward the drawn gang's player |
 | [FND-AI-061](../findings/FND-AI-061.md) | The family-11 handler's miscellaneous Equip and Heal also need a previous action other than Attack, and most branches keep the current sector as focus |
 | [FND-AI-062](../findings/FND-AI-062.md) | Families 13 and 14 make up to five draws on a contested objective, can write nothing after a failed attack, and compare Support with an unset value |
+| [FND-AI-063](../findings/FND-AI-063.md) | The unset Support threshold of families 13 and 14 always holds the 0 the selector's prologue leaves at the same stack address |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |
@@ -631,7 +632,6 @@ Entries whose Open questions section says more than None known.
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list | supported |
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 | supported |
 | [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
-| [BUG-AI-006](../bugs/BUG-AI-006.md) | An objective gang with nothing else to do picks its Influence site against a threshold the planner never sets | supported |
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | The turn-start sound plays even with sound effects turned off | supported |
 | [BUG-AWARDS-001](../bugs/BUG-AWARDS-001.md) | The endgame screen shows at most three awards per player though a player can earn five | supported |
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | Bribe costs 3 instead of the manual's 5 | supported |
