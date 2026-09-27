@@ -133,6 +133,35 @@ public sealed class AiFamilySevenTurnPlannerTests
     }
 
     [Fact]
+    public void AcceptedDrawAgainstNonHostileOwnerDoesNotAttack()
+    {
+        // RULE-AI-003: the same board as the Homicidal Maniac's attack above, planned by a Goon
+        // player that is not hostile to the target's owner, so the accepted draw is dropped.
+        var data = BundledOriginalData.Load();
+        var attacker = data.Gangs
+            .Where(gang => gang.Stats.Detect >= 10)
+            .OrderByDescending(gang => gang.Stats.Combat + gang.Stats.Defense)
+            .First();
+        var target = data.Gangs.OrderBy(gang => gang.Stats.Combat).First();
+        var match = CreateMatch(data, sourceSites: [0, 0, 0],
+            attackerDefinitionId: attacker.Id, targetDefinitionId: target.Id,
+            sourceOwner: new PlayerId(1), targetSector: 0,
+            mentality: AiDifficulty.Goon);
+        var player = new PlayerId(0);
+        BeginFamilySevenTurn(match, player);
+        match.FinishUpkeep();
+
+        match.PrepareAiPlanning(player);
+        var commands = AiTurnPlanner.Plan(match, player);
+
+        Assert.False(match.AiStrategy.IsHostile(player, new PlayerId(1)));
+        Assert.DoesNotContain(commands, command => command.Action == GangAction.Attack);
+        Assert.NotEqual(GangAction.Attack, match.AiPlanning.PlannedAction(player, 0));
+        // The draw the Maniac attacks with was still made.
+        Assert.Equal(3, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void FailedSingleAttackComparisonFallsThroughToResearch()
     {
         var data = BundledOriginalData.Load();

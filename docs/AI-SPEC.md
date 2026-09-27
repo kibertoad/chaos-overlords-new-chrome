@@ -1,14 +1,14 @@
 # AI specification
 
-Status: provisional recreation baseline  
+Status: recovered family handlers; reference traces outstanding  
 
 The original executable's complete difficulty branches and evaluation weights
 have not yet been recovered. Static analysis has recovered the outer per-gang
 dispatcher, its 15-value handler map, the distinct zero-based four-valued AI
 Mentality global, all six writes to it, and all eight genuine query consumers.
-The current planner exists to make Human-versus-Computer
-matches operable while preserving deterministic simulation and replay behavior.
-It must not be cited as behavioral parity with the original AI.
+Every computer gang plans through its recovered family handler; what remains
+unproven is agreement with controlled runs of the original, so the planner must
+not yet be cited as behavioral parity with the original AI.
 
 <!-- doc-index:begin toc depth=2 -->
 - [Original and Advanced policy architecture](#original-and-advanced-policy-architecture)
@@ -75,21 +75,24 @@ native saves, replays, canonical hashes, and online game settings.
 - `AiTurnPlanner.Plan` only accepts the active computer player during Command.
 - It reads authoritative `MatchState` and returns at most one command per active
   gang without mutating state or consuming simulation RNG.
-- Candidate commands come exclusively from `CommandOptionCatalog.LegalCommands`.
-- Attack candidates are additionally restricted by the same cooperative sector
-  detection query exposed to players, so the baseline does not target gangs it
-  cannot observe.
+- Each gang submits the one command its planning record describes, and only
+  when the authoritative command validator accepts it and it fits the shared
+  budget. A record whose action needs a target it does not hold plans nothing.
+- An Attack is additionally restricted by the same cooperative sector detection
+  query exposed to players, so the planner does not target gangs it cannot
+  observe.
 - Before each computer player's plan, a replay-recorded preparation step applies
   the recovered directional hostility rule. Eligible opponents become maximally
   hostile when the computer has a strict effective Combat + Defense advantage
   in more than 75 percent of that opponent's controlled sectors. The same step
-  prepares recovered family-1 commands and consumes any mode-5 maximum-tie RNG
-  exactly once; subsequent `Plan` queries do not consume it again.
-- Control ranking uses the recovered strict solo-strength boundary: the acting
+  runs every gang's family handler and consumes any mode-5 maximum-tie RNG
+  exactly once; subsequent `Plan` queries do not consume it again. `Plan`
+  refuses a player whose handlers have not written its records this turn.
+- Control choices use the recovered strict solo-strength boundary: the acting
   gang's Force + Control must exceed sector Income plus detectable defending
   Force + Control and owner-influenced Support. Equal or weaker solo attempts
-  are demoted below useful commands.
-- Heal ranking follows the recovered continuation gates: effective Heal must
+  are not chosen.
+- Heal choices follow the recovered continuation gates: effective Heal must
   be at least -3 and Force must be below 9. A gang at Force 9 can legally Heal,
   but the original planner does not select it in any recovered family-1 path.
 - Family 1 has one narrower live override when the immediately previous action
@@ -116,7 +119,6 @@ native saves, replays, canonical hashes, and online game settings.
   50 or more, and exactly Goon Mentality. Crime is Chaos through Tolerance 3
   and Snitch from 4; every failed gate chooses mode-5 Move. The complete branch,
   including exact item and Move targets, is live and replay-recorded.
-- Selection is stable by score, action, target kind, target ID, and secondary ID.
 - A shared nonnegative spending budget prevents the planner from intentionally
   queuing more Bribe/Equip cost than the player currently holds while still
   allowing validator-approved free actions from a negative balance.
@@ -127,18 +129,20 @@ native saves, replays, canonical hashes, and online game settings.
 
 ## Current policy
 
-The baseline favors healing damaged gangs, taking uncontrolled sectors,
-influencing valuable sites, useful affordable equipment, and incomplete
-research. Scenario modifiers emphasize attacks for Kill 'Em All/Eliminate,
-sector acquisition for Power/Big 40/Armageddon, important sectors for Siege,
-central sectors for Big Man, Support for Acceptance, and income for
-Greed/Dominance. Terminate is deliberately last-resort.
+Every gang plans through the family its scenario and hire role select
+(RULE-AI-002), and nothing ranks commands outside those handlers. What a
+scenario emphasizes comes from that table and from the handlers themselves,
+such as the objective families 13 and 14 and the Terminate the final Greed
+turns write.
 
 Difficulty is one global match setting, matching the original setup panel's
-**AI Mentality** choice rather than a property selected per opponent. It acts
-only where the recovered handlers read it: the combat-advantage hostility of
-RULE-AI-003 and the family continuations that test it, such as family 1's
-choice between Snitch and taking a sector (RULE-AI-020).
+**AI Mentality** choice rather than a property selected per opponent. It sets
+the computer players' resolution band (RULE-AI-018), the starting attitudes and
+whether they recover each turn (RULE-AI-014, RULE-AI-015), and the
+combat-advantage hostility gate (RULE-AI-003). In planning, the handlers read it
+directly only in family continuations such as family 1's choice between crime
+and taking a sector (RULE-AI-020), and Advanced policy's expansion runs only at
+Crime Lord and above (DEV-AI-003).
 
 Every mentality uses the same authoritative state, command validation, economy,
 and RNG stream as a human player. The AI receives no extra cash, statistics,
@@ -468,6 +472,5 @@ family handler; no command is ranked by recreation weights.
 
 The original manual and contemporary developer FAQ corroborate four global
 mentalities, increasing aggression, a player-denial emphasis at Homicidal
-Maniac, and fair play without hidden resources. They do not corroborate the current
-score constants; exact parity remains blocked on completing the consumer trace
-and reference-decision work above.
+Maniac, and fair play without hidden resources. Exact parity remains blocked on
+completing the consumer trace and reference-decision work above.

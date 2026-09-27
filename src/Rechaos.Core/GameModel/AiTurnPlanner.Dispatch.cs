@@ -101,6 +101,7 @@ public static partial class AiTurnPlanner
                     break;
             }
         }
+        state.MarkAiPlanningPrepared(playerId);
     }
 
     private static void PrepareFamilyOneCommand(
