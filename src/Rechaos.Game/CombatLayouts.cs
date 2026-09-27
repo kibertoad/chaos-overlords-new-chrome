@@ -9,7 +9,8 @@ public static class CombatPanelLayout
 
     /// <summary>
     /// Each gang's two Force tracks in SCR-COMBAT-002: the upper shows <c>force_start</c> and the
-    /// lower <c>force_shown</c>, at local y 116 and 123 (FND-COMBAT-009, FND-COMBAT-010).
+    /// lower <c>force_shown</c>, at local y 116 and 123, 68 and 75 rows below the gang portrait
+    /// (FND-COMBAT-009, FND-COMBAT-010, FND-COMBAT-015).
     /// </summary>
     public const int ForceBarTracks = 2;
 

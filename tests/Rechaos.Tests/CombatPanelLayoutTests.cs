@@ -27,6 +27,12 @@ public sealed class CombatPanelLayoutTests
         Assert.Equal(new Rectangle(256, 247, 60, 3), CombatPanelLayout.ForceBar(false, 1));
         Assert.Equal(new Rectangle(329, 240, 60, 3), CombatPanelLayout.ForceBar(true, 0));
         Assert.Equal(new Rectangle(329, 247, 60, 3), CombatPanelLayout.ForceBar(true, 1));
+        // FND-COMBAT-015: the tracks start 68 and 75 rows below the top of the gang portrait.
+        foreach (var right in new[] { false, true })
+        {
+            Assert.Equal(68, CombatPanelLayout.ForceBar(right, 0).Y - CombatPanelLayout.GangPortrait(right).Y);
+            Assert.Equal(75, CombatPanelLayout.ForceBar(right, 1).Y - CombatPanelLayout.GangPortrait(right).Y);
+        }
         // The red track, then 6 pixels of the green strip per point (FND-COMBAT-009).
         Assert.Equal(new Rectangle(354, 3, 60, 3), CombatPanelLayout.RedTrackSource);
         Assert.Equal(new Rectangle(354, 0, 42, 3), CombatPanelLayout.GreenTrackSource(42));

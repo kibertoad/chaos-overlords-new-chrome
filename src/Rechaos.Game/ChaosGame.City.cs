@@ -167,13 +167,13 @@ public sealed partial class ChaosGame
     {
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
+        var playerIndex = PlanningViewer?.Value ?? 0;
         var player = state.Players[playerIndex];
         // FND-UI-017, FND-UI-018: the marker follows the viewed player, which on the sector view is
         // the player whose cards are shown, and there a portrait dims when the active player sees
         // none of that player's gangs in the sector.
         if (drawMapLayer)
-            DrawOverlordBar(batch, pixel, state, state.Coordinator.ActivePlayer, sectorView: null);
+            DrawOverlordBar(batch, pixel, state, PlanningViewer, sectorView: null);
         else
             DrawOverlordBar(batch, pixel, state, SectorViewedPlayer(state), sectorView: _cursor);
         if (drawMapLayer)
@@ -235,14 +235,17 @@ public sealed partial class ChaosGame
         DrawSectorNumber(font, batch, sectorValues.Cash, StatusConsoleLayout.SectorValueY(4), Color.Lime);
         font.Draw(batch, CityStatusMessage.Clip(_message),
             new Vector2(438, 354), Color.Gold, 1);
-        if (state.Coordinator.ActivePlayer is { } reportPlayer
+        if (_state is not null && PlanningViewer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
             && PresentationClock.BlinkLit(_inputTime))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
-        if (state.Coordinator.ActivePlayer is { } activePlayer
+        if (_state is not null && PlanningViewer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
             && PresentationClock.BlinkLit(_inputTime))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
+        // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
+        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(_inputTime))
+            DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
         {
@@ -399,7 +402,7 @@ public sealed partial class ChaosGame
             batch.Draw(_uiKeyedSprites, Moved(cell),
                 OriginalSpriteLayout.ObjectiveSectorPylons, Color.White);
 
-        var player = state.Players[state.Coordinator.ActivePlayer?.Value ?? 0];
+        var player = state.Players[PlanningViewer?.Value ?? 0];
         foreach (var marker in CitySiteMarkerProjection.Project(
                      state, player.Id, _siteSearchSelections.For(player.Id)))
         {

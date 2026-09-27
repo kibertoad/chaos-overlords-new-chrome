@@ -58,7 +58,7 @@ public sealed partial class ChaosGame
     private bool CanOpenCommands(out PlayerId playerId)
     {
         if (_state is not null && _state.Coordinator.Phase == TurnPhase.Command
-            && _state.Coordinator.ActivePlayer is { } active)
+            && _state is not null && PlanningViewer is { } active)
         {
             playerId = active;
             return true;
@@ -282,7 +282,7 @@ public sealed partial class ChaosGame
 
     private void SubmitBulkCommand(GangAction action, CommandTarget target)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_state is null || PlanningViewer is not { } playerId) return;
         var intent = new BulkCommandIntent(action, target, _commandRepeats);
         if (ApplyBulkCommand(playerId, _bulkCommandGangs, _groupCommand, intent, BulkGangCommands.Rejection(action)))
             _screens.Show(_commandReturnScreen);
@@ -290,7 +290,7 @@ public sealed partial class ChaosGame
 
     private void CancelSelectedCommand()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
+        if (_state is null || PlanningViewer is not { } playerId || _actions is null) return;
         if (_groupCommand)
         {
             CancelGroupCommands(playerId);
