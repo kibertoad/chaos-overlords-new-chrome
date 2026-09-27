@@ -372,7 +372,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-COMLINK-001` | Storing a Comlink message keeps each player's newest 16 messages | supported | partial | None | `DEV-NET-001` | supported | Delivery to a recipient on another computer (packet type 10) is not implemented; the rebuild tracks read state per message rather than through a shifted cursor. |
+| `RULE-COMLINK-001` | Storing a Comlink message keeps each player's newest 16 messages | supported | complete | None | `DEV-NET-001` | implemented | Delivery to a recipient on another computer (packet type 10) is replaced by the coordination server (DEV-NET-001), and Comlink cannot be opened online. The move of the recipient's View cursor when a message is dropped has no counterpart: the recipient is never the active player, whose inbox alone can have a cursor above 0, since RULE-COMLINK-007 sets it to 0 when a player's planning ends. |
 | `RULE-COMLINK-002` | Comlink Send opens only when another human player can receive a message | supported | complete | None | None | implemented | None |
 | `RULE-COMLINK-003` | Sending a Comlink message stores a copy for each selected recipient | supported | complete | None | None | implemented | None |
 | `RULE-COMLINK-004` | Comlink View opens at the oldest unread message and refuses an empty inbox | supported | complete | None | None | implemented | None |

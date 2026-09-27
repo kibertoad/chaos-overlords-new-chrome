@@ -100,6 +100,13 @@ public sealed class ComlinkInbox
         return inbox;
     }
 
+    /// <summary>
+    /// RULE-COMLINK-001: stores a message, dropping the oldest when the inbox holds 16. The
+    /// original also moves the recipient's View cursor back one place when it drops a message. The
+    /// sender is always the active player and never a recipient, and every other player's cursor
+    /// was set to 0 when its planning ended (RULE-COMLINK-007), so that move changes nothing and
+    /// the View keeps its page on the client instead.
+    /// </summary>
     internal ComlinkMessage Receive(int turn, PlayerId sender, string text)
     {
         if (turn < 1) throw new ArgumentOutOfRangeException(nameof(turn));
