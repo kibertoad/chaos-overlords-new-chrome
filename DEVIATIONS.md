@@ -562,7 +562,9 @@ it.
   sectors are already marked on the city map, so the minimap tells the player nothing new; it
   saves leaving the sector view to find out whether a neighbour is an objective. It is drawn only
   from what the city map shows, removes no control and changes no rule.
-- Dropped: no
+- Dropped: 2026-09-27. FND-UI-018 shows that the original's nine-sector display is a crop
+  of the prepared city map, which already carries the pylons, so the rebuild draws them there
+  as the original does.
 
 ## DEV-UI-003
 
@@ -703,7 +705,10 @@ it.
   already detected are shown, so what the player can know is unchanged; the original makes the
   player leave the sector view to look them up before ordering an Attack or a Move. It removes no
   control and changes no rule.
-- Dropped: no
+- Dropped: 2026-09-27. FND-UI-015 and FND-UI-018 show that the original does this: a press on
+  a portrait of the Overlord bar shows that player's gangs in the sector that the active player
+  can see, the portrait of a player with none is drawn from the dimmed row, and a double-click on
+  another player's card opens the gang or item panels. The rebuild does the same.
 
 Decided 2026-09-18.
 
@@ -774,15 +779,79 @@ Whether the original shows the count is not recorded.
 
 ## DEV-UI-019
 
-- Departs from: SCR-UI-009, SCR-UI-002
+- Departs from: SCR-UI-009, SCR-UI-002, SCR-UI-001
 - Reason: The rebuild has no menu bar. Its commands are reached elsewhere: saving, loading and
   quitting from the Escape menu (DEV-UI-011), the options from the Options screen, Help Topics
   with F1 (DEV-HELP-001), full screen with F11 (DEV-OPTIONS-003), and About, which shows the
-  credits screen, with Shift+F1.
+  credits screen, with Shift+F1. On the title screen, buttons for New Game, Load, Online,
+  Options, Help and Quit stand in for the menu, drawn over the title art with the rebuild's name,
+  its credit line and a box for notices left by the previous screen. Ctrl+H and Ctrl+J open the
+  Online screen, where hosting and joining happen, and Enter and F9 also start a new game and
+  open a saved one.
 - Setting: None
 - Default: mandatory
 - Justification: Every command of the menu bar stays reachable, and the drawing area is drawn
   without the Windows frame above it (DEV-GFX-001), where a menu bar would have no place.
+- Dropped: no
+
+## DEV-UI-020
+
+- Departs from: SCR-UI-003
+- Reason: The city screen takes single keys the original does not: W, A, S and D move the selected
+  sector as the arrows do; C opens the orders of the selected gang, G selects the next gang, I
+  opens the detailed sector screen, F the City Financial panel, R Player Ranking, T the item list,
+  B Combat Results, X Search, H the Hire panel, M Comlink View, N Comlink Send and J Game
+  Information; Space ends the player's planning; and in a local match F5 and F9 open the save
+  browser to save or load, and F6 and F10 save and load a replay.
+- Setting: None
+- Default: mandatory
+- Justification: Each key reaches a panel or command the console already offers, so it adds
+  keyboard input beside the original's mouse input and changes no order or result. The original's
+  keys, the arrows and Enter, work as they do in the original, and a setting that took the extra
+  keys away would give the player nothing.
+- Dropped: no
+
+## DEV-UI-021
+
+- Departs from: SCR-UI-004
+- Reason: The order menus of a gang card and of the group order strip are a panel the rebuild
+  draws at (248,50,174,400), listing the same orders, where the original opens a Windows popup
+  menu at the card's corner or at (290,65). An order the rules refuse for the gang is refused when
+  it is chosen, with a message on the console.
+- Setting: None
+- Default: mandatory
+- Justification: The rebuild draws the whole game in its own window without the Windows frame
+  (DEV-GFX-001), where a native popup menu would appear outside the game's picture and ignore its
+  scaling. The panel offers the orders the original's menus offer, for the same gangs, so the
+  player can do nothing new, and there is no original form to switch back to.
+- Dropped: no
+
+## DEV-UI-022
+
+- Departs from: SCR-UI-004
+- Reason: Dragging the portrait of one of the player's gang cards onto the 3-by-3 display gives
+  that gang a Move to the neighbouring sector it is dropped on, or a recurring Control when it is
+  dropped on its own sector. The sectors the gang may move to are highlighted during the drag.
+- Setting: None
+- Default: mandatory
+- Justification: It adds a shortcut to orders the card's menu already gives, and each drop is
+  validated as the menu's order would be. The original has a second input path for gang orders
+  that the spec has not read (RULE-TURN-005), so this drag is the rebuild's own until it is.
+- Dropped: no
+
+## DEV-UI-023
+
+- Departs from: SCR-UI-003, SCR-UI-004
+- Reason: A line at `(438,354)`, between the console and the Hire dock, says in words why an
+  order, a drop or a key was refused. A line along the bottom of the city map lists the rebuild's
+  keys, and in an online match says where the turn stands instead.
+- Setting: None
+- Default: mandatory
+- Justification: Both lines add information and change nothing the player can do. The original
+  answers a refused order with the reject sound alone, which the rebuild still plays; the line
+  says which rule refused it. The key line names keys DEV-UI-020 adds, which the original's
+  screens cannot show, and online it replaces them with the turn's state, which a player waiting
+  on others needs. A setting that hid them would only take information away.
 - Dropped: no
 
 ## DEV-GFX-001

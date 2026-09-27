@@ -4,7 +4,7 @@ title: Family-13 and family-14 computer gangs move to the Big Man or Siege objec
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-039, FND-AI-027, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-062]
+evidence: [FND-AI-039, FND-AI-027, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-062, FND-AI-063]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-AI-022, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -119,8 +119,9 @@ else if on_objective(s):
             plan(idx, ACTION_EQUIP, mi, 0)
             aux_records[idx].focus = -1
         else:
-            # the handler never sets the starting threshold (BUG-AI-006)
-            let site = objective_site(s, unset_stack_value)
+            # the handler never sets the starting threshold (BUG-AI-006);
+            # the stack slot it reads always holds 0 (FND-AI-063)
+            let site = objective_site(s, 0)
             if site != -1:
                 plan(idx, ACTION_INFLUENCE, site, 0)
                 aux_records[idx].focus = s
@@ -166,6 +167,12 @@ from the one attacked (BUG-AI-003). In a scenario other than 6 and 8 no sector
 is an objective, and the gang writes Move with the planned target left from the
 start of the turn, sector 0.
 
+The Support scan starts from a threshold the handler never sets (BUG-AI-006).
+The stack slot it reads always holds the 0 the selector left there
+(FND-AI-063), so a gang with nothing else to do Influences the first unfinished
+site with the highest positive Support, and plans None when no unfinished site
+has positive Support.
+
 ## What the sources say
 
 SRC-MANUAL-GOG, numbered page 14, lists Eliminate and Big Man among the
@@ -178,8 +185,6 @@ None known.
 
 ## Open questions
 
-- The value the Support scan starts from is left on the stack by earlier calls
-  (BUG-AI-006); a run of the original is needed to know it.
 - When the handler writes nothing, the planning record holds None from the
   start of the turn (RULE-AI-001); whether the gang record's action from the
   previous turn is cleared elsewhere before the turn resolves is not recorded.

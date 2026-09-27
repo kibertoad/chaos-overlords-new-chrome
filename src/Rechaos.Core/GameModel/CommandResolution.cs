@@ -225,6 +225,10 @@ public static partial class CommandResolver
             AddDamage(incomingDamage, outcome.Target.Id, outcome.Successes);
         RecordFirstCombatRecord(state, snapshots, outcomes, policeOutcomes);
 
+        // RULE-COMBAT-002: the damage is taken off only after every attack and the police have
+        // rolled from the Forces at the start of the phase. The original caps each gang's damage at
+        // 10 and lets a dead gang's Force go below 0; flooring at 0 gives the same Force for every
+        // gang that lives and the same deaths.
         foreach (var (gangId, damage) in incomingDamage)
         {
             var gang = state.FindGang(gangId)!;

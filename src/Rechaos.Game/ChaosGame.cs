@@ -106,6 +106,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly CitySectorClickTracker _citySectorClicks = new();
     private readonly IndexedDoubleClickTracker _sectorGangClicks = new();
     private readonly IndexedDoubleClickTracker _sectorSiteClicks = new();
+    private readonly IndexedDoubleClickTracker _sectorNeighborClicks = new();
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentPortraitClicks = new();
@@ -246,6 +247,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _tickedPresentation.Clear();
             _citySectorClicks.Cancel();
             _sectorSiteClicks.Cancel();
+            _sectorNeighborClicks.Cancel();
             _sectorGangClicks.Cancel();
             _siteSearchClicks.Cancel();
             if (_slidePanels)
@@ -801,30 +803,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         switch (_screens.Current)
         {
             case ClientScreen.Title:
-                switch (TitleActionAt(point))
-                {
-                    case TitleAction.LoadGame:
-                        OpenSaveBrowser(saving: false, fromTitle: true);
-                        break;
-                    case TitleAction.Online:
-                        OpenOnline();
-                        break;
-                    case TitleAction.Options:
-                        OpenOptions();
-                        break;
-                    case TitleAction.Help:
-                        OpenHelp();
-                        break;
-                    case TitleAction.Intro:
-                        ReplayIntroMovies();
-                        break;
-                    case TitleAction.Quit:
-                        Exit();
-                        break;
-                    default:
-                        OpenNewGameSetup();
-                        break;
-                }
+                RunTitleAction(TitleActionAt(point));
                 break;
             case ClientScreen.Options:
                 HandleOptionsClick(point);

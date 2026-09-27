@@ -72,6 +72,16 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
+    /// The player whose cards the view shows, which the Overlord bar's marker follows
+    /// (FND-UI-018: <c>0x00487B8C</c>).
+    /// </summary>
+    private PlayerId SectorViewedPlayer(MatchState state)
+    {
+        var viewer = ViewingPlayer(state);
+        return SectorCardGangs(state, viewer) is { Count: > 0 } cards ? cards[0].Owner : viewer;
+    }
+
+    /// <summary>
     /// Points the workspace at an overlord's gangs. RULE-UI-010: a portrait switches the cards
     /// only when the viewer can see a gang of that overlord in the sector, and the viewer's own
     /// portrait then restores the viewer's roster. The portrait of an overlord with no such gang
@@ -100,9 +110,11 @@ public sealed partial class ChaosGame
             HandleIdleGangWarningClick(point);
             return;
         }
-        if (SectorDetailLayout.Back.Contains(point) || ManagementBack.Contains(point))
+        // FND-UI-015: the back control returns to the city when the press is released inside it.
+        if (SectorDetailLayout.Back.Contains(point))
         {
-            _screens.Show(ClientScreen.City);
+            _pressedPanelFace = (SectorDetailLayout.Back, ClientScreen.Sector,
+                () => _screens.Show(ClientScreen.City));
             return;
         }
         if (_state is null) return;
@@ -127,13 +139,15 @@ public sealed partial class ChaosGame
         }
         if (SectorDetailLayout.TrySectorAt(point, _cursor, out var selectedSector))
         {
+            // SCR-UI-004: only a double-click on a neighbouring cell selects it.
+            if (!_sectorNeighborClicks.Register(selectedSector, _inputTime)) return;
             if (selectedSector != _cursor) _sectorGangCardOwner = null;
             _cursor = selectedSector;
             _gangSelection.KeepOnly(_cursor);
             _message = string.Empty;
             return;
         }
-        var siteSlot = HitTest.IndexAt(MatchLimits.SitesPerSector, SectorDetailLayout.SitePortrait, point);
+        var siteSlot = SectorDetailLayout.SiteAt(point);
         if (siteSlot >= 0)
         {
             if (_sectorSiteClicks.Register(_cursor * MatchLimits.SitesPerSector + siteSlot, _inputTime))
@@ -149,14 +163,23 @@ public sealed partial class ChaosGame
         }
         var visible = SectorCardGangs(_state, playerId)
             .Take(SectorGangCardLayout.VisibleCards).ToArray();
-        var index = HitTest.IndexAt(visible.Length, SectorGangCardLayout.Frame, point);
-        if (index < 0) return;
+        var index = SectorGangCardLayout.CardAt(point);
+        if (index < 0 || index >= visible.Length) return;
         var gang = visible[index];
         if (gang.Owner != playerId)
         {
+            // FND-UI-015: on another player's card a double-click on the portrait opens the gang
+            // panel and one on an equipment icon opens Item Information (fn_004169B3).
             _message = string.Empty;
-            if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
-                OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
+            var equipped = EquippedItems(gang);
+            var region = SectorGangCardLayout.Portrait(index).Contains(point) ? 0
+                : Enumerable.Range(0, 3).FirstOrDefault(
+                    item => SectorGangCardLayout.ItemSlot(index, item).Contains(point)
+                        && equipped[item] is not null, -1) + 1;
+            if (region == 0 && !SectorGangCardLayout.Portrait(index).Contains(point)) return;
+            if (!_sectorGangClicks.Register(gang.Id.Value * 4 + region, _inputTime)) return;
+            if (region == 0) OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
+            else OpenItemDetails(equipped[region - 1]!.Value, ClientScreen.Sector);
             return;
         }
         var ownGangs = _state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();
@@ -181,38 +204,53 @@ public sealed partial class ChaosGame
     private void DrawSectorDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         DrawBoard(batch, pixel, font, state, drawMapLayer: false);
-        batch.Draw(pixel, new Rectangle(0, 42, 438, 418), Color.Black);
-        DrawSectorSideRail(batch, pixel, font);
         var sector = state.Sectors[_cursor];
         var viewer = ViewingPlayer(state);
-        DrawSectorOpponentGangPresence(batch, pixel, font, state, viewer);
+        DrawSectorBackground(batch, pixel);
+        if (_uiSprites is not null)
+        {
+            batch.Draw(_uiSprites, SectorDetailLayout.OwnerStrip,
+                SectorDetailLayout.OwnerStripSource(sector.Owner), Color.White);
+            batch.Draw(_uiSprites, SectorDetailLayout.BackStrip, SectorDetailLayout.BackStripSource, Color.White);
+        }
+        else
+            font.Draw(batch, "<", new Vector2(8, 410), Color.Lime, 2);
+        if (_pressedPanelFace is { } held && held.Face == SectorDetailLayout.Back
+            && _hoverPoint is { } backHover && SectorDetailLayout.Back.Contains(backHover))
+            DrawPressedSectorBack(batch);
         DrawSectorNeighborhood(batch, pixel, font, state);
+        // FND-UI-018: each site is its portrait under the keyed frame, with the progress meter
+        // when the sector's owner is the active player.
         foreach (var site in sector.Sites)
         {
             var definition = state.Definitions.Site(site.DefinitionId);
             var portrait = SectorDetailLayout.SitePortrait(site.Slot);
-            var controlOwner = SiteControlRules.Controller(sector, site, definition);
             if (_sitePortraits is not null)
                 batch.Draw(_sitePortraits, portrait,
                     OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
             // FND-UI-037: the site flash lightens the image; the frame and meter go on top unlit.
             if (_tickedPresentation.Area == portrait)
                 DrawFlashLightening(batch, TickedPresentationKind.SiteFlash);
-            DrawBorder(batch, pixel, portrait,
-                controlOwner is { } influencedBy ? PlayerColors[influencedBy.Value] : Color.Gray, 1);
-            var control = SectorDetailLayout.SiteControlBar(site.Slot);
-            var controlled = SectorDetailLayout.SiteControlWidth(
-                definition.Resistance, site.Resistance);
-            DrawSectorMeter(batch, pixel, control, controlled,
-                SectorDetailLayout.SiteControlColor(controlOwner, viewer));
+            if (_uiKeyedSprites is not null)
+                batch.Draw(_uiKeyedSprites, portrait, SectorDetailLayout.SitePortraitFrameSource, Color.White);
+            else
+                DrawBorder(batch, pixel, portrait, Color.Gray, 1);
+            if (sector.Owner != viewer) continue;
+            var meter = SectorDetailLayout.SiteControlBar(site.Slot);
+            var filled = SectorDetailLayout.SiteControlWidth(definition.Resistance, site.Resistance);
+            if (_uiSprites is not null)
+            {
+                if (filled > 0)
+                    batch.Draw(_uiSprites, meter with { Width = filled },
+                        new Rectangle(354, 0, filled, 3), Color.White);
+            }
+            else
+                DrawSectorMeter(batch, pixel, meter, filled, new Color(0, 247, 0));
         }
         var visibleGangs = SectorCardGangs(state, viewer);
         foreach (var entry in visibleGangs.Take(SectorGangCardLayout.VisibleCards)
                      .Select((gang, index) => (gang, index)))
             DrawSectorGangCard(batch, pixel, font, state, viewer, entry.gang, entry.index);
-        if (visibleGangs.Count > SectorGangCardLayout.VisibleCards)
-            font.Draw(batch, $"+{visibleGangs.Count - SectorGangCardLayout.VisibleCards}",
-                new Vector2(397, 123), Color.White, 1);
         if (_uiSprites is not null && ShowsGroupOrderStrip(state, viewer))
             batch.Draw(_uiSprites, SectorDetailLayout.GroupOrderStrip,
                 OriginalSpriteLayout.GroupOrderStrip, Color.White);
@@ -237,28 +275,35 @@ public sealed partial class ChaosGame
         if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }
 
-    /// <summary>
-    /// Flags every opponent holding gangs the viewer can see in the selected sector, and marks the
-    /// one whose gangs the cards are currently listing.
-    /// </summary>
-    private void DrawSectorOpponentGangPresence(
-        SpriteBatch batch,
-        Texture2D pixel,
-        PixelFont font,
-        MatchState state,
-        PlayerId viewer)
+    private void DrawPressedSectorBack(SpriteBatch batch)
     {
-        foreach (var opponent in state.Setup.Players)
+        if (_uiSprites is not null)
+            batch.Draw(_uiSprites, SectorDetailLayout.Back,
+                PressedKeyFaces.Source(PressedKeyFace.SectorBack), Color.White);
+    }
+
+    private Texture2D? _sectorBackgroundShade;
+
+    /// <summary>
+    /// FND-UI-018: the sector's 52-by-50 cell interior in the unmarked map, stretched over the map
+    /// area and darkened with black through bitmap 143, the pattern the grey 0x8000 selects, laid
+    /// from the area's corner.
+    /// </summary>
+    private void DrawSectorBackground(SpriteBatch batch, Texture2D pixel)
+    {
+        var area = CityMapLayout.Bounds;
+        var neutral = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
+        if (neutral is not null)
+            batch.Draw(neutral, area, CityMapLayout.OwnershipSource(_cursor), Color.White);
+        else
+            batch.Draw(pixel, area, new Color(24, 37, 39));
+        if (_sectorBackgroundShade is null)
         {
-            if (!SectorOpponentGangs.Detectable(state, viewer, opponent.Id, _cursor)) continue;
-            var banner = PlayerPortraitLayout.CityGangPresence(opponent.Id.Value);
-            batch.Draw(pixel, banner, Color.Black);
-            font.Draw(batch, PlayerPortraitLayout.GangPresenceLabel,
-                new Vector2(banner.X, banner.Y), new Color(247, 0, 0), 1);
-            if (_sectorGangCardOwner == opponent.Id)
-                DrawBorder(batch, pixel, PlayerPortraitLayout.CityTop(opponent.Id.Value),
-                    new Color(247, 0, 0), 1);
+            _sectorBackgroundShade = new Texture2D(GraphicsDevice, area.Width, area.Height);
+            _sectorBackgroundShade.SetData(OriginalPatternMask.ShadedRectangle(
+                OriginalPatternMask.ForGrey(0x8000), area.Width, area.Height, Color.Black, Color.Black));
         }
+        batch.Draw(_sectorBackgroundShade, area, Color.White);
     }
 
     private void DrawQueuedCommandTargetHighlight(
@@ -522,23 +567,6 @@ public sealed partial class ChaosGame
             IsSelectedForBulkCommand(gang) ? Color.Gold : PlayerColors[gang.Owner.Value], 1);
     }
 
-    private void DrawSectorSideRail(SpriteBatch batch, Texture2D pixel, PixelFont font)
-    {
-        var rail = new Rectangle(3, 43, 29, 417);
-        batch.Draw(pixel, rail, new Color(105, 105, 105));
-        DrawBorder(batch, pixel, rail, new Color(185, 185, 185), 1);
-        batch.Draw(pixel, new Rectangle(6, 46, 22, 99), new Color(0, 180, 20));
-        batch.Draw(pixel, new Rectangle(8, 48, 18, 95), new Color(210, 0, 0));
-        batch.Draw(pixel, new Rectangle(6, 146, 22, 248), Color.Black);
-        for (var y = 150; y < 394; y += 8)
-            batch.Draw(pixel, new Rectangle(7, y, 20, 1), new Color(0, 20, 115));
-        if (_uiKeyedSprites is not null)
-            batch.Draw(_uiKeyedSprites, SectorDetailLayout.Back,
-                OriginalSpriteLayout.SectorBackArrow, Color.White);
-        else
-            font.Draw(batch, "<", new Vector2(8, 410), Color.Lime, 2);
-    }
-
     private void DrawSectorGangCard(
         SpriteBatch batch,
         Texture2D pixel,
@@ -641,95 +669,33 @@ public sealed partial class ChaosGame
         }
     }
 
+    /// <summary>
+    /// FND-UI-018: the nine-sector display, a crop of the prepared city map with the off-map
+    /// cells blacked out, under the keyed frame and the labels of FND-UI-038.
+    /// </summary>
     private void DrawSectorNeighborhood(
         SpriteBatch batch,
         Texture2D pixel,
         PixelFont font,
         MatchState state)
     {
-        for (var row = 0; row < SectorDetailLayout.Rows; row++)
-        for (var column = 0; column < SectorDetailLayout.Columns; column++)
-        {
-            var destination = SectorDetailLayout.Cell(column, row);
-            if (SectorDetailLayout.SectorAt(_cursor, column, row) is not { } sectorId)
-            {
-                batch.Draw(pixel, destination, Color.Black);
-                continue;
-            }
-            var sector = state.Sectors[sectorId];
-            var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
-            if (layer is not null)
-                batch.Draw(layer, destination, CityMapLayout.Source(sectorId), Color.White);
-            else
-                batch.Draw(pixel, destination, new Color(24, 37, 39));
-            if (_uiKeyedSprites is not null
-                && ObjectiveSectorMarkerPresentation.IsMarked(
-                    state.Setup.Scenario, sectorId, sector.IsImportant))
-                batch.Draw(_uiKeyedSprites, destination,
-                    OriginalSpriteLayout.ObjectiveSectorPylons, Color.White);
-        }
-
-        var playerId = ViewingPlayer(state);
-        // RULE-UI-006: the 3-by-3 display is copied from the prepared city map, so it shows the
-        // markers the full map draw left behind.
-        var markerFrames = GangStatusMarkerPresentation.MapFrames(
-            state, playerId, _gangSight.For(state, playerId));
-        for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
-            if (markerFrames[sectorId] >= 0
-                && SectorDetailLayout.Marker(_cursor, sectorId) is { } marker)
-                DrawGangStatusMarker(batch, marker, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]));
-
+        var display = SectorDetailLayout.Display;
+        DrawPreparedCityMap(batch, pixel, state, ViewingPlayer(state),
+            SectorDetailLayout.DisplaySource(_cursor), display.Location);
+        foreach (var band in SectorDetailLayout.OffMapBands(_cursor))
+            batch.Draw(pixel, band, Color.Black);
         // FND-UI-037: the cell flash lightens the copied display, markers included, and the frame
         // and edge labels are drawn over it unlit.
         DrawFlashLightening(batch, TickedPresentationKind.SectorDisplayCellFlash);
-
-        for (var row = 0; row < SectorDetailLayout.Rows; row++)
-        for (var column = 0; column < SectorDetailLayout.Columns; column++)
-        {
-            var destination = SectorDetailLayout.Cell(column, row);
-            if (SectorDetailLayout.SectorAt(_cursor, column, row) is not { } sectorId)
-            {
-                DrawBorder(batch, pixel, destination, new Color(0, 110, 30), 1);
-                continue;
-            }
-            DrawBorder(batch, pixel, destination,
-                column == 1 && row == 1 ? Color.White : new Color(0, 150, 45),
-                column == 1 && row == 1 ? 2 : 1);
-            if (row == 0)
-                DrawSectorCoordinateBadge(batch, pixel, font,
-                    new Point(destination.Center.X, destination.Y + 1),
-                    ((char)('A' + sectorId % 8)).ToString(), top: true);
-            if (column == 0)
-                DrawSectorCoordinateBadge(batch, pixel, font,
-                    new Point(destination.X + 1, destination.Center.Y),
-                    (sectorId / 8 + 1).ToString(), top: false);
-        }
+        if (_uiKeyedSprites is not null)
+            batch.Draw(_uiKeyedSprites, display, SectorDetailLayout.DisplayFrameSource, Color.White);
+        foreach (var label in SectorDetailLayout.DisplayLabels(_cursor))
+            DrawGridLabel(batch, font, label);
     }
 
     private void DrawGangStatusMarker(SpriteBatch batch, Rectangle destination, Rectangle source)
     {
         if (_uiKeyedSprites is not null)
             batch.Draw(_uiKeyedSprites, destination, source, Color.White);
-    }
-
-    private static void DrawSectorCoordinateBadge(
-        SpriteBatch batch,
-        Texture2D pixel,
-        PixelFont font,
-        Point anchor,
-        string label,
-        bool top)
-    {
-        var bounds = top
-            ? new Rectangle(anchor.X - 8, anchor.Y - 2, 16, 15)
-            : new Rectangle(anchor.X - 3, anchor.Y - 8, 15, 16);
-        batch.Draw(pixel, bounds, new Color(105, 105, 105));
-        batch.Draw(pixel, new Rectangle(bounds.X + 2, bounds.Y + 1, bounds.Width - 4, bounds.Height - 3),
-            Color.Black);
-        batch.Draw(pixel, new Rectangle(bounds.X, bounds.Y, 2, 2), Color.Black);
-        batch.Draw(pixel, new Rectangle(bounds.Right - 2, bounds.Y, 2, 2), Color.Black);
-        batch.Draw(pixel, new Rectangle(bounds.X, bounds.Bottom - 2, 2, 2), Color.Black);
-        batch.Draw(pixel, new Rectangle(bounds.Right - 2, bounds.Bottom - 2, 2, 2), Color.Black);
-        font.Draw(batch, label, new Vector2(bounds.X + 5, bounds.Y + 4), Color.Lime, 1);
     }
 }

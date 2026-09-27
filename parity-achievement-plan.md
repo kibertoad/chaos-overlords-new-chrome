@@ -76,7 +76,7 @@ needs static reads or captures of the original:
 ## Step 12: Close the research plans
 
 - `static_validation_plan.md`: the remaining items, most of which need a run of the original
-  (the Force track y of SCR-COMBAT-002, the BUG-AI-006 threshold, CreatePalette in 8-bit, the save
+  (the Force track y of SCR-COMBAT-002, CreatePalette in 8-bit, the save
   dialog's extension, the option value longer than four bytes, the black pen a new memory
   device context draws the pattern fills' edges with (FND-GFX-006), and what the areas of
   `Px00300` that FND-COMBAT-014 reads show).
