@@ -1,3 +1,4 @@
+using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Xunit;
 
@@ -109,5 +110,46 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
             4, 2, 1, 8, 0, 5));
         Assert.False(OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry(
             4, 2, 1, 8, 0, 6));
+    }
+
+    // RULE-AI-031, FND-AI-063: the unset threshold always holds 0, so a site needs positive
+    // Support to be chosen, and the first of two equal maxima wins.
+    [Fact]
+    public void SupportScanStartsFromTheZeroTheStackSlotHolds()
+    {
+        var data = BundledOriginalData.Load();
+        var none = data.Sites.First(site => site.Support <= 0).Id;
+        var positive = data.Sites.First(site => site.Support > 0).Id;
+
+        Assert.Null(OriginalAiObjectiveFamilyRules.SelectHighestSupportUnfinishedSite(
+            CreateMatch(data, none, none, none), 0));
+        Assert.Equal(1, OriginalAiObjectiveFamilyRules.SelectHighestSupportUnfinishedSite(
+            CreateMatch(data, none, positive, positive), 0));
+    }
+
+    private static MatchState CreateMatch(OriginalData data, short site0, short site1, short site2)
+    {
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "RIVAL", PlayerController.Human)
+        ];
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20,
+                [new MatchGangState(new GangId(10), setups[0].Id, 4, 0, 10)]),
+            new(setups[1], 20,
+                [new MatchGangState(new GangId(20), setups[1].Id, 2, 63, 10)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, site0, 7),
+                new MatchSiteState(1, site1, 16),
+                new MatchSiteState(2, site2, 15)
+            ], owner: id == 0 ? setups[0].Id : null, income: 3))
+            .ToArray();
+        return new MatchState(data, new MatchSetup(
+            ScenarioId.BigMan, GameDuration.SixMonths, 41, setups), players, sectors);
     }
 }

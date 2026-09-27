@@ -4,7 +4,7 @@ title: The intro plays the logos movie and then the intro movie, each ended by t
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-VIDEO-002, FND-VIDEO-001, FND-PLATFORM-012, FND-UI-023, FND-EXE-004]
+evidence: [FND-VIDEO-002, FND-VIDEO-003, FND-VIDEO-001, FND-PLATFORM-012, FND-UI-023, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [FMT-VIDEO-001, RULE-AUDIO-003]
@@ -86,6 +86,10 @@ each movie's sound at a library volume of `effects_level * 25 * 256`.
 - A press ends only the movie playing. A button still held when the second
   movie starts ends it at the first tick.
 - With `effects_level` 0 the movies play without sound.
+- The library sets the volume on the wave device, clamped to `0xFFFF`, with both
+  channels equal at the centre pan (FND-VIDEO-003). The movie's gain is
+  therefore linear in the level, `effects_level * 6400 / 65535`, and level 10
+  stays below the clamp.
 - Each movie closes after the pass that shows the frame whose number equals the
   frame count, one pass after its last frame.
 - When a movie changes its palette, the frame is remapped to the palette of the
@@ -107,7 +111,6 @@ None known.
 
 ## Open questions
 
-- What the library's blit type 3 and its handling of a volume above its normal
-  level do has not been observed.
+- What the library's blit type 3 does has not been observed.
 - How the Smacker library of the GOG build fits the movie's palette in the
   8-bit display set has not been captured.
