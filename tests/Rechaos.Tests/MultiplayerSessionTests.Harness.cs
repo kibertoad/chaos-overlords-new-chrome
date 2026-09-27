@@ -15,7 +15,17 @@ public sealed partial class MultiplayerSessionTests
 {
     private const string MatchId = "m1";
     private const int Seed = 1996;
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
+    /// <summary>
+    /// How long a test waits for something the session does on its own tasks before giving up.
+    /// </summary>
+    /// <remarks>
+    /// Only a bound on failure: every wait returns as soon as its condition holds, so a passing test
+    /// never spends it. The session's pump, outbox and reporter each start on the thread pool, and
+    /// the host's first snapshot serialises and compresses the whole city before its upload is
+    /// queued behind them. Ten seconds was not enough for that on a Windows runner while the rest
+    /// of the suite ran alongside, and the initial snapshot of an otherwise passing test timed out.
+    /// </remarks>
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
     private static readonly MultiplayerGameSettings GameSettings = new(
         ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]);
