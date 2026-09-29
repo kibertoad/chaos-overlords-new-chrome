@@ -338,6 +338,30 @@ The finding or experiment that cites a capture says which tool took it and with
 what settings, and gives its xxh3. Captures, saves and recordings that hold any
 of the game's content are never committed.
 
+### The probe
+
+`tools/Rechaos.OriginalProbe` runs the installed original under the Windows
+debugging interface and records a new local game without anyone at the
+keyboard. It checks the executable's SHA-256 against BLD-GOG-EN-1.1 first. The
+GOG install gives the executable compatibility layers that ask for
+administrator rights, so the probe has to run from an elevated prompt.
+
+```powershell
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --out <run directory> [--game <install directory>] [--timeout <seconds>]
+dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
+```
+
+`new-game` switches full screen off in memory, skips the intro, presses Begin
+with the settings the setup screen opens with (the registry's preferences),
+records the seed and every `roll` with its call site and result, and copies
+the writable sections once the first planning phase waits for input.
+EXP-SETUP-001 gives the breakpoints and the procedure. The run directory holds
+the original's memory and never goes into the repository. `extract` reads the
+numbers of the spec's state layouts and glossary terms out of one or more run
+directories and writes them as the runs of an experiment fixture, with no
+names or texts. `OriginalNewGameExperimentTests` replays every run of
+EXP-SETUP-001 against the rebuild.
+
 ## Static binary research
 
 `tools/ghidra/` holds bounded, clean-room Ghidra scripts for navigating the

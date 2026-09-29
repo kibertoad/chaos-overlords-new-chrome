@@ -4,7 +4,7 @@ title: Each active gang's fourteen statistics are its definition's, plus its ite
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GANG-001, FND-GANG-007, FND-UPKEEP-001, SRC-MANUAL-GOG]
+evidence: [FND-GANG-001, FND-GANG-007, FND-UPKEEP-001, SRC-MANUAL-GOG, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: [RULE-SITE-001, RULE-COMBAT-001, FMT-STATE-001, FMT-STATE-002, FMT-DATA-002, FMT-DATA-003]

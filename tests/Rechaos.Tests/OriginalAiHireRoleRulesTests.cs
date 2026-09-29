@@ -222,28 +222,34 @@ public sealed class OriginalAiHireRoleRulesTests
         Assert.Equal(new OriginalAiHireRoleSelection(0, 0), result);
     }
 
+    // FND-SETUP-018: Siege plays with a turn limit of 65535, so f = 65535 / 52 and the quotas are
+    // 3 f (3781 gangs) for slot 9 and f (1261) for slot 4, whatever length was chosen at setup.
     [Theory]
-    [InlineData(9, 3)]
-    [InlineData(4, 1)]
-    public void SiegeQuotasResetAtExactOneYearBoundary(int turn, int count)
+    [InlineData(9, 3781, GameDuration.SixMonths)]
+    [InlineData(4, 1261, GameDuration.FourYears)]
+    public void SiegeQuotasResetAtTheUntimedTurnLimitsBoundary(int turn, int count, GameDuration duration)
     {
-        var inputs = turn == 9
-            ? PowerInputs(family5Count: count)
-            : PowerInputs(family7Count: count);
+        PowerInputsForSlot(turn, count, duration, out var reset, out var below);
 
+        Assert.Equal(new OriginalAiHireRoleSelection(0, 0), OriginalAiHireRoleRules.SelectSiegeAdjusted(turn, reset));
         Assert.Equal(
-            new OriginalAiHireRoleSelection(0, 0),
-            OriginalAiHireRoleRules.SelectSiegeAdjusted(turn, inputs));
+            OriginalAiHireRoleRules.SelectScheduled(ScenarioId.Siege, turn),
+            OriginalAiHireRoleRules.SelectSiegeAdjusted(turn, below));
     }
 
-    [Fact]
-    public void SiegeDurationFactorScalesQuota()
+    private static void PowerInputsForSlot(
+        int turn,
+        int count,
+        GameDuration duration,
+        out OriginalAiHireAdjustmentInputs reset,
+        out OriginalAiHireAdjustmentInputs below)
     {
-        var result = OriginalAiHireRoleRules.SelectSiegeAdjusted(
-            turn: 9,
-            PowerInputs(duration: GameDuration.FourYears, family5Count: 11));
-
-        Assert.Equal(new OriginalAiHireRoleSelection(2, 5), result);
+        reset = turn == 9
+            ? PowerInputs(duration: duration, family5Count: count)
+            : PowerInputs(duration: duration, family7Count: count);
+        below = turn == 9
+            ? PowerInputs(duration: duration, family5Count: count - 1)
+            : PowerInputs(duration: duration, family7Count: count - 1);
     }
 
     [Fact]
@@ -262,42 +268,47 @@ public sealed class OriginalAiHireRoleRulesTests
     [InlineData(8)]
     public void EliminateFamilyThreeQuotaResetsScheduledSlots(int turn)
     {
+        // FND-SETUP-018: with a turn limit of 65535 the quota 4 f is 5042 gangs.
         Assert.Equal(
             new OriginalAiHireRoleSelection(0, 1),
             OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn,
-                PowerInputs(family3Count: 4, family6Or12Count: 1)));
+                PowerInputs(family3Count: 5042, family6Or12Count: 1)));
     }
 
-    // FND-AI-050: slots 5 and 7 reset once the hunters reach ten per 52 turns.
+    // FND-AI-050: slots 5 and 7 reset once the hunters reach 10 f.
     [Theory]
     [InlineData(5)]
     [InlineData(7)]
     public void EliminateFamilySixQuotaResetsScheduledSlots(int turn)
     {
-        // RULE-AI-010: scenario 7 resets slots 5 and 7 at 10f (FND-AI-050, 0x00481030).
+        // RULE-AI-010: scenario 7 resets slots 5 and 7 at 10f (FND-AI-050, 0x00481030), and
+        // FND-SETUP-018 makes f 65535 / 52, so the quota is 12603 gangs.
         Assert.Equal(
             new OriginalAiHireRoleSelection(0, 1),
             OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn,
-                PowerInputs(family6Or12Count: 10)));
+                PowerInputs(family6Or12Count: 12603)));
     }
 
+    // FND-SETUP-018: no player can have enough gangs to reach an Eliminate quota, whatever length
+    // was chosen at setup.
     [Theory]
-    [InlineData(5)]
-    [InlineData(7)]
-    public void EliminateFamilySixQuotaKeepsScheduledSlotsBelowTenPerYear(int turn)
+    [InlineData(5, GameDuration.SixMonths)]
+    [InlineData(7, GameDuration.FourYears)]
+    public void EliminateFamilySixQuotaKeepsScheduledSlotsAtAnyReachableCount(int turn, GameDuration duration)
     {
         Assert.Equal(
             new OriginalAiHireRoleSelection(3, 4),
             OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn,
-                PowerInputs(family6Or12Count: 9)));
+                PowerInputs(duration: duration, family6Or12Count: MatchLimits.GangsPerPlayer)));
     }
 
+    // FND-SETUP-018: the quota 2 f is 2521 gangs and the cash test f * 100 is 126028.85.
     [Theory]
-    [InlineData(2, 100)]
-    [InlineData(1, 99)]
+    [InlineData(2521, 126029)]
+    [InlineData(1, 126028)]
     public void EliminateSlotNineChecksFamilyAndCashThresholds(int family2Count, int cash)
     {
         Assert.Equal(
@@ -314,7 +325,7 @@ public sealed class OriginalAiHireRoleRulesTests
             new OriginalAiHireRoleSelection(5, 3),
             OriginalAiHireRoleRules.SelectEliminateAdjusted(
                 turn: 9,
-                PowerInputs(cash: 100, family2Count: 1, family6Or12Count: 1)));
+                PowerInputs(cash: 126029, family2Count: 2520, family6Or12Count: 1)));
     }
 
     [Fact]
@@ -381,11 +392,13 @@ public sealed class OriginalAiHireRoleRulesTests
                     family6Or12Count: 1)));
     }
 
+    // FND-SETUP-018: Armageddon plays with a turn limit of 65535, so the quotas 4 f and 3 f are
+    // 5042 and 3781 gangs.
     [Theory]
-    [InlineData(3, 2, 4)]
-    [InlineData(5, 6, 4)]
-    [InlineData(9, 3, 3)]
-    public void ArmageddonQuotasResetAtExactOneYearBoundary(
+    [InlineData(3, 2, 5042)]
+    [InlineData(5, 6, 5042)]
+    [InlineData(9, 3, 3781)]
+    public void ArmageddonQuotasResetAtTheUntimedTurnLimitsBoundary(
         int turn,
         int countedFamily,
         int boundary)

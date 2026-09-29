@@ -77,7 +77,7 @@ internal static class AiPlanningPreparation
             state.Setup.Scenario, activeGangCount, ownedSectorCount,
             playerState.Cash, hasNeutralSector);
         var elapsedTurns = state.Coordinator.Turn - 1;
-        var turnsRemaining = Math.Max(0, ScenarioCatalog.Turns(state.Setup.Duration) - elapsedTurns);
+        var turnsRemaining = Math.Max(0, ScenarioCatalog.TurnLimit(state.Setup.Scenario, state.Setup.Duration) - elapsedTurns);
         if (!OriginalAiHireRoleRules.ShouldAttemptHire(
                 state.Setup.Scenario, activeGangCount, hireGangLimit,
                 turnsRemaining, state.Setup.Duration))

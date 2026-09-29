@@ -141,7 +141,7 @@ public static partial class AiTurnPlanner
     private static void TerminateForGreed(MatchState state, PlayerId playerId, int gangSlot)
     {
         var turnsRemaining = Math.Max(0,
-            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
+            ScenarioCatalog.TurnLimit(state.Setup.Scenario, state.Setup.Duration) - (state.Coordinator.Turn - 1));
         if (!OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
                 state.Setup.Scenario, turnsRemaining))
             return;

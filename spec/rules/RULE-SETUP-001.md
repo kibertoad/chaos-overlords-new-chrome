@@ -4,7 +4,7 @@ title: A new match gives every player $20, or $500 in Armageddon, and $1,500 to 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-015, FND-SETUP-001, FND-SETUP-004, FND-RNG-005, SRC-MANUAL-GOG]
+evidence: [FND-SETUP-015, FND-SETUP-001, FND-SETUP-004, FND-RNG-005, SRC-MANUAL-GOG, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-004]

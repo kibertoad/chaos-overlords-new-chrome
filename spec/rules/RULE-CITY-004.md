@@ -1,10 +1,10 @@
 ---
 id: RULE-CITY-004
 title: Each player's Right Hands starts in roster slot 0 in its headquarters at Force 10 with no equipment
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CITY-003, FND-SETUP-004, FND-TURN-003]
+evidence: [FND-CITY-003, FND-SETUP-004, FND-TURN-003, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -61,10 +61,5 @@ None known.
 
 ## Open questions
 
-- That the Right Hands takes roster slot 0 rests on FND-TURN-003 and
-  FND-SETUP-004, which read slot 0 as the Right Hands; FND-CITY-003 does not
-  name the slot.
-- That its equipment bytes are -1 rests on FND-SETUP-004, which calls the
-  extra Right Hands identical and unequipped.
-- `player`, `definition` and `force` of FMT-STATE-001 are placed from an
-  outside source only.
+None known. EXP-SETUP-001 found each player's Right Hands in roster slot 0
+with definition 0, Force 10 and -1 in all three equipment bytes.

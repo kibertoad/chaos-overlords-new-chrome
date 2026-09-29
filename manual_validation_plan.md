@@ -57,13 +57,6 @@ finding or experiment is in the spec.
 
 ## Random numbers and the order of a turn
 
-- RULE-RNG-001, RULE-RNG-002: does the raw sequence match the prediction?
-  Start the original under a debugger, break in `fn_00478CC0` and record its
-  argument (the seed). Then log the argument and result of every call of
-  `fn_0045D227` up to the first planning phase of a new local game with fixed
-  setup choices. Record whether the startup `serialNum` draws happened, the
-  seed, and every (argument, result) pair; compare with RULE-RNG-002 run from
-  the seed.
 - RULE-TURN-001: is Upkeep skipped on the first turn after loading a save? Play
   a local game to turn 3, save during planning, note each player's cash, quit
   and load the save. Record each player's cash at the first planning phase
@@ -246,11 +239,11 @@ finding or experiment is in the spec.
 
 ## Setup, city generation, objectives and awards
 
-- RULE-SETUP-001, RULE-SETUP-004, RULE-CITY-001 to RULE-CITY-004: capture an
-  initial-state fixture. Start a local game with one human and default
-  settings, save on the first planning turn, and record the save file, the
-  seed if a debugger is attached, and a screenshot of the city. Repeat with
-  Armageddon to check the $500 start and the site exclusions.
+- RULE-SETUP-001, RULE-SETUP-004, RULE-RESEARCH-002: EXP-SETUP-001 recorded a
+  new game in Kill 'Em All at Crime Lord. Add runs in Armageddon, to check the
+  $500 start, the researched items and the site exclusions, and at Homicidal
+  Maniac, which draws no reactions (`Rechaos.OriginalProbe new-game` after
+  choosing them on the setup screen).
 - RULE-SETUP-001, RULE-SETUP-005, RULE-SETUP-006, RULE-SETUP-007: for each
   name modifier, start a game with one human named with it; record starting
   cash, the Crackdown state of neutral sectors, the roster, and whether enemy

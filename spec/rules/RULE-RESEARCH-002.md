@@ -4,7 +4,7 @@ title: A new match starts each player with each item's research difficulty, or w
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-RESEARCH-002, SRC-MANUAL-GOG]
+evidence: [FND-RESEARCH-002, SRC-MANUAL-GOG, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: [FMT-DATA-003]
