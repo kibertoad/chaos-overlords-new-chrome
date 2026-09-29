@@ -15,7 +15,13 @@ namespace Rechaos.Tests;
 /// order and reach the same generator position and state. The turns check the turn order
 /// (RULE-TURN-001), the computer players' planning passes, sector choices and hire choices
 /// (RULE-AI-001, RULE-AI-006, RULE-AI-008, RULE-AI-009, RULE-AI-010) and the hire resolution
-/// (RULE-HIRE-001).
+/// (RULE-HIRE-001). The computer players' orders take the resolution through its fixed order of
+/// steps (RULE-TURN-002): the instant phase with Heal, Influence and Research (RULE-TURN-003,
+/// RULE-HEAL-001, RULE-INFLUENCE-001, RULE-RESEARCH-001), Equip in the transaction pass
+/// (RULE-EQUIP-001, RULE-EQUIP-002, RULE-EQUIP-003), Move (RULE-MOVE-001), Control
+/// (RULE-CONTROL-001), Chaos and its payout (RULE-CHAOS-001, RULE-CHAOS-002) and upkeep
+/// (RULE-UPKEEP-001). No recorded run has an Attack, a Bribe, a Hide, a Snitch, a Give, a Sell, a
+/// Terminate or an active Crackdown yet.
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
