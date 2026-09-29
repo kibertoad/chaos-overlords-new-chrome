@@ -28,4 +28,29 @@ internal static class OriginalAddresses
     // SCR-SETUP-001: the Begin button, (370, 375) with size 92 by 45.
     public const int BeginX = 370 + 46;
     public const int BeginY = 375 + 22;
+
+    // FND-SETUP-013: the values the setup screen commits at Begin. The scenario dword and its
+    // preference byte, the time limit, the Mentality, and the live roster the screen edits: six
+    // INT32 player types, six portrait bytes and six 12-byte length-prefixed names.
+    public const uint Scenario = 0x004ABBE8;
+    public const uint PreferredScenario = 0x00487858;
+    public const uint TurnLimit = 0x004A5EF8;
+    public const uint Mentality = 0x00487850;
+    public const uint RosterTypes = 0x004AB638;
+    public const uint RosterPortraits = 0x004A5F00;
+    public const uint RosterNames = 0x004A2588;
+    public const int RosterNameLength = 12;
+    public const byte EmptyPortrait = 15;
+
+    // FND-SETUP-015: the six name modifier strings, in the order the new-match scan tests them,
+    // each a placeholder byte followed by upper-case ASCII and a NUL until the first scan.
+    public static readonly IReadOnlyDictionary<string, uint> ModifierNames = new Dictionary<string, uint>
+    {
+        ["right_hands"] = 0x00487B9C,
+        ["visibility"] = 0x00487BA8,
+        ["hire_force"] = 0x00487BB4,
+        ["elite"] = 0x00487BC0,
+        ["islands"] = 0x00487BCC,
+        ["cash"] = 0x00487BD8,
+    };
 }

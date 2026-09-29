@@ -70,11 +70,11 @@
 | [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported |
 | [RULE-AI-012](../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
-| [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported |
+| [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | supported |
 | [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | supported |
-| [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported |
+| [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | established |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported |
@@ -169,19 +169,19 @@
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent | supported |
 | [RULE-POLICE-004](../rules/RULE-POLICE-004.md) | Crackdown reports go to the players who had a gang in the sector when resolution began | supported |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported |
-| [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | supported |
+| [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | established |
 | [RULE-RNG-001](../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start | established |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws | established |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | supported |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | supported |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | supported |
-| [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported |
+| [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | established |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | established |
-| [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported |
-| [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | supported |
-| [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | supported |
-| [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | A player named with the visibility modifier sees every opposing gang for the whole match | supported |
+| [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | established |
+| [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | established |
+| [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | established |
+| [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | A player named with the visibility modifier sees every opposing gang for the whole match | established |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported |
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported |
@@ -561,11 +561,14 @@
 
 ## experiments
 
-1 entries.
+4 entries.
 
 | ID | Title | Status |
 |---|---|---|
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | What does a new local game draw from the generator, and what state does its first planning phase start from? | recorded |
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | Does a new local Armageddon game with two humans draw and start as the spec gives? | recorded |
+| [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | Does a new local Greed game at Homicidal Maniac with a four-year limit draw and start as the spec gives? | recorded |
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | Do the six name modifiers change a new local game as the spec gives? | recorded |
 
 ## bugs
 

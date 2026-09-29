@@ -347,20 +347,28 @@ GOG install gives the executable compatibility layers that ask for
 administrator rights, so the probe has to run from an elevated prompt.
 
 ```powershell
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --out <run directory> [--game <install directory>] [--timeout <seconds>]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
-`new-game` switches full screen off in memory, skips the intro, presses Begin
-with the settings the setup screen opens with (the registry's preferences),
+`new-game` switches full screen off in memory, skips the intro, presses Begin,
 records the seed and every `roll` with its call site and result, and copies
 the writable sections once the first planning phase waits for input.
-EXP-SETUP-001 gives the breakpoints and the procedure. The run directory holds
+EXP-SETUP-001 gives the breakpoints and the procedure. Without options, Begin
+takes the settings the setup screen opens with (the registry's preferences).
+The options write what the setup screen's controls would commit before Begin
+is pressed: the scenario in the original's numbering, the Mentality, the time
+limit, and the slots that hold humans, each optionally named with one of the
+six name modifiers (`right_hands`, `visibility`, `hire_force`, `elite`,
+`islands`, `cash`), which the probe reads from the running executable. With
+several humans the recording stops at the first human's Ready card, before
+its hire offers are drawn. `extract` refuses runs recorded with different
+settings, since the runs of one experiment differ only in the seed. The run directory holds
 the original's memory and never goes into the repository. `extract` reads the
 numbers of the spec's state layouts and glossary terms out of one or more run
 directories and writes them as the runs of an experiment fixture, with no
 names or texts. `OriginalNewGameExperimentTests` replays every run of
-EXP-SETUP-001 against the rebuild.
+EXP-SETUP-001 to EXP-SETUP-004 against the rebuild.
 
 ## Static binary research
 
