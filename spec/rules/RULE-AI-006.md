@@ -325,6 +325,15 @@ afterwards. A sector already holding six of the player's gangs is never
 entered by a routing step, but a directly returned adjacent target is not
 tested against that limit.
 
+A target read past the end of `selector_pairs` can lie off the board, and a
+routing step toward it can then leave the city. Its count is read at
+`player * 64 + result` in `sector_gang_count`, which for a result outside 0 to
+63 is another player's row as that player's last refresh of the list left it,
+for player 0 one of the constants 272, 303, 333 and 364 or a 0 of the
+initialized data before the list, and for player 5 a field of the first
+`selector_pairs` (FND-AI-066). A step whose read gives 5 or less is taken, and
+the destination is a sector number outside the city.
+
 ## What the sources say
 
 SRC-MANUAL-GOG does not describe how computer players choose where to move.
@@ -352,9 +361,6 @@ None known.
 - A tie count that runs through the records of all six players would continue
   into `aux_records`; the procedure does not model it, and no run has reached
   it.
-- A routing step off the board reads `sector_gang_count` of the neighbouring
-  player, or memory outside it for players 0 and 5, and a target read from the
-  planning records can be anywhere. No run has recorded such a step.
 - `selector_pairs` is not cleared when a match starts or is loaded, so a second
   match in the same run of the game, or a loaded one, starts with the scores
   the last call left. The runs so far each started one new match.

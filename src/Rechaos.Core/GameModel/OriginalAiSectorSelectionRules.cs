@@ -169,9 +169,9 @@ internal static class OriginalAiSectorSelectionRules
             ?? throw new InvalidOperationException("The sector selector picked a pair past the modelled memory.");
     }
 
-    // PLACEHOLDER: RULE-AI-006. A step off the board reads the count list of another player or
-    // the memory around it, which no run has recorded; the rebuild takes it as a full sector, so
-    // the step is taken back and the result stays on the board.
+    // DEV-AI-005: a step off the board reads past the player's row of the count list and, when
+    // that memory holds 5 or less, leaves the city in the original. The rebuild takes such a step
+    // as blocked, so the result stays on the board. A step on the board reads the player's row.
     private static int GangCount(IReadOnlyList<int> sectorGangCounts, int sectorId) =>
         sectorId is >= 0 and < MatchLimits.SectorCount
             ? sectorGangCounts[sectorId]

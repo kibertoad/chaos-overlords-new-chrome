@@ -1775,6 +1775,7 @@ None.
 |---|---|
 | [FND-AI-043](../findings/FND-AI-043.md) | body |
 | [FND-AI-044](../findings/FND-AI-044.md) | body |
+| [FND-AI-066](../findings/FND-AI-066.md) | body |
 | [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
 | glossary: ai_started | glossary |
 | glossary: raider_mode | glossary |

@@ -17,6 +17,12 @@ locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00409B71..0x00409DCA
+  - build: BLD-GOG-EN-1.1
+    file: Chaos Overlords.exe
+    address: 0x0040A364
+  - build: BLD-GOG-EN-1.1
+    file: Chaos Overlords.exe
+    address: 0x0048992C..0x0048994F
 tool: Python 3.14.7 script disassembling the file bytes with Capstone 5.0.7
 environment: null
 ---
@@ -71,6 +77,15 @@ subtracts the 1 again when the count is above 5; a larger column subtracts 1
 the same way, and the rows add or subtract 8. The four tests use the gang's
 own column and row, not the moved result.
 
+`sector_gang_count` at `0x00489950` is written by `0x0040A1A7` only: it
+stores 0 in the player's 64 entries (`0x0040A364`) and adds 1 for each gang
+(`0x0040A8E3`), for the player it is called with, so each row holds the counts
+of that player's last refresh (FND-AI-045 gives the calls). The 36 bytes before
+it, `0x0048992C..0x0048994F`, lie in the initialized part of `.data` and hold
+the INT32 values 272, 303, 333, 364, 0, 0, 0, 0 and 0 in the file; no
+instruction addresses them. Its last row ends at `0x00489F4F`, where the pair
+list begins.
+
 The pair list ends at `0x0048A14F`. The table follows it at `0x0048A150`, and
 the planning records (FMT-STATE-007) at `0x0048A250`, `0x510` bytes per
 player, follow the table.
@@ -108,6 +123,8 @@ players would continue into `aux_records` at `0x0048C0B0`; no run has been
 seen to go that far.
 
 ## How to reproduce
+
+Read the 36 bytes of the file's `.data` section at `0x0048992C`.
 
 Disassemble `0x004099E9..0x00409B6C` for the refill, `0x00408553..0x00408641`
 for the sort, and `0x00409B71..0x00409DCA` for the two tie counts and the
