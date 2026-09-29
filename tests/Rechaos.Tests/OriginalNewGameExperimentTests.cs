@@ -13,10 +13,12 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
+    private static readonly Lazy<RecordedRun[]> Recorded = new(LoadRuns);
+
     public static TheoryData<int> Runs()
     {
         var data = new TheoryData<int>();
-        for (var run = 0; run < Fixture().RootElement.GetProperty("runs").GetArrayLength(); run++) data.Add(run);
+        for (var run = 0; run < Recorded.Value.Length; run++) data.Add(run);
         return data;
     }
 
@@ -93,10 +95,11 @@ public sealed class OriginalNewGameExperimentTests
         foreach (var player in match.Players)
         {
             var gangs = player.Gangs.Where(gang => gang.IsActive).ToArray();
-            Assert.Equal(recorded.GangRecords(player.Id.Value).Count, gangs.Length);
+            var records = recorded.GangRecords(player.Id.Value);
+            Assert.Equal(records.Count, gangs.Length);
             for (var slot = 0; slot < gangs.Length; slot++)
             {
-                var record = player.Id.Value * 81 + slot;
+                var record = records[slot];
                 var gang = gangs[slot];
                 Assert.Equal(recorded.Gang(record, "definition"), gang.DefinitionId);
                 Assert.Equal(recorded.Gang(record, "sector"), gang.SectorId);
@@ -135,7 +138,7 @@ public sealed class OriginalNewGameExperimentTests
     {
         var setup = new MatchSetup(
             OriginalScenario(recorded.Term("scenario", 0)),
-            GameDuration.OneYear,
+            Duration(recorded.Term("turn_limit", 0)),
             recorded.Seed,
             [new MatchPlayerSetup(new PlayerId(0), "PROBE", PlayerController.Human, (short)recorded.Term("portrait", 0))],
             (AiDifficulty)recorded.Term("mentality", 0));
@@ -153,12 +156,21 @@ public sealed class OriginalNewGameExperimentTests
         _ => (ScenarioId)value,
     };
 
-    private static RecordedRun Run(int run) =>
-        new(Fixture().RootElement.GetProperty("runs")[run]);
+    // FND-SETUP-018: an untimed scenario records 65535 whatever length was chosen, and its length
+    // changes nothing the fixture holds.
+    private static GameDuration Duration(int turnLimit) =>
+        Enum.GetValues<GameDuration>().Where(duration => ScenarioCatalog.Turns(duration) == turnLimit)
+            .DefaultIfEmpty(GameDuration.OneYear).First();
 
-    private static JsonDocument Fixture() =>
-        JsonDocument.Parse(File.ReadAllText(
+    private static RecordedRun Run(int run) => Recorded.Value[run];
+
+    private static RecordedRun[] LoadRuns()
+    {
+        using var fixture = JsonDocument.Parse(File.ReadAllText(
             Path.Combine(AppContext.BaseDirectory, "spec", "experiments", "EXP-SETUP-001.json")));
+        return fixture.RootElement.GetProperty("runs").EnumerateArray()
+            .Select(run => new RecordedRun(run)).ToArray();
+    }
 
     private sealed class RecordedRun
     {
