@@ -33,6 +33,13 @@ internal sealed class StateExtractor
         };
     }
 
+    /// <summary>The setup choices a run was recorded with, one line each; none for the defaults.</summary>
+    public static string[] Settings(string runDirectory)
+    {
+        var trace = JsonSerializer.Deserialize<ProbeTrace>(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
+        return (trace.Settings ?? NewGameSettings.Defaults).Describe().ToArray();
+    }
+
     private JsonArray EndState()
     {
         var rows = new JsonArray();

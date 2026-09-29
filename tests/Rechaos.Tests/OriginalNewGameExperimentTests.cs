@@ -6,43 +6,48 @@ using Xunit;
 namespace Rechaos.Tests;
 
 /// <summary>
-/// EXP-SETUP-001: new local games of the original, recorded from Begin to the first planning phase
-/// under a debugger. Each run gives the seed, every roll(n) with its call site and result, and the
-/// state the first planning phase starts from. The rebuild starts the same match from the same
-/// seed and has to reach the same generator position and the same state.
+/// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
+/// first planning phase under a debugger. Each run gives the seed, every roll(n) with its call site
+/// and result, and the state the first planning phase starts from. The rebuild starts the same
+/// match from the same seed and settings and has to reach the same generator position and state.
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    public static TheoryData<int> Runs()
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004"];
+
+    public static TheoryData<string, int> Runs()
     {
-        var data = new TheoryData<int>();
-        for (var run = 0; run < Fixture().RootElement.GetProperty("runs").GetArrayLength(); run++) data.Add(run);
+        var data = new TheoryData<string, int>();
+        foreach (var experiment in Experiments)
+            for (var run = 0; run < Fixture(experiment).RootElement.GetProperty("runs").GetArrayLength(); run++)
+                data.Add(experiment, run);
         return data;
     }
 
     // RULE-RNG-001, RULE-RNG-002: every result the original returned follows from the seed.
     [Theory]
     [MemberData(nameof(Runs))]
-    public void EveryRollFollowsFromTheSeed(int run)
+    public void EveryRollFollowsFromTheSeed(string experiment, int run)
     {
-        var recorded = Run(run);
+        var recorded = Run(experiment, run);
         var random = new DeterministicRandom(recorded.Seed);
         foreach (var (call, bound, result) in recorded.Rolls)
             Assert.True(random.NextInclusive(bound) == result, $"roll({bound}) at {call}");
     }
 
-    // RULE-SETUP-001, RULE-SETUP-003, RULE-SETUP-004, RULE-AI-014, RULE-AI-018, RULE-CITY-001,
-    // RULE-CITY-002, RULE-CITY-003, RULE-CITY-004, RULE-RESEARCH-002, RULE-HIRE-002,
-    // RULE-HIRE-004, RULE-SITE-001, RULE-GANG-001, RULE-DETECT-001: the rebuild's new match reaches
-    // the state the original's first planning phase starts from, with the same number of draws.
-    // The state is read with the layouts of FMT-STATE-001, FMT-STATE-002 and FMT-STATE-004.
+    // RULE-SETUP-001, RULE-SETUP-003, RULE-SETUP-004, RULE-SETUP-005, RULE-SETUP-006,
+    // RULE-SETUP-007, RULE-AI-014, RULE-AI-018, RULE-CITY-001, RULE-CITY-002, RULE-CITY-003,
+    // RULE-CITY-004, RULE-RESEARCH-002, RULE-HIRE-002, RULE-HIRE-004, RULE-SITE-001,
+    // RULE-GANG-001, RULE-DETECT-001, FND-HIRE-005: the rebuild's new match reaches the state the original's first planning phase starts from, with the same
+    // number of draws. The state is read with the layouts of FMT-STATE-001, FMT-STATE-002 and
+    // FMT-STATE-004.
     [Theory]
     [MemberData(nameof(Runs))]
-    public void TheRebuildStartsTheSameMatch(int run)
+    public void TheRebuildStartsTheSameMatch(string experiment, int run)
     {
-        var recorded = Run(run);
+        var recorded = Run(experiment, run);
         var match = StartMatch(recorded);
-        var human = new PlayerId(0);
+        var human = recorded.Humans[0];
 
         Assert.Equal(recorded.Rolls.Count * 3L, match.Random.ConsumptionCount);
         var expectedState = new DeterministicRandom(recorded.Seed);
@@ -56,6 +61,7 @@ public sealed class OriginalNewGameExperimentTests
             Assert.Equal(recorded.Term("cash", slot), player.Cash);
             Assert.Equal(recorded.Term("reaction", slot), match.AiStrategy.Reaction(player.Id));
             Assert.Equal(recorded.Term("difficulty_band", slot), (int)OriginalResolutionRules.Band(match, player.Id));
+            Assert.Equal(recorded.Term("hire_force_modifier", slot) != 0, player.UsesMaximumHireForce);
             foreach (var other in match.Players)
                 Assert.Equal(
                     recorded.Term("attitude", slot * 6 + other.Id.Value),
@@ -67,8 +73,9 @@ public sealed class OriginalNewGameExperimentTests
                     $"research_remaining of item {item} for player {slot}");
         }
 
-        var offers = match.Players[0].HireOfferSlots.Select(offer => (int)offer.GangDefinitionId!.Value);
-        Assert.Equal(Enumerable.Range(0, 3).Select(slot => recorded.Term("hire_offers", slot)), offers);
+        // An offer slot holds 0x9C while vacant (FND-SETUP-015).
+        var offers = match.Players[human.Value].HireOfferSlots.Select(offer => (int?)offer.GangDefinitionId ?? -100);
+        Assert.Equal(Enumerable.Range(0, 3).Select(slot => recorded.Term("hire_offers", human.Value * 3 + slot)), offers);
 
         foreach (var sector in match.Sectors)
         {
@@ -133,17 +140,48 @@ public sealed class OriginalNewGameExperimentTests
 
     private static MatchState StartMatch(RecordedRun recorded)
     {
+        var scenario = OriginalScenario(recorded.Term("scenario", 0));
         var setup = new MatchSetup(
-            OriginalScenario(recorded.Term("scenario", 0)),
-            GameDuration.OneYear,
+            scenario,
+            ScenarioCatalog.Get(scenario).IsTimed ? Duration(recorded.Term("turn_limit", 0)) : GameDuration.OneYear,
             recorded.Seed,
-            [new MatchPlayerSetup(new PlayerId(0), "PROBE", PlayerController.Human, (short)recorded.Term("portrait", 0))],
-            (AiDifficulty)recorded.Term("mentality", 0));
+            recorded.Humans.Select(slot => new MatchPlayerSetup(
+                slot, Name(recorded, slot.Value), PlayerController.Human, (short)recorded.Term("portrait", slot.Value))).ToArray(),
+            (AiDifficulty)recorded.Term("mentality", 0),
+            allowSparsePlayerIds: true);
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);
         match.FinishUpkeep();
-        match.PrepareHireOffers(new PlayerId(0));
+        // RULE-SETUP-008: with several local humans the planning phase waits on the Ready card
+        // before it refills the offers, and the recording stops there.
+        if (recorded.Humans.Count == 1) match.PrepareHireOffers(recorded.Humans[0]);
         return match;
     }
+
+    // The fixture keeps the flags a name set rather than the name (FND-SETUP-015), so the name is
+    // the modifier string whose flag is set.
+    private static string Name(RecordedRun recorded, int slot)
+    {
+        (string Flag, string Name)[] modifiers =
+        [
+            ("modifier_right_hands", OriginalSetupNameRules.ExtraRightHandsName),
+            ("modifier_visibility", OriginalSetupNameRules.OmniscienceName),
+            ("hire_force_modifier", OriginalHireCheatRules.MaximumForceName),
+            ("modifier_elite", OriginalSetupNameRules.AssaultTeamName),
+            ("modifier_islands", OriginalSetupNameRules.IslandsName),
+            ("modifier_cash", OriginalSetupNameRules.MaximumStartingCashName),
+        ];
+        return modifiers.Where(modifier => recorded.Term(modifier.Flag, slot) != 0)
+            .Select(modifier => modifier.Name).SingleOrDefault() ?? $"PROBE{slot}";
+    }
+
+    private static GameDuration Duration(int turns) => turns switch
+    {
+        26 => GameDuration.SixMonths,
+        52 => GameDuration.OneYear,
+        104 => GameDuration.TwoYears,
+        208 => GameDuration.FourYears,
+        _ => throw new ArgumentOutOfRangeException(nameof(turns), turns, null),
+    };
 
     // The original numbers Siege 6 and Eliminate 7, the rebuild the other way round (RULE-SETUP-002).
     private static ScenarioId OriginalScenario(int value) => value switch
@@ -153,12 +191,12 @@ public sealed class OriginalNewGameExperimentTests
         _ => (ScenarioId)value,
     };
 
-    private static RecordedRun Run(int run) =>
-        new(Fixture().RootElement.GetProperty("runs")[run]);
+    private static RecordedRun Run(string experiment, int run) =>
+        new(Fixture(experiment).RootElement.GetProperty("runs")[run]);
 
-    private static JsonDocument Fixture() =>
+    private static JsonDocument Fixture(string experiment) =>
         JsonDocument.Parse(File.ReadAllText(
-            Path.Combine(AppContext.BaseDirectory, "spec", "experiments", "EXP-SETUP-001.json")));
+            Path.Combine(AppContext.BaseDirectory, "spec", "experiments", $"{experiment}.json")));
 
     private sealed class RecordedRun
     {
@@ -183,6 +221,10 @@ public sealed class OriginalNewGameExperimentTests
         }
 
         public int Seed { get; }
+
+        // controller: 0 for a human at this computer (FND-SETUP-002).
+        public IReadOnlyList<PlayerId> Humans => Enumerable.Range(0, 6)
+            .Where(slot => Term("controller", slot) == 0).Select(slot => new PlayerId(slot)).ToArray();
         public IReadOnlyList<(string Call, int Bound, int Result)> Rolls { get; }
 
         public int Term(string term, int index) => _terms[(term, index)];
