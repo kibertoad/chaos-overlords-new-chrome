@@ -8,18 +8,25 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-008 go on to press Done with no
-/// orders for one to fifteen turns and stop at the next planning phase. Each run gives the seed,
-/// every roll(n) with its call site and result, and the state the recording stops at. The rebuild
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-009 go on to press Done for one
+/// to fifteen turns, EXP-TURN-009 with orders for the human's gang, and stop at the next planning
+/// phase. Each run gives the seed, every roll(n) with its call site and result, and the state the recording stops at. The rebuild
 /// plays the same match from the same seed and settings and has to make the same rolls in the same
 /// order and reach the same generator position and state. The turns check the turn order
 /// (RULE-TURN-001), the computer players' planning passes, sector choices and hire choices
 /// (RULE-AI-001, RULE-AI-006, RULE-AI-008, RULE-AI-009, RULE-AI-010) and the hire resolution
-/// (RULE-HIRE-001).
+/// (RULE-HIRE-001). The computer players' orders take the resolution through its fixed order of
+/// steps (RULE-TURN-002): the instant phase with Heal, Influence and Research (RULE-TURN-003,
+/// RULE-HEAL-001, RULE-INFLUENCE-001, RULE-RESEARCH-001), Equip in the transaction pass
+/// (RULE-EQUIP-001, RULE-EQUIP-002, RULE-EQUIP-003), Move (RULE-MOVE-001), Control
+/// (RULE-CONTROL-001), Chaos and its payout (RULE-CHAOS-001, RULE-CHAOS-002) and upkeep
+/// (RULE-UPKEEP-001). EXP-TURN-009 also gives the human's gang orders: Snitch, Bribe and Hide
+/// (RULE-SNITCH-001, RULE-BRIBE-001, RULE-HIDE-001) and a recurring Chaos (RULE-TURN-004), which
+/// bring on a Crackdown. No recorded run has an Attack, a Give, a Sell or a Terminate yet.
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -191,6 +198,8 @@ public sealed class OriginalNewGameExperimentTests
         for (var turn = 0; turn < recorded.DoneCount; turn++)
         {
             var human = recorded.Humans[0];
+            foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))
+                Submit(recorder, match, human, order);
             recorder.FinishCommand(human);
             while (!(match.Coordinator.Phase == TurnPhase.Command && match.Coordinator.ActivePlayer == human))
                 HeadlessMatchRunner.Advance(recorder);
@@ -198,6 +207,41 @@ public sealed class OriginalNewGameExperimentTests
         }
 
         return match;
+    }
+
+    // The probe writes an order straight into the human's gang record (FMT-STATE-001) as the order
+    // screens do (RULE-TURN-005); the rebuild takes the same order as a command. A slot is the
+    // position among the player's active gangs.
+    private static void Submit(MatchReplayRecorder recorder, MatchState match, PlayerId human, RecordedOrder order)
+    {
+        var gang = match.Players[human.Value].Gangs.Where(candidate => candidate.IsActive).ElementAt(order.Slot);
+        var action = (GangAction)order.Action;
+        var target = action switch
+        {
+            GangAction.Move => CommandTarget.Sector(order.Target),
+            GangAction.Research or GangAction.Equip => CommandTarget.Item(order.Target),
+            GangAction.Attack => CommandTarget.Gang(match.Players[order.Target].Gangs
+                .Where(candidate => candidate.IsActive).ElementAt(order.Target2).Id),
+            GangAction.Bribe or GangAction.Chaos or GangAction.Control or GangAction.Heal
+                or GangAction.Hide or GangAction.Snitch or GangAction.Terminate => CommandTarget.None,
+            _ => throw new NotSupportedException($"No recorded order of action {action} is replayed yet."),
+        };
+        var result = recorder.Submit(new GameCommand(human, gang.Id, action, target, order.Repeat));
+        Assert.True(result.Accepted, $"turn {order.Turn}: the rebuild refused {action}: {result}");
+    }
+
+    private sealed record RecordedOrder(int Turn, int Slot, int Action, int Target, int Target2, bool Repeat)
+    {
+        // "turn 3: gang slot 0 action 13 target 0 target_2 0 repeat 0", as the probe writes it.
+        public static RecordedOrder Parse(string value)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(value,
+                @"^turn (-?\d+): gang slot (-?\d+) action (-?\d+) target (-?\d+) target_2 (-?\d+) repeat ([01])$");
+            Assert.True(match.Success, value);
+            var numbers = match.Groups.Values.Skip(1)
+                .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            return new(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5] != 0);
+        }
     }
 
     // The fixture keeps the flags a name set rather than the name (FND-SETUP-015), so the name is
@@ -240,8 +284,9 @@ public sealed class OriginalNewGameExperimentTests
     {
         using var fixture = JsonDocument.Parse(File.ReadAllText(
             Path.Combine(AppContext.BaseDirectory, "spec", "experiments", $"{experiment}.json")));
+        var inputs = fixture.RootElement.GetProperty("inputs");
         return fixture.RootElement.GetProperty("runs").EnumerateArray()
-            .Select(run => new RecordedRun(run)).ToArray();
+            .Select(run => new RecordedRun(run, inputs)).ToArray();
     }
 
     private sealed class RecordedRun
@@ -249,8 +294,12 @@ public sealed class OriginalNewGameExperimentTests
         private readonly Dictionary<(string, int), int> _terms = [];
         private readonly Dictionary<(string, int, string), int> _fields = [];
 
-        public RecordedRun(JsonElement run)
+        public RecordedRun(JsonElement run, JsonElement inputs)
         {
+            Orders = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "order")
+                .Select(input => RecordedOrder.Parse(input.GetProperty("value").GetString()!))
+                .ToArray();
             Seed = run.GetProperty("rng_state").GetInt32();
             DoneCount = run.TryGetProperty("done_at_roll", out var done) ? done.GetArrayLength() : 0;
             Rolls = run.GetProperty("rolls").EnumerateArray()
@@ -269,6 +318,7 @@ public sealed class OriginalNewGameExperimentTests
 
         public int Seed { get; }
         public int DoneCount { get; }
+        public IReadOnlyList<RecordedOrder> Orders { get; }
 
         // controller: 0 for a human at this computer (FND-SETUP-002).
         public IReadOnlyList<PlayerId> Humans => Enumerable.Range(0, 6)
