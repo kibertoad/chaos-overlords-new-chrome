@@ -115,7 +115,7 @@ internal sealed class OriginalProcess : IDisposable
             for (var i = 0; i < 100 && !Exited; i++) PumpOne(50);
         }
 
-        foreach (var thread in _threads.Values) Native.CloseHandle(thread);
+        // The thread handles came with debug events, and continuing the exit event closed them.
         if (_process != IntPtr.Zero) Native.CloseHandle(_process);
         Marshal.FreeHGlobal(_event);
     }
@@ -130,9 +130,9 @@ internal sealed class OriginalProcess : IDisposable
         {
             case Native.CreateProcessDebugEvent:
                 CloseIfSet(Marshal.ReadIntPtr(_event, 16));
+                // The event's process and thread handles belong to the system, which closes them
+                // when the exit events are continued; only the image file handle is the debugger's.
                 _threads[threadId] = Marshal.ReadIntPtr(_event, 32);
-                // The process handle of the event duplicates the one CreateProcess returned.
-                CloseIfSet(Marshal.ReadIntPtr(_event, 24));
                 _started = true;
                 foreach (var breakpoint in _breakpoints.Values) Arm(breakpoint);
                 break;

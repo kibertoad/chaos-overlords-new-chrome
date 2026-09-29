@@ -20,11 +20,14 @@ public sealed class OriginalNewGameExperimentTests
 {
     private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003"];
 
+    private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
+        new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
+
     public static TheoryData<string, int> Runs()
     {
         var data = new TheoryData<string, int>();
         foreach (var experiment in Experiments)
-            for (var run = 0; run < Fixture(experiment).RootElement.GetProperty("runs").GetArrayLength(); run++)
+            for (var run = 0; run < Recorded.Value[experiment].Length; run++)
                 data.Add(experiment, run);
         return data;
     }
@@ -125,10 +128,11 @@ public sealed class OriginalNewGameExperimentTests
         foreach (var player in match.Players)
         {
             var gangs = player.Gangs.Where(gang => gang.IsActive).ToArray();
-            Assert.Equal(recorded.GangRecords(player.Id.Value).Count, gangs.Length);
+            var records = recorded.GangRecords(player.Id.Value);
+            Assert.Equal(records.Count, gangs.Length);
             for (var slot = 0; slot < gangs.Length; slot++)
             {
-                var record = player.Id.Value * 81 + slot;
+                var record = records[slot];
                 var gang = gangs[slot];
                 Assert.Equal(recorded.Gang(record, "definition"), gang.DefinitionId);
                 Assert.Equal(recorded.Gang(record, "sector"), gang.SectorId);
@@ -229,12 +233,15 @@ public sealed class OriginalNewGameExperimentTests
         _ => (ScenarioId)value,
     };
 
-    private static RecordedRun Run(string experiment, int run) =>
-        new(Fixture(experiment).RootElement.GetProperty("runs")[run]);
+    private static RecordedRun Run(string experiment, int run) => Recorded.Value[experiment][run];
 
-    private static JsonDocument Fixture(string experiment) =>
-        JsonDocument.Parse(File.ReadAllText(
+    private static RecordedRun[] LoadRuns(string experiment)
+    {
+        using var fixture = JsonDocument.Parse(File.ReadAllText(
             Path.Combine(AppContext.BaseDirectory, "spec", "experiments", $"{experiment}.json")));
+        return fixture.RootElement.GetProperty("runs").EnumerateArray()
+            .Select(run => new RecordedRun(run)).ToArray();
+    }
 
     private sealed class RecordedRun
     {

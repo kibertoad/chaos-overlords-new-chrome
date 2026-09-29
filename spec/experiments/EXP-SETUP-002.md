@@ -63,10 +63,10 @@ definition 4 or 8.
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` starts the rebuild's
-match with the same seed and settings and finds the same generator position
-and the same state, compared field by field as in EXP-SETUP-001.
+Every result is the one RULE-RNG-002 computes from the recorded seed. The
+fixture holds, for each run, the seed, scenario, Mentality and controllers,
+and the same state fields as EXP-SETUP-001, which a match started from the
+same seed and settings has to reach.
 
 ## Conclusion
 

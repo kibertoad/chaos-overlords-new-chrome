@@ -26,15 +26,10 @@ internal static partial class Native
     public const int Wow64ContextSize = 0x2CC;
     public const int DebugEventSize = 0xB0;
 
-    public const uint WmKeyDown = 0x0100;
-    public const uint WmKeyUp = 0x0101;
-    public const uint WmChar = 0x0102;
     public const uint WmCommand = 0x0111;
     public const uint WmMouseMove = 0x0200;
     public const uint WmLButtonDown = 0x0201;
     public const uint WmLButtonUp = 0x0202;
-    public const uint WmRButtonDown = 0x0204;
-    public const uint WmRButtonUp = 0x0205;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct StartupInfo
@@ -105,51 +100,4 @@ internal static partial class Native
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool PostMessageW(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("user32.dll")]
-    public static extern bool GetClientRect(IntPtr window, out Rect rect);
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct Rect
-    {
-        public int Left, Top, Right, Bottom;
-    }
-
-    [DllImport("user32.dll")]
-    public static extern IntPtr GetDC(IntPtr window);
-
-    [DllImport("user32.dll")]
-    public static extern int ReleaseDC(IntPtr window, IntPtr dc);
-
-    [DllImport("user32.dll")]
-    public static extern bool PrintWindow(IntPtr window, IntPtr dc, uint flags);
-
-    [DllImport("gdi32.dll")]
-    public static extern IntPtr CreateCompatibleDC(IntPtr dc);
-
-    [DllImport("gdi32.dll")]
-    public static extern bool DeleteDC(IntPtr dc);
-
-    [DllImport("gdi32.dll")]
-    public static extern IntPtr SelectObject(IntPtr dc, IntPtr gdiObject);
-
-    [DllImport("gdi32.dll")]
-    public static extern bool DeleteObject(IntPtr gdiObject);
-
-    [DllImport("gdi32.dll")]
-    public static extern bool BitBlt(
-        IntPtr destination, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY,
-        uint rop);
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct BitmapInfoHeader
-    {
-        public int Size, Width, Height;
-        public short Planes, BitCount;
-        public int Compression, SizeImage, XPelsPerMeter, YPelsPerMeter, ClrUsed, ClrImportant;
-    }
-
-    [DllImport("gdi32.dll")]
-    public static extern IntPtr CreateDIBSection(
-        IntPtr dc, ref BitmapInfoHeader header, uint usage, out IntPtr bits, IntPtr section, uint offset);
 }

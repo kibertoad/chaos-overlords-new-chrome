@@ -79,14 +79,13 @@ RULE-RNG-001 gives the seed 52421, three draws per call. The call order is the
 order of RULE-SETUP-003, RULE-SETUP-004, RULE-CITY-001 to RULE-CITY-003 and
 RULE-HIRE-002.
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` checks every roll
-against the generator, then starts the rebuild's match from the same seed,
-scenario and Mentality with one human in slot 0 and compares: the generator's
-state and the number of draws, each slot's portrait, cash, reaction,
-difficulty band, attitudes and remaining research, the human's hire offers,
-each sector's owner, Income, base and current Tolerance, Support, Cash, police
-presence, sites and their progress, and each gang's definition, sector, Force,
-items, fourteen statistics and visibility.
+The fixture holds what a match started from the same seed, scenario and
+Mentality with one human in slot 0 has to reach: the number of draws, each
+slot's portrait, cash, reaction, difficulty band, attitudes and remaining
+research, the human's hire offers, each sector's owner, Income, base and
+current Tolerance, Support, Cash, police presence, sites and their progress,
+and each gang's definition, sector, Force, items, fourteen statistics and
+visibility.
 
 ## Conclusion
 

@@ -155,7 +155,7 @@ objective, plus the draws inside `select_sector`.
 
 ## Edge cases
 
-Big Man and Eliminate play with a `turn_limit` of 65535 (FND-SETUP-018), so
+Big Man and Siege play with a `turn_limit` of 65535 (FND-SETUP-018), so
 `turns_remaining()` is even exactly when `elapsed_turns` is odd, whatever
 length was chosen at setup.
 
