@@ -239,11 +239,6 @@ finding or experiment is in the spec.
 
 ## Setup, city generation, objectives and awards
 
-- RULE-SETUP-001, RULE-SETUP-004, RULE-RESEARCH-002: EXP-SETUP-001 recorded a
-  new game in Kill 'Em All at Crime Lord. Add runs in Armageddon, to check the
-  $500 start, the researched items and the site exclusions, and at Homicidal
-  Maniac, which draws no reactions (`Rechaos.OriginalProbe new-game` after
-  choosing them on the setup screen).
 - RULE-SETUP-001, RULE-SETUP-005, RULE-SETUP-006, RULE-SETUP-007: for each
   name modifier, start a game with one human named with it; record starting
   cash, the Crackdown state of neutral sectors, the roster, and whether enemy

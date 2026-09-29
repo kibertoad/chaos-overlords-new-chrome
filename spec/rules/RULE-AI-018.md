@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-018
 title: A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-007, FND-AI-053, FND-AI-004, FND-EXE-004, EXP-SETUP-001]
+evidence: [FND-AI-007, FND-AI-053, FND-AI-004, FND-EXE-004, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003]
 conflicting: []
 split_with: []
 related: []
