@@ -26,7 +26,7 @@ static int Usage()
         Usage:
           Rechaos.OriginalProbe new-game --out <directory> [--game <install directory>] [--timeout <seconds>]
               [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
-              [--end-turns <n>]
+              [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
         """);
@@ -50,7 +50,9 @@ static int NewGame(string[] args)
             return new HumanSlot(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), modifier);
         }).ToArray(),
         IntOption(args, "--end-turns") ?? 0,
-        args.Contains("--trace-hires"));
+        args.Contains("--trace-hires"),
+        IntOption(args, "--seed"),
+        IntOption(args, "--dump-at-roll"));
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).

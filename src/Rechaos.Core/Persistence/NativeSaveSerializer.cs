@@ -14,7 +14,7 @@ public static class NativeSaveSerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
-    public const int CurrentFormatVersion = 35;
+    public const int CurrentFormatVersion = 36;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -211,7 +211,9 @@ public static class NativeSaveSerializer
                 savedPlanning.FirstCombatRecordDefinition
                     ?? throw new InvalidDataException("Native save first combat record definition is missing."),
                 savedPlanning.SectorWeights
-                    ?? throw new InvalidDataException("Native save AI sector weights are missing."))
+                    ?? throw new InvalidDataException("Native save AI sector weights are missing."),
+                savedPlanning.SectorChoiceScores
+                    ?? throw new InvalidDataException("Native save AI sector choice scores are missing."))
             : throw new InvalidDataException("Native save AI planning state is missing.");
         var runtime = new MatchRuntimeRestore(
             document.Runtime.Turn,
@@ -310,7 +312,8 @@ public static class NativeSaveSerializer
                 state.AiPlanning.CaptureNeedsFamily(),
                 state.AiPlanning.CaptureRaiderMode(),
                 checked((byte)state.AiPlanning.FirstCombatRecordDefinition),
-                state.AiPlanning.CaptureSectorWeights()),
+                state.AiPlanning.CaptureSectorWeights(),
+                state.AiPlanning.CaptureSectorChoiceScores()),
             state.Players.Select(player => new PlayerComlinkDocument(
                 player.Id.Value,
                 state.ComlinkFor(player.Id).NextSequence,
@@ -634,7 +637,8 @@ internal sealed record AiPlanningDocument(
     IReadOnlyList<bool>? NeedsFamily = null,
     IReadOnlyList<bool>? RaiderMode = null,
     byte? FirstCombatRecordDefinition = null,
-    IReadOnlyList<byte>? SectorWeights = null);
+    IReadOnlyList<byte>? SectorWeights = null,
+    IReadOnlyList<int>? SectorChoiceScores = null);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,

@@ -62,7 +62,7 @@
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | Queries the computer players' handlers share | supported |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported |
-| [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported |
+| [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector | supported |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | established |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
@@ -219,7 +219,7 @@
 
 ## findings
 
-337 entries.
+338 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -288,6 +288,7 @@
 | [FND-AI-063](../findings/FND-AI-063.md) | The unset Support threshold of families 13 and 14 always holds the 0 the selector's prologue leaves at the same stack address | recorded |
 | [FND-AI-064](../findings/FND-AI-064.md) | The AI ranks its three hire offers by Chaos, Control, Influence, fighting strength, Tech Level and Research, or Stealth, then refuses an unaffordable winner | recorded |
 | [FND-AI-065](../findings/FND-AI-065.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and elsewhere the offer with the smallest Tech Level times positive statistics per cost | recorded |
+| [FND-AI-066](../findings/FND-AI-066.md) | The sector selector keeps its score pairs between calls, skips filtered sectors when refilling them, and counts ties past the end of the list | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -563,7 +564,7 @@
 
 ## experiments
 
-7 entries.
+10 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -574,6 +575,9 @@
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | Does the first turn of a new local game, ended with no orders, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-002](../experiments/EXP-TURN-002.md) | Do three turns of a new local game, each ended with no orders, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-003](../experiments/EXP-TURN-003.md) | Do two turns of new local games, each ended with no orders, hire as the spec gives? | recorded |
+| [EXP-TURN-004](../experiments/EXP-TURN-004.md) | Do six turns of new local games, each ended with no orders, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-005](../experiments/EXP-TURN-005.md) | Do three turns of new local Greed games, each ended with no orders, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-006](../experiments/EXP-TURN-006.md) | Do three turns of new local Armageddon games, each ended with no orders, draw and resolve as the spec gives? | recorded |
 
 ## bugs
 

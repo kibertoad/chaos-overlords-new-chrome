@@ -46,6 +46,7 @@ public sealed class AiPlanningState
     private readonly bool[] _needsFamily;
     private readonly bool[] _raiderMode;
     private readonly byte[] _sectorWeights;
+    private readonly int[] _sectorChoiceScores;
     private byte _firstCombatRecordDefinition;
 
     private AiPlanningState(
@@ -67,7 +68,8 @@ public sealed class AiPlanningState
         IReadOnlyList<bool> needsFamily,
         IReadOnlyList<bool> raiderMode,
         byte firstCombatRecordDefinition,
-        IReadOnlyList<byte> sectorWeights)
+        IReadOnlyList<byte> sectorWeights,
+        IReadOnlyList<int> sectorChoiceScores)
     {
         ArgumentNullException.ThrowIfNull(currentHireRoles);
         ArgumentNullException.ThrowIfNull(previousHireRoles);
@@ -87,6 +89,9 @@ public sealed class AiPlanningState
         ArgumentNullException.ThrowIfNull(needsFamily);
         ArgumentNullException.ThrowIfNull(raiderMode);
         ArgumentNullException.ThrowIfNull(sectorWeights);
+        ArgumentNullException.ThrowIfNull(sectorChoiceScores);
+        if (sectorChoiceScores.Count != MatchLimits.SectorCount)
+            throw new ArgumentException("The sector choice scores must hold one value per sector.", nameof(sectorChoiceScores));
         if (currentHireRoles.Count != MatchLimits.PlayerCount
             || previousHireRoles.Count != MatchLimits.PlayerCount)
             throw new ArgumentException("AI hire roles must contain all six original player slots.");
@@ -156,6 +161,7 @@ public sealed class AiPlanningState
         _needsFamily = needsFamily.ToArray();
         _raiderMode = raiderMode.ToArray();
         _sectorWeights = sectorWeights.ToArray();
+        _sectorChoiceScores = sectorChoiceScores.ToArray();
         _firstCombatRecordDefinition = RequireUnsignedAgnostic(firstCombatRecordDefinition);
     }
 
@@ -217,6 +223,50 @@ public sealed class AiPlanningState
     internal IReadOnlyList<bool> CaptureNeedsFamily() => _needsFamily.ToArray();
     internal IReadOnlyList<bool> CaptureRaiderMode() => _raiderMode.ToArray();
     internal IReadOnlyList<byte> CaptureSectorWeights() => _sectorWeights.ToArray();
+    internal IReadOnlyList<int> CaptureSectorChoiceScores() => _sectorChoiceScores.ToArray();
+
+    /// <summary>
+    /// RULE-AI-006, FND-AI-066: the score half of the sector selector's 64 pairs. The original keeps
+    /// them in one global list that every call of the selector, for any player, sorts and leaves
+    /// behind, and a call copies a new score into a pair only for the sectors its late filter keeps.
+    /// </summary>
+    internal int[] SectorChoiceScores => _sectorChoiceScores;
+
+    /// <summary>
+    /// FMT-STATE-007: the six blocks of 81 planning records as the original holds them in memory,
+    /// the bytes the sector selector's unbounded tie count reads past its own lists (FND-AI-066).
+    /// A player that has never had a planning pass keeps records of zero bytes; the first pass
+    /// resets them (RULE-AI-001).
+    /// </summary>
+    internal byte[] PlanningRecordImage()
+    {
+        var image = new byte[MatchLimits.PlayerCount * GangSlotsPerPlayer * PlanningRecordSize];
+        for (var player = 0; player < MatchLimits.PlayerCount; player++)
+        {
+            if (!_hasPlanned[player]) continue;
+            for (var slot = 0; slot < GangSlotsPerPlayer; slot++)
+            {
+                var index = player * GangSlotsPerPlayer + slot;
+                var record = image.AsSpan(index * PlanningRecordSize, PlanningRecordSize);
+                record[0] = unchecked((byte)_families[index]);
+                record[1] = _needsFamily[index] ? (byte)1 : (byte)0;
+                record[2] = (byte)_olderActions[index];
+                record[3] = _olderTargets[index].First;
+                record[4] = _olderTargets[index].Second;
+                record[5] = (byte)_previousActions[index];
+                record[6] = _previousTargets[index].First;
+                record[7] = _previousTargets[index].Second;
+                record[8] = (byte)_plannedActions[index];
+                record[9] = _plannedTargets[index].First;
+                record[10] = _plannedTargets[index].Second;
+                BitConverter.TryWriteBytes(record[12..], _weaponCooldowns[index]);
+                BitConverter.TryWriteBytes(record[14..], _armorCooldowns[index]);
+            }
+        }
+        return image;
+    }
+
+    internal const int PlanningRecordSize = 16;
 
     /// <summary>
     /// Byte 0, <c>definition</c>, of the first combat record (FMT-STATE-003): player 0's roster
@@ -506,7 +556,8 @@ public sealed class AiPlanningState
         new bool[MatchLimits.PlayerCount * GangSlotsPerPlayer],
         new bool[MatchLimits.PlayerCount],
         0,
-        new byte[MatchLimits.PlayerCount * MatchLimits.SectorCount]);
+        new byte[MatchLimits.PlayerCount * MatchLimits.SectorCount],
+        new int[MatchLimits.SectorCount]);
 
     internal static AiPlanningState Initialize(IReadOnlyList<MatchPlayerState> players)
     {
@@ -590,7 +641,8 @@ public sealed class AiPlanningState
         IReadOnlyList<bool>? needsFamily = null,
         IReadOnlyList<bool>? raiderMode = null,
         byte firstCombatRecordDefinition = 0,
-        IReadOnlyList<byte>? sectorWeights = null) => new(
+        IReadOnlyList<byte>? sectorWeights = null,
+        IReadOnlyList<int>? sectorChoiceScores = null) => new(
             currentHireRoles, previousHireRoles, families, sectorAnchors,
             olderActions, previousActions, plannedActions,
             olderTargets, previousTargets, plannedTargets, hasPlanned,
@@ -605,7 +657,8 @@ public sealed class AiPlanningState
             needsFamily ?? new bool[MatchLimits.PlayerCount * GangSlotsPerPlayer],
             raiderMode ?? new bool[MatchLimits.PlayerCount],
             firstCombatRecordDefinition,
-            sectorWeights ?? new byte[MatchLimits.PlayerCount * MatchLimits.SectorCount]);
+            sectorWeights ?? new byte[MatchLimits.PlayerCount * MatchLimits.SectorCount],
+            sectorChoiceScores ?? new int[MatchLimits.SectorCount]);
 
     private static bool IsValidFamily(int family) =>
         family == UnusedFamily || family is >= 0 and <= MaximumFamily and not 8;

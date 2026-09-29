@@ -171,7 +171,7 @@ public static partial class AiTurnPlanner
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
-            formationSectorId: formationSectorId);
+            formationSectorId: formationSectorId, planning: state.AiPlanning);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
         if (storesDestination)
             state.AiPlanning.SetFormationSector(playerId, gangSlot, target);
@@ -264,7 +264,7 @@ public static partial class AiTurnPlanner
             owner => state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             owner => state.FindPlayer(new PlayerId(owner))?.Setup.Controller
                 == PlayerController.Human,
-            state.Random);
+            state.Random, planning: state.AiPlanning);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
         state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }

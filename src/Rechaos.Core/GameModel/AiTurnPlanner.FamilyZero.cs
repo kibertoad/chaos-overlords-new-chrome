@@ -233,7 +233,7 @@ public static partial class AiTurnPlanner
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            state.Random);
+            state.Random, planning: state.AiPlanning);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }
 }

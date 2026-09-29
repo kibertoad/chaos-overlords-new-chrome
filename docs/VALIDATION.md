@@ -354,7 +354,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
@@ -375,14 +375,19 @@ its hire offers are drawn. `--end-turns` presses Done that many times with no
 orders, with Warn if Idle Gangs and Detailed Combat switched off in memory so
 nothing waits for input, and dumps the state at the planning phase that
 follows the last one; each run records the roll count at every press as
-`done_at_roll`. `extract` refuses runs recorded with different
+`done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
+a recorded run can be played again, and `--dump-at-roll` copies the writable
+sections and the top of the stack at the entry of that call of `roll`, counted
+from 0, into
+`at-roll-<n>` in the run directory, to look at the state that led to a
+divergence. `extract` refuses runs recorded with different
 settings, since the runs of one experiment differ only in the seed. The run
 directory holds
 the original's memory and never goes into the repository. `extract` reads the
 numbers of the spec's state layouts and glossary terms out of one or more run
 directories and writes them as the runs of an experiment fixture, with no
 names or texts. `OriginalNewGameExperimentTests` replays every run of
-EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-003 against the
+EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-006 against the
 rebuild and names the first roll whose bound or result differs, with the
 original's call instruction.
 

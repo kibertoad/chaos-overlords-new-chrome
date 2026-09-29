@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-006
 title: The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-AI-025, FND-AI-026, FND-AI-027, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052]
+evidence: [FND-AI-005, FND-AI-025, FND-AI-026, FND-AI-027, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052, FND-AI-066, EXP-TURN-004, EXP-TURN-006]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-007, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -15,9 +15,13 @@ related: [RULE-AI-004, RULE-AI-007, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, 
 When a computer gang moves, its handler asks this selector for a destination.
 The selector gives each sector near the gang a score according to what the
 handler wants (free land, own land, enemy land, sites, the leader, an
-objective), keeps the nearest ring of sectors that score anything, picks the
-best at random among ties, and returns the first step toward it that does not
-put more than six of the player's gangs in one sector.
+objective), keeps the nearest ring of sectors that score anything, and sorts
+the scores into a list it keeps from one call to the next. It picks the best at
+random among ties and returns it when it is next to the gang, or else the first
+step toward it that does not put more than six of the player's gangs in one
+sector. The list keeps old scores for the sectors a late filter clears, and the
+tie count can run past its end, so a pick can land on a sector no score of this
+call points to.
 
 ## When it runs
 
@@ -31,7 +35,8 @@ None.
 ## Inputs
 
 `gangs`, `sectors`, `site_definitions`, `planning_records` (the acting
-record's `family` and each record's `previous_action`), `aux_records`
+record's `family`, each record's `previous_action`, and the bytes of every
+record for a tie count that runs past the table), `selector_pairs`, `aux_records`
 (`focus`), `sector_gang_count`, `attitude`, `controller`,
 `scenario_standing`, and `rng_state` through `roll`.
 
@@ -199,45 +204,104 @@ define select_sector(player, mode, idx):
                     found = true
         radius = radius + 1
     score[src] = 0
-    # late filters
+    # the late filters; a filtered sector of family 0 or 1 keeps its old pair
     let fam = planning_records[idx].family
     for c in 0..64:
         if sectors[c].crackdown_turns != 0:
             score[c] = 0
-        else if (fam == 0 or fam == 1) and score[c] > 0 and sectors[c].owner != player and not solo_control_ok(player, idx, c):
+        if (fam == 0 or fam == 1) and not solo_control_ok(player, idx, c) and sectors[c].owner != player:
             score[c] = 0
-    let top = 0
-    for c in 0..64:
-        top = max(top, score[c])
-    let tied = []
-    for c in 0..64:
-        if score[c] == top:
-            append(tied, c)
-    let target = tied[0]
-    if count(tied) > 1:
-        target = tied[roll(count(tied)) - 1]
+        else:
+            selector_pairs[c].score = score[c]
+    # the sort: an exchange sort, highest score first
+    for i in 0..64:
+        selector_pairs[i].sector = i
+    for i in 0..64:
+        for j in i..64:
+            if selector_pairs[i].score < selector_pairs[j].score:
+                let kept = selector_pairs[i]
+                selector_pairs[i] = selector_pairs[j]
+                selector_pairs[j] = kept
+    let top = selector_pairs[0].score
+    let first = selector_pairs[0].sector
+    let n = 1
+    while pair_score(n) == top:
+        n = n + 1
+    let target = first
+    if n > 1:
+        target = pair_sector(roll(n) - 1)
+    if abs(first % 8 - sx) <= 1 and abs(first / 8 - sy) <= 1 and top > 0:
+        return target
+    # routing uses signed % and /, which truncate toward zero
     let tx = target % 8
     let ty = target / 8
-    if abs(tx - sx) <= 1 and abs(ty - sy) <= 1 and score[target] > 0:
-        return target
-    let x = sx
-    let y = sy
-    if tx > sx and sector_gang_count[player * 64 + sy * 8 + sx + 1] <= 5:
-        x = sx + 1
-    else if tx < sx and sector_gang_count[player * 64 + sy * 8 + sx - 1] <= 5:
-        x = sx - 1
-    if ty > sy and sector_gang_count[player * 64 + (sy + 1) * 8 + x] <= 5:
-        y = sy + 1
-    else if ty < sy and sector_gang_count[player * 64 + (sy - 1) * 8 + x] <= 5:
-        y = sy - 1
-    return y * 8 + x
+    let result = src
+    if sx < tx:
+        result = result + 1
+        if sector_gang_count[player * 64 + result] > 5:
+            result = result - 1
+    if sx > tx:
+        result = result - 1
+        if sector_gang_count[player * 64 + result] > 5:
+            result = result + 1
+    if sy < ty:
+        result = result + 8
+        if sector_gang_count[player * 64 + result] > 5:
+            result = result - 8
+    if sy > ty:
+        result = result - 8
+        if sector_gang_count[player * 64 + result] > 5:
+            result = result + 8
+    return result
+
+# The memory from selector_pairs on, read as pairs of INT32: the 64 pairs, then
+# score, which the selector keeps as 64 INT32 whose element x * 8 + y is the
+# score of sector y * 8 + x, then the bytes of planning_records
+define pair_dword(k):
+    if k < 128:
+        if k % 2 == 0:
+            return selector_pairs[k / 2].score
+        return selector_pairs[k / 2].sector
+    if k < 192:
+        let m = k - 128
+        return score[(m % 8) * 8 + m / 8]
+    return record_dword(k - 192)
+
+# Dword k of planning_records as the game holds them, 16 bytes per record in
+# element order, read as a little-endian INT32
+define record_dword(k):
+    let r = planning_records[k / 4]
+    let v = 0
+    if k % 4 == 3:
+        v = (r.weapon_cooldown + 65536) % 65536 + ((r.armor_cooldown + 65536) % 65536) * 65536
+    else:
+        let b = [r.family, r.needs_family, r.older_action, r.older_target]
+        if k % 4 == 1:
+            b = [r.older_target_2, r.previous_action, r.previous_target, r.previous_target_2]
+        if k % 4 == 2:
+            b = [r.planned_action, r.planned_target, r.planned_target_2, r.unk_0B]
+        let weight = 1
+        for i in 0..4:
+            v = v + ((b[i] + 256) % 256) * weight
+            weight = weight * 256
+    if v >= 2147483648:
+        v = v - 4294967296
+    return v
+
+define pair_score(n):
+    return pair_dword(n * 2)
+
+define pair_sector(n):
+    return pair_dword(n * 2 + 1)
 ```
 
 ## Outputs
 
-Returns the destination sector, 0 to 63: a sector next to the gang, or its own
-sector when both routing steps are blocked. Makes one `roll` when more than
-one sector ties for the best score, and none otherwise.
+Returns the destination sector: a sector the tie draw picked, when the first
+sorted pair is next to the gang and scores above 0, or else a sector at most
+one step from the gang, its own sector when the routing steps are blocked or
+the target is its own sector. Makes one `roll` when the tie count is above 1,
+and none otherwise. Leaves `selector_pairs` sorted.
 
 ## Edge cases
 
@@ -246,8 +310,14 @@ completeness. It compares where the player and the owner query first appear
 among the standings bytes, which hold places, so it does not compare the two
 players' standings (FND-STATE-004).
 
-When every sector scores 0 after the filters, all 64 sectors tie at 0, one
-`roll(64)` picks one of them, and the gang steps toward it. Encoded modes and
+When every sector scores 0 after the filters and every pair holds 0, the tie
+count runs over the 64 pairs, the 32 pairs of the score table and the zero
+bytes of the planning records that follow. A player's records are all zero
+bytes until its first planning pass, so with a human in slot 0 the count
+reaches 258 (FND-AI-066, EXP-TURN-006). A pick among the first 64 pairs is the
+sector of that number, since equal scores are never swapped; a pick in the
+table reads a sector field of 0, and a pick in the records reads four of their
+bytes as a sector. The gang then steps toward that target. Encoded modes and
 mode 11 always end that way, because the only sector they score is removed
 when it is the gang's own. The search stops at the first radius where any
 sector scores, even when that sector is the gang's own and is removed
@@ -267,12 +337,8 @@ None known.
 
 - Whether each radius clears the scores before rescanning is not recorded; the
   procedure writes each score by assignment, which gives the same result.
-- The order of tied sectors after the descending sort decides which sector a
-  given draw picks. Ascending sector order is assumed.
 - The late filter clears sectors whose byte at sector record +15 is nonzero;
   that byte is taken to be `crackdown_turns`.
-- Whether the "adjacent and positive" test uses the 3-by-3 neighbourhood
-  including diagonals is assumed.
 - Whether the Crackdown filter also applies before the radius search stops is
   not recorded; the procedure applies it only afterwards.
 - For mode 16 the procedure passes the acting slot; the findings say selector
@@ -283,3 +349,12 @@ None known.
   applies to mode 6 is not stated.
 - The site `definition` of an empty site slot, if one exists, is not
   described.
+- A tie count that runs through the records of all six players would continue
+  into `aux_records`; the procedure does not model it, and no run has reached
+  it.
+- A routing step off the board reads `sector_gang_count` of the neighbouring
+  player, or memory outside it for players 0 and 5, and a target read from the
+  planning records can be anywhere. No run has recorded such a step.
+- `selector_pairs` is not cleared when a match starts or is loaded, so a second
+  match in the same run of the game, or a loaded one, starts with the scores
+  the last call left. The runs so far each started one new match.

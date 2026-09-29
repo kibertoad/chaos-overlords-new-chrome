@@ -14,16 +14,16 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `unknown` | 0 |
 | `sourced` | 0 |
 | `supported` | 0 |
-| `established` | 0 |
+| `established` | 1 |
 | `disputed` | 0 |
-| `implemented` | 180 |
+| `implemented` | 179 |
 | `validated` | 42 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 0 |
-| `complete` | 222 |
+| `partial` | 1 |
+| `complete` | 221 |
 
 ## DATA
 
@@ -321,7 +321,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | The sector weights and the hostility step also run once for every player, humans included, when a match starts (as it is built) and when it is loaded (a journaled step of the local load), as FND-AI-045 records. |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | hostile_owner reads the attitude cell of owner_query, with the out-of-row reads of FND-AI-048 for a neutral sector and one under police presence. |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | None |
-| `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported | complete | None | None | implemented | No call reaches mode 4; the rebuild scores it from the standings bytes and the owner query as FND-AI-056 reads them. |
+| `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established | partial | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | established | No call reaches mode 4; the rebuild scores it from the standings bytes and the owner query as FND-AI-056 reads them. PLACEHOLDER: a routing step off the board, whose count read no run has recorded, is taken as a full sector. A tie count that would run past the planning records stops there. |
 | `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | complete | None | None | implemented | Mode 0 draws one of the eight neighbours with roll(8) and draws again off the map, with no capacity test. |
 | `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |

@@ -1309,6 +1309,21 @@ defined by RULE-AI-004.
 sector: -2 under police presence, otherwise the owner byte. A function,
 defined by RULE-AI-004.
 
+## pair_dword
+
+`pair_dword(k)` gives dword `k` of the memory from `selector_pairs` on. A
+function, defined by RULE-AI-006.
+
+## pair_score
+
+`pair_score(n)` gives the score field of pair `n`, read past the end of
+`selector_pairs` when `n` is 64 or more. A function, defined by RULE-AI-006.
+
+## pair_sector
+
+`pair_sector(n)` gives the sector field of pair `n`, read past the end of
+`selector_pairs` when `n` is 64 or more. A function, defined by RULE-AI-006.
+
 ## PanelSlideDrawn
 
 An event: one step of a panel sliding in or out is drawn. It carries the
@@ -1611,6 +1626,11 @@ game keeps: `INT32LE[6]`, indexed by player slot, at `0x004AB650`; the setup
 draw stores 3 to 6 there, and save block 36 copies it [FND-AI-006,
 FND-RNG-005, FND-RNG-006, FND-STATE-003].
 
+## record_dword
+
+`record_dword(k)` gives dword `k` of `planning_records` as the game holds them
+in memory. A function, defined by RULE-AI-006.
+
 ## refresh_anchor
 
 `refresh_anchor(player)` keeps or replaces a player's placement anchor. A
@@ -1869,6 +1889,14 @@ RULE-AI-006.
 The local setup's selected player card, 0 to 5, the only card whose portrait
 and name can be changed. Any other value the game keeps: `INT32` at
 `0x004854C4` [FND-SETUP-005, FND-STATE-008].
+
+## selector_pairs
+
+The sector selector's list of score and sector pairs. A list the game keeps, of
+64 records of an `INT32` score at +0 and an `INT32` sector at +4, at
+`0x00489F50`, followed in memory by the selector's score table at `0x0048A150`
+and by `planning_records`; only `select_sector` writes it, nothing clears it,
+and it is not saved [FND-AI-066, FND-STATE-007].
 
 ## serial_number
 

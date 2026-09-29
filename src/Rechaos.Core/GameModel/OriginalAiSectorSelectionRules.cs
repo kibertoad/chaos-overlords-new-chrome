@@ -35,7 +35,8 @@ internal static class OriginalAiSectorSelectionRules
         Func<int, int>? unfinishedSiteScore = null,
         Func<int, bool>? hasPriorInfluence = null,
         Func<int, int>? completedSiteScore = null,
-        Func<int, int>? ownerQuery = null)
+        Func<int, int>? ownerQuery = null,
+        AiPlanningState? planning = null)
     {
         ValidateInputs(
             mode, sourceSectorId, family, sectorOwners, sectorDisabled,
@@ -83,6 +84,32 @@ internal static class OriginalAiSectorSelectionRules
         }
 
         scores[sourceSectorId] = 0;
+        return Choose(
+            scores, sourceSectorId, player, family, sectorOwners, sectorDisabled,
+            sectorGangCounts, canSoloControl, random, planning ?? AiPlanningState.Initialize());
+    }
+
+    /// <summary>
+    /// RULE-AI-006, FND-AI-066: the selector's second half. The score of each sector is copied into
+    /// the persistent pair list, except where the late filter of families 0 and 1 zeroes it, which
+    /// leaves that pair with the score an earlier call sorted into it. The pairs are then numbered
+    /// 0 to 63 and exchange-sorted by score, highest first. The ties with the first pair are counted
+    /// with no bound, so when every pair ties the count runs on through the score table and the
+    /// planning records that follow the list in memory, and the pick reads its sector from there.
+    /// </summary>
+    private static int Choose(
+        int[] scores,
+        int sourceSectorId,
+        PlayerId player,
+        int family,
+        IReadOnlyList<int> sectorOwners,
+        IReadOnlyList<bool> sectorDisabled,
+        IReadOnlyList<int> sectorGangCounts,
+        Func<int, bool> canSoloControl,
+        DeterministicRandom random,
+        AiPlanningState planning)
+    {
+        var pairScores = planning.SectorChoiceScores;
         for (var sectorId = 0; sectorId < MatchLimits.SectorCount; sectorId++)
         {
             if (sectorDisabled[sectorId]) scores[sectorId] = 0;
@@ -93,37 +120,90 @@ internal static class OriginalAiSectorSelectionRules
                 && sectorOwners[sectorId] != player.Value
                 && !canSoloControl(sectorId))
                 scores[sectorId] = 0;
+            else
+                pairScores[sectorId] = scores[sectorId];
         }
 
-        var sorted = Enumerable.Range(0, MatchLimits.SectorCount)
-            .OrderByDescending(sectorId => scores[sectorId])
-            .ToArray();
-        var maximum = scores[sorted[0]];
-        var routeOneStep = maximum < 1 || !IsNear(sourceSectorId, sorted[0]);
-        var tieCount = sorted.TakeWhile(sectorId => scores[sectorId] == maximum).Count();
-        var target = tieCount == 1
-            ? sorted[0]
-            : sorted[random.NextInclusive(tieCount) - 1];
-        if (!routeOneStep) return target;
+        var pairSectors = new int[MatchLimits.SectorCount];
+        for (var index = 0; index < pairSectors.Length; index++) pairSectors[index] = index;
+        for (var first = 0; first < MatchLimits.SectorCount; first++)
+        for (var second = first; second < MatchLimits.SectorCount; second++)
+        {
+            if (pairScores[first] >= pairScores[second]) continue;
+            (pairScores[first], pairScores[second]) = (pairScores[second], pairScores[first]);
+            (pairSectors[first], pairSectors[second]) = (pairSectors[second], pairSectors[first]);
+        }
 
-        var result = sourceSectorId;
+        var memory = new PairMemory(pairScores, pairSectors, scores, planning.PlanningRecordImage());
+        var maximum = pairScores[0];
+        var sourceX = sourceSectorId % MatchLimits.BoardWidth;
+        var sourceY = sourceSectorId / MatchLimits.BoardWidth;
+        var best = pairSectors[0];
+        if (maximum > 0
+            && Math.Abs(best % MatchLimits.BoardWidth - sourceX) <= 1
+            && Math.Abs(best / MatchLimits.BoardWidth - sourceY) <= 1)
+            return PickTied(memory, maximum, best, random);
+
+        var target = PickTied(memory, maximum, best, random);
         var targetX = target % MatchLimits.BoardWidth;
         var targetY = target / MatchLimits.BoardWidth;
-        if (sourceX < targetX
-            && sectorGangCounts[result + 1] <= MaximumDestinationGangCount)
-            result++;
-        if (sourceX > targetX
-            && sectorGangCounts[result - 1] <= MaximumDestinationGangCount)
-            result--;
+        var result = sourceSectorId;
+        if (sourceX < targetX && GangCount(sectorGangCounts, ++result) > MaximumDestinationGangCount) result--;
+        if (sourceX > targetX && GangCount(sectorGangCounts, --result) > MaximumDestinationGangCount) result++;
         if (sourceY < targetY
-            && sectorGangCounts[result + MatchLimits.BoardWidth]
-                <= MaximumDestinationGangCount)
-            result += MatchLimits.BoardWidth;
-        if (sourceY > targetY
-            && sectorGangCounts[result - MatchLimits.BoardWidth]
-                <= MaximumDestinationGangCount)
+            && GangCount(sectorGangCounts, result += MatchLimits.BoardWidth) > MaximumDestinationGangCount)
             result -= MatchLimits.BoardWidth;
+        if (sourceY > targetY
+            && GangCount(sectorGangCounts, result -= MatchLimits.BoardWidth) > MaximumDestinationGangCount)
+            result += MatchLimits.BoardWidth;
         return result;
+    }
+
+    private static int PickTied(PairMemory memory, int maximum, int best, DeterministicRandom random)
+    {
+        var tieCount = 1;
+        while (memory.Score(tieCount) == maximum) tieCount++;
+        if (tieCount == 1) return best;
+        // FND-AI-066: the sector field of pair roll(count) - 1.
+        return memory.Sector(random.NextInclusive(tieCount) - 1)
+            ?? throw new InvalidOperationException("The sector selector picked a pair past the modelled memory.");
+    }
+
+    // PLACEHOLDER: RULE-AI-006. A step off the board reads the count list of another player or
+    // the memory around it, which no run has recorded; the rebuild takes it as a full sector, so
+    // the step is taken back and the result stays on the board.
+    private static int GangCount(IReadOnlyList<int> sectorGangCounts, int sectorId) =>
+        sectorId is >= 0 and < MatchLimits.SectorCount
+            ? sectorGangCounts[sectorId]
+            : int.MaxValue;
+
+    /// <summary>
+    /// FND-AI-066, FND-STATE-007: the memory the pair list at 0x00489F50 runs into. Pair index 64
+    /// onward reads the 8 by 8 score table at 0x0048A150, whose dword x * 8 + y holds the score of
+    /// sector y * 8 + x, and index 96 onward reads the planning records at 0x0048A250. The records
+    /// end at 0x0048C0B0; the memory past them is not modelled, and a count that reaches it stops.
+    /// </summary>
+    private sealed class PairMemory(int[] pairScores, int[] pairSectors, int[] table, byte[] records)
+    {
+        private const int TablePairs = MatchLimits.SectorCount / 2;
+
+        public int? Score(int pair) => Dword(pair, 0);
+
+        public int? Sector(int pair) => Dword(pair, 1);
+
+        private int? Dword(int pair, int field)
+        {
+            if (pair < MatchLimits.SectorCount)
+                return field == 0 ? pairScores[pair] : pairSectors[pair];
+            pair -= MatchLimits.SectorCount;
+            if (pair < TablePairs)
+            {
+                var dword = pair * 2 + field;
+                return table[dword % MatchLimits.BoardWidth * MatchLimits.BoardWidth + dword / MatchLimits.BoardWidth];
+            }
+            var offset = (pair - TablePairs) * 8 + field * 4;
+            return offset + 4 <= records.Length ? BitConverter.ToInt32(records, offset) : null;
+        }
     }
 
     private static readonly int[] NeighbourOffsets = [-9, -8, -7, -1, 1, 7, 8, 9];
@@ -274,12 +354,6 @@ internal static class OriginalAiSectorSelectionRules
 
     private static bool IsEliminateObjective(int sectorId) =>
         OriginalCityGenerator.HeadquartersCandidates.Contains(sectorId);
-
-    private static bool IsNear(int sourceSectorId, int targetSectorId) =>
-        Math.Abs(sourceSectorId % MatchLimits.BoardWidth
-                 - targetSectorId % MatchLimits.BoardWidth) <= 1
-        && Math.Abs(sourceSectorId / MatchLimits.BoardWidth
-                    - targetSectorId / MatchLimits.BoardWidth) <= 1;
 
     private static int FirstIndexOrEnd(IReadOnlyList<int> values, int sought)
     {
