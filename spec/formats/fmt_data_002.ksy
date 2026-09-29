@@ -34,11 +34,11 @@ types:
       - id: hire_cost
         type: s2
         doc: The price of hiring the gang; 0 skips the cash test.
-        doc-ref: FND-HIRE-006, FND-AI-008
+        doc-ref: FND-HIRE-006, FND-AI-064
       - id: upkeep
         type: s2
         doc: Upkeep paid each turn for the gang.
-        doc-ref: FND-AI-008
+        doc-ref: FND-AI-064
       - id: combat
         type: s2
         doc: Base Combat.

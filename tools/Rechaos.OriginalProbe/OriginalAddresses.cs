@@ -19,6 +19,29 @@ internal static class OriginalAddresses
     public const uint PrefFullScreen = 0x0048786C;
     public const uint PrefFullScreenCopy = 0x00498354;
 
+    // FND-OPTIONS-001, FND-OPTIONS-002: Warn if Idle Gangs, which asks before Done ends a turn
+    // with a gang left idle (RULE-OPTIONS-003), and Detailed Combat, which plays combat as the
+    // detailed presentation.
+    public const uint PrefWarnIdle = 0x00487860;
+    public const uint PrefDetailedCombat = 0x0048785C;
+
+    // elapsed_turns: 0 through the first turn, up by one after each resolution.
+    public const uint ElapsedTurns = 0x0049CA68;
+
+    // SCR-UI-003: the Done control, (500, 282) with size 100 by 48.
+    public const int DoneX = 500 + 50;
+    public const int DoneY = 282 + 24;
+
+    // FND-UI-020: left_button_down, the byte the window procedure keeps from the mouse messages.
+    public const uint LeftButtonDown = 0x004985A4;
+
+    // FND-HIRE-001: the hire block's first check of one hire order, the count of the player's gangs
+    // in the order's sector, and the arrays it reads: offers, orders and cash.
+    public const uint HireOrderCheck = 0x0047592B;
+    public const uint HireOffers = 0x004ABBC0;
+    public const uint HireOrders = 0x004A27C8;
+    public const uint Cash = 0x004A25E8;
+
     // FND-SETUP-002: the full local setup handler.
     public const uint LocalSetup = 0x0040E0A0;
 

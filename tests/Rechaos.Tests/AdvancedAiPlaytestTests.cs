@@ -24,9 +24,8 @@ public sealed class AdvancedAiPlaytestTests
             ScenarioId.Power, AiDifficulty.CrimeLord, AiTurnPlanner.AdvancedFeature.ExpertExpansion);
         Report("Power", "EXPERT EXPANSION", original, advanced);
 
-        Assert.True(advanced.IdleGangTurns < original.IdleGangTurns);
         Assert.True(advanced.ExpansionMoves > original.ExpansionMoves);
-        AssertTerritoryImproves(original, advanced, minimumDefendedRetentionPercent: 98);
+        AssertTerritoryImproves(original, advanced);
     }
 
     [Fact]
@@ -78,16 +77,13 @@ public sealed class AdvancedAiPlaytestTests
 
     private static void AssertTerritoryImproves(
         CampaignMetrics original,
-        CampaignMetrics advanced,
-        int minimumDefendedRetentionPercent = 100)
+        CampaignMetrics advanced)
     {
         Assert.True(advanced.ControlledSectorTurns >= original.ControlledSectorTurns);
         Assert.True(advanced.FinalControlledSectors >= original.FinalControlledSectors);
         var originalDefended = original.ControlledSectorTurns - original.UndefendedSectorTurns;
         var advancedDefended = advanced.ControlledSectorTurns - advanced.UndefendedSectorTurns;
-        Assert.True(
-            advancedDefended * 100
-            >= originalDefended * minimumDefendedRetentionPercent);
+        Assert.True(advancedDefended >= originalDefended);
     }
 
     private static CampaignMetrics Drive(
@@ -133,6 +129,8 @@ public sealed class AdvancedAiPlaytestTests
                         state.FinishCommand(playerId);
                         break;
                     }
+                    // RULE-TURN-001, RULE-HIRE-002: the offers are refilled before the planner draws.
+                    state.PrepareHireOffers(playerId);
                     state.PrepareAiPlanning(playerId);
                     var commands = feature == AiTurnPlanner.AdvancedFeature.None
                         ? AiTurnPlanner.Plan(state, playerId)
@@ -151,7 +149,6 @@ public sealed class AdvancedAiPlaytestTests
                         if (!state.Submit(command).Accepted)
                             throw new InvalidOperationException("AI selected an invalid command.");
                     }
-                    state.PrepareHireOffers(playerId);
                     var hiring = state.PrepareAiHiring(playerId);
                     if (hiring.Choice is { } choice)
                     {

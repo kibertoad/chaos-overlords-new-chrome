@@ -6,10 +6,10 @@ builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
-environment: Windows 11 Pro 10.0.26200, the installed executable run elevated with the compatibility layers the registry names for it, full screen switched off in memory, under the Windows debugging interface of tools/Rechaos.OriginalProbe
+environment: Windows 11 Pro 10.0.26200, full screen switched off in memory, under the Windows debugging interface of tools/Rechaos.OriginalProbe; the first run used the installed executable run elevated with the compatibility layers the registry names for it, the second an unelevated copy of the executable beside junctions to the install's DATA, MUSIC and HELP directories, with the same layers except RUNASADMIN
 starting_state: new-game
 recording: null
-repetitions: 1
+repetitions: 2
 fixture: EXP-SETUP-002.json
 ---
 
@@ -43,19 +43,19 @@ the screen opened them.
 
 ## Observations
 
-The seed was 27834. Nothing was drawn before Begin. Begin made 338 calls of
-`roll`:
+The seeds were 27834 and 36130. Nothing was drawn before Begin. Begin made 338
+and 330 calls of `roll`:
 
 | Calls | Call instruction | Bound | What RULE-SETUP-004 and its callees say they are |
 |---|---|---|---|
-| 6 | `0x00468C99` | 15 | the portraits of the four empty slots, with two redraws |
-| 6 | `0x0046DC83` | 4 | one reaction per slot |
-| 80 | `0x00476191`, `0x0047619F` alternately | 32 | the density centres |
-| 234 | `0x004764C1` | 21 | the site proposals, with their redraws |
-| 12 | `0x00476777` | 6 | the headquarters permutation, with six redraws |
+| 6, 4 | `0x00468C99` | 15 | the portraits of the four empty slots, with two redraws in the first run and none in the second |
+| 6, 6 | `0x0046DC83` | 4 | one reaction per slot |
+| 80, 80 | `0x00476191`, `0x0047619F` alternately | 32 | the density centres |
+| 234, 223 | `0x004764C1` | 21 | the site proposals, with their redraws |
+| 12, 17 | `0x00476777` | 6 | the headquarters permutation, with six and eleven redraws |
 
-No hire offer was drawn: the copy holds `0x9C` in all three offer bytes of
-slot 0. The copy held 9 as the scenario, 0 as the Mentality and 65535 in
+In both runs no hire offer was drawn: the copy holds `0x9C` in all three offer
+bytes of slot 0. Each copy held 9 as the scenario, 0 as the Mentality and 65535 in
 `turn_limit`. Every slot had $500 and no research left on any item, slots 0
 and 3 had type 0 and portraits 0 and 1, the four computer players had
 difficulty band 0 and the humans 1, and none of the 192 sites was of
@@ -72,6 +72,6 @@ same seed and settings has to reach.
 
 The Armageddon branches of the new-match setup and the city generator, a
 second human in a later slot and the Goon difficulty bands agree with the
-spec for these seeds. The planning phase of a game with two humans opens on
+spec for both seeds. The planning phase of a game with two humans opens on
 the Ready card (RULE-SETUP-008) before it refills the hire offers, so the
 offers stay vacant in the copy and RULE-HIRE-002 is not reached.

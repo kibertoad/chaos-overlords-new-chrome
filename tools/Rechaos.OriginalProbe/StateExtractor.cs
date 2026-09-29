@@ -21,12 +21,15 @@ internal sealed class StateExtractor
     {
         var trace = JsonNode.Parse(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
         var extractor = new StateExtractor(File.ReadAllBytes(Path.Combine(runDirectory, $"data-{DataStart:X8}.bin")));
+        var doneAtRoll = new JsonArray();
+        foreach (var count in trace["RollsAtDone"]?.AsArray() ?? []) doneAtRoll.Add(count!.GetValue<int>());
         var rolls = new JsonArray();
         foreach (var roll in trace["Rolls"]!.AsArray())
             rolls.Add(new JsonArray(roll!["Call"]!.GetValue<string>(), roll["Bound"]!.GetValue<int>(), roll["Result"]!.GetValue<int>()));
         return new JsonObject
         {
             ["rng_state"] = trace["Seed"]!.GetValue<int>(),
+            ["done_at_roll"] = doneAtRoll,
             ["rolls"] = rolls,
             ["events"] = new JsonArray(),
             ["end_state"] = extractor.EndState(),
@@ -38,6 +41,13 @@ internal sealed class StateExtractor
     {
         var trace = JsonSerializer.Deserialize<ProbeTrace>(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
         return (trace.Settings ?? NewGameSettings.Defaults).Describe().ToArray();
+    }
+
+    /// <summary>The Done presses a run was recorded with, one line each.</summary>
+    public static string[] Turns(string runDirectory)
+    {
+        var trace = JsonSerializer.Deserialize<ProbeTrace>(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
+        return (trace.Settings ?? NewGameSettings.Defaults).DescribeTurns().ToArray();
     }
 
     private JsonArray EndState()

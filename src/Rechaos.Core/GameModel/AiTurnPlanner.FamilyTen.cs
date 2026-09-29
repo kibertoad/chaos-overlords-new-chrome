@@ -84,5 +84,5 @@ public static partial class AiTurnPlanner
                 .Setup.Controller == PlayerController.Human,
             state.Random,
             completedSiteScore: sectorId =>
-                OriginalAiFamilyTenRules.CompletedStealthScore(state, sectorId));
+                OriginalAiFamilyTenRules.CompletedStealthScore(state, sectorId), planning: state.AiPlanning);
 }

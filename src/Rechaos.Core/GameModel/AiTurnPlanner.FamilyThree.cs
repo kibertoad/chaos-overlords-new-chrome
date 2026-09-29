@@ -199,7 +199,7 @@ public static partial class AiTurnPlanner
                 .Setup.Controller == PlayerController.Human,
             state.Random,
             unfinishedSiteScore: sectorId =>
-                OriginalAiFamilyThreeRules.UnfinishedCashScore(state, sectorId));
+                OriginalAiFamilyThreeRules.UnfinishedCashScore(state, sectorId), planning: state.AiPlanning);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }
 }

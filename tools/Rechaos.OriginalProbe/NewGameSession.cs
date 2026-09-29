@@ -10,7 +10,9 @@ internal sealed record HumanSlot(int Slot, string? Modifier);
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
 /// Scenario numbers are the original's (FND-SETUP-013).
 /// </summary>
-internal sealed record NewGameSettings(int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans)
+internal sealed record NewGameSettings(
+    int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
+    bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -25,6 +27,13 @@ internal sealed record NewGameSettings(int? Scenario, int? Mentality, int? TurnL
                 ? $"slot {human.Slot}: human"
                 : $"slot {human.Slot}: human named modifier_name_{human.Modifier}";
     }
+
+    /// <summary>The Done presses after the first planning phase, one line each.</summary>
+    public IEnumerable<string> DescribeTurns()
+    {
+        for (var turn = 1; turn <= EndTurns; turn++)
+            yield return $"Done (550, 306) with no orders, turn {turn}";
+    }
 }
 
 internal sealed record ProbeTrace(
@@ -33,13 +42,14 @@ internal sealed record ProbeTrace(
     int Seed,
     List<RollRecord> Rolls,
     int RollsBeforeBegin,
+    List<int>? RollsAtDone,
     bool Dumped,
     List<string> Notes);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
-/// the given settings and dumps the writable sections once the first planning phase waits for the
-/// first human.
+/// the given settings, presses Done as many times as asked, and dumps the writable sections once
+/// the planning phase that follows waits for the first human.
 /// </summary>
 internal sealed class NewGameSession(
     string executable, string gameDirectory, string outputDirectory, TimeSpan timeout, NewGameSettings settings)
@@ -48,31 +58,36 @@ internal sealed class NewGameSession(
     private readonly OriginalProcess _process = OriginalProcess.Start(executable, gameDirectory);
     private readonly List<RollRecord> _rolls = [];
     private readonly List<string> _notes = [];
+    private readonly List<int> _rollsAtDone = [];
     private int _seed = -1;
     private bool _setupReached;
 
     public ProbeTrace Run()
     {
-        _process.SetBreakpoint(OriginalAddresses.SeedGenerator, context => _seed = context.Argument(0));
+        _process.SetBreakpoint(OriginalAddresses.SeedGenerator, SeedGenerator);
         _process.SetBreakpoint(OriginalAddresses.Roll, OnRoll);
         _process.SetBreakpoint(OriginalAddresses.PreferenceLoaderCall + 5, ForceWindow, oneShot: true);
         _process.SetBreakpoint(OriginalAddresses.LocalSetup, _ => _setupReached = true);
+        if (settings.TraceHires) _process.SetBreakpoint(OriginalAddresses.HireOrderCheck, TraceHire);
 
         var window = IntPtr.Zero;
         if (!_process.RunUntil(() => (window = _process.FindMainWindow()) != IntPtr.Zero, timeout))
             return Finish(false, "The game window never appeared.");
 
-        // The logos and intro movies end on the left button; the title then takes File, New Game.
+        // RULE-VIDEO-001: a movie ends when left_button_down is set at one of its 10 Hz ticks, so a
+        // posted press and release is missed. The probe holds the button in memory until the setup
+        // screen opens; the title then takes File, New Game.
         var nextPoke = DateTime.MinValue;
         var reached = _process.RunUntil(() =>
         {
             if (_setupReached) return true;
             if (DateTime.UtcNow < nextPoke) return false;
-            nextPoke = DateTime.UtcNow.AddSeconds(1.5);
-            Click(window, 320, 240);
+            nextPoke = DateTime.UtcNow.AddSeconds(0.5);
+            _process.Write(OriginalAddresses.LeftButtonDown, [1]);
             Native.PostMessageW(window, Native.WmCommand, OriginalAddresses.NewGameCommand, IntPtr.Zero);
             return false;
         }, timeout);
+        _process.Write(OriginalAddresses.LeftButtonDown, [0]);
         if (!reached) return Finish(false, "The setup screen never opened.");
 
         _process.Pump(TimeSpan.FromSeconds(2));
@@ -87,18 +102,72 @@ internal sealed class NewGameSession(
             timeout);
         if (!settled) return Finish(false, "The new match never settled.", rollsBeforeBegin);
 
+        // Each Done ends the human's planning with no orders; the next planning phase has begun
+        // when elapsed_turns has moved on and the rolls have stopped again.
+        for (var turn = 1; turn <= settings.EndTurns; turn++)
+        {
+            _rollsAtDone.Add(_rolls.Count);
+            Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
+            var target = turn;
+            var next = _process.RunUntil(
+                () => _process.ReadInt32(OriginalAddresses.ElapsedTurns) >= target
+                      && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(8),
+                timeout);
+            if (!next) return Finish(false, $"Turn {turn} never reached the next planning phase.", rollsBeforeBegin);
+        }
+
         DumpWritableSections();
         return Finish(true, null, rollsBeforeBegin);
     }
 
     public void Dispose() => _process.Dispose();
 
+    // --seed replaces the clock value the process start passes to srand, so a run can be repeated.
+    private void SeedGenerator(BreakContext context)
+    {
+        if (settings.Seed is { } seed) _process.Write(context.Esp + 4, BitConverter.GetBytes(seed));
+        _seed = context.Argument(0);
+    }
+
+    // A diagnostic dump, not fixture data: the writable sections and the stack as roll(n) is
+    // entered for the given zero-based roll, with the registers in a note.
+    private void DumpAtRoll(BreakContext context)
+    {
+        var directory = Path.Combine(outputDirectory, $"at-roll-{_rolls.Count}");
+        Directory.CreateDirectory(directory);
+        foreach (var section in PeSection.Read(executable, out _).Where(section => section.IsWritable))
+            File.WriteAllBytes(
+                Path.Combine(directory, $"{section.Name.TrimStart('.')}-{section.VirtualAddress:X8}.bin"),
+                _process.Read(section.VirtualAddress, (int)section.VirtualSize));
+        for (var length = 0x4000; length >= 0x400; length /= 2)
+        {
+            try
+            {
+                File.WriteAllBytes(Path.Combine(directory, $"stack-{context.Esp:X8}.bin"), _process.Read(context.Esp, length));
+                break;
+            }
+            catch (System.ComponentModel.Win32Exception) { }
+        }
+        _notes.Add($"Dumped at roll {_rolls.Count}: esp 0x{context.Esp:X8} ebp 0x{context.Ebp:X8}, return 0x{context.ReturnAddress:X8}.");
+    }
+
     private void OnRoll(BreakContext context)
     {
+        if (settings.DumpAtRoll == _rolls.Count) DumpAtRoll(context);
         var call = context.ReturnAddress - 5;
         var bound = context.Argument(0);
         _process.SetBreakpoint(context.ReturnAddress, returned =>
             _rolls.Add(new RollRecord($"0x{call:X8}", bound, (int)returned.Eax)), oneShot: true);
+    }
+
+    // A diagnostic note, not fixture data: the offers, orders and cash each time the hire block
+    // checks an order, with the roll count so far.
+    private void TraceHire(BreakContext context)
+    {
+        var offers = _process.Read(OriginalAddresses.HireOffers, 18).Select(value => (int)(sbyte)value);
+        var orders = _process.Read(OriginalAddresses.HireOrders, 18).Select(value => (int)(sbyte)value);
+        var cash = Enumerable.Range(0, 6).Select(player => _process.ReadInt32(OriginalAddresses.Cash + (uint)(4 * player)));
+        _notes.Add($"hire check after roll {_rolls.Count}: offers [{string.Join(",", offers)}] orders [{string.Join(",", orders)}] cash [{string.Join(",", cash)}]");
     }
 
     private void ForceWindow(BreakContext context)
@@ -107,6 +176,9 @@ internal sealed class NewGameSession(
         if (call != 0xE8) _notes.Add($"The preference loader call starts with 0x{call:X2}, not a call.");
         _process.Write(OriginalAddresses.PrefFullScreen, [0]);
         _process.Write(OriginalAddresses.PrefFullScreenCopy, [0]);
+        if (settings.EndTurns == 0) return;
+        _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(0));
+        _process.Write(OriginalAddresses.PrefDetailedCombat, BitConverter.GetBytes(0));
     }
 
     // Writes what the setup screen's controls would have committed (FND-SETUP-013): the screen is
@@ -165,7 +237,7 @@ internal sealed class NewGameSession(
         if (note is not null) _notes.Add(note);
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
-        return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, dumped, _notes);
+        return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes);
     }
 
     private static void Click(IntPtr window, int x, int y)
