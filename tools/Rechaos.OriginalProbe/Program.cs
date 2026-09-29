@@ -26,7 +26,7 @@ static int Usage()
         Usage:
           Rechaos.OriginalProbe new-game --out <directory> [--game <install directory>] [--timeout <seconds>]
               [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
-              [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>]
+              [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
         """);
@@ -52,7 +52,8 @@ static int NewGame(string[] args)
         IntOption(args, "--end-turns") ?? 0,
         args.Contains("--trace-hires"),
         IntOption(args, "--seed"),
-        IntOption(args, "--dump-at-roll"));
+        IntOption(args, "--dump-at-roll"),
+        HexOption(args, "--trace-calls"));
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
@@ -128,6 +129,12 @@ static int Extract(string[] args)
 
 static int? IntOption(string[] args, string name) =>
     Option(args, name) is { } value ? int.Parse(value, System.Globalization.CultureInfo.InvariantCulture) : null;
+
+static uint? HexOption(string[] args, string name) =>
+    Option(args, name) is { } value
+        ? uint.Parse(value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? value[2..] : value,
+            System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture)
+        : null;
 
 static string? Option(string[] args, string name)
 {
