@@ -12,7 +12,7 @@ internal sealed record HumanSlot(int Slot, string? Modifier);
 /// </summary>
 internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
-    bool TraceHires = false)
+    bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -64,7 +64,7 @@ internal sealed class NewGameSession(
 
     public ProbeTrace Run()
     {
-        _process.SetBreakpoint(OriginalAddresses.SeedGenerator, context => _seed = context.Argument(0));
+        _process.SetBreakpoint(OriginalAddresses.SeedGenerator, SeedGenerator);
         _process.SetBreakpoint(OriginalAddresses.Roll, OnRoll);
         _process.SetBreakpoint(OriginalAddresses.PreferenceLoaderCall + 5, ForceWindow, oneShot: true);
         _process.SetBreakpoint(OriginalAddresses.LocalSetup, _ => _setupReached = true);
@@ -122,8 +122,38 @@ internal sealed class NewGameSession(
 
     public void Dispose() => _process.Dispose();
 
+    // --seed replaces the clock value the process start passes to srand, so a run can be repeated.
+    private void SeedGenerator(BreakContext context)
+    {
+        if (settings.Seed is { } seed) _process.Write(context.Esp + 4, BitConverter.GetBytes(seed));
+        _seed = context.Argument(0);
+    }
+
+    // A diagnostic dump, not fixture data: the writable sections and the stack as roll(n) is
+    // entered for the given zero-based roll, with the registers in a note.
+    private void DumpAtRoll(BreakContext context)
+    {
+        var directory = Path.Combine(outputDirectory, $"at-roll-{_rolls.Count}");
+        Directory.CreateDirectory(directory);
+        foreach (var section in PeSection.Read(executable, out _).Where(section => section.IsWritable))
+            File.WriteAllBytes(
+                Path.Combine(directory, $"{section.Name.TrimStart('.')}-{section.VirtualAddress:X8}.bin"),
+                _process.Read(section.VirtualAddress, (int)section.VirtualSize));
+        for (var length = 0x4000; length >= 0x400; length /= 2)
+        {
+            try
+            {
+                File.WriteAllBytes(Path.Combine(directory, $"stack-{context.Esp:X8}.bin"), _process.Read(context.Esp, length));
+                break;
+            }
+            catch (System.ComponentModel.Win32Exception) { }
+        }
+        _notes.Add($"Dumped at roll {_rolls.Count}: esp 0x{context.Esp:X8} ebp 0x{context.Ebp:X8}, return 0x{context.ReturnAddress:X8}.");
+    }
+
     private void OnRoll(BreakContext context)
     {
+        if (settings.DumpAtRoll == _rolls.Count) DumpAtRoll(context);
         var call = context.ReturnAddress - 5;
         var bound = context.Argument(0);
         _process.SetBreakpoint(context.ReturnAddress, returned =>

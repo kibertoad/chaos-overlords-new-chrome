@@ -145,7 +145,7 @@ public static partial class AiTurnPlanner
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
-            scenarioStandings: OriginalAiScenarioStandingRules.Build(state));
+            scenarioStandings: OriginalAiScenarioStandingRules.Build(state), planning: state.AiPlanning);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }
 }

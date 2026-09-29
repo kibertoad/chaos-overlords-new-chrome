@@ -351,6 +351,40 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Equal(3, blocked.Random.ConsumptionCount);
     }
 
+    // RULE-AI-006, FND-AI-066: a sector the late filter clears keeps the score an earlier call
+    // sorted into its pair. The first call leaves score 1 in pair 0; the family-0 call clears every
+    // sector but its own, so pair 0 keeps it, heads the sort as sector 0 and is routed toward.
+    [Fact]
+    public void AFilteredSectorKeepsTheScoreAnEarlierCallSortedIntoItsPair()
+    {
+        var planning = AiPlanningState.Initialize();
+        var facts = new Facts(source: 27);
+        facts.Owners[28] = 1;
+
+        Assert.Equal(28, facts.Select(mode: 3, family: 2, planning: planning));
+        Assert.Equal(18, facts.Select(mode: 3, family: 0, planning: planning));
+        Assert.Equal(0, facts.Random.ConsumptionCount);
+        Assert.Equal(1, planning.CaptureSectorChoiceScores()[0]);
+    }
+
+    // RULE-AI-006, FND-AI-066, EXP-TURN-006: player 0's records are all zero before its first
+    // planning pass, and player 1's first record starts with family 99, so a count over zero scores
+    // stops after 64 + 32 + 162 pairs, the roll(258) of the Armageddon recordings.
+    [Fact]
+    public void TheTieCountStopsAtTheFirstPlanningRecordThatIsNotZero()
+    {
+        const int source = 27;
+        var planning = AiPlanningState.Initialize();
+        planning.BeginPlanning(new PlayerId(1));
+        var facts = new Facts(source, player: new PlayerId(1), seed: 4321);
+        var expectedRandom = new DeterministicRandom(
+            facts.Random.State, facts.Random.ConsumptionCount);
+        var expected = ZeroMaximumStep(source, facts.GangCounts, expectedRandom, tieCount: 258);
+
+        Assert.Equal(expected, facts.Select(mode: 3, family: 2, planning: planning));
+        Assert.Equal(expectedRandom.State, facts.Random.State);
+    }
+
     [Fact]
     public void ModesTwelveAndFourteenUseBigManObjectivesAndOwnedExclusion()
     {
@@ -551,12 +585,19 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 2));
     }
 
+    // RULE-AI-006, FND-AI-066: with no planning pass made, every score of the pairs, the table and
+    // the planning records is 0, so the tie count runs over 64 pairs, 32 of the table and 972 of
+    // the records. A pick past the pairs reads a sector field of 0.
+    private const int FreshTieCount = 64 + 32 + 6 * 81 * 16 / 8;
+
     private static int ZeroMaximumStep(
         int source,
         IReadOnlyList<int> gangCounts,
-        DeterministicRandom random)
+        DeterministicRandom random,
+        int tieCount = FreshTieCount)
     {
-        var target = random.NextInclusive(MatchLimits.SectorCount) - 1;
+        var pick = random.NextInclusive(tieCount);
+        var target = pick <= MatchLimits.SectorCount ? pick - 1 : 0;
         var result = source;
         if (source % MatchLimits.BoardWidth < target % MatchLimits.BoardWidth
             && gangCounts[result + 1] < MatchLimits.FriendlyGangsPerSector)
@@ -608,7 +649,8 @@ public sealed class OriginalAiSectorSelectionRulesTests
             int family,
             Func<int, bool>? canSoloControl = null,
             bool? hasHumanPlayers = null,
-            int? formationSectorId = null) =>
+            int? formationSectorId = null,
+            AiPlanningState? planning = null) =>
             OriginalAiSectorSelectionRules.Select(
                 mode, Source, Player, family,
                 Owners, Disabled, GangCounts,
@@ -623,7 +665,8 @@ public sealed class OriginalAiSectorSelectionRulesTests
                 unfinishedSiteScore: SiteScores.ElementAt,
                 hasPriorInfluence: PriorInfluence.Contains,
                 completedSiteScore: SiteScores.ElementAt,
-                ownerQuery: mode == 4 ? OwnerQuery : null);
+                ownerQuery: mode == 4 ? OwnerQuery : null,
+                planning: planning);
 
         // RULE-AI-004 owner_query: -2 under police presence, else the owner byte.
         private int OwnerQuery(int sectorId) => Disabled[sectorId] ? -2 : Owners[sectorId];

@@ -16,7 +16,7 @@
 
 ## supported
 
-220 entries.
+219 entries.
 
 | ID | Title |
 |---|---|
@@ -64,7 +64,6 @@
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | Queries the computer players' handlers share |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one |
-| [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs |
@@ -243,10 +242,11 @@
 
 ## established
 
-17 entries.
+18 entries.
 
 | ID | Title |
 |---|---|
+| [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
@@ -282,7 +282,7 @@
 
 ## recorded
 
-340 entries.
+344 entries.
 
 | ID | Title |
 |---|---|
@@ -293,6 +293,9 @@
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | Does the first turn of a new local game, ended with no orders, draw and resolve as the spec gives? |
 | [EXP-TURN-002](../experiments/EXP-TURN-002.md) | Do three turns of a new local game, each ended with no orders, draw and resolve as the spec gives? |
 | [EXP-TURN-003](../experiments/EXP-TURN-003.md) | Do two turns of new local games, each ended with no orders, hire as the spec gives? |
+| [EXP-TURN-004](../experiments/EXP-TURN-004.md) | Do six turns of new local games, each ended with no orders, draw and resolve as the spec gives? |
+| [EXP-TURN-005](../experiments/EXP-TURN-005.md) | Do three turns of new local Greed games, each ended with no orders, draw and resolve as the spec gives? |
+| [EXP-TURN-006](../experiments/EXP-TURN-006.md) | Do three turns of new local Armageddon games, each ended with no orders, draw and resolve as the spec gives? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -354,6 +357,7 @@
 | [FND-AI-063](../findings/FND-AI-063.md) | The unset Support threshold of families 13 and 14 always holds the 0 the selector's prologue leaves at the same stack address |
 | [FND-AI-064](../findings/FND-AI-064.md) | The AI ranks its three hire offers by Chaos, Control, Influence, fighting strength, Tech Level and Research, or Stealth, then refuses an unaffordable winner |
 | [FND-AI-065](../findings/FND-AI-065.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and elsewhere the offer with the smallest Tech Level times positive statistics per cost |
+| [FND-AI-066](../findings/FND-AI-066.md) | The sector selector keeps its score pairs between calls, skips filtered sectors when refilling them, and counts ties past the end of the list |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |
@@ -637,6 +641,7 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
+| [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
@@ -701,7 +706,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | Queries the computer players' handlers share | supported |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported |
-| [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported |
+| [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | established |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
 | [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported |
