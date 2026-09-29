@@ -66,12 +66,12 @@ police presence byte.
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` gives each rebuild
-player the modifier name whose flag the original set, starts the match with
-the same seed and settings, and finds the same generator position and the
-same state, compared field by field as in EXP-SETUP-001, together with the
-hire Force flag.
+Every result is the one RULE-RNG-002 computes from the recorded seed. The
+fixture holds, for each run, the seed and settings, the name-modifier flags
+each slot's name set (FND-SETUP-015) and the hire Force flag, and the same
+state fields as EXP-SETUP-001, which a match started from the same seed and
+settings, with each player given the modifier name whose flag is set, has to
+reach.
 
 ## Conclusion
 
