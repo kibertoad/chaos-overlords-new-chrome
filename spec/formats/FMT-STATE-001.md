@@ -9,7 +9,7 @@ byte_order: little
 size: 32
 text: false
 definition: fmt_state_001.ksy
-evidence: [FND-DETECT-002, FND-COMBAT-008, FND-AI-004, FND-AI-007, FND-CHAOS-001, FND-COMBAT-001, FND-COMBAT-004, FND-CONTROL-001, FND-DETECT-001, FND-EQUIP-002, FND-EQUIP-007, FND-EQUIP-008, FND-GANG-001, FND-GANG-003, FND-GANG-005, FND-GANG-007, FND-HIDE-001, FND-HIRE-002, FND-MOVE-001, FND-MOVE-003, FND-PLATFORM-003, FND-STATE-002, FND-TURN-001, FND-TURN-002, FND-TURN-004, FND-TURN-005, FND-UI-036, SRC-RECHAOS-3561D41, FND-EXE-004]
+evidence: [FND-DETECT-002, FND-COMBAT-008, FND-AI-004, FND-AI-007, FND-CHAOS-001, FND-COMBAT-001, FND-COMBAT-004, FND-CONTROL-001, FND-DETECT-001, FND-EQUIP-002, FND-EQUIP-007, FND-EQUIP-008, FND-GANG-001, FND-GANG-003, FND-GANG-005, FND-GANG-007, FND-HIDE-001, FND-HIRE-002, FND-MOVE-001, FND-MOVE-003, FND-PLATFORM-003, FND-STATE-002, FND-TURN-001, FND-TURN-002, FND-TURN-004, FND-TURN-005, FND-UI-036, SRC-RECHAOS-3561D41, FND-EXE-004, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: []
@@ -103,8 +103,10 @@ None known.
 
 ## Coverage
 
-A memory structure: nothing has been decoded against a dump of the running
-original. The record size and the 486-record block agree with the
+A memory structure. EXP-SETUP-001 decoded the six Right Hands records of a
+new match from a dump of the running original, with the player, definition,
+sector, Force, equipment, visibility and fourteen statistics this layout
+gives; no hired, equipped or ordered gang has been decoded yet. The record size and the 486-record block agree with the
 15,552-byte block the save reader and writer transfer from `0x00498DA8`
 [FND-PLATFORM-003].
 

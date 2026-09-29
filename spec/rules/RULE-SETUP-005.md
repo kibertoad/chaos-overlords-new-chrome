@@ -1,10 +1,10 @@
 ---
 id: RULE-SETUP-005
 title: A player named with the island modifier puts every neutral sector under a Crackdown that never ends
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-015, FND-SETUP-003, FND-SETUP-001]
+evidence: [FND-SETUP-015, FND-SETUP-003, FND-SETUP-001, EXP-SETUP-004]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-001, FMT-STATE-002]

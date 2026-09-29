@@ -199,7 +199,8 @@ public sealed class AiObjectiveTurnPlannerTests
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, hireRole);
         match.FinishUpkeep();
-        var turnsRemaining = ScenarioCatalog.Turns(match.Setup.Duration)
+        // FND-SETUP-018: the objective scenarios play with a turn limit of 65535.
+        var turnsRemaining = ScenarioCatalog.TurnLimit(match.Setup.Scenario, match.Setup.Duration)
             - (match.Coordinator.Turn - 1);
 
         match.PrepareAiPlanning(player);

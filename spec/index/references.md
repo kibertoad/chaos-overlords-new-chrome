@@ -24,6 +24,10 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [BUG-OPTIONS-002](../bugs/BUG-OPTIONS-002.md) | builds |
 | [BUG-SAVE-001](../bugs/BUG-SAVE-001.md) | builds |
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | builds |
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | builds |
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | builds |
+| [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | builds |
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -315,6 +319,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-SETUP-015](../findings/FND-SETUP-015.md) | builds, locations |
 | [FND-SETUP-016](../findings/FND-SETUP-016.md) | builds, locations |
 | [FND-SETUP-017](../findings/FND-SETUP-017.md) | builds, locations |
+| [FND-SETUP-018](../findings/FND-SETUP-018.md) | builds, locations |
 | [FND-SNITCH-001](../findings/FND-SNITCH-001.md) | builds, locations |
 | [FND-STATE-001](../findings/FND-STATE-001.md) | builds, locations |
 | [FND-STATE-002](../findings/FND-STATE-002.md) | builds, locations |
@@ -698,6 +703,70 @@ None.
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | body |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | body |
 
+## EXP-SETUP-001
+
+| Cited by | In |
+|---|---|
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
+| [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | body |
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
+| [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
+| [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
+| [FMT-STATE-004](../formats/FMT-STATE-004.md) | body, evidence |
+| [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
+| [RULE-AI-014](../rules/RULE-AI-014.md) | evidence |
+| [RULE-AI-018](../rules/RULE-AI-018.md) | evidence |
+| [RULE-CITY-001](../rules/RULE-CITY-001.md) | body, evidence |
+| [RULE-CITY-002](../rules/RULE-CITY-002.md) | body, evidence |
+| [RULE-CITY-003](../rules/RULE-CITY-003.md) | evidence |
+| [RULE-CITY-004](../rules/RULE-CITY-004.md) | body, evidence |
+| [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | evidence |
+| [RULE-GANG-001](../rules/RULE-GANG-001.md) | evidence |
+| [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | evidence |
+| [RULE-HIRE-004](../rules/RULE-HIRE-004.md) | evidence |
+| [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | evidence |
+| [RULE-RNG-001](../rules/RULE-RNG-001.md) | body, evidence |
+| [RULE-RNG-002](../rules/RULE-RNG-002.md) | body, evidence |
+| [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | evidence |
+| [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | evidence |
+| [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
+| [RULE-SITE-001](../rules/RULE-SITE-001.md) | evidence |
+
+## EXP-SETUP-002
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-014](../rules/RULE-AI-014.md) | evidence |
+| [RULE-AI-018](../rules/RULE-AI-018.md) | evidence |
+| [RULE-CITY-002](../rules/RULE-CITY-002.md) | evidence |
+| [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | evidence |
+| [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | evidence |
+| [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | evidence |
+| [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
+
+## EXP-SETUP-003
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-014](../rules/RULE-AI-014.md) | evidence |
+| [RULE-AI-018](../rules/RULE-AI-018.md) | evidence |
+| [RULE-CITY-002](../rules/RULE-CITY-002.md) | evidence |
+| [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | evidence |
+| [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | evidence |
+| [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
+
+## EXP-SETUP-004
+
+| Cited by | In |
+|---|---|
+| [RULE-CITY-002](../rules/RULE-CITY-002.md) | evidence |
+| [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | evidence |
+| [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | evidence |
+| [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
+| [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | evidence |
+| [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | evidence |
+| [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | evidence |
+
 ## FMT-AUDIO-001
 
 | Cited by | In |
@@ -814,6 +883,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
@@ -857,7 +927,7 @@ None.
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | body, related |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | related |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | related |
-| [RULE-CITY-004](../rules/RULE-CITY-004.md) | body, related |
+| [RULE-CITY-004](../rules/RULE-CITY-004.md) | related |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, related |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | related |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | related |
@@ -899,6 +969,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body |
 | [FND-AI-027](../findings/FND-AI-027.md) | body |
@@ -934,7 +1005,7 @@ None.
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | related |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | related |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | related |
-| [RULE-CITY-001](../rules/RULE-CITY-001.md) | body, related |
+| [RULE-CITY-001](../rules/RULE-CITY-001.md) | related |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | related |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | related |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | related |
@@ -983,6 +1054,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FND-POLICE-001](../findings/FND-POLICE-001.md) | body |
 | glossary: site | glossary |
@@ -1650,6 +1722,7 @@ None.
 |---|---|
 | [FND-AI-043](../findings/FND-AI-043.md) | body |
 | [FND-AI-044](../findings/FND-AI-044.md) | body |
+| [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
 | glossary: ai_started | glossary |
 | glossary: raider_mode | glossary |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | evidence |
@@ -2167,7 +2240,7 @@ None.
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: hq_sectors | glossary |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | evidence |
-| [RULE-CITY-004](../rules/RULE-CITY-004.md) | body, evidence |
+| [RULE-CITY-004](../rules/RULE-CITY-004.md) | evidence |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
 | [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | evidence |
@@ -2947,6 +3020,7 @@ None.
 | [FND-SELL-002](../findings/FND-SELL-002.md) | body |
 | [FND-SETUP-014](../findings/FND-SETUP-014.md) | body |
 | [FND-SETUP-017](../findings/FND-SETUP-017.md) | body |
+| [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
 | [FND-STATE-001](../findings/FND-STATE-001.md) | body |
 | [FND-STATE-002](../findings/FND-STATE-002.md) | body |
 | [FND-STATE-004](../findings/FND-STATE-004.md) | body |
@@ -3490,6 +3564,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FND-HIRE-001](../findings/FND-HIRE-001.md) | body |
 | [FND-SETUP-015](../findings/FND-SETUP-015.md) | body |
@@ -4091,6 +4166,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-OPTIONS-001](../bugs/BUG-OPTIONS-001.md) | evidence |
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [FND-OPTIONS-001](../findings/FND-OPTIONS-001.md) | body |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
 | [FND-RNG-003](../findings/FND-RNG-003.md) | body |
@@ -4113,6 +4189,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [FND-RNG-001](../findings/FND-RNG-001.md) | body |
 | [FND-RNG-004](../findings/FND-RNG-004.md) | body |
 | [FND-RNG-006](../findings/FND-RNG-006.md) | body |
@@ -4154,6 +4231,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [FND-HIDE-002](../findings/FND-HIDE-002.md) | body |
 | glossary: reaction | glossary |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
@@ -4318,7 +4396,7 @@ None.
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: modifier_name_elite | glossary |
 | glossary: modifier_name_right_hands | glossary |
-| [RULE-CITY-004](../rules/RULE-CITY-004.md) | body, evidence |
+| [RULE-CITY-004](../rules/RULE-CITY-004.md) | evidence |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | evidence |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
 | [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | evidence |
@@ -4421,7 +4499,11 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
+| [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | body |
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
 | [FND-OBJECTIVE-003](../findings/FND-OBJECTIVE-003.md) | body |
+| [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | glossary: portrait | glossary |
 | glossary: preferred_scenario | glossary |
@@ -4443,6 +4525,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FND-AI-047](../findings/FND-AI-047.md) | body |
 | [FND-STATE-003](../findings/FND-STATE-003.md) | body |
@@ -4480,6 +4563,17 @@ None.
 | glossary: portrait | glossary |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | evidence |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | body, evidence |
+
+## FND-SETUP-018
+
+| Cited by | In |
+|---|---|
+| [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | body |
+| glossary: turn_limit | glossary |
+| [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
+| [RULE-AI-010](../rules/RULE-AI-010.md) | body, evidence |
+| [RULE-AI-011](../rules/RULE-AI-011.md) | evidence |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | body, evidence |
 
 ## FND-SNITCH-001
 
@@ -4711,7 +4805,7 @@ None.
 | glossary: scenario | glossary |
 | glossary: scenario_score | glossary |
 | glossary: turn_end | glossary |
-| [RULE-CITY-004](../rules/RULE-CITY-004.md) | body, evidence |
+| [RULE-CITY-004](../rules/RULE-CITY-004.md) | evidence |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | evidence |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | evidence |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
@@ -5475,6 +5569,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-001](../bugs/BUG-AI-001.md) | body, related |
+| [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
 | glossary: family_count | glossary |
 | glossary: first_hostile | glossary |
 | glossary: hunter_covered | glossary |
@@ -5521,7 +5616,9 @@ None.
 
 ## RULE-AI-014
 
-None.
+| Cited by | In |
+|---|---|
+| [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | body |
 
 ## RULE-AI-015
 
@@ -5543,7 +5640,9 @@ None.
 
 ## RULE-AI-018
 
-None.
+| Cited by | In |
+|---|---|
+| [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | body |
 
 ## RULE-AI-019
 
@@ -5640,6 +5739,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-006](../bugs/BUG-AI-006.md) | related |
+| [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
 | glossary: fight_or_heal | glossary |
 | glossary: objective_site | glossary |
 | glossary: on_objective | glossary |
@@ -5796,6 +5896,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | body |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | body, related |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | related |
@@ -5804,6 +5905,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
 | glossary: propose_site | glossary |
 | glossary: sites_balanced | glossary |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | body |
@@ -5813,6 +5915,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [RULE-CITY-004](../rules/RULE-CITY-004.md) | body |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | body, related |
 
@@ -6183,6 +6286,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
 | [RULE-HIRE-004](../rules/RULE-HIRE-004.md) | body |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
 | [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | body, related |
@@ -6277,6 +6382,7 @@ None.
 |---|---|
 | [BUG-OPTIONS-001](../bugs/BUG-OPTIONS-001.md) | body, related |
 | [BUG-OPTIONS-002](../bugs/BUG-OPTIONS-002.md) | body, related |
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | glossary: next_option | glossary |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | body |
 | [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | body |
@@ -6352,6 +6458,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [FND-EXE-004](../findings/FND-EXE-004.md) | body |
 | glossary: rng | glossary |
 | glossary: rng_step | glossary |
@@ -6361,6 +6468,10 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
+| [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | body |
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | body |
 | glossary: roll | glossary |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | related |
@@ -6421,6 +6532,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
 | glossary: name_matches | glossary |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | body, related |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | body, related |
@@ -6439,6 +6552,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | body |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | body |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, related |
@@ -6447,6 +6562,10 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
+| [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | body |
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | body, related |
 | [RULE-AI-016](../rules/RULE-AI-016.md) | related |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | related |
@@ -6475,12 +6594,15 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | related |
 
 ## RULE-SETUP-008
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
+| [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | body, related |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | body, related |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body |
@@ -6980,6 +7102,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [FND-SETUP-013](../findings/FND-SETUP-013.md) | body |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | body, related |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | body |

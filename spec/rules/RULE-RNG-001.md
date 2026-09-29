@@ -1,10 +1,10 @@
 ---
 id: RULE-RNG-001
 title: The generator, its step, and its seed at process start
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-RNG-001, FND-RNG-002, FND-RNG-005, FND-RNG-006, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-RNG-001, FND-RNG-002, FND-RNG-005, FND-RNG-006, SRC-MANUAL-GOG, FND-EXE-004, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: []
@@ -74,4 +74,5 @@ None known.
 
 ## Open questions
 
-- No run of the original has confirmed a predicted sequence from a known seed.
+None known. EXP-SETUP-001 recorded the seed and 310 results that follow from
+it.

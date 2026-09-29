@@ -207,7 +207,7 @@ public static partial class AiTurnPlanner
                     : null;
             if (OwnerQuery(state, gang.SectorId) != playerId.Value)
             {
-                var turnsRemaining = ScenarioCatalog.Turns(state.Setup.Duration)
+                var turnsRemaining = ScenarioCatalog.TurnLimit(state.Setup.Scenario, state.Setup.Duration)
                     - (state.Coordinator.Turn - 1);
                 if (OriginalAiObjectiveFamilyRules.ShouldScanContestedObjectiveTargets(
                         turnsRemaining, visibleWeight))

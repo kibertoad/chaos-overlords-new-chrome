@@ -584,6 +584,14 @@ public sealed partial class AiTurnPlannerTests
         var player = new PlayerId(0);
         match.Players[1].Gangs[0].SectorId = 27;
         match.Sectors[27].Owner = new PlayerId(1);
+        // RULE-AI-031: the gang fights when turns_remaining() is even, and Big Man plays with a
+        // turn limit of 65535 (FND-SETUP-018), so the second turn is a fighting turn.
+        var coordinator = match.Coordinator;
+        coordinator.FinishUpkeep();
+        foreach (var setup in match.Setup.Players) coordinator.FinishCommand(setup.Id);
+        foreach (var _ in TurnStructure.ExecutionOrder) coordinator.FinishExecutionPhase();
+        foreach (var setup in match.Setup.Players) coordinator.FinishHire(setup.Id);
+        coordinator.FinishPlayerElimination();
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 1);
         var recorder = new MatchReplayRecorder(match);

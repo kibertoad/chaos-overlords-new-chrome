@@ -4,7 +4,7 @@ title: A computer player tries to hire only below a gang limit and outside each 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-012, FND-AI-009, FND-EXE-004]
+evidence: [FND-AI-012, FND-AI-009, FND-EXE-004, FND-SETUP-018]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, FMT-STATE-001, FMT-STATE-002]
@@ -101,6 +101,5 @@ None known.
   sector is not 100.
 - The "not under a Crackdown" test of selector `0x22` is taken to be a zero
   Crackdown byte.
-- `turn_limit` has no recorded address (see the glossary).
 - The comparison `active gangs <= limit` is recorded as inclusive for every
   gated scenario.
