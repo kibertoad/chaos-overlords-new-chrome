@@ -552,6 +552,12 @@ to 0; it goes up by 1 after each `resolution`, before the next `turn_start`,
 so it is 0 throughout the first turn. The Crackdown window and history read
 it [FND-TURN-006].
 
+## encoded_sector
+
+`encoded_sector(t)` gives the sector whose score an encoded selector mode
+`0x40 + t` raises: sector `t` for 0 to 63, and sector 37 for the end marker
+100. A function, defined by RULE-AI-006.
+
 ## endgame_rows
 
 The order in which the endgame screen lists the player slots: active players

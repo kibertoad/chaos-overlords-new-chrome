@@ -12,7 +12,7 @@ internal sealed record HumanSlot(int Slot, string? Modifier);
 /// </summary>
 internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
-    bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null)
+    bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -69,6 +69,7 @@ internal sealed class NewGameSession(
         _process.SetBreakpoint(OriginalAddresses.PreferenceLoaderCall + 5, ForceWindow, oneShot: true);
         _process.SetBreakpoint(OriginalAddresses.LocalSetup, _ => _setupReached = true);
         if (settings.TraceHires) _process.SetBreakpoint(OriginalAddresses.HireOrderCheck, TraceHire);
+        if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
 
         var window = IntPtr.Zero;
         if (!_process.RunUntil(() => (window = _process.FindMainWindow()) != IntPtr.Zero, timeout))
@@ -168,6 +169,17 @@ internal sealed class NewGameSession(
         var orders = _process.Read(OriginalAddresses.HireOrders, 18).Select(value => (int)(sbyte)value);
         var cash = Enumerable.Range(0, 6).Select(player => _process.ReadInt32(OriginalAddresses.Cash + (uint)(4 * player)));
         _notes.Add($"hire check after roll {_rolls.Count}: offers [{string.Join(",", offers)}] orders [{string.Join(",", orders)}] cash [{string.Join(",", cash)}]");
+    }
+
+    // A diagnostic note, not fixture data: each call of the traced function with the roll count so
+    // far, its caller, its first four stack arguments and what it returned.
+    private void TraceCall(BreakContext context)
+    {
+        var call = context.ReturnAddress - 5;
+        var arguments = string.Join(",", Enumerable.Range(0, 4).Select(index => context.Argument(index)));
+        var rolls = _rolls.Count;
+        _process.SetBreakpoint(context.ReturnAddress, returned =>
+            _notes.Add($"call after roll {rolls} from 0x{call:X8} with [{arguments}] returned {(int)returned.Eax}"), oneShot: true);
     }
 
     private void ForceWindow(BreakContext context)

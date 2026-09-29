@@ -1,9 +1,9 @@
 ---
-id: FND-AI-059
-title: The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself
-status: superseded
+id: FND-AI-068
+title: The family-6 handler has no equipment gate, its guard target list ends in sector 100, which sends the gang toward sector 37, and a gang covers a sector for itself
+status: recorded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: [FND-AI-068]
+superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
 method: static
@@ -59,9 +59,13 @@ example after a Move that did not complete.
 When every weight-10 sector is covered, selector `0x5F` finds no active gang
 in sector 100, so selector `0x60` returns 100. The handler then passes mode
 `0xA4` to the sector selector and stores 100 as the coverage sector until the
-step overwrites it. No sector matches the mode, every score is 0, and the
-sector selector's tie draw among all 64 sectors (RULE-AI-006) picks a random
-destination. Mode 2 is used only when no sector has weight 10.
+step overwrites it. The selector adds to the score of the sector whose table
+element is `(100 % 8) * 8 + 100 / 8`, element 44, which is sector 37
+(FND-AI-067), so the gang heads for sector 37. Mode 2 is used only when no
+sector has weight 10.
+
+This corrects FND-AI-059, which took mode `0xA4` to score no sector and the
+gang to step toward a sector drawn from all 64.
 
 ## Alternatives
 

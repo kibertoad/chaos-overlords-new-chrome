@@ -9,7 +9,7 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiSectorSelectionRules
 {
-    /// <summary>FND-AI-059: selector 0x9A's value past the end of the weight-10 list.</summary>
+    /// <summary>FND-AI-068: selector 0x9A's value past the end of the weight-10 list.</summary>
     public const int GuardTargetEndMarker = 100;
     private const int NeutralOwner = -1;
     private const int MinimumRawOwner = -3;
@@ -74,6 +74,15 @@ internal static class OriginalAiSectorSelectionRules
                     if (added > 0)
                     {
                         scores[sectorId] = checked(scores[sectorId] + added);
+                        found = true;
+                    }
+                    // FND-AI-067: an encoded mode adds 1 to its own sector's score for every cell
+                    // the ring visits, so the search stops at radius 1 with that score at the
+                    // number of cells on the board around the gang.
+                    if (mode >= 0x40)
+                    {
+                        var encoded = EncodedSector(mode - 0x40);
+                        scores[encoded] = checked(scores[encoded] + 1);
                         found = true;
                     }
                     if (owner >= 0 && isHostileOwner(owner) && isHumanOwner(owner))
@@ -304,9 +313,19 @@ internal static class OriginalAiSectorSelectionRules
                 && sectorGangCounts[sectorId] < MatchLimits.FriendlyGangsPerSector =>
                 ObjectiveModeBaseScore(owner, isHostileOwner, isHumanOwner),
             16 when sectorId == formationSectorId => 1,
-            >= 0x40 and < 0x80 when sectorId == mode - 0x40 => 1,
             _ => 0
         };
+
+    /// <summary>
+    /// FND-AI-067: the sector whose score an encoded mode raises. The selector adds to the score
+    /// table at (t % 8) * 8 + t / 8, which is sector t for 0 to 63; the guard end marker t = 100
+    /// lands on the table entry of sector 37.
+    /// </summary>
+    internal static int EncodedSector(int encoded)
+    {
+        var tableIndex = encoded % MatchLimits.BoardWidth * MatchLimits.BoardWidth + encoded / MatchLimits.BoardWidth;
+        return tableIndex % MatchLimits.BoardWidth * MatchLimits.BoardWidth + tableIndex / MatchLimits.BoardWidth;
+    }
 
     internal static int ObjectiveModeBaseScore(
         int owner,

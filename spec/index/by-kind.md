@@ -219,7 +219,7 @@
 
 ## findings
 
-338 entries.
+340 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -281,7 +281,7 @@
 | [FND-AI-056](../findings/FND-AI-056.md) | Mode 4 of the sector selector scores a sector 1 when selector 0x2D accepts the owner query's value for the planning player | recorded |
 | [FND-AI-057](../findings/FND-AI-057.md) | The family-1 handler's switch has a fourth branch for Attack, Hide and Move, and its crime gate falls through to the Goon test | recorded |
 | [FND-AI-058](../findings/FND-AI-058.md) | The family-2 handler tests the hostile pool's own count, reads the owner query, and runs its late Control gates after every branch | recorded |
-| [FND-AI-059](../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself | recorded |
+| [FND-AI-059](../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself | superseded |
 | [FND-AI-060](../findings/FND-AI-060.md) | The family-7 handler's Attack test reads the attitude toward the drawn gang's player | recorded |
 | [FND-AI-061](../findings/FND-AI-061.md) | The family-11 handler's miscellaneous Equip and Heal also need a previous action other than Attack, and most branches keep the current sector as focus | recorded |
 | [FND-AI-062](../findings/FND-AI-062.md) | Families 13 and 14 make up to five draws on a contested objective, can write nothing after a failed attack, and compare Support with an unset value | recorded |
@@ -289,6 +289,8 @@
 | [FND-AI-064](../findings/FND-AI-064.md) | The AI ranks its three hire offers by Chaos, Control, Influence, fighting strength, Tech Level and Research, or Stealth, then refuses an unaffordable winner | recorded |
 | [FND-AI-065](../findings/FND-AI-065.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and elsewhere the offer with the smallest Tech Level times positive statistics per cost | recorded |
 | [FND-AI-066](../findings/FND-AI-066.md) | The sector selector keeps its score pairs between calls, skips filtered sectors when refilling them, and counts ties past the end of the list | recorded |
+| [FND-AI-067](../findings/FND-AI-067.md) | The sector selector adds 1 to an encoded mode's sector for every sector a ring visits | recorded |
+| [FND-AI-068](../findings/FND-AI-068.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, which sends the gang toward sector 37, and a gang covers a sector for itself | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -564,7 +566,7 @@
 
 ## experiments
 
-10 entries.
+12 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -578,6 +580,8 @@
 | [EXP-TURN-004](../experiments/EXP-TURN-004.md) | Do six turns of new local games, each ended with no orders, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-005](../experiments/EXP-TURN-005.md) | Do three turns of new local Greed games, each ended with no orders, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-006](../experiments/EXP-TURN-006.md) | Do three turns of new local Armageddon games, each ended with no orders, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-007](../experiments/EXP-TURN-007.md) | Do fifteen turns of new local games, each ended with no orders, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-008](../experiments/EXP-TURN-008.md) | Do ten turns of new local games with Mentality 3, each ended with no orders, draw and resolve as the spec gives? | recorded |
 
 ## bugs
 
