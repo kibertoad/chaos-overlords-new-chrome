@@ -38,7 +38,7 @@ internal sealed class OriginalProcess : IDisposable
                 IntPtr.Zero, workingDirectory, ref startup, out var information))
             throw new Win32Exception(
                 Marshal.GetLastWin32Error(),
-                $"Cannot start {executable}. The GOG install asks for administrator rights, so the probe has to run elevated.");
+                $"Cannot start {executable}. The installed path asks for administrator rights; run a staged copy with --executable (docs/VALIDATION.md).");
         process._process = information.Process;
         process.ProcessId = information.ProcessId;
         Native.CloseHandle(information.Thread);

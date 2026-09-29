@@ -64,8 +64,17 @@ public sealed class DeterministicRandom
         var second = NextRaw();
         var selector = NextRaw();
         var selected = selector > SelectionThreshold ? first : second;
-        return selected % maximum + 1;
+        var result = selected % maximum + 1;
+        RollObserver?.Invoke(maximum, result);
+        return result;
     }
+
+    /// <summary>
+    /// Sees every roll(n) made on this thread, as the bound and the result, so a test can line the
+    /// rebuild's rolls up with an experiment's recorded ones (RULE-RNG-002).
+    /// </summary>
+    [ThreadStatic]
+    internal static Action<int, int>? RollObserver;
 }
 
 public sealed record PhaseBoundaryHash(

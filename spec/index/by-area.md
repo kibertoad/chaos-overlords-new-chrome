@@ -177,6 +177,9 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [EXP-TURN-001](../experiments/EXP-TURN-001.md) | Does the first turn of a new local game, ended with no orders, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-002](../experiments/EXP-TURN-002.md) | Do three turns of a new local game, each ended with no orders, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-003](../experiments/EXP-TURN-003.md) | Do two turns of new local games, each ended with no orders, hire as the spec gives? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -525,10 +528,10 @@
 | [FND-AI-005](../findings/FND-AI-005.md) | The shared AI sector selector scores sectors by mode in growing squares, and scenario standings rank players | recorded |
 | [FND-AI-006](../findings/FND-AI-006.md) | A six-by-six attitude matrix starts from the Mentality, recovers each turn and drops after attacks and takeovers | recorded |
 | [FND-AI-007](../findings/FND-AI-007.md) | A per-player difficulty band set from the Mentality changes the dice of several resolved actions | recorded |
-| [FND-AI-008](../findings/FND-AI-008.md) | The AI ranks its three hire offers by a role mode, then refuses an unaffordable winner without a fallback | recorded |
+| [FND-AI-008](../findings/FND-AI-008.md) | The AI ranks its three hire offers by a role mode, then refuses an unaffordable winner without a fallback | superseded |
 | [FND-AI-009](../findings/FND-AI-009.md) | The AI hire role comes from a per-scenario schedule indexed by the elapsed turn | recorded |
 | [FND-AI-010](../findings/FND-AI-010.md) | The AI keeps an encoded hire placement anchor per player and refreshes it by fixed scans | recorded |
-| [FND-AI-011](../findings/FND-AI-011.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and the least efficient offer elsewhere | recorded |
+| [FND-AI-011](../findings/FND-AI-011.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and the least efficient offer elsewhere | superseded |
 | [FND-AI-012](../findings/FND-AI-012.md) | The AI tries to hire only below a gang limit set by territory, cash and scenario, with scenario time gates | recorded |
 | [FND-AI-013](../findings/FND-AI-013.md) | AI queries for the first sector holding a visible hostile human gang and for family-6 coverage | recorded |
 | [FND-AI-014](../findings/FND-AI-014.md) | The family-6 hire guards compare the previous hire role with schedule slot numbers | recorded |
@@ -581,6 +584,8 @@
 | [FND-AI-061](../findings/FND-AI-061.md) | The family-11 handler's miscellaneous Equip and Heal also need a previous action other than Attack, and most branches keep the current sector as focus | recorded |
 | [FND-AI-062](../findings/FND-AI-062.md) | Families 13 and 14 make up to five draws on a contested objective, can write nothing after a failed attack, and compare Support with an unset value | recorded |
 | [FND-AI-063](../findings/FND-AI-063.md) | The unset Support threshold of families 13 and 14 always holds the 0 the selector's prologue leaves at the same stack address | recorded |
+| [FND-AI-064](../findings/FND-AI-064.md) | The AI ranks its three hire offers by Chaos, Control, Influence, fighting strength, Tech Level and Research, or Stealth, then refuses an unaffordable winner | recorded |
+| [FND-AI-065](../findings/FND-AI-065.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and elsewhere the offer with the smallest Tech Level times positive statistics per cost | recorded |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |
@@ -588,7 +593,7 @@
 | [RULE-AI-005](../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector | supported |
-| [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | supported |
+| [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | established |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported |
 | [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported |

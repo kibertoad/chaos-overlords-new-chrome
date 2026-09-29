@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 188 |
-| `validated` | 34 |
+| `implemented` | 180 |
+| `validated` | 42 |
 
 | Code | Rows |
 |---|---|
@@ -49,8 +49,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-AUDIO-001` | Sound effect files DATA/SNDnnnnn | supported | complete | None | None | implemented | The files are passed whole to the sound library. |
-| `FMT-AUDIO-002` | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported | complete | None | None | implemented | The files are passed whole to the music player. |
+| `FMT-AUDIO-001` | Sound effect files DATA/SNDnnnnn | supported | complete | tests/Rechaos.Tests/OriginalSoundFileTests.cs | None | validated | The files are passed whole to the sound library. |
+| `FMT-AUDIO-002` | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported | complete | tests/Rechaos.Tests/OriginalSoundFileTests.cs | None | validated | The files are passed whole to the music player. |
 | `RULE-AUDIO-001` | Starting a music program | supported | complete | None | None | implemented | Title, game and endgame programs are wired to the matching Ogg tracks; the rebuild plays files in place of CD audio. |
 | `RULE-AUDIO-002` | Music repeats its program when it ends and pauses while the window is inactive | supported | complete | None | None | implemented | Focus loss pauses and focus gain resumes music; the end-of-playback restart was not checked separately. |
 | `RULE-AUDIO-003` | Applying the music and effects levels | supported | complete | None | None | implemented | The 0 to 10 level conversion and the level-5 music default are implemented. |
@@ -109,7 +109,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TURN-001` | A turn is turn start, planning by each active player in slot order, then resolution | supported | complete | None | None | implemented | None |
+| `RULE-TURN-001` | A turn is turn start, planning by each active player in slot order, then resolution | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-TURN-002` | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported | complete | None | None | implemented | None |
 | `RULE-TURN-003` | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported | complete | None | None | implemented | None |
 | `RULE-TURN-004` | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported | complete | None | `DEV-TURN-001` | implemented | None |
@@ -146,7 +146,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-HIRE-001` | Hires and snubs are carried out player by player and offer slot by offer slot | supported | complete | None | None | implemented | None |
+| `RULE-HIRE-001` | Hires and snubs are carried out player by player and offer slot by offer slot | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-HIRE-002` | Vacant hire offers are refilled in place at the player's planning entry | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-HIRE-003` | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported | complete | None | `DEV-HIRE-001` | implemented | The rebuild refuses a drop on a sector already holding six friendly gangs, which the original accepts (see deviations). |
 | `RULE-HIRE-004` | A new match starts with every hire offer vacant and no hire order | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
@@ -316,16 +316,16 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | complete | None | `DEV-AI-003` | implemented | A seat changes hands only at a clean Command boundary, so the takeover's own planning pass (FND-AI-043) is the pass that turn's planning runs. |
+| `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-003` | validated | A seat changes hands only at a clean Command boundary, so the takeover's own planning pass (FND-AI-043) is the pass that turn's planning runs. |
 | `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | Every gang submits the one command its record holds after this turn's family dispatch, when that command is legal; a gang with none, a record missing the target its action needs, and a gang in family 99 plan nothing. The planner refuses a player whose records the dispatch has not written this turn. |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | The sector weights and the hostility step also run once for every player, humans included, when a match starts (as it is built) and when it is loaded (a journaled step of the local load), as FND-AI-045 records. |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | hostile_owner reads the attitude cell of owner_query, with the out-of-row reads of FND-AI-048 for a neutral sector and one under police presence. |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | None |
 | `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported | complete | None | None | implemented | No call reaches mode 4; the rebuild scores it from the standings bytes and the owner query as FND-AI-056 reads them. |
 | `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | complete | None | None | implemented | Mode 0 draws one of the eight neighbours with roll(8) and draws again off the map, with no capacity test. |
-| `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | supported | complete | None | None | implemented | None |
-| `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | None | None | implemented | None |
-| `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | complete | None | None | implemented | The hunter guards compare the previous hire role with the scenario's hunter slot number, as the original does (BUG-AI-001), and the per-scenario slot adjustments and the hunter reversion follow FND-AI-050. `first_hostile` reads the sector weights the planning pass cached before its hostility step (RULE-AI-003), and the hunter coverage test follows selector 0x5F (FND-AI-059). In 60 simulated four-year matches with a simulated human, computer players hired 853 hunters out of 23,722 hires. |
+| `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The hunter guards compare the previous hire role with the scenario's hunter slot number, as the original does (BUG-AI-001), and the per-scenario slot adjustments and the hunter reversion follow FND-AI-050. `first_hostile` reads the sector weights the planning pass cached before its hostility step (RULE-AI-003), and the hunter coverage test follows selector 0x5F (FND-AI-059). In 60 simulated four-year matches with a simulated human, computer players hired 853 hunters out of 23,722 hires. |
 | `RULE-AI-011` | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported | complete | None | None | implemented | None |
 | `RULE-AI-012` | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported | complete | None | None | implemented | None |
 | `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | complete | None | `DEV-AI-004` | implemented | Placement is carried out in the Hire phase. The failed anchor 63 follows FND-AI-051. An anchor of 164 (sector 100) always fails the keep test and is replaced (DEV-AI-004). |

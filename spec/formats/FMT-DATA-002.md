@@ -9,7 +9,7 @@ byte_order: little
 size: 156
 text: false
 definition: fmt_data_002.ksy
-evidence: [FND-DATA-002, FND-DATA-006, FND-DATA-007, FND-GANG-007, FND-ASSET-001, FND-GANG-001, FND-AI-008, FND-UPKEEP-001, FND-HIRE-006, FND-HIRE-007, FND-HIRE-009, FND-RESEARCH-003, SRC-RECHAOS-3561D41, FND-EVENT-005, FND-GANG-006, FND-GANG-002]
+evidence: [FND-DATA-002, FND-DATA-006, FND-DATA-007, FND-GANG-007, FND-ASSET-001, FND-GANG-001, FND-AI-064, FND-UPKEEP-001, FND-HIRE-006, FND-HIRE-007, FND-HIRE-009, FND-RESEARCH-003, SRC-RECHAOS-3561D41, FND-EVENT-005, FND-GANG-006, FND-GANG-002]
 conflicting: []
 split_with: []
 related: []
@@ -27,8 +27,8 @@ related: []
 | `0x00` | 30 | `char[30]` | `name` | The gang's name. ASCII text, then one NUL byte, then spaces to the end of the field. Read it as a C string. | supported | FND-EVENT-005, FND-GANG-006, FND-GANG-002, FND-DATA-002, SRC-RECHAOS-3561D41 |
 | `0x1E` | 2 | `INT16LE` | `id` | The gang's number, equal to the record's index, 0 to 89. | supported | FND-DATA-002 |
 | `0x20` | 90 | `char[90]` | `description` | The gang's description, drawn as three rows of 30 characters. ASCII text padded with spaces to the end of the field, with no NUL byte. | supported | FND-GANG-006, FND-GANG-002, FND-DATA-002, SRC-RECHAOS-3561D41 |
-| `0x7A` | 2 | `INT16LE` | `hire_cost` | The price of hiring the gang. The hire resolution tests it against cash and charges it, a price of 0 skipping the cash test; the console draws it under each offer; the computer players compare it with cash. SRC-RECHAOS-3561D41 calls it the gang's Force. | supported | FND-DATA-002, FND-HIRE-006, FND-HIRE-007, FND-AI-008 |
-| `0x7C` | 2 | `INT16LE` | `upkeep` | Upkeep paid each turn for the gang. | supported | FND-DATA-002, FND-AI-008, FND-UPKEEP-001 |
+| `0x7A` | 2 | `INT16LE` | `hire_cost` | The price of hiring the gang. The hire resolution tests it against cash and charges it, a price of 0 skipping the cash test; the console draws it under each offer; the computer players compare it with cash. SRC-RECHAOS-3561D41 calls it the gang's Force. | supported | FND-DATA-002, FND-HIRE-006, FND-HIRE-007, FND-AI-064 |
+| `0x7C` | 2 | `INT16LE` | `upkeep` | Upkeep paid each turn for the gang. | supported | FND-DATA-002, FND-AI-064, FND-UPKEEP-001 |
 | `0x7E` | 2 | `INT16LE` | `combat` | Base Combat. | supported | FND-GANG-001, FND-HIRE-006, SRC-RECHAOS-3561D41 |
 | `0x80` | 2 | `INT16LE` | `defense` | Base Defense. | supported | FND-GANG-001, FND-HIRE-006, SRC-RECHAOS-3561D41 |
 | `0x82` | 2 | `INT16LE` | `tech_level` | Tech Level: the limit the Research list compares item Tech Levels with, and the first row of the hire comparison panel. Not copied into the gang record. | supported | FND-RESEARCH-003, FND-HIRE-009, FND-HIRE-006, SRC-RECHAOS-3561D41 |

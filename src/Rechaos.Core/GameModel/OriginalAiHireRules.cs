@@ -3,7 +3,8 @@ using Rechaos.Core.Assets;
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Three-offer ranking recovered from the original AI helper at 0x004078d9.
+/// Three-offer ranking recovered from the original AI helper at 0x004078d9 (RULE-AI-008,
+/// FND-AI-064) and the snub choice of selector 0x8E (RULE-AI-009, FND-AI-065).
 /// Returns the offer slot, not a gang ID, because later offers win most ties.
 /// </summary>
 internal static class OriginalAiHireRules
@@ -22,28 +23,28 @@ internal static class OriginalAiHireRules
         var selected = mode switch
         {
             0 => SelectLastMinimum(offers, initialScore: 3,
-                eligible: offer => offer.Stats.Control >= 0,
+                eligible: offer => offer.Stats.Chaos >= 0,
                 score: offer => offer.Upkeep),
             1 => SelectLastMaximum(offers, initialScore: 0,
                 eligible: offer => scenario != ScenarioId.Greed || offer.Upkeep <= 3,
-                score: offer => offer.Stats.Heal),
+                score: offer => offer.Stats.Control),
             2 => SelectLastMaximum(offers, initialScore: 0,
                 eligible: offer => scenario != ScenarioId.Greed || offer.Upkeep <= 3,
-                score: offer => offer.Stats.Research),
+                score: offer => offer.Stats.Influence),
             3 => SelectLastMaximum(offers, initialScore: 0,
                 eligible: _ => true,
                 score: CombatScore),
             4 when scenario == ScenarioId.Greed => SelectLastMaximum(offers, initialScore: 0,
                 eligible: offer => offer.Upkeep <= 4
-                    && offer.Stats.Strength >= 0
-                    && offer.Stats.Stealth > 3,
-                score: offer => offer.Stats.Stealth + offer.Stats.Strength),
+                    && offer.Stats.Research >= 0
+                    && offer.TechLevel > 3,
+                score: offer => offer.TechLevel + offer.Stats.Research),
             4 => SelectFirstStrictMaximum(offers, initialScore: 0,
-                eligible: offer => offer.Stats.Strength >= 0,
-                score: offer => offer.Stats.Stealth + offer.Stats.Strength),
+                eligible: offer => offer.Stats.Research >= 0,
+                score: offer => offer.TechLevel + offer.Stats.Research),
             5 => SelectLastMaximum(offers, initialScore: 10,
                 eligible: _ => true,
-                score: offer => offer.Stats.Detect),
+                score: offer => offer.Stats.Stealth),
             _ => null
         };
 
@@ -67,6 +68,7 @@ internal static class OriginalAiHireRules
             var stats = offer.Stats;
             var positiveTotal = Math.Max(0, (int)stats.Combat)
                 + Math.Max(0, (int)stats.Defense)
+                + Math.Max(0, (int)stats.Chaos)
                 + Math.Max(0, (int)stats.Control)
                 + Math.Max(0, (int)stats.Heal)
                 + Math.Max(0, (int)stats.Influence)
@@ -75,9 +77,8 @@ internal static class OriginalAiHireRules
                 + Math.Max(0, (int)stats.Blade)
                 + Math.Max(0, (int)stats.Range)
                 + Math.Max(0, (int)stats.Fighting)
-                + Math.Max(0, (int)stats.MartialArts)
-                + Math.Max(0, (int)offer.TechLevel);
-            var score = stats.Stealth * positiveTotal * 20
+                + Math.Max(0, (int)stats.MartialArts);
+            var score = offer.TechLevel * positiveTotal * 20
                 / (offer.Force + offer.Upkeep + 1);
             if (score >= best) continue;
             best = score;
@@ -87,6 +88,7 @@ internal static class OriginalAiHireRules
     }
 
     private static int CombatScore(GangDefinition offer) => offer.Stats.Combat
+        + Math.Max(0, (int)offer.Stats.Strength)
         + Math.Max(0, (int)offer.Stats.Blade)
         + Math.Max(0, (int)offer.Stats.Range)
         + Math.Max(0, (int)offer.Stats.Fighting)

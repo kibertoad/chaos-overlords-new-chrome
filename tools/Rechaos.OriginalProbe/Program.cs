@@ -26,6 +26,7 @@ static int Usage()
         Usage:
           Rechaos.OriginalProbe new-game --out <directory> [--game <install directory>] [--timeout <seconds>]
               [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
+              [--end-turns <n>]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
         """);
@@ -47,9 +48,13 @@ static int NewGame(string[] args)
             if (modifier is not null && !OriginalAddresses.ModifierNames.ContainsKey(modifier))
                 throw new ArgumentException($"Unknown name modifier {modifier}.");
             return new HumanSlot(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), modifier);
-        }).ToArray());
+        }).ToArray(),
+        IntOption(args, "--end-turns") ?? 0,
+        args.Contains("--trace-hires"));
 
-    var executable = Path.Combine(game, "Chaos Overlords.exe");
+    // --executable runs a copy from another path in the game directory, which escapes the
+    // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
+    var executable = Option(args, "--executable") ?? Path.Combine(game, "Chaos Overlords.exe");
     var hash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(executable)));
     if (hash != OriginalAddresses.ExecutableSha256)
     {
@@ -77,6 +82,7 @@ static int Extract(string[] args)
     var runArray = new JsonArray();
     var seeds = new JsonArray();
     string[]? settings = null;
+    string[]? turns = null;
     foreach (var run in runs)
     {
         // Runs of one experiment differ only in the seed.
@@ -88,6 +94,7 @@ static int Extract(string[] args)
         }
 
         settings = runSettings;
+        turns = StateExtractor.Turns(run);
         var extracted = StateExtractor.ExtractRun(run);
         seeds.Add(extracted["rng_state"]!.GetValue<int>());
         runArray.Add(extracted);
@@ -105,6 +112,9 @@ static int Extract(string[] args)
             new JsonObject { ["tick"] = 0, ["name"] = "command", ["value"] = "File, New Game (0x8101)" },
             .. settings!.Select(setting => new JsonObject { ["tick"] = 0, ["name"] = "setup", ["value"] = setting }),
             new JsonObject { ["tick"] = 0, ["name"] = "left_click", ["value"] = "Begin (416, 397)" },
+            // A Done press comes once the planning phase has settled, at the roll count its run
+            // gives in done_at_roll.
+            .. turns!.Select(turn => new JsonObject { ["tick"] = null, ["name"] = "left_click", ["value"] = turn }),
         ]),
         ["seeds"] = seeds,
         ["runs"] = runArray,

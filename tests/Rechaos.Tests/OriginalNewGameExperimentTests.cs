@@ -1,19 +1,24 @@
 using System.Text.Json;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
 using Xunit;
 
 namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. Each run gives the seed, every roll(n) with its call site
-/// and result, and the state the first planning phase starts from. The rebuild starts the same
-/// match from the same seed and settings and has to reach the same generator position and state.
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-003 go on to press Done with no
+/// orders for one to three turns and stop at the next planning phase. Each run gives the seed,
+/// every roll(n) with its call site and result, and the state the recording stops at. The rebuild
+/// plays the same match from the same seed and settings and has to make the same rolls in the same
+/// order and reach the same generator position and state. The turns check the turn order
+/// (RULE-TURN-001), the computer players' planning passes and hire choices (RULE-AI-001,
+/// RULE-AI-008, RULE-AI-009, RULE-AI-010) and the hire resolution (RULE-HIRE-001).
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003"];
 
     public static TheoryData<string, int> Runs()
     {
@@ -46,8 +51,28 @@ public sealed class OriginalNewGameExperimentTests
     public void TheRebuildStartsTheSameMatch(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded);
+        var rolls = new List<(int Bound, int Result)>();
+        MatchState match;
+        DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
+        try
+        {
+            match = StartMatch(recorded);
+        }
+        finally
+        {
+            DeterministicRandom.RollObserver = null;
+        }
+
         var human = recorded.Humans[0];
+
+        // The first roll that differs, named by the original's call instruction.
+        for (var index = 0; index < Math.Min(rolls.Count, recorded.Rolls.Count); index++)
+        {
+            var (call, bound, result) = recorded.Rolls[index];
+            Assert.True(
+                rolls[index] == (bound, result),
+                $"roll {index}: the original called roll({bound}) at {call} and got {result}, the rebuild roll({rolls[index].Bound}) and got {rolls[index].Result}");
+        }
 
         Assert.Equal(recorded.Rolls.Count * 3L, match.Random.ConsumptionCount);
         var expectedState = new DeterministicRandom(recorded.Seed);
@@ -154,6 +179,19 @@ public sealed class OriginalNewGameExperimentTests
         // RULE-SETUP-008: with several local humans the planning phase waits on the Ready card
         // before it refills the offers, and the recording stops there.
         if (recorded.Humans.Count == 1) match.PrepareHireOffers(recorded.Humans[0]);
+
+        // Each Done ends the human's planning with no orders. The computer players then plan and
+        // the turn resolves as in a headless match, up to the human's next planning entry.
+        var recorder = new MatchReplayRecorder(match);
+        for (var turn = 0; turn < recorded.DoneCount; turn++)
+        {
+            var human = recorded.Humans[0];
+            recorder.FinishCommand(human);
+            while (!(match.Coordinator.Phase == TurnPhase.Command && match.Coordinator.ActivePlayer == human))
+                HeadlessMatchRunner.Advance(recorder);
+            recorder.PrepareHireOffers(human);
+        }
+
         return match;
     }
 
@@ -206,6 +244,7 @@ public sealed class OriginalNewGameExperimentTests
         public RecordedRun(JsonElement run)
         {
             Seed = run.GetProperty("rng_state").GetInt32();
+            DoneCount = run.TryGetProperty("done_at_roll", out var done) ? done.GetArrayLength() : 0;
             Rolls = run.GetProperty("rolls").EnumerateArray()
                 .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
                 .ToArray();
@@ -221,6 +260,7 @@ public sealed class OriginalNewGameExperimentTests
         }
 
         public int Seed { get; }
+        public int DoneCount { get; }
 
         // controller: 0 for a human at this computer (FND-SETUP-002).
         public IReadOnlyList<PlayerId> Humans => Enumerable.Range(0, 6)

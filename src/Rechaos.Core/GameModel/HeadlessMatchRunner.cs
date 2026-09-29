@@ -128,7 +128,7 @@ public static class HeadlessMatchRunner
         return new HeadlessMatchResult(recorder.State, stateHash, boundaries, replayVerified);
     }
 
-    private static void Advance(MatchReplayRecorder recorder)
+    internal static void Advance(MatchReplayRecorder recorder)
     {
         var state = recorder.State;
         switch (state.Coordinator.Phase)
@@ -160,6 +160,9 @@ public static class HeadlessMatchRunner
 
     private static void PlanComputerTurn(MatchReplayRecorder recorder, PlayerId player)
     {
+        // RULE-TURN-001, RULE-HIRE-002: the vacant offers are refilled on entry, before the planner
+        // (RULE-AI-001) makes any draw of its own.
+        recorder.PrepareHireOffers(player);
         recorder.PrepareAiPlanning(player);
         foreach (var command in AiPolicyPlanner.Plan(recorder.State, player))
         {
@@ -167,7 +170,6 @@ public static class HeadlessMatchRunner
             if (!result.Accepted)
                 throw new InvalidOperationException("AI submitted an illegal command.");
         }
-        recorder.PrepareHireOffers(player);
         var hiring = recorder.PrepareAiHiring(player);
         if (hiring.Choice is { } choice)
         {

@@ -342,17 +342,26 @@ of the game's content are never committed.
 
 `tools/Rechaos.OriginalProbe` runs the installed original under the Windows
 debugging interface and records a new local game without anyone at the
-keyboard. It checks the executable's SHA-256 against BLD-GOG-EN-1.1 first. The
-GOG install gives the executable compatibility layers that ask for
-administrator rights, so the probe has to run from an elevated prompt.
+keyboard. It checks the executable's SHA-256 against BLD-GOG-EN-1.1 first.
+
+The GOG install registers compatibility layers for the installed executable's
+path, among them RUNASADMIN, so starting that file needs an elevated prompt.
+A copy at another path escapes them. Put `Chaos Overlords.exe` and
+`SMACKW32.DLL` in a directory outside the repository, add directory junctions
+named `DATA`, `MUSIC` and `HELP` that point into the install (the game finds
+its data next to its own executable), set the other layers for the child
+process, and pass the copy with `--executable`:
 
 ```powershell
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
+$env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
-`new-game` switches full screen off in memory, skips the intro, presses Begin,
-records the seed and every `roll` with its call site and result, and copies
+`new-game` switches full screen off in memory, ends the logos and intro movies
+by holding `left_button_down` in memory (RULE-VIDEO-001 ends a movie only when
+the button is held at one of its ticks, so a posted click is missed), presses
+Begin, records the seed and every `roll` with its call site and result, and copies
 the writable sections once the first planning phase waits for input.
 EXP-SETUP-001 gives the breakpoints and the procedure. Without options, Begin
 takes the settings the setup screen opens with (the registry's preferences).
@@ -362,13 +371,20 @@ limit, and the slots that hold humans, each optionally named with one of the
 six name modifiers (`right_hands`, `visibility`, `hire_force`, `elite`,
 `islands`, `cash`), which the probe reads from the running executable. With
 several humans the recording stops at the first human's Ready card, before
-its hire offers are drawn. `extract` refuses runs recorded with different
-settings, since the runs of one experiment differ only in the seed. The run directory holds
+its hire offers are drawn. `--end-turns` presses Done that many times with no
+orders, with Warn if Idle Gangs and Detailed Combat switched off in memory so
+nothing waits for input, and dumps the state at the planning phase that
+follows the last one; each run records the roll count at every press as
+`done_at_roll`. `extract` refuses runs recorded with different
+settings, since the runs of one experiment differ only in the seed. The run
+directory holds
 the original's memory and never goes into the repository. `extract` reads the
 numbers of the spec's state layouts and glossary terms out of one or more run
 directories and writes them as the runs of an experiment fixture, with no
 names or texts. `OriginalNewGameExperimentTests` replays every run of
-EXP-SETUP-001 to EXP-SETUP-004 against the rebuild.
+EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-003 against the
+rebuild and names the first roll whose bound or result differs, with the
+original's call instruction.
 
 ## Static binary research
 

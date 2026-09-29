@@ -1,9 +1,9 @@
 ---
 id: FND-AI-008
 title: The AI ranks its three hire offers by a role mode, then refuses an unaffordable winner without a fallback
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-064]
 recorded_by: kibertoad
 reproduced_by: []
 method: static
