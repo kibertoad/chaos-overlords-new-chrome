@@ -7,12 +7,25 @@ internal sealed record RollRecord(string Call, int Bound, int Result);
 internal sealed record HumanSlot(int Slot, string? Modifier);
 
 /// <summary>
+/// An order the probe writes into a gang record of the first human before the Done press of
+/// <paramref name="Turn"/>, counted from 1: the FMT-STATE-001 bytes <c>action</c>, <c>target</c>
+/// and <c>target_2</c>, and for a recurring order <c>repeat_action</c> and <c>repeat_target</c>, as
+/// RULE-TURN-005 has the order screens write them.
+/// </summary>
+internal sealed record ProbeOrder(int Turn, int Slot, int Action, int Target, int Target2, bool Repeat)
+{
+    public override string ToString() =>
+        $"turn {Turn}: gang slot {Slot} action {Action} target {Target} target_2 {Target2} repeat {(Repeat ? 1 : 0)}";
+}
+
+/// <summary>
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
 /// Scenario numbers are the original's (FND-SETUP-013).
 /// </summary>
 internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
-    bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null)
+    bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
+    IReadOnlyList<ProbeOrder>? Orders = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -28,11 +41,20 @@ internal sealed record NewGameSettings(
                 : $"slot {human.Slot}: human named modifier_name_{human.Modifier}";
     }
 
-    /// <summary>The Done presses after the first planning phase, one line each.</summary>
-    public IEnumerable<string> DescribeTurns()
+    /// <summary>
+    /// The orders and Done presses after the first planning phase, one input each: an order is
+    /// named <c>order</c> and a Done press <c>left_click</c>.
+    /// </summary>
+    public IEnumerable<(string Name, string Value)> DescribeTurns()
     {
         for (var turn = 1; turn <= EndTurns; turn++)
-            yield return $"Done (550, 306) with no orders, turn {turn}";
+        {
+            var orders = (Orders ?? []).Where(order => order.Turn == turn).ToArray();
+            foreach (var order in orders) yield return ("order", order.ToString());
+            yield return ("left_click", orders.Length == 0
+                ? $"Done (550, 306) with no orders, turn {turn}"
+                : $"Done (550, 306), turn {turn}");
+        }
     }
 }
 
@@ -61,6 +83,7 @@ internal sealed class NewGameSession(
     private readonly List<int> _rollsAtDone = [];
     private int _seed = -1;
     private bool _setupReached;
+    private int _panelsOpen;
 
     public ProbeTrace Run()
     {
@@ -70,6 +93,8 @@ internal sealed class NewGameSession(
         _process.SetBreakpoint(OriginalAddresses.LocalSetup, _ => _setupReached = true);
         if (settings.TraceHires) _process.SetBreakpoint(OriginalAddresses.HireOrderCheck, TraceHire);
         if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
+        _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
+        _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
 
         var window = IntPtr.Zero;
         if (!_process.RunUntil(() => (window = _process.FindMainWindow()) != IntPtr.Zero, timeout))
@@ -107,13 +132,30 @@ internal sealed class NewGameSession(
         // when elapsed_turns has moved on and the rolls have stopped again.
         for (var turn = 1; turn <= settings.EndTurns; turn++)
         {
+            if (!ClosePanels(window))
+                return Finish(false, $"A panel of turn {turn} never closed.", rollsBeforeBegin);
+            foreach (var order in (settings.Orders ?? []).Where(order => order.Turn == turn))
+                WriteOrder(order);
             _rollsAtDone.Add(_rolls.Count);
             Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
             var target = turn;
-            var next = _process.RunUntil(
-                () => _process.ReadInt32(OriginalAddresses.ElapsedTurns) >= target
-                      && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(8),
-                timeout);
+            var rollsAtClick = _rolls.Count;
+            var clicked = DateTime.UtcNow;
+            // A press the game did not take leaves the turn where it was with no roll made; press
+            // again after a quiet while.
+            var next = _process.RunUntil(() =>
+            {
+                if (_rolls.Count == rollsAtClick && _process.ReadInt32(OriginalAddresses.ElapsedTurns) < target
+                    && DateTime.UtcNow - clicked > TimeSpan.FromSeconds(20))
+                {
+                    ClosePanels(window);
+                    _notes.Add($"Done of turn {turn} pressed again after roll {_rolls.Count}");
+                    Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
+                    clicked = DateTime.UtcNow;
+                }
+                return _process.ReadInt32(OriginalAddresses.ElapsedTurns) >= target
+                       && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(8);
+            }, timeout);
             if (!next) return Finish(false, $"Turn {turn} never reached the next planning phase.", rollsBeforeBegin);
         }
 
@@ -122,6 +164,36 @@ internal sealed class NewGameSession(
     }
 
     public void Dispose() => _process.Dispose();
+
+    private void OpenPanel(BreakContext context, string panel)
+    {
+        _panelsOpen++;
+        _notes.Add($"{panel} opened after roll {_rolls.Count}");
+        _process.SetBreakpoint(context.ReturnAddress, _ => _panelsOpen--, oneShot: true);
+    }
+
+    // Presses Exit until every panel handler that opened has returned.
+    private bool ClosePanels(IntPtr window)
+    {
+        for (var attempt = 0; _panelsOpen > 0 && attempt < 10; attempt++)
+        {
+            Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
+            _process.RunUntil(() => _panelsOpen == 0, TimeSpan.FromSeconds(3));
+        }
+
+        return _panelsOpen == 0;
+    }
+
+    private void WriteOrder(ProbeOrder order)
+    {
+        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var record = OriginalAddresses.GangRecords
+            + (uint)(human * OriginalAddresses.PlayerGangStride + order.Slot * OriginalAddresses.GangRecordSize);
+        _process.Write(record + 7, [
+            (byte)order.Action, (byte)order.Target, (byte)order.Target2,
+            (byte)(order.Repeat ? order.Action : 0), (byte)(order.Repeat ? order.Target : 0)]);
+        _notes.Add($"order after roll {_rolls.Count}: {order}");
+    }
 
     // --seed replaces the clock value the process start passes to srand, so a run can be repeated.
     private void SeedGenerator(BreakContext context)

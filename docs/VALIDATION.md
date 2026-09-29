@@ -354,7 +354,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
@@ -374,7 +374,17 @@ several humans the recording stops at the first human's Ready card, before
 its hire offers are drawn. `--end-turns` presses Done that many times with no
 orders, with Warn if Idle Gangs and Detailed Combat switched off in memory so
 nothing waits for input, and dumps the state at the planning phase that
-follows the last one; each run records the roll count at every press as
+follows the last one. The human's planning phase opens the Combat Results
+panel (SCR-COMBAT-001) after a fight that involved its gangs, and the Last
+Turn Events panel (SCR-EVENT-001) when it has reports, and waits in each; the
+probe breaks on both handlers and presses Exit before the next Done, and presses
+Done again if a press left the turn unmoved for 20 seconds. `--orders` writes
+an order into a gang record of the first human before the Done press of the
+given turn, counted from 1: the `action`, `target` and `target_2` bytes of
+FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
+as the order screens write them (RULE-TURN-005). The fixture lists each order
+as an `order` input before its Done press, and the replay submits the same
+order as a command; each run records the roll count at every press as
 `done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
 a recorded run can be played again, and `--dump-at-roll` copies the writable
 sections and the top of the stack at the entry of that call of `roll`, counted
@@ -391,7 +401,7 @@ the original's memory and never goes into the repository. `extract` reads the
 numbers of the spec's state layouts and glossary terms out of one or more run
 directories and writes them as the runs of an experiment fixture, with no
 names or texts. `OriginalNewGameExperimentTests` replays every run of
-EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-008 against the
+EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-009 against the
 rebuild and names the first roll whose bound or result differs, with the
 original's call instruction.
 

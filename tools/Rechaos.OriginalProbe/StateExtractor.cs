@@ -43,8 +43,8 @@ internal sealed class StateExtractor
         return (trace.Settings ?? NewGameSettings.Defaults).Describe().ToArray();
     }
 
-    /// <summary>The Done presses a run was recorded with, one line each.</summary>
-    public static string[] Turns(string runDirectory)
+    /// <summary>The orders and Done presses a run was recorded with, one input each.</summary>
+    public static (string Name, string Value)[] Turns(string runDirectory)
     {
         var trace = JsonSerializer.Deserialize<ProbeTrace>(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
         return (trace.Settings ?? NewGameSettings.Defaults).DescribeTurns().ToArray();

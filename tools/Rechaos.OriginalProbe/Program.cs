@@ -27,6 +27,7 @@ static int Usage()
           Rechaos.OriginalProbe new-game --out <directory> [--game <install directory>] [--timeout <seconds>]
               [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
+              [--orders <turn:slot:action:target:target_2:repeat>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
         """);
@@ -53,7 +54,8 @@ static int NewGame(string[] args)
         args.Contains("--trace-hires"),
         IntOption(args, "--seed"),
         IntOption(args, "--dump-at-roll"),
-        HexOption(args, "--trace-calls"));
+        HexOption(args, "--trace-calls"),
+        Option(args, "--orders") is { } orders ? ParseOrders(orders) : null);
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
@@ -85,7 +87,7 @@ static int Extract(string[] args)
     var runArray = new JsonArray();
     var seeds = new JsonArray();
     string[]? settings = null;
-    string[]? turns = null;
+    (string Name, string Value)[]? turns = null;
     foreach (var run in runs)
     {
         // Runs of one experiment differ only in the seed.
@@ -96,8 +98,15 @@ static int Extract(string[] args)
             return 1;
         }
 
+        var runTurns = StateExtractor.Turns(run);
+        if (turns is not null && !turns.SequenceEqual(runTurns))
+        {
+            Console.Error.WriteLine($"{run} was recorded with other orders or turns.");
+            return 1;
+        }
+
         settings = runSettings;
-        turns = StateExtractor.Turns(run);
+        turns = runTurns;
         var extracted = StateExtractor.ExtractRun(run);
         seeds.Add(extracted["rng_state"]!.GetValue<int>());
         runArray.Add(extracted);
@@ -115,9 +124,9 @@ static int Extract(string[] args)
             new JsonObject { ["tick"] = 0, ["name"] = "command", ["value"] = "File, New Game (0x8101)" },
             .. settings!.Select(setting => new JsonObject { ["tick"] = 0, ["name"] = "setup", ["value"] = setting }),
             new JsonObject { ["tick"] = 0, ["name"] = "left_click", ["value"] = "Begin (416, 397)" },
-            // A Done press comes once the planning phase has settled, at the roll count its run
-            // gives in done_at_roll.
-            .. turns!.Select(turn => new JsonObject { ["tick"] = null, ["name"] = "left_click", ["value"] = turn }),
+            // An order is written and a Done pressed once the planning phase has settled, at the
+            // roll count its run gives in done_at_roll.
+            .. turns!.Select(turn => new JsonObject { ["tick"] = null, ["name"] = turn.Name, ["value"] = turn.Value }),
         ]),
         ["seeds"] = seeds,
         ["runs"] = runArray,
@@ -129,6 +138,15 @@ static int Extract(string[] args)
 
 static int? IntOption(string[] args, string name) =>
     Option(args, name) is { } value ? int.Parse(value, System.Globalization.CultureInfo.InvariantCulture) : null;
+
+// --orders turn:slot:action:target:target_2:repeat,... with repeat 0 or 1.
+static IReadOnlyList<ProbeOrder> ParseOrders(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(order =>
+    {
+        var parts = order.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        if (parts.Length != 6) throw new FormatException($"An order needs six numbers: {order}");
+        return new ProbeOrder(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5] != 0);
+    }).ToArray();
 
 static uint? HexOption(string[] args, string name) =>
     Option(args, name) is { } value
