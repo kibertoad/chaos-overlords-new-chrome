@@ -367,6 +367,18 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Equal(1, planning.CaptureSectorChoiceScores()[0]);
     }
 
+    // RULE-AI-006, FND-AI-067, EXP-TURN-007: an encoded mode adds 1 to its sector for each cell the
+    // first ring visits. Sector 16 has six cells on the board within one step, itself included.
+    [Fact]
+    public void AnEncodedModeScoresItsSectorOncePerVisitedCell()
+    {
+        var planning = AiPlanningState.Initialize();
+        var facts = new Facts(source: 16);
+
+        facts.Select(mode: 0x40, family: 2, planning: planning);
+        Assert.Equal(6, planning.CaptureSectorChoiceScores()[0]);
+    }
+
     // RULE-AI-006, FND-AI-066, EXP-TURN-006: player 0's records are all zero before its first
     // planning pass, and player 1's first record starts with family 99, so a count over zero scores
     // stops after 64 + 32 + 162 pairs, the roll(258) of the Armageddon recordings.

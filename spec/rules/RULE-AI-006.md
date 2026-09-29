@@ -4,7 +4,7 @@ title: The shared AI sector selector scores the nearest sectors by mode and rout
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-AI-025, FND-AI-026, FND-AI-027, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052, FND-AI-066, EXP-TURN-004, EXP-TURN-006]
+evidence: [FND-AI-005, FND-AI-025, FND-AI-026, FND-AI-027, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052, FND-AI-066, FND-AI-067, EXP-TURN-004, EXP-TURN-006, EXP-TURN-007]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-007, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -175,13 +175,13 @@ define mode_score(player, mode, idx, c):
     else if mode == 16:
         if c == block_leader_sector(player, idx - player * 81):
             score = 1
-    else if mode >= 0x40:
-        if c == mode - 0x40:
-            score = 1
-    # the common block after the mode switch
-    if score > 0 and o >= 0 and is_human(o) and attitude[player * 6 + o] < 0:
-        score = score * 5
     return score
+
+# The sector whose score an encoded target t raises: the selector adds to
+# element (t % 8) * 8 + t / 8 of score as the table holds it
+define encoded_sector(t):
+    let d = (t % 8) * 8 + t / 8
+    return (d % 8) * 8 + d / 8
 
 # The destination for the gang idx of player; mode 0 is RULE-AI-007
 define select_sector(player, mode, idx):
@@ -196,12 +196,24 @@ define select_sector(player, mode, idx):
         append(score, 0)
     let radius = 1
     let found = false
+    # each ring visits the whole square, column by column, and adds
     while radius <= 7 and not found:
-        for c in 0..64:
-            if abs(c % 8 - sx) <= radius and abs(c / 8 - sy) <= radius:
-                score[c] = mode_score(player, mode, idx, c)
-                if score[c] > 0:
-                    found = true
+        for x in 0..8:
+            for y in 0..8:
+                let c = y * 8 + x
+                if abs(x - sx) <= radius and abs(y - sy) <= radius:
+                    let added = mode_score(player, mode, idx, c)
+                    if added > 0:
+                        score[c] = score[c] + added
+                        found = true
+                    if mode >= 0x40:
+                        let e = encoded_sector(mode - 0x40)
+                        score[e] = score[e] + 1
+                        found = true
+                    # the common block after the mode switch
+                    let o = sectors[c].owner
+                    if o >= 0 and is_human(o) and attitude[player * 6 + o] < 0:
+                        score[c] = score[c] * 5
         radius = radius + 1
     score[src] = 0
     # the late filters; a filtered sector of family 0 or 1 keeps its old pair
@@ -317,9 +329,9 @@ bytes until its first planning pass, so with a human in slot 0 the count
 reaches 258 (FND-AI-066, EXP-TURN-006). A pick among the first 64 pairs is the
 sector of that number, since equal scores are never swapped; a pick in the
 table reads a sector field of 0, and a pick in the records reads four of their
-bytes as a sector. The gang then steps toward that target. Encoded modes and
-mode 11 always end that way, because the only sector they score is removed
-when it is the gang's own. The search stops at the first radius where any
+bytes as a sector. The gang then steps toward that target. Mode 11, and an
+encoded mode whose sector is the gang's own, end that way, because the only
+sector they score is removed. The search stops at the first radius where any
 sector scores, even when that sector is the gang's own and is removed
 afterwards. A sector already holding six of the player's gangs is never
 entered by a routing step, but a directly returned adjacent target is not
@@ -334,6 +346,14 @@ initialized data before the list, and for player 5 a field of the first
 `selector_pairs` (FND-AI-066). A step whose read gives 5 or less is taken, and
 the destination is a sector number outside the city.
 
+An encoded mode stops the search at radius 1 whatever it scores, because every
+visited sector adds 1 to its target and sets `found`. The target's score is the
+number of sectors on the board within one step of the gang, its own included:
+4 in a corner, 6 on an edge, 9 elsewhere, multiplied by five when the target
+lies in that square and is held by a hostile human, after the visits before it
+(FND-AI-067, EXP-TURN-007). The target need not be in that square. The guard
+end marker 100 (RULE-AI-025) raises sector 37, the sector of table element 44.
+
 ## What the sources say
 
 SRC-MANUAL-GOG does not describe how computer players choose where to move.
@@ -344,8 +364,6 @@ None known.
 
 ## Open questions
 
-- Whether each radius clears the scores before rescanning is not recorded; the
-  procedure writes each score by assignment, which gives the same result.
 - The late filter clears sectors whose byte at sector record +15 is nonzero;
   that byte is taken to be `crackdown_turns`.
 - Whether the Crackdown filter also applies before the radius search stops is

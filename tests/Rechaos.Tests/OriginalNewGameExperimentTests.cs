@@ -8,8 +8,8 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-006 go on to press Done with no
-/// orders for one to six turns and stop at the next planning phase. Each run gives the seed,
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-008 go on to press Done with no
+/// orders for one to fifteen turns and stop at the next planning phase. Each run gives the seed,
 /// every roll(n) with its call site and result, and the state the recording stops at. The rebuild
 /// plays the same match from the same seed and settings and has to make the same rolls in the same
 /// order and reach the same generator position and state. The turns check the turn order
@@ -19,7 +19,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));

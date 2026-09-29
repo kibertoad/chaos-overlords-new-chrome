@@ -4,7 +4,7 @@ title: A computer player picks a hire role from its scenario's turn schedule, th
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-050, FND-AI-059, FND-AI-003, FND-AI-009, FND-AI-013, FND-AI-014, FND-AI-017, FND-AI-064, FND-AI-065, FND-AI-042, FND-AI-044, FND-EXE-004, FND-OBJECTIVE-003, FND-SETUP-018]
+evidence: [FND-AI-050, FND-AI-068, FND-AI-003, FND-AI-009, FND-AI-013, FND-AI-014, FND-AI-017, FND-AI-064, FND-AI-065, FND-AI-042, FND-AI-044, FND-EXE-004, FND-OBJECTIVE-003, FND-SETUP-018]
 conflicting: []
 split_with: []
 related: [RULE-AI-001, RULE-AI-008, RULE-AI-009, RULE-AI-011, RULE-AI-012, RULE-AI-004, RULE-OBJECTIVE-002, FMT-STATE-001]

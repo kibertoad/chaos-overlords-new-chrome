@@ -354,7 +354,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
@@ -380,14 +380,18 @@ a recorded run can be played again, and `--dump-at-roll` copies the writable
 sections and the top of the stack at the entry of that call of `roll`, counted
 from 0, into
 `at-roll-<n>` in the run directory, to look at the state that led to a
-divergence. `extract` refuses runs recorded with different
+divergence. `--trace-calls` sets a breakpoint on a function of the original and
+adds a note to `trace.json` for each call: the roll count so far, the calling
+instruction, the first four stack arguments and the returned value. Comparing
+those notes with the same calls in the rebuild shows which call first gave a
+different answer. `extract` refuses runs recorded with different
 settings, since the runs of one experiment differ only in the seed. The run
 directory holds
 the original's memory and never goes into the repository. `extract` reads the
 numbers of the spec's state layouts and glossary terms out of one or more run
 directories and writes them as the runs of an experiment fixture, with no
 names or texts. `OriginalNewGameExperimentTests` replays every run of
-EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-006 against the
+EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-008 against the
 rebuild and names the first roll whose bound or result differs, with the
 original's call instruction.
 
