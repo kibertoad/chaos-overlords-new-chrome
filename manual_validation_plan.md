@@ -110,8 +110,8 @@ finding or experiment is in the spec.
 - RULE-BRIBE-001 / BUG-BRIBE-001: bribe a sector with Tolerance 39 twice in
   one turn; record 45 (no cap) and cash down by 6. Bribe with 2 cash; record
   the report and that nothing changed.
-- RULE-SNITCH-001 / RULE-TOLERANCE-002: Snitch a sector at Tolerance 2 while
-  in debt; record Tolerance 1 after the turn and no cash change.
+- RULE-SNITCH-001: Snitch while in debt; record no cash change. EXP-TURN-032
+  covers the clamp at 1 with the player's cash positive.
 - RULE-TOLERANCE-001: after one Bribe, record the sector's Tolerance at each
   of the next four turn starts and, if it can be seen, at each phase, to find
   when the one-point return happens and what normal is.

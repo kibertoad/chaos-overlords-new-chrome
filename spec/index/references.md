@@ -61,6 +61,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-029](../experiments/EXP-TURN-029.md) | builds |
 | [EXP-TURN-030](../experiments/EXP-TURN-030.md) | builds |
 | [EXP-TURN-031](../experiments/EXP-TURN-031.md) | builds |
+| [EXP-TURN-032](../experiments/EXP-TURN-032.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -866,6 +867,7 @@ None.
 | [EXP-TURN-029](../experiments/EXP-TURN-029.md) | body |
 | [EXP-TURN-030](../experiments/EXP-TURN-030.md) | body |
 | [EXP-TURN-031](../experiments/EXP-TURN-031.md) | body |
+| [EXP-TURN-032](../experiments/EXP-TURN-032.md) | body |
 
 ## EXP-TURN-002
 
@@ -906,6 +908,7 @@ None.
 | [EXP-TURN-029](../experiments/EXP-TURN-029.md) | body |
 | [EXP-TURN-030](../experiments/EXP-TURN-030.md) | body |
 | [EXP-TURN-031](../experiments/EXP-TURN-031.md) | body |
+| [EXP-TURN-032](../experiments/EXP-TURN-032.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 
 ## EXP-TURN-005
@@ -1112,6 +1115,13 @@ None.
 |---|---|
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | evidence |
+
+## EXP-TURN-032
+
+| Cited by | In |
+|---|---|
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | evidence |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -7188,6 +7198,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
+| [EXP-TURN-032](../experiments/EXP-TURN-032.md) | body |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | related |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, related |
 
@@ -7234,6 +7245,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-032](../experiments/EXP-TURN-032.md) | body |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | related |
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | related |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | related |
@@ -7244,6 +7256,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | body, related |
+| [EXP-TURN-032](../experiments/EXP-TURN-032.md) | body |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | body, related |
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | body, related |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | body, related |

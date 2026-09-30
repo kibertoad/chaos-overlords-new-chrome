@@ -208,6 +208,7 @@
 | [EXP-TURN-029](../experiments/EXP-TURN-029.md) | Does an armed gang strike back at a bare-handed Martial Artist? | recorded |
 | [EXP-TURN-030](../experiments/EXP-TURN-030.md) | Do two Gives swap weapons, and does the later of two Gives to one gang replace both the earlier one and a weapon bought that turn? | recorded |
 | [EXP-TURN-031](../experiments/EXP-TURN-031.md) | Does an Equip succeed at exactly its price, fail one short, and count a Sell only from an earlier roster slot? | recorded |
+| [EXP-TURN-032](../experiments/EXP-TURN-032.md) | Does a Snitch that takes a base Tolerance below 1 leave it at 1? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -348,7 +349,7 @@
 | ID | Title | Status |
 |---|---|---|
 | [FND-SNITCH-001](../findings/FND-SNITCH-001.md) | Snitch subtracts 3 from Tolerance with no cash test, and after the instant phase every Tolerance below 1 becomes 1 | recorded |
-| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | established |
 
 ## TOLERANCE
 
@@ -356,7 +357,7 @@
 |---|---|---|
 | [FND-TOLERANCE-001](../findings/FND-TOLERANCE-001.md) | Bribe, Snitch and a one-point drift change the base Tolerance at sector offset 0x02, which is clamped to 1..40 after the instant phase, while the Chaos test reads offset 0x05 | recorded |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | established |
-| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 | supported |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 | established |
 
 ## SITE
 
