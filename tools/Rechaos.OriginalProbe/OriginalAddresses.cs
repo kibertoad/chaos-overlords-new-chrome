@@ -71,6 +71,13 @@ internal static class OriginalAddresses
     public const uint HireOrderCheck = 0x0047592B;
     public const uint HireOffers = 0x004ABBC0;
     public const uint HireOrders = 0x004A27C8;
+
+    // FMT-STATE-007: the computer players' planning records, 81 of 16 bytes per player, with the
+    // family at offset 0; FND-AI-043: raider_mode, one byte per player.
+    public const uint PlanningRecords = 0x0048A250;
+    public const int PlanningPlayerStride = 0x510;
+    public const int PlanningRecordSize = 0x10;
+    public const uint RaiderMode = 0x00482158;
     public const uint Cash = 0x004A25E8;
 
     // FND-SETUP-002: the full local setup handler.

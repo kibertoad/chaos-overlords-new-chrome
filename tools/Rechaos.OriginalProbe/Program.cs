@@ -28,6 +28,7 @@ static int Usage()
               [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
               [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer_slot:sector>,...] [--sound]
+              [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
         """);
@@ -57,7 +58,8 @@ static int NewGame(string[] args)
         HexOption(args, "--trace-calls"),
         Option(args, "--orders") is { } orders ? ParseOrders(orders) : null,
         args.Contains("--sound"),
-        Option(args, "--hires") is { } hires ? ParseHires(hires) : null);
+        Option(args, "--hires") is { } hires ? ParseHires(hires) : null,
+        ParsePlanning(Option(args, "--families"), Option(args, "--raiders")));
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
@@ -158,6 +160,30 @@ static IReadOnlyList<ProbeHire> ParseHires(string value) =>
         if (parts.Length != 3 || parts[1] is < 0 or > 2) throw new FormatException($"A hire needs a turn, an offer slot 0 to 2 and a sector: {hire}");
         return new ProbeHire(parts[0], parts[1], parts[2]);
     }).ToArray();
+
+// --families turn:player:slot:family,... writes a planning record's family; --raiders
+// turn:player,... sets a player's raider_mode (ProbePlanning).
+static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders)
+{
+    static int[] Numbers(string entry) =>
+        entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+    var writes = new List<ProbePlanning>();
+    foreach (var entry in (families ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var parts = Numbers(entry);
+        if (parts.Length != 4 || parts[1] is < 1 or > 5 || parts[2] is < 0 or > 80 || parts[3] is < 0 or > 99)
+            throw new FormatException($"A family write needs a turn, a player 1 to 5, a slot 0 to 80 and a family 0 to 99: {entry}");
+        writes.Add(new ProbePlanning(parts[0], parts[1], parts[2], parts[3]));
+    }
+    foreach (var entry in (raiders ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var parts = Numbers(entry);
+        if (parts.Length != 2 || parts[1] is < 1 or > 5)
+            throw new FormatException($"A raider needs a turn and a player 1 to 5: {entry}");
+        writes.Add(new ProbePlanning(parts[0], parts[1], 0, ProbePlanning.Raider));
+    }
+    return writes.Count == 0 ? null : writes;
+}
 
 static uint? HexOption(string[] args, string name) =>
     Option(args, name) is { } value

@@ -68,6 +68,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | builds |
 | [EXP-TURN-037](../experiments/EXP-TURN-037.md) | builds |
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | builds |
+| [EXP-TURN-039](../experiments/EXP-TURN-039.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -880,6 +881,7 @@ None.
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | [EXP-TURN-037](../experiments/EXP-TURN-037.md) | body |
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
+| [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 
 ## EXP-TURN-002
 
@@ -923,6 +925,7 @@ None.
 | [EXP-TURN-032](../experiments/EXP-TURN-032.md) | body |
 | [EXP-TURN-033](../experiments/EXP-TURN-033.md) | body |
 | [EXP-TURN-035](../experiments/EXP-TURN-035.md) | body |
+| [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 
 ## EXP-TURN-005
@@ -1233,6 +1236,13 @@ None.
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | body, evidence |
+
+## EXP-TURN-039
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
+| [RULE-AI-027](../rules/RULE-AI-027.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -1575,6 +1585,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [FND-AI-066](../findings/FND-AI-066.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: planning_records | glossary |
@@ -6302,6 +6313,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | related |
+| [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 
 ## RULE-AI-024
@@ -6341,6 +6353,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-005](../bugs/BUG-AI-005.md) | related |
+| [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | body |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 

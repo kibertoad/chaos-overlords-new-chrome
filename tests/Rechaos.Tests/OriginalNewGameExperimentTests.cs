@@ -67,7 +67,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-036", "EXP-TURN-037", "EXP-TURN-038"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-036", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -397,7 +397,11 @@ public sealed class OriginalNewGameExperimentTests
 
         // Each Done ends the human's planning with no orders. The computer players then plan and
         // the turn resolves as in a headless match, up to the human's next planning entry.
-        var recorder = new MatchReplayRecorder(match);
+        // A planning write changes the state outside the recorder, as the probe changes the
+        // original's memory outside the game, so such a run's journal is not verified.
+        var recorder = recorded.Planning.Count == 0
+            ? new MatchReplayRecorder(match)
+            : MatchReplayRecorder.Unverified(match);
         for (var turn = 0; turn < recorded.DoneCount; turn++)
         {
             var human = recorded.Humans[0];
@@ -414,6 +418,11 @@ public sealed class OriginalNewGameExperimentTests
                 var result = recorder.QueueHire(human, offered.Value, hire.Sector);
                 Assert.True(result.Accepted, $"turn {hire.Turn}: the rebuild refused the hire: {result}");
             }
+            // FMT-STATE-007, RULE-AI-023, RULE-AI-027: the probe writes a computer player's family or
+            // raider flag straight into the original's memory, for branches no local match reaches.
+            foreach (var write in recorded.Planning.Where(write => write.Turn == turn + 1))
+                if (write.Raider) match.AiPlanning.SetRaiderMode(new PlayerId(write.Player));
+                else match.AiPlanning.SetFamily(new PlayerId(write.Player), write.Slot, write.Family);
             recorder.FinishCommand(human);
             // A human eliminated in this turn's resolution plans no more; the recording stops at
             // the next planning phase that comes (RULE-OBJECTIVE-005).
@@ -469,6 +478,25 @@ public sealed class OriginalNewGameExperimentTests
             var numbers = match.Groups.Values.Skip(1)
                 .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
             return new(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5] != 0);
+        }
+    }
+
+    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider)
+    {
+        // "turn 2: player 1 gang slot 0 family 4" or "turn 1: player 3 raider_mode 1", as the
+        // probe writes them.
+        public static RecordedPlanning Parse(string value)
+        {
+            var raider = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([1-5]) raider_mode 1$");
+            if (raider.Success)
+                return new(int.Parse(raider.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(raider.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), 0, 0, true);
+            var match = System.Text.RegularExpressions.Regex.Match(value,
+                @"^turn (\d+): player ([1-5]) gang slot (\d+) family (\d+)$");
+            Assert.True(match.Success, value);
+            var numbers = match.Groups.Values.Skip(1)
+                .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            return new(numbers[0], numbers[1], numbers[2], numbers[3], false);
         }
     }
 
@@ -570,6 +598,10 @@ public sealed class OriginalNewGameExperimentTests
                 .Where(input => input.GetProperty("name").GetString() == "hire")
                 .Select(input => RecordedHire.Parse(input.GetProperty("value").GetString()!))
                 .ToArray();
+            Planning = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "planning")
+                .Select(input => RecordedPlanning.Parse(input.GetProperty("value").GetString()!))
+                .ToArray();
             Seed = run.GetProperty("rng_state").GetInt32();
             DoneCount = run.TryGetProperty("done_at_roll", out var done) ? done.GetArrayLength() : 0;
             Rolls = run.GetProperty("rolls").EnumerateArray()
@@ -590,6 +622,7 @@ public sealed class OriginalNewGameExperimentTests
         public int DoneCount { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
+        public IReadOnlyList<RecordedPlanning> Planning { get; }
 
         // controller: 0 for a human at this computer (FND-SETUP-002), -2 for one eliminated who has
         // not yet seen the card (RULE-OBJECTIVE-005).

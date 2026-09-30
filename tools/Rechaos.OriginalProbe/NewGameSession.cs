@@ -28,13 +28,29 @@ internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector)
 }
 
 /// <summary>
+/// A computer player's planning state written before a Done press, for branches no local match
+/// reaches: family 99 or less writes the <c>family</c> of the player's planning record in the slot
+/// (FMT-STATE-007), and <see cref="Raider"/> sets the player's byte of <c>raider_mode</c>, which a
+/// takeover of a network seat sets (RULE-AI-027).
+/// </summary>
+internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family)
+{
+    public const int Raider = -1;
+
+    public override string ToString() => Family == Raider
+        ? $"turn {Turn}: player {Player} raider_mode 1"
+        : $"turn {Turn}: player {Player} gang slot {Slot} family {Family}";
+}
+
+/// <summary>
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
 /// Scenario numbers are the original's (FND-SETUP-013).
 /// </summary>
 internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
-    IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null)
+    IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
+    IReadOnlyList<ProbePlanning>? Planning = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -60,9 +76,11 @@ internal sealed record NewGameSettings(
         {
             var orders = (Orders ?? []).Where(order => order.Turn == turn).ToArray();
             var hires = (Hires ?? []).Where(hire => hire.Turn == turn).ToArray();
+            var planning = (Planning ?? []).Where(write => write.Turn == turn).ToArray();
             foreach (var order in orders) yield return ("order", order.ToString());
             foreach (var hire in hires) yield return ("hire", hire.ToString());
-            yield return ("left_click", orders.Length + hires.Length == 0
+            foreach (var write in planning) yield return ("planning", write.ToString());
+            yield return ("left_click", orders.Length + hires.Length + planning.Length == 0
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
@@ -156,6 +174,8 @@ internal sealed class NewGameSession(
                 WriteOrder(order);
             foreach (var hire in (settings.Hires ?? []).Where(hire => hire.Turn == turn))
                 WriteHire(hire);
+            foreach (var write in (settings.Planning ?? []).Where(write => write.Turn == turn))
+                WritePlanning(write);
             _rollsAtDone.Add(_rolls.Count);
             Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
             var target = turn;
@@ -268,6 +288,17 @@ internal sealed class NewGameSession(
         var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
         _process.Write(OriginalAddresses.HireOrders + (uint)(human * 3 + hire.OfferSlot), [(byte)hire.Sector]);
         _notes.Add($"hire after roll {_rolls.Count}: {hire}");
+    }
+
+    private void WritePlanning(ProbePlanning write)
+    {
+        if (write.Family == ProbePlanning.Raider)
+            _process.Write(OriginalAddresses.RaiderMode + (uint)write.Player, [1]);
+        else
+            _process.Write(OriginalAddresses.PlanningRecords
+                + (uint)(write.Player * OriginalAddresses.PlanningPlayerStride
+                    + write.Slot * OriginalAddresses.PlanningRecordSize), [(byte)write.Family]);
+        _notes.Add($"planning after roll {_rolls.Count}: {write}");
     }
 
     // --seed replaces the clock value the process start passes to srand, so a run can be repeated.
