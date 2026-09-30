@@ -87,16 +87,15 @@ internal static class OriginalAiSectorSelectionRules
                     // FND-AI-069: the common block tests the visited sector, but the table element
                     // it multiplies is x * 9 + y rather than x * 8 + y, so the score of another
                     // sector is scaled, and in column 7 the element lies past the table.
-                    if (multipliesByFive(sectorId))
+                    // DEV-AI-006: an element past the table is a dword of player 0's first
+                    // planning records in the original; the rebuild leaves the records alone.
+                    var element = x * (MatchLimits.BoardWidth + 1) + y;
+                    if (element < MatchLimits.SectorCount)
                     {
-                        var element = x * (MatchLimits.BoardWidth + 1) + y;
-                        // DEV-AI-006: an element past the table is a dword of player 0's first
-                        // planning records in the original; the rebuild leaves the records alone.
-                        if (element < MatchLimits.SectorCount)
-                        {
-                            var scaled = TableSector(element);
+                        // A score of 0 stays 0, so the test is asked only where there is one to scale.
+                        var scaled = TableSector(element);
+                        if (scores[scaled] != 0 && multipliesByFive(sectorId))
                             scores[scaled] = unchecked(scores[scaled] * 5);
-                        }
                     }
                 }
             }
@@ -346,11 +345,7 @@ internal static class OriginalAiSectorSelectionRules
     /// table at (t % 8) * 8 + t / 8, which is sector t for 0 to 63; the guard end marker t = 100
     /// lands on the table entry of sector 37.
     /// </summary>
-    internal static int EncodedSector(int encoded)
-    {
-        var tableIndex = encoded % MatchLimits.BoardWidth * MatchLimits.BoardWidth + encoded / MatchLimits.BoardWidth;
-        return tableIndex % MatchLimits.BoardWidth * MatchLimits.BoardWidth + tableIndex / MatchLimits.BoardWidth;
-    }
+    internal static int EncodedSector(int encoded) => TableSector(TableSector(encoded));
 
     /// <summary>
     /// RULE-AI-006, FND-AI-069: modes 12 to 15 give 5 to an admitted sector that passes the common
