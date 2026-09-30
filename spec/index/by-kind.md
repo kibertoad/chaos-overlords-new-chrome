@@ -102,7 +102,7 @@
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | supported |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported |
-| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income | established |
@@ -571,7 +571,7 @@
 
 ## experiments
 
-36 entries.
+37 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -611,6 +611,7 @@
 | [EXP-TURN-030](../experiments/EXP-TURN-030.md) | Do two Gives swap weapons, and does the later of two Gives to one gang replace both the earlier one and a weapon bought that turn? | recorded |
 | [EXP-TURN-031](../experiments/EXP-TURN-031.md) | Does an Equip succeed at exactly its price, fail one short, and count a Sell only from an earlier roster slot? | recorded |
 | [EXP-TURN-032](../experiments/EXP-TURN-032.md) | Does a Snitch that takes a base Tolerance below 1 leave it at 1? | recorded |
+| [EXP-TURN-033](../experiments/EXP-TURN-033.md) | Does a Bribe the player cannot pay for leave the cash and the base Tolerance unchanged? | recorded |
 
 ## bugs
 

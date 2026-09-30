@@ -184,7 +184,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-BRIBE-001` | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The Bribe changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. |
+| `RULE-BRIBE-001` | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The Bribe changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. EXP-TURN-033 bribes nine times and then fails at 2 cash. |
 
 ## SNITCH
 
