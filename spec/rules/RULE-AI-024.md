@@ -4,7 +4,7 @@ title: Family-5 computer gangs influence the best Support site in owned land, ta
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-034, FND-AI-033, FND-AI-026, FND-AI-028, FND-EXE-004, EXP-TURN-020]
+evidence: [FND-AI-072, FND-AI-034, FND-AI-033, FND-AI-026, FND-AI-028, FND-EXE-004, EXP-TURN-020]
 conflicting: []
 split_with: []
 related: [RULE-AI-022]
@@ -46,6 +46,8 @@ auxiliary values of -1 and a family of 11 or 2. Draws as RULE-AI-022.
 
 Mode 7 also skips sectors where another of the player's gangs is continuing an
 Influence (FND-AI-026), so two family-5 gangs rarely gather in one sector.
+The family-5 draw at `0x0043AC6A` passes the sector as the strength test's
+slot, as family 3's does (BUG-AI-007).
 
 ## What the sources say
 

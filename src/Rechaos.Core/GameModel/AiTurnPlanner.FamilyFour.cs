@@ -67,8 +67,9 @@ public static partial class AiTurnPlanner
     {
         if (visibleWeight == 10)
         {
+            // BUG-AI-007, call 0x00401A4F: the strength test is handed the sector as a slot.
             var draw = DrawHumanWeightedAttackTarget(
-                state, playerId, gang, visible, visibleWeight);
+                state, playerId, gang, visible, visibleWeight, strengthTestSlot: gang.SectorId);
             if (draw.Accepted)
                 SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
             else

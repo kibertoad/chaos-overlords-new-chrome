@@ -408,7 +408,25 @@ public sealed partial class MatchState
         SectorBenefitResolver.ActivatePending(this);
         SectorRecordRebuild.BeforePlanning(this);
         EffectiveStatisticsCalculator.RebuildBeforePlanning(this);
+        RecordVisibilityBeforePlanning();
         return CaptureBoundary(Coordinator.FinishUpkeep());
+    }
+
+    /// <summary>
+    /// RULE-DETECT-001 writes every active gang's <c>visible_to</c> bytes at each planning entry,
+    /// and no gang moves or changes its statistics between the entries of one planning phase, so
+    /// the bytes the last entry leaves are these. A gone gang keeps the bits it had (BUG-AI-007).
+    /// </summary>
+    private void RecordVisibilityBeforePlanning()
+    {
+        foreach (var gang in Players.SelectMany(player => player.Gangs).Where(gang => gang.IsActive))
+        {
+            byte mask = 0;
+            foreach (var observer in Players)
+                if (observer.Id == gang.Owner || CanPlayerDetectGang(observer.Id, gang.Id))
+                    mask |= (byte)(1 << observer.Id.Value);
+            gang.VisibilityMask = mask;
+        }
     }
     public TurnTransition FinishCommand(PlayerId player)
     {
@@ -799,6 +817,7 @@ public sealed partial class MatchState
     {
         // Native Eliminate cleanup writes only inactive sector 100. Force zero is this
         // model's inactive marker; retain equipment so the retired record stays inspectable.
+        gang.RetiredForce = gang.Force;
         gang.Force = 0;
         gang.Hidden = false;
     }

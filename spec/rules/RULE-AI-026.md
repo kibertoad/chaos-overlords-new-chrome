@@ -74,7 +74,7 @@ if w == 10:
     let kind = 0
     if hostile_owner(player, s):
         kind = 1
-    let t = draw_once(player, idx, kind)
+    let t = draw_once(player, idx, kind, idx % 81)
     if t != -1 and attitude[player * 6 + t / 81] < 0:
         plan(idx, ACTION_ATTACK, t / 81, t % 81)
         aux_records[idx].focus = s

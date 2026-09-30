@@ -4,7 +4,7 @@ title: Family-3 computer gangs influence the best Cash site in owned land, take 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-033, FND-AI-034, FND-AI-021, FND-AI-026, FND-AI-028, FND-EXE-004, FND-AI-042]
+evidence: [FND-AI-072, FND-AI-033, FND-AI-034, FND-AI-021, FND-AI-026, FND-AI-028, FND-EXE-004, FND-AI-042, EXP-TURN-022]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -117,7 +117,8 @@ define site_builder(player, slot, kind):
             let kind_pool = 0
             if hostile_owner(player, s):
                 kind_pool = 1
-            let t = draw_once(player, idx, kind_pool)
+            # BUG-AI-007: the sector is passed where the slot belongs
+            let t = draw_once(player, idx, kind_pool, s)
             if t != -1:
                 plan(idx, ACTION_ATTACK, t / 81, t % 81)
             else:
@@ -153,7 +154,11 @@ A site whose Cash is 0 or negative is never chosen. On equal Cash the site in
 the lower slot wins. After Attack, Hide or Move without a visible hostile human
 gang, the Heal gate is skipped, so a badly hurt gang can go on influencing. A
 failed draw leaves the gang doing nothing this turn. The strength test can be
-made on a different gang from the one attacked (BUG-AI-003).
+made on a different gang from the one attacked (BUG-AI-003). Its attacker is the
+player's record in the roster slot numbered like the gang's sector, and its
+compared gang comes from that record's sector (BUG-AI-007): in EXP-TURN-022 an
+unused record with sector 100 was compared with a gone gang, and the draw
+failed.
 
 ## What the sources say
 

@@ -228,11 +228,14 @@ public static partial class CommandResolver
         // RULE-COMBAT-002: the damage is taken off only after every attack and the police have
         // rolled from the Forces at the start of the phase. The original caps each gang's damage at
         // 10 and lets a dead gang's Force go below 0; flooring at 0 gives the same Force for every
-        // gang that lives and the same deaths.
+        // gang that lives and the same deaths, and the dead gang's record keeps the unfloored value
+        // for BUG-AI-007.
         foreach (var (gangId, damage) in incomingDamage)
         {
             var gang = state.FindGang(gangId)!;
-            gang.Force = Math.Max(0, snapshots[gangId].Force - damage);
+            var force = snapshots[gangId].Force - Math.Min(damage, MaximumPhaseDamage);
+            gang.Force = Math.Max(0, force);
+            if (force <= 0 && snapshots[gangId].Force > 0) gang.RetiredForce = force;
         }
         CreditCombatStatistics(state, outcomes);
 
@@ -425,6 +428,8 @@ public static partial class CommandResolver
     {
         var gang = state.FindGang(command.Gang)!;
         var before = gang.Force;
+        // The original writes only sector 100, so the record keeps its Force (BUG-AI-007).
+        gang.RetiredForce = before;
         EliminateGang(state, gang);
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, 0),
@@ -478,6 +483,9 @@ public static partial class CommandResolver
         }
         return results;
     }
+
+    /// <summary>RULE-COMBAT-002: the most damage one gang takes in a combat phase.</summary>
+    private const int MaximumPhaseDamage = 10;
 
     /// <summary>How many reroute draws one move set may spend before the deterministic fallback.</summary>
     private const int MaximumMoveRerouteDraws = 256;

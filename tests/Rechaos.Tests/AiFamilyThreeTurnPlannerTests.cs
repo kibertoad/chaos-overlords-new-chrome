@@ -129,6 +129,61 @@ public sealed class AiFamilyThreeTurnPlannerTests
             MatchStateHasher.ComputeFingerprint(restored));
     }
 
+    // BUG-AI-007, call 0x00436650: the strength test is handed the sector, 1, as the roster slot.
+    // The computer player has only slot 0, so the test reads the unused record of slot 1, whose
+    // sector byte is 100, and compares it with a gone gang still marked visible there
+    // (EXP-TURN-022). With no such gang it compares zeros with zeros and accepts.
+    [Theory]
+    [InlineData(true, GangAction.None)]
+    [InlineData(false, GangAction.Attack)]
+    public void StrengthTestReadsTheRecordAtTheSectorNumber(bool goneGangVisible, GangAction expected)
+    {
+        var data = BundledOriginalData.Load();
+        var attacker = data.Gangs
+            .OrderByDescending(gang => gang.Stats.Detect)
+            .ThenByDescending(gang => gang.Stats.Combat)
+            .First();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "HUMAN", PlayerController.Human)
+        ];
+        var gone = new MatchGangState(new GangId(21), setups[1].Id, 4, 1, 0,
+            statistics: EffectiveStatistics.From(data.Gang(4).Stats))
+        {
+            RetiredForce = 20,
+            VisibilityMask = goneGangVisible ? (byte)1 : (byte)0
+        };
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20,
+                [new MatchGangState(new GangId(10), setups[0].Id, attacker.Id, 1, 10)]),
+            new(setups[1], 20,
+                [new MatchGangState(new GangId(20), setups[1].Id, 4, 1, 1), gone])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(1, 3, 13),
+                new MatchSiteState(2, 14, 14)
+            ], owner: id == 1 ? setups[1].Id : null, income: 3))
+            .ToArray();
+        var match = new MatchState(data, new MatchSetup(
+            ScenarioId.Power, GameDuration.SixMonths, 41, setups,
+            AiDifficulty.HomicidalManiac), players, sectors);
+        var player = new PlayerId(0);
+        BeginFamilyThreeTurn(match, player);
+        match.AiPlanning.SeedFamily(player, 0, 3);
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Move);
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
+        recorder.PrepareAiPlanning(player);
+        AiTurnPlanner.Plan(match, player);
+
+        Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
+    }
+
     [Theory]
     [InlineData(ScenarioId.Eliminate, 11)]
     [InlineData(ScenarioId.Power, 2)]
