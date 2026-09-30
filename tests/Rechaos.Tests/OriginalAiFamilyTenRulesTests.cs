@@ -46,6 +46,8 @@ public sealed class OriginalAiFamilyTenRulesTests
     [InlineData(0, 10, 10, true)]
     [InlineData(1, 10, 10, false)]
     [InlineData(0, 11, 10, false)]
+    // FND-AI-071: a signed comparison, so cash below 0 fails it.
+    [InlineData(0, 1, -5, false)]
     public void ArmorOpportunityUsesCooldownAndInclusiveCashBoundary(
         int cooldown,
         int itemCost,

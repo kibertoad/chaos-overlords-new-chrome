@@ -15,10 +15,13 @@ internal static class OriginalAiFamilyTwelveRules
         return itemCost;
     }
 
+    /// <summary>
+    /// FND-AI-070: the cost is compared with cash as signed values (<c>JG</c> at 0x00435684 and
+    /// 0x004357D2), so a player whose upkeep left its cash below 0 (RULE-UPKEEP-001) fails the test.
+    /// </summary>
     public static bool CanEquip(int cooldown, int itemCost, int cash)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(itemCost);
-        ArgumentOutOfRangeException.ThrowIfNegative(cash);
         return cooldown <= 0 && itemCost <= cash;
     }
 
