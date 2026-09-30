@@ -566,7 +566,7 @@
 
 ## experiments
 
-13 entries.
+14 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -583,6 +583,7 @@
 | [EXP-TURN-007](../experiments/EXP-TURN-007.md) | Do fifteen turns of new local games, each ended with no orders, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-008](../experiments/EXP-TURN-008.md) | Do ten turns of new local games with Mentality 3, each ended with no orders, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | Do twelve turns of new local games, with the human's first gang given Snitch, recurring Chaos, Hide and Bribe orders, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | Do twenty-five turns of new local games, with the human's first gang hiding throughout, draw and resolve as the spec gives? | recorded |
 
 ## bugs
 

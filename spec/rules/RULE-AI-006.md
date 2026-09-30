@@ -364,6 +364,12 @@ None known.
 
 ## Open questions
 
+- EXP-TURN-010's first run disagrees at call 11610: a family-1 gang of mode 5
+  in sector 20 did not score sector 12, held by a human the player's attitude
+  toward is -10 and holding one of the player's gangs, at the 5 this procedure
+  gives it. Either the late filter (`solo_control_ok`) removes the sector or
+  the multiply by five does not apply to it; the reading of selector `0x2C`
+  and of the common block at `0x004098D4` has to settle which.
 - The late filter clears sectors whose byte at sector record +15 is nonzero;
   that byte is taken to be `crackdown_turns`.
 - Whether the Crackdown filter also applies before the radius search stops is

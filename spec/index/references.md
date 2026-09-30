@@ -37,6 +37,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-007](../experiments/EXP-TURN-007.md) | builds |
 | [EXP-TURN-008](../experiments/EXP-TURN-008.md) | builds |
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | builds |
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -794,6 +795,7 @@ None.
 | [EXP-TURN-007](../experiments/EXP-TURN-007.md) | body |
 | [EXP-TURN-008](../experiments/EXP-TURN-008.md) | body |
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
 
 ## EXP-TURN-002
 
@@ -820,6 +822,7 @@ None.
 | [EXP-TURN-007](../experiments/EXP-TURN-007.md) | body |
 | [EXP-TURN-008](../experiments/EXP-TURN-008.md) | body |
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 
 ## EXP-TURN-005
@@ -847,7 +850,15 @@ None.
 
 ## EXP-TURN-009
 
-None.
+| Cited by | In |
+|---|---|
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
+
+## EXP-TURN-010
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-006](../rules/RULE-AI-006.md) | body |
 
 ## FMT-AUDIO-001
 
@@ -5669,6 +5680,7 @@ None.
 | [EXP-TURN-004](../experiments/EXP-TURN-004.md) | body |
 | [EXP-TURN-006](../experiments/EXP-TURN-006.md) | body |
 | [EXP-TURN-007](../experiments/EXP-TURN-007.md) | body |
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
 | [FND-AI-059](../findings/FND-AI-059.md) | body |
 | [FND-AI-067](../findings/FND-AI-067.md) | body |
 | glossary: block_leader_sector | glossary |
@@ -6648,6 +6660,7 @@ None.
 | [EXP-TURN-007](../experiments/EXP-TURN-007.md) | body |
 | [EXP-TURN-008](../experiments/EXP-TURN-008.md) | body |
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | body |
 | glossary: roll | glossary |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | related |

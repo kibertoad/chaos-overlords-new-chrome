@@ -401,7 +401,7 @@ the original's memory and never goes into the repository. `extract` reads the
 numbers of the spec's state layouts and glossary terms out of one or more run
 directories and writes them as the runs of an experiment fixture, with no
 names or texts. `OriginalNewGameExperimentTests` replays every run of
-EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-009 against the
+EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-010 against the
 rebuild and names the first roll whose bound or result differs, with the
 original's call instruction.
 

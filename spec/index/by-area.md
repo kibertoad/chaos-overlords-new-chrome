@@ -186,6 +186,7 @@
 | [EXP-TURN-007](../experiments/EXP-TURN-007.md) | Do fifteen turns of new local games, each ended with no orders, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-008](../experiments/EXP-TURN-008.md) | Do ten turns of new local games with Mentality 3, each ended with no orders, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | Do twelve turns of new local games, with the human's first gang given Snitch, recurring Chaos, Hide and Bribe orders, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | Do twenty-five turns of new local games, with the human's first gang hiding throughout, draw and resolve as the spec gives? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |

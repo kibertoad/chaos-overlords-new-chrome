@@ -24,6 +24,7 @@ Status: active at a validated local checkpoint
   - [Extraction, asset verification, and diagnostics](#extraction-asset-verification-and-diagnostics)
 - [Reference environment](#reference-environment)
 - [Recommended next evidence batches](#recommended-next-evidence-batches)
+  - [Recorded runs of the original](#recorded-runs-of-the-original)
 <!-- doc-index:end -->
 
 ## Repository state
@@ -856,6 +857,43 @@ plan: one controlled run of the original next to an existing static finding
 makes an entry `established`. The conformance work listed under
 [Documentation standard](#documentation-standard) is the rebuild's side of the
 same goal.
+
+### Recorded runs of the original
+
+`tools/Rechaos.OriginalProbe` runs the original under a debugger, records
+every `roll`, presses Done, can write orders for the human's gang, and dumps
+the state; `OriginalNewGameExperimentTests` replays each run and compares every
+roll and the end state. [VALIDATION.md](VALIDATION.md) gives the commands.
+EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-010 are recorded,
+up to twenty-five turns, and every run but one replays exactly.
+
+- The open divergence is EXP-TURN-010's first run at call 11610, pinned by
+  `AKnownDivergenceIsStillWhereItWasFound`. RULE-AI-006's open questions give
+  the evidence: the original did not score sector 12 at 5 for player 4's
+  family-1 gang 8. Read selector `0x2C` and the common block at `0x004098D4`
+  for a human-held sector that already holds one of the player's gangs, fix
+  the rebuild, and drop the entry from `KnownDivergences`.
+- A human with no orders is eliminated after about thirty turns, and the probe
+  then waits for a turn that never comes. Longer runs need the human's gang on
+  a recurring Hide (EXP-TURN-010) or the probe needs to stop at the
+  elimination report.
+- No recording has an Attack by the human, a Terminate, a Give or a Sell, and
+  none has combat that the replay confirms past the matching prefix. The
+  police and third-Crackdown calls of EXP-TURN-010 lie in the first run's
+  matching prefix, so RULE-POLICE-001 and RULE-POLICE-002 have roll evidence
+  but no state comparison yet. Attack orders need a target gang, whose slot
+  the probe would have to read at the planning phase.
+- Screens have not been compared with captures. The plan: capture the window's
+  client area where the probe already stops, render the same state in the
+  rebuild, and compare each SCR element's rectangle, reporting an element that
+  the original drew as solid white as unverified instead of passing it. Try a
+  DirectDraw wrapper such as DDrawCompat beside the staged executable first,
+  since the white rectangles look like failed blits, and check that it leaves
+  a recorded run's rolls unchanged.
+- A modal panel the probe does not know stalls a run until someone presses its
+  Exit; the probe knows Combat Results and Last Turn Events. Run recordings
+  from PowerShell with the compatibility layers in `__COMPAT_LAYER`, one at a
+  time, and pull `main` before recording or replaying.
 
 For scope and the roadmap, continue with
 [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md).

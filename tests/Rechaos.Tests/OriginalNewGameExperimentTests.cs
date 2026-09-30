@@ -8,9 +8,9 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-009 go on to press Done for one
-/// to fifteen turns, EXP-TURN-009 with orders for the human's gang, and stop at the next planning
-/// phase. Each run gives the seed, every roll(n) with its call site and result, and the state the recording stops at. The rebuild
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-010 go on to press Done for one
+/// to twenty-five turns, EXP-TURN-009 and EXP-TURN-010 with orders for the human's gang, and stop at
+/// the next planning phase. Each run gives the seed, every roll(n) with its call site and result, and the state the recording stops at. The rebuild
 /// plays the same match from the same seed and settings and has to make the same rolls in the same
 /// order and reach the same generator position and state. The turns check the turn order
 /// (RULE-TURN-001), the computer players' planning passes, sector choices and hire choices
@@ -26,10 +26,59 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
+
+    // Runs the rebuild does not yet replay, with the first roll that differs. EXP-TURN-010's first
+    // run: player 4's family-1 gang 8 in sector 20 scores sectors 11 and 12 at 5 in the rebuild and
+    // draws roll(2); the original takes sector 11 with no draw. Sector 12 is the human's, player 4's
+    // attitude toward it is -10, and a gang of player 4 stands in it, so the late filter
+    // (selector 0x2C) or the multiply by five scores it differently (RULE-AI-006). The misplaced
+    // roll(2) is 11609 and matches the original's roll(2) for gang 11, so 11610 is the first to differ.
+    private static readonly Dictionary<(string Experiment, int Run), int> KnownDivergences = new()
+    {
+        [("EXP-TURN-010", 0)] = 11610,
+    };
+
+    public static TheoryData<string, int> MatchingRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var experiment in Experiments)
+            for (var run = 0; run < Recorded.Value[experiment].Length; run++)
+                if (!KnownDivergences.ContainsKey((experiment, run))) data.Add(experiment, run);
+        return data;
+    }
+
+    public static TheoryData<string, int> DivergingRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var ((experiment, run), _) in KnownDivergences) data.Add(experiment, run);
+        return data;
+    }
+
+    // A known divergence stays where it was found; when a fix moves it, the entry above goes.
+    [Theory]
+    [MemberData(nameof(DivergingRuns))]
+    public void AKnownDivergenceIsStillWhereItWasFound(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var rolls = new List<(int Bound, int Result)>();
+        DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
+        try
+        {
+            StartMatch(recorded);
+        }
+        finally
+        {
+            DeterministicRandom.RollObserver = null;
+        }
+
+        var first = Enumerable.Range(0, Math.Min(rolls.Count, recorded.Rolls.Count))
+            .First(index => rolls[index] != (recorded.Rolls[index].Bound, recorded.Rolls[index].Result));
+        Assert.Equal(KnownDivergences[(experiment, run)], first);
+    }
 
     public static TheoryData<string, int> Runs()
     {
@@ -58,7 +107,7 @@ public sealed class OriginalNewGameExperimentTests
     // number of draws. The state is read with the layouts of FMT-STATE-001, FMT-STATE-002 and
     // FMT-STATE-004.
     [Theory]
-    [MemberData(nameof(Runs))]
+    [MemberData(nameof(MatchingRuns))]
     public void TheRebuildStartsTheSameMatch(string experiment, int run)
     {
         var recorded = Run(experiment, run);
