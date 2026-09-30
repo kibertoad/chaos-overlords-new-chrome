@@ -31,15 +31,9 @@ public sealed class OriginalNewGameExperimentTests
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
 
-    // Runs the rebuild does not yet replay, with the first roll that differs. EXP-TURN-010's first
-    // run: player 4's family-1 gang 8 in sector 20 scores sectors 11 and 12 at 5 in the rebuild and
-    // draws roll(2); the original takes sector 11 with no draw. Sector 12 is the human's, player 4's
-    // attitude toward it is -10, and a gang of player 4 stands in it, so the late filter
-    // (selector 0x2C) or the multiply by five scores it differently (RULE-AI-006). The misplaced
-    // roll(2) is 11609 and matches the original's roll(2) for gang 11, so 11610 is the first to differ.
+    // Runs the rebuild does not yet replay, with the first roll that differs. None at present.
     private static readonly Dictionary<(string Experiment, int Run), int> KnownDivergences = new()
     {
-        [("EXP-TURN-010", 0)] = 11610,
     };
 
     public static TheoryData<string, int> MatchingRuns()
@@ -59,7 +53,7 @@ public sealed class OriginalNewGameExperimentTests
     }
 
     // A known divergence stays where it was found; when a fix moves it, the entry above goes.
-    [Theory]
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(DivergingRuns))]
     public void AKnownDivergenceIsStillWhereItWasFound(string experiment, int run)
     {

@@ -59,5 +59,7 @@
     "tests/fixtures/synthetic/"
   ],
   "maximumTrackedFileBytes": 1048576,
-  "approvedLargeFiles": []
+  "approvedLargeFiles": [
+    "spec/experiments/EXP-TURN-010.json"
+  ]
 }

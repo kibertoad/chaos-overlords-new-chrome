@@ -223,10 +223,7 @@ public static partial class AiTurnPlanner
             canSoloControl: sectorId => CanSoloControl(state, player.Id, gang, sectorId),
             hasPriorChaos: sectorId =>
                 CountPreviousChaosInSector(state, player.Id, sectorId) > 0,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(player.Id, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
+            ownerTests: SelectorOwnerTests(state, player.Id),
             state.Random, planning: state.AiPlanning);
     }
 }

@@ -37,7 +37,7 @@ therefore return a diagonal neighbour. When the chosen sector is adjacent and
 its score is positive, it is returned directly.
 
 Candidates are removed late when marked unavailable or when a family 0 or 1
-gang cannot take a non-owned destination alone (FND-AI-027). When those
+gang cannot take a non-owned destination alone (FND-AI-069). When those
 filters leave a greatest score below 1, the routine still counts the sectors
 tied at the top, which are then all 64 sectors at score 0, makes one draw, and
 routes toward the drawn sector the same way. It does not resume the radius

@@ -1752,6 +1752,18 @@ hiring player from 0 to 79, so slot 0 is reused once the Right Hands are dead
 command bar uses it as scratch space while a sector-wide order is chosen
 [FND-TURN-009].
 
+## scale_element
+
+`scale_element(e)` multiplies dword `e` of the sector selector's score table by
+five, or past the table a dword of player 0's planning records. A function,
+defined by RULE-AI-006.
+
+## scales
+
+`scales(player, s)` tells whether the sector selector's common block
+multiplies for sector `s`: the attitude toward its owner query is negative and
+its owner reads as human. A function, defined by RULE-AI-006.
+
 ## scenario
 
 The objective of the match. Any other value the game keeps: `INT32LE` at
@@ -1915,6 +1927,11 @@ stays in memory for the session [FND-OPTIONS-001, FND-OPTIONS-003].
 
 `set_pointer(shape, force)` changes the Windows cursor to a stock shape. A
 function, defined by RULE-UI-007.
+
+## set_record_dword
+
+`set_record_dword(k, v)` stores `v` as dword `k` of `planning_records`, the
+inverse of `record_dword`. A function, defined by RULE-AI-006.
 
 ## site
 

@@ -62,8 +62,10 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Equal(26, leading.Select(mode: 6, family: 2, hasHumanPlayers: false));
     }
 
+    // RULE-AI-006, FND-AI-069: a sector that passes the common block's test scores 2 in mode 6 and
+    // gets no leader point.
     [Fact]
-    public void ModeSixRoutesToEveryTiedLeaderAndAddsHostileHumanWeight()
+    public void ModeSixRoutesToEveryTiedLeaderAndGivesHostileHumansTwoWithoutTheLeaderPoint()
     {
         var tied = new Facts(source: 27);
         tied.Owners[28] = 1;
@@ -73,9 +75,13 @@ public sealed class OriginalAiSectorSelectionRulesTests
         tied.HumanOwners.Add(2);
 
         Assert.Equal(26, tied.Select(mode: 6, family: 2, hasHumanPlayers: true));
-        Assert.Equal(3, OriginalAiSectorSelectionRules.ModeSixBaseScore(
+        Assert.Equal(2, OriginalAiSectorSelectionRules.ModeSixBaseScore(
             26, tied.Player.Value, 2, tied.GangCounts,
-            tied.HostileOwners.Contains, tied.HumanOwners.Contains,
+            sectorId => sectorId == 26,
+            hasHumanPlayers: true, tied.Standings));
+        Assert.Equal(1, OriginalAiSectorSelectionRules.ModeSixBaseScore(
+            26, tied.Player.Value, 2, tied.GangCounts,
+            _ => false,
             hasHumanPlayers: true, tied.Standings));
     }
 
@@ -133,16 +139,25 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Equal(28, facts.Select(mode: 8, family: 3));
     }
 
+    // RULE-AI-006, FND-AI-069: the common block scales table element x * 9 + y. In column 0 that is
+    // the visited sector, which has its score by then; elsewhere it is a sector of the same or the
+    // next column that the ring visits later, so the multiply meets a score of 0.
     [Fact]
-    public void HostileHumanMultiplierAppliesAfterBaseWeight()
+    public void HostileHumanMultiplierScalesOnlyTheElementItsIndexReaches()
     {
-        var facts = new Facts(source: 27);
-        facts.Owners[28] = 0;
-        facts.Owners[26] = 1;
-        facts.HostileOwners.Add(1);
-        facts.HumanOwners.Add(1);
+        var edge = new Facts(source: 9);
+        edge.Owners[10] = 0;
+        edge.Owners[8] = 1;
+        edge.HostileOwners.Add(1);
+        edge.HumanOwners.Add(1);
+        Assert.Equal(8, edge.Select(mode: 5, family: 2));
 
-        Assert.Equal(26, facts.Select(mode: 5, family: 2));
+        var inner = new Facts(source: 27);
+        inner.Owners[28] = 0;
+        inner.Owners[26] = 1;
+        inner.HostileOwners.Add(1);
+        inner.HumanOwners.Add(1);
+        Assert.Equal(28, inner.Select(mode: 5, family: 2));
     }
 
     [Fact]
@@ -178,17 +193,49 @@ public sealed class OriginalAiSectorSelectionRulesTests
     [Fact]
     public void DisabledLateFilterUsesZeroMaximumFallbackWithoutResumingRadiusSearch()
     {
-        var facts = new Facts(source: 27);
-        facts.Owners[28] = 1;
+        // Mode 14 admits an objective whoever owns it, so policed objectives stop the search at
+        // radius 1 and the late filter then clears them.
+        var facts = new Facts(source: 19);
+        facts.Disabled[27] = true;
         facts.Disabled[28] = true;
-        facts.Owners[29] = 1;
         var expectedRandom = new DeterministicRandom(
             facts.Random.State, facts.Random.ConsumptionCount);
         var expected = ZeroMaximumStep(facts.Source, facts.GangCounts, expectedRandom);
 
-        Assert.Equal(expected, facts.Select(mode: 3, family: 2));
+        Assert.Equal(expected, facts.Select(mode: 14, family: 2));
         Assert.Equal(expectedRandom.State, facts.Random.State);
         Assert.Equal(expectedRandom.ConsumptionCount, facts.Random.ConsumptionCount);
+    }
+
+    // RULE-AI-006, FND-AI-069: the modes read the owner query, so a policed sector reads as owner
+    // -2, scores nothing and does not stop the search.
+    [Fact]
+    public void PolicedSectorReadsAsNoOwnerAndLetsTheSearchGoOn()
+    {
+        var facts = new Facts(source: 27);
+        facts.Owners[28] = 1;
+        facts.Disabled[28] = true;
+        facts.Owners[29] = 1;
+
+        Assert.Equal(28, facts.Select(mode: 3, family: 2));
+        Assert.Equal(0, facts.Random.ConsumptionCount);
+    }
+
+    // RULE-AI-006, FND-AI-069: the late filter compares the owner query, so for families 0 and 1 a
+    // policed sector of the player's own keeps the score an earlier call left in its pair.
+    [Fact]
+    public void LateFilterKeepsTheOldPairOfAPolicedOwnSector()
+    {
+        var planning = AiPlanningState.Initialize();
+        planning.SectorChoiceScores[28] = 7;
+        var facts = new Facts(source: 27);
+        facts.Owners[28] = facts.Player.Value;
+        facts.Disabled[28] = true;
+        facts.Owners[26] = facts.Player.Value;
+
+        facts.Select(mode: 2, family: 0, planning: planning);
+
+        Assert.Contains(7, planning.SectorChoiceScores);
     }
 
     [Fact]
@@ -367,7 +414,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Equal(1, planning.CaptureSectorChoiceScores()[0]);
     }
 
-    // RULE-AI-006, FND-AI-067, EXP-TURN-007: an encoded mode adds 1 to its sector for each cell the
+    // RULE-AI-006, FND-AI-069, EXP-TURN-007: an encoded mode adds 1 to its sector for each cell the
     // first ring visits. Sector 16 has six cells on the board within one step, itself included.
     [Fact]
     public void AnEncodedModeScoresItsSectorOncePerVisitedCell()
@@ -441,8 +488,10 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Equal(28, facts.Select(mode: 12, family: 13));
     }
 
+    // RULE-AI-006, FND-AI-069: a hostile human's objective scores 5, and the common block's
+    // multiply never reaches it.
     [Fact]
-    public void ObjectiveModesCompoundTheirHostileHumanWeight()
+    public void ObjectiveModesGiveHostileHumansFive()
     {
         var facts = new Facts(source: 20);
         facts.Owners[27] = 2;
@@ -451,9 +500,9 @@ public sealed class OriginalAiSectorSelectionRulesTests
         facts.HumanOwners.Add(1);
 
         Assert.Equal(5, OriginalAiSectorSelectionRules.ObjectiveModeBaseScore(
-            1, facts.HostileOwners.Contains, facts.HumanOwners.Contains));
+            28, sectorId => sectorId == 28));
         Assert.Equal(1, OriginalAiSectorSelectionRules.ObjectiveModeBaseScore(
-            2, facts.HostileOwners.Contains, facts.HumanOwners.Contains));
+            27, sectorId => sectorId == 28));
         Assert.Equal(28, facts.Select(mode: 14, family: 14));
         Assert.Equal(0, facts.Random.ConsumptionCount);
     }
@@ -557,36 +606,30 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             6, 27, new PlayerId(0), 2,
             facts.Owners, facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
+            _ => false, _ => false, new SectorOwnerTests(_ => false, _ => false),
             facts.Random,
             hasHumanPlayers: false));
-        Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
-            4, 27, new PlayerId(0), 2,
-            facts.Owners, facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
-            facts.Random,
-            scenarioStandings: facts.Standings));
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 8));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             8, 27, new PlayerId(0), 3,
             facts.Owners, facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
+            _ => false, _ => false, new SectorOwnerTests(_ => false, _ => false),
             facts.Random));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             7, 27, new PlayerId(0), 5,
             facts.Owners, facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
+            _ => false, _ => false, new SectorOwnerTests(_ => false, _ => false),
             facts.Random,
             unfinishedSiteScore: facts.SiteScores.ElementAt));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             9, 27, new PlayerId(0), 10,
             facts.Owners, facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
+            _ => false, _ => false, new SectorOwnerTests(_ => false, _ => false),
             facts.Random));
         Assert.Throws<ArgumentException>(() => OriginalAiSectorSelectionRules.Select(
             3, 27, new PlayerId(0), 2,
             facts.Owners[..^1], facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
+            _ => false, _ => false, new SectorOwnerTests(_ => false, _ => false),
             facts.Random));
         facts.GangCounts[28] = -1;
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 2));
@@ -668,8 +711,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
                 Owners, Disabled, GangCounts,
                 canSoloControl ?? SoloControl.Contains,
                 PriorChaos.Contains,
-                HostileOwners.Contains,
-                HumanOwners.Contains,
+                new SectorOwnerTests(OwnerIsHuman, MultipliesByFive),
                 Random,
                 hasHumanPlayers,
                 formationSectorId,
@@ -677,10 +719,15 @@ public sealed class OriginalAiSectorSelectionRulesTests
                 unfinishedSiteScore: SiteScores.ElementAt,
                 hasPriorInfluence: PriorInfluence.Contains,
                 completedSiteScore: SiteScores.ElementAt,
-                ownerQuery: mode == 4 ? OwnerQuery : null,
                 planning: planning);
 
-        // RULE-AI-004 owner_query: -2 under police presence, else the owner byte.
-        private int OwnerQuery(int sectorId) => Disabled[sectorId] ? -2 : Owners[sectorId];
+        // RULE-AI-006, FND-AI-069: the common block's test of the visited sector.
+        private bool MultipliesByFive(int sectorId) =>
+            Owners[sectorId] >= 0 && HostileOwners.Contains(Owners[sectorId])
+            && HumanOwners.Contains(Owners[sectorId]);
+
+        // RULE-AI-004 owner_is_human, without the neutral sector's read.
+        private bool OwnerIsHuman(int sectorId) =>
+            Owners[sectorId] >= 0 && HumanOwners.Contains(Owners[sectorId]);
     }
 }

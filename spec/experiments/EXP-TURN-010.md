@@ -34,6 +34,9 @@ As EXP-TURN-001.
    every call of the sector selector `0x00408642` (`--trace-calls 0x00408642`)
    and copy the writable sections at the entry of call 11610 of `roll`,
    counting from 0 (`--dump-at-roll 11610`).
+3. Repeat step 2 over twenty-five turns (`--end-turns 25`), copying the
+   writable sections at the entry of call 12630 instead
+   (`--dump-at-roll 12630`).
 
 ## Observations
 
@@ -74,18 +77,35 @@ it; player 4's `attitude` toward player 0 was -10.
 
 Every result is the one RULE-RNG-002 computes from the recorded seed.
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays both runs. The
-rebuild makes the second run's calls with the same bounds and results and
-reaches the same generator position and state. In the first run it makes
-calls 0 to 11609 with the same bounds and results, including the Crackdown and
-police calls, and differs from call 11610 on: its call for player 4's gang 8,
-in sector 20, scores sectors 11 and 12 at 5 and calls `roll(2)`, which is call
-11609 and happens to match the original's call for gang 11.
+rebuild makes both runs' calls with the same bounds and results and reaches the
+same generator position and state after the twenty-five turns.
+
+At call 11610 of the first run the original's call for player 4's gang 8, in
+sector 20, returned 11 with no draw. Sector 12, next to it, is the human's and
+player 4's attitude toward the human is -10, so mode 5 gives it 1; the common
+block then multiplies table element `4 * 9 + 1`, the score of sector 44, and
+leaves sector 12 at 1 below sector 11's 5 (FND-AI-069). A reading in which the
+common block multiplied the visited sector gave both 5 and drew `roll(2)`.
+
+With that reading of the common block, the first call to differ was call
+12630. The third run, of step 3, traced the selector over all twenty-five
+turns. At call 10662 of `roll` the original's call for player 5's gang 16, in
+sector 45, returned 52, and sector 52 then held six of player 5's gangs. The
+Move stayed in the gang's orders and the Move repair (RULE-MOVE-002) let the
+gang in, so at call 11615 its call was made from sector 52 and returned 45. A
+reading in which a Move into a sector holding six of the player's gangs is
+refused when it is planned left the gang in sector 45, where the call returned
+38. With the Move kept, both runs replay to the end.
+
+The other corrections FND-AI-069 makes, the owner read of -2 under a
+Crackdown and the end of mode 6 after its hostile-human bonus, come from the
+static reading. These runs do not single them out: a reading with them and
+with the Move refused when it is planned also first differed at call 12630.
 
 ## Conclusion
 
-The second run agrees with the spec over twenty-five turns, including a tied
-Control. The first run disagrees with RULE-AI-006 as the rebuild implements
-it: the original did not give sector 12 the score of 5 that mode 5 and the
-multiply by five give a sector held by a human the player is hostile to, or
-its late filter for family 1 removed the sector. Which one is not settled. The
-test keeps the first run as a known divergence at call 11610.
+The two runs agree with the spec over twenty-five turns, including a tied
+Control, with RULE-AI-006 as FND-AI-069 corrects it: the common block's
+multiply by five reaches another table element than the visited sector, and a
+computer player's Move into a full sector is planned and left to the Move
+repair.

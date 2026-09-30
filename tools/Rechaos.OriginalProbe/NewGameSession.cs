@@ -25,7 +25,7 @@ internal sealed record ProbeOrder(int Turn, int Slot, int Action, int Target, in
 internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
-    IReadOnlyList<ProbeOrder>? Orders = null)
+    IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -84,6 +84,7 @@ internal sealed class NewGameSession(
     private int _seed = -1;
     private bool _setupReached;
     private int _panelsOpen;
+    private bool _planningLoopReached;
 
     public ProbeTrace Run()
     {
@@ -121,10 +122,12 @@ internal sealed class NewGameSession(
         ApplySettings();
         Click(window, OriginalAddresses.BeginX, OriginalAddresses.BeginY);
 
-        // Planning has begun when the rolls of the new match have stopped for a while.
+        // Planning has begun when the human's planning loop runs, or, where it does not, when the
+        // rolls of the new match have stopped for a while.
+        ArmPlanningLoop();
+        var begun = DateTime.UtcNow;
         var settled = _process.RunUntil(
-            () => _rolls.Count > rollsBeforeBegin
-                  && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(8),
+            () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
             timeout);
         if (!settled) return Finish(false, "The new match never settled.", rollsBeforeBegin);
 
@@ -141,6 +144,7 @@ internal sealed class NewGameSession(
             var target = turn;
             var rollsAtClick = _rolls.Count;
             var clicked = DateTime.UtcNow;
+            DateTime? moved = null;
             // A press the game did not take leaves the turn where it was with no roll made; press
             // again after a quiet while.
             var next = _process.RunUntil(() =>
@@ -153,8 +157,15 @@ internal sealed class NewGameSession(
                     Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
                     clicked = DateTime.UtcNow;
                 }
-                return _process.ReadInt32(OriginalAddresses.ElapsedTurns) >= target
-                       && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(8);
+                if (moved is null)
+                {
+                    if (_process.ReadInt32(OriginalAddresses.ElapsedTurns) < target) return false;
+                    // The loop of the turn just ended no longer runs once the count has moved on.
+                    moved = DateTime.UtcNow;
+                    ArmPlanningLoop();
+                }
+
+                return PlanningWaits(moved.Value);
             }, timeout);
             if (!next) return Finish(false, $"Turn {turn} never reached the next planning phase.", rollsBeforeBegin);
         }
@@ -164,6 +175,25 @@ internal sealed class NewGameSession(
     }
 
     public void Dispose() => _process.Dispose();
+
+    // FND-TIMER-003: the planning function calls the time-limit test on every pass of the human's
+    // planning loop, so its first call after arming means the phase waits for input.
+    private void ArmPlanningLoop()
+    {
+        _planningLoopReached = false;
+        _process.SetBreakpoint(OriginalAddresses.PlanningTimeCheck, _ => _planningLoopReached = true, oneShot: true);
+    }
+
+    // The loop's first pass, then half a second for a panel it opens to reach its handler. Several
+    // humans stop at a Ready card before the loop, and a loop not seen within 30 seconds falls back
+    // to the old test: no roll for 8 seconds.
+    private bool PlanningWaits(DateTime since)
+    {
+        var quiet = DateTime.UtcNow - _process.LastBreakpointUtc;
+        if (_planningLoopReached) return quiet > TimeSpan.FromSeconds(0.5);
+        return (settings.Humans is { Count: > 1 } || DateTime.UtcNow - since > TimeSpan.FromSeconds(30))
+               && quiet > TimeSpan.FromSeconds(8);
+    }
 
     private void OpenPanel(BreakContext context, string panel)
     {
@@ -260,9 +290,21 @@ internal sealed class NewGameSession(
         if (call != 0xE8) _notes.Add($"The preference loader call starts with 0x{call:X2}, not a call.");
         _process.Write(OriginalAddresses.PrefFullScreen, [0]);
         _process.Write(OriginalAddresses.PrefFullScreenCopy, [0]);
+        if (!settings.Sound) Mute();
         if (settings.EndTurns == 0) return;
         _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(0));
         _process.Write(OriginalAddresses.PrefDetailedCombat, BitConverter.GetBytes(0));
+    }
+
+    // Without --sound the run is silent, as if both volumes of the Options dialog were set to 0
+    // (RULE-AUDIO-003): no effect, movie sound or music plays. Nothing the rolls or the state
+    // depend on reads these values.
+    private void Mute()
+    {
+        _process.Write(OriginalAddresses.EffectsLevel, BitConverter.GetBytes(0));
+        _process.Write(OriginalAddresses.MusicLevel, BitConverter.GetBytes(0));
+        _process.Write(OriginalAddresses.EffectsEnabled, [0]);
+        _process.Write(OriginalAddresses.MusicEnabled, [0]);
     }
 
     // Writes what the setup screen's controls would have committed (FND-SETUP-013): the screen is

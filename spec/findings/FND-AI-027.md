@@ -1,9 +1,9 @@
 ---
 id: FND-AI-027
 title: Sector selector modes 10 to 16 and encoded modes, and the filters applied after scoring
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-069]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

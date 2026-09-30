@@ -1,9 +1,9 @@
 ---
 id: FND-AI-025
 title: Sector selector mode 6 routes toward the scenario leader and hostile human land
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-069]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

@@ -1,6 +1,14 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
+/// The selector's two owner tests of a visited sector: RULE-AI-004 owner_is_human (selector 0x35)
+/// and RULE-AI-006's common-block test that multiplies a score by 5 (FND-AI-069).
+/// </summary>
+internal readonly record struct SectorOwnerTests(
+    Func<int, bool> OwnerIsHuman,
+    Func<int, bool> MultipliesByFive);
+
+/// <summary>
 /// Pure implementation of the original weighted sector selector at 0x00408642
 /// for its fully recovered modes 1 through 10, 12 through 16,
 /// and encoded fixed-sector modes 0x40 through 0x7f, and of its mode 0 random
@@ -12,6 +20,7 @@ internal static class OriginalAiSectorSelectionRules
     /// <summary>FND-AI-068: selector 0x9A's value past the end of the weight-10 list.</summary>
     public const int GuardTargetEndMarker = 100;
     private const int NeutralOwner = -1;
+    private const int CrackdownOwner = -2;
     private const int MinimumRawOwner = -3;
     private const int MaximumDestinationGangCount =
         MatchLimits.FriendlyGangsPerSector - 1;
@@ -26,8 +35,7 @@ internal static class OriginalAiSectorSelectionRules
         IReadOnlyList<int> sectorGangCounts,
         Func<int, bool> canSoloControl,
         Func<int, bool> hasPriorChaos,
-        Func<int, bool> isHostileOwner,
-        Func<int, bool> isHumanOwner,
+        SectorOwnerTests ownerTests,
         DeterministicRandom random,
         bool? hasHumanPlayers = null,
         int? formationSectorId = null,
@@ -35,15 +43,15 @@ internal static class OriginalAiSectorSelectionRules
         Func<int, int>? unfinishedSiteScore = null,
         Func<int, bool>? hasPriorInfluence = null,
         Func<int, int>? completedSiteScore = null,
-        Func<int, int>? ownerQuery = null,
         AiPlanningState? planning = null)
     {
+        var (ownerIsHuman, multipliesByFive) = ownerTests;
         ValidateInputs(
             mode, sourceSectorId, family, sectorOwners, sectorDisabled,
             sectorGangCounts, canSoloControl, hasPriorChaos,
-            isHostileOwner, isHumanOwner, random,
+            ownerIsHuman, multipliesByFive, random,
             hasHumanPlayers, formationSectorId, scenarioStandings, unfinishedSiteScore,
-            hasPriorInfluence, completedSiteScore, ownerQuery);
+            hasPriorInfluence, completedSiteScore);
         if (mode == 0) return RandomNeighbour(sourceSectorId, random);
 
         var scores = new int[MatchLimits.SectorCount];
@@ -61,14 +69,13 @@ internal static class OriginalAiSectorSelectionRules
                     var y = sourceY + deltaY;
                     if (y is < 0 or >= MatchLimits.BoardWidth) continue;
                     var sectorId = y * MatchLimits.BoardWidth + x;
-                    var owner = sectorOwners[sectorId];
-                    // RULE-AI-006, FND-AI-056: mode 4 scores the owner query (RULE-AI-004), which
-                    // gives -2 under police presence, rather than the owner byte.
-                    var scoredOwner = mode == 4 ? ownerQuery!(sectorId) : owner;
+                    // RULE-AI-006, FND-AI-069: every mode reads the owner query (selector 0x21,
+                    // RULE-AI-004), which gives -2 under police presence, rather than the owner byte.
+                    var owner = OwnerQuery(sectorOwners, sectorDisabled, sectorId);
                     var added = BaseScore(
-                        mode, sectorId, player.Value, scoredOwner,
+                        mode, sectorId, player.Value, owner,
                         sectorGangCounts, canSoloControl, hasPriorChaos,
-                        isHostileOwner, isHumanOwner,
+                        ownerIsHuman, multipliesByFive,
                         hasHumanPlayers, formationSectorId, scenarioStandings, unfinishedSiteScore,
                         hasPriorInfluence, completedSiteScore);
                     if (added > 0)
@@ -76,7 +83,7 @@ internal static class OriginalAiSectorSelectionRules
                         scores[sectorId] = checked(scores[sectorId] + added);
                         found = true;
                     }
-                    // FND-AI-067: an encoded mode adds 1 to its own sector's score for every cell
+                    // FND-AI-069: an encoded mode adds 1 to its own sector's score for every cell
                     // the ring visits, so the search stops at radius 1 with that score at the
                     // number of cells on the board around the gang.
                     if (mode >= 0x40)
@@ -85,8 +92,19 @@ internal static class OriginalAiSectorSelectionRules
                         scores[encoded] = checked(scores[encoded] + 1);
                         found = true;
                     }
-                    if (owner >= 0 && isHostileOwner(owner) && isHumanOwner(owner))
-                        scores[sectorId] = checked(scores[sectorId] * 5);
+                    // FND-AI-069: the common block tests the visited sector, but the table element
+                    // it multiplies is x * 9 + y rather than x * 8 + y, so the score of another
+                    // sector is scaled, and in column 7 the element lies past the table.
+                    // DEV-AI-006: an element past the table is a dword of player 0's first
+                    // planning records in the original; the rebuild leaves the records alone.
+                    var element = x * (MatchLimits.BoardWidth + 1) + y;
+                    if (element < MatchLimits.SectorCount)
+                    {
+                        // A score of 0 stays 0, so the test is asked only where there is one to scale.
+                        var scaled = TableSector(element);
+                        if (scores[scaled] != 0 && multipliesByFive(sectorId))
+                            scores[scaled] = unchecked(scores[scaled] * 5);
+                    }
                 }
             }
             if (found) break;
@@ -125,8 +143,10 @@ internal static class OriginalAiSectorSelectionRules
             // The native late filter reads the acting planning record's family byte
             // at +0 and applies selector 0x2c only to literal families 0 and 1.
             // Family 11's mode-10 anchors and mode-16 followers deliberately bypass it.
+            // It compares the owner query (selector 0x21), so a policed sector of the player's own
+            // is filtered too (FND-AI-069).
             if (family is 0 or 1
-                && sectorOwners[sectorId] != player.Value
+                && OwnerQuery(sectorOwners, sectorDisabled, sectorId) != player.Value
                 && !canSoloControl(sectorId))
                 scores[sectorId] = 0;
             else
@@ -167,6 +187,16 @@ internal static class OriginalAiSectorSelectionRules
             result += MatchLimits.BoardWidth;
         return result;
     }
+
+    /// <summary>RULE-AI-004 owner_query (selector 0x21): -2 under police presence, else the owner byte.</summary>
+    private static int OwnerQuery(
+        IReadOnlyList<int> sectorOwners,
+        IReadOnlyList<bool> sectorDisabled,
+        int sectorId) => sectorDisabled[sectorId] ? CrackdownOwner : sectorOwners[sectorId];
+
+    /// <summary>FND-AI-066: the sector whose score element <paramref name="element"/> of the table holds.</summary>
+    private static int TableSector(int element) =>
+        element % MatchLimits.BoardWidth * MatchLimits.BoardWidth + element / MatchLimits.BoardWidth;
 
     private static int PickTied(PairMemory memory, int maximum, int best, DeterministicRandom random)
     {
@@ -272,8 +302,8 @@ internal static class OriginalAiSectorSelectionRules
         IReadOnlyList<int> sectorGangCounts,
         Func<int, bool> canSoloControl,
         Func<int, bool> hasPriorChaos,
-        Func<int, bool> isHostileOwner,
-        Func<int, bool> isHumanOwner,
+        Func<int, bool> ownerIsHuman,
+        Func<int, bool> multipliesByFive,
         bool? hasHumanPlayers,
         int? formationSectorId,
         IReadOnlyList<int>? scenarioStandings,
@@ -290,82 +320,75 @@ internal static class OriginalAiSectorSelectionRules
             5 when owner != player && owner > NeutralOwner => 1,
             6 => ModeSixBaseScore(
                 sectorId, player, owner, sectorGangCounts,
-                isHostileOwner, isHumanOwner,
+                multipliesByFive,
                 hasHumanPlayers!.Value, scenarioStandings!),
             7 when owner == player && !hasPriorInfluence!(sectorId) =>
                 Math.Max(0, unfinishedSiteScore!(sectorId)),
             8 when owner == player => Math.Max(0, unfinishedSiteScore!(sectorId)),
             9 when owner == player => Math.Max(0, completedSiteScore!(sectorId)),
-            10 when hasHumanPlayers == true && owner >= 0 && isHumanOwner(owner) => 1,
+            // FND-AI-069: with humans playing, mode 10 asks selector 0x35 about the sector, which
+            // can read a neutral sector as human (RULE-AI-004).
+            10 when hasHumanPlayers == true && ownerIsHuman(sectorId) => 1,
             10 when hasHumanPlayers == false && owner >= 0 && owner != player => 1,
             12 when IsBigManObjective(sectorId)
                 && owner != player
                 && sectorGangCounts[sectorId] < MatchLimits.FriendlyGangsPerSector =>
-                ObjectiveModeBaseScore(owner, isHostileOwner, isHumanOwner),
+                ObjectiveModeBaseScore(sectorId, multipliesByFive),
             13 when IsEliminateObjective(sectorId)
                 && owner != player
                 && sectorGangCounts[sectorId] < MatchLimits.FriendlyGangsPerSector =>
-                ObjectiveModeBaseScore(owner, isHostileOwner, isHumanOwner),
+                ObjectiveModeBaseScore(sectorId, multipliesByFive),
             14 when IsBigManObjective(sectorId)
                 && sectorGangCounts[sectorId] < MatchLimits.FriendlyGangsPerSector =>
-                ObjectiveModeBaseScore(owner, isHostileOwner, isHumanOwner),
+                ObjectiveModeBaseScore(sectorId, multipliesByFive),
             15 when IsEliminateObjective(sectorId)
                 && sectorGangCounts[sectorId] < MatchLimits.FriendlyGangsPerSector =>
-                ObjectiveModeBaseScore(owner, isHostileOwner, isHumanOwner),
+                ObjectiveModeBaseScore(sectorId, multipliesByFive),
             16 when sectorId == formationSectorId => 1,
             _ => 0
         };
 
     /// <summary>
-    /// FND-AI-067: the sector whose score an encoded mode raises. The selector adds to the score
+    /// FND-AI-069: the sector whose score an encoded mode raises. The selector adds to the score
     /// table at (t % 8) * 8 + t / 8, which is sector t for 0 to 63; the guard end marker t = 100
     /// lands on the table entry of sector 37.
     /// </summary>
-    internal static int EncodedSector(int encoded)
-    {
-        var tableIndex = encoded % MatchLimits.BoardWidth * MatchLimits.BoardWidth + encoded / MatchLimits.BoardWidth;
-        return tableIndex % MatchLimits.BoardWidth * MatchLimits.BoardWidth + tableIndex / MatchLimits.BoardWidth;
-    }
+    internal static int EncodedSector(int encoded) => TableSector(TableSector(encoded));
 
-    internal static int ObjectiveModeBaseScore(
-        int owner,
-        Func<int, bool> isHostileOwner,
-        Func<int, bool> isHumanOwner) => owner >= 0
-            && isHostileOwner(owner)
-            && isHumanOwner(owner)
-                // The common post-switch multiplier applies again, preserving
-                // the original objective mode's effective 25-point weight.
-                ? 5
-                : 1;
+    /// <summary>
+    /// RULE-AI-006, FND-AI-069: modes 12 to 15 give 5 to an admitted sector that passes the common
+    /// block's test and 1 to any other. No objective lies in column 0, so the common block's
+    /// multiply never reaches these scores.
+    /// </summary>
+    internal static int ObjectiveModeBaseScore(int sectorId, Func<int, bool> multipliesByFive) =>
+        multipliesByFive(sectorId) ? 5 : 1;
 
+    /// <summary>
+    /// RULE-AI-006, FND-AI-069: mode 6 gives 2 to a sector that passes the common block's test
+    /// while any human plays, and ends the case there without the leader point. Otherwise it gives
+    /// the leader point for an owned sector.
+    /// </summary>
     internal static int ModeSixBaseScore(
         int sectorId,
         int player,
         int owner,
         IReadOnlyList<int> sectorGangCounts,
-        Func<int, bool> isHostileOwner,
-        Func<int, bool> isHumanOwner,
+        Func<int, bool> multipliesByFive,
         bool hasHumanPlayers,
         IReadOnlyList<int> scenarioStandings)
     {
+        if (hasHumanPlayers && multipliesByFive(sectorId)) return 2;
         if (owner < 0) return 0;
 
-        var score = hasHumanPlayers
-            && owner != player
-            && isHumanOwner(owner)
-            && isHostileOwner(owner)
-                ? 2
-                : 0;
         var leaders = Enumerable.Range(0, MatchLimits.PlayerCount)
             .Where(candidate => scenarioStandings[candidate] == 0)
             .ToArray();
         if (leaders.Length != 1)
-            return score + (scenarioStandings[owner] == 0 ? 1 : 0);
+            return scenarioStandings[owner] == 0 ? 1 : 0;
 
         var leader = leaders[0];
-        if (leader != player) return score + (owner == leader ? 1 : 0);
-        return score + (owner != player
-            && sectorGangCounts[sectorId] < 4 ? 1 : 0);
+        if (leader != player) return owner == leader ? 1 : 0;
+        return owner != player && sectorGangCounts[sectorId] < 4 ? 1 : 0;
     }
 
     private static bool IsBigManObjective(int sectorId) =>
@@ -390,16 +413,15 @@ internal static class OriginalAiSectorSelectionRules
         IReadOnlyList<int> sectorGangCounts,
         Func<int, bool> canSoloControl,
         Func<int, bool> hasPriorChaos,
-        Func<int, bool> isHostileOwner,
-        Func<int, bool> isHumanOwner,
+        Func<int, bool> ownerIsHuman,
+        Func<int, bool> multipliesByFive,
         DeterministicRandom random,
         bool? hasHumanPlayers,
         int? formationSectorId,
         IReadOnlyList<int>? scenarioStandings,
         Func<int, int>? unfinishedSiteScore,
         Func<int, bool>? hasPriorInfluence,
-        Func<int, int>? completedSiteScore,
-        Func<int, int>? ownerQuery)
+        Func<int, int>? completedSiteScore)
     {
         if (mode is not (>= 0 and <= 10 or >= 12 and <= 16
                 or >= 0x40 and < 0x80 or 0x40 + GuardTargetEndMarker))
@@ -414,8 +436,8 @@ internal static class OriginalAiSectorSelectionRules
         ArgumentNullException.ThrowIfNull(sectorGangCounts);
         ArgumentNullException.ThrowIfNull(canSoloControl);
         ArgumentNullException.ThrowIfNull(hasPriorChaos);
-        ArgumentNullException.ThrowIfNull(isHostileOwner);
-        ArgumentNullException.ThrowIfNull(isHumanOwner);
+        ArgumentNullException.ThrowIfNull(ownerIsHuman);
+        ArgumentNullException.ThrowIfNull(multipliesByFive);
         ArgumentNullException.ThrowIfNull(random);
         if (sectorOwners.Count != MatchLimits.SectorCount)
             throw new ArgumentException("Sector owners must contain all 64 sectors.", nameof(sectorOwners));
@@ -433,8 +455,6 @@ internal static class OriginalAiSectorSelectionRules
             throw new ArgumentNullException(nameof(hasHumanPlayers));
         if (mode is 4 or 6 && scenarioStandings is null)
             throw new ArgumentNullException(nameof(scenarioStandings));
-        if (mode == 4 && ownerQuery is null)
-            throw new ArgumentNullException(nameof(ownerQuery));
         if (scenarioStandings is not null
             && (scenarioStandings.Count != MatchLimits.PlayerCount
                 || scenarioStandings.Any(standing =>

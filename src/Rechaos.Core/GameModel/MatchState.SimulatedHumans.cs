@@ -12,7 +12,8 @@ public sealed partial class MatchState
     /// The seat stays <see cref="PlayerController.Human"/>, so every rule and AI query that asks
     /// whether a player is human, such as the hunters' choice of targets and the end of the match
     /// when the only human is eliminated, answers as it would for a person. Only the checks that
-    /// keep the computer planner off human seats let it through. The mark lives in this object
+    /// keep the computer planner off human seats let it through, and command validation takes its
+    /// Moves as a computer player's (DEV-MOVE-001). The mark lives in this object
     /// alone: a save, a clone or a replay journal does not carry it, so a replay of such a match
     /// refuses the first planning step of the seat.
     /// </remarks>
