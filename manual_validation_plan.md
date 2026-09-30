@@ -121,12 +121,8 @@ finding or experiment is in the spec.
 
 ## Movement, Control, gangs, equipment and money
 
-- RULE-EQUIP-001, RULE-EQUIP-002, FND-EQUIP-006: Equip at the cash boundary.
-  Start: a save with one gang able to buy an item of known price. Queue the
-  Equip with cash exactly equal to the price, then $1 short, then $1 short with
-  a Sell queued on an earlier roster slot of the same player, then with the
-  Sell on a later slot. Record cash after the turn, the gang's items and the
-  Last Turn report.
+- RULE-EVENT-014: the Last Turn report of an Equip one short. EXP-TURN-031
+  turn 7 sets it up; capture the Last Turn Events panel of turn 8.
 - RULE-EQUIP-003: Factory price. Start: a player owning a sector with a
   completed Factory. Equip an item whose Cost is not a multiple of 3 from a
   gang in that sector and from one outside it. Record cash before and after.
