@@ -33,7 +33,7 @@ As EXP-TURN-001.
    4 in `target`, roster slot 18 in `target_2` and 0 in `repeat_action` and
    `repeat_target` (`--orders 1:0:8:0:0:1,24:0:1:4:18:0`).
 2. Repeat the run and copy the writable sections at the entry of call 11600 of
-   `roll`, counting from 0, the first call after the twenty-fourth Done press
+   `roll`, counting from 0, the second call after the twenty-fourth Done press
    (`--dump-at-roll 11600`).
 
 ## Observations
@@ -66,6 +66,9 @@ The run agrees with RULE-ATTACK-001 and RULE-COMBAT-002 for an attack on a gang
 that is not hiding: the opening pool, the success threshold, the retaliation
 at half the target's hits, and damage taken off Force only at the end of the
 phase. The run does not test Damage Inflicted (RULE-COMBAT-003), which the
-fixture does not record and which this attack left unchanged, nor the attitude
-change, since player 4's attitude toward the human was already at its floor of
--10 in EXP-TURN-010.
+fixture does not record and which this attack left unchanged. It tests the
+attitude change (RULE-AI-016) only in part: player 4's attitude toward the
+human, -10 before the turn, rises to -9 at the start of the resolution
+(RULE-AI-015) and ends at -10, where EXP-TURN-010's run without the Attack
+goes on to -8 a turn later, so the Attack lowered it by at least one, and the
+floor of -10 hides by how much.

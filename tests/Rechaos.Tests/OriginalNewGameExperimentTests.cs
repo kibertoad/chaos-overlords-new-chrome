@@ -24,9 +24,10 @@ namespace Rechaos.Tests;
 /// (RULE-SNITCH-001, RULE-BRIBE-001, RULE-HIDE-001) and a recurring Chaos (RULE-TURN-004), which
 /// bring on a Crackdown. EXP-TURN-011 has the human's gang attack a computer player's gang, which
 /// strikes back (RULE-ATTACK-001), with the damage taken off Force at the end of the combat phase
-/// (RULE-COMBAT-002). Every run compares each gang's Combat with its weapon skills (RULE-COMBAT-001),
-/// each sector's base Tolerance after its return toward normal (RULE-TOLERANCE-001) and every attitude
-/// after its rise (RULE-AI-015). EXP-TURN-010's first run brings police attacks and a Crackdown that
+/// (RULE-COMBAT-002). Every EXP-TURN run compares each gang's Combat with its weapon skills
+/// (RULE-COMBAT-001), each sector's base Tolerance after its return toward normal
+/// (RULE-TOLERANCE-001) and every attitude after its rise, or at Homicidal Maniac in EXP-TURN-008
+/// without one (RULE-AI-015). EXP-TURN-010's first run brings police attacks and a Crackdown that
 /// neutralizes a sector (RULE-POLICE-001, RULE-POLICE-002, RULE-POLICE-003). No recorded run has a
 /// Give, a Sell or a Terminate yet.
 /// </summary>
@@ -260,17 +261,16 @@ public sealed class OriginalNewGameExperimentTests
 
     // The probe writes an order straight into the human's gang record (FMT-STATE-001) as the order
     // screens do (RULE-TURN-005); the rebuild takes the same order as a command. A slot is the
-    // position among the player's active gangs.
+    // gang's roster slot (FMT-STATE-001), the index of its player's gang list.
     private static void Submit(MatchReplayRecorder recorder, MatchState match, PlayerId human, RecordedOrder order)
     {
-        var gang = match.Players[human.Value].Gangs.Where(candidate => candidate.IsActive).ElementAt(order.Slot);
+        var gang = match.Players[human.Value].Gangs[order.Slot];
         var action = (GangAction)order.Action;
         var target = action switch
         {
             GangAction.Move => CommandTarget.Sector(order.Target),
             GangAction.Research or GangAction.Equip => CommandTarget.Item(order.Target),
-            // target_2 of an Attack is the target's roster slot (FMT-STATE-001), the index of its
-            // player's gang list.
+            // target_2 of an Attack is the target's roster slot, as the acting gang's slot is.
             GangAction.Attack => CommandTarget.Gang(match.Players[order.Target].Gangs[order.Target2].Id),
             GangAction.Bribe or GangAction.Chaos or GangAction.Control or GangAction.Heal
                 or GangAction.Hide or GangAction.Snitch or GangAction.Terminate => CommandTarget.None,
