@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 137 |
-| `validated` | 85 |
+| `implemented` | 136 |
+| `validated` | 86 |
 
 | Code | Rows |
 |---|---|
@@ -326,7 +326,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The hunter guards compare the previous hire role with the scenario's hunter slot number, as the original does (BUG-AI-001), and the per-scenario slot adjustments and the hunter reversion follow FND-AI-050. `first_hostile` reads the sector weights the planning pass cached before its hostility step (RULE-AI-003), and the hunter coverage test follows selector 0x5F (FND-AI-068). In 60 simulated four-year matches with a simulated human, computer players hired 853 hunters out of 23,722 hires. |
-| `RULE-AI-011` | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported | complete | None | None | implemented | None |
+| `RULE-AI-011` | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-028 replays Greed's closing turns. The replays refuse hires on the gang limit in Greed, Power, Kill 'Em All, Eliminate and Armageddon, and EXP-TURN-014 hires past it in Big Man. No run reaches the cash-based limit that applies once no neutral sector is free. |
 | `RULE-AI-012` | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported | complete | None | None | implemented | None |
 | `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-004` | validated | Placement is carried out in the Hire phase. The failed anchor 63 follows FND-AI-051. An anchor of 164 (sector 100) always fails the keep test and is replaced (DEV-AI-004). |
 | `RULE-AI-014` | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
