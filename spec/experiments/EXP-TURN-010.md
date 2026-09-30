@@ -84,15 +84,20 @@ block then multiplies table element `4 * 9 + 1`, the score of sector 44, and
 leaves sector 12 at 1 below sector 11's 5 (FND-AI-069). A reading in which the
 common block multiplied the visited sector gave both 5 and drew `roll(2)`.
 
-Two more departures were found on the way to call 12630, with the probe
-repeating the first run with its seed and `--trace-calls 0x00408642
+With that corrected, the rebuild's first different call was call 12630. The
+probe repeated the first run with its seed and `--trace-calls 0x00408642
 --dump-at-roll 12630`, over twenty-five turns. The traced calls agreed with the
 rebuild's in order and result up to call 11615 of `roll`, where the original's
 player 5 gang 16 returned 45 from sector 52 and the rebuild's, still in sector
 45, returned 38. At call 10662 both had sent it to sector 52, which then held
 six of player 5's gangs; the original took the Move and the Move repair
 (RULE-MOVE-002) let the gang in, where the rebuild had refused the Move when it
-was planned.
+was planned. With the Move taken, both runs replay to the end.
+
+The other corrections FND-AI-069 makes, the owner read of -2 under a
+Crackdown and the end of mode 6 after its hostile-human bonus, come from the
+static reading. These runs do not single them out: with them in place and the
+Move still refused, the first different call stayed at 12630.
 
 ## Conclusion
 
