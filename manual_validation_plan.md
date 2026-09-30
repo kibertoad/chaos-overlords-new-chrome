@@ -146,9 +146,6 @@ finding or experiment is in the spec.
 - RULE-SELL-001, BUG-SELL-001: multi-item Sell. Start: a gang holding a weapon,
   armor and a miscellaneous item of known Cost. Sell two of them, then all
   three. Record cash and the gang's items after each.
-- RULE-GIVE-001: same-turn swaps and overwrites. Start: two gangs in one
-  sector, each Giving its weapon to the other, and a third gang Equipping a
-  weapon while receiving one by Give. Record the items after the turn.
 - RULE-UPKEEP-001: upkeep around zero cash. Start: saves near $0 with a known
   number of owned sectors, completed sites with positive and negative Cash, and
   gangs of known Upkeep. Record the Financial panel before the turn, cash after
