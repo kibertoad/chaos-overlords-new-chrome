@@ -542,6 +542,11 @@ public sealed partial class MatchState
         if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this, humanActiveAtTurnStart) is { } outcome)
         {
             Outcome = MatchOutcomeValidator.Freeze(outcome);
+            // FND-OBJECTIVE-004: a match that ends refreshes its sectors and gangs before the
+            // final look at the city, as a turn start does, with no upkeep before it.
+            SectorBenefitResolver.ActivatePending(this, Coordinator.Turn);
+            SectorRecordRebuild.BeforePlanning(this);
+            EffectiveStatisticsCalculator.RebuildBeforePlanning(this);
             AppendMatchEndedEvent(Outcome);
         }
         return CaptureBoundary(Coordinator.FinishPlayerElimination());

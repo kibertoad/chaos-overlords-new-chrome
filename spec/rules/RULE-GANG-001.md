@@ -4,7 +4,7 @@ title: Each active gang's fourteen statistics are its definition's, plus its ite
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GANG-001, FND-GANG-007, FND-UPKEEP-001, SRC-MANUAL-GOG, EXP-SETUP-001]
+evidence: [FND-GANG-001, FND-GANG-007, FND-UPKEEP-001, SRC-MANUAL-GOG, EXP-SETUP-001, FND-OBJECTIVE-004, EXP-TURN-037]
 conflicting: []
 split_with: []
 related: [RULE-SITE-001, RULE-COMBAT-001, FMT-STATE-001, FMT-STATE-002, FMT-DATA-002, FMT-DATA-003]
@@ -22,7 +22,8 @@ Strength and Blade with a blade, Ranged with a ranged weapon.
 ## When it runs
 
 In `turn_start`, after the sector records have been rebuilt (RULE-SITE-001),
-before `planning_phase`. It runs before the first turn's planning as well.
+before `planning_phase`. It runs before the first turn's planning as well, and
+after the sector rebuild that ends a match [FND-OBJECTIVE-004, EXP-TURN-037].
 
 ## Parameters
 
