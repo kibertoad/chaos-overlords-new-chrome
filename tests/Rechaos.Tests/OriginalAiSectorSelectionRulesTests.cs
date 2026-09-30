@@ -606,30 +606,30 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             6, 27, new PlayerId(0), 2,
             facts.Owners, facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
+            _ => false, _ => false, new SectorOwnerTests(_ => false, _ => false),
             facts.Random,
             hasHumanPlayers: false));
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 8));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             8, 27, new PlayerId(0), 3,
             facts.Owners, facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
+            _ => false, _ => false, new SectorOwnerTests(_ => false, _ => false),
             facts.Random));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             7, 27, new PlayerId(0), 5,
             facts.Owners, facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
+            _ => false, _ => false, new SectorOwnerTests(_ => false, _ => false),
             facts.Random,
             unfinishedSiteScore: facts.SiteScores.ElementAt));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             9, 27, new PlayerId(0), 10,
             facts.Owners, facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
+            _ => false, _ => false, new SectorOwnerTests(_ => false, _ => false),
             facts.Random));
         Assert.Throws<ArgumentException>(() => OriginalAiSectorSelectionRules.Select(
             3, 27, new PlayerId(0), 2,
             facts.Owners[..^1], facts.Disabled, facts.GangCounts,
-            _ => false, _ => false, _ => false, _ => false,
+            _ => false, _ => false, new SectorOwnerTests(_ => false, _ => false),
             facts.Random));
         facts.GangCounts[28] = -1;
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 2));
