@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 162 |
-| `validated` | 60 |
+| `implemented` | 160 |
+| `validated` | 62 |
 
 | Code | Rows |
 |---|---|
@@ -275,7 +275,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | supported | complete | None | `DEV-HELP-002` | implemented | None |
+| `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-HELP-002` | validated | EXP-TURN-011 replays a human gang's attack on a computer player's gang that is not hiding, with its retaliation. The Hide evasion and the Martial Arts exception have no recorded run. |
 | `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
 | `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | complete | None | `DEV-UI-008` | implemented | Layout, marks, faces, keys, initial selection and double-click panels follow FND-ATTACK-003 and FND-ATTACK-004. The target cards' art and when the Confirm face is first drawn are not recorded, so the target cards are drawn like the acting gang's. |
 
@@ -284,7 +284,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-COMBAT-001` | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported | complete | None | None | implemented | None |
-| `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | complete | None | None | implemented | Damage, deaths and order follow the rule. The combat records and the per-sector result rows are held as the combat-phase events, field by field as the FMT-STATE-003 and FMT-STATE-008 sections of [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md) give; byte 0 of player 0's first record, which the computer players read, is kept as state. The copy of the fight marks at `0x00498BC0` feeds only the network result sender (FND-STATE-007) and has no counterpart. |
+| `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-011 replays a gang's attack, its retaliation and the damage taken off Force at the end of the phase; no recorded run has police combat or a death in combat yet. Damage, deaths and order follow the rule. The combat records and the per-sector result rows are held as the combat-phase events, field by field as the FMT-STATE-003 and FMT-STATE-008 sections of [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md) give; byte 0 of player 0's first record, which the computer players read, is kept as state. The copy of the fight marks at `0x00498BC0` feeds only the network result sender (FND-STATE-007) and has no counterpart. |
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
 | `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | complete | None | `DEV-COMBAT-002` | implemented | Paging, keys, the opponent and police strips, grid cells with portraits, force_start and force_final tracks and the focus outlines follow FND-COMBAT-007 and FND-COMBAT-012. The pressed Exit face on Enter is not drawn as the panel closes at once, and the pressed arrows are not recorded. |

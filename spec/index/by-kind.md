@@ -88,7 +88,7 @@
 | [RULE-AI-029](../rules/RULE-AI-029.md) | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported |
 | [RULE-AI-030](../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported |
 | [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported |
-| [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | supported |
+| [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | established |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported |
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | Starting a music program | supported |
 | [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | Music repeats its program when it ends and pauses while the window is inactive | supported |
@@ -567,7 +567,7 @@
 
 ## experiments
 
-14 entries.
+15 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -585,6 +585,7 @@
 | [EXP-TURN-008](../experiments/EXP-TURN-008.md) | Do ten turns of new local games with Mentality 3, each ended with no orders, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | Do twelve turns of new local games, with the human's first gang given Snitch, recurring Chaos, Hide and Bribe orders, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-010](../experiments/EXP-TURN-010.md) | Do twenty-five turns of new local games, with the human's first gang hiding throughout, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-011](../experiments/EXP-TURN-011.md) | Does a human gang's Attack on a computer player's gang in its sector draw and resolve as the spec gives? | recorded |
 
 ## bugs
 
