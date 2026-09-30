@@ -290,7 +290,7 @@
 
 ## recorded
 
-367 entries.
+368 entries.
 
 | ID | Title |
 |---|---|
@@ -326,6 +326,7 @@
 | [EXP-TURN-026](../experiments/EXP-TURN-026.md) | Do family-6 gangs that fail their strength test buy equipment, in Armageddon at Criminal, as the spec gives? |
 | [EXP-TURN-027](../experiments/EXP-TURN-027.md) | Does a human's Give of two items to a gang hired the turn before reach the state the spec gives? |
 | [EXP-TURN-028](../experiments/EXP-TURN-028.md) | Do the computer players stop hiring in the closing turns of a six-month Greed? |
+| [EXP-TURN-029](../experiments/EXP-TURN-029.md) | Does an armed gang strike back at a bare-handed Martial Artist? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |

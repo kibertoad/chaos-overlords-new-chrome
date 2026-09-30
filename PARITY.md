@@ -275,7 +275,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-HELP-002` | validated | EXP-TURN-011 replays a human gang's attack on a computer player's gang that is not hiding, with its retaliation. EXP-TURN-017 replays four attacks by computer players' gangs on the human's hiding gang, three evaded and one that hits. The Martial Arts exception has no recorded run. |
+| `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-HELP-002` | validated | EXP-TURN-011 replays a human gang's attack on a computer player's gang that is not hiding, with its retaliation. EXP-TURN-017 replays four attacks by computer players' gangs on the human's hiding gang, three evaded and one that hits. EXP-TURN-029 replays a bare-handed Martial Artist's attack on an armed gang, which does not strike back. |
 | `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
 | `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | complete | None | `DEV-UI-008` | implemented | Layout, marks, faces, keys, initial selection and double-click panels follow FND-ATTACK-003 and FND-ATTACK-004. The target cards' art and when the Confirm face is first drawn are not recorded, so the target cards are drawn like the acting gang's. |
 
