@@ -63,7 +63,7 @@ internal static class OriginalAiSectorSelectionRules
                     var sectorId = y * MatchLimits.BoardWidth + x;
                     // RULE-AI-006, FND-AI-069: every mode reads the owner query (selector 0x21,
                     // RULE-AI-004), which gives -2 under police presence, rather than the owner byte.
-                    var owner = sectorDisabled[sectorId] ? CrackdownOwner : sectorOwners[sectorId];
+                    var owner = OwnerQuery(sectorOwners, sectorDisabled, sectorId);
                     var added = BaseScore(
                         mode, sectorId, player.Value, owner,
                         sectorGangCounts, canSoloControl, hasPriorChaos,
@@ -139,7 +139,7 @@ internal static class OriginalAiSectorSelectionRules
             // It compares the owner query (selector 0x21), so a policed sector of the player's own
             // is filtered too (FND-AI-069).
             if (family is 0 or 1
-                && (sectorDisabled[sectorId] ? CrackdownOwner : sectorOwners[sectorId]) != player.Value
+                && OwnerQuery(sectorOwners, sectorDisabled, sectorId) != player.Value
                 && !canSoloControl(sectorId))
                 scores[sectorId] = 0;
             else
@@ -180,6 +180,12 @@ internal static class OriginalAiSectorSelectionRules
             result += MatchLimits.BoardWidth;
         return result;
     }
+
+    /// <summary>RULE-AI-004 owner_query (selector 0x21): -2 under police presence, else the owner byte.</summary>
+    private static int OwnerQuery(
+        IReadOnlyList<int> sectorOwners,
+        IReadOnlyList<bool> sectorDisabled,
+        int sectorId) => sectorDisabled[sectorId] ? CrackdownOwner : sectorOwners[sectorId];
 
     /// <summary>FND-AI-066: the sector whose score element <paramref name="element"/> of the table holds.</summary>
     private static int TableSector(int element) =>

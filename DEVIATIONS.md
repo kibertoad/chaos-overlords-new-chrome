@@ -242,8 +242,9 @@ The reasoning is in `docs/MULTIPLAYER.md`.
   have given a useful order instead is no longer wasted on a Move that cannot happen.
 - Dropped: no
 
-The refusal applies to the orders of human players only. A computer player's Move into a full
-sector is planned as in the original and left to the Move repair, which EXP-TURN-010 depends on.
+The refusal applies to the orders a person gives only. A Move the computer planner plans into a
+full sector, for a computer seat or for a human seat a simulation hands to the planner, is planned
+as in the original and left to the Move repair, which EXP-TURN-010 depends on.
 Whether the original's panel refuses the order too is in `manual_validation_plan.md`. The rebuild
 counts only the gangs already in the destination, so moving one gang out and another in to a full
 sector takes two turns where the original allows one; counting gangs ordered out of the

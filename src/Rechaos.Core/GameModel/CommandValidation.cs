@@ -166,8 +166,9 @@ public static class CommandValidator
             if (site.Resistance == 0 || site.InfluencedBy is not null)
                 return CommandValidation.Reject(CommandValidationCode.SiteAlreadyInfluenced);
         }
-        // DEV-MOVE-001 departs from the order panel only: a computer player's Move into a full
-        // sector is planned as in the original and left to the Move repair (RULE-MOVE-002).
+        // DEV-MOVE-001 departs from the order panel only: a Move the computer planner plans into a
+        // full sector, a simulated human's included, is planned as in the original and left to the
+        // Move repair (RULE-MOVE-002).
         if (command.Action == GangAction.Move
             && !state.IsPlannedByComputer(command.Player)
             && state.FindPlayer(command.Player)!.Gangs.Count(gang =>

@@ -73,9 +73,13 @@ public static partial class AiTurnPlanner
                     || state.AiPlanning.PreviousAction(player.Id, entry.slot) != original.Action))
                 continue;
 
+            // Command validation lets a computer player's Move into a full sector through for the
+            // Move repair (DEV-MOVE-001); the expansion does not trade a useful order for one.
             var move = CommandOptionCatalog.LegalCommands(state, player.Id, gang.Id, targets)
                 .Where(command => command.Action == GangAction.Move
-                    && state.Sectors[command.Target.Id].Owner != player.Id)
+                    && state.Sectors[command.Target.Id].Owner != player.Id
+                    && player.Gangs.Count(candidate => candidate.IsActive
+                        && candidate.SectorId == command.Target.Id) < MatchLimits.FriendlyGangsPerSector)
                 .OrderByDescending(command => DestinationValue(
                     state, player.Id, command.Target.Id, state.Setup.Scenario))
                 .ThenBy(command => command.Target.Id)
