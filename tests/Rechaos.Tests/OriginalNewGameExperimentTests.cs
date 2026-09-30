@@ -288,7 +288,10 @@ public sealed class OriginalNewGameExperimentTests
         // The running totals the financial panel and the endgame awards read, and the hire roles
         // the computer players' planning keeps (RULE-AI-010). Damage Inflicted is RULE-COMBAT-003.
         // The attitudes compared above follow every Control takeover (RULE-AI-017) in EXP-TURN-011,
-        // EXP-TURN-017 and EXP-TURN-018.
+        // EXP-TURN-017 and EXP-TURN-018. Every Attack lowers the defender's attitude by the larger of
+        // its reaction and the opening damage (RULE-AI-016). In EXP-TURN-017 and EXP-TURN-022 a player
+        // is eliminated (RULE-OBJECTIVE-003) before the end evaluation stores the scores
+        // (RULE-TURN-006).
         if (recorded.HasTerm("cash_spent", 0))
             foreach (var player in match.Players)
             {

@@ -1014,6 +1014,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | evidence |
 | [RULE-EVENT-010](../rules/RULE-EVENT-010.md) | evidence |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
 
@@ -1043,6 +1044,7 @@ None.
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | evidence |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | evidence |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | evidence |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
@@ -1051,6 +1053,8 @@ None.
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | evidence |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | evidence |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | evidence |
+| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | evidence |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, evidence |
 
 ## EXP-TURN-018
 
@@ -1059,6 +1063,7 @@ None.
 | [EXP-TURN-020](../experiments/EXP-TURN-020.md) | body |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | evidence |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body |
 
 ## EXP-TURN-019
 
@@ -1073,6 +1078,7 @@ None.
 |---|---|
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body |
 
 ## EXP-TURN-021
 
@@ -1089,6 +1095,8 @@ None.
 | [FND-AI-072](../findings/FND-AI-072.md) | body |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | body, evidence |
+| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | evidence |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, evidence |
 
 ## EXP-TURN-023
 
@@ -1115,6 +1123,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body |
 
 ## EXP-TURN-026
 

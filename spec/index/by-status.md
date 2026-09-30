@@ -16,7 +16,7 @@
 
 ## supported
 
-179 entries.
+176 entries.
 
 | ID | Title |
 |---|---|
@@ -65,7 +65,6 @@
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base |
-| [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash |
@@ -120,7 +119,6 @@
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | Each Influence gang rolls on its own and adds its successes to the site's progress at once |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | Move destinations are rewritten until no sector would hold more than six of the player's gangs |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested |
-| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup |
@@ -143,7 +141,6 @@
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | Giving a gang an order replaces its whole previous order, one-off or recurring |
-| [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right |
@@ -202,7 +199,7 @@
 
 ## established
 
-60 entries.
+63 entries.
 
 | ID | Title |
 |---|---|
@@ -217,6 +214,7 @@
 | [RULE-AI-012](../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves |
@@ -248,6 +246,7 @@
 | [RULE-HIRE-004](../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | Move pass carries out every Move, player by player, after normalizing each player's destinations |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score |
+| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent |
@@ -266,6 +265,7 @@
 | [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective |
 
 ## disputed
 
@@ -690,6 +690,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-AI-012](../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves |
@@ -721,6 +722,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-HIRE-004](../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | Move pass carries out every Move, player by player, after normalizing each player's destinations |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score |
+| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent |
@@ -739,6 +741,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective |
 
 ## Open questions
 
@@ -794,7 +797,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-012](../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | established |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established |
-| [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | established |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | established |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | established |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
@@ -853,7 +856,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | established |
-| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported |
+| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | established |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | supported |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup | supported |
@@ -884,7 +887,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | Giving a gang an order replaces its whole previous order, one-off or recurring | supported |
-| [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | supported |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | established |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | Drawing numbers in fixed glyph cells | supported |

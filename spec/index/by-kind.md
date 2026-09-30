@@ -72,7 +72,7 @@
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | established |
-| [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | established |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | established |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | established |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | established |
@@ -158,7 +158,7 @@
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | established |
-| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported |
+| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | established |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | supported |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup | supported |
@@ -199,7 +199,7 @@
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | Giving a gang an order replaces its whole previous order, one-off or recurring | supported |
-| [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | supported |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | established |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |
