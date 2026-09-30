@@ -37,6 +37,10 @@ internal static class OriginalAddresses
     public const uint EffectsEnabled = 0x0048783C;
     public const uint MusicEnabled = 0x00487838;
 
+    // FND-TIMER-003: fn_0041BDD5, the planning time-limit test, called on every pass of the human's
+    // planning loop in fn_0046FD80.
+    public const uint PlanningTimeCheck = 0x0041BDD5;
+
     // elapsed_turns: 0 through the first turn, up by one after each resolution.
     public const uint ElapsedTurns = 0x0049CA68;
 

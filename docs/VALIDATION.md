@@ -376,7 +376,9 @@ six name modifiers (`right_hands`, `visibility`, `hire_force`, `elite`,
 `islands`, `cash`), which the probe reads from the running executable. With
 several humans the recording stops at the first human's Ready card, before
 its hire offers are drawn. `--end-turns` presses Done that many times with no
-orders, with Warn if Idle Gangs and Detailed Combat switched off in memory so
+orders, each once the next planning phase waits for input, which the first
+call of the planning time-limit test `0x0041BDD5` (FND-TIMER-003) after
+`elapsed_turns` has moved on shows, with Warn if Idle Gangs and Detailed Combat switched off in memory so
 nothing waits for input, and dumps the state at the planning phase that
 follows the last one. The human's planning phase opens the Combat Results
 panel (SCR-COMBAT-001) after a fight that involved its gangs, and the Last

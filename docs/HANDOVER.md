@@ -874,10 +874,10 @@ original silent unless `--sound` is given.
   hostile-human bonus. The same run also showed that a computer player's Move
   into a sector holding six of its gangs is planned and left to the Move
   repair; DEV-MOVE-001 now refuses only human orders.
-- Each turn of a recording costs at least 8 seconds of idle waiting: the probe
-  takes the planning phase to have begun once `elapsed_turns` has moved on and
-  no `roll` has been made for 8 seconds. A breakpoint where the human's planning
-  phase waits for input would remove that wait.
+- The probe takes a planning phase to wait for input at the first call of the
+  planning time-limit test (FND-TIMER-003) after `elapsed_turns` moves on, so a
+  twenty-five-turn recording takes about 30 seconds. Several humans, which stop
+  at a Ready card, still wait for 8 seconds without a `roll`.
 - A human with no orders is eliminated after about thirty turns, and the probe
   then waits for a turn that never comes. Longer runs need the human's gang on
   a recurring Hide (EXP-TURN-010) or the probe needs to stop at the

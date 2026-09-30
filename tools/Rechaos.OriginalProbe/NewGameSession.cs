@@ -84,6 +84,7 @@ internal sealed class NewGameSession(
     private int _seed = -1;
     private bool _setupReached;
     private int _panelsOpen;
+    private bool _planningLoopReached;
 
     public ProbeTrace Run()
     {
@@ -121,10 +122,12 @@ internal sealed class NewGameSession(
         ApplySettings();
         Click(window, OriginalAddresses.BeginX, OriginalAddresses.BeginY);
 
-        // Planning has begun when the rolls of the new match have stopped for a while.
+        // Planning has begun when the human's planning loop runs, or, where it does not, when the
+        // rolls of the new match have stopped for a while.
+        ArmPlanningLoop();
+        var begun = DateTime.UtcNow;
         var settled = _process.RunUntil(
-            () => _rolls.Count > rollsBeforeBegin
-                  && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(8),
+            () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
             timeout);
         if (!settled) return Finish(false, "The new match never settled.", rollsBeforeBegin);
 
@@ -141,6 +144,7 @@ internal sealed class NewGameSession(
             var target = turn;
             var rollsAtClick = _rolls.Count;
             var clicked = DateTime.UtcNow;
+            DateTime? moved = null;
             // A press the game did not take leaves the turn where it was with no roll made; press
             // again after a quiet while.
             var next = _process.RunUntil(() =>
@@ -153,8 +157,15 @@ internal sealed class NewGameSession(
                     Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
                     clicked = DateTime.UtcNow;
                 }
-                return _process.ReadInt32(OriginalAddresses.ElapsedTurns) >= target
-                       && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(8);
+                if (moved is null)
+                {
+                    if (_process.ReadInt32(OriginalAddresses.ElapsedTurns) < target) return false;
+                    // The loop of the turn just ended no longer runs once the count has moved on.
+                    moved = DateTime.UtcNow;
+                    ArmPlanningLoop();
+                }
+
+                return PlanningWaits(moved.Value);
             }, timeout);
             if (!next) return Finish(false, $"Turn {turn} never reached the next planning phase.", rollsBeforeBegin);
         }
@@ -164,6 +175,25 @@ internal sealed class NewGameSession(
     }
 
     public void Dispose() => _process.Dispose();
+
+    // FND-TIMER-003: the planning function calls the time-limit test on every pass of the human's
+    // planning loop, so its first call after arming means the phase waits for input.
+    private void ArmPlanningLoop()
+    {
+        _planningLoopReached = false;
+        _process.SetBreakpoint(OriginalAddresses.PlanningTimeCheck, _ => _planningLoopReached = true, oneShot: true);
+    }
+
+    // The loop's first pass, then half a second for a panel it opens to reach its handler. Several
+    // humans stop at a Ready card before the loop, and a loop not seen within 30 seconds falls back
+    // to the old test: no roll for 8 seconds.
+    private bool PlanningWaits(DateTime since)
+    {
+        var quiet = DateTime.UtcNow - _process.LastBreakpointUtc;
+        if (_planningLoopReached) return quiet > TimeSpan.FromSeconds(0.5);
+        return (settings.Humans is { Count: > 1 } || DateTime.UtcNow - since > TimeSpan.FromSeconds(30))
+               && quiet > TimeSpan.FromSeconds(8);
+    }
 
     private void OpenPanel(BreakContext context, string panel)
     {
