@@ -870,9 +870,25 @@ up to twenty-five turns, and every run but one replays exactly.
 - The open divergence is EXP-TURN-010's first run at call 11610, pinned by
   `AKnownDivergenceIsStillWhereItWasFound`. RULE-AI-006's open questions give
   the evidence: the original did not score sector 12 at 5 for player 4's
-  family-1 gang 8. Read selector `0x2C` and the common block at `0x004098D4`
-  for a human-held sector that already holds one of the player's gangs, fix
-  the rebuild, and drop the entry from `KnownDivergences`.
+  family-1 gang 8, in sector 20, where the rebuild scores sectors 11 and 12 at
+  5 each. Two explanations are ruled out by the dump at call 11610:
+  - The late filter keeps sector 12. Selector `0x2C` adds only gangs of other
+    players that the player can see (selector `0x91`, FND-AI-052); the
+    sector held player 4's own gang and the human's hiding gang, whose
+    `visible_to[4]` was 0, so the defence was Income 6 plus Support 0 against
+    gang 8's Force 10 plus Control 5.
+  - The multiply by five does not raise neutral sector 11. The common block
+    reads `attitude` as an INT32 at `0x004AB590 + (player * 6 + owner) * 4`
+    with the owner from selector `0x21` and no range test, so owner -1 reads
+    the entry before the player's row; for player 4 that held 10. The same
+    entry for owner -2 (a Crackdown sector) also held 10. Every entry of the
+    casualties table was 0, so selector `0x35` passes for a neutral sector.
+
+  The dump shows the pairs after the sort, which gang 8's call already
+  overwrote. The next step is a dump inside gang 8's selector call, before its
+  sort, to read the raw score table for sectors 11 and 12, then the mode-5
+  case of the original for whichever sector differs. Fix the rebuild and drop
+  the entry from `KnownDivergences`.
 - A human with no orders is eliminated after about thirty turns, and the probe
   then waits for a turn that never comes. Longer runs need the human's gang on
   a recurring Hide (EXP-TURN-010) or the probe needs to stop at the
