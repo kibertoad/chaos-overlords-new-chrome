@@ -24,7 +24,11 @@ namespace Rechaos.Tests;
 /// (RULE-SNITCH-001, RULE-BRIBE-001, RULE-HIDE-001) and a recurring Chaos (RULE-TURN-004), which
 /// bring on a Crackdown. EXP-TURN-011 has the human's gang attack a computer player's gang, which
 /// strikes back (RULE-ATTACK-001), with the damage taken off Force at the end of the combat phase
-/// (RULE-COMBAT-002). No recorded run has a Give, a Sell or a Terminate yet.
+/// (RULE-COMBAT-002). Every run compares each gang's Combat with its weapon skills (RULE-COMBAT-001),
+/// each sector's base Tolerance after its return toward normal (RULE-TOLERANCE-001) and every attitude
+/// after its rise (RULE-AI-015). EXP-TURN-010's first run brings police attacks and a Crackdown that
+/// neutralizes a sector (RULE-POLICE-001, RULE-POLICE-002, RULE-POLICE-003). No recorded run has a
+/// Give, a Sell or a Terminate yet.
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {

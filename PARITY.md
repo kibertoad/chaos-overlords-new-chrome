@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 160 |
-| `validated` | 62 |
+| `implemented` | 154 |
+| `validated` | 68 |
 
 | Code | Rows |
 |---|---|
@@ -196,7 +196,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TOLERANCE-001` | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | supported | complete | None | None | implemented | The base Tolerance moves at the start of the instant phase; the sites' part is added only by the rebuild before planning. |
+| `RULE-TOLERANCE-001` | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every sector's base Tolerance after up to twenty-five resolutions. The base Tolerance moves at the start of the instant phase; the sites' part is added only by the rebuild before planning. |
 | `RULE-TOLERANCE-002` | After the instant phase every sector's base Tolerance is clamped to 1..40 | supported | complete | None | None | implemented | None |
 
 ## SITE
@@ -283,8 +283,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-COMBAT-001` | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported | complete | None | None | implemented | None |
-| `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-011 replays a gang's attack, its retaliation and the damage taken off Force at the end of the phase; no recorded run has police combat or a death in combat yet. Damage, deaths and order follow the rule. The combat records and the per-sector result rows are held as the combat-phase events, field by field as the FMT-STATE-003 and FMT-STATE-008 sections of [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md) give; byte 0 of player 0's first record, which the computer players read, is kept as state. The copy of the fight marks at `0x00498BC0` feeds only the network result sender (FND-STATE-007) and has no counterpart. |
+| `RULE-COMBAT-001` | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every active gang's Combat with its weapon skills. |
+| `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-011 replays a gang's attack, its retaliation and the damage taken off Force at the end of the phase, and EXP-TURN-010 two police attacks; no recorded run has a death in combat yet. Damage, deaths and order follow the rule. The combat records and the per-sector result rows are held as the combat-phase events, field by field as the FMT-STATE-003 and FMT-STATE-008 sections of [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md) give; byte 0 of player 0's first record, which the computer players read, is kept as state. The copy of the fight marks at `0x00498BC0` feeds only the network result sender (FND-STATE-007) and has no counterpart. |
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
 | `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | complete | None | `DEV-COMBAT-002` | implemented | Paging, keys, the opponent and police strips, grid cells with portraits, force_start and force_final tracks and the focus outlines follow FND-COMBAT-007 and FND-COMBAT-012. The pressed Exit face on Enter is not drawn as the panel closes at once, and the pressed arrows are not recorded. |
@@ -307,9 +307,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-POLICE-001` | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | supported | complete | None | None | implemented | None |
-| `RULE-POLICE-002` | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | supported | complete | None | None | implemented | None |
-| `RULE-POLICE-003` | Police presence counts down by one at the end of every turn unless it is permanent | supported | complete | None | None | implemented | None |
+| `RULE-POLICE-001` | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010's first run has two police detection draws in turn 23 and 24, each followed by the police dice. |
+| `RULE-POLICE-002` | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010's first run neutralizes a sector with its third Crackdown and draws the police turns. |
+| `RULE-POLICE-003` | Police presence counts down by one at the end of every turn unless it is permanent | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 compares every sector's police turns after the countdown. |
 | `RULE-POLICE-004` | Crackdown reports go to the players who had a gang in the sector when resolution began | supported | complete | None | None | implemented | None |
 
 ## AI
@@ -330,7 +330,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-012` | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported | complete | None | None | implemented | None |
 | `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | complete | None | `DEV-AI-004` | implemented | Placement is carried out in the Hire phase. The failed anchor 63 follows FND-AI-051. An anchor of 164 (sector 100) always fails the keep test and is replaced (DEV-AI-004). |
 | `RULE-AI-014` | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
-| `RULE-AI-015` | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | supported | complete | None | None | implemented | None |
+| `RULE-AI-015` | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 compares every attitude after twenty-five turns; EXP-TURN-008 runs at Homicidal Maniac, where attitudes do not rise. |
 | `RULE-AI-016` | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported | complete | None | None | implemented | None |
 | `RULE-AI-017` | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | supported | complete | None | None | implemented | None |
 | `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |

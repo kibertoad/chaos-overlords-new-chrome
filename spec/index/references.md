@@ -849,7 +849,9 @@ None.
 
 ## EXP-TURN-008
 
-None.
+| Cited by | In |
+|---|---|
+| [RULE-AI-015](../rules/RULE-AI-015.md) | evidence |
 
 ## EXP-TURN-009
 
@@ -864,12 +866,19 @@ None.
 | [EXP-TURN-011](../experiments/EXP-TURN-011.md) | body |
 | [FND-AI-069](../findings/FND-AI-069.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
+| [RULE-AI-015](../rules/RULE-AI-015.md) | evidence |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | evidence |
+| [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | evidence |
+| [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | evidence |
+| [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | evidence |
+| [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | evidence |
 
 ## EXP-TURN-011
 
 | Cited by | In |
 |---|---|
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 
 ## FMT-AUDIO-001

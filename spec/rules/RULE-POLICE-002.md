@@ -1,10 +1,10 @@
 ---
 id: RULE-POLICE-002
 title: A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CHAOS-002, FND-EVENT-004, FND-EXE-004, FND-POLICE-001, FND-POLICE-002, FND-POLICE-004, FND-RNG-003, FND-RNG-006, FND-SETUP-003, FND-TURN-006, SRC-MANUAL-GOG]
+evidence: [EXP-TURN-010, FND-CHAOS-002, FND-EVENT-004, FND-EXE-004, FND-POLICE-001, FND-POLICE-002, FND-POLICE-004, FND-RNG-003, FND-RNG-006, FND-SETUP-003, FND-TURN-006, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-002, FMT-STATE-004]
