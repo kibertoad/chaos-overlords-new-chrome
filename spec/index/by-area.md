@@ -543,7 +543,7 @@
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | established |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | established |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent | established |
-| [RULE-POLICE-004](../rules/RULE-POLICE-004.md) | Crackdown reports go to the players who had a gang in the sector when resolution began | supported |
+| [RULE-POLICE-004](../rules/RULE-POLICE-004.md) | Crackdown reports go to the players who had a gang in the sector when resolution began | established |
 
 ## AI
 
@@ -630,23 +630,23 @@
 | [FND-AI-072](../findings/FND-AI-072.md) | Five attack draws hand the strength test the gang's sector where it expects a roster slot | recorded |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
-| [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |
+| [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | established |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | Queries the computer players' handlers share | supported |
-| [RULE-AI-005](../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported |
+| [RULE-AI-005](../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | established |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector | supported |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | established |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported |
 | [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | established |
-| [RULE-AI-012](../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported |
+| [RULE-AI-012](../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | established |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | established |
 | [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported |
-| [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | supported |
+| [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | established |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | established |
-| [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported |
+| [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | established |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported |

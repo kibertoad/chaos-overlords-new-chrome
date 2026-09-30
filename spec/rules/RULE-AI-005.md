@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-005
 title: How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-021, FND-AI-024, FND-AI-071, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054, FND-AI-055]
+evidence: [FND-AI-021, FND-AI-024, FND-AI-071, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054, FND-AI-055, EXP-TURN-017, EXP-TURN-031]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-003, RULE-AI-004]
@@ -217,6 +217,5 @@ None known.
 
 ## Open questions
 
-- Whether `danger_near` scans the centre cell with its neighbours is assumed.
 - `combat_records[0].definition` is the disputed byte 0 of FMT-STATE-003;
   either reading gives 0 for player 0's Right Hands (FND-AI-010).

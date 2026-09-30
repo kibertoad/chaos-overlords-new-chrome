@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Pure implementation of the original AI hire destination selector at
-/// <c>0x00408214</c>. The destination write is reported explicitly because
+/// <c>0x00408214</c> (RULE-AI-012). The destination write is reported explicitly because
 /// modes 2 through 63 return 99 without updating the caller's destination.
 /// </summary>
 internal static class OriginalAiHirePlacementRules
