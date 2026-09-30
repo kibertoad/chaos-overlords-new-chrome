@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 140 |
-| `validated` | 82 |
+| `implemented` | 139 |
+| `validated` | 83 |
 
 | Code | Rows |
 |---|---|
@@ -163,7 +163,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-INFLUENCE-001` | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002` | validated | A computer player's planned Influence in a sector it does not control gives no command (DEV-AI-002). |
+| `RULE-INFLUENCE-001` | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002` | validated | A computer player's planned Influence in a sector it does not control gives no command (DEV-AI-002). EXP-TURN-023 checks a Goon computer player's Influence, whose progress is its pool plus its successes (BUG-INFLUENCE-001). |
 | `SCR-INFLUENCE-001` | Influence picker for choosing one of the sector's three sites | supported | complete | None | None | implemented | None |
 
 ## HEAL
@@ -335,7 +335,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-017` | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | supported | complete | None | None | implemented | None |
 | `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
-| `RULE-AI-020` | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
+| `RULE-AI-020` | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-023 and EXP-TURN-024 reach the Snitch, Attack, Control, Heal, Equip and Move branches; no recorded run reaches the crime Chaos after None or Chaos. |
 | `RULE-AI-021` | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-018 reaches the Attack on a visible gang; no recorded run reaches a failed target comparison. |
 | `RULE-AI-022` | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-022 reaches the draw on a visible human gang at Mentality 3, whose strength test reads the record at the sector's slot number (BUG-AI-007). |
 | `RULE-AI-023` | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | No match writes family 4, so the handler matters only for a loaded planning record. |

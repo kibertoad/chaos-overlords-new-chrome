@@ -762,7 +762,19 @@ public static partial class CommandResolver
             band, GangAction.Influence,
             ManualRules.InfluenceDiceCount([(gang.Force, statistics.Influence)]));
         var (rolls, successes) = RollAction(state, band, GangAction.Influence, pool);
-        site.Resistance = ManualRules.ApplyInfluenceProgress(before, successes);
+        if (band == OriginalResolutionBand.Goon)
+        {
+            // BUG-INFLUENCE-001: at band 0 the resolver keeps the reduced pool in the local that
+            // held the site's progress, so the new progress is the pool plus the successes,
+            // whatever the progress was. The pool is not clamped there, so a negative one leaves
+            // negative progress: more Resistance still needed than the site has.
+            var rawPool = gang.Force + statistics.Influence;
+            var progress = rawPool - rawPool / 5 + successes;
+            var resistance = state.Definitions.Site(site.DefinitionId).Resistance;
+            site.Resistance = resistance - Math.Min(progress, resistance);
+        }
+        else
+            site.Resistance = ManualRules.ApplyInfluenceProgress(before, successes);
 
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(

@@ -229,11 +229,12 @@
 
 ## established
 
-32 entries.
+33 entries.
 
 | ID | Title |
 |---|---|
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector |
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | A band-0 Influence sets the site's progress to its dice pool plus its successes |
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role |
@@ -289,7 +290,7 @@
 
 ## recorded
 
-360 entries.
+363 entries.
 
 | ID | Title |
 |---|---|
@@ -319,6 +320,8 @@
 | [EXP-TURN-020](../experiments/EXP-TURN-020.md) | Do the family-5 and family-7 attacks on a human gang that walks into computer land draw and resolve as the spec gives? |
 | [EXP-TURN-021](../experiments/EXP-TURN-021.md) | Does a computer gang in an enemy sector count every other player's visible gang there before it plans Control? |
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | Does a family-3 gang attack a visible human gang at Mentality 3 as the spec gives? |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | Do family-1 gangs snitch, and does a Goon computer player's Influence advance a site, as the spec gives? |
+| [EXP-TURN-024](../experiments/EXP-TURN-024.md) | Do family-1 gangs attack and snitch at Mentality Crime Lord as the spec gives? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -509,6 +512,7 @@
 | [FND-INFLUENCE-001](../findings/FND-INFLUENCE-001.md) | The Influence picker selects an unfinished site through three fixed rectangles and opens its details on double-click |
 | [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | The Influence picker draws each site slot as a PX02000 picture with a keyed PX00129 frame, dims completed sites, and shows the chosen slot from a prepared highlighted copy |
 | [FND-INFLUENCE-003](../findings/FND-INFLUENCE-003.md) | The Influence picker sits at screen (104,124), confirms with a control or Enter only when a site is chosen, cancels with a control or Escape, and preselects a pending Influence order |
+| [FND-INFLUENCE-004](../findings/FND-INFLUENCE-004.md) | At difficulty band 0 the Influence resolver keeps the dice pool in the local that holds the site's progress |
 | [FND-MOVE-001](../findings/FND-MOVE-001.md) | The Terminate pass runs before the Move pass, and Move destinations are normalized per player to at most six gangs a sector |
 | [FND-MOVE-002](../findings/FND-MOVE-002.md) | The Move panel maps a 162-by-156 area into a three-by-three grid of neighboring sectors |
 | [FND-MOVE-003](../findings/FND-MOVE-003.md) | The Terminate and Move passes skip inactive gangs, the destination is target, and selector mode 0 draws one of the eight neighbours, which the Move repair stores as the new destination |
@@ -665,6 +669,7 @@ Entries whose status is established and whose findings and experiments are all o
 | ID | Title |
 |---|---|
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector |
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | A band-0 Influence sets the site's progress to its dice pool plus its successes |
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role |

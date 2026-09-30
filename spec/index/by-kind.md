@@ -219,7 +219,7 @@
 
 ## findings
 
-344 entries.
+345 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -423,6 +423,7 @@
 | [FND-INFLUENCE-001](../findings/FND-INFLUENCE-001.md) | The Influence picker selects an unfinished site through three fixed rectangles and opens its details on double-click | recorded |
 | [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | The Influence picker draws each site slot as a PX02000 picture with a keyed PX00129 frame, dims completed sites, and shows the chosen slot from a prepared highlighted copy | recorded |
 | [FND-INFLUENCE-003](../findings/FND-INFLUENCE-003.md) | The Influence picker sits at screen (104,124), confirms with a control or Enter only when a site is chosen, cancels with a control or Escape, and preselects a pending Influence order | recorded |
+| [FND-INFLUENCE-004](../findings/FND-INFLUENCE-004.md) | At difficulty band 0 the Influence resolver keeps the dice pool in the local that holds the site's progress | recorded |
 | [FND-MOVE-001](../findings/FND-MOVE-001.md) | The Terminate pass runs before the Move pass, and Move destinations are normalized per player to at most six gangs a sector | recorded |
 | [FND-MOVE-002](../findings/FND-MOVE-002.md) | The Move panel maps a 162-by-156 area into a three-by-three grid of neighboring sectors | recorded |
 | [FND-MOVE-003](../findings/FND-MOVE-003.md) | The Terminate and Move passes skip inactive gangs, the destination is target, and selector mode 0 draws one of the eight neighbours, which the Move repair stores as the new destination | recorded |
@@ -570,7 +571,7 @@
 
 ## experiments
 
-26 entries.
+28 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -600,10 +601,12 @@
 | [EXP-TURN-020](../experiments/EXP-TURN-020.md) | Do the family-5 and family-7 attacks on a human gang that walks into computer land draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-021](../experiments/EXP-TURN-021.md) | Does a computer gang in an enemy sector count every other player's visible gang there before it plans Control? | recorded |
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | Does a family-3 gang attack a visible human gang at Mentality 3 as the spec gives? | recorded |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | Do family-1 gangs snitch, and does a Goon computer player's Influence advance a site, as the spec gives? | recorded |
+| [EXP-TURN-024](../experiments/EXP-TURN-024.md) | Do family-1 gangs attack and snitch at Mentality Crime Lord as the spec gives? | recorded |
 
 ## bugs
 
-17 entries.
+18 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -619,6 +622,7 @@
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | Bribe costs 3 instead of the manual's 5 | supported |
 | [BUG-COMBAT-001](../bugs/BUG-COMBAT-001.md) | The game is reported to freeze while presenting a battle with Detailed Combat on | unknown |
 | [BUG-CONTROL-001](../bugs/BUG-CONTROL-001.md) | A player who gave no Control order can be given a contested sector whose Income plus Support is negative | supported |
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | A band-0 Influence sets the site's progress to its dice pool plus its successes | established |
 | [BUG-OBJECTIVE-001](../bugs/BUG-OBJECTIVE-001.md) | An active player with a score below -32000 is ranked below the eliminated players | supported |
 | [BUG-OPTIONS-001](../bugs/BUG-OPTIONS-001.md) | Changes made in the Options menu are never saved | supported |
 | [BUG-OPTIONS-002](../bugs/BUG-OPTIONS-002.md) | An option missing from the registry takes the value of the option read before it | supported |

@@ -20,6 +20,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | builds |
 | [BUG-COMBAT-001](../bugs/BUG-COMBAT-001.md) | builds |
 | [BUG-CONTROL-001](../bugs/BUG-CONTROL-001.md) | builds |
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | builds |
 | [BUG-OBJECTIVE-001](../bugs/BUG-OBJECTIVE-001.md) | builds |
 | [BUG-OPTIONS-001](../bugs/BUG-OPTIONS-001.md) | builds |
 | [BUG-OPTIONS-002](../bugs/BUG-OPTIONS-002.md) | builds |
@@ -51,6 +52,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-020](../experiments/EXP-TURN-020.md) | builds |
 | [EXP-TURN-021](../experiments/EXP-TURN-021.md) | builds |
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | builds |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | builds |
+| [EXP-TURN-024](../experiments/EXP-TURN-024.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -275,6 +278,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-INFLUENCE-001](../findings/FND-INFLUENCE-001.md) | builds, locations |
 | [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | builds, locations |
 | [FND-INFLUENCE-003](../findings/FND-INFLUENCE-003.md) | builds, locations |
+| [FND-INFLUENCE-004](../findings/FND-INFLUENCE-004.md) | builds, locations |
 | [FND-MOVE-001](../findings/FND-MOVE-001.md) | builds, locations |
 | [FND-MOVE-002](../findings/FND-MOVE-002.md) | builds, locations |
 | [FND-MOVE-003](../findings/FND-MOVE-003.md) | builds, locations |
@@ -716,6 +720,13 @@ None.
 |---|---|
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | body |
 
+## BUG-INFLUENCE-001
+
+| Cited by | In |
+|---|---|
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | body |
+
 ## BUG-OBJECTIVE-001
 
 | Cited by | In |
@@ -839,6 +850,8 @@ None.
 | [EXP-TURN-020](../experiments/EXP-TURN-020.md) | body |
 | [EXP-TURN-021](../experiments/EXP-TURN-021.md) | body |
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | body |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
+| [EXP-TURN-024](../experiments/EXP-TURN-024.md) | body |
 
 ## EXP-TURN-002
 
@@ -871,6 +884,8 @@ None.
 | [EXP-TURN-020](../experiments/EXP-TURN-020.md) | body |
 | [EXP-TURN-021](../experiments/EXP-TURN-021.md) | body |
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | body |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
+| [EXP-TURN-024](../experiments/EXP-TURN-024.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 
 ## EXP-TURN-005
@@ -1012,6 +1027,19 @@ None.
 | [FND-AI-072](../findings/FND-AI-072.md) | body |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | body, evidence |
+
+## EXP-TURN-023
+
+| Cited by | In |
+|---|---|
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | body, evidence |
+| [EXP-TURN-024](../experiments/EXP-TURN-024.md) | body |
+| [FND-INFLUENCE-004](../findings/FND-INFLUENCE-004.md) | body |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+
+## EXP-TURN-024
+
+None.
 
 ## FMT-AUDIO-001
 
@@ -3973,6 +4001,14 @@ None.
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
 | [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | body, evidence |
 
+## FND-INFLUENCE-004
+
+| Cited by | In |
+|---|---|
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | body, evidence |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+
 ## FND-MOVE-001
 
 | Cited by | In |
@@ -5770,6 +5806,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-001](../bugs/BUG-AI-001.md) | body, related |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | body, related |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | body |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | body |
@@ -6020,7 +6057,10 @@ None.
 
 | Cited by | In |
 |---|---|
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | related |
 | [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | body |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
+| [FND-INFLUENCE-004](../findings/FND-INFLUENCE-004.md) | body |
 
 ## RULE-AI-019
 
@@ -6035,6 +6075,8 @@ None.
 |---|---|
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | related |
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | related |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
+| [EXP-TURN-024](../experiments/EXP-TURN-024.md) | body |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 
 ## RULE-AI-021
@@ -6715,6 +6757,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | related |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, related |
 | [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | body, related |
 

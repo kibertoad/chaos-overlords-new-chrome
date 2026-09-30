@@ -8,7 +8,7 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-022 go on to press Done for one
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-024 go on to press Done for one
 /// to thirty turns, EXP-TURN-009 to EXP-TURN-022 other than EXP-TURN-018 with orders for the human's
 /// gang, and stop at the next planning phase. Each run gives the seed, every roll(n) with its call
 /// site and result, and the state the recording stops at. The rebuild plays the same match from the same seed and
@@ -40,11 +40,14 @@ namespace Rechaos.Tests;
 /// EXP-TURN-021 a family-1 gang in an enemy sector counts a third player's gangs there before it
 /// plans Control (RULE-AI-004). In EXP-TURN-022, at Mentality 3, a family-3 gang draws it as its
 /// target and then fails a strength test made on the record at its sector's slot number
-/// (RULE-AI-022, BUG-AI-007). No recorded run has a Give yet.
+/// (RULE-AI-022, BUG-AI-007). EXP-TURN-023 and EXP-TURN-024 leave the human idle through Power at
+/// Goon and at Crime Lord, where family-1 gangs snitch and attack (RULE-AI-020) and a Goon computer
+/// player's Influence sets a site's progress to its pool plus its successes (BUG-INFLUENCE-001). No
+/// recorded run has a Give yet.
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -207,7 +210,8 @@ public sealed class OriginalNewGameExperimentTests
                 var record = records[slot];
                 var gang = gangs[slot];
                 Assert.Equal(recorded.Gang(record, "definition"), gang.DefinitionId);
-                Assert.Equal(recorded.Gang(record, "sector"), gang.SectorId);
+                Assert.True(recorded.Gang(record, "sector") == gang.SectorId,
+                    $"player {player.Id.Value} gang {slot}: the original has sector {recorded.Gang(record, "sector")}, the rebuild {gang.SectorId}");
                 Assert.Equal(recorded.Gang(record, "force"), gang.Force);
                 Assert.Equal(recorded.Gang(record, "weapon"), gang.WeaponItemId ?? -1);
                 Assert.Equal(recorded.Gang(record, "armor"), gang.ArmorItemId ?? -1);

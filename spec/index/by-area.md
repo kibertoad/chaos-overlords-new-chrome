@@ -199,6 +199,8 @@
 | [EXP-TURN-020](../experiments/EXP-TURN-020.md) | Do the family-5 and family-7 attacks on a human gang that walks into computer land draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-021](../experiments/EXP-TURN-021.md) | Does a computer gang in an enemy sector count every other player's visible gang there before it plans Control? | recorded |
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | Does a family-3 gang attack a visible human gang at Mentality 3 as the spec gives? | recorded |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | Do family-1 gangs snitch, and does a Goon computer player's Influence advance a site, as the spec gives? | recorded |
+| [EXP-TURN-024](../experiments/EXP-TURN-024.md) | Do family-1 gangs attack and snitch at Mentality Crime Lord as the spec gives? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -298,9 +300,11 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | A band-0 Influence sets the site's progress to its dice pool plus its successes | established |
 | [FND-INFLUENCE-001](../findings/FND-INFLUENCE-001.md) | The Influence picker selects an unfinished site through three fixed rectangles and opens its details on double-click | recorded |
 | [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | The Influence picker draws each site slot as a PX02000 picture with a keyed PX00129 frame, dims completed sites, and shows the chosen slot from a prepared highlighted copy | recorded |
 | [FND-INFLUENCE-003](../findings/FND-INFLUENCE-003.md) | The Influence picker sits at screen (104,124), confirms with a control or Enter only when a site is chosen, cancels with a control or Escape, and preselects a pending Influence order | recorded |
+| [FND-INFLUENCE-004](../findings/FND-INFLUENCE-004.md) | At difficulty band 0 the Influence resolver keeps the dice pool in the local that holds the site's progress | recorded |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported |
 | [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | Influence picker for choosing one of the sector's three sites | supported |
 
