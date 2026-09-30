@@ -996,6 +996,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | evidence |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
 
 ## EXP-TURN-013
 
@@ -1014,6 +1015,7 @@ None.
 |---|---|
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
 | [RULE-EVENT-010](../rules/RULE-EVENT-010.md) | evidence |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
 
 ## EXP-TURN-015
 
@@ -1133,6 +1135,7 @@ None.
 |---|---|
 | [RULE-AI-011](../rules/RULE-AI-011.md) | evidence |
 | [RULE-AI-012](../rules/RULE-AI-012.md) | evidence |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | body, evidence |
 
 ## EXP-TURN-029
 
@@ -5067,7 +5070,7 @@ None.
 | glossary: modifier_name_visibility | glossary |
 | glossary: modifier_right_hands | glossary |
 | glossary: resumed_match | glossary |
-| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | body |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | body, evidence |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | body, evidence |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
 | [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | evidence |

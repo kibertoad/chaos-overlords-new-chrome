@@ -48,7 +48,8 @@ public sealed partial class MatchPlayerState
         short? snubbedHireOffer = null,
         IReadOnlyList<HireOfferSlotState>? hireOfferSlots = null,
         int? snubbedHireOfferSlot = null,
-        bool usesMaximumHireForce = false)
+        bool usesMaximumHireForce = false,
+        int scenarioScore = 0)
     {
         if (bigManPoints < 0) throw new ArgumentOutOfRangeException(nameof(bigManPoints));
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
@@ -77,6 +78,7 @@ public sealed partial class MatchPlayerState
         SnubbedHireOffer = snubbedHireOffer;
         SnubbedHireOfferSlot = snubbedHireOfferSlot;
         UsesMaximumHireForce = usesMaximumHireForce;
+        ScenarioScore = scenarioScore;
     }
 
     public MatchPlayerSetup Setup { get; internal set; }
@@ -85,6 +87,13 @@ public sealed partial class MatchPlayerState
     public int Cash { get; internal set; }
     public int Support { get; internal set; }
     public int BigManPoints { get; internal set; }
+
+    /// <summary>
+    /// RULE-OBJECTIVE-002: the score the last evaluation stored, when the match started or at the
+    /// end of the last turn, and -32000 once the player is out. The computer players' standings and
+    /// the Player Rankings panel read this, never a score worked out from the current state.
+    /// </summary>
+    public int ScenarioScore { get; internal set; }
     public IReadOnlyList<MatchGangState> Gangs => _gangs;
     public IReadOnlyList<PendingHireState> PendingHires => _pendingHires;
     public IReadOnlyDictionary<short, int> ResearchProgress => _researchProgress;
@@ -281,7 +290,21 @@ public sealed partial class MatchState
         // now so resolution never meets a gang without them. A saved gang keeps what it saved.
         foreach (var gang in Players.SelectMany(player => player.Gangs))
             gang.StoredStatistics ??= EffectiveStatisticsCalculator.Rebuilt(this, gang);
+        if (restore is null) RecordStartingScores();
     }
+
+    /// <summary>
+    /// RULE-OBJECTIVE-002, FND-SETUP-015: a new match stores its scores once its city and
+    /// headquarters exist, from the cash each player had before SMGFUNDAGE raised it.
+    /// </summary>
+    private void RecordStartingScores() =>
+        OriginalAiScenarioStandingRules.Record(this, player =>
+            OriginalSetupNameRules.ApplyStartingCash(player.Setup.Name, 0)
+                == OriginalSetupNameRules.MaximumStartingCash
+                ? Setup.Scenario == ScenarioId.Armageddon
+                    ? MatchBootstrap.ArmageddonStartingCash
+                    : OriginalMatchFactory.StandardStartingCash
+                : player.Cash);
     internal MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -304,6 +327,7 @@ public sealed partial class MatchState
         ArgumentNullException.ThrowIfNull(aiStrategy);
         // FND-AI-045: a new match runs the start pass after the city and the headquarters exist.
         RefreshEveryPlayersAiSectorRecords();
+        RecordStartingScores();
     }
     public OriginalData Definitions { get; }
     public MatchSetup Setup { get; private set; }
@@ -513,6 +537,8 @@ public sealed partial class MatchState
             player.Setup.Controller == PlayerController.Human && player.Status == PlayerStatus.Active);
         ResolvePlayerEliminations();
         AwardBigManPoints();
+        // RULE-OBJECTIVE-001: the end evaluation stores the scores before it tests for the end.
+        OriginalAiScenarioStandingRules.Record(this);
         if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this, humanActiveAtTurnStart) is { } outcome)
         {
             Outcome = MatchOutcomeValidator.Freeze(outcome);

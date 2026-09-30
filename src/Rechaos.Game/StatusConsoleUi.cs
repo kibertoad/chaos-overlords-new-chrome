@@ -224,8 +224,8 @@ public static class StatusConsolePresentation
     /// sectors held, or the inactive-seat count Kill 'Em All and Siege share) rather than only
     /// the timed scenarios' scores.
     /// </summary>
-    public static long Score(MatchState state, MatchPlayerState player) =>
-        EndgameRankingEvaluator.Score(state, player);
+    /// <summary>The score stored when the last turn ended (RULE-OBJECTIVE-002).</summary>
+    public static long Score(MatchState state, MatchPlayerState player) => player.ScenarioScore;
 
     public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>
         range.CanTriggerCrackdown(tolerance) ? Color.Red : Color.Lime;

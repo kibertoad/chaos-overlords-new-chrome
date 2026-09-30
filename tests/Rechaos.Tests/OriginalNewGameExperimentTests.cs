@@ -310,6 +310,24 @@ public sealed class OriginalNewGameExperimentTests
                             $"{term} of player {slot}: the original holds {recorded.Term(term, slot)}, the rebuild {value}");
             }
 
+        // RULE-OBJECTIVE-001, RULE-OBJECTIVE-002: the scores and standings stored when the last
+        // turn ended, which the Player Rankings panel shows. An eliminated player scores -32000 and
+        // has standing 0xFF. In EXP-TURN-028's Greed the stored scores are the cash from before the
+        // upkeep of the turn being planned.
+        if (recorded.HasTerm("scenario_score", 0))
+        {
+            var ranking = PlayerRankingPresentation.Project(match);
+            foreach (var player in match.Players)
+            {
+                var slot = player.Id.Value;
+                var standing = ranking.SingleOrDefault(entry => entry.Player == player.Id)?.Standing ?? 0xFF;
+                Assert.True(recorded.Term("scenario_score", slot) == player.ScenarioScore,
+                    $"scenario_score of player {slot}: the original holds {recorded.Term("scenario_score", slot)}, the rebuild {player.ScenarioScore}");
+                Assert.True(recorded.Term("scenario_standing", slot) == standing,
+                    $"scenario_standing of player {slot}: the original holds {recorded.Term("scenario_standing", slot)}, the rebuild {standing}");
+            }
+        }
+
         // FND-SETUP-018: the turn limit the computer players read.
         Assert.Equal(recorded.Term("turn_limit", 0), ScenarioCatalog.TurnLimit(match.Setup.Scenario, match.Setup.Duration));
         Assert.Equal(recorded.Term("elapsed_turns", 0), match.Coordinator.Turn - 1);

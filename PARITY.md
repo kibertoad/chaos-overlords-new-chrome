@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 115 |
-| `validated` | 107 |
+| `implemented` | 114 |
+| `validated` | 108 |
 
 | Code | Rows |
 |---|---|
@@ -395,7 +395,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-OBJECTIVE-001` | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported | complete | None | None | implemented | None |
-| `RULE-OBJECTIVE-002` | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported | complete | None | None | implemented | None |
+| `RULE-OBJECTIVE-002` | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every stored score and standing in Kill 'Em All, Siege, Eliminate, Big Man, Power, Armageddon and Greed, eliminated players included. No run plays Acceptance or Dominance. |
 | `RULE-OBJECTIVE-003` | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported | complete | None | None | implemented | None |
 | `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | supported | complete | None | None | implemented | The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
 | `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | complete | None | None | implemented | Online the humans sit at different computers, so the match ends this way only when every human in it is out, and each client shows the results table. |

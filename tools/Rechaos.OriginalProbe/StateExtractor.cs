@@ -82,6 +82,8 @@ internal sealed class StateExtractor
         Term(rows, "hide_count", 0x004A25D0, 6, 4);
         Term(rows, "hire_role", 0x00482128, 6, 4);
         Term(rows, "previous_hire_role", 0x00482160, 6, 4);
+        Term(rows, "scenario_score", 0x004A2790, 6, 4);
+        Term(rows, "scenario_standing", 0x004ABC08, 6, 1, signed: false);
 
         string[] sectorFields =
         [

@@ -14,7 +14,7 @@ public static class NativeSaveSerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
-    public const int CurrentFormatVersion = 37;
+    public const int CurrentFormatVersion = 38;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -348,7 +348,8 @@ public static class NativeSaveSerializer
         player.SnubbedHireOffer,
         player.HireOfferSlots.ToArray(),
         player.SnubbedHireOfferSlot,
-        player.UsesMaximumHireForce);
+        player.UsesMaximumHireForce,
+        player.ScenarioScore);
 
     private static MatchPlayerState RestorePlayer(
         MatchSetup setup,
@@ -389,7 +390,8 @@ public static class NativeSaveSerializer
             player.Inventory, player.Support, player.BigManPoints, player.Status,
             statistics, player.SnubbedHireOffer,
             hireOfferSlots, player.SnubbedHireOfferSlot,
-            usesMaximumHireForce: player.UsesMaximumHireForce);
+            usesMaximumHireForce: player.UsesMaximumHireForce,
+            scenarioScore: player.ScenarioScore);
     }
 
     private static SectorDocument CaptureSector(MatchSectorState sector) => new(
@@ -560,7 +562,8 @@ internal sealed record PlayerDocument(
     short? SnubbedHireOffer,
     IReadOnlyList<HireOfferSlotState>? HireOfferSlots = null,
     int? SnubbedHireOfferSlot = null,
-    bool UsesMaximumHireForce = false);
+    bool UsesMaximumHireForce = false,
+    int ScenarioScore = 0);
 
 internal sealed record GangDocument(
     int Id,

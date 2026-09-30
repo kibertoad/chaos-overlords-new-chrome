@@ -7,8 +7,8 @@ namespace Rechaos.Game;
 /// <summary>
 /// Explains a Ranking-screen portrait: what the scenario rates overlords on, how the hovered
 /// overlord's score is built from their holdings, and where every active overlord stands.
-/// The totals are the canonical <see cref="EndgameRankingEvaluator"/> scores; the breakdown only
-/// restates the inputs that feed them.
+/// The score is the one stored when the last turn ended (RULE-OBJECTIVE-002); the breakdown
+/// restates the inputs that feed it as they stand now, which the next evaluation will score.
 /// </summary>
 public static class PlayerRankingTooltip
 {
@@ -49,7 +49,8 @@ public static class PlayerRankingTooltip
             player.Setup.Name.ToUpperInvariant(),
             $"PLACE {entry.Standing + 1} OF {entries.Count}{(tied ? " (TIED)" : "")}",
             $"{ScenarioCatalog.Get(state.Setup.Scenario).Name} RATES: {Basis(state.Setup.Scenario)}",
-            $"SCORE: {Number(entry.Score)}"
+            $"SCORE: {Number(entry.Score)} AT LAST TURN'S END",
+            "NOW:"
         };
         lines.AddRange(Breakdown(state, player));
         lines.Add("");
@@ -105,7 +106,7 @@ public static class PlayerRankingTooltip
                 yield return WeightedRow("SECTORS", Number(sectors), sectors, weights.ControlledSector);
                 var total = (long)player.Cash * weights.Cash + (long)player.Support * weights.Support
                     + (long)sectors * weights.ControlledSector;
-                yield return $"  TOTAL {Number(total)} / 10 = SCORE";
+                yield return $"  TOTAL {Number(total)} / 10 = {Number(total / 10)}";
                 break;
             case ScenarioId.KillEmAll or ScenarioId.Eliminate:
                 yield return $"  {MatchLimits.PlayerCount} SEATS - {holdings.OpponentsAlive + 1} ACTIVE OVERLORDS";
