@@ -138,8 +138,7 @@ public static partial class AiTurnPlanner
             snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
-            ownerIsHuman: sectorId => OwnerIsHuman(state, sectorId),
-            multipliesByFive: sectorId => MultipliesSelectorScore(state, playerId, sectorId),
+            ownerTests: SelectorOwnerTests(state, playerId),
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),

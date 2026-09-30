@@ -34,6 +34,9 @@ As EXP-TURN-001.
    every call of the sector selector `0x00408642` (`--trace-calls 0x00408642`)
    and copy the writable sections at the entry of call 11610 of `roll`,
    counting from 0 (`--dump-at-roll 11610`).
+3. Repeat step 2 over twenty-five turns (`--end-turns 25`), copying the
+   writable sections at the entry of call 12630 instead
+   (`--dump-at-roll 12630`).
 
 ## Observations
 
@@ -84,15 +87,13 @@ block then multiplies table element `4 * 9 + 1`, the score of sector 44, and
 leaves sector 12 at 1 below sector 11's 5 (FND-AI-069). A reading in which the
 common block multiplied the visited sector gave both 5 and drew `roll(2)`.
 
-Two more departures were found on the way to call 12630, with the probe
-repeating the first run with its seed and `--trace-calls 0x00408642
---dump-at-roll 12630`, over twenty-five turns. The traced calls agreed with the
-rebuild's in order and result up to call 11615 of `roll`, where the original's
-player 5 gang 16 returned 45 from sector 52 and the rebuild's, still in sector
-45, returned 38. At call 10662 both had sent it to sector 52, which then held
-six of player 5's gangs; the original took the Move and the Move repair
-(RULE-MOVE-002) let the gang in, where the rebuild had refused the Move when it
-was planned.
+The third run, of step 3, traced the selector over all twenty-five turns. At
+call 10662 of `roll` the original's call for player 5's gang 16, in sector 45,
+returned 52, and sector 52 then held six of player 5's gangs. The Move stayed
+in the gang's orders and the Move repair (RULE-MOVE-002) let the gang in, so
+at call 11615 its call was made from sector 52 and returned 45. A reading in
+which a Move into a sector holding six of the player's gangs is refused when
+it is planned left the gang in sector 45, where the call returned 38.
 
 ## Conclusion
 

@@ -68,7 +68,7 @@ public sealed class AiFamilySixTurnPlannerTests
             destinations.Add(OriginalAiSectorSelectionRules.Select(
                 0x40 + OriginalAiSectorSelectionRules.GuardTargetEndMarker,
                 27, new PlayerId(0), 6, owners, disabled, counts,
-                _ => true, _ => false, _ => false, _ => false,
+                _ => true, _ => false, new SectorOwnerTests(_ => false, _ => false),
                 new DeterministicRandom(seed)));
 
         // FND-AI-069: only sector 37 scores, so every seed takes the same step toward it.

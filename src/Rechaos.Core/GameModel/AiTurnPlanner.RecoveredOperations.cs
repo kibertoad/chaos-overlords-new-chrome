@@ -40,6 +40,11 @@ public static partial class AiTurnPlanner
     internal static bool MultipliesSelectorScore(MatchState state, PlayerId playerId, int sectorId) =>
         IsHostileOwner(state, playerId, sectorId) && OwnerIsHuman(state, sectorId);
 
+    /// <summary>RULE-AI-004, RULE-AI-006: the selector's owner tests, read from live state.</summary>
+    internal static SectorOwnerTests SelectorOwnerTests(MatchState state, PlayerId playerId) => new(
+        sectorId => OwnerIsHuman(state, sectorId),
+        sectorId => MultipliesSelectorScore(state, playerId, sectorId));
+
     /// <summary>
     /// FND-AI-046: selector 0x5B counts the player's active gangs in the sector whose previous
     /// action was Chaos, the planning gang included. Callers compare the count with the threshold

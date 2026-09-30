@@ -1,6 +1,14 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
+/// The selector's two owner tests of a visited sector: RULE-AI-004 owner_is_human (selector 0x35)
+/// and RULE-AI-006's common-block test that multiplies a score by 5 (FND-AI-069).
+/// </summary>
+internal readonly record struct SectorOwnerTests(
+    Func<int, bool> OwnerIsHuman,
+    Func<int, bool> MultipliesByFive);
+
+/// <summary>
 /// Pure implementation of the original weighted sector selector at 0x00408642
 /// for its fully recovered modes 1 through 10, 12 through 16,
 /// and encoded fixed-sector modes 0x40 through 0x7f, and of its mode 0 random
@@ -27,8 +35,7 @@ internal static class OriginalAiSectorSelectionRules
         IReadOnlyList<int> sectorGangCounts,
         Func<int, bool> canSoloControl,
         Func<int, bool> hasPriorChaos,
-        Func<int, bool> ownerIsHuman,
-        Func<int, bool> multipliesByFive,
+        SectorOwnerTests ownerTests,
         DeterministicRandom random,
         bool? hasHumanPlayers = null,
         int? formationSectorId = null,
@@ -38,6 +45,7 @@ internal static class OriginalAiSectorSelectionRules
         Func<int, int>? completedSiteScore = null,
         AiPlanningState? planning = null)
     {
+        var (ownerIsHuman, multipliesByFive) = ownerTests;
         ValidateInputs(
             mode, sourceSectorId, family, sectorOwners, sectorDisabled,
             sectorGangCounts, canSoloControl, hasPriorChaos,
