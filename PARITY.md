@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 123 |
-| `validated` | 99 |
+| `implemented` | 122 |
+| `validated` | 100 |
 
 | Code | Rows |
 |---|---|
@@ -360,7 +360,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EVENT-006` | A completed site is reported to the player whose Influence completed it | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 and later replays compare the reports. |
 | `RULE-EVENT-007` | A completed item is reported to the player whose Research completed it | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 and later replays compare the reports. |
 | `RULE-EVENT-008` | A Bribe that fails for lack of cash is reported to its player | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-033 replays the report of a Bribe at 2 cash. |
-| `RULE-EVENT-009` | A Hire that fails for lack of cash is reported to its player | supported | complete | None | None | implemented | None |
+| `RULE-EVENT-009` | A Hire that fails for lack of cash is reported to its player | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-035 replays the report of a hire an Equip of the same turn left unaffordable. |
 | `RULE-EVENT-010` | A Hire refused because its sector is full is reported to its player | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-014 replays two reports. |
 | `RULE-EVENT-011` | A Hire refused because the player has the most gangs allowed is reported to its player | supported | complete | None | None | implemented | None |
 | `RULE-EVENT-012` | Taking control of a sector is reported to the new owner | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The report is the rebuild's Control notification; a winner without a Control order (BUG-CONTROL-001) gets one with no event. EXP-TURN-010 and later replays compare the reports. |

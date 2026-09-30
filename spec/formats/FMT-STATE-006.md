@@ -9,7 +9,7 @@ byte_order: little
 size: 10
 text: false
 definition: fmt_state_006.ksy
-evidence: [FND-EVENT-001, FND-EVENT-004, FND-EVENT-005, FND-SAVE-001, EXP-TURN-010, EXP-TURN-011, EXP-TURN-014, EXP-TURN-017, EXP-TURN-033, EXP-TURN-034]
+evidence: [FND-EVENT-001, FND-EVENT-004, FND-EVENT-005, FND-SAVE-001, EXP-TURN-010, EXP-TURN-011, EXP-TURN-014, EXP-TURN-017, EXP-TURN-033, EXP-TURN-034, EXP-TURN-035]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002, RULE-EVENT-005]
@@ -74,8 +74,8 @@ None known.
 A memory structure. The probe decodes each player's count and its records from
 a dump of the running original's `.data` section at the end of every run it
 records, and EXP-TURN-010 to EXP-TURN-034 hold them: report types 1 to 7 and
-9, with `arg1` 1 and 2 of type 6. No run holds type 8 or a type 6 with
-`arg1` 4, and none has been decoded from a save file.
+9, with `arg1` 1, 2 and 4 of type 6. No run holds type 8, and none has been
+decoded from a save file.
 
 ## Open questions
 
