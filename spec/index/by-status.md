@@ -83,7 +83,7 @@
 | [RULE-AI-027](../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors |
 | [RULE-AI-028](../rules/RULE-AI-028.md) | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader |
-| [RULE-AI-030](../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed |
+| [RULE-AI-030](../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, step toward their player's first gang, and attack when opposed |
 | [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector |
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | Starting a music program |
@@ -271,7 +271,7 @@
 
 ## superseded
 
-8 entries.
+10 entries.
 
 | ID | Title |
 |---|---|
@@ -281,12 +281,14 @@
 | [FND-AI-027](../findings/FND-AI-027.md) | Sector selector modes 10 to 16 and encoded modes, and the filters applied after scoring |
 | [FND-AI-030](../findings/FND-AI-030.md) | The family-0 handler is a general state machine over the previous action |
 | [FND-AI-031](../findings/FND-AI-031.md) | The family-4 handler hides, probes and moves through mode 2 |
+| [FND-AI-037](../findings/FND-AI-037.md) | The family-10 handler improves armor, equips item 44, heals, seeks Stealth sites, then raises Chaos or hides |
+| [FND-AI-038](../findings/FND-AI-038.md) | The family-12 handler equips and heals when unopposed and wanders at random, and attacks when opposed |
 | [FND-AI-059](../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself |
 | [FND-AI-067](../findings/FND-AI-067.md) | The sector selector adds 1 to an encoded mode's sector for every sector a ring visits |
 
 ## recorded
 
-348 entries.
+351 entries.
 
 | ID | Title |
 |---|---|
@@ -305,6 +307,9 @@
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | Do twelve turns of new local games, with the human's first gang given Snitch, recurring Chaos, Hide and Bribe orders, draw and resolve as the spec gives? |
 | [EXP-TURN-010](../experiments/EXP-TURN-010.md) | Do twenty-five turns of new local games, with the human's first gang hiding throughout, draw and resolve as the spec gives? |
 | [EXP-TURN-011](../experiments/EXP-TURN-011.md) | Does a human gang's Attack on a computer player's gang in its sector draw and resolve as the spec gives? |
+| [EXP-TURN-012](../experiments/EXP-TURN-012.md) | Do twenty-three turns of a new local Siege game draw and resolve as the spec gives? |
+| [EXP-TURN-013](../experiments/EXP-TURN-013.md) | Do twenty-five turns of a new local Eliminate game draw and resolve as the spec gives? |
+| [EXP-TURN-014](../experiments/EXP-TURN-014.md) | Do twenty-five turns of a new local Big Man game draw and resolve as the spec gives? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -335,8 +340,6 @@
 | [FND-AI-034](../findings/FND-AI-034.md) | The family-5 handler has the family-3 shape with Support sites and mode 7 |
 | [FND-AI-035](../findings/FND-AI-035.md) | The family-7 handler researches items and influences Research sites |
 | [FND-AI-036](../findings/FND-AI-036.md) | The family-9 handler equips without a cooldown check, then leaves owned land or fights and takes enemy land |
-| [FND-AI-037](../findings/FND-AI-037.md) | The family-10 handler improves armor, equips item 44, heals, seeks Stealth sites, then raises Chaos or hides |
-| [FND-AI-038](../findings/FND-AI-038.md) | The family-12 handler equips and heals when unopposed and wanders at random, and attacks when opposed |
 | [FND-AI-039](../findings/FND-AI-039.md) | The family-13 and family-14 handlers move to and hold the Big Man centre or the Eliminate headquarters |
 | [FND-AI-040](../findings/FND-AI-040.md) | The sector selector breaks ties with one draw and routes one step, x then y, under a six-gang limit |
 | [FND-AI-041](../findings/FND-AI-041.md) | The dispatcher resets a flagged planning record before it assigns a family, and its post-handler block is unreachable |
@@ -366,6 +369,8 @@
 | [FND-AI-066](../findings/FND-AI-066.md) | The sector selector keeps its score pairs between calls, skips filtered sectors when refilling them, and counts ties past the end of the list |
 | [FND-AI-068](../findings/FND-AI-068.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, which sends the gang toward sector 37, and a gang covers a sector for itself |
 | [FND-AI-069](../findings/FND-AI-069.md) | The sector selector scores on the owner query, ends mode 6 after its hostile-human bonus, and multiplies table element x * 9 + y in its common block |
+| [FND-AI-070](../findings/FND-AI-070.md) | The family-12 handler equips and heals when unopposed, otherwise moves toward the sector of the player's first gang, and attacks when opposed |
+| [FND-AI-071](../findings/FND-AI-071.md) | The family-10 handler improves armor, equips item 44, heals, moves when the mode-9 sector's last finished site hides better, then raises Chaos or hides |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |
@@ -741,7 +746,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-027](../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors | supported |
 | [RULE-AI-028](../rules/RULE-AI-028.md) | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported |
-| [RULE-AI-030](../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported |
+| [RULE-AI-030](../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, step toward their player's first gang, and attack when opposed | supported |
 | [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | established |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported |

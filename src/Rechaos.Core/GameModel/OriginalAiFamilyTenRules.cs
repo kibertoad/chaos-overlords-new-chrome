@@ -70,6 +70,29 @@ internal static class OriginalAiFamilyTenRules
         return priorChaosCount == 0 ? GangAction.Chaos : GangAction.Hide;
     }
 
+    /// <summary>
+    /// RULE-AI-028, FND-AI-071: selector 8, which the handler compares for the current sector and
+    /// the one sector selector mode 9 returns. It walks the three site slots and, for each
+    /// finished site (selector 0x1C), replaces its result with that site's Stealth, so it gives
+    /// the Stealth of the last finished site, whatever its sign, and 0 when none is finished.
+    /// </summary>
+    public static int LastFinishedSiteStealth(MatchState state, int sectorId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if ((uint)sectorId >= MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(sectorId));
+
+        var stealth = 0;
+        foreach (var site in state.Sectors[sectorId].Sites)
+            if (site.Resistance <= 0)
+                stealth = state.Definitions.Site(site.DefinitionId).Stats.Stealth;
+        return stealth;
+    }
+
+    /// <summary>
+    /// RULE-AI-006: sector selector mode 9's score, the positive Stealth of the sector's finished
+    /// sites summed.
+    /// </summary>
     public static int CompletedStealthScore(MatchState state, int sectorId)
     {
         ArgumentNullException.ThrowIfNull(state);

@@ -132,7 +132,7 @@ first whose `tech_level` (`0x004A5F88 + item * 0xA6`) is at most selector
 `0x62`'s value and whose `research_remaining` for the given player is above 0,
 or -1 when none is. The same list is the fixed miscellaneous list of FND-AI-035.
 `fn_0042A6E0` reads `0x004A2710 + player` at `0x0042A85A`, item 44's entry
-(FND-AI-037).
+(FND-AI-071).
 
 Addresses inside a region that reference searches report on their own
 (`0x00489850`, `0x004899BC`, `0x00489F4C`, `0x004A0CB4` and the like) are

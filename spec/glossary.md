@@ -972,6 +972,12 @@ Tech cap and affordable. A function, defined by RULE-AI-005.
 A function, defined by RULE-EQUIP-003: what a player pays for an item bought
 by a gang in a given sector, with the Factory discount.
 
+## last_finished_stealth
+
+`last_finished_stealth(c)` gives the Stealth of the last finished site in
+sector `c`, in slot order, or 0 when none is finished. A function, defined by
+RULE-AI-028.
+
 ## last_turn_report_count
 
 How many reports each player has in `last_turn_reports`. Any other value the
@@ -2010,11 +2016,6 @@ function, defined by RULE-AI-006.
 
 `startup_drive_check()` runs the drive check at startup and always gives 1. A
 function, defined by RULE-AUDIO-010.
-
-## stealth_sum
-
-`stealth_sum(c)` sums the positive Stealth of sector `c`'s finished sites. A
-function, defined by RULE-AI-028.
 
 ## step_portrait
 
