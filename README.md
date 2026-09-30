@@ -46,23 +46,25 @@ rounding, ordering and quirks, bugs included. Its 65 deliberate departures
 are listed in [DEVIATIONS.md](DEVIATIONS.md); many are interface changes, and
 five have a setting that restores the original behaviour.
 
-What is still missing is confirmation from the running original. Almost all of
-the evidence is static, so only the data tables, image and movie formats, Help
-files and panel texts are tested against the original's files. The rest follows
-the spec but has not been compared with a recorded play of the original, and a
-static reading can be wrong. The [parity matrix](PARITY.md) shows the state of
-every rule, format and screen, and the
+Recorded runs of the original now check it in play. A debugger records every
+random draw of new games from launch and up to fifteen turns of play, some with
+orders for the human's gang, and the rebuild has to make the same draws and
+reach the same state (EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to
+EXP-TURN-009 in the [spec](spec/README.md)). That covers setup, the computer
+players' planning and hiring, and the resolution of most orders. Combat, the
+Terminate, Give and Sell orders, events and the later game have not been
+recorded yet, and a static reading can still be wrong there. The
+[parity matrix](PARITY.md) shows the state of every rule, format and screen;
+60 of its 222 rows are compared with evidence from the original. The
 [parity achievement plan](parity-achievement-plan.md) and the
 [static](static_validation_plan.md) and [manual](manual_validation_plan.md)
 validation plans list the open questions.
 
 ### Key omissions
 
-- No behaviour has been checked against a run of the original yet: the random
-  number stream from launch, computer player decisions, and screen captures
-  are the main comparisons still to make
-  ([#135](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/135),
-  [#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136),
+- Recorded runs of the original do not reach combat or the late game yet, and
+  no screen has been compared with a capture of the original
+  ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136),
   [#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
 - Help is drawn by a cross-platform viewer, so its typography and paragraph
   layout approximate WinHelp's
