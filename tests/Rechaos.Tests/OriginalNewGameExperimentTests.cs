@@ -8,8 +8,8 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-010 go on to press Done for one
-/// to twenty-five turns, EXP-TURN-009 and EXP-TURN-010 with orders for the human's gang, and stop at
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-011 go on to press Done for one
+/// to twenty-five turns, EXP-TURN-009 to EXP-TURN-011 with orders for the human's gang, and stop at
 /// the next planning phase. Each run gives the seed, every roll(n) with its call site and result, and the state the recording stops at. The rebuild
 /// plays the same match from the same seed and settings and has to make the same rolls in the same
 /// order and reach the same generator position and state. The turns check the turn order
@@ -22,11 +22,18 @@ namespace Rechaos.Tests;
 /// (RULE-CONTROL-001), Chaos and its payout (RULE-CHAOS-001, RULE-CHAOS-002) and upkeep
 /// (RULE-UPKEEP-001). EXP-TURN-009 also gives the human's gang orders: Snitch, Bribe and Hide
 /// (RULE-SNITCH-001, RULE-BRIBE-001, RULE-HIDE-001) and a recurring Chaos (RULE-TURN-004), which
-/// bring on a Crackdown. No recorded run has an Attack, a Give, a Sell or a Terminate yet.
+/// bring on a Crackdown. EXP-TURN-011 has the human's gang attack a computer player's gang, which
+/// strikes back (RULE-ATTACK-001), with the damage taken off Force at the end of the combat phase
+/// (RULE-COMBAT-002). Every EXP-TURN run compares each gang's Combat with its weapon skills
+/// (RULE-COMBAT-001), each sector's base Tolerance after its return toward normal
+/// (RULE-TOLERANCE-001) and every attitude after its rise, or at Homicidal Maniac in EXP-TURN-008
+/// without one (RULE-AI-015). EXP-TURN-010's first run brings police attacks and a Crackdown that
+/// neutralizes a sector (RULE-POLICE-001, RULE-POLICE-002, RULE-POLICE-003). No recorded run has a
+/// Give, a Sell or a Terminate yet.
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -254,17 +261,17 @@ public sealed class OriginalNewGameExperimentTests
 
     // The probe writes an order straight into the human's gang record (FMT-STATE-001) as the order
     // screens do (RULE-TURN-005); the rebuild takes the same order as a command. A slot is the
-    // position among the player's active gangs.
+    // gang's roster slot (FMT-STATE-001), the index of its player's gang list.
     private static void Submit(MatchReplayRecorder recorder, MatchState match, PlayerId human, RecordedOrder order)
     {
-        var gang = match.Players[human.Value].Gangs.Where(candidate => candidate.IsActive).ElementAt(order.Slot);
+        var gang = match.Players[human.Value].Gangs[order.Slot];
         var action = (GangAction)order.Action;
         var target = action switch
         {
             GangAction.Move => CommandTarget.Sector(order.Target),
             GangAction.Research or GangAction.Equip => CommandTarget.Item(order.Target),
-            GangAction.Attack => CommandTarget.Gang(match.Players[order.Target].Gangs
-                .Where(candidate => candidate.IsActive).ElementAt(order.Target2).Id),
+            // target_2 of an Attack is the target's roster slot, as the acting gang's slot is.
+            GangAction.Attack => CommandTarget.Gang(match.Players[order.Target].Gangs[order.Target2].Id),
             GangAction.Bribe or GangAction.Chaos or GangAction.Control or GangAction.Heal
                 or GangAction.Hide or GangAction.Snitch or GangAction.Terminate => CommandTarget.None,
             _ => throw new NotSupportedException($"No recorded order of action {action} is replayed yet."),

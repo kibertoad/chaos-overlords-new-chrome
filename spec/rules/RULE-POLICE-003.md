@@ -1,10 +1,10 @@
 ---
 id: RULE-POLICE-003
 title: Police presence counts down by one at the end of every turn unless it is permanent
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CHAOS-002, FND-EXE-004, FND-POLICE-001, FND-POLICE-004, FND-SETUP-003, SRC-MANUAL-GOG]
+evidence: [EXP-TURN-010, FND-CHAOS-002, FND-EXE-004, FND-POLICE-001, FND-POLICE-004, FND-SETUP-003, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002]

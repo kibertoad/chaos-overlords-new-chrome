@@ -47,15 +47,16 @@ are listed in [DEVIATIONS.md](DEVIATIONS.md); many are interface changes, and
 five have a setting that restores the original behaviour.
 
 Recorded runs of the original now check it in play. A debugger records every
-random draw of new games from launch and up to fifteen turns of play, some with
-orders for the human's gang, and the rebuild has to make the same draws and
+random draw of new games from launch and up to twenty-five turns of play, some
+with orders for the human's gang, and the rebuild has to make the same draws and
 reach the same state (EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to
-EXP-TURN-009 in the [spec](spec/README.md)). That covers setup, the computer
-players' planning and hiring, and the resolution of most orders. Combat, the
-Terminate, Give and Sell orders, events and the later game have not been
-recorded yet, and a static reading can still be wrong there. The
+EXP-TURN-011 in the [spec](spec/README.md)). That covers setup, the computer
+players' planning and hiring, the resolution of most orders, one Attack and the
+police. Deaths in combat, the Terminate, Give and Sell orders, events and the
+later game have not been recorded yet, and a static reading can still be wrong
+there. The
 [parity matrix](PARITY.md) shows the state of every rule, format and screen;
-60 of its 222 rows are compared with evidence from the original. The
+68 of its 222 rows are compared with evidence from the original. The
 [parity achievement plan](parity-achievement-plan.md) and the
 [static](static_validation_plan.md) and [manual](manual_validation_plan.md)
 validation plans list the open questions.

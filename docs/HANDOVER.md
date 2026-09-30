@@ -864,7 +864,7 @@ same goal.
 every `roll`, presses Done, can write orders for the human's gang, and dumps
 the state; `OriginalNewGameExperimentTests` replays each run and compares every
 roll and the end state. [VALIDATION.md](VALIDATION.md) gives the commands.
-EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-010 are recorded,
+EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-011 are recorded,
 up to twenty-five turns, and every run replays exactly. The probe runs the
 original silent unless `--sound` is given.
 
@@ -882,12 +882,12 @@ original silent unless `--sound` is given.
   then waits for a turn that never comes. Longer runs need the human's gang on
   a recurring Hide (EXP-TURN-010) or the probe needs to stop at the
   elimination report.
-- No recording has an Attack by the human, a Terminate, a Give or a Sell, and
-  none has combat that the replay confirms past the matching prefix. The
-  police and third-Crackdown calls of EXP-TURN-010 lie in the first run's
-  matching prefix, so RULE-POLICE-001 and RULE-POLICE-002 have roll evidence
-  but no state comparison yet. Attack orders need a target gang, whose slot
-  the probe would have to read at the planning phase.
+- EXP-TURN-011 has one Attack by the human, on a gang that is not hiding; no
+  recording has a Terminate, a Give or a Sell, an attack on a hiding gang, a
+  Martial Arts exception or a death in combat. The police and third-Crackdown
+  calls of EXP-TURN-010 now replay to the end of both runs. An Attack order
+  needs the target's roster slot, which a state dump (`--dump-at-roll`) of a
+  run with the same seed gives.
 - Screens have not been compared with captures. The plan: capture the window's
   client area where the probe already stops, render the same state in the
   rebuild, and compare each SCR element's rectangle, reporting an element that

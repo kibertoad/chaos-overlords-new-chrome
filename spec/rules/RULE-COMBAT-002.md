@@ -1,10 +1,10 @@
 ---
 id: RULE-COMBAT-002
 title: The combat phase runs every attack, then the police, then applies the damage and fills the combat records
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-001, FND-COMBAT-003, FND-COMBAT-004, FND-COMBAT-008, FND-COMBAT-011, FND-EXE-004, FND-GANG-003, FND-GANG-005, FND-STATE-005, SRC-MANUAL-GOG]
+evidence: [EXP-TURN-010, EXP-TURN-011, FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-001, FND-COMBAT-003, FND-COMBAT-004, FND-COMBAT-008, FND-COMBAT-011, FND-EXE-004, FND-GANG-003, FND-GANG-005, FND-STATE-005, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-ATTACK-001, RULE-POLICE-001, RULE-GANG-002, FMT-STATE-001, FMT-STATE-003, FMT-STATE-008]
