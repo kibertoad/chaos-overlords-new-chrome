@@ -60,6 +60,7 @@
   ],
   "maximumTrackedFileBytes": 1048576,
   "approvedLargeFiles": [
-    "spec/experiments/EXP-TURN-010.json"
+    "spec/experiments/EXP-TURN-010.json",
+    "spec/experiments/EXP-TURN-017.json"
   ]
 }
