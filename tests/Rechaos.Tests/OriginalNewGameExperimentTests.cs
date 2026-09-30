@@ -279,6 +279,29 @@ public sealed class OriginalNewGameExperimentTests
                         $"player {slot} report {index}: the original holds {expected[index]}, the rebuild {reports[index]}");
             }
 
+        // The running totals the financial panel and the endgame awards read, and the hire roles
+        // the computer players' planning keeps (RULE-AI-010). Damage Inflicted is RULE-COMBAT-003.
+        if (recorded.HasTerm("cash_spent", 0))
+            foreach (var player in match.Players)
+            {
+                var slot = player.Id.Value;
+                (string Term, long Value)[] totals =
+                [
+                    ("cash_earned", player.Statistics.CashEarned), ("cash_spent", player.Statistics.CashSpent),
+                    ("damage_inflicted", player.Statistics.DamageInflicted),
+                    ("casualties", player.Statistics.Casualties), ("overthrow_count", player.Statistics.Overthrows),
+                    ("hide_count", player.Statistics.TimesHidden),
+                    ("hire_role", match.AiPlanning.CurrentHireRole(player.Id)),
+                    ("previous_hire_role", match.AiPlanning.PreviousHireRole(player.Id)),
+                ];
+                // The original starts a human player's hire_role at -1 and the rebuild at 0. No rule
+                // reads a human's entry, so the difference is one of representation.
+                foreach (var (term, value) in totals)
+                    if (player.Setup.Controller != PlayerController.Human || term != "hire_role")
+                        Assert.True(recorded.Term(term, slot) == value,
+                            $"{term} of player {slot}: the original holds {recorded.Term(term, slot)}, the rebuild {value}");
+            }
+
         // FND-SETUP-018: the turn limit the computer players read.
         Assert.Equal(recorded.Term("turn_limit", 0), ScenarioCatalog.TurnLimit(match.Setup.Scenario, match.Setup.Duration));
         Assert.Equal(recorded.Term("elapsed_turns", 0), match.Coordinator.Turn - 1);

@@ -990,7 +990,9 @@ None.
 
 ## EXP-TURN-012
 
-None.
+| Cited by | In |
+|---|---|
+| [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | evidence |
 
 ## EXP-TURN-013
 
@@ -1026,6 +1028,7 @@ None.
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | body, evidence |
 | [EXP-TURN-015](../experiments/EXP-TURN-015.md) | body |
 | [EXP-TURN-027](../experiments/EXP-TURN-027.md) | body |
+| glossary: hire_role | glossary |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | evidence |
 
 ## EXP-TURN-017
@@ -1035,6 +1038,7 @@ None.
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
+| [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | evidence |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | evidence |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | evidence |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | evidence |
