@@ -878,6 +878,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-AI-016](../rules/RULE-AI-016.md) | body, evidence |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
@@ -5828,6 +5829,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-011](../experiments/EXP-TURN-011.md) | body |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | body |
 
 ## RULE-AI-016
 

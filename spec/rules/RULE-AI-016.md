@@ -4,7 +4,7 @@ title: Every Attack order lowers the target player's attitude toward the attacke
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-047, FND-AI-006, FND-EXE-004]
+evidence: [EXP-TURN-011, FND-AI-047, FND-AI-006, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-004, RULE-ATTACK-001]
@@ -67,4 +67,9 @@ attitude toward itself.
 
 ## Open questions
 
-None.
+EXP-TURN-011 confirms that an Attack lowers the attitude and that it stops at
+-10: player 4's attitude toward the attacker is -9 after the rise of RULE-AI-015
+and ends at -10. It cannot tell how far the attitude fell, because any drop of
+at least 1 ends at the floor, so the choice of the larger of `reaction` and
+`damage` still rests on the static reading alone. A run in which the attacked
+player's attitude stays above -10 after the drop would settle it.
