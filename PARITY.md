@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 139 |
-| `validated` | 83 |
+| `implemented` | 138 |
+| `validated` | 84 |
 
 | Code | Rows |
 |---|---|
@@ -340,7 +340,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-022` | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-022 reaches the draw on a visible human gang at Mentality 3, whose strength test reads the record at the sector's slot number (BUG-AI-007). |
 | `RULE-AI-023` | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | No match writes family 4, so the handler matters only for a loaded planning record. |
 | `RULE-AI-024` | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-020 reaches the Attack on a visible human gang. |
-| `RULE-AI-025` | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
+| `RULE-AI-025` | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-023 to EXP-TURN-026 reach the hunting Move, the Attack and the Equip after a failed strength test. No recorded run reaches the five further draws, which follow a failed test with nothing to buy. |
 | `RULE-AI-026` | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-020 reaches the Attack on a visible human gang. |
 | `RULE-AI-027` | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-028` | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-013 reaches the item 44 Equip, the Stealth move, Chaos and Hide; no recorded run reaches the armor upgrade or Heal. |

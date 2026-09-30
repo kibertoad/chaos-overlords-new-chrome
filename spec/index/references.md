@@ -54,6 +54,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | builds |
 | [EXP-TURN-023](../experiments/EXP-TURN-023.md) | builds |
 | [EXP-TURN-024](../experiments/EXP-TURN-024.md) | builds |
+| [EXP-TURN-025](../experiments/EXP-TURN-025.md) | builds |
+| [EXP-TURN-026](../experiments/EXP-TURN-026.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -852,6 +854,8 @@ None.
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | body |
 | [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
 | [EXP-TURN-024](../experiments/EXP-TURN-024.md) | body |
+| [EXP-TURN-025](../experiments/EXP-TURN-025.md) | body |
+| [EXP-TURN-026](../experiments/EXP-TURN-026.md) | body |
 
 ## EXP-TURN-002
 
@@ -886,6 +890,8 @@ None.
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | body |
 | [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
 | [EXP-TURN-024](../experiments/EXP-TURN-024.md) | body |
+| [EXP-TURN-025](../experiments/EXP-TURN-025.md) | body |
+| [EXP-TURN-026](../experiments/EXP-TURN-026.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 
 ## EXP-TURN-005
@@ -1035,11 +1041,28 @@ None.
 | [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | body, evidence |
 | [EXP-TURN-024](../experiments/EXP-TURN-024.md) | body |
 | [FND-INFLUENCE-004](../findings/FND-INFLUENCE-004.md) | body |
+| [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
+| [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
 
 ## EXP-TURN-024
 
-None.
+| Cited by | In |
+|---|---|
+| [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
+| [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
+
+## EXP-TURN-025
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
+
+## EXP-TURN-026
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -6119,6 +6142,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-025](../experiments/EXP-TURN-025.md) | body |
+| [EXP-TURN-026](../experiments/EXP-TURN-026.md) | body |
 | [FND-AI-059](../findings/FND-AI-059.md) | body |
 | [FND-AI-068](../findings/FND-AI-068.md) | body |
 | glossary: covered_by | glossary |
