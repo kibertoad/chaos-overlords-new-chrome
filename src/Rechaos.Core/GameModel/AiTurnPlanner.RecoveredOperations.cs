@@ -33,6 +33,14 @@ public static partial class AiTurnPlanner
         state.AiStrategy.IsHostileToOwnerQuery(playerId, OwnerQuery(state, sectorId));
 
     /// <summary>
+    /// RULE-AI-006, FND-AI-069: the sector selector's common block multiplies when the attitude
+    /// toward the owner query is negative (with FND-AI-048's out-of-row reads) and selector 0x35
+    /// reads the sector's owner as human, a neutral sector included.
+    /// </summary>
+    internal static bool MultipliesSelectorScore(MatchState state, PlayerId playerId, int sectorId) =>
+        IsHostileOwner(state, playerId, sectorId) && OwnerIsHuman(state, sectorId);
+
+    /// <summary>
     /// FND-AI-046: selector 0x5B counts the player's active gangs in the sector whose previous
     /// action was Chaos, the planning gang included. Callers compare the count with the threshold
     /// the FND-AI-046 table gives for their call site (0, below 1 or below 2).

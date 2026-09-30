@@ -98,7 +98,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         // RULE-AI-025, FND-AI-068: with every weight-10 sector covered the guard target is the
-        // end marker 100, and mode 0x40 + 100 scores sector 37 (FND-AI-067).
+        // end marker 100, and mode 0x40 + 100 scores sector 37 (FND-AI-069).
         // The marker stored as the coverage sector is overwritten by the step below before any
         // other gang plans, so it is not kept.
         var strategicTarget = FirstUncoveredFamilySixTarget(state, playerId);
@@ -112,10 +112,8 @@ public static partial class AiTurnPlanner
             snapshot.SectorOwners, snapshot.SectorDisabled, snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
+            ownerIsHuman: sectorId => OwnerIsHuman(state, sectorId),
+            multipliesByFive: sectorId => MultipliesSelectorScore(state, playerId, sectorId),
             state.Random, planning: state.AiPlanning);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, destination);
         state.AiPlanning.SetCoverageSector(playerId, gangSlot, destination);

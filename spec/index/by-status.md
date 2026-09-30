@@ -271,19 +271,22 @@
 
 ## superseded
 
-5 entries.
+8 entries.
 
 | ID | Title |
 |---|---|
 | [FND-AI-008](../findings/FND-AI-008.md) | The AI ranks its three hire offers by a role mode, then refuses an unaffordable winner without a fallback |
 | [FND-AI-011](../findings/FND-AI-011.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and the least efficient offer elsewhere |
+| [FND-AI-025](../findings/FND-AI-025.md) | Sector selector mode 6 routes toward the scenario leader and hostile human land |
+| [FND-AI-027](../findings/FND-AI-027.md) | Sector selector modes 10 to 16 and encoded modes, and the filters applied after scoring |
 | [FND-AI-030](../findings/FND-AI-030.md) | The family-0 handler is a general state machine over the previous action |
 | [FND-AI-031](../findings/FND-AI-031.md) | The family-4 handler hides, probes and moves through mode 2 |
 | [FND-AI-059](../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself |
+| [FND-AI-067](../findings/FND-AI-067.md) | The sector selector adds 1 to an encoded mode's sector for every sector a ring visits |
 
 ## recorded
 
-349 entries.
+347 entries.
 
 | ID | Title |
 |---|---|
@@ -323,9 +326,7 @@
 | [FND-AI-022](../findings/FND-AI-022.md) | The turn resolver decodes a gang's two target bytes differently for each action |
 | [FND-AI-023](../findings/FND-AI-023.md) | A resolved hire takes the first inactive roster slot below 80 |
 | [FND-AI-024](../findings/FND-AI-024.md) | The family-11 handler equips, heals, attacks the first visible local gang, or moves in blocks of six |
-| [FND-AI-025](../findings/FND-AI-025.md) | Sector selector mode 6 routes toward the scenario leader and hostile human land |
 | [FND-AI-026](../findings/FND-AI-026.md) | Sector selector modes 7, 8 and 9 score owned sectors by site Support, Cash and Stealth |
-| [FND-AI-027](../findings/FND-AI-027.md) | Sector selector modes 10 to 16 and encoded modes, and the filters applied after scoring |
 | [FND-AI-028](../findings/FND-AI-028.md) | The 48 direct calls of the shared sector selector, by mode and caller |
 | [FND-AI-029](../findings/FND-AI-029.md) | The family-6 handler hunts hostile human sectors and attacks there with up to six target draws |
 | [FND-AI-032](../findings/FND-AI-032.md) | The family-2 handler equips, heals, attacks visible hostiles and takes weak or hostile sectors |
@@ -362,8 +363,8 @@
 | [FND-AI-064](../findings/FND-AI-064.md) | The AI ranks its three hire offers by Chaos, Control, Influence, fighting strength, Tech Level and Research, or Stealth, then refuses an unaffordable winner |
 | [FND-AI-065](../findings/FND-AI-065.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and elsewhere the offer with the smallest Tech Level times positive statistics per cost |
 | [FND-AI-066](../findings/FND-AI-066.md) | The sector selector keeps its score pairs between calls, skips filtered sectors when refilling them, and counts ties past the end of the list |
-| [FND-AI-067](../findings/FND-AI-067.md) | The sector selector adds 1 to an encoded mode's sector for every sector a ring visits |
 | [FND-AI-068](../findings/FND-AI-068.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, which sends the gang toward sector 37, and a gang covers a sector for itself |
+| [FND-AI-069](../findings/FND-AI-069.md) | The sector selector scores on the owner query, ends mode 6 after its hostile-human bonus, and multiplies table element x * 9 + y in its common block |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |

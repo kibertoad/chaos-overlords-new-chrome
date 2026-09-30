@@ -61,7 +61,7 @@ in sector 100, so selector `0x60` returns 100. The handler then passes mode
 `0xA4` to the sector selector and stores 100 as the coverage sector until the
 step overwrites it. The selector adds to the score of the sector whose table
 element is `(100 % 8) * 8 + 100 / 8`, element 44, which is sector 37
-(FND-AI-067), so the gang heads for sector 37. Mode 2 is used only when no
+(FND-AI-069), so the gang heads for sector 37. Mode 2 is used only when no
 sector has weight 10.
 
 This corrects FND-AI-059, which took mode `0xA4` to score no sector and the

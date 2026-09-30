@@ -4,7 +4,7 @@ title: The shared AI sector selector scores the nearest sectors by mode and rout
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-AI-025, FND-AI-026, FND-AI-027, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052, FND-AI-066, FND-AI-067, EXP-TURN-004, EXP-TURN-006, EXP-TURN-007]
+evidence: [FND-AI-005, FND-AI-026, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052, FND-AI-066, FND-AI-069, EXP-TURN-004, EXP-TURN-006, EXP-TURN-007, EXP-TURN-010]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-007, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -21,7 +21,9 @@ random among ties and returns it when it is next to the gang, or else the first
 step toward it that does not put more than six of the player's gangs in one
 sector. The list keeps old scores for the sectors a late filter clears, and the
 tie count can run past its end, so a pick can land on a sector no score of this
-call points to.
+call points to. The multiply by five meant for a hostile human's sector scales
+another element of the score table, so it changes only the sectors of the
+leftmost column.
 
 ## When it runs
 
@@ -100,10 +102,17 @@ define human_count():
             n = n + 1
     return n
 
-# The score mode gives sector c for the gang idx of player
+# The common block's test of a visited sector, also mode 6's bonus and the
+# hostile-human weight of modes 12 to 15: the attitude toward the owner query
+# is negative and selector 0x35 reads the owner as human
+define scales(player, c):
+    return hostile_owner(player, c) and owner_is_human(c)
+
+# The score mode gives sector c for the gang idx of player; every mode reads
+# the owner query, so a policed sector reads as -2
 define mode_score(player, mode, idx, c):
     let g = gangs[idx]
-    let o = sectors[c].owner
+    let o = owner_query(c)
     let score = 0
     if mode == 1:
         if o == SECTOR_NEUTRAL and solo_control_ok(player, idx, c):
@@ -125,8 +134,9 @@ define mode_score(player, mode, idx, c):
         else if o >= 0 and o != player:
             score = 1
     else if mode == 6:
-        if human_count() > 0 and o >= 0 and is_human(o) and attitude[player * 6 + o] < 0:
-            score = 2
+        if human_count() > 0 and scales(player, c):
+            # the case ends here, without the leader point
+            return 2
         let leader = unique_leader()
         if leader != -1 and leader != player:
             if o == leader:
@@ -151,7 +161,7 @@ define mode_score(player, mode, idx, c):
         if human_count() == 0:
             if o >= 0 and o != player:
                 score = 1
-        else if o >= 0 and is_human(o):
+        else if owner_is_human(c):
             score = 1
     else if mode == 11:
         if c == g.sector:
@@ -170,12 +180,22 @@ define mode_score(player, mode, idx, c):
                     listed = true
         if listed and sector_gang_count[player * 64 + c] < 6 and not ((mode == 12 or mode == 13) and o == player):
             score = 1
-            if o >= 0 and is_human(o) and attitude[player * 6 + o] < 0:
+            if scales(player, c):
                 score = 5
     else if mode == 16:
         if c == block_leader_sector(player, idx - player * 81):
             score = 1
     return score
+
+# Multiplies dword e of the score table as the selector holds it (element
+# x * 8 + y is the score of sector y * 8 + x) by five, in 32 bits. Past the 64
+# of the table the dword is one of player 0's planning records
+define scale_element(e):
+    if e < 64:
+        let c = (e % 8) * 8 + e / 8
+        score[c] = score[c] * 5
+    else:
+        set_record_dword(e - 64, record_dword(e - 64) * 5)
 
 # The sector whose score an encoded target t raises: the selector adds to
 # element (t % 8) * 8 + t / 8 of score as the table holds it
@@ -210,10 +230,10 @@ define select_sector(player, mode, idx):
                         let e = encoded_sector(mode - 0x40)
                         score[e] = score[e] + 1
                         found = true
-                    # the common block after the mode switch
-                    let o = sectors[c].owner
-                    if o >= 0 and is_human(o) and attitude[player * 6 + o] < 0:
-                        score[c] = score[c] * 5
+                    # the common block after the mode switch tests the visited
+                    # sector but multiplies table element x * 9 + y
+                    if scales(player, c):
+                        scale_element(x * 9 + y)
         radius = radius + 1
     score[src] = 0
     # the late filters; a filtered sector of family 0 or 1 keeps its old pair
@@ -221,7 +241,7 @@ define select_sector(player, mode, idx):
     for c in 0..64:
         if sectors[c].crackdown_turns != 0:
             score[c] = 0
-        if (fam == 0 or fam == 1) and not solo_control_ok(player, idx, c) and sectors[c].owner != player:
+        if (fam == 0 or fam == 1) and not solo_control_ok(player, idx, c) and owner_query(c) != player:
             score[c] = 0
         else:
             selector_pairs[c].score = score[c]
@@ -300,6 +320,34 @@ define record_dword(k):
         v = v - 4294967296
     return v
 
+# Stores the low 32 bits of v as dword k of planning_records, the inverse of
+# record_dword; each field takes its bytes as the game holds them
+define set_record_dword(k, v):
+    let r = planning_records[k / 4]
+    let u = (v % 4294967296 + 4294967296) % 4294967296
+    let b = []
+    for i in 0..4:
+        append(b, u % 256)
+        u = u / 256
+    if k % 4 == 0:
+        r.family = b[0]
+        r.needs_family = b[1]
+        r.older_action = b[2]
+        r.older_target = b[3]
+    if k % 4 == 1:
+        r.older_target_2 = b[0]
+        r.previous_action = b[1]
+        r.previous_target = b[2]
+        r.previous_target_2 = b[3]
+    if k % 4 == 2:
+        r.planned_action = b[0]
+        r.planned_target = b[1]
+        r.planned_target_2 = b[2]
+        r.unk_0B = b[3]
+    if k % 4 == 3:
+        r.weapon_cooldown = b[0] + b[1] * 256
+        r.armor_cooldown = b[2] + b[3] * 256
+
 define pair_score(n):
     return pair_dword(n * 2)
 
@@ -316,6 +364,26 @@ the target is its own sector. Makes one `roll` when the tie count is above 1,
 and none otherwise. Leaves `selector_pairs` sorted.
 
 ## Edge cases
+
+The common block multiplies table element `x * 9 + y` for a visited sector at
+column `x` and row `y` (FND-AI-069). In column 0 that is the visited sector
+itself, after its score for this visit. Elsewhere it is a sector of the same
+column `x` rows further down, or of the next column once `x + y` reaches 8,
+which the square visits later and which holds 0 at that moment unless an
+encoded mode added to it. So of the scores the modes add, only those of column
+0 are multiplied by five; a hostile human's objective in modes 12 to 15 ends at
+5. In column 7 with `y` of 1 or more the element is one of the first seven
+dwords of player 0's planning records. Those are zero bytes while player 0 has
+had no planning pass, as when a human holds slot 0; a computer player 0 has its
+family, action and target bytes of records 0 and 1 multiplied as one INT32.
+
+A sector under a Crackdown reads as owner -2 in every mode that tests an
+owner, so it scores nothing there and does not stop the search, though the
+late filter would clear it anyway. The attitude test of `scales` then reads
+the entry two before the player's row, and a neutral sector the entry one
+before; `owner_is_human` of a neutral sector reads player 5's `casualties`.
+Such a sector can therefore pass `scales`, and mode 10 with humans can score a
+neutral sector.
 
 No direct call passes mode 4 (FND-AI-028), so its scoring is written out for
 completeness. It compares where the player and the owner query first appear
@@ -349,9 +417,10 @@ the destination is a sector number outside the city.
 An encoded mode stops the search at radius 1 whatever it scores, because every
 visited sector adds 1 to its target and sets `found`. The target's score is the
 number of sectors on the board within one step of the gang, its own included:
-4 in a corner, 6 on an edge, 9 elsewhere, multiplied by five when the target
-lies in that square and is held by a hostile human, after the visits before it
-(FND-AI-067, EXP-TURN-007). The target need not be in that square. The guard
+4 in a corner, 6 on an edge, 9 elsewhere, multiplied by five each time a
+sector passing `scales` whose element `x * 9 + y` is the target's is visited,
+at the count reached by then (FND-AI-069, EXP-TURN-007). The target need not be
+in that square. The guard
 end marker 100 (RULE-AI-025) raises sector 37, the sector of table element 44.
 
 ## What the sources say
@@ -364,22 +433,11 @@ None known.
 
 ## Open questions
 
-- EXP-TURN-010's first run disagrees at call 11610: a family-1 gang of mode 5
-  in sector 20 did not score sector 12, held by a human the player's attitude
-  toward is -10 and holding one of the player's gangs, at the 5 this procedure
-  gives it. Either the late filter (`solo_control_ok`) removes the sector or
-  the multiply by five does not apply to it; the reading of selector `0x2C`
-  and of the common block at `0x004098D4` has to settle which.
 - The late filter clears sectors whose byte at sector record +15 is nonzero;
   that byte is taken to be `crackdown_turns`.
-- Whether the Crackdown filter also applies before the radius search stops is
-  not recorded; the procedure applies it only afterwards.
 - For mode 16 the procedure passes the acting slot; the findings say selector
   `0x77` stops at the acting slot, which is taken to be the gang being
   planned.
-- The mode 6 +2 bonus is given here before the leader point, and the common
-  multiply by five then applies to mode 6 as well; whether the common block
-  applies to mode 6 is not stated.
 - The site `definition` of an empty site slot, if one exists, is not
   described.
 - A tie count that runs through the records of all six players would continue

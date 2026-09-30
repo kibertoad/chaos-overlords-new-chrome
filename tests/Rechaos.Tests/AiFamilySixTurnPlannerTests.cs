@@ -26,7 +26,7 @@ public sealed class AiFamilySixTurnPlannerTests
         Assert.Equal(9, match.AiPlanning.CoverageSector(player, 0));
     }
 
-    // RULE-AI-025, FND-AI-067: when a family-6 gang already covers every weight-10 sector the
+    // RULE-AI-025, FND-AI-069: when a family-6 gang already covers every weight-10 sector the
     // guard target is the end marker 100, whose mode 0xA4 scores sector 37, so the gang steps
     // toward sector 37 and the covered sector is left to the gang guarding it.
     [Fact]
@@ -71,7 +71,7 @@ public sealed class AiFamilySixTurnPlannerTests
                 _ => true, _ => false, _ => false, _ => false,
                 new DeterministicRandom(seed)));
 
-        // FND-AI-067: only sector 37 scores, so every seed takes the same step toward it.
+        // FND-AI-069: only sector 37 scores, so every seed takes the same step toward it.
         var destination = Assert.Single(destinations);
         Assert.Equal(1, Math.Max(
             Math.Abs(destination % MatchLimits.BoardWidth - 37 % MatchLimits.BoardWidth),

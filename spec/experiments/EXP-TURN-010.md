@@ -74,18 +74,30 @@ it; player 4's `attitude` toward player 0 was -10.
 
 Every result is the one RULE-RNG-002 computes from the recorded seed.
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays both runs. The
-rebuild makes the second run's calls with the same bounds and results and
-reaches the same generator position and state. In the first run it makes
-calls 0 to 11609 with the same bounds and results, including the Crackdown and
-police calls, and differs from call 11610 on: its call for player 4's gang 8,
-in sector 20, scores sectors 11 and 12 at 5 and calls `roll(2)`, which is call
-11609 and happens to match the original's call for gang 11.
+rebuild makes both runs' calls with the same bounds and results and reaches the
+same generator position and state after the twenty-five turns.
+
+At call 11610 of the first run the original's call for player 4's gang 8, in
+sector 20, returned 11 with no draw. Sector 12, next to it, is the human's and
+player 4's attitude toward the human is -10, so mode 5 gives it 1; the common
+block then multiplies table element `4 * 9 + 1`, the score of sector 44, and
+leaves sector 12 at 1 below sector 11's 5 (FND-AI-069). A reading in which the
+common block multiplied the visited sector gave both 5 and drew `roll(2)`.
+
+Two more departures were found on the way to call 12630, with the probe
+repeating the first run with its seed and `--trace-calls 0x00408642
+--dump-at-roll 12630`, over twenty-five turns. The traced calls agreed with the
+rebuild's in order and result up to call 11615 of `roll`, where the original's
+player 5 gang 16 returned 45 from sector 52 and the rebuild's, still in sector
+45, returned 38. At call 10662 both had sent it to sector 52, which then held
+six of player 5's gangs; the original took the Move and the Move repair
+(RULE-MOVE-002) let the gang in, where the rebuild had refused the Move when it
+was planned.
 
 ## Conclusion
 
-The second run agrees with the spec over twenty-five turns, including a tied
-Control. The first run disagrees with RULE-AI-006 as the rebuild implements
-it: the original did not give sector 12 the score of 5 that mode 5 and the
-multiply by five give a sector held by a human the player is hostile to, or
-its late filter for family 1 removed the sector. Which one is not settled. The
-test keeps the first run as a known divergence at call 11610.
+The two runs agree with the spec over twenty-five turns, including a tied
+Control, with RULE-AI-006 as FND-AI-069 corrects it: the common block's
+multiply by five reaches another table element than the visited sector, and a
+computer player's Move into a full sector is planned and left to the Move
+repair.

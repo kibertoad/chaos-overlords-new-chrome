@@ -130,6 +130,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AI-066](../findings/FND-AI-066.md) | builds, locations |
 | [FND-AI-067](../findings/FND-AI-067.md) | builds, locations |
 | [FND-AI-068](../findings/FND-AI-068.md) | builds, locations |
+| [FND-AI-069](../findings/FND-AI-069.md) | builds, locations |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | builds, locations |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | builds, locations |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | builds, locations |
@@ -858,7 +859,8 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-AI-006](../rules/RULE-AI-006.md) | body |
+| [FND-AI-069](../findings/FND-AI-069.md) | body |
+| [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -1565,9 +1567,7 @@ None.
 
 ## FND-AI-025
 
-| Cited by | In |
-|---|---|
-| [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
+None.
 
 ## FND-AI-026
 
@@ -1582,13 +1582,7 @@ None.
 
 ## FND-AI-027
 
-| Cited by | In |
-|---|---|
-| [FND-AI-040](../findings/FND-AI-040.md) | body |
-| [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
-| [RULE-AI-029](../rules/RULE-AI-029.md) | evidence |
-| [RULE-AI-030](../rules/RULE-AI-030.md) | evidence |
-| [RULE-AI-031](../rules/RULE-AI-031.md) | evidence |
+None.
 
 ## FND-AI-028
 
@@ -2006,9 +2000,6 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-007](../experiments/EXP-TURN-007.md) | body |
-| [FND-AI-068](../findings/FND-AI-068.md) | body |
-| [RULE-AI-006](../rules/RULE-AI-006.md) | body, evidence |
-| [RULE-AI-025](../rules/RULE-AI-025.md) | body, evidence |
 
 ## FND-AI-068
 
@@ -2018,6 +2009,22 @@ None.
 | [FND-AI-067](../findings/FND-AI-067.md) | body |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | evidence |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | body, evidence |
+
+## FND-AI-069
+
+| Cited by | In |
+|---|---|
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
+| [FND-AI-025](../findings/FND-AI-025.md) | superseded_by |
+| [FND-AI-027](../findings/FND-AI-027.md) | superseded_by |
+| [FND-AI-040](../findings/FND-AI-040.md) | body |
+| [FND-AI-067](../findings/FND-AI-067.md) | superseded_by |
+| [FND-AI-068](../findings/FND-AI-068.md) | body |
+| [RULE-AI-006](../rules/RULE-AI-006.md) | body, evidence |
+| [RULE-AI-025](../rules/RULE-AI-025.md) | body, evidence |
+| [RULE-AI-029](../rules/RULE-AI-029.md) | evidence |
+| [RULE-AI-030](../rules/RULE-AI-030.md) | evidence |
+| [RULE-AI-031](../rules/RULE-AI-031.md) | evidence |
 
 ## FND-ASSET-001
 
@@ -5607,6 +5614,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | related |
+| [FND-AI-069](../findings/FND-AI-069.md) | body |
 | glossary: crackdown_in_force | glossary |
 | glossary: draw_once | glossary |
 | glossary: draw_target | glossary |
@@ -5692,7 +5700,10 @@ None.
 | glossary: pair_score | glossary |
 | glossary: pair_sector | glossary |
 | glossary: record_dword | glossary |
+| glossary: scale_element | glossary |
+| glossary: scales | glossary |
 | glossary: select_sector | glossary |
+| glossary: set_record_dword | glossary |
 | glossary: standings_test | glossary |
 | glossary: unique_leader | glossary |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | related |
@@ -6505,6 +6516,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
 | [FND-MOVE-007](../findings/FND-MOVE-007.md) | body |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | body |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | body, related |

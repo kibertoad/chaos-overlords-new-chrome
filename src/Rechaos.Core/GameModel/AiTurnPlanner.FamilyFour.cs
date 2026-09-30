@@ -170,10 +170,8 @@ public static partial class AiTurnPlanner
             snapshot.SectorGangCounts,
             canSoloControl: sectorId => CanSoloControl(state, playerId, gang, sectorId),
             hasPriorChaos: _ => false,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
+            ownerIsHuman: sectorId => OwnerIsHuman(state, sectorId),
+            multipliesByFive: sectorId => MultipliesSelectorScore(state, playerId, sectorId),
             state.Random, planning: state.AiPlanning);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }

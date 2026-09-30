@@ -1,9 +1,9 @@
 ---
 id: FND-AI-067
 title: The sector selector adds 1 to an encoded mode's sector for every sector a ring visits
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-069]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

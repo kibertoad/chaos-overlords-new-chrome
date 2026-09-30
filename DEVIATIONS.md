@@ -242,6 +242,8 @@ The reasoning is in `docs/MULTIPLAYER.md`.
   have given a useful order instead is no longer wasted on a Move that cannot happen.
 - Dropped: no
 
+The refusal applies to the orders of human players only. A computer player's Move into a full
+sector is planned as in the original and left to the Move repair, which EXP-TURN-010 depends on.
 Whether the original's panel refuses the order too is in `manual_validation_plan.md`. The rebuild
 counts only the gangs already in the destination, so moving one gang out and another in to a full
 sector takes two turns where the original allows one; counting gangs ordered out of the
@@ -509,6 +511,23 @@ started with.
   list (RULE-MOVE-001, RULE-MOVE-002), so the original writes outside that list and leaves a gang
   on no sector: corrupted state that no player can rely on. No recorded run reaches such a step,
   and a setting would choose between refusing the step and reproducing the corruption.
+- Dropped: no
+
+## DEV-AI-006
+
+- Departs from: RULE-AI-006
+- Reason: When the sector selector's common block tests a sector of column 7 with a row of 1 or
+  more and the sector passes, the original multiplies a dword past its score table by five: one
+  of the first seven dwords of player 0's planning records, which hold the family, action, target
+  and cooldown bytes of records 0 and 1 (FND-AI-069). The rebuild leaves the records unchanged.
+- Setting: None
+- Default: mandatory
+- Justification: The write is an index past the end of a 64-entry table, and it rewrites another
+  player's planning state with bytes that are no family, action or target any handler assigns: a
+  corruption no player can rely on. While a human holds slot 0 the records are zero bytes and the
+  multiply leaves them zero, so the usual match plays the same. A setting would choose between
+  leaving the records alone and reproducing a corruption the rebuild's planning state refuses to
+  hold.
 - Dropped: no
 
 ## DEV-EVENT-001

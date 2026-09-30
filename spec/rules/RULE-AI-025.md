@@ -4,7 +4,7 @@ title: Family-6 computer gangs hunt sectors with visible hostile human gangs and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-029, FND-AI-013, FND-AI-015, FND-AI-033, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-068, FND-AI-067]
+evidence: [FND-AI-029, FND-AI-013, FND-AI-015, FND-AI-033, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-068, FND-AI-069]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -131,7 +131,7 @@ every strength test failed, and the strength test can be made on a different
 gang from the one attacked (BUG-AI-003). With no sector of weight 10 the gang
 wanders through mode 2. When every such sector is covered, the list's end
 marker 100 is taken as the destination: mode `0xA4` raises the score of sector
-37, so the gang steps toward sector 37 (FND-AI-068, FND-AI-067). The
+37, so the gang steps toward sector 37 (FND-AI-068, FND-AI-069). The
 sector a hunter covers is its one-step destination, which is usually not the
 hostile sector itself, so a second hunter can pick the same target. The scan
 of `covered_by` includes the planning gang itself (FND-AI-068).
