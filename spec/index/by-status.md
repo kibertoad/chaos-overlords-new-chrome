@@ -288,7 +288,7 @@
 
 ## recorded
 
-354 entries.
+355 entries.
 
 | ID | Title |
 |---|---|
@@ -313,6 +313,7 @@
 | [EXP-TURN-015](../experiments/EXP-TURN-015.md) | Do a human gang's Equip and Sell orders, and eight turns of the computer players, draw and resolve as the spec gives? |
 | [EXP-TURN-016](../experiments/EXP-TURN-016.md) | Do a human gang's Equip orders and one Sell of three items pay and resolve as the spec gives? |
 | [EXP-TURN-017](../experiments/EXP-TURN-017.md) | Do thirty turns of a new local Kill 'Em All game, up to the human's elimination, draw and resolve as the spec gives? |
+| [EXP-TURN-018](../experiments/EXP-TURN-018.md) | Does a new local Kill 'Em All game in which the human's gang never hides draw and resolve as the spec gives, up to the human's elimination? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |

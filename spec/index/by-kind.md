@@ -569,7 +569,7 @@
 
 ## experiments
 
-21 entries.
+22 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -594,6 +594,7 @@
 | [EXP-TURN-015](../experiments/EXP-TURN-015.md) | Do a human gang's Equip and Sell orders, and eight turns of the computer players, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-016](../experiments/EXP-TURN-016.md) | Do a human gang's Equip orders and one Sell of three items pay and resolve as the spec gives? | recorded |
 | [EXP-TURN-017](../experiments/EXP-TURN-017.md) | Do thirty turns of a new local Kill 'Em All game, up to the human's elimination, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-018](../experiments/EXP-TURN-018.md) | Does a new local Kill 'Em All game in which the human's gang never hides draw and resolve as the spec gives, up to the human's elimination? | recorded |
 
 ## bugs
 
