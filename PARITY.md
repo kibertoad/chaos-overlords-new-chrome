@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 138 |
-| `validated` | 84 |
+| `implemented` | 137 |
+| `validated` | 85 |
 
 | Code | Rows |
 |---|---|
@@ -242,7 +242,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-GIVE-001` | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | supported | complete | None | None | implemented | None |
+| `RULE-GIVE-001` | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-027 replays a human's Give of a weapon and an armor to a gang hired the turn before. |
 | `SCR-GIVE-001` | Give panel | supported | complete | None | `DEV-GIVE-001` | implemented | The recipient cards, eligibility, marks, faces and keys follow the original. The list has no background fill, and ineligible cards are blacked out through bitmap 146 from the card's corner (FND-GIVE-003). |
 
 ## SELL

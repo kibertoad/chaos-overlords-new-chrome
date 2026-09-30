@@ -27,7 +27,7 @@ static int Usage()
           Rechaos.OriginalProbe new-game --out <directory> [--game <install directory>] [--timeout <seconds>]
               [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
-              [--orders <turn:slot:action:target:target_2:repeat>,...] [--sound]
+              [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer_slot:sector>,...] [--sound]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
         """);
@@ -56,7 +56,8 @@ static int NewGame(string[] args)
         IntOption(args, "--dump-at-roll"),
         HexOption(args, "--trace-calls"),
         Option(args, "--orders") is { } orders ? ParseOrders(orders) : null,
-        args.Contains("--sound"));
+        args.Contains("--sound"),
+        Option(args, "--hires") is { } hires ? ParseHires(hires) : null);
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
@@ -147,6 +148,15 @@ static IReadOnlyList<ProbeOrder> ParseOrders(string value) =>
         var parts = order.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
         if (parts.Length != 6) throw new FormatException($"An order needs six numbers: {order}");
         return new ProbeOrder(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5] != 0);
+    }).ToArray();
+
+// --hires turn:offer_slot:sector,... places the human's hires (ProbeHire).
+static IReadOnlyList<ProbeHire> ParseHires(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(hire =>
+    {
+        var parts = hire.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        if (parts.Length != 3 || parts[1] is < 0 or > 2) throw new FormatException($"A hire needs a turn, an offer slot 0 to 2 and a sector: {hire}");
+        return new ProbeHire(parts[0], parts[1], parts[2]);
     }).ToArray();
 
 static uint? HexOption(string[] args, string name) =>

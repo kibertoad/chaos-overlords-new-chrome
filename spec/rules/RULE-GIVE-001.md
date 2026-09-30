@@ -1,10 +1,10 @@
 ---
 id: RULE-GIVE-001
 title: Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-002, FND-EQUIP-003, FND-EQUIP-007, FND-EQUIP-008, FND-GIVE-001, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-002, FND-EQUIP-003, FND-EQUIP-007, FND-EQUIP-008, FND-GIVE-001, EXP-TURN-027, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-002, FMT-STATE-001]

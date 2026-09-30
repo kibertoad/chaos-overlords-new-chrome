@@ -44,11 +44,12 @@ namespace Rechaos.Tests;
 /// Goon and at Crime Lord, where family-1 gangs snitch and attack (RULE-AI-020) and a Goon computer
 /// player's Influence sets a site's progress to its pool plus its successes (BUG-INFLUENCE-001). In
 /// EXP-TURN-025 and EXP-TURN-026, Kill 'Em All and Armageddon with the human idle, family-6 gangs
-/// fail their strength test and buy equipment (RULE-AI-025). No recorded run has a Give yet.
+/// fail their strength test and buy equipment (RULE-AI-025). In EXP-TURN-027 the human hires a
+/// second gang and its first gang gives it a weapon and an armor (RULE-HIRE-001, RULE-GIVE-001).
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -273,6 +274,15 @@ public sealed class OriginalNewGameExperimentTests
             var human = recorded.Humans[0];
             foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))
                 Submit(recorder, match, human, order);
+            // RULE-HIRE-003: the probe writes the offer slot's hire order as the hire screen does;
+            // the rebuild queues the gang that slot offers.
+            foreach (var hire in recorded.Hires.Where(hire => hire.Turn == turn + 1))
+            {
+                var offered = match.Players[human.Value].HireOfferSlots[hire.OfferSlot].GangDefinitionId;
+                Assert.NotNull(offered);
+                var result = recorder.QueueHire(human, offered.Value, hire.Sector);
+                Assert.True(result.Accepted, $"turn {hire.Turn}: the rebuild refused the hire: {result}");
+            }
             recorder.FinishCommand(human);
             // A human eliminated in this turn's resolution plans no more; the recording stops at
             // the next planning phase that comes (RULE-OBJECTIVE-005).
@@ -305,6 +315,9 @@ public sealed class OriginalNewGameExperimentTests
             // target of a Sell is the item mask, weapon 1, armor 2 and misc 4 (FMT-STATE-001); the
             // rebuild takes the items in that slot order (RULE-SELL-001).
             GangAction.Sell => SellCommand(human, gang, order.Target),
+            // target of a Give is the item mask and target_2 the recipient's roster slot
+            // (FMT-STATE-001, RULE-GIVE-001).
+            GangAction.Give => GiveCommand(human, gang, match.Players[human.Value].Gangs[order.Target2], order.Target),
             GangAction.Bribe or GangAction.Chaos or GangAction.Control or GangAction.Heal
                 or GangAction.Hide or GangAction.Snitch or GangAction.Terminate =>
                 new GameCommand(human, gang.Id, action, CommandTarget.None, order.Repeat),
@@ -325,6 +338,20 @@ public sealed class OriginalNewGameExperimentTests
             var numbers = match.Groups.Values.Skip(1)
                 .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
             return new(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5] != 0);
+        }
+    }
+
+    private sealed record RecordedHire(int Turn, int OfferSlot, int Sector)
+    {
+        // "turn 1: offer slot 0 sector 12", as the probe writes it.
+        public static RecordedHire Parse(string value)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(value,
+                @"^turn (\d+): offer slot ([0-2]) sector (\d+)$");
+            Assert.True(match.Success, value);
+            var numbers = match.Groups.Values.Skip(1)
+                .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            return new(numbers[0], numbers[1], numbers[2]);
         }
     }
 
@@ -367,11 +394,23 @@ public sealed class OriginalNewGameExperimentTests
         short?[] slots = [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
         var items = Enumerable.Range(0, slots.Length)
             .Where(slot => (mask & (1 << slot)) != 0)
-            .Select(slot => CommandTarget.Item(slots[slot] ?? throw new InvalidOperationException(
+            .Select(slot => (CommandTarget?)CommandTarget.Item(slots[slot] ?? throw new InvalidOperationException(
                 $"The Sell mask {mask} selects an empty slot.")))
             .ToArray();
-        return new GameCommand(human, gang.Id, GangAction.Sell, items[0], false,
+        return new GameCommand(human, gang.Id, GangAction.Sell, items[0]!.Value, false,
             items.ElementAtOrDefault(1), items.ElementAtOrDefault(2));
+    }
+
+    private static GameCommand GiveCommand(PlayerId human, MatchGangState gang, MatchGangState recipient, int mask)
+    {
+        short?[] slots = [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
+        var items = Enumerable.Range(0, slots.Length)
+            .Where(slot => (mask & (1 << slot)) != 0)
+            .Select(slot => (CommandTarget?)CommandTarget.Item(slots[slot] ?? throw new InvalidOperationException(
+                $"The Give mask {mask} selects an empty slot.")))
+            .ToArray();
+        return new GameCommand(human, gang.Id, GangAction.Give, CommandTarget.Gang(recipient.Id), false,
+            items[0], items.ElementAtOrDefault(1), items.ElementAtOrDefault(2));
     }
 
     private static RecordedRun Run(string experiment, int run) => Recorded.Value[experiment][run];
@@ -396,6 +435,10 @@ public sealed class OriginalNewGameExperimentTests
                 .Where(input => input.GetProperty("name").GetString() == "order")
                 .Select(input => RecordedOrder.Parse(input.GetProperty("value").GetString()!))
                 .ToArray();
+            Hires = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "hire")
+                .Select(input => RecordedHire.Parse(input.GetProperty("value").GetString()!))
+                .ToArray();
             Seed = run.GetProperty("rng_state").GetInt32();
             DoneCount = run.TryGetProperty("done_at_roll", out var done) ? done.GetArrayLength() : 0;
             Rolls = run.GetProperty("rolls").EnumerateArray()
@@ -415,6 +458,7 @@ public sealed class OriginalNewGameExperimentTests
         public int Seed { get; }
         public int DoneCount { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
+        public IReadOnlyList<RecordedHire> Hires { get; }
 
         // controller: 0 for a human at this computer (FND-SETUP-002), -2 for one eliminated who has
         // not yet seen the card (RULE-OBJECTIVE-005).
