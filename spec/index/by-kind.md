@@ -569,7 +569,7 @@
 
 ## experiments
 
-19 entries.
+20 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -592,6 +592,7 @@
 | [EXP-TURN-013](../experiments/EXP-TURN-013.md) | Do twenty-five turns of a new local Eliminate game draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-014](../experiments/EXP-TURN-014.md) | Do twenty-five turns of a new local Big Man game draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-015](../experiments/EXP-TURN-015.md) | Do a human gang's Equip and Sell orders, and eight turns of the computer players, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-016](../experiments/EXP-TURN-016.md) | Do a human gang's Equip orders and one Sell of three items pay and resolve as the spec gives? | recorded |
 
 ## bugs
 

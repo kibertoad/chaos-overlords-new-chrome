@@ -43,6 +43,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-013](../experiments/EXP-TURN-013.md) | builds |
 | [EXP-TURN-014](../experiments/EXP-TURN-014.md) | builds |
 | [EXP-TURN-015](../experiments/EXP-TURN-015.md) | builds |
+| [EXP-TURN-016](../experiments/EXP-TURN-016.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -721,7 +722,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [EXP-TURN-015](../experiments/EXP-TURN-015.md) | body |
+| [EXP-TURN-016](../experiments/EXP-TURN-016.md) | body |
 | [FND-FINANCE-002](../findings/FND-FINANCE-002.md) | body |
 | [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | body |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | body |
@@ -810,6 +811,7 @@ None.
 | [EXP-TURN-013](../experiments/EXP-TURN-013.md) | body |
 | [EXP-TURN-014](../experiments/EXP-TURN-014.md) | body |
 | [EXP-TURN-015](../experiments/EXP-TURN-015.md) | body |
+| [EXP-TURN-016](../experiments/EXP-TURN-016.md) | body |
 
 ## EXP-TURN-002
 
@@ -919,9 +921,16 @@ None.
 
 | Cited by | In |
 |---|---|
-| [BUG-SELL-001](../bugs/BUG-SELL-001.md) | body, evidence |
+| [EXP-TURN-016](../experiments/EXP-TURN-016.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | body, evidence |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | body, evidence |
+
+## EXP-TURN-016
+
+| Cited by | In |
+|---|---|
+| [BUG-SELL-001](../bugs/BUG-SELL-001.md) | body, evidence |
+| [EXP-TURN-015](../experiments/EXP-TURN-015.md) | body |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | evidence |
 
 ## FMT-AUDIO-001
@@ -6317,7 +6326,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [EXP-TURN-015](../experiments/EXP-TURN-015.md) | body |
+| [EXP-TURN-016](../experiments/EXP-TURN-016.md) | body |
 | glossary: EquipCashShort | glossary |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | body, related |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | body |
@@ -6819,7 +6828,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | body, related |
-| [EXP-TURN-015](../experiments/EXP-TURN-015.md) | body |
+| [EXP-TURN-016](../experiments/EXP-TURN-016.md) | body |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | body, related |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | body, related |
 

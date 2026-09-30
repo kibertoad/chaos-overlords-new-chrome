@@ -7,7 +7,7 @@ superseded_by: []
 impact: rules
 intent: unintended
 player_reliance: unknown
-evidence: [FND-EQUIP-002, FND-EQUIP-007, SRC-MANUAL-GOG, EXP-TURN-015]
+evidence: [FND-EQUIP-002, FND-EQUIP-007, SRC-MANUAL-GOG, EXP-TURN-016]
 conflicting: []
 split_with: []
 related: [RULE-SELL-001, SCR-SELL-001]
@@ -33,7 +33,7 @@ previous branch stored. Cash and cash earned are then raised once by that local
 `0x00474BC5` and the two additions at `0x00474BDF` and `0x00474BF3`
 (FND-EQUIP-007); RULE-SELL-001 gives the procedure. The panel
 lets the player select every filled slot, and the manual says each selected
-item is sold for half its price. In EXP-TURN-015 a gang sells a weapon, an
+item is sold for half its price. In EXP-TURN-016 a gang sells a weapon, an
 armor and a miscellaneous item at once and its player's cash grows by 1, half
 the miscellaneous item's Cost of 3, where the three halves would make 3.
 

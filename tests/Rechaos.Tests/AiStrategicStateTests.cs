@@ -223,10 +223,8 @@ public sealed class AiStrategicStateTests
         match.PrepareAiPlanning(player);
         var preparedFirstAction = match.AiPlanning.PlannedAction(player, 0);
 
-        // A Move to the gang's own sector is refused for every seat (DEV-AI-002).
         var rejected = match.Submit(new GameCommand(
-            player, new GangId(0), GangAction.Move,
-            CommandTarget.Sector(match.Players[0].Gangs[0].SectorId)));
+            player, new GangId(0), GangAction.Move, CommandTarget.Sector(18)));
         var accepted = match.Submit(new GameCommand(
             player, new GangId(7), GangAction.Hide, CommandTarget.None));
 
@@ -262,29 +260,25 @@ public sealed class AiStrategicStateTests
         ],
         difficulty);
 
-    // RULE-MOVE-001, RULE-AI-006, EXP-TURN-015: the original carries out a computer player's Move to
-    // a sector more than one step away, so validation holds the planner's Move to no distance while
-    // a person's order, and the option catalog the Advanced policy picks from, stay with neighbours.
+    // DEV-AI-007: the original carries out a computer player's Move to a sector several steps away
+    // (RULE-MOVE-001, EXP-TURN-015); the rebuild holds every seat's Move to the neighbours.
     [Theory]
-    [InlineData(PlayerController.Computer, true)]
-    [InlineData(PlayerController.Human, false)]
-    public void OnlyAComputerPlannedMoveGoesBeyondTheNeighbours(PlayerController controller, bool accepted)
+    [InlineData(PlayerController.Computer)]
+    [InlineData(PlayerController.Human)]
+    public void NoSeatMovesBeyondTheNeighbours(PlayerController controller)
     {
         var match = CreateOnePlayerMatch(controller);
         var player = new PlayerId(0);
         match.FinishUpkeep();
         var gang = match.Players[0].Gangs[0];
-        var distant = Enumerable.Range(0, MatchLimits.SectorCount)
-            .First(sector => sector != gang.SectorId && !CommandValidator.IsNeighbour(gang.SectorId, sector));
+        var column = gang.SectorId % MatchLimits.BoardWidth;
+        var distant = gang.SectorId - column + (column < 4 ? column + 2 : column - 2);
 
         var validation = CommandValidator.Validate(
             match, new GameCommand(player, gang.Id, GangAction.Move, CommandTarget.Sector(distant)));
 
-        Assert.Equal(accepted, validation.IsValid);
-        Assert.All(
-            CommandOptionCatalog.LegalCommands(match, player, gang.Id)
-                .Where(command => command.Action == GangAction.Move),
-            command => Assert.True(CommandValidator.IsNeighbour(gang.SectorId, command.Target.Id)));
+        Assert.False(validation.IsValid);
+        Assert.Equal(CommandValidationCode.DestinationNotAdjacent, validation.Code);
     }
 
     private static MatchState CreateOnePlayerMatch(

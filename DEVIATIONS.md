@@ -466,18 +466,6 @@ The correction applied under the Original AI policy as well. Decided 2026-09-17.
 The resolved action can differ from the original's, which changes the match when it does. Decided
 2026-09-17.
 
-A planned Move is not held to the neighbouring sectors. The sector selector can return a sector
-more than one step away (RULE-AI-006), and the original's Move pass puts the gang there
-(RULE-MOVE-001, EXP-TURN-015), so command validation does not check the distance of a Move for
-a seat the computer planner plans, a simulated human's included. The order panel and the option
-catalog, which the Advanced policy picks its own Moves from, still offer neighbours only. Such
-Moves come to about 25 a match in Kill 'Em All and 12 in Power and Big 40. In 973 pairs of matches
-of every scenario, played to turn 208 from the same seeds with a planner-played human seat that
-could not make them, a human seat facing computer players that made them survived to the end in
-45% of the matches and one facing players that did not in 47%, a difference within the matches'
-noise (95% interval of 2.8 points either way); its turns survived and sectors held did not change
-beyond noise either. Keeping the original's Moves therefore costs no measurable balance.
-
 ## DEV-AI-003
 
 - Departs from: RULE-AI-001, RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-UI-009, SCR-UI-008
@@ -541,6 +529,30 @@ started with.
   multiply leaves them zero, so the usual match plays the same. A setting would choose between
   leaving the records alone and reproducing a corruption the rebuild's planning state refuses to
   hold.
+- Dropped: no
+
+## DEV-AI-007
+
+- Departs from: RULE-AI-006, RULE-MOVE-001
+- Reason: A computer player's gang moves only to a sector next to its own, as a human's does. The
+  original's sector selector can return a sector several steps away: when the first of its sorted
+  pairs is a neighbour it returns the tie-break's pick, and a pair that the family-0 and family-1
+  filter kept from an earlier call can tie with the neighbours (RULE-AI-006). The Move pass then
+  puts the gang in that sector at once (RULE-MOVE-001, EXP-TURN-015). The rebuild refuses such a
+  Move when the planned action becomes a command, as DEV-AI-002 does with the other planned
+  actions a human could not order, so the gang has no order that turn and keeps its planning
+  history.
+- Setting: None
+- Default: mandatory
+- Justification: The jump comes from a pair left over from another gang's search, which the
+  selector was not written to return, and it lets a computer player's gang do what no human's can:
+  the same rules apply to every player. It costs no measurable balance. Such Moves come to about
+  25 a match in Kill 'Em All and 12 in Power and Big 40. In 973 pairs of matches of every scenario,
+  played to turn 208 from the same seeds with a planner-played human seat that could not jump, the
+  human seat survived to the end in 45% of the matches when the computer players could jump and in
+  47% when they could not, a difference within the matches' noise (95% interval of 2.8 points
+  either way), and its turns survived and sectors held did not change beyond noise either. A
+  setting would keep an unfair advantage that makes no difference a player could notice.
 - Dropped: no
 
 ## DEV-EVENT-001

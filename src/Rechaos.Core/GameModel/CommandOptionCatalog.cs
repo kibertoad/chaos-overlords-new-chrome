@@ -60,11 +60,6 @@ public static class CommandOptionCatalog
         List<GameCommand> options,
         GameCommand command)
     {
-        // The catalog lists the orders a person could give, so a Move goes to a neighbour even for
-        // a seat the computer plans, whose own planned Move validation holds to no distance.
-        if (command.Action == GangAction.Move
-            && !CommandValidator.IsNeighbour(actor.SectorId, command.Target.Id))
-            return;
         if (CommandValidator.ValidateForActor(state, command, actor).IsValid) options.Add(command);
     }
 

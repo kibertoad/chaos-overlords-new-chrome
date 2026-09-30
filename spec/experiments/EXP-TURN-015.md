@@ -59,20 +59,17 @@ where the rebuild has it.
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run,
 giving the Sell as one command for the three items. The rebuild makes the same
-calls with the same bounds and results and reaches the same generator position
-and state. In it the three Equips cost 3, 2 and 3, and the Sell pays 1, half
-the Cost of the miscellaneous item, where half the Cost of each of the three
-items would make 3.
-
-A rebuild that held a computer player's planned Move to the neighbouring
-sectors dropped player 5's Move to sector 5, and its next tie count for that
-player, at call 950, was 8 where the original's was 7.
+calls with the same bounds and results up to call 950. There it departs by
+DEV-AI-007: it refuses player 5's Move to sector 5 in turn 5, so the gang
+stays in sector 9, and at call 950 its tie count for that player is 8 where
+the original's is 7. The test checks that the first differing call stays at
+950. EXP-TURN-016 repeats the first four turns, which end before that Move,
+and the rebuild reaches the original's state there.
 
 ## Conclusion
 
-The run agrees with RULE-EQUIP-001 and with RULE-SELL-001 and BUG-SELL-001:
-selling several items pays half the Cost of the last selected slot only. It
-also shows that the sector selector can return a sector more than one step
+The run shows that the sector selector can return a sector more than one step
 away, when the first pair after the sort is a neighbour and a pair kept from
 an earlier call ties with it (RULE-AI-006), and that the Move pass then puts
-the gang in that sector (RULE-MOVE-001).
+the gang in that sector (RULE-MOVE-001). Up to that Move it agrees with the
+spec; the Equips and the Sell are compared in EXP-TURN-016.
