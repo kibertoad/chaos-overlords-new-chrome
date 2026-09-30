@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 111 |
-| `validated` | 111 |
+| `implemented` | 108 |
+| `validated` | 114 |
 
 | Code | Rows |
 |---|---|
@@ -394,10 +394,10 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-OBJECTIVE-001` | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported | complete | None | None | implemented | None |
+| `RULE-OBJECTIVE-001` | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Every EXP-TURN run compares the stored scores, and EXP-TURN-036 ends a match on its scenario test. No run ends with a lone survivor. |
 | `RULE-OBJECTIVE-002` | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every stored score and standing in Kill 'Em All, Siege, Eliminate, Big Man, Power, Armageddon and Greed, eliminated players included. No run plays Acceptance or Dominance. |
 | `RULE-OBJECTIVE-003` | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | In EXP-TURN-022 (Eliminate) the human loses the Right Hands while holding a sector, which turns neutral; EXP-TURN-017 and others eliminate a player left with nothing. |
-| `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | supported | complete | None | None | implemented | The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
+| `RULE-OBJECTIVE-004` | Each scenario's own end condition, and the Dominance weights | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-036 ends a six-month Greed with the resolution of turn 26. In every other run the scenario test fails each turn; no run ends Power, Acceptance, Dominance, Big 40, Siege, Big Man or Armageddon on its objective. The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
 | `RULE-OBJECTIVE-005` | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported | complete | None | None | implemented | Online the humans sit at different computers, so the match ends this way only when every human in it is out, and each client shows the results table. |
 | `SCR-OBJECTIVE-001` | Player Rankings panel with one vertical rail per player and portraits placed by score | supported | complete | None | None | implemented | None |
 | `SCR-OBJECTIVE-002` | Private elimination card shown to an eliminated local human over the city screen | supported | complete | None | `DEV-SETUP-002` | implemented | None |
@@ -406,7 +406,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-AWARDS-001` | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | supported | complete | None | None | implemented | None |
+| `RULE-AWARDS-001` | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-036 ends a Greed and compares each player's awards: the Safe and the Dollar Sign go to their players, and nobody reaches the thresholds of the other three. No run gives a Fist, a Skull or a Big Fat Chicken, or ties an award. |
 | `RULE-AWARDS-002` | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported | complete | None | None | implemented | None |
 | `SCR-AWARDS-001` | Endgame screen listing the players by place with their awards or their statistics | supported | complete | None | `DEV-SETUP-002` | implemented | Row typography and timing are unconfirmed against captures of the original. |
 | `SCR-AWARDS-002` | Victory splash shown on the endgame's Awards tab when one player is left | supported | complete | None | None | implemented | None |
