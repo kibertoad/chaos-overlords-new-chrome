@@ -244,6 +244,52 @@ public sealed partial class AiTurnPlannerTests
     }
 
     [Fact]
+    public void SoloControlEstimateCountsEveryOtherPlayersVisibleGang()
+    {
+        // RULE-AI-004 solo_control_ok, EXP-TURN-021: in an owned sector the defence adds the
+        // visible gangs of every player other than the attacker's, not only the owner's.
+        var data = BundledOriginalData.Load();
+        var definition = data.Gangs.Where(candidate => candidate.Stats.Detect >= candidate.Stats.Stealth)
+            .OrderByDescending(candidate => candidate.Stats.Control).First();
+
+        var alone = CreateOwnedSectorMatch(data, definition.Id, bystanderSector: 1);
+        var crowded = CreateOwnedSectorMatch(data, definition.Id, bystanderSector: 0);
+
+        Assert.True(crowded.CanPlayerDetectGang(new PlayerId(0), new GangId(30)));
+        Assert.True(AiTurnPlanner.CanSoloControl(alone, new PlayerId(0), alone.FindGang(new GangId(10))!));
+        Assert.False(AiTurnPlanner.CanSoloControl(crowded, new PlayerId(0), crowded.FindGang(new GangId(10))!));
+    }
+
+    // Sector 0 is player 1's, with none of its gangs there; player 0's gang stands in it and
+    // player 2's gang in bystanderSector.
+    private static MatchState CreateOwnedSectorMatch(OriginalData data, short definitionId, int bystanderSector)
+    {
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "OWNER", PlayerController.Computer),
+            new(new PlayerId(2), "BYSTANDER", PlayerController.Computer)
+        ];
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20, [new MatchGangState(new GangId(10), new PlayerId(0), definitionId, 0, 10)]),
+            new(setups[1], 20, [new MatchGangState(new GangId(20), new PlayerId(1), definitionId, 9, 10)]),
+            new(setups[2], 20, [new MatchGangState(new GangId(30), new PlayerId(2), definitionId, bystanderSector, 10)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 5),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 5)
+            ], owner: id == 0 ? new PlayerId(1) : null,
+                income: ManualRules.MinimumSectorIncome))
+            .ToArray();
+        return new MatchState(data, new MatchSetup(
+            ScenarioId.Power, GameDuration.SixMonths, 23, setups), players, sectors);
+    }
+
+    [Fact]
     public void FamilyOneNoActionBranchDrivesLiveHealCrackdownAndOlderSnitchChoices()
     {
         var data = BundledOriginalData.Load();
