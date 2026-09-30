@@ -4,7 +4,7 @@ title: The shared AI sector selector scores the nearest sectors by mode and rout
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-AI-026, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052, FND-AI-066, FND-AI-069, EXP-TURN-004, EXP-TURN-006, EXP-TURN-007, EXP-TURN-010]
+evidence: [FND-AI-005, FND-AI-026, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052, FND-AI-066, FND-AI-069, EXP-TURN-004, EXP-TURN-006, EXP-TURN-007, EXP-TURN-010, EXP-TURN-015]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-007, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -404,6 +404,13 @@ sector scores, even when that sector is the gang's own and is removed
 afterwards. A sector already holding six of the player's gangs is never
 entered by a routing step, but a directly returned adjacent target is not
 tested against that limit.
+
+The direct return tests only the first pair after the sort. The tied pick it
+returns can be any pair with the same score, and for family 0 and 1 the late
+filter leaves the pairs of filtered sectors as an earlier call wrote them, so
+a pair far from the gang can tie with a neighbour. The selector then returns a
+sector more than one step away, and the Move pass puts the gang there
+(RULE-MOVE-001, EXP-TURN-015).
 
 A target read past the end of `selector_pairs` can lie off the board, and a
 routing step toward it can then leave the city. Its count is read at

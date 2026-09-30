@@ -466,6 +466,18 @@ The correction applied under the Original AI policy as well. Decided 2026-09-17.
 The resolved action can differ from the original's, which changes the match when it does. Decided
 2026-09-17.
 
+A planned Move is not held to the neighbouring sectors. The sector selector can return a sector
+more than one step away (RULE-AI-006), and the original's Move pass puts the gang there
+(RULE-MOVE-001, EXP-TURN-015), so command validation does not check the distance of a Move for
+a seat the computer planner plans, a simulated human's included. The order panel and the option
+catalog, which the Advanced policy picks its own Moves from, still offer neighbours only. Such
+Moves come to about 25 a match in Kill 'Em All and 12 in Power and Big 40. In 973 pairs of matches
+of every scenario, played to turn 208 from the same seeds with a planner-played human seat that
+could not make them, a human seat facing computer players that made them survived to the end in
+45% of the matches and one facing players that did not in 47%, a difference within the matches'
+noise (95% interval of 2.8 points either way); its turns survived and sectors held did not change
+beyond noise either. Keeping the original's Moves therefore costs no measurable balance.
+
 ## DEV-AI-003
 
 - Departs from: RULE-AI-001, RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-UI-009, SCR-UI-008

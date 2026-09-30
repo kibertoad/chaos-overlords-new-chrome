@@ -154,7 +154,7 @@
 | [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported |
 | [RULE-HIRE-004](../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order | established |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported |
-| [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported |
+| [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | Move pass carries out every Move, player by player, after normalizing each player's destinations | established |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported |
@@ -174,7 +174,7 @@
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws | established |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | supported |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | supported |
-| [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | supported |
+| [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | established |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | established |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | established |
@@ -569,7 +569,7 @@
 
 ## experiments
 
-18 entries.
+19 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -591,6 +591,7 @@
 | [EXP-TURN-012](../experiments/EXP-TURN-012.md) | Do twenty-three turns of a new local Siege game draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-013](../experiments/EXP-TURN-013.md) | Do twenty-five turns of a new local Eliminate game draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-014](../experiments/EXP-TURN-014.md) | Do twenty-five turns of a new local Big Man game draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-015](../experiments/EXP-TURN-015.md) | Do a human gang's Equip and Sell orders, and eight turns of the computer players, draw and resolve as the spec gives? | recorded |
 
 ## bugs
 
@@ -613,7 +614,7 @@
 | [BUG-OPTIONS-001](../bugs/BUG-OPTIONS-001.md) | Changes made in the Options menu are never saved | supported |
 | [BUG-OPTIONS-002](../bugs/BUG-OPTIONS-002.md) | An option missing from the registry takes the value of the option read before it | supported |
 | [BUG-SAVE-001](../bugs/BUG-SAVE-001.md) | Loading a truncated save overwrites part of the game state and keeps the rest | supported |
-| [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them | supported |
+| [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them | established |
 
 ## screens
 

@@ -8,8 +8,8 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-014 go on to press Done for one
-/// to twenty-five turns, EXP-TURN-009 to EXP-TURN-014 with orders for the human's gang, and stop at
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-015 go on to press Done for one
+/// to twenty-five turns, EXP-TURN-009 to EXP-TURN-015 with orders for the human's gang, and stop at
 /// the next planning phase. Each run gives the seed, every roll(n) with its call site and result, and
 /// the state the recording stops at. The rebuild plays the same match from the same seed and
 /// settings and has to make the same rolls in the same order and reach the same generator position
@@ -30,12 +30,13 @@ namespace Rechaos.Tests;
 /// its weapon skills (RULE-COMBAT-001), each sector's base Tolerance after its return toward normal
 /// (RULE-TOLERANCE-001) and every attitude after its rise, or at Homicidal Maniac in EXP-TURN-008
 /// without one (RULE-AI-015). EXP-TURN-010's first run brings police attacks and a Crackdown that
-/// neutralizes a sector (RULE-POLICE-001, RULE-POLICE-002, RULE-POLICE-003). No recorded run has a
-/// Give, a Sell or a Terminate yet.
+/// neutralizes a sector (RULE-POLICE-001, RULE-POLICE-002, RULE-POLICE-003). EXP-TURN-015 has the
+/// human's gang buy three items and sell them in one order (RULE-SELL-001), and a computer player's
+/// gang move several sectors at once (RULE-MOVE-001). No recorded run has a Give or a Terminate yet.
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));

@@ -309,16 +309,22 @@ public static class CommandValidator
             return CommandValidation.Reject(CommandValidationCode.TargetNotFound);
         if (rule.SpatialConstraint != SpatialConstraint.AdjacentSector)
             return CommandValidation.Valid();
-        var sourceX = actor.SectorId % MatchLimits.BoardWidth;
-        var sourceY = actor.SectorId / MatchLimits.BoardWidth;
-        var targetX = target.Id % MatchLimits.BoardWidth;
-        var targetY = target.Id / MatchLimits.BoardWidth;
-        var deltaX = Math.Abs(sourceX - targetX);
-        var deltaY = Math.Abs(sourceY - targetY);
-        return Math.Max(deltaX, deltaY) == 1
+        // RULE-MOVE-001 sets the gang's sector to the target whatever the distance, and the sector
+        // selector can return a tied sector beyond the neighbours (RULE-AI-006). A Move the
+        // computer planner plans, a simulated human's included, is therefore held to no distance;
+        // the order panel and the option catalog offer neighbours only. A Move to the gang's own
+        // sector stays refused for every seat (DEV-AI-002).
+        return IsNeighbour(actor.SectorId, target.Id)
+                || (state.IsPlannedByComputer(actor.Owner) && target.Id != actor.SectorId)
             ? CommandValidation.Valid()
             : CommandValidation.Reject(CommandValidationCode.DestinationNotAdjacent);
     }
+
+    /// <summary>Whether sector <paramref name="to"/> is one step from <paramref name="from"/>.</summary>
+    internal static bool IsNeighbour(int from, int to) =>
+        Math.Max(
+            Math.Abs(from % MatchLimits.BoardWidth - to % MatchLimits.BoardWidth),
+            Math.Abs(from / MatchLimits.BoardWidth - to / MatchLimits.BoardWidth)) == 1;
 
     private static CommandValidation ValidateSiteTarget(
         MatchState state,
