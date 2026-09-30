@@ -1,10 +1,10 @@
 ---
 id: RULE-EVENT-013
 title: Losing control of a sector is reported to the previous owner
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, FND-EVENT-004]
+evidence: [FND-EVENT-001, FND-EVENT-004, EXP-TURN-011]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]

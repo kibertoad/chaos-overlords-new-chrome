@@ -1,10 +1,10 @@
 ---
 id: RULE-EVENT-002
 title: Recording a Last Turn report keeps the first 32 reports of a resolution
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG]
+evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG, EXP-TURN-010, EXP-TURN-017]
 conflicting: []
 split_with: []
 related: [FMT-STATE-006]

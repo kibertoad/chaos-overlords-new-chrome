@@ -108,8 +108,7 @@ finding or experiment is in the spec.
 - RULE-RESEARCH-001: two gangs of one player researching the same item that
   the first can finish; record the remaining research and the report.
 - RULE-BRIBE-001 / BUG-BRIBE-001: bribe a sector with Tolerance 39 twice in
-  one turn; record 45 (no cap) and cash down by 6. Capture the Last Turn
-  report of a Bribe at 2 cash (EXP-TURN-033 turn 10 sets it up).
+  one turn; record 45 (no cap) and cash down by 6.
 - RULE-SNITCH-001: Snitch while in debt; record no cash change. EXP-TURN-032
   covers the clamp at 1 with the player's cash positive.
 - RULE-TOLERANCE-001: after one Bribe, record the sector's Tolerance at each
@@ -121,8 +120,6 @@ finding or experiment is in the spec.
 
 ## Movement, Control, gangs, equipment and money
 
-- RULE-EVENT-014: the Last Turn report of an Equip one short. EXP-TURN-031
-  turn 7 sets it up; capture the Last Turn Events panel of turn 8.
 - RULE-EQUIP-003: Factory price. Start: a player owning a sector with a
   completed Factory. Equip an item whose Cost is not a multiple of 3 from a
   gang in that sector and from one outside it. Record cash before and after.
@@ -213,8 +210,9 @@ finding or experiment is in the spec.
 - RULE-EVENT-002: produce more than 32 reports for one player in one turn (for
   example many failed hires and a Crackdown) and check that the first 32 are
   kept in order.
-- RULE-EVENT-003: eliminate a player in a hot-seat game and record which slots
-  see the report and in what order.
+- RULE-EVENT-003: eliminate a player in a hot-seat game and record the order
+  in which the humans see the report. EXP-TURN-017 shows that all six slots
+  record it.
 - RULE-EVENT-004: move a gang out of a sector in the turn it is cracked down on
   and check that its player still gets the report.
 - SCR-COMLINK-001, RULE-COMLINK-004, RULE-COMLINK-005: in a two-human game,
