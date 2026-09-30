@@ -87,13 +87,20 @@ block then multiplies table element `4 * 9 + 1`, the score of sector 44, and
 leaves sector 12 at 1 below sector 11's 5 (FND-AI-069). A reading in which the
 common block multiplied the visited sector gave both 5 and drew `roll(2)`.
 
-The third run, of step 3, traced the selector over all twenty-five turns. At
-call 10662 of `roll` the original's call for player 5's gang 16, in sector 45,
-returned 52, and sector 52 then held six of player 5's gangs. The Move stayed
-in the gang's orders and the Move repair (RULE-MOVE-002) let the gang in, so
-at call 11615 its call was made from sector 52 and returned 45. A reading in
-which a Move into a sector holding six of the player's gangs is refused when
-it is planned left the gang in sector 45, where the call returned 38.
+With that reading of the common block, the first call to differ was call
+12630. The third run, of step 3, traced the selector over all twenty-five
+turns. At call 10662 of `roll` the original's call for player 5's gang 16, in
+sector 45, returned 52, and sector 52 then held six of player 5's gangs. The
+Move stayed in the gang's orders and the Move repair (RULE-MOVE-002) let the
+gang in, so at call 11615 its call was made from sector 52 and returned 45. A
+reading in which a Move into a sector holding six of the player's gangs is
+refused when it is planned left the gang in sector 45, where the call returned
+38. With the Move kept, both runs replay to the end.
+
+The other corrections FND-AI-069 makes, the owner read of -2 under a
+Crackdown and the end of mode 6 after its hostile-human bonus, come from the
+static reading. These runs do not single them out: a reading with them and
+with the Move refused when it is planned also first differed at call 12630.
 
 ## Conclusion
 
