@@ -30,6 +30,13 @@ internal static class OriginalAddresses
     public const uint PrefWarnIdle = 0x00487860;
     public const uint PrefDetailedCombat = 0x0048785C;
 
+    // RULE-AUDIO-003: effects_level and music_level, the Options dialog's volumes, and the
+    // effects_enabled and music_enabled flags the loader sets from them.
+    public const uint EffectsLevel = 0x00487864;
+    public const uint MusicLevel = 0x00487868;
+    public const uint EffectsEnabled = 0x0048783C;
+    public const uint MusicEnabled = 0x00487838;
+
     // elapsed_turns: 0 through the first turn, up by one after each resolution.
     public const uint ElapsedTurns = 0x0049CA68;
 

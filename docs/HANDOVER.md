@@ -865,30 +865,19 @@ every `roll`, presses Done, can write orders for the human's gang, and dumps
 the state; `OriginalNewGameExperimentTests` replays each run and compares every
 roll and the end state. [VALIDATION.md](VALIDATION.md) gives the commands.
 EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-010 are recorded,
-up to twenty-five turns, and every run but one replays exactly.
+up to twenty-five turns, and every run replays exactly. The probe runs the
+original silent unless `--sound` is given.
 
-- The open divergence is EXP-TURN-010's first run at call 11610, pinned by
-  `AKnownDivergenceIsStillWhereItWasFound`. RULE-AI-006's open questions give
-  the evidence: the original did not score sector 12 at 5 for player 4's
-  family-1 gang 8, in sector 20, where the rebuild scores sectors 11 and 12 at
-  5 each. Two explanations are ruled out by the dump at call 11610:
-  - The late filter keeps sector 12. Selector `0x2C` adds only gangs of other
-    players that the player can see (selector `0x91`, FND-AI-052); the
-    sector held player 4's own gang and the human's hiding gang, whose
-    `visible_to[4]` was 0, so the defence was Income 6 plus Support 0 against
-    gang 8's Force 10 plus Control 5.
-  - The multiply by five does not raise neutral sector 11. The common block
-    reads `attitude` as an INT32 at `0x004AB590 + (player * 6 + owner) * 4`
-    with the owner from selector `0x21` and no range test, so owner -1 reads
-    the entry before the player's row; for player 4 that held 10. The same
-    entry for owner -2 (a Crackdown sector) also held 10. Every entry of the
-    casualties table was 0, so selector `0x35` passes for a neutral sector.
-
-  The dump shows the pairs after the sort, which gang 8's call already
-  overwrote. The next step is a dump inside gang 8's selector call, before its
-  sort, to read the raw score table for sectors 11 and 12, then the mode-5
-  case of the original for whichever sector differs. Fix the rebuild and drop
-  the entry from `KnownDivergences`.
+- EXP-TURN-010's first run diverged at call 11610 until FND-AI-069: the sector
+  selector's common block multiplies table element `x * 9 + y` instead of the
+  visited sector, every mode reads the owner query, and mode 6 ends after its
+  hostile-human bonus. The same run also showed that a computer player's Move
+  into a sector holding six of its gangs is planned and left to the Move
+  repair; DEV-MOVE-001 now refuses only human orders.
+- Each turn of a recording costs at least 8 seconds of idle waiting: the probe
+  takes the planning phase to have begun once `elapsed_turns` has moved on and
+  no `roll` has been made for 8 seconds. A breakpoint where the human's planning
+  phase waits for input would remove that wait.
 - A human with no orders is eliminated after about thirty turns, and the probe
   then waits for a turn that never comes. Longer runs need the human's gang on
   a recurring Hide (EXP-TURN-010) or the probe needs to stop at the

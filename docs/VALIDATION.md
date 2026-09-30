@@ -354,11 +354,15 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--sound]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
-`new-game` switches full screen off in memory, ends the logos and intro movies
+`new-game` switches full screen off in memory, silences the game unless
+`--sound` is given (it sets both volumes of the Options dialog, `effects_level`
+and `music_level`, to 0 in memory with the flags RULE-AUDIO-003 derives from
+them, so no effect, movie sound or music plays; nothing the rolls or the state
+depend on reads them), ends the logos and intro movies
 by holding `left_button_down` in memory (RULE-VIDEO-001 ends a movie only when
 the button is held at one of its ticks, so a posted click is missed), presses
 Begin, records the seed and every `roll` with its call site and result, and copies

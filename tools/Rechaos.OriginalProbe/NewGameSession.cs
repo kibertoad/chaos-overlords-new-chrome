@@ -25,7 +25,7 @@ internal sealed record ProbeOrder(int Turn, int Slot, int Action, int Target, in
 internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
-    IReadOnlyList<ProbeOrder>? Orders = null)
+    IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -260,9 +260,21 @@ internal sealed class NewGameSession(
         if (call != 0xE8) _notes.Add($"The preference loader call starts with 0x{call:X2}, not a call.");
         _process.Write(OriginalAddresses.PrefFullScreen, [0]);
         _process.Write(OriginalAddresses.PrefFullScreenCopy, [0]);
+        if (!settings.Sound) Mute();
         if (settings.EndTurns == 0) return;
         _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(0));
         _process.Write(OriginalAddresses.PrefDetailedCombat, BitConverter.GetBytes(0));
+    }
+
+    // Without --sound the run is silent, as if both volumes of the Options dialog were set to 0
+    // (RULE-AUDIO-003): no effect, movie sound or music plays. Nothing the rolls or the state
+    // depend on reads these values.
+    private void Mute()
+    {
+        _process.Write(OriginalAddresses.EffectsLevel, BitConverter.GetBytes(0));
+        _process.Write(OriginalAddresses.MusicLevel, BitConverter.GetBytes(0));
+        _process.Write(OriginalAddresses.EffectsEnabled, [0]);
+        _process.Write(OriginalAddresses.MusicEnabled, [0]);
     }
 
     // Writes what the setup screen's controls would have committed (FND-SETUP-013): the screen is
