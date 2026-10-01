@@ -184,6 +184,14 @@ None known.
 
 ## Open questions
 
+- EXP-TURN-020 directly checks the successful weight-10 attack branch: call
+  10549 draws the sole human target and the attack resolves. The fixture
+  compares the complete draw stream and final state, but does not isolate the
+  failed or non-hostile attack fallthrough, weapon and armor upgrade cooldowns,
+  Heal, best-Research-sector routing and ties, Research-site Influence,
+  continuation and type cycling, fallback scans and the fixed item list,
+  research exhaustion and family change, or the late Greed Terminate override.
+  The attack check alone does not establish the research procedure.
 - The item `type` numbers (0 melee, 1 blade, 2 ranged, 3 armor, 4
   miscellaneous) are assumptions shared with RULE-AI-005.
 - A previous Research of an item of type 4 that is not on the fixed list, or of

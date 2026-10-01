@@ -25,8 +25,8 @@ environment: null
 
 Family 10's handler `0x0042A6E0` first calls selector `0x72`, which scans the
 researched armor items (type 3) whose Tech is at most the gang's own Tech and
-keeps the first strictly greatest Defense improvement. An unarmored gang uses
-item 1 as its zero-Defense baseline. The handler accepts the armor only when
+keeps the first strictly greatest Stealth improvement (FND-AI-055). An
+unarmored gang starts from item 1. The handler accepts the armor only when
 the +14 cooldown is at most 0 and the item's cost is at most cash, and then
 writes Equip and the literal cooldown 2.
 

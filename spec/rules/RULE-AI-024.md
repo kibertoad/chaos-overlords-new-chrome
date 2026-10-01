@@ -59,6 +59,14 @@ None known.
 
 ## Open questions
 
+- EXP-TURN-020 directly checks the weight-10 attack branch after Attack, Hide
+  or Move: call 10547 draws the sole human target and the attack resolves. The
+  fixture compares the complete draw stream and final state, but does not
+  isolate the remaining `site_builder` branches: Heal, best Support site and
+  continued Influence, solo Control, mode-7 movement, equipment cooldowns,
+  failed attacks, three-Move family changes, action cases without a body and
+  the late Greed Terminate override. Those branches remain statically supported;
+  the attack check alone does not establish the Support-building procedure.
 - FND-AI-034 says the handler has "the same action switch and ending" as family
   3; that the unrecorded cases and the three-Move test are also the same is
   assumed.

@@ -1,7 +1,7 @@
 ---
 id: RULE-HIRE-001
 title: Hires and snubs are carried out player by player and offer slot by offer slot
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-HIRE-001, FND-HIRE-002, FND-HIRE-005, FND-HIRE-006, FND-EQUIP-006, FND-EVENT-001, FND-TURN-005, FND-EXE-004, EXP-TURN-027, EXP-TURN-035, SRC-MANUAL-GOG]
