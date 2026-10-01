@@ -56,7 +56,10 @@ namespace Rechaos.Tests;
 /// a sector's base Tolerance to the clamp at 1 (RULE-SNITCH-001, RULE-TOLERANCE-002). In
 /// EXP-TURN-033 the human bribes every turn until a Bribe meets 2 cash and fails (RULE-BRIBE-001).
 /// EXP-TURN-037 plays a six-month Greed to its end with the 26th resolution (RULE-OBJECTIVE-001,
-/// RULE-OBJECTIVE-004) and compares the awards the endgame gives (RULE-AWARDS-001).
+/// RULE-OBJECTIVE-004) and compares the awards the endgame gives (RULE-AWARDS-001). EXP-TURN-039 and
+/// EXP-TURN-038 do the same in Acceptance and Dominance with the human hiding every turn, where a
+/// site completed in a turn counts in that turn's score (RULE-OBJECTIVE-002) and in the sector and
+/// gang refresh that ends the match (RULE-SITE-001, RULE-GANG-001).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -64,7 +67,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-039", "EXP-TURN-038"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -209,13 +212,20 @@ public sealed class OriginalNewGameExperimentTests
         foreach (var sector in match.Sectors)
         {
             var s = sector.Id;
-            Assert.Equal(recorded.Sector(s, "owner"), sector.Owner?.Value ?? -1);
-            Assert.Equal(recorded.Sector(s, "income"), sector.Income);
-            Assert.Equal(recorded.Sector(s, "base_tolerance"), sector.BaseTolerance);
-            Assert.Equal(recorded.Sector(s, "tolerance"), sector.Tolerance);
-            Assert.Equal(recorded.Sector(s, "support"), sector.Support);
-            Assert.Equal(recorded.Sector(s, "cash_yield"), sector.CashYield);
-            Assert.Equal(recorded.Sector(s, "crackdown_turns"), sector.CrackdownTurnsRemaining);
+            Assert.True(recorded.Sector(s, "owner") == (sector.Owner?.Value ?? -1),
+                $"sector {s} owner: the original holds {recorded.Sector(s, "owner")}, the rebuild {sector.Owner?.Value ?? -1}");
+            Assert.True(recorded.Sector(s, "income") == sector.Income,
+                $"sector {s} income: the original holds {recorded.Sector(s, "income")}, the rebuild {sector.Income}");
+            Assert.True(recorded.Sector(s, "base_tolerance") == sector.BaseTolerance,
+                $"sector {s} base_tolerance: the original holds {recorded.Sector(s, "base_tolerance")}, the rebuild {sector.BaseTolerance}");
+            Assert.True(recorded.Sector(s, "tolerance") == sector.Tolerance,
+                $"sector {s} tolerance: the original holds {recorded.Sector(s, "tolerance")}, the rebuild {sector.Tolerance}");
+            Assert.True(recorded.Sector(s, "support") == sector.Support,
+                $"sector {s} support: the original holds {recorded.Sector(s, "support")}, the rebuild {sector.Support}");
+            Assert.True(recorded.Sector(s, "cash_yield") == sector.CashYield,
+                $"sector {s} cash_yield: the original holds {recorded.Sector(s, "cash_yield")}, the rebuild {sector.CashYield}");
+            Assert.True(recorded.Sector(s, "crackdown_turns") == sector.CrackdownTurnsRemaining,
+                $"sector {s} crackdown_turns: the original holds {recorded.Sector(s, "crackdown_turns")}, the rebuild {sector.CrackdownTurnsRemaining}");
             for (var site = 0; site < 3; site++)
             {
                 Assert.Equal(recorded.Sector(s, $"sites[{site}].definition"), sector.Sites[site].DefinitionId);

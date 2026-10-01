@@ -572,7 +572,7 @@
 
 ## experiments
 
-41 entries.
+43 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -617,6 +617,8 @@
 | [EXP-TURN-035](../experiments/EXP-TURN-035.md) | Does a hire the player could afford at planning fail, with a cash report, once an Equip has spent the cash? | recorded |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | Do repeated turn runs agree on running totals, hire roles and the planning and resolution behaviour they exercise? | recorded |
 | [EXP-TURN-037](../experiments/EXP-TURN-037.md) | How does a six-month Greed end, and which awards does the endgame give? | recorded |
+| [EXP-TURN-038](../experiments/EXP-TURN-038.md) | How does a six-month Dominance end, and does a site completed in the last turn count? | recorded |
+| [EXP-TURN-039](../experiments/EXP-TURN-039.md) | How does a six-month Acceptance end, and does a human that always hides get the Big Fat Chicken? | recorded |
 
 ## bugs
 

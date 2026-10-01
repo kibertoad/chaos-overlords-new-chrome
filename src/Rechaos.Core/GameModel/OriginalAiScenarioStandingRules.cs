@@ -85,7 +85,7 @@ internal static class OriginalAiScenarioStandingRules
             ScenarioId.Greed => cash,
             ScenarioId.Power or ScenarioId.Big40 or ScenarioId.Armageddon =>
                 ControlledSectorCount(state, player.Id),
-            ScenarioId.Acceptance => player.Support,
+            ScenarioId.Acceptance => CompletedSiteSupport(state, player.Id),
             ScenarioId.Dominance => DominanceScore(state, player, cash),
             ScenarioId.KillEmAll or ScenarioId.Eliminate =>
                 MatchLimits.PlayerCount - state.Players.Count(candidate =>
@@ -101,8 +101,19 @@ internal static class OriginalAiScenarioStandingRules
         var weights = ScenarioCatalog.Weights(state.Setup.Duration);
         return unchecked((cash * weights.Cash
             + ControlledSectorCount(state, player.Id) * weights.ControlledSector
-            + player.Support * weights.Support) / 10);
+            + CompletedSiteSupport(state, player.Id) * weights.Support) / 10);
     }
+
+    /// <summary>
+    /// RULE-OBJECTIVE-002 <c>completed_site_support</c>: the Support of every site in the player's
+    /// sectors whose progress has reached its Resistance, read as the evaluation runs. A site
+    /// completed during the turn counts at once, before the next rebuild activates it.
+    /// </summary>
+    internal static int CompletedSiteSupport(MatchState state, PlayerId player) =>
+        state.Sectors.Where(sector => sector.Owner == player)
+            .SelectMany(sector => sector.Sites)
+            .Where(site => site.Resistance == 0)
+            .Sum(site => state.Definitions.Site(site.DefinitionId).Support);
 
     private static int ControlledSectorCount(MatchState state, PlayerId player) =>
         state.Sectors.Count(sector => sector.Owner == player);

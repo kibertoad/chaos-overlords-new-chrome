@@ -4,7 +4,7 @@ title: The endgame awards go to every player tied at the extreme of each statist
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AWARDS-004, FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, SRC-MANUAL-GOG, EXP-TURN-037]
+evidence: [FND-AWARDS-004, FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, SRC-MANUAL-GOG, EXP-TURN-037, EXP-TURN-039, EXP-TURN-038]
 conflicting: []
 split_with: []
 related: []

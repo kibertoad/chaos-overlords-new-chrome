@@ -96,6 +96,7 @@ public static class PlayerRankingTooltip
     {
         var holdings = MatchOutcomeEvaluator.Project(state, player);
         var sectors = holdings.ControlledSectors;
+        var support = EndgameRankingEvaluator.CompletedSiteSupport(state, player);
         switch (state.Setup.Scenario)
         {
             case ScenarioId.Greed:
@@ -105,14 +106,14 @@ public static class PlayerRankingTooltip
                 yield return $"  SECTORS: {sectors} OF {MatchLimits.SectorCount}";
                 break;
             case ScenarioId.Acceptance:
-                yield return $"  SUPPORT: {Number(player.Support)}";
+                yield return $"  SUPPORT: {Number(support)}";
                 break;
             case ScenarioId.Dominance:
                 var weights = ScenarioCatalog.Weights(state.Setup.Duration);
                 yield return WeightedRow("CASH", Money(player.Cash), player.Cash, weights.Cash);
-                yield return WeightedRow("SUPPORT", Number(player.Support), player.Support, weights.Support);
+                yield return WeightedRow("SUPPORT", Number(support), support, weights.Support);
                 yield return WeightedRow("SECTORS", Number(sectors), sectors, weights.ControlledSector);
-                var total = (long)player.Cash * weights.Cash + (long)player.Support * weights.Support
+                var total = (long)player.Cash * weights.Cash + (long)support * weights.Support
                     + (long)sectors * weights.ControlledSector;
                 yield return $"  TOTAL {Number(total)} / 10 = {Number(total / 10)}";
                 break;

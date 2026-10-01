@@ -105,7 +105,8 @@ public sealed class PlayerRankingUiTests
     public void StatusConsoleScoreMatchesRankingScore(ScenarioId scenario)
     {
         var state = CreateMatch(scenario, [300, 100], sectorOwners: [0, 0, 1]);
-        state.Players[0].Support = 4;
+        // A completed site of Support 1 in the player's sector (RULE-OBJECTIVE-002).
+        state.Sectors[0].Sites[0].Resistance = 0;
         state.Players[0].BigManPoints = 12;
         state.Sectors[OriginalCityGenerator.HeadquartersCandidates[0]].Owner = new PlayerId(0);
         OriginalAiScenarioStandingRules.Record(state);
@@ -167,7 +168,8 @@ public sealed class PlayerRankingUiTests
     public void DominanceTooltipShowsWeightedComponentsBehindTheScore()
     {
         var state = CreateMatch(ScenarioId.Dominance, [400, 0], sectorOwners: [0, 0]);
-        state.Players[0].Support = 3;
+        // Sector 0's three sites complete, each of Support 1 (RULE-OBJECTIVE-002).
+        foreach (var site in state.Sectors[0].Sites) site.Resistance = 0;
         OriginalAiScenarioStandingRules.Record(state);
         var entries = PlayerRankingPresentation.Project(state);
 

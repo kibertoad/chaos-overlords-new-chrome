@@ -4,7 +4,7 @@ title: Each player's scenario score is rebuilt from what the scenario counts, an
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-003, FND-AI-005, FND-TURN-003, FND-UI-033, FND-CITY-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG, FND-EXE-004, FND-SETUP-015, EXP-TURN-012, EXP-TURN-014, EXP-TURN-028]
+evidence: [FND-OBJECTIVE-003, FND-AI-005, FND-TURN-003, FND-UI-033, FND-CITY-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG, FND-EXE-004, FND-SETUP-015, EXP-TURN-012, EXP-TURN-014, EXP-TURN-028, EXP-TURN-039, EXP-TURN-038]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-004, FMT-STATE-002]
