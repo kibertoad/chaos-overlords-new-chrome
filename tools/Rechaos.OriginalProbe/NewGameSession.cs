@@ -476,6 +476,15 @@ internal sealed class NewGameSession(
             try
             {
                 if (screen == IntPtr.Zero) throw new InvalidOperationException("Cannot acquire the capture window DC.");
+                if (firstCopy is null)
+                {
+                    const int bitsPixel = 12, planes = 14;
+                    var hostDepth = Native.GetDeviceCaps(screen, bitsPixel) * Native.GetDeviceCaps(screen, planes);
+                    var gameDepth = _process.ReadInt32(OriginalAddresses.DisplayDepth);
+                    _notes.Add($"Capture depths: original records {gameDepth}; probe window DC reports {hostDepth}.");
+                    if (gameDepth != hostDepth)
+                        _notes.Add("Capture depth mismatch: evaluate colour-key conversion before accepting presentation evidence.");
+                }
                 memory = Native.CreateCompatibleDC(screen);
                 if (memory == IntPtr.Zero) throw new InvalidOperationException("Cannot create the capture memory DC.");
                 bitmap = Native.CreateDIBSection(screen, info, 0, out var bits, IntPtr.Zero, 0);

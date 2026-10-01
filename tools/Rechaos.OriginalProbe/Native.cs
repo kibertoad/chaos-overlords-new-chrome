@@ -136,4 +136,7 @@ internal static partial class Native
 
     [DllImport("gdi32.dll")]
     public static extern bool GdiFlush();
+
+    [DllImport("gdi32.dll")]
+    public static extern int GetDeviceCaps(IntPtr dc, int index);
 }

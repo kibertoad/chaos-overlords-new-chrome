@@ -38,6 +38,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-13 | [Bug reports carry a replayable journal, stored apart from matches](#2026-09-13--bug-reports-carry-a-replayable-journal-stored-apart-from-matches) |
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
+| 2026-10-02 | [Windows 11 original capture artifacts](#2026-10-02--windows-11-original-capture-artifacts) |
 <!-- doc-index:end -->
 
 ## 2026-10-01 ? Use the original executable as the parity target
@@ -579,3 +580,12 @@ reproduced. Modern online play is a new design: a coordination server under
 verifies state hashes, hostable by players or run centrally
 ([`MULTIPLAYER.md`](./MULTIPLAYER.md)). Hot-seat play remains the local mode
 and the client-side wiring of online play is tracked as follow-up work.
+
+## 2026-10-02 — Windows 11 original capture artifacts
+
+The maintainer identifies the original executable's white blocks on Windows 11
+as a known bug and asks that they be treated as expected. Preserve them in
+captures and document affected areas separately in parity comparisons. Their
+presence alone does not invalidate a capture or establish a rebuild layout
+error. Continue comparing unaffected regions with the original; do not patch
+the original compositor merely to make reference images resemble the rebuild.

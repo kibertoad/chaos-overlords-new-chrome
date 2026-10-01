@@ -24,6 +24,9 @@ internal static class OriginalAddresses
     public const uint PrefFullScreen = 0x0048786C;
     public const uint PrefFullScreenCopy = 0x00498354;
 
+    // FND-PLATFORM-009: the depth returned by display setup, used to choose the image set.
+    public const uint DisplayDepth = 0x0048787C;
+
     // FND-OPTIONS-001, FND-OPTIONS-002: Warn if Idle Gangs, which asks before Done ends a turn
     // with a gang left idle (RULE-OPTIONS-003), and Detailed Combat, which plays combat as the
     // detailed presentation.
