@@ -10,9 +10,8 @@ public sealed partial class ChaosGame
 
     private readonly Dictionary<string, Song> _soundtrack =
         new(StringComparer.OrdinalIgnoreCase);
-    private IReadOnlyList<Song> _activeSoundtrack = [];
+    private SongCollection _activeSoundtrack = SongCollection.Empty.Clone();
     private OriginalSoundtrackMode? _soundtrackMode;
-    private int _soundtrackIndex = -1;
     private int _musicVolumeLevel = OriginalSoundtrackPolicy.DefaultVolumeLevel;
     private bool _soundtrackEnabled;
     private bool _soundtrackFailed;
@@ -74,7 +73,7 @@ public sealed partial class ChaosGame
                 return;
             }
 
-            if (poll) StartNextSoundtrackTrack(gameTime.TotalGameTime);
+            if (poll) StartSoundtrackProgram(gameTime.TotalGameTime);
         }
         catch
         {
@@ -82,14 +81,14 @@ public sealed partial class ChaosGame
         }
     }
 
-    private void StartNextSoundtrackTrack(TimeSpan now)
+    private void StartSoundtrackProgram(TimeSpan now)
     {
         if (!_soundtrackEnabled || _activeSoundtrack.Count == 0 || !IsActive) return;
         try
         {
             if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
-            _soundtrackIndex = (_soundtrackIndex + 1) % _activeSoundtrack.Count;
-            MediaPlayer.Play(_activeSoundtrack[_soundtrackIndex]);
+            // RULE-AUDIO-001, FND-AUDIO-007: a stopped program restarts at its first track.
+            MediaPlayer.Play(_activeSoundtrack, index: 0);
             _soundtrackAwaitingStart = true;
             _soundtrackStartDeadline = now + SoundtrackStartTimeout;
         }
@@ -105,7 +104,6 @@ public sealed partial class ChaosGame
     {
         if (!_soundtrackEnabled) return;
         _soundtrackMode = null;
-        _soundtrackIndex = -1;
         _soundtrackAwaitingStart = false;
         _soundtrackPausedByDeactivation = false;
         try
@@ -125,15 +123,14 @@ public sealed partial class ChaosGame
 
         if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
         _soundtrackMode = mode;
-        _soundtrackIndex = -1;
         _soundtrackAwaitingStart = false;
         _soundtrackPausedByDeactivation = false;
-        _activeSoundtrack = OriginalSoundtrackPolicy.FileNamesFor(mode)
-            .Select(fileName => _soundtrack.GetValueOrDefault(fileName))
-            .Where(song => song is not null)
-            .Cast<Song>()
-            .ToArray();
-        StartNextSoundtrackTrack(now);
+        _activeSoundtrack = SongCollection.Empty.Clone();
+        // RULE-AUDIO-001: let the player advance within the complete CD program.
+        foreach (var fileName in OriginalSoundtrackPolicy.FileNamesFor(mode))
+            if (_soundtrack.GetValueOrDefault(fileName) is { } song)
+                _activeSoundtrack.Add(song);
+        StartSoundtrackProgram(now);
     }
 
     protected override void OnDeactivated(object sender, EventArgs args)
@@ -252,9 +249,8 @@ public sealed partial class ChaosGame
         DisableSoundtrack();
         foreach (var song in _soundtrack.Values) song.Dispose();
         _soundtrack.Clear();
-        _activeSoundtrack = [];
+        _activeSoundtrack.Clear();
         _soundtrackMode = null;
-        _soundtrackIndex = -1;
     }
 
     protected override void UnloadContent()

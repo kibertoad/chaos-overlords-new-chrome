@@ -24,6 +24,7 @@ public sealed class SoundtrackCatalogTests
         "track06.ogg", "track07.ogg", "track08.ogg"
     })]
     [InlineData(OriginalSoundtrackMode.Endgame, new[] { "track09.ogg" })]
+    // RULE-AUDIO-001, FND-AUDIO-001: the selector uses these inclusive CD programs.
     public void RecoveredModesUseExactInclusiveCdTrackRanges(
         OriginalSoundtrackMode mode, string[] expected) =>
         Assert.Equal(expected, OriginalSoundtrackPolicy.FileNamesFor(mode));
