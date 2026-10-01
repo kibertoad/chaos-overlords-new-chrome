@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Defensive equipment, healing, movement, and attack choices recovered from
-/// original AI family 12 at 0x004353a0.
+/// original AI family 12 at 0x004353A0 (FND-AI-070).
 /// </summary>
 internal static class OriginalAiFamilyTwelveRules
 {

@@ -557,7 +557,7 @@ public static class CommandOverlayLayout
 
 public static class SiteInformationLayout
 {
-    // Native handler 0x0044c476 uses the alternate PX05002 slide form.
+    // Native handler 0x0044C476 (FND-UI-005) uses the alternate PX05002 slide form.
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
     public static Rectangle Portrait => new(156, 139, 120, 64);
@@ -602,7 +602,7 @@ public static class ComlinkViewLayout
 {
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Page => SharedPanelLayout.At(29, 9, 59, 13);
-    // Native view handler 0x0045d61a uses half-open panel-local rectangles
+    // Native view handler 0x0045D61A (FND-COMLINK-002) uses half-open panel-local rectangles
     // (31,33)-(57,56), (59,33)-(85,56), and (33,169)-(82,191).
     public static Rectangle Previous => SharedPanelLayout.At(31, 33, 26, 23);
     public static Rectangle Next => SharedPanelLayout.At(59, 33, 26, 23);
@@ -626,7 +626,7 @@ public static class ComlinkSendLayout
         (MessageRows - 1) * TextRowStride + OriginalFontLayout.GlyphHeight);
     public static Rectangle Cancel => SharedPanelLayout.At(33, 137, 49, 22);
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
-    // Native press helper 0x00418821 draws a one-pixel-larger held sprite than
+    // Native press helper 0x00418821 (FND-COMLINK-003) draws a one-pixel-larger held sprite than
     // either half-open activation target, then restores the baked face on exit.
     public static Rectangle CancelPressed => new(Cancel.X, Cancel.Y, 50, 23);
     public static Rectangle OkPressed => new(Ok.X, Ok.Y, 50, 23);
@@ -643,7 +643,7 @@ public static class ComlinkSendLayout
     }
 
     /// <summary>
-    /// PX00129 source used by native caret helper <c>0x0046023c</c>. The normal
+    /// PX00129 source used by native caret helper <c>0x0046023C</c> (FND-COMLINK-005). The normal
     /// glyph strip is row zero; the same glyphs at y=441 carry the inverse cell.
     /// Only the original strip has that inverse row, so the supplemental glyphs
     /// drawn after it (the status console's brackets) have no caret cell.
@@ -661,14 +661,14 @@ public static class ComlinkSendLayout
     {
         if (slot is < 0 or >= MatchLimits.PlayerCount)
             throw new ArgumentOutOfRangeException(nameof(slot));
-        // Send renderer 0x0045fdf1 fills a 105-by-34 backing tile. The
+        // Send renderer 0x0045FDF1 (FND-COMLINK-007) fills a 105-by-34 backing tile. The
         // panel-buffer points (97/218, 163/197/231) translate to these final
         // screen coordinates as the 344-pixel form enters from the right.
         return new Rectangle(201 + slot / 3 * 121, 143 + slot % 3 * 34, 105, 34);
     }
 
     /// <summary>
-    /// Native Send handler 0x0045eab1's half-open recipient click target.
+    /// FND-COMLINK-003: native Send handler 0x0045EAB1's half-open recipient click target.
     /// This intentionally includes each recipient's name/text region rather
     /// than only the smaller portrait cell returned by <see cref="Recipient"/>.
     /// </summary>
@@ -720,7 +720,7 @@ public static class InfluenceCommandLayout
     };
 
     /// <summary>
-    /// Native Influence handler 0x0043f692's half-open site selection targets.
+    /// FND-INFLUENCE-001: native Influence handler 0x0043F692's half-open site selection targets.
     /// These differ slightly from the staggered card artwork apertures.
     /// </summary>
     public static Rectangle SiteHit(int slot) => slot switch

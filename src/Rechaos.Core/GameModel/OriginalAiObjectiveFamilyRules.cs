@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Objective routing shared by original AI families 13 and 14. Recovered from
-/// selector 0x1f and the terminal blocks at 0x0040b87d through 0x004677df.
+/// selector 0x1f and the terminal blocks at 0x0040B87D through 0x004677DF (FND-AI-039).
 /// </summary>
 internal static class OriginalAiObjectiveFamilyRules
 {

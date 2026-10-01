@@ -81,7 +81,7 @@ public static class AttackCommandLayout
     }
 
     /// <summary>
-    /// Native Attack handler 0x0043b290 partitions one six-cell target region
+    /// Native Attack handler 0x0043B290 (FND-ATTACK-001) partitions one six-cell target region
     /// for pointer selection; its regions are wider than the gang-card art.
     /// </summary>
     public static Rectangle TargetHit(int targetSlot)
