@@ -150,6 +150,7 @@ public sealed class LastTurnReportRecordTests
     [Fact]
     public void ControlLostThroughControlNamesTheNewOwner()
     {
+        // RULE-EVENT-013: use a nonzero owner so the Control result cannot match the Crackdown sentinel.
         var headquarters = State.Players[1].Gangs[0].SectorId;
         Assert.Equal(new PlayerId(1), State.Sectors[headquarters].Owner);
         var notification = new GameNotification(41, Turn, TurnPhase.Execution, ExecutionPhase.Control,
