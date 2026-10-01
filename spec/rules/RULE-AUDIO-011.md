@@ -1,9 +1,9 @@
 ---
 id: RULE-AUDIO-011
 title: The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM
-status: supported
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [RULE-AUDIO-002]
 evidence: [FND-AUDIO-014, FND-AUDIO-007]
 conflicting: []
 split_with: []
@@ -11,6 +11,11 @@ related: [RULE-AUDIO-001, RULE-AUDIO-002]
 ---
 
 ## Summary
+
+Withdrawn as a parity requirement: this entry describes a compatibility wrapper,
+not the original executable. RULE-AUDIO-002 remains the original focus and
+restart contract. The wrapper finding remains useful context for possible fixes.
+
 
 The executable's focus pause and resume requests do not pause or resume the
 virtual CD device supplied with this GOG build. A pause request is unsupported;

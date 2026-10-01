@@ -17,6 +17,10 @@ environment: null
 
 ## Observation
 
+This records compatibility-environment behavior for reference. The wrapper is
+not the parity target; its fixes may inform choices without requiring identical
+behavior. The original executable contract remains RULE-AUDIO-002.
+
 The installed `winmm.dll` is a 39424-byte PE32 image, with preferred base
 `0x6AB40000` and xxh3 `80f620dfdda54ba6ab48431bc6623e8d`. Its export
 `mciSendCommandA` has RVA `0x1360`, placing its dispatcher at `0x6AB41360`.
