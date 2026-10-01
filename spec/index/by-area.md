@@ -203,6 +203,13 @@
 | [EXP-TURN-024](../experiments/EXP-TURN-024.md) | Do family-1 gangs attack and snitch at Mentality Crime Lord as the spec gives? | recorded |
 | [EXP-TURN-025](../experiments/EXP-TURN-025.md) | Does a family-6 gang that fails its strength test buy equipment, in Kill 'Em All at Homicidal Maniac, as the spec gives? | recorded |
 | [EXP-TURN-026](../experiments/EXP-TURN-026.md) | Do family-6 gangs that fail their strength test buy equipment, in Armageddon at Criminal, as the spec gives? | recorded |
+| [EXP-TURN-027](../experiments/EXP-TURN-027.md) | Does a human's Give of two items to a gang hired the turn before reach the state the spec gives? | recorded |
+| [EXP-TURN-028](../experiments/EXP-TURN-028.md) | Do the computer players stop hiring in the closing turns of a six-month Greed? | recorded |
+| [EXP-TURN-029](../experiments/EXP-TURN-029.md) | Does an armed gang strike back at a bare-handed Martial Artist? | recorded |
+| [EXP-TURN-030](../experiments/EXP-TURN-030.md) | Do two Gives swap weapons, and does the later of two Gives to one gang replace both the earlier one and a weapon bought that turn? | recorded |
+| [EXP-TURN-031](../experiments/EXP-TURN-031.md) | Does an Equip succeed at exactly its price, fail one short, and count a Sell only from an earlier roster slot? | recorded |
+| [EXP-TURN-032](../experiments/EXP-TURN-032.md) | Does a Snitch that takes a base Tolerance below 1 leave it at 1? | recorded |
+| [EXP-TURN-033](../experiments/EXP-TURN-033.md) | Does a Bribe the player cannot pay for leave the cash and the base Tolerance unchanged? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -336,14 +343,14 @@
 |---|---|---|
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | Bribe costs 3 instead of the manual's 5 | supported |
 | [FND-BRIBE-001](../findings/FND-BRIBE-001.md) | Bribe needs and costs 3 cash and adds 3 to the sector's Tolerance with no cap | recorded |
-| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established |
 
 ## SNITCH
 
 | ID | Title | Status |
 |---|---|---|
 | [FND-SNITCH-001](../findings/FND-SNITCH-001.md) | Snitch subtracts 3 from Tolerance with no cash test, and after the instant phase every Tolerance below 1 becomes 1 | recorded |
-| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | established |
 
 ## TOLERANCE
 
@@ -351,7 +358,7 @@
 |---|---|---|
 | [FND-TOLERANCE-001](../findings/FND-TOLERANCE-001.md) | Bribe, Snitch and a one-point drift change the base Tolerance at sector offset 0x02, which is clamped to 1..40 after the instant phase, while the Chaos test reads offset 0x05 | recorded |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | established |
-| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 | supported |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 | established |
 
 ## SITE
 
@@ -418,8 +425,8 @@
 | [FND-EQUIP-008](../findings/FND-EQUIP-008.md) | The Equip, Give and Sell panels store the item, the item mask and the recipient in target and target_2, and the Equip list and the Give recipients are filtered by the gang definition's Tech Level | recorded |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | The Equip and Research panels frame the chosen category cell with a 34-by-34 keyed cell of PX00129 and open on category 0 or the category of the pending order | recorded |
 | [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | The Equip panel handler's faces, keys and double-clicks, and the chosen row redrawn in the second font of PX00129 inside a green frame | recorded |
-| [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | supported |
-| [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported |
+| [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | established |
+| [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | established |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | Equip panel | supported |
@@ -431,7 +438,7 @@
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | The Give panel handler lists the giver's sector mates, accepts a recipient only when its Tech Level covers every selected item, and stores the order in the target bytes | recorded |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art | recorded |
 | [FND-GIVE-003](../findings/FND-GIVE-003.md) | The Give recipient list fills no background, and dims an ineligible card with black through bitmap 146 from the card's corner | recorded |
-| [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | supported |
+| [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | established |
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | Give panel | supported |
 
 ## SELL
@@ -629,7 +636,7 @@
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | established |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported |
-| [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported |
+| [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | established |
 | [RULE-AI-012](../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established |
