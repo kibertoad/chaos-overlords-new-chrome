@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 3 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 100 |
-| `validated` | 119 |
+| `implemented` | 99 |
+| `validated` | 120 |
 
 | Code | Rows |
 |---|---|
@@ -39,7 +39,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-GFX-001` | 16-bit image files in DATA/PX16 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | The rebuild supplies the missing header fields itself. PX00202 and PX00203 are 311 wide as FND-GFX-005 records; PX06008 is decoded as 242 by 157 where the file is 241 wide and the executable reads 242 by 158, which the test allows for. |
+| `FMT-GFX-001` | 16-bit image files in DATA/PX16 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | `DEV-GFX-002` | validated | The rebuild supplies the missing header fields itself. PX00202 and PX00203 are 311 wide as FND-GFX-005 records; PX06008 is decoded as 242 by 157 where the file is 241 wide and the executable reads 242 by 158, which the test allows for. DEV-GFX-002 replaces the undefined top row with black; the valid rows are drawn without stretching. |
 | `FMT-GFX-002` | 8-bit image files in DATA/PX08 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
 | `FMT-GFX-003` | Palette entry in a PX08 image file | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
 | `RULE-GFX-001` | Decoding the RLE8 pixel data of a PX08 image | supported | complete | None | None | implemented | None |
@@ -367,7 +367,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EVENT-012` | Taking control of a sector is reported to the new owner | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The report is the rebuild's Control notification; a winner without a Control order (BUG-CONTROL-001) gets one with no event. EXP-TURN-010 and later replays compare the reports. |
 | `RULE-EVENT-013` | Losing control of a sector is reported to the previous owner | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The report is the rebuild's Control lost notification, sent on a takeover by Control and on a third Crackdown. Its unread `arg2` names the new owner after a takeover and is 0 after a Crackdown. EXP-TURN-011, EXP-TURN-017, EXP-TURN-018 and EXP-TURN-025 compare the reports. |
 | `RULE-EVENT-014` | An Equip that fails for lack of cash is reported to its player | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002` | validated | The report is the rebuild's failed Equip result, which names the gang and its sector; like the original it does not name the item. EXP-TURN-034 replays a human's report. A computer player's Equip it cannot pay for gives no command and no report (DEV-AI-002), which the replays allow for. |
-| `SCR-EVENT-001` | Last Turn Events panel | supported | complete | None | `DEV-EVENT-001`, `DEV-EVENT-002` | implemented | Every element sits at the position SCR-EVENT-001 records, with its pressed faces and act-on-release input. The caption is chosen by the record's type and arg1 from strings 33 to 44, which a test compares with the executable's string table. |
+| `SCR-EVENT-001` | Last Turn Events panel | supported | complete | tests/Rechaos.Tests/LastTurnEventsLayoutTests.cs | `DEV-EVENT-001`, `DEV-EVENT-002`, `DEV-GFX-002` | validated | Layout tests compare recorded element positions and the short artwork placement (FND-GFX-005), including DEV-GFX-002; this is not a rendered-screen comparison. Every element sits at the position SCR-EVENT-001 records, with its pressed faces and act-on-release input. The caption is chosen by the record's type and arg1 from strings 33 to 44, which a test compares with the executable's string table. |
 
 ## COMLINK
 

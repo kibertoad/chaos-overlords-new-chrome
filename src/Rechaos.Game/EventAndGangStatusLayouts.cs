@@ -139,6 +139,15 @@ public static class LastTurnEventsLayout
     /// </summary>
     public static Rectangle Artwork => SharedPanelLayout.At(94, 11, 242, 158);
 
+    public static Rectangle ArtworkDestination(int textureWidth, int textureHeight)
+    {
+        // SCR-EVENT-001, FND-GFX-005, DEV-GFX-002: the short illustration's
+        // valid bottom-up rows sit below the undefined extra top row.
+        var area = Artwork;
+        return textureWidth == 242 && textureHeight == 157
+            ? new Rectangle(area.X, area.Y + 1, area.Width, 157) : area;
+    }
+
     /// <summary>The researched item's 48-by-48 frame at (296, 190) (SCR-EVENT-001).</summary>
     public static Rectangle ResearchItem => SharedPanelLayout.At(192, 66, 48, 48);
 

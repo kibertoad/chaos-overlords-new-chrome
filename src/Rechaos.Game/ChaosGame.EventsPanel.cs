@@ -416,7 +416,15 @@ public sealed partial class ChaosGame
     {
         var artworkIndex = LastTurnEventPresentation.ArtworkIndex(notification, related);
         if (artworkIndex > 0 && _lastTurnEventArtwork[artworkIndex] is { } artwork)
-            batch.Draw(artwork, LastTurnEventsLayout.Artwork, Color.White);
+        {
+            var destination = LastTurnEventsLayout.ArtworkDestination(artwork.Width, artwork.Height);
+            // DEV-GFX-002: replace the original out-of-bounds top row, retaining
+            // the valid rows at their original scale and bottom edge.
+            if (destination.Y != LastTurnEventsLayout.Artwork.Y && _pixel is not null)
+                batch.Draw(_pixel, new Rectangle(destination.X, LastTurnEventsLayout.Artwork.Y,
+                    destination.Width, 1), Color.Black);
+            batch.Draw(artwork, destination, Color.White);
+        }
         // SCR-EVENT-001: the researched item starts at frame 0 when the panel opens and after
         // each page change.
         if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId
