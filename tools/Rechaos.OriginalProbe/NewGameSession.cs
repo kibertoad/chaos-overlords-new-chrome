@@ -441,24 +441,26 @@ internal sealed class NewGameSession(
     private void CaptureDrawingArea(IntPtr window)
     {
         const int width = 640, height = 460;
-        // FND-UI-038: the marker shows the frame before its counter's last step. The counter is
-        // read on both sides of the copies, and a capture it moved during is taken again.
+        // FND-UI-038 records the counter's increment after the draw. A stable counter does not
+        // prove that the window capture contains that draw; retain it only as a diagnostic.
         for (var attempt = 0; attempt < 10; attempt++)
         {
             var before = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
-            CaptureDrawingArea(window, width, height);
+            var copiesAgree = CaptureDrawingArea(window, width, height);
             var after = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
-            if (before != after) continue;
-            _notes.Add($"marker_frame {(before + 11) % 12}");
+            if (before != after || !copiesAgree) continue;
+            _notes.Add($"marker_counter {before}; displayed marker frame unverified.");
             return;
         }
-        _notes.Add("The marker counter moved during every capture.");
+        _notes.Add("Capture rejected: the marker counter moved or the synchronized copies disagreed.");
     }
 
-    private void CaptureDrawingArea(IntPtr window, int width, int height)
+    private bool CaptureDrawingArea(IntPtr window, int width, int height)
     {
         Native.GetClientRect(window, out var client);
         _notes.Add($"Client area {client.Right - client.Left} by {client.Bottom - client.Top}.");
+        byte[]? firstCopy = null;
+        var copiesAgree = false;
         foreach (var (name, print) in new[] { ("capture-print.bmp", true), ("capture-blt.bmp", false) })
         {
             var info = new byte[40];
@@ -468,21 +470,42 @@ internal sealed class NewGameSession(
             BitConverter.GetBytes((short)1).CopyTo(info, 12);
             BitConverter.GetBytes((short)32).CopyTo(info, 14);
             var screen = Native.GetDC(window);
-            var memory = Native.CreateCompatibleDC(screen);
-            var bitmap = Native.CreateDIBSection(screen, info, 0, out var bits, IntPtr.Zero, 0);
-            var old = Native.SelectObject(memory, bitmap);
-            var ok = print
-                ? Native.PrintWindow(window, memory, 1)
-                : Native.BitBlt(memory, 0, 0, width, height, screen, 0, 0, 0x00CC0020);
-            var pixels = new byte[width * height * 4];
-            System.Runtime.InteropServices.Marshal.Copy(bits, pixels, 0, pixels.Length);
-            Native.SelectObject(memory, old);
-            Native.DeleteObject(bitmap);
-            Native.DeleteDC(memory);
-            Native.ReleaseDC(window, screen);
-            WriteBitmap(Path.Combine(outputDirectory, name), width, height, pixels);
-            if (!ok) _notes.Add($"{name}: the copy failed.");
+            var memory = IntPtr.Zero;
+            var bitmap = IntPtr.Zero;
+            var old = IntPtr.Zero;
+            try
+            {
+                if (screen == IntPtr.Zero) throw new InvalidOperationException("Cannot acquire the capture window DC.");
+                memory = Native.CreateCompatibleDC(screen);
+                if (memory == IntPtr.Zero) throw new InvalidOperationException("Cannot create the capture memory DC.");
+                bitmap = Native.CreateDIBSection(screen, info, 0, out var bits, IntPtr.Zero, 0);
+                if (bitmap == IntPtr.Zero || bits == IntPtr.Zero)
+                    throw new InvalidOperationException("Cannot allocate the capture bitmap.");
+                old = Native.SelectObject(memory, bitmap);
+                if (old == IntPtr.Zero || old == new IntPtr(-1))
+                    throw new InvalidOperationException("Cannot select the capture bitmap.");
+                var ok = print
+                    ? Native.PrintWindow(window, memory, 1)
+                    : Native.BitBlt(memory, 0, 0, width, height, screen, 0, 0, 0x00CC0020);
+                if (!ok) throw new InvalidOperationException($"{name}: the copy failed.");
+                // CreateDIBSection requires GDI drawing to finish before its bits are read directly.
+                // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-createdibsection
+                if (!Native.GdiFlush()) throw new InvalidOperationException($"{name}: flushing the copy failed.");
+                var pixels = new byte[width * height * 4];
+                System.Runtime.InteropServices.Marshal.Copy(bits, pixels, 0, pixels.Length);
+                if (firstCopy is null) firstCopy = pixels;
+                else copiesAgree = firstCopy.AsSpan().SequenceEqual(pixels);
+                WriteBitmap(Path.Combine(outputDirectory, name), width, height, pixels);
+            }
+            finally
+            {
+                if (old != IntPtr.Zero && old != new IntPtr(-1)) Native.SelectObject(memory, old);
+                if (bitmap != IntPtr.Zero) Native.DeleteObject(bitmap);
+                if (memory != IntPtr.Zero) Native.DeleteDC(memory);
+                if (screen != IntPtr.Zero) Native.ReleaseDC(window, screen);
+            }
         }
+        return copiesAgree;
     }
 
     private static void WriteBitmap(string path, int width, int height, byte[] topDownBgra)

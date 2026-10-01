@@ -136,4 +136,7 @@ internal static partial class Native
 
     [DllImport("gdi32.dll")]
     public static extern bool BitBlt(IntPtr dc, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, uint rop);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool GdiFlush();
 }

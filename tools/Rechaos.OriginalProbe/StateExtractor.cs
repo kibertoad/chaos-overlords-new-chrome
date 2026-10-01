@@ -35,17 +35,18 @@ internal sealed class StateExtractor
             ["end_state"] = extractor.EndState(),
         };
         // --capture: the drawing area is kept outside the repository and named by its xxh3 under
-        // GAME_DIR/captures; the fixture holds the hash and the marker frame it showed.
+        // GAME_DIR/captures. Counter-only captures have no verified marker frame and must not
+        // become fixture references. Diagnostic bitmaps remain in the external run directory.
         var capture = Path.Combine(runDirectory, "capture-print.bmp");
-        if (File.Exists(capture))
+        var marker = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>())
+            .FirstOrDefault(note => note.StartsWith("marker_frame ", StringComparison.Ordinal));
+        if (File.Exists(capture) && marker is not null)
         {
-            var marker = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>())
-                .FirstOrDefault(note => note.StartsWith("marker_frame ", StringComparison.Ordinal));
             run["capture"] = new JsonObject
             {
                 ["xxh3"] = Convert.ToHexStringLower(System.IO.Hashing.XxHash128.Hash(File.ReadAllBytes(capture))),
                 ["area"] = new JsonArray(0, 0, 640, 460),
-                ["marker_frame"] = marker is null ? null : int.Parse(marker["marker_frame ".Length..], System.Globalization.CultureInfo.InvariantCulture),
+                ["marker_frame"] = int.Parse(marker["marker_frame ".Length..], System.Globalization.CultureInfo.InvariantCulture),
             };
         }
         return run;
