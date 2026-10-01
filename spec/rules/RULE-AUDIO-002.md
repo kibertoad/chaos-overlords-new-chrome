@@ -80,6 +80,4 @@ None known.
 
 ## Open questions
 
-- How the replacement `winmm.dll` of the GOG build answers the status query and
-  the resume, and so whether the resume really plays past the program there, has
-  not been observed.
+None.

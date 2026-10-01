@@ -20,6 +20,8 @@ public sealed partial class ChaosGame
     private bool _soundtrackPausedByDeactivation;
     private TimeSpan _soundtrackStartDeadline;
     private readonly SoundtrackRestartPoll _soundtrackRestartPoll = new();
+    private SoundtrackFade? _soundtrackFade;
+    private OriginalSoundtrackMode? _soundtrackModeAfterFade;
 
     private void LoadSoundtrack()
     {
@@ -55,12 +57,13 @@ public sealed partial class ChaosGame
     private void UpdateSoundtrack(GameTime gameTime)
     {
         var poll = _soundtrackRestartPoll.Advance(_soundtrackEnabled, IsActive, gameTime.TotalGameTime);
-        if (!_soundtrackEnabled || _introMoviesPlaying || !IsActive) return;
         try
         {
+            if (AdvanceSoundtrackFade(gameTime.TotalGameTime)) return;
+            if (!_soundtrackEnabled || _introMoviesPlaying || !IsActive) return;
             SelectSoundtrackMode(SoundtrackContext(), gameTime.TotalGameTime, _restartSoundtrackProgram);
             _restartSoundtrackProgram = false;
-            if (_activeSoundtrack.Count == 0) return;
+            if (_soundtrackFade is not null || _activeSoundtrack.Count == 0) return;
             if (MediaPlayer.State == MediaState.Playing)
             {
                 _soundtrackAwaitingStart = false;
@@ -107,6 +110,8 @@ public sealed partial class ChaosGame
     {
         if (!_soundtrackEnabled) return;
         _soundtrackMode = null;
+        _soundtrackFade = null;
+        _soundtrackModeAfterFade = null;
         _soundtrackAwaitingStart = false;
         _soundtrackPausedByDeactivation = false;
         try
@@ -128,6 +133,17 @@ public sealed partial class ChaosGame
             return;
         }
 
+        if (MediaPlayer.State == MediaState.Playing)
+        {
+            _soundtrackModeAfterFade = mode;
+            BeginSoundtrackFade(now);
+            return;
+        }
+        SetSoundtrackMode(mode, now);
+    }
+
+    private void SetSoundtrackMode(OriginalSoundtrackMode mode, TimeSpan now)
+    {
         if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
         _soundtrackMode = mode;
         _soundtrackAwaitingStart = false;
@@ -138,6 +154,31 @@ public sealed partial class ChaosGame
             if (_soundtrack.GetValueOrDefault(fileName) is { } song)
                 _activeSoundtrack.Add(song);
         StartSoundtrackProgram(now);
+    }
+
+    private void BeginSoundtrackFade(TimeSpan now)
+    {
+        // RULE-AUDIO-001, RULE-AUDIO-003, FND-AUDIO-007: retain integer attenuation,
+        // including the final residual volume before the explicit zero and stop.
+        _soundtrackFade ??= new SoundtrackFade(MediaPlayer.Volume, now);
+        MediaPlayer.Volume = _soundtrackFade.VolumeAt(now);
+        _soundtrackAwaitingStart = false;
+    }
+
+    private bool AdvanceSoundtrackFade(TimeSpan now)
+    {
+        if (_soundtrackFade is not { } fade) return false;
+        MediaPlayer.Volume = fade.VolumeAt(now);
+        if (!fade.IsComplete(now)) return true;
+        MediaPlayer.Stop();
+        MediaPlayer.Volume = fade.RestoredVolume;
+        _soundtrackFade = null;
+        if (_soundtrackModeAfterFade is { } mode)
+        {
+            _soundtrackModeAfterFade = null;
+            SetSoundtrackMode(mode, now);
+        }
+        return true;
     }
 
     protected override void OnDeactivated(object sender, EventArgs args)
@@ -206,21 +247,22 @@ public sealed partial class ChaosGame
         if (_soundtrack.Count == 0 || _soundtrackFailed) return;
         try
         {
-            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(level);
             if (level == 0)
             {
                 _soundtrackEnabled = false;
                 _soundtrackAwaitingStart = false;
                 _soundtrackPausedByDeactivation = false;
-                if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
+                if (MediaPlayer.State == MediaState.Playing) BeginSoundtrackFade(now);
+                else if (_soundtrackFade is null && MediaPlayer.State != MediaState.Stopped)
+                    MediaPlayer.Stop();
                 return;
             }
 
+            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(level);
             var shouldStart = !_soundtrackEnabled;
             _soundtrackEnabled = true;
-            if (!shouldStart || _introMoviesPlaying) return;
-            _soundtrackMode = null;
-            SelectSoundtrackMode(SoundtrackContext(), now);
+            // RULE-AUDIO-003: enabling music leaves playback to the next poll.
+            if (_soundtrackFade is not null || !shouldStart || _introMoviesPlaying) return;
         }
         catch
         {
@@ -231,6 +273,8 @@ public sealed partial class ChaosGame
     private void DisableSoundtrack()
     {
         _soundtrackFailed = true;
+        _soundtrackFade = null;
+        _soundtrackModeAfterFade = null;
         _soundtrackEnabled = false;
         _soundtrackAwaitingStart = false;
         _soundtrackPausedByDeactivation = false;
