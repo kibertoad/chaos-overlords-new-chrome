@@ -190,7 +190,7 @@ public sealed partial class ChaosGame
         // FND-AUDIO-007: when music is enabled the original selector plays the new program
         // straight after the fade, so a track paused by deactivation during the fade must not
         // be resumed by the next activation. A muting fade leaves a paused device alone.
-        _soundtrackProgramPlayer?.FinishFade(fade, release: _soundtrackEnabled);
+        _soundtrackProgramPlayer?.FinishFade(fade.RestoredVolume, release: _soundtrackEnabled);
     }
 
     protected override void OnDeactivated(object sender, EventArgs args)

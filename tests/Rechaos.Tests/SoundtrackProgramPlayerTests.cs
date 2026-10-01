@@ -39,7 +39,7 @@ public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
             MediaPlayer.Volume = fade.VolumeAt(TimeSpan.FromMilliseconds(17));
             // The original level handler is allowed to run inside a fade wait.
             MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(10);
-            player.FinishFade(fade, release);
+            player.FinishFade(fade.RestoredVolume, release);
             Assert.Equal(MediaState.Stopped, MediaPlayer.State);
             Assert.Equal(0f, stoppedVolume);
             Assert.Equal(OriginalSoundtrackPolicy.VolumeForLevel(5), MediaPlayer.Volume);
