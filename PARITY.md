@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 106 |
-| `validated` | 116 |
+| `implemented` | 105 |
+| `validated` | 117 |
 
 | Code | Rows |
 |---|---|
@@ -58,7 +58,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AUDIO-005` | Playing a sound effect, which cuts off the one playing | supported | complete | None | None | implemented | One effect voice, each new cue stopping the one before it. |
 | `RULE-AUDIO-006` | The turn-start sound | supported | complete | None | None | implemented | Only online matches, the rebuild's network games, play the cue, from the second turn on; local games are silent. The cue skips the effects-enabled test (BUG-AUDIO-001) and plays at the effects volume, which is 0 at level 0 (RULE-AUDIO-003). |
 | `RULE-AUDIO-007` | The Comlink alert plays slot 6 through the effects gate | supported | complete | None | None | implemented | None |
-| `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | None | None | implemented | The repeat is paced by the rebuild's presentation clock at four seconds. |
+| `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | tests/Rechaos.Tests/ComlinkAlertCadenceTests.cs | None | validated | Tests compare all eight arrival phases and the arrival/planning-entry repeat-counter resets with FND-AUDIO-012: the first repeat takes 17 to 24 shared presentation ticks, then repeats every 24 ticks. |
 | `RULE-AUDIO-009` | The sound of an attack in Detailed Combat | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-010` | The startup drive check always passes and the game never looks for its disc | supported | complete | None | `DEV-AUDIO-001` | implemented | The rebuild plays the music files and never checks a drive or looks for the disc (DEV-AUDIO-001); nothing else in the rule reaches a game result. |
 

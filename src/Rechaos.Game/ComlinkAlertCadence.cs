@@ -12,19 +12,30 @@ public sealed class ComlinkAlertCadence
 
     public static readonly TimeSpan RepeatInterval = PresentationClock.Period * RepeatTicks;
 
-    private TimeSpan? _nextAlert;
+    private long? _nextAlertTick;
+    private long? _deliverySequence;
 
-    public bool Advance(bool hasUnread, bool presentationActive, TimeSpan now)
+    public bool Advance(bool hasUnread, bool presentationActive, TimeSpan now,
+        bool enteringPlanning = false, long? deliverySequence = null)
     {
+        var tick = PresentationClock.Ticks(now);
         if (!hasUnread)
         {
-            _nextAlert = null;
+            _nextAlertTick = null;
+            _deliverySequence = null;
             return false;
         }
         if (!presentationActive) return false;
-        if (_nextAlert is { } next && now < next) return false;
-
-        _nextAlert = now + RepeatInterval;
+        // RULE-AUDIO-008, FND-AUDIO-012: arrival and planning entry reset only the
+        // modulo-three repeat counter; the shared eight-step blink phase survives.
+        var restart = enteringPlanning
+            || deliverySequence is { } sequence && sequence != _deliverySequence;
+        _deliverySequence = deliverySequence;
+        if (!restart && _nextAlertTick is { } next && tick < next) return false;
+        if (restart || _nextAlertTick is null)
+            _nextAlertTick = (tick / 8 + 3) * 8;
+        else
+            _nextAlertTick += ((tick - _nextAlertTick.Value) / RepeatTicks + 1) * RepeatTicks;
         return true;
     }
 }
