@@ -145,18 +145,20 @@ public sealed class LastTurnReportRecordTests
     }
 
     // RULE-EVENT-013: a sector lost through Control names the player that owns it after the
-    // Control phase.
+    // Control phase. The owner is player 1, so the record cannot be told from the 0 of a sector
+    // lost through a third Crackdown.
     [Fact]
     public void ControlLostThroughControlNamesTheNewOwner()
     {
-        var headquarters = State.Players[0].Gangs[0].SectorId;
-        Assert.Equal(new PlayerId(0), State.Sectors[headquarters].Owner);
+        // RULE-EVENT-013: use a nonzero owner so the Control result cannot match the Crackdown sentinel.
+        var headquarters = State.Players[1].Gangs[0].SectorId;
+        Assert.Equal(new PlayerId(1), State.Sectors[headquarters].Owner);
         var notification = new GameNotification(41, Turn, TurnPhase.Execution, ExecutionPhase.Control,
             GameNotificationKind.ControlLost, null, headquarters);
 
         var record = LastTurnEventPresentation.Record(State, notification, null);
 
-        Assert.Equal(new LastTurnReportRecord(3, headquarters, 0, 0), record);
+        Assert.Equal(new LastTurnReportRecord(3, headquarters, 1, 0), record);
     }
 
     private static GameEvent Event(

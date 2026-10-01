@@ -9,10 +9,10 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-026 go on to press Done for one
-/// to thirty turns, EXP-TURN-009 to EXP-TURN-022 other than EXP-TURN-018 with orders for the human's
-/// gang, and stop at the next planning phase. Each run gives the seed, every roll(n) with its call
-/// site and result, and the state the recording stops at. The rebuild plays the same match from the same seed and
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-033 go on to press Done for one
+/// to thirty turns, EXP-TURN-009 to EXP-TURN-022 other than EXP-TURN-018, EXP-TURN-027 and
+/// EXP-TURN-029 to EXP-TURN-033 with orders for the human's gangs, and stop at the next planning
+/// phase. Each run gives the seed, every roll(n) with its call site and result, and the state the recording stops at. The rebuild plays the same match from the same seed and
 /// settings and has to make the same rolls in the same order and reach the same generator position
 /// and state. The turns check the turn order (RULE-TURN-001), the computer players' planning passes,
 /// family dispatch, sector choices, hire choices and hire placement (RULE-AI-001, RULE-AI-002,
@@ -261,13 +261,16 @@ public sealed class OriginalNewGameExperimentTests
         // sector when resolution began (RULE-POLICE-004): EXP-TURN-023 and EXP-TURN-024 report one to
         // players that raised no Chaos there, and EXP-TURN-024 to one with no gang left there at the end.
         if (recorded.HasTerm("last_turn_report_count", 0))
+        {
+            var eventsBySequence = new Dictionary<long, GameEvent>();
+            foreach (var gameEvent in match.Events) eventsBySequence[gameEvent.Sequence] = gameEvent;
             foreach (var player in match.Players)
             {
                 var slot = player.Id.Value;
                 var reports = LastTurnEventProjection.For(match, player.Id)
                     .Select(notification => LastTurnEventPresentation.Record(match, notification,
                         notification.RelatedEventSequence is { } sequence
-                            ? match.Events.LastOrDefault(e => e.Sequence == sequence)
+                            ? eventsBySequence.GetValueOrDefault(sequence)
                             : null))
                     .ToArray();
                 // DEV-AI-002: a computer player's Equip it cannot pay for gives no command in the
@@ -284,6 +287,7 @@ public sealed class OriginalNewGameExperimentTests
                     Assert.True(expected[index] == reports[index],
                         $"player {slot} report {index}: the original holds {expected[index]}, the rebuild {reports[index]}");
             }
+        }
 
         // The running totals the financial panel and the endgame awards read, and the hire roles
         // the computer players' planning keeps (RULE-AI-010). Damage Inflicted is RULE-COMBAT-003.
@@ -387,7 +391,7 @@ public sealed class OriginalNewGameExperimentTests
                 CommandTarget.Gang(match.Players[order.Target].Gangs[order.Target2].Id), order.Repeat),
             // target of a Sell is the item mask, weapon 1, armor 2 and misc 4 (FMT-STATE-001); the
             // rebuild takes the items in that slot order (RULE-SELL-001).
-            GangAction.Sell => SellCommand(human, gang, order.Target),
+            GangAction.Sell => SellCommand(human, gang, order.Target, order.Repeat),
             // target of a Give is the item mask and target_2 the recipient's roster slot
             // (FMT-STATE-001, RULE-GIVE-001).
             GangAction.Give => GiveCommand(human, gang, match.Players[human.Value].Gangs[order.Target2], order.Target),
@@ -462,7 +466,7 @@ public sealed class OriginalNewGameExperimentTests
         _ => (ScenarioId)value,
     };
 
-    private static GameCommand SellCommand(PlayerId human, MatchGangState gang, int mask)
+    private static GameCommand SellCommand(PlayerId human, MatchGangState gang, int mask, bool repeat)
     {
         short?[] slots = [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
         var items = Enumerable.Range(0, slots.Length)
@@ -470,7 +474,10 @@ public sealed class OriginalNewGameExperimentTests
             .Select(slot => (CommandTarget?)CommandTarget.Item(slots[slot] ?? throw new InvalidOperationException(
                 $"The Sell mask {mask} selects an empty slot.")))
             .ToArray();
-        return new GameCommand(human, gang.Id, GangAction.Sell, items[0]!.Value, false,
+        if (items.Length == 0)
+            throw new InvalidOperationException($"The Sell mask {mask} selects no slot.");
+        // The repeat flag goes through as recorded, so the rebuild's validation judges it.
+        return new GameCommand(human, gang.Id, GangAction.Sell, items[0]!.Value, repeat,
             items.ElementAtOrDefault(1), items.ElementAtOrDefault(2));
     }
 

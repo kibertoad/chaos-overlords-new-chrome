@@ -7,6 +7,50 @@ namespace Rechaos.Tests;
 
 public sealed class AiFamilyThreeTurnPlannerTests
 {
+    // FMT-STATE-001, BUG-AI-007: the unused final record is outside the hire cap.
+    // RULE-DETECT-001: the planning cache must produce the public detection query's mask.
+    [Fact]
+    public void CrowdedPlanningVisibilityMatchesDetectionQueries()
+    {
+        var data = BundledOriginalData.Load();
+        var setups = Enumerable.Range(0, 6).Select(index => new MatchPlayerSetup(
+            new PlayerId(index), index == 5 ? "SMGHUBBLE" : $"PLAYER{index}", PlayerController.Human)).ToArray();
+        var players = setups.Select((setup, index) => new MatchPlayerState(setup, 100,
+            Enumerable.Range(0, 80).Select(slot => new MatchGangState(
+                new GangId(index * 100 + slot), setup.Id, (short)(slot % 5),
+                (slot % 16 + index * 8) % 64, 10)).ToArray())).ToArray();
+        var sectors = CreateMatch(data, definitionId: 4, force: 10, ownsSource: true).Sectors;
+        var match = new MatchState(data, new MatchSetup(
+            ScenarioId.Power, GameDuration.SixMonths, 41, setups), players, sectors);
+        // FinishUpkeep derives Hidden from the queued command.
+        foreach (var player in players)
+        {
+            var gang = player.Gangs[0];
+            var command = new GameCommand(player.Id, gang.Id, GangAction.Hide, CommandTarget.None);
+            gang.QueuedCommand = new QueuedCommand(0, command);
+        }
+        match.FinishUpkeep();
+        Assert.Contains(players.SelectMany(player => player.Gangs), gang => gang.Hidden);
+        foreach (var gang in players.SelectMany(player => player.Gangs))
+        {
+            byte expected = 0;
+            foreach (var observer in players)
+                if (match.CanPlayerDetectGang(observer.Id, gang.Id))
+                    expected |= (byte)(1 << observer.Id.Value);
+            Assert.Equal(expected, gang.VisibilityMask);
+        }
+    }
+
+    [Fact]
+    public void FinalOriginalRecordIsUnusedButNextSlotIsOutOfRange()
+    {
+        var match = CreateMatch(BundledOriginalData.Load(), definitionId: 4, force: 10, ownsSource: true);
+        Assert.Equal(new OriginalGangRecord(100, 0, 0, 0),
+            OriginalGangRecord.At(match, new PlayerId(0), 80));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            OriginalGangRecord.At(match, new PlayerId(0), 81));
+    }
+
     [Fact]
     public void FirstContinuationInfluencesHighestCashSiteAndReplays()
     {
