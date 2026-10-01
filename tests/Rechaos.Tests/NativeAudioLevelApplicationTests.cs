@@ -63,6 +63,9 @@ public sealed class NativeAudioLevelApplicationTests
         }
         finally
         {
+            // Reset the native loop flag before returning this effect source to
+            // the shared pool; Ogg streams do not reset a recycled source's flag.
+            voice.IsLooped = false;
             voice.Stop();
             MediaPlayer.Stop();
             File.Delete(preferencePath);
