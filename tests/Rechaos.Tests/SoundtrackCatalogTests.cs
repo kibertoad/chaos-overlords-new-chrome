@@ -68,6 +68,22 @@ public sealed class SoundtrackCatalogTests
             OriginalSoundtrackPolicy.VolumeForLevel(11));
     }
 
+    // RULE-AUDIO-001, FND-AUDIO-001: the two endgame entries request mode 1;
+    // Options, Help, setup navigation and game panels do not call the selector.
+    [Theory]
+    [InlineData(ClientScreen.Handoff, ClientScreen.Elimination, true)]
+    [InlineData(ClientScreen.Elimination, ClientScreen.Endgame, true)]
+    [InlineData(ClientScreen.City, ClientScreen.Endgame, true)]
+    [InlineData(ClientScreen.Options, ClientScreen.Endgame, false)]
+    [InlineData(ClientScreen.Help, ClientScreen.Elimination, false)]
+    [InlineData(ClientScreen.Endgame, ClientScreen.Endgame, false)]
+    [InlineData(ClientScreen.Title, ClientScreen.Setup, false)]
+    [InlineData(ClientScreen.Setup, ClientScreen.Title, false)]
+    [InlineData(ClientScreen.City, ClientScreen.Gang, false)]
+    public void OriginalEndgameEntriesRestartEvenWhenTheirMusicModeIsAlreadySelected(
+        ClientScreen previous, ClientScreen current, bool restart) =>
+        Assert.Equal(restart, OriginalSoundtrackPolicy.RestartsOnEntry(previous, current));
+
     [Fact]
     public void AvailableTracksSkipMissingFilesWithoutReordering()
     {

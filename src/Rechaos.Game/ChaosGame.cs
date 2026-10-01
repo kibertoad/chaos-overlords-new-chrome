@@ -242,6 +242,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             });
         _screens.Changed += (previous, current) =>
         {
+            if (OriginalSoundtrackPolicy.RestartsOnEntry(previous, current))
+                _restartSoundtrackProgram = true;
             if (!KeepsGangSelection(current)) _gangSelection.Clear();
             // A pressed face acts on the screen it was pressed on; if something else moved the
             // screen during the wait, the key's action is dropped.

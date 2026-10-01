@@ -12,6 +12,7 @@ public sealed partial class ChaosGame
         new(StringComparer.OrdinalIgnoreCase);
     private SongCollection _activeSoundtrack = SongCollection.Empty.Clone();
     private OriginalSoundtrackMode? _soundtrackMode;
+    private bool _restartSoundtrackProgram;
     private int _musicVolumeLevel = OriginalSoundtrackPolicy.DefaultVolumeLevel;
     private bool _soundtrackEnabled;
     private bool _soundtrackFailed;
@@ -57,7 +58,8 @@ public sealed partial class ChaosGame
         if (!_soundtrackEnabled || _introMoviesPlaying || !IsActive) return;
         try
         {
-            SelectSoundtrackMode(SoundtrackContext(), gameTime.TotalGameTime);
+            SelectSoundtrackMode(SoundtrackContext(), gameTime.TotalGameTime, _restartSoundtrackProgram);
+            _restartSoundtrackProgram = false;
             if (_activeSoundtrack.Count == 0) return;
             if (MediaPlayer.State == MediaState.Playing)
             {
@@ -89,6 +91,7 @@ public sealed partial class ChaosGame
             if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
             // RULE-AUDIO-001, FND-AUDIO-007: a stopped program restarts at its first track.
             MediaPlayer.Play(_activeSoundtrack, index: 0);
+            _restartSoundtrackProgram = false;
             _soundtrackAwaitingStart = true;
             _soundtrackStartDeadline = now + SoundtrackStartTimeout;
         }
@@ -116,10 +119,14 @@ public sealed partial class ChaosGame
         }
     }
 
-    private void SelectSoundtrackMode(ClientScreen screen, TimeSpan now)
+    private void SelectSoundtrackMode(ClientScreen screen, TimeSpan now, bool restart = false)
     {
         var mode = OriginalSoundtrackPolicy.ModeFor(screen, _eliminationMusicHeld);
-        if (_soundtrackMode == mode) return;
+        if (_soundtrackMode == mode)
+        {
+            if (restart) StartSoundtrackProgram(now);
+            return;
+        }
 
         if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
         _soundtrackMode = mode;

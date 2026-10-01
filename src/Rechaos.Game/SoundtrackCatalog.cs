@@ -50,6 +50,11 @@ public static class OriginalSoundtrackPolicy
             _ => eliminationMusicHeld ? OriginalSoundtrackMode.Endgame : OriginalSoundtrackMode.Gameplay
         };
 
+    /// <summary>RULE-AUDIO-001, FND-AUDIO-001: each endgame presentation requests its program anew.</summary>
+    public static bool RestartsOnEntry(ClientScreen previous, ClientScreen current) =>
+        previous != current && previous is not (ClientScreen.Options or ClientScreen.Help)
+        && current is ClientScreen.Endgame or ClientScreen.Elimination;
+
     public static float VolumeForLevel(int level)
     {
         if (level is < MinimumVolumeLevel or > MaximumVolumeLevel)
