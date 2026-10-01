@@ -30,7 +30,7 @@ public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
             File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg"), path);
             return Song.FromUri($"track{index}", new Uri(path));
         }).ToArray();
-        using var player = new SoundtrackProgramPlayer(songs);
+        var player = new SoundtrackProgramPlayer(songs);
         try
         {
             MediaPlayer.IsRepeating = false;
@@ -48,7 +48,8 @@ public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
             else if (state == "stopped") player.Stop();
             else if (state == "completed") WaitFor(() => player.ReadyToRestart);
 
-            player.ResumeThroughDiscEnd();
+            // A newly started track is reported so the caller can watch for a failed start.
+            Assert.Equal(state is "stopped" or "completed", player.ResumeThroughDiscEnd());
             if (state != "completed")
             {
                 Assert.Equal(MediaState.Playing, MediaPlayer.State);

@@ -187,7 +187,11 @@ public sealed partial class ChaosGame
     {
         if (_soundtrackFade is not { } fade) return;
         _soundtrackFade = null;
-        _soundtrackProgramPlayer?.Stop();
+        // FND-AUDIO-007: when music is enabled the original selector plays the new program
+        // straight after the fade, so a track paused by deactivation during the fade must not
+        // be resumed by the next activation. A muting fade leaves a paused device alone.
+        if (_soundtrackEnabled) _soundtrackProgramPlayer?.Release();
+        else _soundtrackProgramPlayer?.Stop();
         // A level chosen while the fade ran wins over the volume the fade started from.
         MediaPlayer.Volume = _soundtrackEnabled
             ? OriginalSoundtrackPolicy.VolumeForLevel(_musicVolumeLevel)
@@ -232,7 +236,7 @@ public sealed partial class ChaosGame
         {
             FinishIntroMovie("movie.failed", exception);
         }
-        if (!_soundtrackEnabled || _introMoviesPlaying) return;
+        if (!_soundtrackEnabled) return;
         try
         {
             // RULE-AUDIO-002, FND-AUDIO-007: activation reapplies levels before resuming.
@@ -246,7 +250,10 @@ public sealed partial class ChaosGame
             {
                 // An effect voice failure must not disable the music.
             }
-            _soundtrackProgramPlayer?.ResumeThroughDiscEnd();
+            // Background music stays suppressed while the intro movies play.
+            if (_introMoviesPlaying || _soundtrackProgramPlayer?.ResumeThroughDiscEnd() != true) return;
+            _soundtrackAwaitingStart = true;
+            _soundtrackStartDeadline = _inputTime + SoundtrackStartTimeout;
         }
         catch
         {
@@ -294,7 +301,7 @@ public sealed partial class ChaosGame
         _soundtrackAwaitingStart = false;
         try
         {
-            _soundtrackProgramPlayer?.Stop();
+            _soundtrackProgramPlayer?.Release();
         }
         catch
         {
