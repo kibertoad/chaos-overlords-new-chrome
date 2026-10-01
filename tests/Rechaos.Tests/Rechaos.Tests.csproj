@@ -8,6 +8,8 @@
     <!-- Validation builds tests beneath a disposable artifact root, not the repository. Keep the
          single version source beside the test binary so GameVersionTests still verifies the exact
          file MSBuild stamped into every assembly. -->
+    <None Include="../fixtures/synthetic/long-silence.ogg" Link="Fixtures/long-silence.ogg" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../fixtures/synthetic/silence.ogg" Link="Fixtures/silence.ogg" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../version.txt" Link="version.txt" CopyToOutputDirectory="PreserveNewest" />
     <!-- The TypeScript source of the two version constants, beside the test binary for the same
          reason. AGENTS.md makes each pair's equality a hard rule and nothing enforced it: the

@@ -118,12 +118,6 @@ internal sealed class NewGameSession(
 
     public ProbeTrace Run()
     {
-        // FND-PLATFORM-008: on a 16-bit display the image set's white reads back as
-        // RGB(255,252,255), the compositor's key. Here the surfaces follow the 32-bit desktop and
-        // white reads back as RGB(255,255,255), so nothing keyed would be transparent. A capture
-        // run moves the key to the colour white reads back as on this system.
-        if (settings.Capture)
-            _process.Write(OriginalAddresses.SixteenBitKeyColour, [0xFF, 0xFF, 0xFF, 0x00]);
         _process.SetBreakpoint(OriginalAddresses.SeedGenerator, SeedGenerator);
         _process.SetBreakpoint(OriginalAddresses.Roll, OnRoll);
         _process.SetBreakpoint(OriginalAddresses.PreferenceLoaderCall + 5, ForceWindow, oneShot: true);

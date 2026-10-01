@@ -27,7 +27,7 @@ As EXP-TURN-001.
 
 ## Procedure
 
-As EXP-TURN-036 with `--seed 5` and `--scenario 3` (Dominance).
+As EXP-TURN-037 with `--seed 5` and `--scenario 3` (Dominance).
 Before the first Done press the human's gang in roster slot 0 is set to Hide
 with Hide as its recurring order (`--orders 1:0:8:0:0:1`), so it hides in
 every turn.

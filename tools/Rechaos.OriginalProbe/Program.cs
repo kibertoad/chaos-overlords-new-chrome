@@ -158,7 +158,8 @@ static IReadOnlyList<ProbeHire> ParseHires(string value) =>
     value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(hire =>
     {
         var parts = hire.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-        if (parts.Length != 3 || parts[1] is < 0 or > 2) throw new FormatException($"A hire needs a turn, an offer slot 0 to 2 and a sector: {hire}");
+        if (parts.Length != 3 || parts[1] is < 0 or > 2 || parts[2] is < 0 or > 63)
+            throw new FormatException($"A hire needs a turn, an offer slot 0 to 2 and a sector 0 to 63: {hire}");
         return new ProbeHire(parts[0], parts[1], parts[2]);
     }).ToArray();
 

@@ -32,6 +32,24 @@ public sealed partial class ChaosGame
         Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute);
 
     /// <summary>
+    /// A button let go while the music fade blocks game events: lets go of what its press holds
+    /// without completing it.
+    /// </summary>
+    /// <remarks>
+    /// FND-AUDIO-016: the fade dispatches window messages without running the game's event step, so
+    /// the release does nothing in the game. The press still has to end, or the control would stay
+    /// held until some later release, possibly on another screen. It ends as a release outside the
+    /// window does, which every held control already takes as a cancel.
+    /// </remarks>
+    private void CancelSwallowedPointerReleases(MouseState mouse)
+    {
+        if (PointerButtonEdges.Released(mouse.LeftButton, _previousMouse.LeftButton))
+            CompletePointerRelease(pointerMapped: false, Point.Zero, rightButton: false);
+        if (PointerButtonEdges.Released(mouse.RightButton, _previousMouse.RightButton))
+            CompletePointerRelease(pointerMapped: false, Point.Zero, rightButton: true);
+    }
+
+    /// <summary>
     /// A button released: completes what its press holds. Only a face pressed with the right button
     /// waits on that button; every other held control follows the left one.
     /// </summary>

@@ -57,11 +57,13 @@ public static class HireDockLayout
         return new Rectangle(438 + slot * 66, 436, 33, 24);
     }
 
-    /// <summary>SCR-UI-003, EXP-UI-001: the price's two digits start at (450 + 66k, 440).</summary>
     public static Point Price(int slot)
     {
         var cell = PriceCell(slot);
-        return new Point(cell.X + 12, cell.Y + 4);
+        const int twoGlyphWidth = 11; // 5px glyph + 1px advance + 5px glyph.
+        return new Point(
+            cell.X + (cell.Width - twoGlyphWidth) / 2,
+            cell.Y + 4);
     }
 
     public static string PriceText(int amount)

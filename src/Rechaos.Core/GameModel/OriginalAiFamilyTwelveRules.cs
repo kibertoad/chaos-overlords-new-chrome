@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Defensive equipment, healing, movement, and attack choices recovered from
-/// original AI family 12 at 0x004353a0.
+/// original AI family 12 at 0x004353A0 (FND-AI-070).
 /// </summary>
 internal static class OriginalAiFamilyTwelveRules
 {
@@ -16,7 +16,7 @@ internal static class OriginalAiFamilyTwelveRules
     }
 
     /// <summary>
-    /// FND-AI-070: the cost is compared with cash as signed values (<c>JG</c> at 0x00435684 and
+    /// FND-AI-073: the cost is compared with cash as signed values (<c>JG</c> at 0x00435684 and
     /// 0x004357D2), so a player whose upkeep left its cash below 0 (RULE-UPKEEP-001) fails the test.
     /// </summary>
     public static bool CanEquip(int cooldown, int itemCost, int cash)

@@ -42,18 +42,27 @@ thirtieth turn made 1258 calls: four at `0x00473ABC`, the Hide test of an
 attack, and one each at `0x0042A1AB`, `0x00434AFD` and `0x00431D4F`, the
 attack target draws of families 0, 1 and 6.
 
+The six players held 1, 2, 5, 5, 8 and 5 Last Turn reports (FMT-STATE-006).
+The last of each was the elimination of player 0 (type 9 with `arg1` 0), which
+was also the eliminated human's only report. Before it were four Crackdown
+reports for sectors 11 and 19 (type 1), five completed sites (type 4), nine
+completed items (type 5), and player 4's loss of sector 18 with `arg2` 5
+(type 3), which player 5 took with `arg2` 4 (type 2).
+
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run up to
 the planning phase that follows the human's elimination. The rebuild makes the
-same calls with the same bounds and results and reaches the same generator
-position and state. In it four gangs of player 2 attack the human's gang in
-sector 12, which hides: three draws fall below the evasion threshold and miss,
-and the fourth attack hits and takes the gang's Force from 4 to 0, which
-eliminates the human.
+same calls with the same bounds and results, reaches the same generator
+position and state, and builds the same Last Turn reports for every player. In
+it four gangs of player 2 attack the human's gang in sector 12, which hides:
+three draws fall below the evasion threshold and miss, and the fourth attack
+hits and takes the gang's Force from 4 to 0, which eliminates the human.
 
 ## Conclusion
 
 The run agrees with the spec over thirty turns of Kill 'Em All, including
 computer players' attacks on a hiding gang (RULE-ATTACK-001) and a death in
-combat (RULE-COMBAT-002, RULE-GANG-002).
+combat (RULE-COMBAT-002, RULE-GANG-002). It also settles that `danger_near`
+scans the gang's own sector with its neighbours (RULE-AI-005): a replay whose
+equipment gate skips that sector diverges from the run.

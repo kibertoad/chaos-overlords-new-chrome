@@ -28,14 +28,11 @@ public static class CityStatusMessage
 
 public static class StatusConsoleLayout
 {
-    // SCR-UI-003, EXP-UI-001: the scenario name, the date and the redrawn CASH label start at
-    // x 481, the scenario name at y 6, and right-aligned values end at x 579, the last glyph
-    // column before 580.
-    public const int LabelLeft = 481;
-    public const int ValueRight = 580;
+    public const int LabelLeft = 480;
+    public const int ValueRight = 579;
     /// <summary>RULE-UI-011: the sector code and the four sector values start at x 568.</summary>
     public const int SectorValueLeft = 568;
-    public const int ScenarioY = 6;
+    public const int ScenarioY = 3;
     public const int DateY = 15;
     public const int ScoreY = 24;
     public const int CashY = 42;
@@ -222,12 +219,12 @@ public static class StatusConsoleTooltip
 public static class StatusConsolePresentation
 {
     /// <summary>
-    /// The status-console SCORE row: the same scenario standing score the ranking screen ranks
+    /// The status-console SCORE row: the scenario score the last evaluation stored, when the match
+    /// started or the last turn ended (RULE-OBJECTIVE-002), the same one the ranking screen ranks
     /// by, so objective scenarios show their standing (Big Man points, sectors controlled, HQ
-    /// sectors held, or the inactive-seat count Kill 'Em All and Siege share) rather than only
+    /// sectors held, or the inactive-seat count Kill 'Em All and Eliminate share) rather than only
     /// the timed scenarios' scores.
     /// </summary>
-    /// <summary>The score stored when the last turn ended (RULE-OBJECTIVE-002).</summary>
     public static long Score(MatchState state, MatchPlayerState player) => player.ScenarioScore;
 
     public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>

@@ -4,7 +4,7 @@ title: Crackdown reports go to the players who had a gang in the sector when res
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CHAOS-002, FND-EXE-004, FND-POLICE-002, EXP-TURN-023, EXP-TURN-024]
+evidence: [FND-CHAOS-002, FND-EXE-004, FND-POLICE-002, EXP-TURN-023, EXP-TURN-024, EXP-TURN-036]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]

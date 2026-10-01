@@ -1,6 +1,6 @@
 ---
 id: EXP-TURN-039
-title: How do raiders and family-4 gangs plan, when the probe sets them in memory?
+title: How does a six-month Acceptance end, and does a human that always hides get the Big Fat Chicken?
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -15,10 +15,11 @@ fixture: EXP-TURN-039.json
 
 ## Question
 
-Family 9 plans for a player whose `raider_mode` is set, which only a computer
-player taking over a network seat does (RULE-AI-027), and no match assigns
-family 4 (RULE-AI-023). Neither handler runs in a local match. How do the two
-plan when the flag and the family are written into the original's memory?
+EXP-TURN-037 ends a Greed. Acceptance scores the Support of the completed
+sites in a player's sectors (RULE-OBJECTIVE-002), and the match ends with one
+more refresh of the sectors and gangs (FND-OBJECTIVE-004). Does the original
+end a six-month Acceptance with the 26th resolution, and does a human that
+hid every turn get award 2 (Big Fat Chicken) from RULE-AWARDS-001?
 
 ## Setup
 
@@ -26,35 +27,29 @@ As EXP-TURN-001.
 
 ## Procedure
 
-As EXP-TURN-004 with `--seed 17`, `--scenario 1` (Power) and twelve Done
-presses (`--end-turns 12`). The human gives no orders. Before the first Done
-press the probe sets the `raider_mode` byte at `0x00482158` for players 1 and 3
-(`--raiders 1:1,1:3`). Before the second it writes 4 into the `family` of the
-planning record in roster slot 0 of players 2, 4 and 5 (FMT-STATE-007,
-`--families 2:2:0:4,2:4:0:4,2:5:0:4`); the first planning pass of each player
-has assigned that record a family by then, so the write is not reset.
-
-The seed was found in the rebuild, which played this setup for seeds 1 to 40
-in Power and Kill 'Em All and counted each family-4 and family-9 plan by the
-previous and the planned action. Seed 17 gave the most kinds of plan,
-including family-9 attacks.
+As EXP-TURN-037 with `--seed 1` and `--scenario 2` (Acceptance).
+Before the first Done press the human's gang in roster slot 0 is set to Hide
+with Hide as its recurring order (`--orders 1:0:8:0:0:1`), so it hides in
+every turn.
 
 ## Observations
 
-The run made 1857 calls of `roll`, with the Done presses at the counts listed
-in the fixture. The raiders' gangs equip, move out of their own sectors, take
-other sectors by Control and attack, and the family-4 gangs raise Chaos, equip
-and move.
+The run made 13650 calls of `roll`. At the end `match_over` was 1 and
+`elapsed_turns` 25. The stored scores were 0, 16, 25, 21, 26 and 25 for
+players 0 to 5. The human held award 2 (Big Fat Chicken) and award 4 (Safe),
+player 2 held award 3 (Dollar Sign), and no other player held one.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. It
-makes the same writes to the rebuild's planning state before the same Done
-presses, and the rebuild makes the same calls with the same bounds and
-results and reaches the same state. Without the writes the rebuild parts from
-the original at roll 477. No family-4 gang sees a hostile human gang, so the
-family-4 attack draws and its Control after repeated moves are not compared.
+`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
+rebuild makes the same calls with the same bounds and results, ends the match
+with the resolution of turn 26, reaches the same state, stored scores and Last
+Turn reports, and gives the same awards to the same players. The computer
+players' last planning reads the gangs' statistics as the refresh at the end
+of the match leaves them; without that refresh the rebuild's rolls part from
+the original's in the hire-offer scan of the final turn.
 
 ## Conclusion
 
-The run agrees with RULE-AI-023 and RULE-AI-027 for the branches it reaches.
+The run agrees with RULE-OBJECTIVE-002, RULE-OBJECTIVE-004, RULE-AWARDS-001
+and the refresh of RULE-GANG-001 at the end of a match.

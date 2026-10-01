@@ -40,15 +40,22 @@ that DEV-AI-007 refuses.
 The run made 2493 calls of `roll`. At the end the human had 3 cash and
 sector 51 had base Tolerance 29.
 
+The six players held 1, 1, 0, 3, 3 and 1 Last Turn reports (FMT-STATE-006).
+The human's was the tenth Bribe's: type 6 (cash short) with `arg1` 1 (Bribe),
+`arg2` 51 and `arg3` 0. The others were three completed sites (type 4), two
+completed items (type 5) and three Controls of sectors no one owned before
+(type 2 with `arg2` -1).
+
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state. In its replay the human's cash at the
-planning of turns 2 to 11 is 18, 16, 14, 12, 10, 8, 6, 4, 2 and 3: each turn
-adds 1 and the first nine Bribes take 3, and the tenth, at 2 cash, fails. The
-base Tolerance of 29 is 11 plus 3 for each of the nine paid Bribes, less the
-nine one-point returns toward 11 after the first turn (RULE-TOLERANCE-001).
+rebuild makes the same calls with the same bounds and results, reaches the same
+generator position and state, and builds the same Last Turn reports for every
+player. In its replay the human's cash at the planning of turns 2 to 11 is 18,
+16, 14, 12, 10, 8, 6, 4, 2 and 3: each turn adds 1 and the first nine Bribes
+take 3, and the tenth, at 2 cash, fails. The base Tolerance of 29 is 11 plus 3
+for each of the nine paid Bribes, less the nine one-point returns toward 11
+after the first turn (RULE-TOLERANCE-001).
 
 ## Conclusion
 

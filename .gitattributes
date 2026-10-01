@@ -10,3 +10,7 @@
 # Verify-Repository.ps1 measures on the checkout. LF keeps their size the same on
 # every platform instead of growing by one byte per line on Windows.
 /spec/experiments/*.json text eol=lf
+
+# Git runs hooks with sh, which rejects the carriage returns a CRLF checkout
+# would add on Windows.
+.githooks/** text eol=lf

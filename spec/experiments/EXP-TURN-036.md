@@ -1,6 +1,6 @@
 ---
 id: EXP-TURN-036
-title: How does a six-month Greed end, and which awards does the endgame give?
+title: Do repeated turn runs agree on running totals, hire roles and the planning and resolution behaviour they exercise?
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -9,48 +9,74 @@ reproduced_by: []
 environment: Windows 11 Pro 10.0.26200, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, run with the compatibility layers DWM8And16BitMitigation, WINXPSP2, DISABLEDWM, 640X480 and DISABLEDXMAXIMIZEDWINDOWEDMODE, windowed, Warn if Idle Gangs and Detailed Combat switched off and the sound levels set to 0 in memory, under the Windows debugging interface of tools/Rechaos.OriginalProbe
 starting_state: new-game
 recording: null
-repetitions: 1
+repetitions: 28
 fixture: EXP-TURN-036.json
 ---
 
 ## Question
 
-A timed scenario ends with the resolution of the turn numbered with its limit
-(RULE-OBJECTIVE-004), after the end evaluation has stored the scores
-(RULE-OBJECTIVE-001). The endgame then gives the awards (RULE-AWARDS-001).
-Every earlier run stops before a match ends. Does the original end a
-six-month Greed with the 26th resolution, and which awards does it give?
+Do the original's running totals and computer hire roles agree with the static
+rules, and what additional behaviour do the repeated runs cover?
 
 ## Setup
 
-As EXP-TURN-001.
+The setups, seeds, orders and stop points are those of EXP-TURN-001 and
+EXP-TURN-010 through EXP-TURN-035. EXP-TURN-002 through EXP-TURN-009 have no
+supplemental running-total samples here. This entry records supplemental observations from their reruns;
+it does not claim that another run was made to write this entry.
 
 ## Procedure
 
-As EXP-TURN-028 with 26 Done presses (`--end-turns 26`). After the last one
-the end evaluation sets `match_over`, and the match loop gives the human one
-last look at the city with the turn's Combat Results open (FND-OBJECTIVE-004).
-The probe closes the panel, presses Done there, and stops when the endgame's
-row painter at `0x0042CE61` first runs, once the awards are given.
+Repeat each source run with its recorded setup and inputs, extracting each
+player's cash earned and spent, damage inflicted, casualties, overthrows,
+hides, current hire role and previous hire role at the final planning phase.
+The supplemental fixture identifies each source fixture and its zero-based
+run index and preserves these extracted fields. The source fixtures retain
+the complete draw sequences and final state alongside these measurements.
 
 ## Observations
 
-The run made 10794 calls of `roll`; the first 10081 are those of EXP-TURN-028,
-which stops before its 26th Done. At the end `match_over` was 1 and `elapsed_turns` still 25, since the
-loop moves it on only after the endgame. The stored scores were each player's
-cash, with the human last. The human, who spent nothing, held award 4 (Safe),
-player 1, with the most cash spent (372), held award 3 (Dollar Sign), and no
-other player held one. Nobody overthrew, damaged or hid enough for the first
-three awards.
+The supplemental fixture records 28 final-state samples. EXP-TURN-016
+ends with cash earned of 5, 40, 30, 34, 36 and 48 and cash spent of 8, 32,
+36, 30, 21 and 35 for players 0 through 5. All six damage totals are zero;
+the human's current hire role is -1 and every computer player's is 0.
+
+12 samples include nonzero damage totals. They agree with counting full
+opening attack damage, including damage beyond the target's remaining Force,
+without adding retaliation or police damage (RULE-COMBAT-003).
+
+The final reports of EXP-TURN-023 and EXP-TURN-024 include Crackdowns sent to
+players who raised no Chaos there; EXP-TURN-024 includes a recipient with no
+gang left in the sector at the end. Recipients follow the gangs present when
+resolution began (RULE-POLICE-004).
+
+The computer planning and hire outcomes agree with the sector danger and
+hostility refresh (RULE-AI-003) and encoded hire destinations (RULE-AI-012).
+The unused random destination modes are not exercised. EXP-TURN-017's
+computer equipment choices require the danger scan to include the gang's
+own sector (RULE-AI-005). EXP-TURN-031's human Equip and Sell do not establish
+a computer upgrade choice.
+
+Attitudes after takeovers in EXP-TURN-011, EXP-TURN-017 and EXP-TURN-018 agree
+with the takeover reaction (RULE-AI-017); none reaches the -10 floor.
+The family-0 sequences in EXP-TURN-010 and EXP-TURN-017 agree with RULE-AI-019
+in the previous-action branches reached. No recorded run reaches its
+previous-Snitch branch, Control after a failed draw following Attack, or a
+failed draw after Heal, Hide or Move.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results, ends the match
-with the resolution of turn 26, reaches the same state, stored scores and Last
-Turn reports, and gives the same awards to the same players.
+The source runs' replay comparisons agree on the extracted running totals
+and computer players' current and previous hire roles, as well as the draws,
+final gang and sector records, attitudes and Last Turn reports above.
+The human's current hire role differs (-1 in the original, 0 in the replay);
+the comparison maps only the original's -1 for a human player to 0, and
+compares every other value. No rule reads the initial human role before the
+first planning pass replaces it (FND-AI-042).
 
 ## Conclusion
 
-The run agrees with RULE-OBJECTIVE-001, RULE-OBJECTIVE-004 and
-RULE-AWARDS-001.
+The supplemental observations agree with the static readings of
+RULE-COMBAT-003, RULE-POLICE-004, RULE-AI-003, RULE-AI-005, RULE-AI-012,
+RULE-AI-017 and RULE-AI-019 in the cases reached. They support established
+status without claiming coverage of the unobserved branches.
