@@ -35,10 +35,22 @@ try
             AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
 
+    // --reference-frame <save> <bitmap> [--marker-frame <n>]: show the save as a new game's first
+    // planning entry, write the drawing area and exit (ReferenceFrameRequest).
+    var referenceArgument = Array.FindIndex(args, value => value == "--reference-frame");
+    var markerArgument = Array.FindIndex(args, value => value == "--marker-frame");
+    var referenceFrame = referenceArgument >= 0 && referenceArgument + 2 < args.Length
+        ? new ReferenceFrameRequest(
+            Path.GetFullPath(args[referenceArgument + 1]), Path.GetFullPath(args[referenceArgument + 2]),
+            markerArgument >= 0 && markerArgument + 1 < args.Length
+                ? int.Parse(args[markerArgument + 1], System.Globalization.CultureInfo.InvariantCulture)
+                : null)
+        : null;
     using var game = new ChaosGame(
         assetRoot,
         args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
-        diagnostics);
+        diagnostics,
+        referenceFrame: referenceFrame);
     if (platformSmokeTest)
         return 0;
     try

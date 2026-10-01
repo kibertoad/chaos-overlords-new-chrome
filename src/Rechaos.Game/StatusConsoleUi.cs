@@ -28,11 +28,14 @@ public static class CityStatusMessage
 
 public static class StatusConsoleLayout
 {
-    public const int LabelLeft = 480;
-    public const int ValueRight = 579;
+    // SCR-UI-003, EXP-UI-001: the scenario name, the date and the redrawn CASH label start at
+    // x 481, the scenario name at y 6, and right-aligned values end at x 579, the last glyph
+    // column before 580.
+    public const int LabelLeft = 481;
+    public const int ValueRight = 580;
     /// <summary>RULE-UI-011: the sector code and the four sector values start at x 568.</summary>
     public const int SectorValueLeft = 568;
-    public const int ScenarioY = 3;
+    public const int ScenarioY = 6;
     public const int DateY = 15;
     public const int ScoreY = 24;
     public const int CashY = 42;

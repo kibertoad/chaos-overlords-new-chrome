@@ -78,6 +78,13 @@ internal static class OriginalAddresses
     public const int PlanningPlayerStride = 0x510;
     public const int PlanningRecordSize = 0x10;
     public const uint RaiderMode = 0x00482158;
+
+    // FND-PLATFORM-008: the keyed mask compositor stores its 16-bit key colour RGB(255,252,255)
+    // as the immediate of the instruction at 0x00427A23.
+    public const uint SixteenBitKeyColour = 0x00427A26;
+
+    // FND-UI-038: the 16-bit counter of the viewed player's marker, 0 to 11.
+    public const uint MarkerCounter = 0x00487B90;
     public const uint Cash = 0x004A25E8;
 
     // FND-SETUP-002: the full local setup handler.

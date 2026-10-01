@@ -240,7 +240,7 @@ public sealed partial class ChaosGame
         var selectedSector = state.Sectors[_cursor];
         var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
         var scenario = ScenarioCatalog.Get(state.Setup.Scenario);
-        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.LabelLeft, 14, 44, 8), Color.Black);
+        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.LabelLeft - 1, 14, 44, 8), Color.Black);
         font.Draw(batch, scenario.Name,
             new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
         font.Draw(batch, MatchDate(state.Coordinator.Turn),

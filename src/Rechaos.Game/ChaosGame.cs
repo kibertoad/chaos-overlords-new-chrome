@@ -228,9 +228,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         string assetRoot,
         bool debugPhaseStepping = false,
         RuntimeDiagnostics? diagnostics = null,
-        string? screenshotFolder = null)
+        string? screenshotFolder = null,
+        ReferenceFrameRequest? referenceFrame = null)
     {
         _assetRoot = assetRoot;
+        _referenceFrame = referenceFrame;
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;
         _screens.Changed += (previous, current) => _diagnostics?.Write(
@@ -302,14 +304,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // 1366x768 laptop or a 1080p panel at 150% scaling cannot show a 920-pixel-tall window, and
         // the DONE button ends up below the screen edge. Draw and input already letterbox from the
         // viewport, so any size works; the window just has to fit on the display it opens on.
-        var (backBufferWidth, backBufferHeight) = PreferredBackBufferSize();
+        var (backBufferWidth, backBufferHeight) = _referenceFrame is null
+            ? PreferredBackBufferSize()
+            : (VirtualInput.Width, VirtualInput.Height);
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = backBufferWidth,
             PreferredBackBufferHeight = backBufferHeight,
             SynchronizeWithVerticalRetrace = true,
             HardwareModeSwitch = false,
-            IsFullScreen = _fullscreen
+            IsFullScreen = _fullscreen && _referenceFrame is null
         };
         // Ticking on without focus is what keeps background online notices, the planning timer and
         // the autosave serviced; the redraw is the expensive part, and BeginDraw spaces that out
@@ -435,6 +439,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     {
         _autoSave.Pump();
         _inputTime = gameTime.TotalGameTime;
+        if (UpdateReferenceFrame())
+        {
+            base.Update(gameTime);
+            return;
+        }
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
         _multiSelectModifier = keyboard.IsKeyDown(Keys.LeftControl)

@@ -50,7 +50,7 @@ internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
-    IReadOnlyList<ProbePlanning>? Planning = null)
+    IReadOnlyList<ProbePlanning>? Planning = null, bool Capture = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -118,6 +118,12 @@ internal sealed class NewGameSession(
 
     public ProbeTrace Run()
     {
+        // FND-PLATFORM-008: on a 16-bit display the image set's white reads back as
+        // RGB(255,252,255), the compositor's key. Here the surfaces follow the 32-bit desktop and
+        // white reads back as RGB(255,255,255), so nothing keyed would be transparent. A capture
+        // run moves the key to the colour white reads back as on this system.
+        if (settings.Capture)
+            _process.Write(OriginalAddresses.SixteenBitKeyColour, [0xFF, 0xFF, 0xFF, 0x00]);
         _process.SetBreakpoint(OriginalAddresses.SeedGenerator, SeedGenerator);
         _process.SetBreakpoint(OriginalAddresses.Roll, OnRoll);
         _process.SetBreakpoint(OriginalAddresses.PreferenceLoaderCall + 5, ForceWindow, oneShot: true);
@@ -229,6 +235,7 @@ internal sealed class NewGameSession(
         }
 
         DumpWritableSections();
+        if (settings.Capture) CaptureDrawingArea(window);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -432,6 +439,68 @@ internal sealed class NewGameSession(
             File.WriteAllBytes(Path.Combine(outputDirectory, name), bytes);
             _notes.Add($"Dumped {section.Name} at 0x{section.VirtualAddress:X8}, {section.VirtualSize} bytes, to {name}.");
         }
+    }
+
+    // RULE-GFX-002: the 640-by-460 drawing area starts at the client area's top-left corner. The
+    // capture is written to the run directory, outside the repository, once through PrintWindow
+    // and once through a copy from the window's device context.
+    private void CaptureDrawingArea(IntPtr window)
+    {
+        const int width = 640, height = 460;
+        // FND-UI-038: the marker shows the frame before its counter's last step. The counter is
+        // read on both sides of the copies, and a capture it moved during is taken again.
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            var before = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
+            CaptureDrawingArea(window, width, height);
+            var after = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
+            if (before != after) continue;
+            _notes.Add($"marker_frame {(before + 11) % 12}");
+            return;
+        }
+        _notes.Add("The marker counter moved during every capture.");
+    }
+
+    private void CaptureDrawingArea(IntPtr window, int width, int height)
+    {
+        Native.GetClientRect(window, out var client);
+        _notes.Add($"Client area {client.Right - client.Left} by {client.Bottom - client.Top}.");
+        foreach (var (name, print) in new[] { ("capture-print.bmp", true), ("capture-blt.bmp", false) })
+        {
+            var info = new byte[40];
+            BitConverter.GetBytes(40).CopyTo(info, 0);
+            BitConverter.GetBytes(width).CopyTo(info, 4);
+            BitConverter.GetBytes(-height).CopyTo(info, 8);
+            BitConverter.GetBytes((short)1).CopyTo(info, 12);
+            BitConverter.GetBytes((short)32).CopyTo(info, 14);
+            var screen = Native.GetDC(window);
+            var memory = Native.CreateCompatibleDC(screen);
+            var bitmap = Native.CreateDIBSection(screen, info, 0, out var bits, IntPtr.Zero, 0);
+            var old = Native.SelectObject(memory, bitmap);
+            var ok = print
+                ? Native.PrintWindow(window, memory, 1)
+                : Native.BitBlt(memory, 0, 0, width, height, screen, 0, 0, 0x00CC0020);
+            var pixels = new byte[width * height * 4];
+            System.Runtime.InteropServices.Marshal.Copy(bits, pixels, 0, pixels.Length);
+            Native.SelectObject(memory, old);
+            Native.DeleteObject(bitmap);
+            Native.DeleteDC(memory);
+            Native.ReleaseDC(window, screen);
+            WriteBitmap(Path.Combine(outputDirectory, name), width, height, pixels);
+            if (!ok) _notes.Add($"{name}: the copy failed.");
+        }
+    }
+
+    private static void WriteBitmap(string path, int width, int height, byte[] topDownBgra)
+    {
+        using var stream = File.Create(path);
+        using var writer = new BinaryWriter(stream);
+        writer.Write((byte)'B'); writer.Write((byte)'M');
+        writer.Write(54 + topDownBgra.Length); writer.Write(0); writer.Write(54);
+        writer.Write(40); writer.Write(width); writer.Write(-height);
+        writer.Write((short)1); writer.Write((short)32); writer.Write(0);
+        writer.Write(topDownBgra.Length); writer.Write(0); writer.Write(0); writer.Write(0); writer.Write(0);
+        writer.Write(topDownBgra);
     }
 
     private ProbeTrace Finish(bool dumped, string? note, int rollsBeforeBegin = 0)

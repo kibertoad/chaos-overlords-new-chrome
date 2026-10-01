@@ -378,6 +378,15 @@ public sealed class OriginalNewGameExperimentTests
     private static bool IsActive(MatchState match, PlayerId player) =>
         match.FindPlayer(player)!.Status == PlayerStatus.Active;
 
+    [Fact] // TEMP
+    public void TempWriteReferenceSave()
+    {
+        if (Environment.GetEnvironmentVariable("REF_SAVE") is not { } spec) return;
+        var parts = spec.Split('|');
+        var match = StartMatch(Run(parts[0], int.Parse(parts[1])));
+        Rechaos.Core.Persistence.NativeSaveStore.SaveAtomic(parts[2], match);
+    }
+
     private static MatchState StartMatch(RecordedRun recorded)
     {
         var scenario = OriginalScenario(recorded.Term("scenario", 0));

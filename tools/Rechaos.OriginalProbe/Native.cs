@@ -100,4 +100,40 @@ internal static partial class Native
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool PostMessageW(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Rect
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern bool GetClientRect(IntPtr window, out Rect rect);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDC(IntPtr window);
+
+    [DllImport("user32.dll")]
+    public static extern int ReleaseDC(IntPtr window, IntPtr dc);
+
+    [DllImport("user32.dll")]
+    public static extern bool PrintWindow(IntPtr window, IntPtr dc, uint flags);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr CreateCompatibleDC(IntPtr dc);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool DeleteDC(IntPtr dc);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr CreateDIBSection(IntPtr dc, byte[] info, uint usage, out IntPtr bits, IntPtr section, uint offset);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr SelectObject(IntPtr dc, IntPtr gdiObject);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool DeleteObject(IntPtr gdiObject);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool BitBlt(IntPtr dc, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, uint rop);
 }
