@@ -507,6 +507,17 @@ flag is reset, and the new stream is published afterward. A paused resume retain
 its existing completion state. Dependency upgrades must preserve these boundaries
 or replace this hook with an equivalent supported API.
 
+A separate native diagnostic confirms a remaining tail-delivery defect in the pinned
+backend. Keep the initially prepared 0.5-second buffer playing with native looping,
+seek the decoder of the synthetic 2.5-second track to 2.25 seconds, and wait for
+`pendingFinish`. The decoder reaches 2.5 seconds, but `ALGetSourcei.BuffersQueued`
+is 1 rather than 2: the decoded 0.25-second tail was not queued. The streaming
+worker sets `finished` on that read and queues buffers only when `!finished`.
+This diagnostic intentionally changes decoder position to isolate submission; it
+does not compare audible hardware output. Whole-track decoding alone therefore
+cannot establish the endpoint required by RULE-AUDIO-001. Repairing final-buffer
+submission remains necessary before claiming full soundtrack parity.
+
 ## Failure triage
 
 Classify mismatches as:
