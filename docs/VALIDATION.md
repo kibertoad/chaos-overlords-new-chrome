@@ -500,26 +500,36 @@ original's result as the deviation changes it.
 
 ## Native audio backend
 
-The native soundtrack EOF regression pins the old stream at its decoded end before
-replacing its program, then requires the replacement decoder to reach the end of a
-2.5-second synthetic track. This checks stale completion-state truncation, without
-proving audible output or final partial-buffer delivery. The production adapter
-binds MonoGame DesktopGL 3.8.5.1 `OggStreamer.Instance` and `pendingFinish` through
-reflection: explicit stop removes and synchronizes with the old stream before the
-flag is reset, and the new stream is published afterward. A paused resume retains
-its existing completion state. Dependency upgrades must preserve these boundaries
-or replace this hook with an equivalent supported API.
+The soundtrack adapter binds the pinned MonoGame DesktopGL 3.8.5.1 backend through
+reflection. Before the first program starts, it stops and joins the stock Ogg worker
+and installs a replacement using the same stream registry, native buffers, decoder,
+preparation lock and stop lock. Dependency upgrades must preserve these contracts
+or replace the adapter with supported APIs. The worker is joined before game audio
+assets are disposed; failures are reported back on the owning game thread.
 
-A separate native diagnostic confirms a remaining tail-delivery defect in the pinned
-backend. Keep the initially prepared 0.5-second buffer playing with native looping,
-seek the decoder of the synthetic 2.5-second track to 2.25 seconds, and wait for
-`pendingFinish`. The decoder reaches 2.5 seconds, but `ALGetSourcei.BuffersQueued`
-is 1 rather than 2: the decoded 0.25-second tail was not queued. The streaming
-worker sets `finished` on that read and queues buffers only when `!finished`.
-This diagnostic intentionally changes decoder position to isolate submission; it
-does not compare audible hardware output. Whole-track decoding alone therefore
-cannot establish the endpoint required by RULE-AUDIO-001. Repairing final-buffer
-submission remains necessary before claiming full soundtrack parity.
+The stock worker loses a fill batch when its final read reaches EOF: it queues
+buffers only when `!finished`. Its shared EOF flag can also truncate a replacement
+program. The replacement keeps EOF per stream, queues every nonempty decoded buffer
+including the final partial one, and completes only after the native queue drains.
+Paused transport retains queued data, and a new-song start resets that stream's EOF.
+Completion calls stay outside preparation and stop locks. A transport lock serializes
+their notification with owner mutations, and generation checks reject a completion
+selected before an explicit stop or replacement. A native regression holds the worker
+between unregistering the old stream and notifying, starts a replacement, and verifies
+that the replacement decodes to its own end.
+
+`SoundtrackBufferDeliveryTests` pin the initial native buffer with looping and seek
+the synthetic 2.5-second decoder near its end to isolate buffer submission. The
+partial-tail case failed before repair (one queued buffer instead of two). Cases
+compare native queue counts and exact PCM byte sizes for a partial tail, a mixed
+full/partial batch and empty EOF, then pause and resume the pending tail. Native
+looping is cleared before the test source can be recycled. `SoundtrackStopTailTests`
+compare whole replacement-track decoding at pending EOF; existing native player
+cases cover advancement, activation, explicit stop, fade and completion ordering.
+
+These checks cover decoding, submission and native transport controls. Audible
+hardware output, original device/channel behavior and end-to-end window/caller
+ordering still require comparison before claiming full soundtrack parity.
 
 ## Failure triage
 

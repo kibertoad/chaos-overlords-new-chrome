@@ -29,11 +29,11 @@ public sealed class SoundtrackStopTailTests
         try
         {
             player.PlayProgram([shortSong]);
-            WaitFor(() => DesktopGlSoundtrackCompletionState.Pending);
+            WaitFor(() => DesktopGlSoundtrackStreaming.IsPending(shortSong));
             lock (prepareMutex)
             {
                 Assert.Equal(MediaState.Playing, MediaPlayer.State);
-                Assert.True(DesktopGlSoundtrackCompletionState.Pending);
+                Assert.True(DesktopGlSoundtrackStreaming.IsPending(shortSong));
                 SetNativeLooping(oldStream, false);
                 player.PlayProgram([longSong]);
             }
