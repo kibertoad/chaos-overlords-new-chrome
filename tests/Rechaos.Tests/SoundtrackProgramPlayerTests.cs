@@ -20,8 +20,8 @@ public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
         // program; only its final track ending makes the program eligible for the restart poll.
         var owner = Environment.CurrentManagedThreadId;
         var playingThreads = new ConcurrentBag<int>();
-        var oldDriver = Environment.GetEnvironmentVariable("ALSOFT_DRIVERS");
-        Environment.SetEnvironmentVariable("ALSOFT_DRIVERS", "null");
+        // Invoke-Validation sets ALSOFT_DRIVERS=null before launching the test process.
+        // A runtime Environment.SetEnvironmentVariable cannot configure native OpenAL on Unix.
         var audioPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg");
         var songs = Enumerable.Range(1, 3)
             .Select(index => Song.FromUri($"silence{index}", new Uri(audioPath))).ToArray();
@@ -75,7 +75,6 @@ public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
             MediaPlayer.MediaStateChanged -= barrier;
             player.Dispose();
             foreach (var song in songs) song.Dispose();
-            Environment.SetEnvironmentVariable("ALSOFT_DRIVERS", oldDriver);
         }
     }
 
