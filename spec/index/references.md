@@ -161,6 +161,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AI-070](../findings/FND-AI-070.md) | builds, locations |
 | [FND-AI-071](../findings/FND-AI-071.md) | builds, locations |
 | [FND-AI-072](../findings/FND-AI-072.md) | builds, locations |
+| [FND-AI-073](../findings/FND-AI-073.md) | body, builds, locations |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | builds, locations |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | builds, locations |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | builds, locations |
@@ -1057,14 +1058,14 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
-| [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
+| [RULE-AI-024](../rules/RULE-AI-024.md) | body, evidence |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
 
 ## EXP-TURN-021
 
 | Cited by | In |
 |---|---|
-| [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
+| [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
 
 ## EXP-TURN-022
 
@@ -2211,6 +2212,9 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-AI-070](../findings/FND-AI-070.md) | body |
+| [FND-AI-071](../findings/FND-AI-071.md) | body |
+| [FND-AI-073](../findings/FND-AI-073.md) | body |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
 | [RULE-AI-028](../rules/RULE-AI-028.md) | evidence |
@@ -2369,6 +2373,13 @@ None.
 | [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
+
+## FND-AI-073
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-028](../rules/RULE-AI-028.md) | evidence |
+| [RULE-AI-030](../rules/RULE-AI-030.md) | evidence |
 
 ## FND-ASSET-001
 
@@ -5867,6 +5878,7 @@ None.
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | body, evidence |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
+| [FND-AI-073](../findings/FND-AI-073.md) | body |
 | [FND-CHAOS-001](../findings/FND-CHAOS-001.md) | body |
 | [FND-UI-035](../findings/FND-UI-035.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
@@ -7527,6 +7539,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-AI-073](../findings/FND-AI-073.md) | body |
 | [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | body, related |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
 

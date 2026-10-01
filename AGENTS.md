@@ -1,5 +1,17 @@
 # Repository agent instructions
 
+## Git ownership in the Windows sandbox
+
+The Windows sandbox may run Git as a different account from the checkout owner.
+For this trusted checkout, use a command-scoped exception from the first Git
+command: `git -c safe.directory=C:/sources/rechaos-overlords ...`. In a separate
+worktree, use that worktree's resolved absolute path instead. With `git -C`, the
+exception names the target checkout, not the shell's working directory.
+
+Keep the exception scoped to the known checkout. Do not use `safe.directory=*`
+or change global Git configuration. This exception does not alter a remote URL
+or relax the push-destination checks below.
+
 ## Git push destination
 
 The authorized canonical repository is

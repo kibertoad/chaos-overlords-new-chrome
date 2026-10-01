@@ -527,17 +527,9 @@ public static partial class AiTurnPlanner
         // every visible gang of every other player there, the owner's or not.
         var defense = checked(sector.Income + sector.Support);
         if (sector.Owner is not null)
-            defense = checked(defense + ManualRules.ControlStrength(state.Players
-                .Where(other => other.Id != playerId)
-                .SelectMany(other => other.Gangs)
-                .Where(candidate => candidate.IsActive
-                    && candidate.SectorId == sector.Id
-                    && state.CanPlayerDetectGang(playerId, candidate.Id))
-                .Select(candidate =>
-                {
-                    var candidateStatistics = EffectiveStatisticsCalculator.ForGang(state, candidate);
-                    return (candidate.Force, candidateStatistics.Control);
-                })));
+            defense = checked(defense + ManualRules.ControlStrength(
+                VisibleOpponentsInSector(state, playerId, sector.Id).Select(target =>
+                    (target.Gang.Force, EffectiveStatisticsCalculator.ForGang(state, target.Gang).Control))));
         return attack > defense;
     }
 

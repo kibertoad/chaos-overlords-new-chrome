@@ -8,6 +8,7 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal readonly record struct OriginalGangRecord(int Sector, int Force, int Combat, int Defense)
 {
+    private const int RecordsPerPlayer = 81; // FMT-STATE-001
     /// <summary>The sector byte of a record that holds no living gang (FMT-STATE-001).</summary>
     public const int InactiveSector = 100;
 
@@ -27,7 +28,7 @@ internal readonly record struct OriginalGangRecord(int Sector, int Force, int Co
         ArgumentNullException.ThrowIfNull(state);
         var gangs = state.FindPlayer(player)?.Gangs
             ?? throw new ArgumentOutOfRangeException(nameof(player));
-        if ((uint)slot >= MatchLimits.GangsPerPlayer)
+        if ((uint)slot >= RecordsPerPlayer)
             throw new ArgumentOutOfRangeException(nameof(slot));
         return slot < gangs.Count ? Of(state, gangs[slot]) : Unused;
     }
