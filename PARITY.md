@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 145 |
-| `validated` | 77 |
+| `implemented` | 144 |
+| `validated` | 78 |
 
 | Code | Rows |
 |---|---|
@@ -224,7 +224,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Each rebuilt field keeps its low eight bits, as the original's INT8 fields do; no shipped combination reaches the wrap. |
-| `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-26 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. EXP-TURN-017 replays a death in combat. |
+| `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-26 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. EXP-TURN-017 replays a death in combat and EXP-TURN-019 a Terminate. |
 | `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | complete | None | `DEV-UI-010` | implemented | Opened from the order panels' portraits with the gang's values, the Force question marks and the recorded positions. The base values are blacked out through bitmap 143 from each area's corner (FND-GANG-011, FND-GFX-006). |
 | `SCR-GANG-002` | Gang information panel for a hired gang | supported | complete | None | `DEV-GANG-001` | implemented | Opened for hired gangs and hire offers, with every recorded position, rotating items, base values 18 pixels to the left, and the close face acting on release. |
 
@@ -256,7 +256,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TERMINATE-001` | Terminate pass retires every gang ordered to Terminate, before any Move | supported | complete | None | None | implemented | Terminate retires the gang through the same step as RULE-GANG-002, before any Move, with no casualty and no Last Turn report. Force 0, the cleared orders and Hidden are the representation of the inactive slot (2026-09-26 decision). |
+| `RULE-TERMINATE-001` | Terminate pass retires every gang ordered to Terminate, before any Move | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Terminate retires the gang through the same step as RULE-GANG-002, before any Move, with no casualty and no Last Turn report. Force 0, the cleared orders and Hidden are the representation of the inactive slot (2026-09-26 decision). EXP-TURN-019 replays the Terminate of the human's only gang. |
 
 ## UPKEEP
 
