@@ -288,7 +288,7 @@
 
 ## recorded
 
-357 entries.
+359 entries.
 
 | ID | Title |
 |---|---|
@@ -315,6 +315,8 @@
 | [EXP-TURN-017](../experiments/EXP-TURN-017.md) | Do thirty turns of a new local Kill 'Em All game, up to the human's elimination, draw and resolve as the spec gives? |
 | [EXP-TURN-018](../experiments/EXP-TURN-018.md) | Does a new local Kill 'Em All game in which the human's gang never hides draw and resolve as the spec gives, up to the human's elimination? |
 | [EXP-TURN-019](../experiments/EXP-TURN-019.md) | Does a human gang's Terminate order retire the gang as the spec gives? |
+| [EXP-TURN-020](../experiments/EXP-TURN-020.md) | Do the family-5 and family-7 attacks on a human gang that walks into computer land draw and resolve as the spec gives? |
+| [EXP-TURN-021](../experiments/EXP-TURN-021.md) | Does a computer gang in an enemy sector count every other player's visible gang there before it plans Control? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |

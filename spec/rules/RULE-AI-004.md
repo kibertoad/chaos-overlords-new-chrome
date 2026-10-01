@@ -4,7 +4,7 @@ title: Queries the computer players' handlers share
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057, FND-SETUP-018]
+evidence: [FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057, FND-SETUP-018, EXP-TURN-021]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, RULE-RNG-002]
@@ -243,6 +243,12 @@ None known.
 
 ## Open questions
 
+- EXP-TURN-021 directly checks the owned-sector rejection in `solo_control_ok`
+  when visible defenders include the owner's and a third player's gangs. Its
+  selector trace and call-16671 snapshot do not independently check the other
+  shared queries, the neutral-sector case, equal-strength boundary, invisible
+  defenders, own-sector rejection or Crackdown rejection. The query library
+  therefore remains supported.
 - `crackdown_in_force` is taken to test for a nonzero Crackdown byte; a positive
   test is also possible.
 - Whether `visible_weight` stops at the first visible gang or looks on for one
