@@ -56,9 +56,11 @@ public sealed class SoundtrackCatalogTests
     [InlineData(0, 0)]
     [InlineData(5, 32000)]
     [InlineData(10, 64000)]
-    public void RecoveredVolumeLevelsMatchOriginalStereoChannelValues(
-        int level, int originalChannelValue) =>
-        Assert.Equal(originalChannelValue / (float)ushort.MaxValue,
+    // RULE-AUDIO-003, FND-AUDIO-007: this checks the original left channel only.
+    // A scalar gain does not reproduce the right-channel borrow from level 6 upward.
+    public void RecoveredVolumeLevelsMatchOriginalLeftChannelValues(
+        int level, int originalLeftChannelValue) =>
+        Assert.Equal(originalLeftChannelValue / (float)ushort.MaxValue,
             OriginalSoundtrackPolicy.VolumeForLevel(level));
 
     [Fact]
