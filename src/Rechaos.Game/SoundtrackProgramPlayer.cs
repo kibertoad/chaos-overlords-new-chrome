@@ -113,6 +113,7 @@ public sealed class SoundtrackProgramPlayer : IDisposable
         if (_cursor.Current is not { } song) return;
         Volatile.Write(ref _expectedSong, song);
         Interlocked.Exchange(ref _songCompleted, 0);
+        DesktopGlSoundtrackCompletionState.ClearBeforeNewSong();
         // The native completion path now only stops this one song and reports completion.
         MediaPlayer.Play(song);
     }
