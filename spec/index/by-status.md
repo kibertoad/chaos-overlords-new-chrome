@@ -16,7 +16,7 @@
 
 ## supported
 
-171 entries.
+172 entries.
 
 | ID | Title |
 |---|---|
@@ -77,7 +77,7 @@
 | [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector |
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | Starting a music program |
-| [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | Music repeats its program when it ends and pauses while the window is inactive |
+| [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | Music restarts a stopped program and sends pause and resume requests on focus changes |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | Applying the music and effects levels |
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | Loading the general sound effects |
 | [RULE-AUDIO-005](../rules/RULE-AUDIO-005.md) | Playing a sound effect, which cuts off the one playing |
@@ -86,6 +86,7 @@
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc |
+| [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors |
@@ -290,7 +291,7 @@
 
 ## recorded
 
-380 entries.
+381 entries.
 
 | ID | Title |
 |---|---|
@@ -417,6 +418,7 @@
 | [FND-AUDIO-011](../findings/FND-AUDIO-011.md) | Panels play slot 3 for an accepted choice and slot 4 for a refused one, and the pagers stop at both ends |
 | [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read |
 | [FND-AUDIO-013](../findings/FND-AUDIO-013.md) | Detailed Combat loads each attack's sound into slot 5 and picks the attack and hit strips from the weapon, Martial Arts and outcome |
+| [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | The shipped GOG CD wrapper rejects MCI_PAUSE and treats MCI_PLAY without MCI_FROM as a successful no-op |
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | The award builder takes five categories in a fixed order with fixed starting thresholds and keeps every tied player, but only three awards per row are drawn |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions |
@@ -824,13 +826,14 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-031](../rules/RULE-AI-031.md) | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | established |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported |
-| [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | Music repeats its program when it ends and pauses while the window is inactive | supported |
+| [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | Music restarts a stopped program and sends pause and resume requests on focus changes | supported |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | Applying the music and effects levels | supported |
 | [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | The turn-start sound | supported |
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | The Comlink alert plays slot 6 through the effects gate | supported |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks | supported |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | supported |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
+| [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM | supported |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | established |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established |

@@ -13,7 +13,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 0 |
+| `supported` | 1 |
 | `established` | 0 |
 | `disputed` | 0 |
 | `implemented` | 105 |
@@ -21,7 +21,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Code | Rows |
 |---|---|
-| `missing` | 0 |
+| `missing` | 1 |
 | `partial` | 0 |
 | `complete` | 222 |
 
@@ -52,7 +52,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-AUDIO-001` | Sound effect files DATA/SNDnnnnn | supported | complete | tests/Rechaos.Tests/OriginalSoundFileTests.cs | None | validated | The files are passed whole to the sound library. |
 | `FMT-AUDIO-002` | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported | complete | tests/Rechaos.Tests/OriginalSoundFileTests.cs | None | validated | The files are passed whole to the music player. |
 | `RULE-AUDIO-001` | Starting a music program | supported | complete | None | None | implemented | Title, game and endgame programs are wired to the matching Ogg tracks; the rebuild plays files in place of CD audio. |
-| `RULE-AUDIO-002` | Music repeats its program when it ends and pauses while the window is inactive | supported | complete | None | None | implemented | Focus loss pauses and focus gain resumes music; the end-of-playback restart was not checked separately. |
+| `RULE-AUDIO-002` | Music restarts a stopped program and sends pause and resume requests on focus changes | supported | complete | None | None | implemented | Focus loss pauses and focus gain resumes music; the end-of-playback restart was not checked separately. |
 | `RULE-AUDIO-003` | Applying the music and effects levels | supported | complete | None | None | implemented | The 0 to 10 level conversion and the level-5 music default are implemented. |
 | `RULE-AUDIO-004` | Loading the general sound effects | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-005` | Playing a sound effect, which cuts off the one playing | supported | complete | None | None | implemented | One effect voice, each new cue stopping the one before it. |
@@ -61,6 +61,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | tests/Rechaos.Tests/ComlinkAlertCadenceTests.cs | None | validated | Tests compare all eight arrival phases and the arrival/planning-entry repeat-counter resets with FND-AUDIO-012: the first repeat takes 17 to 24 shared presentation ticks, then repeats every 24 ticks. |
 | `RULE-AUDIO-009` | The sound of an attack in Detailed Combat | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-010` | The startup drive check always passes and the game never looks for its disc | supported | complete | None | `DEV-AUDIO-001` | implemented | The rebuild plays the music files and never checks a drive or looks for the disc (DEV-AUDIO-001); nothing else in the rule reaches a game result. |
+| `RULE-AUDIO-011` | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM | supported | missing | None | None | supported | The rebuild pauses and resumes its file player; the shipped virtual CD wrapper does not implement either focus request. The wrapper-specific behavior has no original-comparison test. |
+
 
 ## VIDEO
 

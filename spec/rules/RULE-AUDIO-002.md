@@ -1,23 +1,26 @@
 ---
 id: RULE-AUDIO-002
-title: Music repeats its program when it ends and pauses while the window is inactive
+title: Music restarts a stopped program and sends pause and resume requests on focus changes
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-001, FND-AUDIO-007, FND-UI-023, FND-EXE-004]
+evidence: [FND-AUDIO-014, FND-AUDIO-001, FND-AUDIO-007, FND-UI-023, FND-EXE-004]
 conflicting: []
 split_with: []
-related: [RULE-AUDIO-001, RULE-AUDIO-003, RULE-UI-008]
+related: [RULE-AUDIO-011, RULE-AUDIO-001, RULE-AUDIO-003, RULE-UI-008]
 ---
 
 ## Summary
 
 About six times a second the game asks MCI whether the CD is playing. When it
-is not, music is enabled and the window is active, the current program starts
-again from its first track; this is how a program repeats after its last
-track. When the game's window loses focus the music pauses, and when the window
-regains focus the levels are applied again and the music resumes from where it
-stopped. The notification MCI sends at the end of playback changes nothing.
+is not, music is enabled and the window is active, the current program is
+requested again from its first track. On focus loss the executable requests
+a pause; on focus regain it reapplies levels and requests playback with no
+start or end position. The end-of-playback MCI notification changes nothing.
+
+The shipped GOG wrapper rejects the pause command and ignores the resume
+request without a start position (RULE-AUDIO-011). These are executable
+requests, not proof that this build audibly pauses and resumes.
 
 ## When it runs
 
@@ -64,7 +67,7 @@ of the disc.
 - The poll also restarts music that stopped for any other reason, such as a
   disc change, and it restarts the program once music is enabled again after
   level 0 (RULE-AUDIO-003).
-- After a resume the music runs past the last track of the program to the end
+- On a device implementing the MCI resume, music can run past the last track of the program to the end
   of the disc before the poll restarts the program.
 - Without a disc or a CD device the poll sends the status and play commands on
   every tick, and the pointer is switched to the hourglass and back each time
@@ -80,6 +83,5 @@ None known.
 
 ## Open questions
 
-- How the replacement `winmm.dll` of the GOG build answers the status query and
-  the resume, and so whether the resume really plays past the program there, has
-  not been observed.
+- Audible focus behavior of the GOG wrapper has not been recorded dynamically;
+  its static pause and no-start play paths are recorded in RULE-AUDIO-011.
