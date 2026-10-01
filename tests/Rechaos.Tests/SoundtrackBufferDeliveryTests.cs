@@ -103,6 +103,64 @@ public sealed class SoundtrackBufferDeliveryTests
         }
     }
 
+    [Fact]
+    public void PausingAfterEarlierBuffersDrainRetainsThePendingTail()
+    {
+        // RULE-AUDIO-002, FND-AUDIO-007: positionless resume retains the queued tail.
+        using var song = Song.FromUri("rotated", new Uri(Path.Combine(AppContext.BaseDirectory, "Fixtures", "long-silence.ogg")));
+        using var player = new SoundtrackProgramPlayer([song]);
+        var stream = Stream(song);
+        var reader = stream.GetType().GetProperty("Reader", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
+        reader.GetType().GetProperty("TimePosition")!.SetValue(reader, TimeSpan.FromSeconds(1.75));
+        SetNativeLooping(stream, true);
+        try
+        {
+            MediaPlayer.Volume = 0;
+            player.PlayProgram([song]);
+            WaitFor(() => DesktopGlSoundtrackStreaming.IsPending(song));
+            var mutex = stream.GetType().GetField("prepareMutex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
+            var assembly = typeof(Song).Assembly;
+            var al = assembly.GetType("MonoGame.OpenAL.AL", true)!;
+            var source = (int)stream.GetType().GetField("alSourceId", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
+            lock (mutex)
+            {
+                SetNativeLooping(stream, false);
+                al.GetMethod("SourcePause", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, [typeof(int)], null)!.Invoke(null, [source]);
+                var integerParameter = assembly.GetType("MonoGame.OpenAL.ALSourcei", true)!;
+                al.GetMethod("Source", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
+                    [typeof(int), integerParameter, typeof(int)], null)!.Invoke(null, [source, Enum.ToObject(integerParameter, Convert.ToInt32(Enum.Parse(assembly.GetType("MonoGame.OpenAL.ALGetSourcei", true)!, "SampleOffset"))), 22050]);
+                var unqueued = (int[])al.GetMethod("SourceUnqueueBuffers", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                    null, [typeof(int), typeof(int)], null)!.Invoke(null, [source, 1])!;
+                var buffers = (int[])stream.GetType().GetField("alBufferIds", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
+                Assert.Equal(buffers[0], Assert.Single(unqueued));
+                // The remaining native queue is buffers[1], buffers[2], not its array prefix.
+                SetNativeLooping(stream, true);
+                al.GetMethod("SourcePlay", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, [typeof(int)], null)!.Invoke(null, [source]);
+                MediaPlayer.Pause();
+                // The controlled queue rotation itself must leave OpenAL error-free.
+                Assert.Equal(0, Convert.ToInt32(al.GetMethod("GetError", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                    null, Type.EmptyTypes, null)!.Invoke(null, null)));
+            }
+            var pausedCycle = DesktopGlSoundtrackStreaming.CompletedPumpCycles;
+            WaitFor(() => DesktopGlSoundtrackStreaming.CompletedPumpCycles >= pausedCycle + 2);
+            Assert.Equal(MediaState.Paused, MediaPlayer.State);
+            Assert.False(player.ResumeThroughDiscEnd());
+            var resumedCycle = DesktopGlSoundtrackStreaming.CompletedPumpCycles;
+            WaitFor(() =>
+            {
+                Assert.False(player.AdvanceTrack()); // Also reports a native worker error.
+                return DesktopGlSoundtrackStreaming.CompletedPumpCycles >= resumedCycle + 2;
+            });
+            Assert.Equal(MediaState.Playing, MediaPlayer.State);
+            Assert.True(DesktopGlSoundtrackStreaming.IsPending(song));
+        }
+        finally
+        {
+            SetNativeLooping(stream, false);
+            player.Release();
+            DesktopGlSoundtrackStreaming.Shutdown();
+        }
+    }
     private static bool Registered(Song song)
     {
         var type = typeof(Song).Assembly.GetType("Microsoft.Xna.Framework.Audio.OggStreamer", true)!;

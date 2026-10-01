@@ -38,6 +38,7 @@ internal static class DesktopGlSoundtrackStreaming
     }
 
     internal static void CancelCompletion() => _backend?.CancelCompletion();
+    internal static long CompletedPumpCycles => _backend?.CompletedPumpCycles ?? 0;
     internal static bool IsPending(Song song) => _backend?.IsPending(song) == true;
 
     internal static void ResetForNewSong(Song song)
@@ -71,6 +72,7 @@ internal static class DesktopGlSoundtrackStreaming
         private volatile bool _stop;
         private readonly int _updateInterval;
         private long _generation;
+        private long _completedPumpCycles;
 
         internal Backend()
         {
@@ -95,6 +97,7 @@ internal static class DesktopGlSoundtrackStreaming
             _thread.Start();
         }
 
+        internal long CompletedPumpCycles => Interlocked.Read(ref _completedPumpCycles);
         internal bool ShutdownRequested => (bool)_cancelled.GetValue(_streamer)!;
         internal void Join() => _thread.Join();
         internal void StopAndJoin()
@@ -159,7 +162,15 @@ internal static class DesktopGlSoundtrackStreaming
                         snapshot = ((System.Collections.IEnumerable)_streams.GetValue(_streamer)!).Cast<object>().ToArray();
                     foreach (var stream in snapshot) Pump(stream);
                     foreach (var stale in _atEnd.Keys.Except(snapshot).ToArray())
-                        _atEnd.TryRemove(stale, out _);
+                    {
+                        // Pause removes a live stream from the native registry. Its EOF
+                        // still describes the retained queue and must survive resume.
+                        // New starts explicitly reset it; disposal closes the reader.
+                        lock (Field(stale, "prepareMutex"))
+                            if (!Registered(stale) && Property(stale, "Reader") is null)
+                                _atEnd.TryRemove(stale, out _);
+                    }
+                    Interlocked.Increment(ref _completedPumpCycles);
                 }
             }
             catch (Exception failure)

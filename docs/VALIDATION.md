@@ -522,7 +522,10 @@ that the replacement decodes to its own end.
 the synthetic 2.5-second decoder near its end to isolate buffer submission. The
 partial-tail case failed before repair (one queued buffer instead of two). Cases
 compare native queue counts and exact PCM byte sizes for a partial tail, a mixed
-full/partial batch and empty EOF, then pause and resume the pending tail. Native
+full/partial batch and empty EOF, then pause and resume the pending tail. A separate
+case rotates the native queue by draining its first buffer, pauses through two actual
+worker cycles and resumes the remaining tail. This reproduces a native invalid-operation
+error if EOF is forgotten when a live paused stream leaves the registry. Native
 looping is cleared before the test source can be recycled. `SoundtrackStopTailTests`
 compare whole replacement-track decoding at pending EOF; existing native player
 cases cover advancement, activation, explicit stop, fade and completion ordering.
