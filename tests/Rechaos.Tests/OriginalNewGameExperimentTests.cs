@@ -47,11 +47,17 @@ namespace Rechaos.Tests;
 /// fail their strength test and buy equipment (RULE-AI-025). In EXP-TURN-027 the human hires a
 /// second gang and its first gang gives it a weapon and an armor (RULE-HIRE-001, RULE-GIVE-001).
 /// EXP-TURN-028 plays a six-month Greed to its 25th turn, where the computer players stop hiring
-/// in the closing turns (RULE-AI-011).
+/// in the closing turns (RULE-AI-011). In EXP-TURN-029 a hired Martial Artist attacks bare handed
+/// and its armed target does not strike back (RULE-ATTACK-001). In EXP-TURN-030 two gangs swap
+/// weapons by Give, then both give to a third that buys a weapon in the same turn (RULE-GIVE-001).
+/// EXP-TURN-031 buys at the exact price, one short, and one short with a Sell by an earlier and by a
+/// later roster slot (RULE-EQUIP-001, RULE-EQUIP-002). In EXP-TURN-032 six Snitches in a row drive
+/// a sector's base Tolerance to the clamp at 1 (RULE-SNITCH-001, RULE-TOLERANCE-002). In
+/// EXP-TURN-033 the human bribes every turn until a Bribe meets 2 cash and fails (RULE-BRIBE-001).
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -274,6 +280,8 @@ public sealed class OriginalNewGameExperimentTests
         for (var turn = 0; turn < recorded.DoneCount; turn++)
         {
             var human = recorded.Humans[0];
+            // DEV-EQUIP-001: the rebuild resolves Equip and Sell in the order they are submitted.
+            // Every recording lists a turn's orders in roster order, the original's scan order.
             foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))
                 Submit(recorder, match, human, order);
             // RULE-HIRE-003: the probe writes the offer slot's hire order as the hire screen does;
