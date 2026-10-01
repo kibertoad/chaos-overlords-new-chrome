@@ -77,7 +77,7 @@ No return value. Writes the gang's planned action and targets through `plan`
 (Equip targets the item, Attack the drawn gang's player and roster slot, Move
 the sector `select_sector` returns). A weapon or armor Equip sets the matching
 cooldown to the item's cost. Draws up to five `roll`s in the attack loop, or
-the draws inside `select_sector` for the random step.
+the draws inside `select_sector` for the step toward the first gang.
 
 ## Edge cases
 
