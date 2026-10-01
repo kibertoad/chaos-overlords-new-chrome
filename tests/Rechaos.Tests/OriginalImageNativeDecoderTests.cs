@@ -7,6 +7,52 @@ namespace Rechaos.Tests;
 public sealed partial class OriginalImageFileTests
 {
     [Fact]
+    public void OriginalPx16ColorsMatchRuntimeDecoderAndWindowsSetDIBits()
+    {
+        // FMT-GFX-001, FND-PLATFORM-002: compare file-defined RGB555 pixels
+        // through the original upload API and the bundled runtime BMP decoder.
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "Windows GDI reference requires Windows.");
+        var files = OriginalFormatFiles.Require("FMT-GFX-001");
+        var assembly = typeof(Microsoft.Xna.Framework.Graphics.Texture2D).Assembly;
+        var resultType = assembly.GetType("StbImageSharp.ImageResult", throwOnError: true)!;
+        var componentsType = assembly.GetType("StbImageSharp.ColorComponents", throwOnError: true)!;
+        var decode = resultType.GetMethod("FromStream", [typeof(Stream), componentsType])!;
+        OriginalFormatFiles.CheckEach(files, file =>
+        {
+            var size = DocumentedSize(file.Name);
+            var repaired = file.ReadAllBytes();
+            BmpRepair.Repair(repaired, size.Width, size.Height, 16);
+            using var stream = new MemoryStream(repaired);
+            var result = decode.Invoke(null, [stream, Enum.Parse(componentsType, "RedGreenBlueAlpha")])!;
+            var rgba = (byte[])resultType.GetProperty("Data")!.GetValue(result)!;
+            var info = repaired.AsSpan(14, 40).ToArray();
+            var outputInfo = (byte[])info.Clone();
+            BitConverter.TryWriteBytes(outputInfo.AsSpan(14), (short)32);
+            BitConverter.TryWriteBytes(outputInfo.AsSpan(20), size.Width * size.Height * 4);
+            var bitmap = CreateDIBSection(IntPtr.Zero, outputInfo, 0, out var pixels, IntPtr.Zero, 0);
+            Assert.NotEqual(IntPtr.Zero, bitmap);
+            try
+            {
+                Assert.Equal(size.Height, SetDIBits(IntPtr.Zero, bitmap, 0, (uint)size.Height,
+                    repaired.AsSpan(54).ToArray(), info, 1));
+                Assert.True(GdiFlush());
+                var native = new byte[size.Width * size.Height * 4];
+                Marshal.Copy(pixels, native, 0, native.Length);
+                for (var y = 0; y < size.Height; y++)
+                for (var x = 0; x < size.Width; x++)
+                {
+                    var bottom = (y * size.Width + x) * 4;
+                    var top = ((size.Height - 1 - y) * size.Width + x) * 4;
+                    Assert.True(native[bottom] == rgba[top + 2]
+                        && native[bottom + 1] == rgba[top + 1]
+                        && native[bottom + 2] == rgba[top], $"RGB mismatch at ({x}, bottom-up {y}).");
+                }
+            }
+            finally { Assert.True(DeleteObject(bitmap)); }
+        });
+    }
+
+    [Fact]
     public void OriginalPx08PixelsMatchWindowsSetDIBits()
     {
         // RULE-GFX-001, FMT-GFX-002, FND-PLATFORM-002: the original fixes
