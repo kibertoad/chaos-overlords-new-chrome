@@ -190,12 +190,7 @@ public sealed partial class ChaosGame
         // FND-AUDIO-007: when music is enabled the original selector plays the new program
         // straight after the fade, so a track paused by deactivation during the fade must not
         // be resumed by the next activation. A muting fade leaves a paused device alone.
-        if (_soundtrackEnabled) _soundtrackProgramPlayer?.Release();
-        else _soundtrackProgramPlayer?.Stop();
-        // A level chosen while the fade ran wins over the volume the fade started from.
-        MediaPlayer.Volume = _soundtrackEnabled
-            ? OriginalSoundtrackPolicy.VolumeForLevel(_musicVolumeLevel)
-            : fade.RestoredVolume;
+        _soundtrackProgramPlayer?.FinishFade(fade, release: _soundtrackEnabled);
     }
 
     protected override void OnDeactivated(object sender, EventArgs args)
@@ -281,9 +276,9 @@ public sealed partial class ChaosGame
                 return;
             }
 
-            // A running fade owns the volume until it finishes and applies this level.
-            if (_soundtrackFade is null)
-                MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(level);
+            // RULE-AUDIO-003, FND-AUDIO-007: a level message applies immediately, even
+            // during a fade. Later fade steps and its captured-volume restore can overwrite it.
+            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(level);
             // RULE-AUDIO-003: enabling music leaves playback to the next poll.
             _soundtrackEnabled = true;
         }

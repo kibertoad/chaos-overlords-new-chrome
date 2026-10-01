@@ -14,6 +14,44 @@ public sealed class NativeSoundtrackCollection;
 public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
 {
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void FadeStopsAtZeroAndRestoresCapturedVolumeAfterInterveningLevelChange(bool release)
+    {
+        // RULE-AUDIO-003, FND-AUDIO-007: the fade keeps its local captured volume;
+        // messages processed while it waits cannot replace the final restore value.
+        var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg");
+        using var song = Song.FromUri("fade", new Uri(path));
+        var player = new SoundtrackProgramPlayer([song]);
+        float? stoppedVolume = null;
+        EventHandler<EventArgs> observeStop = (_, _) =>
+        {
+            if (MediaPlayer.State == MediaState.Stopped) stoppedVolume = MediaPlayer.Volume;
+        };
+        MediaPlayer.MediaStateChanged += observeStop;
+        try
+        {
+            MediaPlayer.IsRepeating = false;
+            MediaPlayer.IsShuffled = false;
+            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(5);
+            player.PlayProgram([song]);
+            var fade = new SoundtrackFade(MediaPlayer.Volume, TimeSpan.Zero);
+            MediaPlayer.Volume = fade.VolumeAt(TimeSpan.FromMilliseconds(17));
+            // The original level handler is allowed to run inside a fade wait.
+            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(10);
+            player.FinishFade(fade, release);
+            Assert.Equal(MediaState.Stopped, MediaPlayer.State);
+            Assert.Equal(0f, stoppedVolume);
+            Assert.Equal(OriginalSoundtrackPolicy.VolumeForLevel(5), MediaPlayer.Volume);
+        }
+        finally
+        {
+            MediaPlayer.MediaStateChanged -= observeStop;
+            player.Dispose();
+        }
+    }
+
+    [Theory]
     [InlineData("playing")]
     [InlineData("paused")]
     [InlineData("stopped")]
