@@ -16,7 +16,7 @@
 
 ## supported
 
-202 entries.
+199 entries.
 
 | ID | Title |
 |---|---|
@@ -96,7 +96,6 @@
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left |
-| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation |
@@ -155,12 +154,10 @@
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there |
-| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | Planning time limit chosen for a match |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed |
-| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | A turn is turn start, planning by each active player in slot order, then resolution |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
@@ -225,7 +222,7 @@
 
 ## established
 
-37 entries.
+40 entries.
 
 | ID | Title |
 |---|---|
@@ -239,6 +236,7 @@
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site |
@@ -264,8 +262,10 @@
 | [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | A player named with the island modifier puts every neutral sector under a Crackdown that never ends |
 | [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters |
 | [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | A player named with the visibility modifier sees every opposing gang for the whole match |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash |
 | [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 
 ## disputed
 
@@ -290,7 +290,7 @@
 
 ## recorded
 
-370 entries.
+372 entries.
 
 | ID | Title |
 |---|---|
@@ -329,6 +329,8 @@
 | [EXP-TURN-029](../experiments/EXP-TURN-029.md) | Does an armed gang strike back at a bare-handed Martial Artist? |
 | [EXP-TURN-030](../experiments/EXP-TURN-030.md) | Do two Gives swap weapons, and does the later of two Gives to one gang replace both the earlier one and a weapon bought that turn? |
 | [EXP-TURN-031](../experiments/EXP-TURN-031.md) | Does an Equip succeed at exactly its price, fail one short, and count a Sell only from an earlier roster slot? |
+| [EXP-TURN-032](../experiments/EXP-TURN-032.md) | Does a Snitch that takes a base Tolerance below 1 leave it at 1? |
+| [EXP-TURN-033](../experiments/EXP-TURN-033.md) | Does a Bribe the player cannot pay for leave the cash and the base Tolerance unchanged? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -685,6 +687,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site |
@@ -710,8 +713,10 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | A player named with the island modifier puts every neutral sector under a Crackdown that never ends |
 | [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters |
 | [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | A player named with the visibility modifier sees every opposing gang for the whole match |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash |
 | [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 
 ## Open questions
 
@@ -792,7 +797,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | supported |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported |
-| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income | established |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way | established |
@@ -850,7 +855,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | supported |
-| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | established |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | A turn is turn start, planning by each active player in slot order, then resolution | supported |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported |
