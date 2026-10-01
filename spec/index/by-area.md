@@ -212,6 +212,7 @@
 | [EXP-TURN-033](../experiments/EXP-TURN-033.md) | Does a Bribe the player cannot pay for leave the cash and the base Tolerance unchanged? | recorded |
 | [EXP-TURN-034](../experiments/EXP-TURN-034.md) | What Last Turn report does a human's Equip one short of its price leave? | recorded |
 | [EXP-TURN-035](../experiments/EXP-TURN-035.md) | Does a hire the player could afford at planning fail, with a cash report, once an Equip has spent the cash? | recorded |
+| [EXP-TURN-036](../experiments/EXP-TURN-036.md) | How does a six-month Greed end, and which awards does the endgame give? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -226,7 +227,7 @@
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | Giving a gang an order replaces its whole previous order, one-off or recurring | supported |
-| [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | supported |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | established |
 
 ## SETUP
 
@@ -643,7 +644,7 @@
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | established |
-| [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | established |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | established |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | established |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | established |
@@ -733,10 +734,10 @@
 | [FND-OBJECTIVE-004](../findings/FND-OBJECTIVE-004.md) | Each round marks eliminated local humans, walks the slots, resolves the turn, and ends the match on the evaluator's flag or when no local human is left | recorded |
 | [FND-OBJECTIVE-005](../findings/FND-OBJECTIVE-005.md) | The Player Ranking panel places each portrait by its score scaled into 140 pixels, and closes on its button or on Enter or plus | recorded |
 | [FND-OBJECTIVE-006](../findings/FND-OBJECTIVE-006.md) | The network session transfer, the save and the load copy the scenario, the time limit and the turn counter as the same four-byte values, so a restored match keeps the scenario meanings | recorded |
-| [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported |
+| [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | established |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | established |
-| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported |
-| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | supported |
+| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | established |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | established |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | Player Rankings panel with one vertical rail per player and portraits placed by score | supported |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | Private elimination card shown to an eliminated local human over the city screen | supported |
@@ -750,7 +751,7 @@
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not | recorded |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions | recorded |
 | [FND-AWARDS-004](../findings/FND-AWARDS-004.md) | The awards table holds five codes per player, and the results screen shows the victory splash when exactly one player is still active, whoever controls it | recorded |
-| [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | supported |
+| [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | established |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | Endgame screen listing the players by place with their awards or their statistics | supported |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | Victory splash shown on the endgame's Awards tab when one player is left | supported |
