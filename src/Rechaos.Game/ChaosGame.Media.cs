@@ -19,6 +19,7 @@ public sealed partial class ChaosGame
     private bool _soundtrackAwaitingStart;
     private bool _soundtrackPausedByDeactivation;
     private TimeSpan _soundtrackStartDeadline;
+    private readonly SoundtrackRestartPoll _soundtrackRestartPoll = new();
 
     private void LoadSoundtrack()
     {
@@ -53,7 +54,8 @@ public sealed partial class ChaosGame
 
     private void UpdateSoundtrack(GameTime gameTime)
     {
-        if (!_soundtrackEnabled || _introMoviesPlaying) return;
+        var poll = _soundtrackRestartPoll.Advance(_soundtrackEnabled, IsActive, gameTime.TotalGameTime);
+        if (!_soundtrackEnabled || _introMoviesPlaying || !IsActive) return;
         try
         {
             SelectSoundtrackMode(SoundtrackContext(), gameTime.TotalGameTime);
@@ -72,7 +74,7 @@ public sealed partial class ChaosGame
                 return;
             }
 
-            StartNextSoundtrackTrack(gameTime.TotalGameTime);
+            if (poll) StartNextSoundtrackTrack(gameTime.TotalGameTime);
         }
         catch
         {
@@ -82,7 +84,7 @@ public sealed partial class ChaosGame
 
     private void StartNextSoundtrackTrack(TimeSpan now)
     {
-        if (!_soundtrackEnabled || _activeSoundtrack.Count == 0) return;
+        if (!_soundtrackEnabled || _activeSoundtrack.Count == 0 || !IsActive) return;
         try
         {
             if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
@@ -173,10 +175,15 @@ public sealed partial class ChaosGame
         {
             FinishIntroMovie("movie.failed", exception);
         }
-        if (!_soundtrackEnabled || !_soundtrackPausedByDeactivation) return;
+        if (!_soundtrackEnabled) return;
         try
         {
-            if (MediaPlayer.State == MediaState.Paused) MediaPlayer.Resume();
+            // RULE-AUDIO-002, FND-AUDIO-007: activation reapplies levels before resuming.
+            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(_musicVolumeLevel);
+            if (_activeEffectVoice is not null)
+                _activeEffectVoice.Volume = AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel);
+            if (_soundtrackPausedByDeactivation && MediaPlayer.State == MediaState.Paused)
+                MediaPlayer.Resume();
             _soundtrackPausedByDeactivation = false;
         }
         catch

@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 0 |
+| `supported` | 1 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 105 |
+| `implemented` | 104 |
 | `validated` | 117 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 0 |
-| `complete` | 222 |
+| `partial` | 1 |
+| `complete` | 221 |
 
 ## DATA
 
@@ -52,7 +52,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-AUDIO-001` | Sound effect files DATA/SNDnnnnn | supported | complete | tests/Rechaos.Tests/OriginalSoundFileTests.cs | None | validated | The files are passed whole to the sound library. |
 | `FMT-AUDIO-002` | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported | complete | tests/Rechaos.Tests/OriginalSoundFileTests.cs | None | validated | The files are passed whole to the music player. |
 | `RULE-AUDIO-001` | Starting a music program | supported | complete | None | None | implemented | Title, game and endgame programs are wired to the matching Ogg tracks; the rebuild plays files in place of CD audio. |
-| `RULE-AUDIO-002` | Music repeats its program when it ends and pauses while the window is inactive | supported | complete | None | None | implemented | Focus loss pauses and focus gain resumes music; the end-of-playback restart was not checked separately. |
+| `RULE-AUDIO-002` | Music repeats its program when it ends and pauses while the window is inactive | supported | partial | tests/Rechaos.Tests/SoundtrackRestartPollTests.cs | None | supported | The FND-AUDIO-007 timer and enabled/active poll gates are tested; activation reapplies volumes before resuming. The file playlist resumes within its selected program rather than continuing to the disc end, and an unexpected stop advances to the next file rather than restarting the program. The GOG replacement device's resume behavior remains an open question in the rule. |
 | `RULE-AUDIO-003` | Applying the music and effects levels | supported | complete | None | None | implemented | The 0 to 10 level conversion and the level-5 music default are implemented. |
 | `RULE-AUDIO-004` | Loading the general sound effects | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-005` | Playing a sound effect, which cuts off the one playing | supported | complete | None | None | implemented | One effect voice, each new cue stopping the one before it. |
