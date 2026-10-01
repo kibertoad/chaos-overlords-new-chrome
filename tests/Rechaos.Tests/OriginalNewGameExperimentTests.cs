@@ -306,12 +306,17 @@ public sealed class OriginalNewGameExperimentTests
                     ("hire_role", match.AiPlanning.CurrentHireRole(player.Id)),
                     ("previous_hire_role", match.AiPlanning.PreviousHireRole(player.Id)),
                 ];
-                // The original starts a human player's hire_role at -1 and the rebuild at 0. No rule
-                // reads a human's entry, so the difference is one of representation.
+                // The original holds -1 in a human player's hire_role and the rebuild 0. A player's
+                // first planning pass writes 0 there before anything reads it (FND-AI-042), so the
+                // difference is one of representation; any other value is still compared.
                 foreach (var (term, value) in totals)
-                    if (player.Setup.Controller != PlayerController.Human || term != "hire_role")
-                        Assert.True(recorded.Term(term, slot) == value,
-                            $"{term} of player {slot}: the original holds {recorded.Term(term, slot)}, the rebuild {value}");
+                {
+                    var original = recorded.Term(term, slot);
+                    if (term == "hire_role" && original == -1 && player.Setup.Controller == PlayerController.Human)
+                        original = 0;
+                    Assert.True(original == value,
+                        $"{term} of player {slot}: the original holds {recorded.Term(term, slot)}, the rebuild {value}");
+                }
             }
 
         // FND-SETUP-018: the turn limit the computer players read.

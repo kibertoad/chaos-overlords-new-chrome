@@ -2086,6 +2086,7 @@ None.
 | [FND-AI-057](../findings/FND-AI-057.md) | body |
 | [FND-STATE-003](../findings/FND-STATE-003.md) | body |
 | glossary: ai_started | glossary |
+| glossary: hire_role | glossary |
 | glossary: planning_records | glossary |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | evidence |
