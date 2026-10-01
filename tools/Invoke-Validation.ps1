@@ -189,7 +189,22 @@ try {
             '--show-stdout', 'All'
         )
     }
-    Invoke-CheckedDotnet -Arguments $testArguments
+    # Native soundtrack regression tests use synthesized silence and OpenAL's null driver.
+    # Set this in the parent before dotnet starts: on Unix, a managed runtime environment
+    # change does not update the native environment that OpenAL reads.
+    $previousAudioDriver = $env:ALSOFT_DRIVERS
+    try {
+        $env:ALSOFT_DRIVERS = 'null'
+        Invoke-CheckedDotnet -Arguments $testArguments
+    }
+    finally {
+        if ($null -eq $previousAudioDriver) {
+            Remove-Item Env:ALSOFT_DRIVERS -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:ALSOFT_DRIVERS = $previousAudioDriver
+        }
+    }
 
     if ($documentationCheckFailed) {
         throw 'Documentation check failed; run node tools/update-doc-indexes.mjs, node tools/check-spec.mjs and node tools/spec-coverage.mjs, and fix what they report.'

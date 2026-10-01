@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 0 |
+| `supported` | 3 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 105 |
+| `implemented` | 102 |
 | `validated` | 117 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 0 |
-| `complete` | 222 |
+| `partial` | 3 |
+| `complete` | 219 |
 
 ## DATA
 
@@ -51,9 +51,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `FMT-AUDIO-001` | Sound effect files DATA/SNDnnnnn | supported | complete | tests/Rechaos.Tests/OriginalSoundFileTests.cs | None | validated | The files are passed whole to the sound library. |
 | `FMT-AUDIO-002` | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported | complete | tests/Rechaos.Tests/OriginalSoundFileTests.cs | None | validated | The files are passed whole to the music player. |
-| `RULE-AUDIO-001` | Starting a music program | supported | complete | None | None | implemented | Title, game and endgame programs are wired to the matching Ogg tracks; the rebuild plays files in place of CD audio. |
-| `RULE-AUDIO-002` | Music repeats its program when it ends and pauses while the window is inactive | supported | complete | None | None | implemented | Focus loss pauses and focus gain resumes music; the end-of-playback restart was not checked separately. |
-| `RULE-AUDIO-003` | Applying the music and effects levels | supported | complete | None | None | implemented | The 0 to 10 level conversion and the level-5 music default are implemented. |
+| `RULE-AUDIO-001` | Starting a music program | supported | partial | tests/Rechaos.Tests/SoundtrackCatalogTests.cs, tests/Rechaos.Tests/SoundtrackFadeTests.cs | None | supported | FND-AUDIO-001 program ranges are compared by the catalog tests, and each stopped program restarts from its first track. Mode changes use the recorded 32-step integer fade; SoundtrackFadeTests checks attenuation and stop timing against FND-AUDIO-007. Endgame and elimination entry now explicitly restart an already selected program. Other same-mode selector callers remain to be compared. |
+| `RULE-AUDIO-002` | Music repeats its program when it ends and pauses while the window is inactive | supported | partial | tests/Rechaos.Tests/SoundtrackRestartPollTests.cs, tests/Rechaos.Tests/SoundtrackProgramCursorTests.cs, tests/Rechaos.Tests/SoundtrackProgramPlayerTests.cs | None | supported | The FND-AUDIO-007 timer and enabled/active poll gates are tested; activation reapplies volumes before resuming. Track advancement is owned by the game thread; native completion only reports the finished song, preventing inter-track Stopped from competing with the restart poll. Paused playback preserves position and continues to disc end. The cursor tests compare program and resume bounds with FND-AUDIO-007; a native regression test forces the worker stop window and checks restart gating and game-thread starts; native smoke also checks continuation and cancellation. Activation when playback was already stopped still lacks original-comparison coverage. The GOG wrapper is outside the parity target. |
+| `RULE-AUDIO-003` | Applying the music and effects levels | supported | partial | tests/Rechaos.Tests/SoundtrackFadeTests.cs | None | supported | The 0 to 10 level conversion and level-5 music default are implemented. Mute uses the recorded integer fade, and re-enabling waits for the poll. Original-comparison coverage of auxiliary-device channel routing, exit restoration and fade/caller ordering remains incomplete. |
 | `RULE-AUDIO-004` | Loading the general sound effects | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-005` | Playing a sound effect, which cuts off the one playing | supported | complete | None | None | implemented | One effect voice, each new cue stopping the one before it. |
 | `RULE-AUDIO-006` | The turn-start sound | supported | complete | None | None | implemented | Only online matches, the rebuild's network games, play the cue, from the second turn on; local games are silent. The cue skips the effects-enabled test (BUG-AUDIO-001) and plays at the effects volume, which is 0 at level 0 (RULE-AUDIO-003). |
