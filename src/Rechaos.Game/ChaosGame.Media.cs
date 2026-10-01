@@ -48,7 +48,7 @@ public sealed partial class ChaosGame
             _soundtrackProgramPlayer = new SoundtrackProgramPlayer(SoundtrackCatalog.ExpectedFileNames
                 .Select(fileName => _soundtrack.GetValueOrDefault(fileName))
                 .Where(song => song is not null).Cast<Song>().ToArray());
-            ApplyMusicVolumeLevel(_musicVolumeLevel, TimeSpan.Zero);
+            ApplyAudioVolumeLevels(TimeSpan.Zero);
         }
         catch
         {
@@ -235,16 +235,7 @@ public sealed partial class ChaosGame
         try
         {
             // RULE-AUDIO-002, FND-AUDIO-007: activation reapplies levels before resuming.
-            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(_musicVolumeLevel);
-            try
-            {
-                if (_activeEffectVoice is not null)
-                    _activeEffectVoice.Volume = AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel);
-            }
-            catch
-            {
-                // An effect voice failure must not disable the music.
-            }
+            ApplyAudioVolumeLevels(_inputTime);
             // Background music stays suppressed while the intro movies play.
             if (_introMoviesPlaying || _soundtrackProgramPlayer?.ResumeThroughDiscEnd() != true) return;
             _soundtrackAwaitingStart = true;
@@ -256,13 +247,20 @@ public sealed partial class ChaosGame
         }
     }
 
-    private void ApplyMusicVolumeLevel(int level, TimeSpan now)
+    private void ApplyAudioVolumeLevels(TimeSpan now)
     {
-        if (level is < OriginalSoundtrackPolicy.MinimumVolumeLevel
-            or > OriginalSoundtrackPolicy.MaximumVolumeLevel)
-            throw new ArgumentOutOfRangeException(nameof(level));
-
-        _musicVolumeLevel = level;
+        var level = _musicVolumeLevel;
+        // RULE-AUDIO-003, FND-AUDIO-007: either menu command reapplies effects
+        // first and then music, including when the chosen level is unchanged.
+        try
+        {
+            if (_activeEffectVoice is not null)
+                _activeEffectVoice.Volume = AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel);
+        }
+        catch
+        {
+            // An effect voice failure must not disable the independent music path.
+        }
         if (_soundtrack.Count == 0 || _soundtrackFailed) return;
         try
         {
