@@ -58,7 +58,7 @@ public static class EquipmentSellLayout
     }
 
     /// <summary>
-    /// Native Sell handler 0x00443bbd's half-open item-toggle target. It is
+    /// FND-EQUIP-004: native Sell handler 0x00443BBD's half-open item-toggle target. It is
     /// narrower than the row artwork, which also reserves a price column.
     /// </summary>
     public static Rectangle ItemHit(int slot)

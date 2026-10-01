@@ -448,8 +448,23 @@ static work still open is listed in
 
 `node tools/check-spec.mjs` runs the documentation standard's
 [checks](https://dinorefurb.com/documentation-standard/#checks) over `spec/`,
-`PARITY.md` and `DEVIATIONS.md`, and writes the indexes in `spec/index/`. The
-fast gate runs it with `--check`. It compiles the Kaitai definitions when
+`PARITY.md` and `DEVIATIONS.md`, and writes the indexes in `spec/index/`. It
+also fails when a code comment gives an address that no entry the comment
+cites records, in its locations or text or in the evidence of an entry it
+cites. This is the address check of the toolkit's documentation check
+(kibertoad/refurbished-dinosaurs-template#39), with the same rules: comments
+are read from `.cs`, `.ts`, `.js` and `.mjs` files, so `//` inside a string or
+a regular expression is not a comment and `/* … */` is; a neutral name (`fn_…`,
+`g_…`) is always an address, and a plain `0x…` value is one only inside an
+image given with `--images` (by default the executable's,
+`0x00400000..0x004C9000`, from FND-EXE-001), so colours, masks and offsets are
+left alone. A range larger than `--max-range` (64 KiB by default), such as a
+whole section, records only its two ends, nothing inside it. When a comment
+fails, cite the finding that records the address, or write one.
+The fast gate runs it with `--check`, and `.githooks/pre-commit` runs it before
+each commit once a clone enables the hook. The hook copies the index to a
+temporary directory and checks that, so it judges what is being committed, not
+unstaged edits. It compiles the Kaitai definitions when
 `kaitai-struct-compiler` (or the path in `KSC`) is on the path and warns when
 it is not. Until the patch tool is published with the standard's spec package,
 an experiment that uses a save patch also gives each write as a byte offset and

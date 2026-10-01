@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Equipment, healing, Stealth-site movement, and concealment choices recovered
-/// from original AI family 10 at 0x0042a6e0.
+/// from original AI family 10 at 0x0042A6E0 (FND-AI-071).
 /// </summary>
 internal static class OriginalAiFamilyTenRules
 {

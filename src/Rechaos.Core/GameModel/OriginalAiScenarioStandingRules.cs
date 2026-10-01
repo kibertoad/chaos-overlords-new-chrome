@@ -1,7 +1,7 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Scenario scores and zero-based competition standings of the original routine at 0x0047712a,
+/// Scenario scores and zero-based competition standings of the original routine at 0x0047712A,
 /// which runs only when a match starts and at the end of each turn (FND-AI-005, FND-SETUP-015).
 /// </summary>
 internal static class OriginalAiScenarioStandingRules
