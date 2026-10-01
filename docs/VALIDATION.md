@@ -442,6 +442,8 @@ static work still open is listed in
 `PARITY.md` and `DEVIATIONS.md`, and writes the indexes in `spec/index/`. It
 also fails when a C# comment gives an executable address (`0x…`, `fn_…` or
 `g_…`) that no entry the comment cites, or an entry one of those cites, records.
+A range of more than 64 KiB, such as a whole section, records none of the
+addresses inside it.
 The fast gate runs it with `--check`, and `.githooks/pre-commit` runs it before
 each commit once a clone enables the hook. It compiles the Kaitai definitions when
 `kaitai-struct-compiler` (or the path in `KSC`) is on the path and warns when

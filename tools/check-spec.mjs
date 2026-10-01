@@ -1062,11 +1062,17 @@ function walk(dir, fn) {
 // Addresses in code comments: an executable address that a C# comment gives, written 0x… or as
 // a neutral name (fn_…, g_…), must be recorded in an entry the comment cites, or in an entry that
 // one of those cites; a superseded entry records nothing. A comment block is a run of
-// consecutive comment lines; a comment that trails code also takes the block above it. The
-// address may appear in an entry's locations or its text, singly or inside a range.
+// consecutive comment lines; a comment that trails code also takes the block above it and the
+// comment lines below it that start in the same column. The address may appear in an entry's
+// locations or its text, written either way, singly or inside a range. A range of more than
+// MAX_RANGE bytes describes a section or the extent of a whole table (FND-EXE-004's game code,
+// FND-DATA-005's image), not a place, and records nothing inside it: it would otherwise vouch for
+// every address in the program on behalf of each of the many entries that cite it. The largest
+// game function in FND-EXE-004 spans under 20 KiB.
 {
   const ADDRESS_RE = /\b(?:0x|fn_|g_)(00[4-9A-Fa-f][0-9A-Fa-f]{5})\b/g;
-  const RANGE_RE = /\b(0x[0-9A-Fa-f]{8})(?:\.\.(0x[0-9A-Fa-f]{8}))?\b/g;
+  const RANGE_RE = /\b(?:0x|fn_|g_)([0-9A-Fa-f]{8})(?:\.\.0x([0-9A-Fa-f]{8}))?\b/g;
+  const MAX_RANGE = 0x10000;
   const recorded = new Map(); // entry ID -> [low, high] ranges
   const rangesOf = (id) => {
     if (recorded.has(id)) return recorded.get(id);
@@ -1074,7 +1080,10 @@ function walk(dir, fn) {
     const ranges = [];
     if (e && !isSuperseded(id)) {
       const text = [e.body, ...asList(e.meta.locations).map((loc) => String(loc?.address ?? ""))].join("\n");
-      for (const [, low, high] of text.matchAll(RANGE_RE)) ranges.push([parseInt(low, 16), parseInt(high ?? low, 16)]);
+      for (const [, low, high] of text.matchAll(RANGE_RE)) {
+        const range = [parseInt(low, 16), parseInt(high ?? low, 16)];
+        if (range[1] - range[0] < MAX_RANGE) ranges.push(range);
+      }
     }
     recorded.set(id, ranges);
     return ranges;
@@ -1099,7 +1108,8 @@ function walk(dir, fn) {
       if (!addresses.length) continue;
       let first = i, last = i;
       while (first > 0 && isComment(lines[first - 1])) first--;
-      if (isComment(lines[i])) while (last < lines.length - 1 && isComment(lines[last + 1])) last++;
+      const continues = isComment(lines[i]) ? isComment : (line) => isComment(line) && line.indexOf("//") === at;
+      while (last < lines.length - 1 && continues(lines[last + 1])) last++;
       const cited = idsIn(lines.slice(first, last + 1).join("\n")).filter((x) => entries.has(x));
       const scope = reach(cited);
       for (const [address, value] of new Map(addresses.map((m) => [m[0], parseInt(m[1], 16)]))) {
