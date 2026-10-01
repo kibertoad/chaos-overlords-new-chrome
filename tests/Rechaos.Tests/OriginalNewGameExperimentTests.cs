@@ -78,7 +78,7 @@ public sealed class OriginalNewGameExperimentTests
         DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
         try
         {
-            StartMatch(recorded);
+            StartMatch(recorded, out _);
         }
         finally
         {
@@ -123,10 +123,11 @@ public sealed class OriginalNewGameExperimentTests
         var recorded = Run(experiment, run);
         var rolls = new List<(int Bound, int Result)>();
         MatchState match;
+        int donePresses;
         DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
         try
         {
-            match = StartMatch(recorded);
+            match = StartMatch(recorded, out donePresses);
         }
         finally
         {
@@ -143,6 +144,14 @@ public sealed class OriginalNewGameExperimentTests
                 rolls[index] == (bound, result),
                 $"roll {index}: the original called roll({bound}) at {call} and got {result}, the rebuild roll({rolls[index].Bound}) and got {rolls[index].Result}");
         }
+
+        // The replay stops early only at the human's elimination or the match's outcome, and an
+        // eliminated human presses Done no more and a decided match has no planning phase
+        // (RULE-OBJECTIVE-005), so the recording has to end there. Checked after the rolls, so a
+        // divergence of the rebuild is still named by its first differing roll.
+        Assert.True(
+            donePresses == recorded.DoneCount,
+            $"the replay stopped after {donePresses} of the recording's {recorded.DoneCount} Done presses");
 
         Assert.Equal(recorded.Rolls.Count * 3L, match.Random.ConsumptionCount);
         var expectedState = new DeterministicRandom(recorded.Seed);
@@ -238,7 +247,7 @@ public sealed class OriginalNewGameExperimentTests
     private static bool IsActive(MatchState match, PlayerId player) =>
         match.FindPlayer(player)!.Status == PlayerStatus.Active;
 
-    private static MatchState StartMatch(RecordedRun recorded)
+    private static MatchState StartMatch(RecordedRun recorded, out int donePresses)
     {
         var scenario = OriginalScenario(recorded.Term("scenario", 0));
         var setup = new MatchSetup(
@@ -258,25 +267,22 @@ public sealed class OriginalNewGameExperimentTests
         // Each Done ends the human's planning with no orders. The computer players then plan and
         // the turn resolves as in a headless match, up to the human's next planning entry.
         var recorder = new MatchReplayRecorder(match);
+        var human = recorded.Humans[0];
+        donePresses = 0;
         for (var turn = 0; turn < recorded.DoneCount; turn++)
         {
-            var human = recorded.Humans[0];
             foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))
                 Submit(recorder, match, human, order);
             recorder.FinishCommand(human);
-            // A human eliminated in this turn's resolution plans no more; the recording stops at
-            // the next planning phase that comes (RULE-OBJECTIVE-005).
+            donePresses++;
+            // A human eliminated in this turn's resolution plans no more, and a decided match has
+            // no planning phase: the replay stops at the next planning phase that comes, or at the
+            // outcome, and the caller checks that the recording ends there (RULE-OBJECTIVE-005).
             while (!(match.Coordinator.Phase == TurnPhase.Command
                        && (match.Coordinator.ActivePlayer == human || !IsActive(match, human)))
                    && match.Outcome is null)
                 HeadlessMatchRunner.Advance(recorder);
-            if (!IsActive(match, human) || match.Outcome is not null)
-            {
-                // An eliminated human presses Done no more, and a decided match has no planning
-                // phase, so the recording must end here.
-                Assert.Equal(recorded.DoneCount - 1, turn);
-                break;
-            }
+            if (!IsActive(match, human) || match.Outcome is not null) break;
 
             recorder.PrepareHireOffers(human);
         }
