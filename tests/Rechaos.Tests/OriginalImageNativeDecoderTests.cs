@@ -25,6 +25,11 @@ public sealed partial class OriginalImageFileTests
             using var stream = new MemoryStream(repaired);
             var result = decode.Invoke(null, [stream, Enum.Parse(componentsType, "RedGreenBlueAlpha")])!;
             var rgba = (byte[])resultType.GetProperty("Data")!.GetValue(result)!;
+            var keyed = new Microsoft.Xna.Framework.Color[size.Width * size.Height];
+            for (var p = 0; p < keyed.Length; p++)
+                keyed[p] = new Microsoft.Xna.Framework.Color(rgba[p * 4], rgba[p * 4 + 1],
+                    rgba[p * 4 + 2], rgba[p * 4 + 3]);
+            Rechaos.Game.OriginalWhiteKey.Apply(keyed);
             var info = repaired.AsSpan(14, 40).ToArray();
             var outputInfo = (byte[])info.Clone();
             BitConverter.TryWriteBytes(outputInfo.AsSpan(14), (short)32);
@@ -46,6 +51,13 @@ public sealed partial class OriginalImageFileTests
                     Assert.True(native[bottom] == rgba[top + 2]
                         && native[bottom + 1] == rgba[top + 1]
                         && native[bottom + 2] == rgba[top], $"RGB mismatch at ({x}, bottom-up {y}).");
+                    // FMT-GFX-001, FND-PLATFORM-008: validate the production
+                    // mask against packed original pixels, not decoded colors.
+                    var packed = BitConverter.ToUInt16(repaired,
+                        54 + y * ((size.Width * 2 + 3) & ~3) + x * 2);
+                    var expected = packed == 0x7fff ? Microsoft.Xna.Framework.Color.Transparent
+                        : new Microsoft.Xna.Framework.Color(rgba[top], rgba[top + 1], rgba[top + 2], rgba[top + 3]);
+                    Assert.Equal(expected, keyed[top / 4]);
                 }
             }
             finally { Assert.True(DeleteObject(bitmap)); }
