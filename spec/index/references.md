@@ -438,6 +438,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-037](../findings/FND-UI-037.md) | builds, locations |
 | [FND-UI-038](../findings/FND-UI-038.md) | builds, locations |
 | [FND-UI-039](../findings/FND-UI-039.md) | builds, locations |
+| [FND-UI-040](../findings/FND-UI-040.md) | body, builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -4452,6 +4453,7 @@ None.
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
 | [FND-STATE-010](../findings/FND-STATE-010.md) | body |
+| [FND-UI-040](../findings/FND-UI-040.md) | body |
 | glossary: controller | glossary |
 | glossary: match_over | glossary |
 | glossary: resumed_match | glossary |
@@ -5358,6 +5360,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-039](../findings/FND-UI-039.md) | body |
+| [FND-UI-040](../findings/FND-UI-040.md) | body |
 | glossary: no_match_in_play | glossary |
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | body, evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body, evidence |
@@ -5607,6 +5610,7 @@ None.
 |---|---|
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | body, evidence |
 | [FND-UI-013](../findings/FND-UI-013.md) | body |
+| [FND-UI-040](../findings/FND-UI-040.md) | body |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | evidence |
 | [SCR-UI-006](../screens/SCR-UI-006.md) | body, evidence |
 
@@ -5770,6 +5774,7 @@ None.
 | [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | body |
 | [FND-MOVE-007](../findings/FND-MOVE-007.md) | body |
 | [FND-RESEARCH-005](../findings/FND-RESEARCH-005.md) | body |
+| [FND-UI-040](../findings/FND-UI-040.md) | body |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 | [SCR-MOVE-001](../screens/SCR-MOVE-001.md) | body, evidence |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | body, evidence |
@@ -6008,6 +6013,12 @@ None.
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
 
 ## FND-UI-039
+
+| Cited by | In |
+|---|---|
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## FND-UI-040
 
 | Cited by | In |
 |---|---|
