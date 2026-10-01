@@ -530,7 +530,9 @@ The rebuild accepts `--reference-frame <native-save> <bitmap> [--marker-frame <n
 
 On 2026-10-02, a native save generated from EXP-SETUP-001's first run produced two byte-identical 640-by-460 bitmap files with the marker fixed at frame 0. A staged original executable run with the same seed reproduced all 310 recorded rolls and all 2,760 state entries in that fixture (the current probe also records 66 additional entries). Its PrintWindow and BitBlt copies were identical. With the rebuild's marker set to the recorded frame 6, a direct RGB comparison found 6,714 differing pixels. The original capture visibly contains white blocks at transparency boundaries, so this run is not accepted as a historical rendering reference. The files and memory dumps remain outside the repository. This establishes repeatability for one rebuilt state, not screen parity; driver behavior and the remaining layout/content differences still need investigation.
 
-Unsupported hire-price/status alignment edits and the temporary environment-driven save-writing test have been removed.
+Malformed capture commands return exit code 2 before diagnostic logging or game startup. The capture parser rejects missing operands, repeated options, marker frames outside 0..11 (FND-UI-038), and an output path equal to the input save. All 14 ReferenceFrameRequestTests pass. Direct executable checks of a missing save/bitmap and frame 12 both returned 2; a valid frame-6 capture remained byte-identical to the preceding runtime capture.
+
+Unsupported hire-price/status alignment edits and the temporary environment-driven save-writing test have been removed. The expanded cash row is covered by DEV-UI-006 and is an expected difference in pixel comparisons. Hire-price origins are independently recorded by FND-HIRE-007 and SCR-HIRE-002; runtime capture artifacts do not override that evidence.
 
 ## Failure triage
 

@@ -21,15 +21,16 @@ string? assetRoot = null;
 var platformSmokeTest = args.Contains("--platform-smoke-test", StringComparer.OrdinalIgnoreCase);
 // --reference-frame <save> <bitmap> [--marker-frame <n>]: show the save as a new game's first
 // planning entry, write the drawing area and exit (ReferenceFrameRequest).
-var referenceArgument = Array.FindIndex(args, value => value == "--reference-frame");
-var markerArgument = Array.FindIndex(args, value => value == "--marker-frame");
-var referenceFrame = referenceArgument >= 0 && referenceArgument + 2 < args.Length
-    ? new ReferenceFrameRequest(
-        Path.GetFullPath(args[referenceArgument + 1]), Path.GetFullPath(args[referenceArgument + 2]),
-        markerArgument >= 0 && markerArgument + 1 < args.Length
-            ? int.Parse(args[markerArgument + 1], System.Globalization.CultureInfo.InvariantCulture)
-            : null)
-    : null;
+ReferenceFrameRequest? referenceFrame;
+try
+{
+    referenceFrame = ReferenceFrameRequest.ParseArguments(args);
+}
+catch (ArgumentException exception)
+{
+    Console.Error.WriteLine(exception.Message);
+    return 2;
+}
 using var diagnostics = referenceFrame is null
     ? RuntimeDiagnostics.OpenDefault()
     : RuntimeDiagnostics.Open(Path.Combine(referenceFrame.UserDataDirectory, "Logs"));

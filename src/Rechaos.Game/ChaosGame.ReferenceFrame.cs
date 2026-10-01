@@ -19,6 +19,44 @@ public sealed record ReferenceFrameRequest(string SavePath, string OutputPath, i
     // Retain the directory after exit so failed runs can be diagnosed from their logs.
     public string UserDataDirectory { get; } = Path.Combine(
         Path.GetTempPath(), "rechaos-reference-frame-" + Guid.NewGuid().ToString("N"));
+
+    public static ReferenceFrameRequest? ParseArguments(string[] args)
+    {
+        var reference = Array.IndexOf(args, "--reference-frame");
+        var marker = Array.IndexOf(args, "--marker-frame");
+        if (reference < 0)
+        {
+            if (marker >= 0) throw new ArgumentException("--marker-frame requires --reference-frame.");
+            return null;
+        }
+        if (Array.LastIndexOf(args, "--reference-frame") != reference
+            || (marker >= 0 && Array.LastIndexOf(args, "--marker-frame") != marker))
+            throw new ArgumentException("Capture options may only be supplied once.");
+        static string Operand(string[] values, int index)
+        {
+            if (index >= values.Length || string.IsNullOrWhiteSpace(values[index])
+                || values[index].StartsWith("--", StringComparison.Ordinal))
+                throw new ArgumentException("Usage: --reference-frame <save> <bitmap> [--marker-frame <0-11>]");
+            return values[index];
+        }
+        var save = Path.GetFullPath(Operand(args, reference + 1));
+        var output = Path.GetFullPath(Operand(args, reference + 2));
+        int? frame = null;
+        if (marker >= 0)
+        {
+            // FND-UI-038: the marker counter wraps after its twelve frames.
+            if (!int.TryParse(Operand(args, marker + 1),
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value)
+                || value is < 0 or > 11)
+                throw new ArgumentException("--marker-frame must be between 0 and 11.");
+            frame = value;
+        }
+        if (string.Equals(save, output, OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            throw new ArgumentException("The capture bitmap must not overwrite the input save.");
+        return new ReferenceFrameRequest(save, output, frame);
+    }
 }
 
 public sealed partial class ChaosGame
