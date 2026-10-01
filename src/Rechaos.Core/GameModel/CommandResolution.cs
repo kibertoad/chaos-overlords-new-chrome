@@ -230,12 +230,13 @@ public static partial class CommandResolver
         // 10 and lets a dead gang's Force go below 0; flooring at 0 gives the same Force for every
         // gang that lives and the same deaths, and the dead gang's record keeps the unfloored value
         // for BUG-AI-007.
+        var retiredForces = new Dictionary<GangId, int>();
         foreach (var (gangId, damage) in incomingDamage)
         {
             var gang = state.FindGang(gangId)!;
             var force = snapshots[gangId].Force - Math.Min(damage, MaximumPhaseDamage);
             gang.Force = Math.Max(0, force);
-            if (force <= 0 && snapshots[gangId].Force > 0) gang.RetiredForce = force;
+            if (force <= 0 && snapshots[gangId].Force > 0) retiredForces[gangId] = force;
         }
         CreditCombatStatistics(state, outcomes);
 
@@ -299,7 +300,7 @@ public static partial class CommandResolver
                      .OrderBy(snapshot => snapshot.Id.Value))
         {
             var gang = state.FindGang(snapshot.Id)!;
-            EliminateGang(state, gang);
+            EliminateGang(state, gang, retiredForces[gang.Id]);
             state.FindPlayer(gang.Owner)!.Statistics.Casualties++;
             state.QueueNotification(
                 gang.Owner, GameNotificationKind.Elimination, gang.Id, gang.SectorId,
@@ -372,12 +373,11 @@ public static partial class CommandResolver
     /// The native resolver marks the record inactive without clearing its three equipment bytes.
     /// Keep those inaccessible values for parity and post-match inspection.
     /// </remarks>
-    private static void EliminateGang(MatchState state, MatchGangState gang)
+    private static void EliminateGang(MatchState state, MatchGangState gang, int recordForce)
     {
         state.Commands.Cancel(gang.Id);
         gang.QueuedCommand = null;
-        gang.Force = 0;
-        gang.Hidden = false;
+        gang.Retire(recordForce);
     }
 
     private sealed record CombatSnapshot(
@@ -429,8 +429,7 @@ public static partial class CommandResolver
         var gang = state.FindGang(command.Gang)!;
         var before = gang.Force;
         // The original writes only sector 100, so the record keeps its Force (BUG-AI-007).
-        gang.RetiredForce = before;
-        EliminateGang(state, gang);
+        EliminateGang(state, gang, before);
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, 0),
             GameNotificationKind.Elimination);
