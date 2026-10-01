@@ -269,8 +269,12 @@ public sealed partial class ChaosGame
 
     private void SetMusicVolumeLevel(int level)
     {
+        if (level is < OriginalSoundtrackPolicy.MinimumVolumeLevel
+            or > OriginalSoundtrackPolicy.MaximumVolumeLevel)
+            throw new ArgumentOutOfRangeException(nameof(level));
         var changed = level != _musicVolumeLevel;
-        ApplyAudioVolumeLevels(level, _inputTime);
+        _musicVolumeLevel = level;
+        ApplyAudioVolumeLevels(_inputTime);
         SavePreferences();
         if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
@@ -285,7 +289,7 @@ public sealed partial class ChaosGame
         _soundEffectVolumeLevel = level;
         // RULE-AUDIO-003: the common helper writes both levels even for an
         // effects-only choice. Muting changes the current voice's volume, not its position.
-        ApplyAudioVolumeLevels(_musicVolumeLevel, _inputTime);
+        ApplyAudioVolumeLevels(_inputTime);
         SavePreferences();
         if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
