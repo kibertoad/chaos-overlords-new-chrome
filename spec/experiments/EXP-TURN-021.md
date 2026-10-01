@@ -47,7 +47,7 @@ the attack draws of families 3 and 5 (FND-RNG-006). In the copy after the last
 turn the human's gang was alive in sector 37.
 
 In the traced run, in the planning of turn 28, player 3's selector calls were
-for gangs 6, 8, 11 and 15, in that order, and the call for gang 8 made call
+for gangs 6, 8, 11, 15, 17 and 20, in that order, and the call for gang 8 made call
 16671, `roll(3)` at `0x00409C24`, and returned 13. In the copy at the entry
 of that call, gang 8 of player 3, with Force 10, stood in sector 6; its call
 came from `0x00435189` in family 1's handler `fn_00434080`. Sector 6 was player 1's; one gang of player 1, with Force 5, and
@@ -56,7 +56,7 @@ two of player 2, with Force 8 and 9, stood in it too.
 ## Results
 
 Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the first run.
+`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays both runs.
 The rebuild makes the same calls with the same bounds and results and reaches
 the same generator position and state after the twenty-nine turns.
 

@@ -29,26 +29,19 @@ internal static class OriginalAiScenarioStandingRules
     /// RULE-OBJECTIVE-002: the standings of the scores the last evaluation stored, each the number of
     /// slots with a strictly greater score, and 0xFF for an inactive or empty slot.
     /// </summary>
-    public static IReadOnlyList<int> Stored(MatchState state)
+    public static IReadOnlyList<int> Stored(MatchState state) =>
+        Standings(state, player => player.ScenarioScore);
+
+    public static IReadOnlyList<int> Build(MatchState state) =>
+        Standings(state, player => Score(state, player));
+
+    private static int[] Standings(MatchState state, Func<MatchPlayerState, int> score)
     {
         ArgumentNullException.ThrowIfNull(state);
         var scores = Enumerable.Repeat(InactiveScore, MatchLimits.PlayerCount).ToArray();
         foreach (var player in state.Players.Where(player => player.Status == PlayerStatus.Active))
-            scores[player.Id.Value] = player.ScenarioScore;
-        return Standings(state, scores);
-    }
+            scores[player.Id.Value] = score(player);
 
-    public static IReadOnlyList<int> Build(MatchState state)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        var scores = Enumerable.Repeat(InactiveScore, MatchLimits.PlayerCount).ToArray();
-        foreach (var player in state.Players.Where(player => player.Status == PlayerStatus.Active))
-            scores[player.Id.Value] = Score(state, player);
-        return Standings(state, scores);
-    }
-
-    private static int[] Standings(MatchState state, int[] scores)
-    {
         var standings = new int[MatchLimits.PlayerCount];
         for (var player = 0; player < MatchLimits.PlayerCount; player++)
         {

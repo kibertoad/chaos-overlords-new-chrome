@@ -4,7 +4,7 @@ title: The end of a turn removes eliminated players, reports each elimination to
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-003, FND-TURN-008, FND-POLICE-001, FND-EVENT-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-017, EXP-TURN-022]
+evidence: [FND-TURN-003, FND-TURN-008, FND-POLICE-001, FND-EVENT-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-017, EXP-TURN-018, EXP-TURN-020, EXP-TURN-022, EXP-TURN-025]
 conflicting: []
 split_with: []
 related: [RULE-POLICE-003, RULE-EVENT-003, RULE-OBJECTIVE-001, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]

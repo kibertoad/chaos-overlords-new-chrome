@@ -36,11 +36,18 @@ The seed was 10857. The run made 7028 calls of `roll`, 314 before the first
 Done press. The copy held 25 in `elapsed_turns`, every player active, and the
 human's gang in roster slot 0.
 
+At the end the six players held 0, 2, 2, 0, 1 and 1 Last Turn reports
+(FMT-STATE-006): a Hire refused because its sector was full for player 1 in
+sector 36 and for player 4 in sector 35 (type 7), three completed sites
+(type 4), and player 5's Control of sector 42, owned by no one before (type 2
+with `arg2` -1).
+
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state.
+rebuild makes the same calls with the same bounds and results, reaches the
+same generator position and state, and builds the same Last Turn reports for
+every player.
 
 ## Conclusion
 

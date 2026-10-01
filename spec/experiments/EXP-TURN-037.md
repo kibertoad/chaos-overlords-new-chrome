@@ -1,6 +1,6 @@
 ---
 id: EXP-TURN-037
-title: How does a six-month Acceptance end, and does a human that always hides get the Big Fat Chicken?
+title: How does a six-month Greed end, and which awards does the endgame give?
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -15,11 +15,11 @@ fixture: EXP-TURN-037.json
 
 ## Question
 
-EXP-TURN-036 ends a Greed. Acceptance scores the Support of the completed
-sites in a player's sectors (RULE-OBJECTIVE-002), and the match ends with one
-more refresh of the sectors and gangs (FND-OBJECTIVE-004). Does the original
-end a six-month Acceptance with the 26th resolution, and does a human that
-hid every turn get award 2 (Big Fat Chicken) from RULE-AWARDS-001?
+A timed scenario ends with the resolution of the turn numbered with its limit
+(RULE-OBJECTIVE-004), after the end evaluation has stored the scores
+(RULE-OBJECTIVE-001). The endgame then gives the awards (RULE-AWARDS-001).
+Every earlier run stops before a match ends. Does the original end a
+six-month Greed with the 26th resolution, and which awards does it give?
 
 ## Setup
 
@@ -27,29 +27,30 @@ As EXP-TURN-001.
 
 ## Procedure
 
-As EXP-TURN-036 with `--seed 1` and `--scenario 2` (Acceptance).
-Before the first Done press the human's gang in roster slot 0 is set to Hide
-with Hide as its recurring order (`--orders 1:0:8:0:0:1`), so it hides in
-every turn.
+As EXP-TURN-028 with 26 Done presses (`--end-turns 26`). After the last one
+the end evaluation sets `match_over`, and the match loop gives the human one
+last look at the city with the turn's Combat Results open (FND-OBJECTIVE-004).
+The probe closes the panel, presses Done there, and stops when the endgame's
+row painter at `0x0042CE61` first runs, once the awards are given.
 
 ## Observations
 
-The run made 13650 calls of `roll`. At the end `match_over` was 1 and
-`elapsed_turns` 25. The stored scores were 0, 16, 25, 21, 26 and 25 for
-players 0 to 5. The human held award 2 (Big Fat Chicken) and award 4 (Safe),
-player 2 held award 3 (Dollar Sign), and no other player held one.
+The run made 10794 calls of `roll`; the first 10081 are those of EXP-TURN-028,
+which stops before its 26th Done. At the end `match_over` was 1 and `elapsed_turns` still 25, since the
+loop moves it on only after the endgame. The stored scores were each player's
+cash, with the human last. The human, who spent nothing, held award 4 (Safe),
+player 1, with the most cash spent (372), held award 3 (Dollar Sign), and no
+other player held one. Nobody overthrew, damaged or hid enough for the first
+three awards.
 
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
 rebuild makes the same calls with the same bounds and results, ends the match
 with the resolution of turn 26, reaches the same state, stored scores and Last
-Turn reports, and gives the same awards to the same players. The computer
-players' last planning reads the gangs' statistics as the refresh at the end
-of the match leaves them; without that refresh the rebuild's rolls part from
-the original's in the hire-offer scan of the final turn.
+Turn reports, and gives the same awards to the same players.
 
 ## Conclusion
 
-The run agrees with RULE-OBJECTIVE-002, RULE-OBJECTIVE-004, RULE-AWARDS-001
-and the refresh of RULE-GANG-001 at the end of a match.
+The run agrees with RULE-OBJECTIVE-001, RULE-OBJECTIVE-004 and
+RULE-AWARDS-001.
