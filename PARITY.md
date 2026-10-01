@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 146 |
-| `validated` | 76 |
+| `implemented` | 144 |
+| `validated` | 78 |
 
 | Code | Rows |
 |---|---|
@@ -224,7 +224,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Each rebuilt field keeps its low eight bits, as the original's INT8 fields do; no shipped combination reaches the wrap. |
-| `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-26 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. EXP-TURN-017 replays a death in combat. |
+| `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-26 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. EXP-TURN-017 replays a death in combat and EXP-TURN-019 a Terminate. |
 | `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | complete | None | `DEV-UI-010` | implemented | Opened from the order panels' portraits with the gang's values, the Force question marks and the recorded positions. The base values are blacked out through bitmap 143 from each area's corner (FND-GANG-011, FND-GFX-006). |
 | `SCR-GANG-002` | Gang information panel for a hired gang | supported | complete | None | `DEV-GANG-001` | implemented | Opened for hired gangs and hire offers, with every recorded position, rotating items, base values 18 pixels to the left, and the close face acting on release. |
 
@@ -256,7 +256,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TERMINATE-001` | Terminate pass retires every gang ordered to Terminate, before any Move | supported | complete | None | None | implemented | Terminate retires the gang through the same step as RULE-GANG-002, before any Move, with no casualty and no Last Turn report. Force 0, the cleared orders and Hidden are the representation of the inactive slot (2026-09-26 decision). |
+| `RULE-TERMINATE-001` | Terminate pass retires every gang ordered to Terminate, before any Move | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Terminate retires the gang through the same step as RULE-GANG-002, before any Move, with no casualty and no Last Turn report. Force 0, the cleared orders and Hidden are the representation of the inactive slot (2026-09-26 decision). EXP-TURN-019 replays the Terminate of the human's only gang. |
 
 ## UPKEEP
 
@@ -336,7 +336,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-020` | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
-| `RULE-AI-021` | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
+| `RULE-AI-021` | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-018 reaches the Attack on a visible gang; no recorded run reaches a failed target comparison. |
 | `RULE-AI-022` | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-023` | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | No match writes family 4, so the handler matters only for a loaded planning record. |
 | `RULE-AI-024` | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |

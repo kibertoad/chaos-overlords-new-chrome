@@ -4,7 +4,7 @@ title: A gang that dies or is terminated has only its sector byte set to inactiv
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [EXP-TURN-017, FND-GANG-003, FND-GANG-005, FND-MOVE-001, FND-MOVE-003]
+evidence: [EXP-TURN-017, EXP-TURN-019, FND-GANG-003, FND-GANG-005, FND-MOVE-001, FND-MOVE-003]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
