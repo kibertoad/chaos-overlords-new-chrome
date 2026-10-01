@@ -127,7 +127,9 @@ public sealed partial class ChaosGame
             ClientScreen.Title or ClientScreen.Setup or ClientScreen.Online
             or ClientScreen.Lobby or ClientScreen.Handoff or ClientScreen.Elimination
             or ClientScreen.Endgame));
-        if (_comlinkAlertCadence.Advance(hasUnread, presentationActive, now)
+        if (_comlinkAlertCadence.Advance(hasUnread, presentationActive, now,
+                enteringPlanning, PlanningViewer is { } viewer && _state is not null
+                    ? _state.ComlinkFor(viewer).NextSequence : null)
             && AudioRouting.IncomingMessageSound(hasUnread) is { } alert)
             PlayGeneralSound(alert);
     }
