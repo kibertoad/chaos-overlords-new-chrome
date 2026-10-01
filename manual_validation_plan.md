@@ -108,10 +108,10 @@ finding or experiment is in the spec.
 - RULE-RESEARCH-001: two gangs of one player researching the same item that
   the first can finish; record the remaining research and the report.
 - RULE-BRIBE-001 / BUG-BRIBE-001: bribe a sector with Tolerance 39 twice in
-  one turn; record 45 (no cap) and cash down by 6. Bribe with 2 cash; record
-  the report and that nothing changed.
-- RULE-SNITCH-001 / RULE-TOLERANCE-002: Snitch a sector at Tolerance 2 while
-  in debt; record Tolerance 1 after the turn and no cash change.
+  one turn; record 45 (no cap) and cash down by 6. Capture the Last Turn
+  report of a Bribe at 2 cash (EXP-TURN-033 turn 10 sets it up).
+- RULE-SNITCH-001: Snitch while in debt; record no cash change. EXP-TURN-032
+  covers the clamp at 1 with the player's cash positive.
 - RULE-TOLERANCE-001: after one Bribe, record the sector's Tolerance at each
   of the next four turn starts and, if it can be seen, at each phase, to find
   when the one-point return happens and what normal is.
@@ -121,12 +121,8 @@ finding or experiment is in the spec.
 
 ## Movement, Control, gangs, equipment and money
 
-- RULE-EQUIP-001, RULE-EQUIP-002, FND-EQUIP-006: Equip at the cash boundary.
-  Start: a save with one gang able to buy an item of known price. Queue the
-  Equip with cash exactly equal to the price, then $1 short, then $1 short with
-  a Sell queued on an earlier roster slot of the same player, then with the
-  Sell on a later slot. Record cash after the turn, the gang's items and the
-  Last Turn report.
+- RULE-EVENT-014: the Last Turn report of an Equip one short. EXP-TURN-031
+  turn 7 sets it up; capture the Last Turn Events panel of turn 8.
 - RULE-EQUIP-003: Factory price. Start: a player owning a sector with a
   completed Factory. Equip an item whose Cost is not a multiple of 3 from a
   gang in that sector and from one outside it. Record cash before and after.
@@ -146,9 +142,6 @@ finding or experiment is in the spec.
 - RULE-SELL-001, BUG-SELL-001: multi-item Sell. Start: a gang holding a weapon,
   armor and a miscellaneous item of known Cost. Sell two of them, then all
   three. Record cash and the gang's items after each.
-- RULE-GIVE-001: same-turn swaps and overwrites. Start: two gangs in one
-  sector, each Giving its weapon to the other, and a third gang Equipping a
-  weapon while receiving one by Give. Record the items after the turn.
 - RULE-UPKEEP-001: upkeep around zero cash. Start: saves near $0 with a known
   number of owned sectors, completed sites with positive and negative Cash, and
   gangs of known Upkeep. Record the Financial panel before the turn, cash after
