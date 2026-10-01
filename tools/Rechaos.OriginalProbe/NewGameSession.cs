@@ -19,13 +19,22 @@ internal sealed record ProbeOrder(int Turn, int Slot, int Action, int Target, in
 }
 
 /// <summary>
+/// A hire the human places before a Done press: the hire offer slot 0 to 2 and the sector it is
+/// dropped on, written into <c>hire_orders</c> as the hire screen does (RULE-HIRE-003).
+/// </summary>
+internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector)
+{
+    public override string ToString() => $"turn {Turn}: offer slot {OfferSlot} sector {Sector}";
+}
+
+/// <summary>
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
 /// Scenario numbers are the original's (FND-SETUP-013).
 /// </summary>
 internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
-    IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false)
+    IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -50,8 +59,10 @@ internal sealed record NewGameSettings(
         for (var turn = 1; turn <= EndTurns; turn++)
         {
             var orders = (Orders ?? []).Where(order => order.Turn == turn).ToArray();
+            var hires = (Hires ?? []).Where(hire => hire.Turn == turn).ToArray();
             foreach (var order in orders) yield return ("order", order.ToString());
-            yield return ("left_click", orders.Length == 0
+            foreach (var hire in hires) yield return ("hire", hire.ToString());
+            yield return ("left_click", orders.Length + hires.Length == 0
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
@@ -139,6 +150,8 @@ internal sealed class NewGameSession(
                 return Finish(false, $"A panel of turn {turn} never closed.", rollsBeforeBegin);
             foreach (var order in (settings.Orders ?? []).Where(order => order.Turn == turn))
                 WriteOrder(order);
+            foreach (var hire in (settings.Hires ?? []).Where(hire => hire.Turn == turn))
+                WriteHire(hire);
             _rollsAtDone.Add(_rolls.Count);
             Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
             var target = turn;
@@ -223,6 +236,13 @@ internal sealed class NewGameSession(
             (byte)order.Action, (byte)order.Target, (byte)order.Target2,
             (byte)(order.Repeat ? order.Action : 0), (byte)(order.Repeat ? order.Target : 0)]);
         _notes.Add($"order after roll {_rolls.Count}: {order}");
+    }
+
+    private void WriteHire(ProbeHire hire)
+    {
+        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        _process.Write(OriginalAddresses.HireOrders + (uint)(human * 3 + hire.OfferSlot), [(byte)hire.Sector]);
+        _notes.Add($"hire after roll {_rolls.Count}: {hire}");
     }
 
     // --seed replaces the clock value the process start passes to srand, so a run can be repeated.
