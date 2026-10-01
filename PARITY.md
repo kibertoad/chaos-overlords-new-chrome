@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 136 |
-| `validated` | 86 |
+| `implemented` | 135 |
+| `validated` | 87 |
 
 | Code | Rows |
 |---|---|
@@ -184,20 +184,20 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-BRIBE-001` | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The Bribe changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. |
+| `RULE-BRIBE-001` | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The Bribe changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. EXP-TURN-033 bribes nine times and then fails at 2 cash. |
 
 ## SNITCH
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-SNITCH-001` | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The Snitch changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. |
+| `RULE-SNITCH-001` | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The Snitch changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. |
 
 ## TOLERANCE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-TOLERANCE-001` | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every sector's base Tolerance after up to twenty-five resolutions. The base Tolerance moves at the start of the instant phase; the sites' part is added only by the rebuild before planning. |
-| `RULE-TOLERANCE-002` | After the instant phase every sector's base Tolerance is clamped to 1..40 | supported | complete | None | None | implemented | None |
+| `RULE-TOLERANCE-002` | After the instant phase every sector's base Tolerance is clamped to 1..40 | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-032 takes a base Tolerance to 0 and to -1 by Snitch, and both end at 1. No run reaches the upper bound. |
 
 ## SITE
 
@@ -232,8 +232,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-EQUIP-001` | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-EQUIP-001` | validated | Cash is tested at the Equip's place in the order the player gave Equip and Sell, where the original tests it at the gang's place in the roster scan (DEV-EQUIP-001). A computer player's planned Equip it can no longer pay for gives no command (DEV-AI-002). The failed-Equip report is compared under RULE-EVENT-014. |
-| `RULE-EQUIP-002` | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-EQUIP-001` | validated | Players resolve by slot. Equip and Sell resolve in the order the player gave them, where the original scans roster slots (DEV-EQUIP-001). Give keeps the roster order: the rebuild empties every giver's slots before the pass and delivers after all players' scans, and no Equip or Sell reads a giver's or recipient's slot in between, so the result is the same as delivering after each player's scan. The EXP-TURN recordings reach Equip only; no recording has a Give or a Sell yet. |
+| `RULE-EQUIP-001` | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-EQUIP-001` | validated | Cash is tested at the Equip's place in the order the player gave Equip and Sell, where the original tests it at the gang's place in the roster scan (DEV-EQUIP-001). A computer player's planned Equip it can no longer pay for gives no command (DEV-AI-002). The failed-Equip report is compared under RULE-EVENT-014. |
+| `RULE-EQUIP-002` | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-EQUIP-001` | validated | Players resolve by slot. Equip and Sell resolve in the order the player gave them, where the original scans roster slots (DEV-EQUIP-001). Give keeps the roster order: the rebuild empties every giver's slots before the pass and delivers after all players' scans, and no Equip or Sell reads a giver's or recipient's slot in between, so the result is the same as delivering after each player's scan. EXP-TURN-031 gives an Equip at the exact price, Equips one short, and a Sell by an earlier and by a later roster slot, each turn's orders in roster order; EXP-TURN-016, EXP-TURN-027 and EXP-TURN-030 hold Sells and Gives. |
 | `RULE-EQUIP-003` | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-EQUIP-004` | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported | complete | None | None | implemented | None |
 | `SCR-EQUIP-001` | Equip panel | supported | complete | None | `None` | implemented | Category cells, held item icons, list columns, row mark, frame, faces and keys follow the original, and the portrait double-click opens the compact gang panel. The rebuild's extra keys are DEV-UI-010. |

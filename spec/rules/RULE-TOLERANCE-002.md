@@ -1,10 +1,10 @@
 ---
 id: RULE-TOLERANCE-002
 title: After the instant phase every sector's base Tolerance is clamped to 1..40
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TOLERANCE-001, FND-SNITCH-001, FND-STATE-001, FND-TURN-008, FND-TURN-001, FND-CONTROL-001, FND-EXE-004]
+evidence: [FND-TOLERANCE-001, FND-SNITCH-001, FND-STATE-001, FND-TURN-008, FND-TURN-001, FND-CONTROL-001, FND-EXE-004, EXP-TURN-032]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, RULE-TOLERANCE-001, RULE-BRIBE-001, RULE-SNITCH-001]
