@@ -55,6 +55,10 @@ namespace Rechaos.Tests;
 /// later roster slot (RULE-EQUIP-001, RULE-EQUIP-002). In EXP-TURN-032 six Snitches in a row drive
 /// a sector's base Tolerance to the clamp at 1 (RULE-SNITCH-001, RULE-TOLERANCE-002). In
 /// EXP-TURN-033 the human bribes every turn until a Bribe meets 2 cash and fails (RULE-BRIBE-001).
+/// Every computer player's pass starts from its sector weights and the hostility step
+/// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
+/// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
+/// around the gang's sector, the centre included, which EXP-TURN-017 needs (RULE-AI-005).
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
@@ -252,8 +256,10 @@ public sealed class OriginalNewGameExperimentTests
         // the order they were recorded, as the FMT-STATE-006 records the original holds. The runs
         // hold the reports of RULE-EVENT-003 (elimination), RULE-EVENT-004 (Crackdown),
         // RULE-EVENT-006 (site), RULE-EVENT-007 (Research), RULE-EVENT-008 and RULE-EVENT-014
-        // (cash), RULE-EVENT-009 (Hire cash), RULE-EVENT-010 (full sector), RULE-EVENT-012 and
-        // RULE-EVENT-013 (Control).
+        // (cash), RULE-EVENT-009 (hire cash), RULE-EVENT-010 (full sector), RULE-EVENT-012 and
+        // RULE-EVENT-013 (Control). A Crackdown report goes to every player that had a gang in the
+        // sector when resolution began (RULE-POLICE-004): EXP-TURN-023 and EXP-TURN-024 report one to
+        // players that raised no Chaos there, and EXP-TURN-024 to one with no gang left there at the end.
         if (recorded.HasTerm("last_turn_report_count", 0))
         {
             var eventsBySequence = new Dictionary<long, GameEvent>();
@@ -282,6 +288,37 @@ public sealed class OriginalNewGameExperimentTests
                         $"player {slot} report {index}: the original holds {expected[index]}, the rebuild {reports[index]}");
             }
         }
+
+        // The running totals the financial panel and the endgame awards read, and the hire roles
+        // the computer players' planning keeps (RULE-AI-010). Damage Inflicted is RULE-COMBAT-003.
+        // The attitudes compared above follow every Control takeover (RULE-AI-017) in EXP-TURN-011,
+        // EXP-TURN-017 and EXP-TURN-018.
+        if (recorded.HasTerm("cash_spent", 0))
+            foreach (var player in match.Players)
+            {
+                var slot = player.Id.Value;
+                (string Term, long Value)[] totals =
+                [
+                    ("cash_earned", player.Statistics.CashEarned), ("cash_spent", player.Statistics.CashSpent),
+                    ("damage_inflicted", player.Statistics.DamageInflicted),
+                    ("casualties", player.Statistics.Casualties), ("overthrow_count", player.Statistics.Overthrows),
+                    ("hide_count", player.Statistics.TimesHidden),
+                    ("hire_role", match.AiPlanning.CurrentHireRole(player.Id)),
+                    ("previous_hire_role", match.AiPlanning.PreviousHireRole(player.Id)),
+                ];
+                // The original holds -1 in a human player's hire_role and the rebuild 0. A player's
+                // first planning pass writes 0 there before anything reads it (FND-AI-042), so the
+                // difference is one of representation; any other value is still compared.
+                foreach (var (term, value) in totals)
+                {
+                    var original = recorded.Term(term, slot);
+                    var expected = term == "hire_role" && original == -1 && player.Setup.Controller == PlayerController.Human
+                        ? 0
+                        : original;
+                    Assert.True(expected == value,
+                        $"{term} of player {slot}: the original holds {original}, the rebuild {value}");
+                }
+            }
 
         // FND-SETUP-018: the turn limit the computer players read.
         Assert.Equal(recorded.Term("turn_limit", 0), ScenarioCatalog.TurnLimit(match.Setup.Scenario, match.Setup.Duration));

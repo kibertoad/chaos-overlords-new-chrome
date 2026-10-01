@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-019
 title: Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-072, FND-AI-048, FND-AI-046, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-044, FND-EXE-004]
+evidence: [FND-AI-072, FND-AI-048, FND-AI-046, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-044, FND-EXE-004, EXP-TURN-010, EXP-TURN-017, EXP-TURN-036]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]

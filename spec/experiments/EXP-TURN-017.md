@@ -63,4 +63,6 @@ hits and takes the gang's Force from 4 to 0, which eliminates the human.
 
 The run agrees with the spec over thirty turns of Kill 'Em All, including
 computer players' attacks on a hiding gang (RULE-ATTACK-001) and a death in
-combat (RULE-COMBAT-002, RULE-GANG-002).
+combat (RULE-COMBAT-002, RULE-GANG-002). It also settles that `danger_near`
+scans the gang's own sector with its neighbours (RULE-AI-005): a replay whose
+equipment gate skips that sector diverges from the run.
