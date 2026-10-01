@@ -52,8 +52,9 @@ public static class OriginalSoundtrackPolicy
             _ => eliminationMusicHeld ? OriginalSoundtrackMode.Endgame : OriginalSoundtrackMode.Gameplay
         };
 
-    /// <summary>RULE-AUDIO-001, FND-AUDIO-001: endgame entries and returns from a match
-    /// to the title loop request their program anew; setup and modal screens do not.</summary>
+    /// <summary>RULE-AUDIO-001, FND-AUDIO-001: endgame entries and returns to the title loop
+    /// from a match or from network preparation request their program anew; moving between the
+    /// title and setup, and leaving Options or Help, do not.</summary>
     public static bool RestartsOnEntry(ClientScreen previous, ClientScreen current) =>
         previous != current && previous is not (ClientScreen.Options or ClientScreen.Help)
         && (current is ClientScreen.Endgame or ClientScreen.Elimination

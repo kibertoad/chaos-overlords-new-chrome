@@ -79,7 +79,7 @@ public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
         var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg");
         var songs = Enumerable.Range(1, 3)
             .Select(index => Song.FromUri($"program{index}", new Uri(path))).ToArray();
-        using var player = new SoundtrackProgramPlayer(songs);
+        var player = new SoundtrackProgramPlayer(songs);
         try
         {
             MediaPlayer.IsRepeating = false;

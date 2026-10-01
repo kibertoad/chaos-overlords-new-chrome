@@ -70,8 +70,9 @@ public sealed class SoundtrackCatalogTests
             OriginalSoundtrackPolicy.VolumeForLevel(11));
     }
 
-    // RULE-AUDIO-001, FND-AUDIO-001: the two endgame entries request mode 1;
-    // Options, Help, setup navigation and game panels do not call the selector.
+    // RULE-AUDIO-001, FND-AUDIO-001: the two endgame entries request mode 1, and returns to
+    // the title loop from a match or network preparation request mode 0; Options, Help, setup
+    // navigation and game panels do not call the selector.
     [Theory]
     [InlineData(ClientScreen.Handoff, ClientScreen.Elimination, true)]
     [InlineData(ClientScreen.Elimination, ClientScreen.Endgame, true)]
