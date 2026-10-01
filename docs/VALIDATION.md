@@ -434,8 +434,11 @@ static work still open is listed in
 
 `node tools/check-spec.mjs` runs the documentation standard's
 [checks](https://dinorefurb.com/documentation-standard/#checks) over `spec/`,
-`PARITY.md` and `DEVIATIONS.md`, and writes the indexes in `spec/index/`. The
-fast gate runs it with `--check`. It compiles the Kaitai definitions when
+`PARITY.md` and `DEVIATIONS.md`, and writes the indexes in `spec/index/`. It
+also fails when a C# comment gives an executable address (`0x…`, `fn_…` or
+`g_…`) that no entry the comment cites, or an entry one of those cites, records.
+The fast gate runs it with `--check`, and `.githooks/pre-commit` runs it before
+each commit once a clone enables the hook. It compiles the Kaitai definitions when
 `kaitai-struct-compiler` (or the path in `KSC`) is on the path and warns when
 it is not. Until the patch tool is published with the standard's spec package,
 an experiment that uses a save patch also gives each write as a byte offset and

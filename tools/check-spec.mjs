@@ -1059,49 +1059,50 @@ function walk(dir, fn) {
   }
 }
 
-// Addresses in code comments: an executable address that a C# comment gives must be recorded in
-// an entry the comment cites, or in an entry that one of those cites. A comment block is a run
-// of consecutive comment lines; the address may appear in an entry's locations or its text,
-// singly or inside a range.
+// Addresses in code comments: an executable address that a C# comment gives, written 0x… or as
+// a neutral name (fn_…, g_…), must be recorded in an entry the comment cites, or in an entry that
+// one of those cites; a superseded entry records nothing. A comment block is a run of
+// consecutive comment lines; a comment that trails code also takes the block above it. The
+// address may appear in an entry's locations or its text, singly or inside a range.
 {
-  const ADDRESS_RE = /\b0x00[4-9A-Fa-f][0-9A-Fa-f]{5}\b/g;
+  const ADDRESS_RE = /\b(?:0x|fn_|g_)(00[4-9A-Fa-f][0-9A-Fa-f]{5})\b/g;
   const RANGE_RE = /\b(0x[0-9A-Fa-f]{8})(?:\.\.(0x[0-9A-Fa-f]{8}))?\b/g;
   const recorded = new Map(); // entry ID -> [low, high] ranges
   const rangesOf = (id) => {
     if (recorded.has(id)) return recorded.get(id);
     const e = entries.get(id);
     const ranges = [];
-    if (e) {
+    if (e && !isSuperseded(id)) {
       const text = [e.body, ...asList(e.meta.locations).map((loc) => String(loc?.address ?? ""))].join("\n");
       for (const [, low, high] of text.matchAll(RANGE_RE)) ranges.push([parseInt(low, 16), parseInt(high ?? low, 16)]);
     }
     recorded.set(id, ranges);
     return ranges;
   };
-  const reach = (ids) => {
-    const all = new Set(ids);
-    for (const id of ids) {
+  const citedBy = new Map(); // entry ID -> the IDs it cites
+  const citesOf = (id) => {
+    if (!citedBy.has(id)) {
       const e = entries.get(id);
-      if (e) for (const x of idsIn(e.body + "\n" + CLAIM_LINKS.flatMap((k) => asList(e.meta[k])).join(" "))) all.add(x);
+      citedBy.set(id, e ? idsIn(e.body + "\n" + CLAIM_LINKS.flatMap((k) => asList(e.meta[k])).join(" ")) : []);
     }
-    return [...all];
+    return citedBy.get(id);
   };
+  const reach = (ids) => [...new Set([...ids, ...ids.flatMap(citesOf)])];
+  const isComment = (line) => /^\s*\/\//.test(line);
   for (const { file, text } of codeFiles()) {
     if (!file.endsWith(".cs")) continue;
     const lines = text.replace(/\r\n/g, "\n").split("\n");
-    const isComment = (line) => /^\s*\/\//.test(line);
     for (let i = 0; i < lines.length; i++) {
       const at = lines[i].indexOf("//");
       if (at < 0) continue;
-      const addresses = lines[i].slice(at).match(ADDRESS_RE);
-      if (!addresses) continue;
+      const addresses = [...lines[i].slice(at).matchAll(ADDRESS_RE)];
+      if (!addresses.length) continue;
       let first = i, last = i;
       while (first > 0 && isComment(lines[first - 1])) first--;
-      while (last < lines.length - 1 && isComment(lines[last + 1])) last++;
+      if (isComment(lines[i])) while (last < lines.length - 1 && isComment(lines[last + 1])) last++;
       const cited = idsIn(lines.slice(first, last + 1).join("\n")).filter((x) => entries.has(x));
       const scope = reach(cited);
-      for (const address of new Set(addresses)) {
-        const value = parseInt(address, 16);
+      for (const [address, value] of new Map(addresses.map((m) => [m[0], parseInt(m[1], 16)]))) {
         if (scope.some((x) => rangesOf(x).some(([low, high]) => value >= low && value <= high))) continue;
         problem(file, `line ${i + 1} gives ${address} as evidence, but ${cited.length ? `neither ${cited.join(", ")} nor an entry they cite records it` : "the comment cites no entry that records it"}; cite the finding that records it, or record it in a new one`);
       }

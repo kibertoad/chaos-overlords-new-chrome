@@ -124,8 +124,9 @@ comment, and that row of `PARITY.md` cannot be `complete` while it does.
 
 `node tools/check-spec.mjs` runs the standard's checks over `spec/`,
 `PARITY.md` and `DEVIATIONS.md`, checks that every spec and deviation ID cited
-in the code resolves and that every executable address a C# comment gives is
-recorded in an entry the comment cites, and rewrites the generated indexes in `spec/index/`;
+in the code resolves and that every executable address a C# comment gives
+(`0x…`, `fn_…` or `g_…`) is recorded in an entry the comment cites, and
+rewrites the generated indexes in `spec/index/`;
 `--check` fails on a stale index instead of writing it. It compiles the Kaitai
 definitions when `kaitai-struct-compiler` (or the path in `KSC`) is available;
 the CI fast gate installs a pinned release, so there they always compile.
