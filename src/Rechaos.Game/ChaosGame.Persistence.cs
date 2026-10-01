@@ -116,6 +116,9 @@ public sealed partial class ChaosGame
         MatchState loaded, MatchReplayRecorder recorder, string message,
         bool enteredFromSave = false)
     {
+        // RULE-AUDIO-001, FND-AUDIO-001: re-entering the outer game starts its
+        // program from the first track even when another match was already playing.
+        _restartSoundtrackProgram = true;
         ReplaceMatch(loaded, new MatchActions(recorder));
         if (enteredFromSave)
         {
