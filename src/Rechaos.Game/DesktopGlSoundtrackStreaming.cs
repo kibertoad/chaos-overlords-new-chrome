@@ -12,6 +12,8 @@ internal static class DesktopGlSoundtrackStreaming
     private static readonly object CompletionMutex = new();
     private static Backend? _backend;
 
+    /// <summary>Starts or restarts the worker. Call it before taking the transport lock:
+    /// a restart joins the previous worker, which may be waiting on that lock.</summary>
     internal static void EnsureInitialized()
     {
         lock (InitializationMutex)
@@ -41,11 +43,8 @@ internal static class DesktopGlSoundtrackStreaming
     internal static long CompletedPumpCycles => _backend?.CompletedPumpCycles ?? 0;
     internal static bool IsPending(Song song) => _backend?.IsPending(song) == true;
 
-    internal static void ResetForNewSong(Song song)
-    {
-        EnsureInitialized();
-        _backend!.Reset(song);
-    }
+    internal static void ResetForNewSong(Song song) =>
+        (_backend ?? throw new InvalidOperationException("Soundtrack streaming is not initialized.")).Reset(song);
 
     internal static void Shutdown()
     {
@@ -59,13 +58,29 @@ internal static class DesktopGlSoundtrackStreaming
     private sealed class Backend
     {
         private readonly object _streamer;
-        private readonly Type _streamType;
         private readonly object _iterationMutex;
-        private readonly FieldInfo _streams;
+        private readonly object _registry;
         private readonly FieldInfo _cancelled;
+        private readonly FieldInfo _songStream;
+        private readonly FieldInfo _prepareMutex;
+        private readonly FieldInfo _stopMutex;
+        private readonly FieldInfo _sourceId;
+        private readonly FieldInfo _bufferIds;
+        private readonly PropertyInfo _reader;
+        private readonly PropertyInfo _preparing;
+        private readonly PropertyInfo _finishedAction;
         private readonly MethodInfo _fillBuffer;
-        private readonly Type _al;
-        private readonly Type _sourceQuery;
+        private readonly MethodInfo _removeStream;
+        private readonly MethodInfo _registryContains;
+        private readonly MethodInfo _getSource;
+        private readonly MethodInfo _getSourceState;
+        private readonly MethodInfo _sourcePlay;
+        private readonly MethodInfo _queueBuffers;
+        private readonly MethodInfo _unqueueBuffers;
+        private readonly MethodInfo _getError;
+        private readonly object _buffersQueued;
+        private readonly object _buffersProcessed;
+        private PropertyInfo? _timePosition;
         private readonly ConcurrentDictionary<object, bool> _atEnd = new();
         private Exception? _failure;
         private readonly Thread _thread;
@@ -78,20 +93,43 @@ internal static class DesktopGlSoundtrackStreaming
         {
             var assembly = typeof(Song).Assembly;
             var type = assembly.GetType("Microsoft.Xna.Framework.Audio.OggStreamer", true)!;
-            _streamType = assembly.GetType("Microsoft.Xna.Framework.Audio.OggStream", true)!;
-            _al = assembly.GetType("MonoGame.OpenAL.AL", true)!;
-            _sourceQuery = assembly.GetType("MonoGame.OpenAL.ALGetSourcei", true)!;
+            var streamType = assembly.GetType("Microsoft.Xna.Framework.Audio.OggStream", true)!;
+            var al = assembly.GetType("MonoGame.OpenAL.AL", true)!;
+            var sourceQuery = assembly.GetType("MonoGame.OpenAL.ALGetSourcei", true)!;
             _streamer = type.GetProperty("Instance", Members)!.GetValue(null)!;
             var updateRate = (float)type.GetProperty("UpdateRate", Members)!.GetValue(_streamer)!;
             _updateInterval = (int)(1000 / (updateRate > 0 ? updateRate : 1));
             _iterationMutex = type.GetField("iterationMutex", Members)!.GetValue(_streamer)!;
-            _streams = type.GetField("streams", Members)!;
+            _registry = type.GetField("streams", Members)!.GetValue(_streamer)!;
+            _registryContains = _registry.GetType().GetMethod("Contains")!;
             _cancelled = type.GetField("cancelled", Members)!;
             _fillBuffer = type.GetMethod("FillBuffer", Members)!;
-            // This runs before a soundtrack starts. Quiesce the stock worker, which
-            // discards a whole fill batch when its last read reaches EOF.
-            type.GetMethod("Shutdown", Members)!.Invoke(_streamer, null);
-            ((Thread)type.GetField("underlyingThread", Members)!.GetValue(_streamer)!).Join();
+            _removeStream = type.GetMethod("RemoveStream", Members)!;
+            _songStream = typeof(Song).GetField("stream", Members)!;
+            _prepareMutex = streamType.GetField("prepareMutex", Members)!;
+            _stopMutex = streamType.GetField("stopMutex", Members)!;
+            _sourceId = streamType.GetField("alSourceId", Members)!;
+            _bufferIds = streamType.GetField("alBufferIds", Members)!;
+            _reader = streamType.GetProperty("Reader", Members)!;
+            _preparing = streamType.GetProperty("Preparing", Members)!;
+            _finishedAction = streamType.GetProperty("FinishedAction", Members)!;
+            _getSource = al.GetMethod("GetSource", Members, null, [typeof(int), sourceQuery, typeof(int).MakeByRefType()], null)!;
+            _getSourceState = al.GetMethod("GetSourceState", Members, null, [typeof(int)], null)!;
+            _sourcePlay = al.GetMethod("SourcePlay", Members, null, [typeof(int)], null)!;
+            _queueBuffers = al.GetMethod("SourceQueueBuffers", Members, null, [typeof(int), typeof(int), typeof(int[])], null)!;
+            _unqueueBuffers = al.GetMethod("SourceUnqueueBuffers", Members, null, [typeof(int), typeof(int)], null)!;
+            _getError = al.GetMethod("GetError", Members, null, Type.EmptyTypes, null)!;
+            _buffersQueued = Enum.Parse(sourceQuery, "BuffersQueued");
+            _buffersProcessed = Enum.Parse(sourceQuery, "BuffersProcessed");
+            var stockWorker = (Thread)type.GetField("underlyingThread", Members)!.GetValue(_streamer)!;
+            if (stockWorker.IsAlive)
+            {
+                // This runs before a soundtrack starts. Quiesce the stock worker, which
+                // discards a whole fill batch when its last read reaches EOF. Its shutdown
+                // clears the stream registry, so a restarted replacement must not repeat it.
+                type.GetMethod("Shutdown", Members)!.Invoke(_streamer, null);
+                stockWorker.Join();
+            }
             _cancelled.SetValue(_streamer, false);
             _thread = new Thread(Run) { IsBackground = true, Name = "Soundtrack streaming" };
             _thread.Start();
@@ -106,7 +144,8 @@ internal static class DesktopGlSoundtrackStreaming
             _thread.Join();
         }
 
-        private object Stream(Song song) => typeof(Song).GetField("stream", Members)!.GetValue(song)!;
+        private object Stream(Song song) => _songStream.GetValue(song)!;
+        private static object MutexOf(FieldInfo mutex, object stream) => mutex.GetValue(stream)!;
 
         internal bool IsPending(Song song) => _atEnd.GetValueOrDefault(Stream(song));
 
@@ -115,7 +154,7 @@ internal static class DesktopGlSoundtrackStreaming
         internal void Reset(Song song)
         {
             var stream = Stream(song);
-            lock (Field(stream, "prepareMutex"))
+            lock (MutexOf(_prepareMutex, stream))
             {
                 CancelCompletion();
                 _atEnd.TryRemove(stream, out _);
@@ -128,46 +167,44 @@ internal static class DesktopGlSoundtrackStreaming
                 throw new InvalidOperationException("Soundtrack streaming failed.", failure);
         }
 
-        private object Field(object stream, string name) => _streamType.GetField(name, Members)!.GetValue(stream)!;
-        private object Property(object stream, string name) => _streamType.GetProperty(name, Members)!.GetValue(stream)!;
-
-        private object? Call(string name, Type[] signature, params object?[] args)
+        private object? Call(MethodInfo method, params object?[] args)
         {
-            var result = _al.GetMethod(name, Members, null, signature, null)!.Invoke(null, args);
-            var error = _al.GetMethod("GetError", Members, null, Type.EmptyTypes, null)!.Invoke(null, null);
+            var result = method.Invoke(null, args);
+            var error = _getError.Invoke(null, null);
             if (Convert.ToInt32(error) != 0)
-                throw new InvalidOperationException($"OpenAL {name} failed: {error}.");
+                throw new InvalidOperationException($"OpenAL {method.Name} failed: {error}.");
             return result;
         }
 
-        private int Query(int source, string name)
+        private int Query(int source, object parameter)
         {
-            object?[] args = [source, Enum.Parse(_sourceQuery, name), 0];
-            Call("GetSource", [typeof(int), _sourceQuery, typeof(int).MakeByRefType()], args);
+            object?[] args = [source, parameter, 0];
+            Call(_getSource, args);
             return (int)args[2]!;
         }
 
-        private void Queue(int source, int[] buffers) =>
-            Call("SourceQueueBuffers", [typeof(int), typeof(int), typeof(int[])], source, buffers.Length, buffers);
+        private bool StopRequested => _stop || (bool)_cancelled.GetValue(_streamer)!;
 
         private void Run()
         {
             try
             {
-                while (!_stop && !(bool)_cancelled.GetValue(_streamer)!)
+                while (!StopRequested)
                 {
                     Thread.Sleep(_updateInterval);
+                    // Shutdown may arrive during the sleep; do not touch native sources after it.
+                    if (StopRequested) break;
                     object[] snapshot;
                     lock (_iterationMutex)
-                        snapshot = ((System.Collections.IEnumerable)_streams.GetValue(_streamer)!).Cast<object>().ToArray();
+                        snapshot = ((System.Collections.IEnumerable)_registry).Cast<object>().ToArray();
                     foreach (var stream in snapshot) Pump(stream);
                     foreach (var stale in _atEnd.Keys.Except(snapshot).ToArray())
                     {
                         // Pause removes a live stream from the native registry. Its EOF
                         // still describes the retained queue and must survive resume.
                         // New starts explicitly reset it; disposal closes the reader.
-                        lock (Field(stale, "prepareMutex"))
-                            if (!Registered(stale) && Property(stale, "Reader") is null)
+                        lock (MutexOf(_prepareMutex, stale))
+                            if (!Registered(stale) && _reader.GetValue(stale) is null)
                                 _atEnd.TryRemove(stale, out _);
                     }
                     Interlocked.Increment(ref _completedPumpCycles);
@@ -182,50 +219,51 @@ internal static class DesktopGlSoundtrackStreaming
         private bool Registered(object stream)
         {
             lock (_iterationMutex)
-                return ((System.Collections.IEnumerable)_streams.GetValue(_streamer)!).Cast<object>().Contains(stream);
+                return (bool)_registryContains.Invoke(_registry, [stream])!;
         }
 
         private void Pump(object stream)
         {
             Action? completed = null;
             long completionGeneration = 0;
-            lock (Field(stream, "prepareMutex"))
+            bool submitted;
+            lock (MutexOf(_prepareMutex, stream))
             {
                 if (!Registered(stream)) return;
-                var source = (int)Field(stream, "alSourceId");
-                var queued = Query(source, "BuffersQueued");
-                var processed = Query(source, "BuffersProcessed");
+                var source = (int)_sourceId.GetValue(stream)!;
+                var queued = Query(source, _buffersQueued);
+                var processed = Query(source, _buffersProcessed);
                 int[] available;
                 if (processed > 0)
-                    available = (int[])Call("SourceUnqueueBuffers", [typeof(int), typeof(int)], source, processed)!;
+                    available = (int[])Call(_unqueueBuffers, source, processed)!;
                 else
-                    available = ((int[])Field(stream, "alBufferIds")).Skip(queued).ToArray();
+                    available = ((int[])_bufferIds.GetValue(stream)!).Skip(queued).ToArray();
                 queued -= processed;
                 var tail = _atEnd.GetValueOrDefault(stream);
                 var filled = new List<int>();
                 foreach (var buffer in available)
                 {
                     if (tail) break;
-                    var reader = Property(stream, "Reader");
-                    var position = reader.GetType().GetProperty("TimePosition")!;
-                    var before = (TimeSpan)position.GetValue(reader)!;
+                    var reader = _reader.GetValue(stream)!;
+                    _timePosition ??= reader.GetType().GetProperty("TimePosition")!;
+                    var before = (TimeSpan)_timePosition.GetValue(reader)!;
                     tail = (bool)_fillBuffer.Invoke(_streamer, [stream, buffer])!;
                     // A short final buffer is valid; an empty EOF buffer is not.
-                    if ((TimeSpan)position.GetValue(reader)! > before) filled.Add(buffer);
+                    if ((TimeSpan)_timePosition.GetValue(reader)! > before) filled.Add(buffer);
                 }
-                if (filled.Count > 0)
+                submitted = filled.Count > 0;
+                if (submitted)
                 {
-                    Queue(source, filled.ToArray());
+                    Call(_queueBuffers, source, filled.Count, filled.ToArray());
                     queued += filled.Count;
                 }
                 _atEnd[stream] = tail;
                 if (tail && queued == 0)
                 {
-                    lock (_iterationMutex)
-                        _streams.GetValue(_streamer)!.GetType().GetMethod("Remove")!.Invoke(_streams.GetValue(_streamer), [stream]);
+                    _removeStream.Invoke(_streamer, [stream]);
                     _atEnd.TryRemove(stream, out _);
                     completionGeneration = Volatile.Read(ref _generation);
-                    completed = (Action)Property(stream, "FinishedAction");
+                    completed = (Action)_finishedAction.GetValue(stream)!;
                 }
             }
             // Completion calls MediaPlayer.Stop, which takes stopMutex then prepareMutex.
@@ -235,12 +273,15 @@ internal static class DesktopGlSoundtrackStreaming
                     if (completionGeneration == Volatile.Read(ref _generation)) completed();
                 return;
             }
-            lock (Field(stream, "stopMutex"))
+            // Restart only to play newly submitted data. Without it, a source that drains
+            // after the queue query would replay its unqueued final buffers from the start.
+            if (!submitted) return;
+            lock (MutexOf(_stopMutex, stream))
             {
-                if (!Registered(stream) || (bool)Property(stream, "Preparing")) return;
-                var source = (int)Field(stream, "alSourceId");
-                var state = Call("GetSourceState", [typeof(int)], source)!.ToString();
-                if (state == "Stopped") Call("SourcePlay", [typeof(int)], source);
+                if (!Registered(stream) || (bool)_preparing.GetValue(stream)!) return;
+                var source = (int)_sourceId.GetValue(stream)!;
+                var state = Call(_getSourceState, source)!.ToString();
+                if (state == "Stopped") Call(_sourcePlay, source);
             }
         }
     }

@@ -27,6 +27,8 @@ public sealed class SoundtrackProgramPlayer : IDisposable
     public void PlayProgram(IReadOnlyList<Song> program)
     {
         CheckOwnerThread();
+        // A worker restart joins the old worker, which may be waiting on the transport lock.
+        DesktopGlSoundtrackStreaming.EnsureInitialized();
         using var transport = DesktopGlSoundtrackStreaming.SerializeTransport();
         Release();
         _cursor.Start(program);
@@ -50,6 +52,7 @@ public sealed class SoundtrackProgramPlayer : IDisposable
     public bool ResumeThroughDiscEnd()
     {
         CheckOwnerThread();
+        DesktopGlSoundtrackStreaming.EnsureInitialized();
         _cursor.ResumeThroughDiscEnd();
         // Completion may still be delivering its Stopped notification. Do not block
         // activation on that callback before it has reported the finished song.
@@ -81,12 +84,13 @@ public sealed class SoundtrackProgramPlayer : IDisposable
         // Between two tracks of a program the native transport is briefly stopped while
         // the original device is still playing, so that gap is stopped like a playing track.
         if (state == MediaState.Stopped && (_expectedSong is null || _cursor.AtEnd)) return;
-        DesktopGlSoundtrackStreaming.CancelCompletion();
         Volatile.Write(ref _expectedSong, null);
         // A track whose completion was already reported has handed over to the next one.
         if (Interlocked.Exchange(ref _songCompleted, 0) != 0) _cursor.Advance();
         _restartCurrentOnResume = true;
         if (state == MediaState.Playing) MediaPlayer.Stop();
+        // After the native stop: draining the source can select a completion during it.
+        DesktopGlSoundtrackStreaming.CancelCompletion();
     }
 
     /// <summary>Stops the transport whatever its state, so no later activation resumes
@@ -95,12 +99,12 @@ public sealed class SoundtrackProgramPlayer : IDisposable
     {
         CheckOwnerThread();
         using var transport = DesktopGlSoundtrackStreaming.SerializeTransport();
-        DesktopGlSoundtrackStreaming.CancelCompletion();
         Stop();
         _restartCurrentOnResume = false;
         Volatile.Write(ref _expectedSong, null);
         Interlocked.Exchange(ref _songCompleted, 0);
         if (MediaPlayer.State == MediaState.Paused) MediaPlayer.Stop();
+        DesktopGlSoundtrackStreaming.CancelCompletion();
     }
 
     /// <summary>RULE-AUDIO-003, FND-AUDIO-007: finish at zero, stop, then restore

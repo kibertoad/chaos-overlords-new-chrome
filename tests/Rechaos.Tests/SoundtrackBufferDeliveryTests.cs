@@ -1,10 +1,8 @@
-using System.Diagnostics;
 using System.Reflection;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
 using Rechaos.Game;
 using Xunit;
+using static Rechaos.Tests.SoundtrackStopTailTests;
 
 namespace Rechaos.Tests;
 
@@ -20,7 +18,7 @@ public sealed class SoundtrackBufferDeliveryTests
         // RULE-AUDIO-001, RULE-AUDIO-002, FND-AUDIO-007: the requested endpoint includes the last frame.
         using var song = Song.FromUri("tail", new Uri(Path.Combine(AppContext.BaseDirectory, "Fixtures", "long-silence.ogg")));
         using var player = new SoundtrackProgramPlayer([song]);
-        var stream = Stream(song);
+        var stream = OggStreamOf(song);
         var reader = stream.GetType().GetProperty("Reader", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
         reader.GetType().GetProperty("TimePosition")!.SetValue(reader, TimeSpan.FromSeconds(seekSeconds));
         SetNativeLooping(stream, true);
@@ -92,7 +90,7 @@ public sealed class SoundtrackBufferDeliveryTests
                 player.PlayProgram([nextSong]);
             }
             WaitFor(() => player.ReadyToRestart);
-            var reader = Stream(nextSong).GetType().GetProperty("Reader", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(Stream(nextSong))!;
+            var reader = OggStreamOf(nextSong).GetType().GetProperty("Reader", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(OggStreamOf(nextSong))!;
             Assert.Equal(nextSong.Duration, (TimeSpan)reader.GetType().GetProperty("TimePosition")!.GetValue(reader)!);
             Assert.Same(nextSong, MediaPlayer.Queue.ActiveSong);
         }
@@ -109,7 +107,7 @@ public sealed class SoundtrackBufferDeliveryTests
         // RULE-AUDIO-002, FND-AUDIO-007: positionless resume retains the queued tail.
         using var song = Song.FromUri("rotated", new Uri(Path.Combine(AppContext.BaseDirectory, "Fixtures", "long-silence.ogg")));
         using var player = new SoundtrackProgramPlayer([song]);
-        var stream = Stream(song);
+        var stream = OggStreamOf(song);
         var reader = stream.GetType().GetProperty("Reader", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
         reader.GetType().GetProperty("TimePosition")!.SetValue(reader, TimeSpan.FromSeconds(1.75));
         SetNativeLooping(stream, true);
@@ -167,29 +165,6 @@ public sealed class SoundtrackBufferDeliveryTests
         var instance = type.GetProperty("Instance", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!.GetValue(null)!;
         var mutex = type.GetField("iterationMutex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance)!;
         lock (mutex)
-            return ((System.Collections.IEnumerable)type.GetField("streams", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance)!).Cast<object>().Contains(Stream(song));
-    }
-    private static void SetNativeLooping(object stream, bool value)
-    {
-        var sourceId = (int)stream.GetType().GetField("alSourceId", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
-        var assembly = typeof(SoundEffect).Assembly;
-        var sourceBoolean = assembly.GetType("MonoGame.OpenAL.ALSourceb", throwOnError: true)!;
-        var setter = assembly.GetType("MonoGame.OpenAL.AL", throwOnError: true)!.GetMethod("Source",
-            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
-            [typeof(int), sourceBoolean, typeof(bool)], null)!;
-        setter.Invoke(null, [sourceId, Enum.Parse(sourceBoolean, "Looping"), value]);
-    }
-
-    private static object Stream(Song song) => typeof(Song).GetField("stream", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(song)!;
-
-    private static void WaitFor(Func<bool> condition)
-    {
-        var timeout = Stopwatch.StartNew();
-        while (!condition() && timeout.Elapsed < TimeSpan.FromSeconds(10))
-        {
-            FrameworkDispatcher.Update();
-            Thread.Sleep(1);
-        }
-        Assert.True(condition(), "Native stream boundary did not arrive.");
+            return ((System.Collections.IEnumerable)type.GetField("streams", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance)!).Cast<object>().Contains(OggStreamOf(song));
     }
 }
