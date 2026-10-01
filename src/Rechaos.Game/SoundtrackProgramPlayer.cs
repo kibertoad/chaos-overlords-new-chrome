@@ -90,6 +90,23 @@ public sealed class SoundtrackProgramPlayer : IDisposable
         if (MediaPlayer.State == MediaState.Paused) MediaPlayer.Stop();
     }
 
+    /// <summary>RULE-AUDIO-003, FND-AUDIO-007: finish at zero, stop, then restore
+    /// the volume captured by the fade, including when a message changed the level.</summary>
+    public void FinishFade(float restoredVolume, bool release)
+    {
+        CheckOwnerThread();
+        try
+        {
+            MediaPlayer.Volume = 0;
+            if (release) Release();
+            else Stop();
+        }
+        finally
+        {
+            MediaPlayer.Volume = restoredVolume;
+        }
+    }
+
     private void PlayCurrent()
     {
         if (_cursor.Current is not { } song) return;

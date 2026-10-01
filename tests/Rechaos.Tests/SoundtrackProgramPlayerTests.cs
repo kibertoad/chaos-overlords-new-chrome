@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Reflection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Media;
 using Rechaos.Game;
@@ -13,6 +14,57 @@ public sealed class NativeSoundtrackCollection;
 [Collection("Native soundtrack")]
 public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void FadeStopsAtZeroAndRestoresCapturedVolumeAfterInterveningLevelChange(bool release)
+    {
+        // RULE-AUDIO-003, FND-AUDIO-007: the fade keeps its local captured volume;
+        // messages processed while it waits cannot replace the final restore value.
+        var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg");
+        using var song = Song.FromUri("fade", new Uri(path));
+        var player = new SoundtrackProgramPlayer([song]);
+        float? stoppedVolume = null;
+        EventHandler<EventArgs> observeStop = (_, _) =>
+        {
+            if (MediaPlayer.State == MediaState.Stopped) stoppedVolume = MediaPlayer.Volume;
+        };
+        MediaPlayer.MediaStateChanged += observeStop;
+        try
+        {
+            MediaPlayer.IsRepeating = false;
+            MediaPlayer.IsShuffled = false;
+            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(5);
+            // Pin the DesktopGL streaming worker before playback starts. The owner can
+            // re-enter this lock while stopping; the worker cannot report natural completion.
+            var stream = typeof(Song).GetField("stream", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.GetValue(song) ?? throw new InvalidOperationException("Expected the NVorbis Song backend.");
+            var prepareMutex = stream.GetType().GetField("prepareMutex",
+                BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(stream)
+                ?? throw new InvalidOperationException("Expected the Ogg streaming preparation lock.");
+            lock (prepareMutex)
+            {
+                player.PlayProgram([song]);
+                var fade = new SoundtrackFade(MediaPlayer.Volume, TimeSpan.Zero);
+                MediaPlayer.Volume = fade.VolumeAt(TimeSpan.FromMilliseconds(17));
+                // The original level handler is allowed to run inside a fade wait.
+                MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(10);
+                // Deliberately outlast the fixture: completion must stay blocked on a loaded host.
+                Thread.Sleep(song.Duration + TimeSpan.FromMilliseconds(100));
+                Assert.Equal(MediaState.Playing, MediaPlayer.State);
+                player.FinishFade(fade.RestoredVolume, release);
+                Assert.Equal(MediaState.Stopped, MediaPlayer.State);
+                Assert.Equal(0f, stoppedVolume);
+                Assert.Equal(OriginalSoundtrackPolicy.VolumeForLevel(5), MediaPlayer.Volume);
+            }
+        }
+        finally
+        {
+            MediaPlayer.MediaStateChanged -= observeStop;
+            player.Dispose();
+        }
+    }
+
     [Theory]
     [InlineData("playing")]
     [InlineData("paused")]

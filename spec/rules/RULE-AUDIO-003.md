@@ -73,6 +73,11 @@ RULE-AUDIO-002 does that once music is enabled.
   paused device retains its paused position.
 - The music is stopped with a fade of 32 steps of 17 ms when the CD device
   supports a volume, and at once otherwise.
+- The fade captures the initial volume, writes zero before stopping, and
+  restores the captured value afterward. A nonzero level chosen by a message
+  during the fade is applied immediately; later fade steps and the final
+  restore can overwrite it. The chosen menu level does not replace the
+  captured volume (FND-AUDIO-007).
 - The effects volume goes to the auxiliary device the sound setup finds by the
   technology value `0x20`, which no Windows device reports, so it goes to
   device 0 on most machines; the music volume goes to the CD audio device
