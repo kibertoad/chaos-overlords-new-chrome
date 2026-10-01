@@ -1,0 +1,6926 @@
+{
+  "experiment": "EXP-TURN-036",
+  "build": "BLD-GOG-EN-1.1",
+  "starting_state": null,
+  "recording_xxh3": null,
+  "clock": "roll",
+  "inputs": [],
+  "runs": [
+    {
+      "source_experiment": "EXP-TURN-001",
+      "source_fixture": "EXP-TURN-001.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 1
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 9
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 12
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 7
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 9
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 9
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 3
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 2
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 3
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 2
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-010",
+      "source_fixture": "EXP-TURN-010.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 23
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 1433
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 1154
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 921
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 1352
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 1447
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 1067
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 1002
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 850
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 1072
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 1096
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 25
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 6
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 6
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 6
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 6
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 6
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-010",
+      "source_fixture": "EXP-TURN-010.json",
+      "source_run": 1,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 25
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 1405
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 903
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 1396
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 1395
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 942
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 1087
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 899
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 949
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 883
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 900
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 2
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 25
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 6
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 6
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 6
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 6
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 6
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-011",
+      "source_fixture": "EXP-TURN-011.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 24
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 1341
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 1063
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 841
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 1246
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 1342
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 994
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 918
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 789
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 986
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 1013
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 23
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-012",
+      "source_fixture": "EXP-TURN-012.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 18
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 727
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 752
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 890
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 758
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 815
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 634
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 693
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 746
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 780
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 679
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 28
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 142
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 84
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 37
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 61
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 2
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 3
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 4
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 3
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 23
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 2
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-013",
+      "source_fixture": "EXP-TURN-013.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 25
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 802
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 937
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 1018
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 1224
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 1099
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 737
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 656
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 658
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 860
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 864
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 13
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 4
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 53
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 21
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 2
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 3
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 25
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 20
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 21
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 21
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 19
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 19
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 2
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-014",
+      "source_fixture": "EXP-TURN-014.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 25
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 472
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 869
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 280
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 762
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 186
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 364
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 825
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 284
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 516
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 210
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 31
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 127
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 7
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 32
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 61
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 9
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 3
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 3
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 25
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-015",
+      "source_fixture": "EXP-TURN-015.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 9
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 109
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 135
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 129
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 113
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 121
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 8
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 123
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 119
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 121
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 82
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 124
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 4
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 5
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 5
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 5
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 6
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 5
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-016",
+      "source_fixture": "EXP-TURN-016.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 5
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 40
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 30
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 34
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 36
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 48
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 8
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 32
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 36
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 30
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 21
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 35
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-017",
+      "source_fixture": "EXP-TURN-017.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 26
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 1943
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 1706
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 2000
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 1855
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 1439
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 1690
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 1668
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 1602
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 1375
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 1298
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 14
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 2
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 2
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 30
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 5
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 3
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 4
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 3
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 3
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 3
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-018",
+      "source_fixture": "EXP-TURN-018.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 22
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 849
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 928
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 871
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 1065
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 771
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 844
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 828
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 784
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 717
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 579
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 15
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 9
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 2
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 4
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-019",
+      "source_fixture": "EXP-TURN-019.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 3
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 30
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 30
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 22
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 27
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 20
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 14
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 17
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 22
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 26
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 23
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-020",
+      "source_fixture": "EXP-TURN-020.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 20
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 906
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 1023
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 948
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 1117
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 842
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 894
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 872
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 885
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 827
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 659
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 19
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 4
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-021",
+      "source_fixture": "EXP-TURN-021.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 29
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 1656
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 2020
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 1522
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 1409
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 1921
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 1421
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 1601
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 1478
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 1302
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 1523
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 3
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 3
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 3
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 3
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-022",
+      "source_fixture": "EXP-TURN-022.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 14
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 319
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 313
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 182
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 291
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 367
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 172
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 296
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 203
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 315
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 276
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 26
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 14
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 7
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 13
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 12
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 13
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 9
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 13
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 11
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 4
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 4
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 2
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 2
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-023",
+      "source_fixture": "EXP-TURN-023.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 30
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 813
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 1211
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 935
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 928
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 856
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 825
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 1067
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 952
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 955
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 858
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 12
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 3
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 4
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 2
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 2
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 5
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-024",
+      "source_fixture": "EXP-TURN-024.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 29
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 1386
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 1430
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 1245
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 1523
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 1916
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 1218
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 1080
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 1057
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 1187
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 1227
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 12
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 29
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 7
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 2
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 3
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 4
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 4
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-025",
+      "source_fixture": "EXP-TURN-025.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 21
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 1090
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 896
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 1039
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 1221
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 838
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 820
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 685
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 761
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 847
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 778
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 18
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 2
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-026",
+      "source_fixture": "EXP-TURN-026.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 20
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 1101
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 1130
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 1098
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 972
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 1393
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 1589
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 1636
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 1578
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 1468
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 1512
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 9
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 20
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 8
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 3
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 3
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 3
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 3
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 3
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-027",
+      "source_fixture": "EXP-TURN-027.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 3
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 26
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 23
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 22
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 28
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 28
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 17
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 23
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 34
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 21
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 21
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 15
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-028",
+      "source_fixture": "EXP-TURN-028.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 25
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 1100
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 996
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 1158
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 971
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 949
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 372
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 332
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 320
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 366
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 327
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-029",
+      "source_fixture": "EXP-TURN-029.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 10
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 205
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 212
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 185
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 203
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 177
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 12
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 170
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 195
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 124
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 195
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 163
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 1
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 18
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 5
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-030",
+      "source_fixture": "EXP-TURN-030.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 4
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 43
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 40
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 40
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 47
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 57
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 20
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 30
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 32
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 40
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 21
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 24
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-031",
+      "source_fixture": "EXP-TURN-031.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 11
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 102
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 186
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 215
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 111
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 192
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 31
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 79
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 168
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 162
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 119
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 115
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-032",
+      "source_fixture": "EXP-TURN-032.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 6
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 64
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 92
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 78
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 67
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 101
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 44
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 82
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 80
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 31
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 79
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 6
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 6
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 6
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 6
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-033",
+      "source_fixture": "EXP-TURN-033.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 10
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 175
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 236
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 214
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 171
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 230
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 27
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 137
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 235
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 191
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 126
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 207
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 5
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 5
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 1
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-034",
+      "source_fixture": "EXP-TURN-034.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 9
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 89
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 154
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 177
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 88
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 147
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 28
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 52
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 133
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 127
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 106
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 94
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 5
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 5
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 6
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 5
+        }
+      ]
+    },
+    {
+      "source_experiment": "EXP-TURN-035",
+      "source_fixture": "EXP-TURN-035.json",
+      "source_run": 0,
+      "end_state": [
+        {
+          "term": "cash_earned",
+          "index": 0,
+          "value": 2
+        },
+        {
+          "term": "cash_earned",
+          "index": 1,
+          "value": 20
+        },
+        {
+          "term": "cash_earned",
+          "index": 2,
+          "value": 17
+        },
+        {
+          "term": "cash_earned",
+          "index": 3,
+          "value": 17
+        },
+        {
+          "term": "cash_earned",
+          "index": 4,
+          "value": 14
+        },
+        {
+          "term": "cash_earned",
+          "index": 5,
+          "value": 16
+        },
+        {
+          "term": "cash_spent",
+          "index": 0,
+          "value": 7
+        },
+        {
+          "term": "cash_spent",
+          "index": 1,
+          "value": 16
+        },
+        {
+          "term": "cash_spent",
+          "index": 2,
+          "value": 22
+        },
+        {
+          "term": "cash_spent",
+          "index": 3,
+          "value": 12
+        },
+        {
+          "term": "cash_spent",
+          "index": 4,
+          "value": 4
+        },
+        {
+          "term": "cash_spent",
+          "index": 5,
+          "value": 11
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "damage_inflicted",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "casualties",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "overthrow_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hide_count",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 0,
+          "value": -1
+        },
+        {
+          "term": "hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "hire_role",
+          "index": 5,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 0,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 1,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 2,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 3,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 4,
+          "value": 0
+        },
+        {
+          "term": "previous_hire_role",
+          "index": 5,
+          "value": 0
+        }
+      ]
+    }
+  ]
+}

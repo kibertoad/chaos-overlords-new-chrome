@@ -4,7 +4,7 @@ title: A Control takeover lowers the previous owner's attitude toward the new ow
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-047, FND-CONTROL-003, FND-AI-006, FND-EXE-004, EXP-TURN-011, EXP-TURN-017, EXP-TURN-018]
+evidence: [FND-AI-047, FND-CONTROL-003, FND-AI-006, FND-EXE-004, EXP-TURN-011, EXP-TURN-017, EXP-TURN-018, EXP-TURN-036]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-004, RULE-CONTROL-001]

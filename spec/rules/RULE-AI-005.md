@@ -4,7 +4,7 @@ title: How a computer player picks a weapon, armor or miscellaneous upgrade, and
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-021, FND-AI-024, FND-AI-071, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054, FND-AI-055, EXP-TURN-017, EXP-TURN-031]
+evidence: [FND-AI-021, FND-AI-024, FND-AI-071, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054, FND-AI-055, EXP-TURN-017, EXP-TURN-036]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-003, RULE-AI-004]

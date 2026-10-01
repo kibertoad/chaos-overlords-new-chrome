@@ -212,6 +212,7 @@
 | [EXP-TURN-033](../experiments/EXP-TURN-033.md) | Does a Bribe the player cannot pay for leave the cash and the base Tolerance unchanged? | recorded |
 | [EXP-TURN-034](../experiments/EXP-TURN-034.md) | What Last Turn report does a human's Equip one short of its price leave? | recorded |
 | [EXP-TURN-035](../experiments/EXP-TURN-035.md) | Does a hire the player could afford at planning fail, with a cash report, once an Equip has spent the cash? | recorded |
+| [EXP-TURN-036](../experiments/EXP-TURN-036.md) | Do repeated turn runs agree on running totals, hire roles and the planning and resolution behaviour they exercise? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -292,7 +293,7 @@
 | [FND-HIRE-007](../findings/FND-HIRE-007.md) | The offer refill rejects a draw only when it equals a slot's current value or the gang just removed, and the same function draws the three offers on the console | recorded |
 | [FND-HIRE-008](../findings/FND-HIRE-008.md) | The console hire handler takes a drop only on a sector the player owns or has a gang in, opens the live-gang panel on a double-click, and 0x004078B8 is the computer players' snub | recorded |
 | [FND-HIRE-009](../findings/FND-HIRE-009.md) | The Hire comparison panel loads resource 5016, draws three 32-by-32 portraits and sixteen value rows per offer, and closes on its one control or Enter | recorded |
-| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | supported |
+| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | established |
 | [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | Vacant hire offers are refilled in place at the player's planning entry | supported |
 | [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported |
 | [RULE-HIRE-004](../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order | established |
