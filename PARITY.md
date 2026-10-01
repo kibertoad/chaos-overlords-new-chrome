@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 3 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 102 |
-| `validated` | 117 |
+| `implemented` | 101 |
+| `validated` | 118 |
 
 | Code | Rows |
 |---|---|
@@ -55,7 +55,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AUDIO-002` | Music repeats its program when it ends and pauses while the window is inactive | supported | partial | tests/Rechaos.Tests/SoundtrackRestartPollTests.cs, tests/Rechaos.Tests/SoundtrackProgramCursorTests.cs, tests/Rechaos.Tests/SoundtrackProgramPlayerTests.cs | None | supported | The FND-AUDIO-007 timer and enabled/active poll gates are tested; activation reapplies volumes before resuming. Track advancement is owned by the game thread; native completion only reports the finished song, preventing inter-track Stopped from competing with the restart poll. Paused playback preserves position and continues to disc end. The cursor tests compare program and resume bounds with FND-AUDIO-007; a native regression test forces the worker stop window and checks restart gating and game-thread starts; native smoke also checks continuation and cancellation. Native activation cases compare playing, paused, explicit stop and natural completion against the original calls and the MCI contract; explicit stop restarts the interrupted track, while natural completion advances. Actual CD device failures and the no-disc hourglass behavior remain outside this coverage. The GOG wrapper is outside the parity target. |
 | `RULE-AUDIO-003` | Applying the music and effects levels | supported | partial | tests/Rechaos.Tests/SoundtrackFadeTests.cs, tests/Rechaos.Tests/SoundtrackProgramPlayerTests.cs | None | supported | The 0 to 10 level conversion and level-5 music default are implemented. Mute uses the recorded integer fade, and re-enabling waits for the poll. Native fade completion checks zero before stop and restoration of the captured volume after an intervening level change. Nonzero level messages apply immediately during a fade; no test drives that path through the level handler yet. Original-comparison coverage of auxiliary-device channel routing, exit restoration and reentrant fade/caller ordering remains incomplete. |
 | `RULE-AUDIO-004` | Loading the general sound effects | supported | complete | None | None | implemented | None |
-| `RULE-AUDIO-005` | Playing a sound effect, which cuts off the one playing | supported | complete | None | None | implemented | One effect voice, each new cue stopping the one before it. |
+| `RULE-AUDIO-005` | Playing a sound effect, which cuts off the one playing | supported | complete | tests/Rechaos.Tests/NativeEffectVoiceTests.cs | None | validated | Native tests exercise the actual effect methods against FND-AUDIO-006: replacing a voice disposes the preceding one without changing the music transport; the disabled wrapper preserves it while the direct cue replaces it. Original auxiliary-device routing and audible hardware output are not compared. |
 | `RULE-AUDIO-006` | The turn-start sound | supported | complete | None | None | implemented | Only online matches, the rebuild's network games, play the cue, from the second turn on; local games are silent. The cue skips the effects-enabled test (BUG-AUDIO-001) and plays at the effects volume, which is 0 at level 0 (RULE-AUDIO-003). |
 | `RULE-AUDIO-007` | The Comlink alert plays slot 6 through the effects gate | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | tests/Rechaos.Tests/ComlinkAlertCadenceTests.cs | None | validated | Tests compare all eight arrival phases and the arrival/planning-entry repeat-counter resets with FND-AUDIO-012: the first repeat takes 17 to 24 shared presentation ticks, then repeats every 24 ticks. |
