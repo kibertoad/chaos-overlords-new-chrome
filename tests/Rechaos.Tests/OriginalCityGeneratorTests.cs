@@ -329,6 +329,19 @@ public sealed class OriginalCityGeneratorTests
         Assert.False(wrongCase.CanPlayerDetectGang(new PlayerId(0), wrongCaseRemote.Id));
     }
 
+    // RULE-OBJECTIVE-002, FND-SETUP-015: a new match stores its scores before SMGFUNDAGE raises the
+    // cash, so a Greed match starts its SMGFUNDAGE player on the standard cash's score.
+    [Fact]
+    public void SmgFundageStartingScoreCountsTheCashBeforeTheRaise()
+    {
+        var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), SetupWithName("SMGFUNDAGE"));
+
+        Assert.Equal(OriginalSetupNameRules.MaximumStartingCash, match.Players[0].Cash);
+        Assert.Equal(OriginalMatchFactory.StandardStartingCash, match.Players[0].ScenarioScore);
+        Assert.All(match.Players.Skip(1), player =>
+            Assert.Equal(OriginalMatchFactory.StandardStartingCash, player.ScenarioScore));
+    }
+
     [Theory]
     [InlineData("SMGSPANK")]
     [InlineData("SMGHUBBLE")]

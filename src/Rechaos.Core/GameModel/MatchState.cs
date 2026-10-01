@@ -290,21 +290,12 @@ public sealed partial class MatchState
         // now so resolution never meets a gang without them. A saved gang keeps what it saved.
         foreach (var gang in Players.SelectMany(player => player.Gangs))
             gang.StoredStatistics ??= EffectiveStatisticsCalculator.Rebuilt(this, gang);
-        if (restore is null) RecordStartingScores();
+        // RULE-OBJECTIVE-002: a match built from rosters as given stores their scores as given.
+        // MatchBootstrap.Create and the generator, which raise a SMGFUNDAGE player's cash, store
+        // them again from the cash before the raise (FND-SETUP-015).
+        if (restore is null) OriginalAiScenarioStandingRules.Record(this);
     }
 
-    /// <summary>
-    /// RULE-OBJECTIVE-002, FND-SETUP-015: a new match stores its scores once its city and
-    /// headquarters exist, from the cash each player had before SMGFUNDAGE raised it.
-    /// </summary>
-    private void RecordStartingScores() =>
-        OriginalAiScenarioStandingRules.Record(this, player =>
-            OriginalSetupNameRules.ApplyStartingCash(player.Setup.Name, 0)
-                == OriginalSetupNameRules.MaximumStartingCash
-                ? Setup.Scenario == ScenarioId.Armageddon
-                    ? MatchBootstrap.ArmageddonStartingCash
-                    : OriginalMatchFactory.StandardStartingCash
-                : player.Cash);
     internal MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -327,7 +318,11 @@ public sealed partial class MatchState
         ArgumentNullException.ThrowIfNull(aiStrategy);
         // FND-AI-045: a new match runs the start pass after the city and the headquarters exist.
         RefreshEveryPlayersAiSectorRecords();
-        RecordStartingScores();
+        // RULE-OBJECTIVE-002, FND-SETUP-015: a new match stores its scores once its city and
+        // headquarters exist, from the cash every player had before SMGFUNDAGE raised it.
+        var cashBeforeModifier = MatchBootstrap.StartingCashBeforeModifier(
+            setup.Scenario, OriginalMatchFactory.StandardStartingCash);
+        OriginalAiScenarioStandingRules.Record(this, _ => cashBeforeModifier);
     }
     public OriginalData Definitions { get; }
     public MatchSetup Setup { get; private set; }

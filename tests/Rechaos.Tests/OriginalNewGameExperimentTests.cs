@@ -333,6 +333,9 @@ public sealed class OriginalNewGameExperimentTests
             }
         }
 
+        // FND-SETUP-018: the turn limit the computer players read.
+        Assert.Equal(recorded.Term("turn_limit", 0), ScenarioCatalog.TurnLimit(match.Setup.Scenario, match.Setup.Duration));
+
         // RULE-OBJECTIVE-001, RULE-OBJECTIVE-004, RULE-AWARDS-001: a run that ends the match stops at
         // the endgame, where each player's first three award entries hold the categories won in the
         // builder's order (0 Fist, 1 Skull, 2 Big Fat Chicken, 3 Dollar Sign, 4 Safe), then -1.
@@ -358,8 +361,6 @@ public sealed class OriginalNewGameExperimentTests
             return;
         }
 
-        // FND-SETUP-018: the turn limit the computer players read.
-        Assert.Equal(recorded.Term("turn_limit", 0), ScenarioCatalog.TurnLimit(match.Setup.Scenario, match.Setup.Duration));
         Assert.Equal(recorded.Term("elapsed_turns", 0), match.Coordinator.Turn - 1);
         if (recorded.Term("controller", human.Value) == 0) Assert.Equal(human, match.Coordinator.ActivePlayer);
         else Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
