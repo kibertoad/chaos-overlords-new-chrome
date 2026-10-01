@@ -288,7 +288,7 @@
 
 ## recorded
 
-356 entries.
+357 entries.
 
 | ID | Title |
 |---|---|
@@ -376,6 +376,7 @@
 | [FND-AI-069](../findings/FND-AI-069.md) | The sector selector scores on the owner query, ends mode 6 after its hostile-human bonus, and multiplies table element x * 9 + y in its common block |
 | [FND-AI-070](../findings/FND-AI-070.md) | The family-12 handler equips and heals when unopposed, otherwise moves toward the sector of the player's first gang, and attacks when opposed |
 | [FND-AI-071](../findings/FND-AI-071.md) | The family-10 handler improves armor, equips item 44, heals, moves when the mode-9 sector's last finished site hides better, then raises Chaos or hides |
+| [FND-AI-073](../findings/FND-AI-073.md) | Family-10 armor and family-12 weapon and armor gates compare item cost with cash as signed values |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |

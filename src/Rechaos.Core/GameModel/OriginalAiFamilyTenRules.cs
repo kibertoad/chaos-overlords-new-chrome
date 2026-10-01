@@ -35,7 +35,7 @@ internal static class OriginalAiFamilyTenRules
     }
 
     /// <summary>
-    /// FND-AI-071: the cost is compared with cash as signed values (<c>JG</c> at 0x0042A784), so a
+    /// FND-AI-073: the cost is compared with cash as signed values (<c>JG</c> at 0x0042A784), so a
     /// player whose upkeep left its cash below 0 (RULE-UPKEEP-001) fails the test.
     /// </summary>
     public static bool CanEquipArmor(int cooldown, int itemCost, int cash)
