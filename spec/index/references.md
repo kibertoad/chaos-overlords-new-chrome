@@ -976,14 +976,14 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
-| [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
+| [RULE-AI-024](../rules/RULE-AI-024.md) | body, evidence |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
 
 ## EXP-TURN-021
 
 | Cited by | In |
 |---|---|
-| [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
+| [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
