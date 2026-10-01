@@ -497,6 +497,16 @@ original's result as the deviation changes it.
   `spec/experiments/saves/`; the base save itself stays with the maintainer's
   captures.
 
+The native soundtrack EOF regression pins the old stream at its decoded end before
+replacing its program, then requires the replacement decoder to reach the end of a
+2.5-second synthetic track. This checks stale completion-state truncation, without
+proving audible output or final partial-buffer delivery. The production adapter
+binds MonoGame DesktopGL 3.8.5.1 `OggStreamer.Instance` and `pendingFinish` through
+reflection: explicit stop removes and synchronizes with the old stream before the
+flag is reset, and the new stream is published afterward. A paused resume retains
+its existing completion state. Dependency upgrades must preserve these boundaries
+or replace this hook with an equivalent supported API.
+
 ## Failure triage
 
 Classify mismatches as:
