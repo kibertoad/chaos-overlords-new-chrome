@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 148 |
-| `validated` | 74 |
+| `implemented` | 147 |
+| `validated` | 75 |
 
 | Code | Rows |
 |---|---|
@@ -209,7 +209,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-MOVE-001` | validated | None |
+| `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-MOVE-001`, `DEV-AI-007` | validated | None |
 | `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002`, `DEV-MOVE-002` | implemented | The fallback for a mover already sent back draws a random neighbour (RULE-AI-007); after 256 of them DEV-MOVE-002 applies. |
 | `SCR-MOVE-001` | Move panel | supported | complete | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | implemented | The map crop, taken from the same prepared city map as the city screen with its pylons and markers, the off-city bands, arrow, faces and keys follow the original. The enabled cells follow the edge table of FND-MOVE-007, Enter, Execute and Escape press their faces, and only DEV-MOVE-001 refuses a Move into a full sector. |
 
@@ -249,7 +249,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-SELL-001` | Sell removes every selected item but pays half the Cost of only the last selected slot | supported | complete | None | `DEV-EQUIP-001` | implemented | Keeps BUG-SELL-001: a multi-item Sell pays only the last selected slot, so no deviation covers it. |
+| `RULE-SELL-001` | Sell removes every selected item but pays half the Cost of only the last selected slot | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-EQUIP-001` | validated | Keeps BUG-SELL-001: a multi-item Sell pays only the last selected slot, so no deviation covers it. EXP-TURN-016 sells a weapon, an armor and a miscellaneous item in one order. |
 | `SCR-SELL-001` | Sell panel | supported | complete | None | None | implemented | Pictures, names, half prices, highlight, faces and keys follow the original; the rebuild's extra keys are DEV-UI-010. |
 
 ## TERMINATE
@@ -321,7 +321,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | The sector weights and the hostility step also run once for every player, humans included, when a match starts (as it is built) and when it is loaded (a journaled step of the local load), as FND-AI-045 records. |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | hostile_owner reads the attitude cell of owner_query, with the out-of-row reads of FND-AI-048 for a neutral sector and one under police presence. |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | None |
-| `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-005`, `DEV-AI-006` | validated | No call reaches mode 4; the rebuild scores it from the standings bytes and the owner query as FND-AI-056 reads them. A routing step that would leave the city is not taken (DEV-AI-005). The common block's multiply of an element past the score table leaves player 0's planning records unchanged (DEV-AI-006). A tie count that would run past the planning records stops there. |
+| `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-005`, `DEV-AI-006`, `DEV-AI-007` | validated | No call reaches mode 4; the rebuild scores it from the standings bytes and the owner query as FND-AI-056 reads them. A routing step that would leave the city is not taken (DEV-AI-005). The common block's multiply of an element past the score table leaves player 0's planning records unchanged (DEV-AI-006). A tie count that would run past the planning records stops there. |
 | `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | complete | None | None | implemented | Mode 0 draws one of the eight neighbours with roll(8) and draws again off the map, with no capacity test. |
 | `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |

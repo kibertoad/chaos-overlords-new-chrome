@@ -191,6 +191,8 @@
 | [EXP-TURN-012](../experiments/EXP-TURN-012.md) | Do twenty-three turns of a new local Siege game draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-013](../experiments/EXP-TURN-013.md) | Do twenty-five turns of a new local Eliminate game draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-014](../experiments/EXP-TURN-014.md) | Do twenty-five turns of a new local Big Man game draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-015](../experiments/EXP-TURN-015.md) | Do a human gang's Equip and Sell orders, and eight turns of the computer players, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-016](../experiments/EXP-TURN-016.md) | Do a human gang's Equip orders and one Sell of three items pay and resolve as the spec gives? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -356,7 +358,7 @@
 | [FND-MOVE-005](../findings/FND-MOVE-005.md) | The Move panel marks the chosen neighbour with one of eight 32-by-32 keyed arrows from PX00129 placed around the centre cell | recorded |
 | [FND-MOVE-006](../findings/FND-MOVE-006.md) | The Move repair loop has no bound, and some order sets keep it running for ever | recorded |
 | [FND-MOVE-007](../findings/FND-MOVE-007.md) | The Move panel's cell table disables only neighbours beyond the city's edge or with owner byte -2, and its keys draw the pressed faces | recorded |
-| [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported |
+| [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | Move pass carries out every Move, player by player, after normalizing each player's destinations | established |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported |
 | [SCR-MOVE-001](../screens/SCR-MOVE-001.md) | Move panel | supported |
 
@@ -424,10 +426,10 @@
 
 | ID | Title | Status |
 |---|---|---|
-| [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them | supported |
+| [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them | established |
 | [FND-SELL-001](../findings/FND-SELL-001.md) | The Sell panel handler shows each carried item at half its cost and stores the chosen items as a three-bit mask in the target byte | recorded |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | The Sell panel marks each selected row with a 192-by-54 keyed overlay from PX00129 and restores the panel's own pixels for the others | recorded |
-| [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | supported |
+| [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | established |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | Sell panel | supported |
 
 ## TERMINATE
