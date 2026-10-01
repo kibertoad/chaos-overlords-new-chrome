@@ -128,7 +128,7 @@ public sealed class PlayerRankingUiTests
             "PLAYER 2",
             "PLACE 1 OF 4 (TIED)",
             "GREED RATES: CASH ON HAND",
-            "SCORE: 2,500 AT LAST TURN'S END",
+            "SCORE: 2,500 AT MATCH START",
             "NOW:",
             "  CASH: $2,500",
             "",
@@ -144,6 +144,25 @@ public sealed class PlayerRankingUiTests
         ], lines);
     }
 
+    // RULE-OBJECTIVE-002: after turn 1 the stored score is the one the last end evaluation wrote.
+    [Fact]
+    public void TooltipDatesTheScoreToTheLastTurnEndAfterTurnOne()
+    {
+        var state = CreateMatch(ScenarioId.Greed, [100, 50]);
+        var coordinator = state.Coordinator;
+        coordinator.FinishUpkeep();
+        foreach (var setup in state.Setup.Players) coordinator.FinishCommand(setup.Id);
+        foreach (var _ in TurnStructure.ExecutionOrder) coordinator.FinishExecutionPhase();
+        foreach (var setup in state.Setup.Players) coordinator.FinishHire(setup.Id);
+        coordinator.FinishPlayerElimination();
+        Assert.Equal(2, coordinator.Turn);
+        var entries = PlayerRankingPresentation.Project(state);
+
+        var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
+
+        Assert.Equal("SCORE: 100 AT LAST TURN'S END", lines[3]);
+    }
+
     [Fact]
     public void DominanceTooltipShowsWeightedComponentsBehindTheScore()
     {
@@ -154,7 +173,7 @@ public sealed class PlayerRankingUiTests
 
         var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
 
-        Assert.Equal("SCORE: 49 AT LAST TURN'S END", lines[3]);
+        Assert.Equal("SCORE: 49 AT MATCH START", lines[3]);
         Assert.Equal("  CASH          $400 X 1    = 400", lines[5]);
         Assert.Equal("  SUPPORT          3 X 10   = 30", lines[6]);
         Assert.Equal("  SECTORS          2 X 30   = 60", lines[7]);
@@ -170,7 +189,7 @@ public sealed class PlayerRankingUiTests
 
         var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
 
-        Assert.Equal("SCORE: 3 AT LAST TURN'S END", lines[3]);
+        Assert.Equal("SCORE: 3 AT MATCH START", lines[3]);
         Assert.Equal("  6 SEATS - 3 ACTIVE OVERLORDS", lines[5]);
         Assert.Equal("  SHARED BY EVERY SURVIVING OVERLORD", lines[6]);
     }
@@ -183,7 +202,7 @@ public sealed class PlayerRankingUiTests
 
         var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
 
-        Assert.Equal("SCORE: 0 AT LAST TURN'S END", lines[3]);
+        Assert.Equal("SCORE: 0 AT MATCH START", lines[3]);
         Assert.Equal("  HQ SECTORS HELD: 0 OF 6 (GOAL)", lines[5]);
     }
 
