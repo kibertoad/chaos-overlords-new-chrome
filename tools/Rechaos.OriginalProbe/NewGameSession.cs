@@ -96,6 +96,7 @@ internal sealed class NewGameSession(
     private bool _setupReached;
     private int _panelsOpen;
     private bool _planningLoopReached;
+    private bool _awardsReached;
 
     public ProbeTrace Run()
     {
@@ -136,6 +137,9 @@ internal sealed class NewGameSession(
         // Planning has begun when the human's planning loop runs, or, where it does not, when the
         // rolls of the new match have stopped for a while.
         ArmPlanningLoop();
+        // A match that ends reaches the endgame instead of another planning phase; the run stops
+        // there, once the awards are given (RULE-AWARDS-001).
+        _process.SetBreakpoint(OriginalAddresses.AwardsRows, _ => _awardsReached = true, oneShot: true);
         var begun = DateTime.UtcNow;
         var settled = _process.RunUntil(
             () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
@@ -162,6 +166,19 @@ internal sealed class NewGameSession(
             // again after a quiet while.
             var next = _process.RunUntil(() =>
             {
+                if (_awardsReached) return true;
+                // FND-OBJECTIVE-004: a match that ends gives each active human one last look at the
+                // city, with the turn's Combat Results open, before the awards controller runs and
+                // before elapsed_turns moves on. Close the panels and press Done there.
+                if (_process.Read(OriginalAddresses.MatchOver, 1)[0] != 0
+                    && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(2)
+                    && DateTime.UtcNow - clicked > TimeSpan.FromSeconds(5))
+                {
+                    _notes.Add($"the match is over; Done pressed at the final view after roll {_rolls.Count}");
+                    ClosePanels(window);
+                    Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
+                    clicked = DateTime.UtcNow;
+                }
                 if (_rolls.Count == rollsAtClick && _process.ReadInt32(OriginalAddresses.ElapsedTurns) < target
                     && DateTime.UtcNow - clicked > TimeSpan.FromSeconds(20))
                 {
@@ -180,7 +197,15 @@ internal sealed class NewGameSession(
 
                 return PlanningWaits(moved.Value);
             }, timeout);
-            if (!next) return Finish(false, $"Turn {turn} never reached the next planning phase.", rollsBeforeBegin);
+            if (!next)
+                return Finish(false, $"Turn {turn} never reached the next planning phase (match_over "
+                    + $"{_process.Read(OriginalAddresses.MatchOver, 1)[0]}, {_panelsOpen} panel(s) open, elapsed_turns "
+                    + $"{_process.ReadInt32(OriginalAddresses.ElapsedTurns)}).", rollsBeforeBegin);
+            if (_awardsReached)
+            {
+                _notes.Add($"The match ended with turn {turn}; the endgame drew the awards after roll {_rolls.Count}.");
+                break;
+            }
         }
 
         DumpWritableSections();

@@ -414,7 +414,9 @@ resolution (FMT-STATE-006), which the fixtures from EXP-TURN-010 on hold.
 The EXP-TURN fixtures also hold each player's running totals (`cash_earned`,
 `cash_spent`, `damage_inflicted`, `casualties`, `overthrow_count`,
 `hide_count`), the computer players' `hire_role` and `previous_hire_role`, and
-the `scenario_score` and `scenario_standing` the last evaluation stored.
+the `scenario_score` and `scenario_standing` the last evaluation stored. A run
+that ends the match stops when the endgame draws the awards, and its fixture
+holds `match_over` and each player's first three `player_awards` entries.
 `OriginalNewGameExperimentTests` replays every run of the EXP-SETUP and
 EXP-TURN fixtures against the rebuild and names the first roll whose bound or
 result differs, with the original's call instruction, then compares the state

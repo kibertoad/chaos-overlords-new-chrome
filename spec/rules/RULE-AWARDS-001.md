@@ -1,10 +1,10 @@
 ---
 id: RULE-AWARDS-001
 title: The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AWARDS-004, FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, SRC-MANUAL-GOG]
+evidence: [FND-AWARDS-004, FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, SRC-MANUAL-GOG, EXP-TURN-036]
 conflicting: []
 split_with: []
 related: []
