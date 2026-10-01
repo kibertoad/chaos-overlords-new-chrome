@@ -55,6 +55,8 @@ namespace Rechaos.Tests;
 /// later roster slot (RULE-EQUIP-001, RULE-EQUIP-002). In EXP-TURN-032 six Snitches in a row drive
 /// a sector's base Tolerance to the clamp at 1 (RULE-SNITCH-001, RULE-TOLERANCE-002). In
 /// EXP-TURN-033 the human bribes every turn until a Bribe meets 2 cash and fails (RULE-BRIBE-001).
+/// EXP-TURN-037 plays a six-month Greed to its end with the 26th resolution (RULE-OBJECTIVE-001,
+/// RULE-OBJECTIVE-004) and compares the awards the endgame gives (RULE-AWARDS-001).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -62,7 +64,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -101,7 +103,7 @@ public sealed class OriginalNewGameExperimentTests
         DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
         try
         {
-            StartMatch(recorded);
+            StartMatch(recorded, out _);
         }
         finally
         {
@@ -146,10 +148,11 @@ public sealed class OriginalNewGameExperimentTests
         var recorded = Run(experiment, run);
         var rolls = new List<(int Bound, int Result)>();
         MatchState match;
+        int donePresses;
         DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
         try
         {
-            match = StartMatch(recorded);
+            match = StartMatch(recorded, out donePresses);
         }
         finally
         {
@@ -166,6 +169,14 @@ public sealed class OriginalNewGameExperimentTests
                 rolls[index] == (bound, result),
                 $"roll {index}: the original called roll({bound}) at {call} and got {result}, the rebuild roll({rolls[index].Bound}) and got {rolls[index].Result}");
         }
+
+        // The replay stops early only at the human's elimination or the match's outcome, and an
+        // eliminated human presses Done no more and a decided match has no planning phase
+        // (RULE-OBJECTIVE-005), so the recording has to end there. Checked after the rolls, so a
+        // divergence of the rebuild is still named by its first differing roll.
+        Assert.True(
+            donePresses == recorded.DoneCount,
+            $"the replay stopped after {donePresses} of the recording's {recorded.DoneCount} Done presses");
 
         Assert.Equal(recorded.Rolls.Count * 3L, match.Random.ConsumptionCount);
         var expectedState = new DeterministicRandom(recorded.Seed);
@@ -292,7 +303,10 @@ public sealed class OriginalNewGameExperimentTests
         // The running totals the financial panel and the endgame awards read, and the hire roles
         // the computer players' planning keeps (RULE-AI-010). Damage Inflicted is RULE-COMBAT-003.
         // The attitudes compared above follow every Control takeover (RULE-AI-017) in EXP-TURN-011,
-        // EXP-TURN-017 and EXP-TURN-018.
+        // EXP-TURN-017 and EXP-TURN-018. Every Attack lowers the defender's attitude by the larger of
+        // its reaction and the opening damage (RULE-AI-016). In EXP-TURN-017, EXP-TURN-018, EXP-TURN-020,
+        // EXP-TURN-022 and EXP-TURN-025 a player is eliminated (RULE-OBJECTIVE-003) before the end
+        // evaluation stores the scores (RULE-TURN-006).
         if (recorded.HasTerm("cash_spent", 0))
             foreach (var player in match.Players)
             {
@@ -320,17 +334,158 @@ public sealed class OriginalNewGameExperimentTests
                 }
             }
 
+        // RULE-OBJECTIVE-001, RULE-OBJECTIVE-002: the scores and standings stored when the last
+        // turn ended, which the Player Rankings panel shows. An eliminated player scores -32000 and
+        // has standing 0xFF. In EXP-TURN-028's Greed the stored scores are the cash from before the
+        // upkeep of the turn being planned.
+        if (recorded.HasTerm("scenario_score", 0))
+        {
+            var ranking = PlayerRankingPresentation.Project(match);
+            foreach (var player in match.Players)
+            {
+                var slot = player.Id.Value;
+                var standing = ranking.SingleOrDefault(entry => entry.Player == player.Id)?.Standing ?? 0xFF;
+                Assert.True(recorded.Term("scenario_score", slot) == player.ScenarioScore,
+                    $"scenario_score of player {slot}: the original holds {recorded.Term("scenario_score", slot)}, the rebuild {player.ScenarioScore}");
+                Assert.True(recorded.Term("scenario_standing", slot) == standing,
+                    $"scenario_standing of player {slot}: the original holds {recorded.Term("scenario_standing", slot)}, the rebuild {standing}");
+            }
+        }
+
         // FND-SETUP-018: the turn limit the computer players read.
         Assert.Equal(recorded.Term("turn_limit", 0), ScenarioCatalog.TurnLimit(match.Setup.Scenario, match.Setup.Duration));
+
+        // RULE-OBJECTIVE-001, RULE-OBJECTIVE-004, RULE-AWARDS-001: a run that ends the match stops at
+        // the endgame, where each player's first three award entries hold the categories won in the
+        // builder's order (0 Fist, 1 Skull, 2 Big Fat Chicken, 3 Dollar Sign, 4 Safe), then -1.
+        if (recorded.HasTerm("match_over", 0))
+        {
+            Assert.NotNull(match.Outcome);
+            // The match ends with the resolution of the last recorded Done.
+            Assert.Equal(recorded.DoneCount, match.Outcome.Turn);
+            EndgameAward[] order =
+                [EndgameAward.Fist, EndgameAward.Skull, EndgameAward.BigFatChicken, EndgameAward.DollarSign, EndgameAward.Safe];
+            foreach (var player in match.Players)
+            {
+                var slot = player.Id.Value;
+                var won = order.Select((award, category) => (award, category))
+                    .Where(entry => match.Outcome!.Awards.Any(result =>
+                        result.Award == entry.award && result.Recipients.Contains(player.Id)))
+                    .Select(entry => entry.category)
+                    .Concat(Enumerable.Repeat(-1, 3)).Take(3).ToArray();
+                var held = Enumerable.Range(0, 3).Select(entry => recorded.Term("player_awards", slot * 5 + entry)).ToArray();
+                Assert.True(held.SequenceEqual(won),
+                    $"awards of player {slot}: the original holds [{string.Join(",", held)}], the rebuild [{string.Join(",", won)}]");
+            }
+            return;
+        }
+
         Assert.Equal(recorded.Term("elapsed_turns", 0), match.Coordinator.Turn - 1);
         if (recorded.Term("controller", human.Value) == 0) Assert.Equal(human, match.Coordinator.ActivePlayer);
         else Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
     }
 
+    // RULE-OBJECTIVE-005: -2 stops before the card at the human's own slot; -1
+    // has dismissed it and lets the remaining slots and resolution finish.
+    private static void AdvanceToRecordedEndpoint(MatchReplayRecorder recorder, PlayerId human, int controller)
+    {
+        var match = recorder.State;
+        while (match.Outcome is null
+               && !(match.Coordinator.Phase == TurnPhase.Command && match.Coordinator.ActivePlayer == human))
+            HeadlessMatchRunner.Advance(recorder);
+        if (match.Outcome is not null || IsActive(match, human) || controller != -1) return;
+
+        do
+        {
+            HeadlessMatchRunner.Advance(recorder);
+        } while (match.Outcome is null && match.Coordinator.Phase != TurnPhase.Upkeep);
+    }
+
+    private static void AssertReplayEndpoint(MatchState match, PlayerId human, int controller)
+    {
+        if (controller != 0)
+            Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
+        else if (match.Outcome is null)
+        {
+            Assert.Equal(TurnPhase.Command, match.Coordinator.Phase);
+            Assert.Equal(human, match.Coordinator.ActivePlayer);
+        }
+        else
+        {
+            Assert.Equal(PlayerStatus.Active, match.FindPlayer(human)!.Status);
+            Assert.Equal(TurnPhase.Upkeep, match.Coordinator.Phase);
+        }
+    }
+    // Synthetic harness cases, not recordings from the original: RULE-OBJECTIVE-005.
+    [Theory]
+    [InlineData(0, -2)]
+    [InlineData(2, -2)]
+    [InlineData(2, -1)]
+    [InlineData(5, -1)]
+    public void EliminatedHumanEndpointIncludesTheCorrectComputerPlanning(int slot, int controller)
+    {
+        MatchState Create()
+        {
+            var state = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
+                ScenarioId.Power, GameDuration.OneYear, 12345,
+                [new MatchPlayerSetup(new PlayerId(slot), "PROBE", PlayerController.Human, 0)],
+                AiDifficulty.Goon, allowSparsePlayerIds: true));
+            state.FindPlayer(new PlayerId(slot))!.Status = PlayerStatus.Eliminated;
+            foreach (var gang in state.FindPlayer(new PlayerId(slot))!.Gangs) gang.Force = 0;
+            state.FinishUpkeep();
+            return state;
+        }
+
+        var expected = Create();
+        var expectedRecorder = new MatchReplayRecorder(expected);
+        for (var earlier = 0; earlier < slot; earlier++) HeadlessMatchRunner.Advance(expectedRecorder);
+        if (controller == -1)
+        {
+            for (var remaining = slot; remaining < 6; remaining++) HeadlessMatchRunner.Advance(expectedRecorder);
+            while (expected.Coordinator.Phase != TurnPhase.Upkeep) HeadlessMatchRunner.Advance(expectedRecorder);
+        }
+
+        var actual = Create();
+        AdvanceToRecordedEndpoint(new MatchReplayRecorder(actual), new PlayerId(slot), controller);
+        AssertReplayEndpoint(actual, new PlayerId(slot), controller);
+        Assert.Equal(expected.Random.ConsumptionCount, actual.Random.ConsumptionCount);
+        Assert.Equal(expected.Random.State, actual.Random.State);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(expected), MatchStateHasher.ComputeFingerprint(actual));
+        Assert.Equal(controller == -2 ? TurnPhase.Command : TurnPhase.Upkeep, actual.Coordinator.Phase);
+        if (controller == -2) Assert.Equal(new PlayerId(slot), actual.Coordinator.ActivePlayer);
+        else Assert.Equal(MatchEndReason.NoHumansLeft, actual.Outcome!.Reason);
+    }
+
+    // RULE-OBJECTIVE-001: a surviving human's decided match has no next planning entry.
+    [Fact]
+    public void SurvivingHumanOutcomeDoesNotRequireAnActivePlanningSlot()
+    {
+        var human = new PlayerId(2);
+        var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
+            ScenarioId.Power, GameDuration.OneYear, 12345,
+            [new MatchPlayerSetup(human, "PROBE", PlayerController.Human, 0)],
+            AiDifficulty.Goon, allowSparsePlayerIds: true));
+        foreach (var player in match.Players.Where(player => player.Id != human))
+        {
+            player.Status = PlayerStatus.Eliminated;
+            foreach (var gang in player.Gangs) gang.Force = 0;
+        }
+        var recorder = new MatchReplayRecorder(match);
+        while (match.Coordinator.Phase != TurnPhase.PlayerElimination)
+        {
+            if (match.Coordinator.Phase == TurnPhase.Command)
+                recorder.FinishCommand(match.Coordinator.ActivePlayer!.Value);
+            else HeadlessMatchRunner.Advance(recorder);
+        }
+        AdvanceToRecordedEndpoint(recorder, human, 0);
+        Assert.NotNull(match.Outcome);
+        Assert.Null(match.Coordinator.ActivePlayer);
+        AssertReplayEndpoint(match, human, 0);
+    }
     private static bool IsActive(MatchState match, PlayerId player) =>
         match.FindPlayer(player)!.Status == PlayerStatus.Active;
 
-    private static MatchState StartMatch(RecordedRun recorded)
+    private static MatchState StartMatch(RecordedRun recorded, out int donePresses)
     {
         var scenario = OriginalScenario(recorded.Term("scenario", 0));
         var setup = new MatchSetup(
@@ -345,14 +500,17 @@ public sealed class OriginalNewGameExperimentTests
         match.FinishUpkeep();
         // RULE-SETUP-008: with several local humans the planning phase waits on the Ready card
         // before it refills the offers, and the recording stops there.
+        var initialRecorder = new MatchReplayRecorder(match);
+        AdvanceToRecordedEndpoint(initialRecorder, recorded.Humans[0], 0);
         if (recorded.Humans.Count == 1) match.PrepareHireOffers(recorded.Humans[0]);
 
         // Each Done ends the human's planning with no orders. The computer players then plan and
         // the turn resolves as in a headless match, up to the human's next planning entry.
         var recorder = new MatchReplayRecorder(match);
+        var human = recorded.Humans[0];
+        donePresses = 0;
         for (var turn = 0; turn < recorded.DoneCount; turn++)
         {
-            var human = recorded.Humans[0];
             // DEV-EQUIP-001: the rebuild resolves Equip and Sell in the order they are submitted.
             // Every recording lists a turn's orders in roster order, the original's scan order.
             foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))
@@ -367,13 +525,11 @@ public sealed class OriginalNewGameExperimentTests
                 Assert.True(result.Accepted, $"turn {hire.Turn}: the rebuild refused the hire: {result}");
             }
             recorder.FinishCommand(human);
-            // A human eliminated in this turn's resolution plans no more; the recording stops at
-            // the next planning phase that comes (RULE-OBJECTIVE-005).
-            while (!(match.Coordinator.Phase == TurnPhase.Command
-                       && (match.Coordinator.ActivePlayer == human || !IsActive(match, human)))
-                   && match.Outcome is null)
-                HeadlessMatchRunner.Advance(recorder);
-            if (IsActive(match, human)) recorder.PrepareHireOffers(human);
+            donePresses++;
+            AdvanceToRecordedEndpoint(recorder, human, recorded.Term("controller", human.Value));
+            if (!IsActive(match, human) || match.Outcome is not null) break;
+
+            recorder.PrepareHireOffers(human);
         }
 
         return match;
@@ -547,9 +703,10 @@ public sealed class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedHire> Hires { get; }
 
         // controller: 0 for a human at this computer (FND-SETUP-002), -2 for one eliminated who has
-        // not yet seen the card (RULE-OBJECTIVE-005).
+        // not yet seen the card and -1 for one who has (RULE-OBJECTIVE-005). Setup fills every
+        // empty slot with a computer player (FND-SETUP-002), so a -1 here is always a retired human.
         public IReadOnlyList<PlayerId> Humans => Enumerable.Range(0, 6)
-            .Where(slot => Term("controller", slot) is 0 or -2).Select(slot => new PlayerId(slot)).ToArray();
+            .Where(slot => Term("controller", slot) is 0 or -1 or -2).Select(slot => new PlayerId(slot)).ToArray();
         public IReadOnlyList<(string Call, int Bound, int Result)> Rolls { get; }
 
         public int Term(string term, int index) => _terms[(term, index)];

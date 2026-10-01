@@ -7,8 +7,9 @@ namespace Rechaos.Game;
 /// <summary>
 /// Explains a Ranking-screen portrait: what the scenario rates overlords on, how the hovered
 /// overlord's score is built from their holdings, and where every active overlord stands.
-/// The totals are the canonical <see cref="EndgameRankingEvaluator"/> scores; the breakdown only
-/// restates the inputs that feed them.
+/// The score is the one stored when the last turn ended, or at setup during the first turn
+/// (RULE-OBJECTIVE-002); the breakdown restates the inputs that feed it as they stand now, which
+/// the next evaluation will score.
 /// </summary>
 public static class PlayerRankingTooltip
 {
@@ -49,7 +50,8 @@ public static class PlayerRankingTooltip
             player.Setup.Name.ToUpperInvariant(),
             $"PLACE {entry.Standing + 1} OF {entries.Count}{(tied ? " (TIED)" : "")}",
             $"{ScenarioCatalog.Get(state.Setup.Scenario).Name} RATES: {Basis(state.Setup.Scenario)}",
-            $"SCORE: {Number(entry.Score)}"
+            ScoreLine(state, entry.Score),
+            "NOW:"
         };
         lines.AddRange(Breakdown(state, player));
         lines.Add("");
@@ -65,6 +67,13 @@ public static class PlayerRankingTooltip
         lines.Add("SCORE TRAILS; EQUAL SCORES, EQUAL HEIGHT.");
         return lines;
     }
+
+    /// <summary>
+    /// The stored score and when it was stored: no turn has ended during turn 1, so the score
+    /// there is the one recorded at setup.
+    /// </summary>
+    private static string ScoreLine(MatchState state, long score) =>
+        $"SCORE: {Number(score)} " + (state.Coordinator.Turn == 1 ? "AT MATCH START" : "AT LAST TURN'S END");
 
     /// <summary>What <paramref name="scenario"/> rates overlords on, as the standing score states it.</summary>
     public static string Basis(ScenarioId scenario) => scenario switch
@@ -105,7 +114,7 @@ public static class PlayerRankingTooltip
                 yield return WeightedRow("SECTORS", Number(sectors), sectors, weights.ControlledSector);
                 var total = (long)player.Cash * weights.Cash + (long)player.Support * weights.Support
                     + (long)sectors * weights.ControlledSector;
-                yield return $"  TOTAL {Number(total)} / 10 = SCORE";
+                yield return $"  TOTAL {Number(total)} / 10 = {Number(total / 10)}";
                 break;
             case ScenarioId.KillEmAll or ScenarioId.Eliminate:
                 yield return $"  {MatchLimits.PlayerCount} SEATS - {holdings.OpponentsAlive + 1} ACTIVE OVERLORDS";
