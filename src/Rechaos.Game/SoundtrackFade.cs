@@ -1,10 +1,10 @@
 namespace Rechaos.Game;
 
-/// <summary>RULE-AUDIO-001, RULE-AUDIO-003, FND-AUDIO-007: the CD fade subtracts
-/// the initial high-byte volume divided by 32 before each 17 ms wait.</summary>
+/// <summary>RULE-AUDIO-001, RULE-AUDIO-003, FND-AUDIO-016: the CD fade subtracts
+/// the initial high-byte volume divided by 32 before each zero-based wait.</summary>
 public sealed class SoundtrackFade
 {
-    public static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(32 * 17);
+    public static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(31 * 17);
     private readonly int _initialVolume;
     private readonly TimeSpan _startedAt;
 
@@ -17,14 +17,18 @@ public sealed class SoundtrackFade
     }
 
     public float RestoredVolume => _initialVolume * 256 / (float)ushort.MaxValue;
+    public float FirstStepVolume => VolumeAfterWrites(1);
     public bool IsComplete(TimeSpan now) => now - _startedAt >= Duration;
 
     public float VolumeAt(TimeSpan now)
     {
         if (IsComplete(now)) return 0;
         var elapsed = Math.Max(0, (now - _startedAt).Ticks);
-        var steps = Math.Min(32, elapsed / TimeSpan.FromMilliseconds(17).Ticks + 1);
-        return (_initialVolume - (int)steps * (_initialVolume / 32))
-            * 256 / (float)ushort.MaxValue;
+        // FND-AUDIO-016: the first dispatch has deadline zero; the second write
+        // is already applied while waiting for the first nonzero deadline.
+        return VolumeAfterWrites((int)Math.Min(32, elapsed / TimeSpan.FromMilliseconds(17).Ticks + 2));
     }
+
+    private float VolumeAfterWrites(int writes) =>
+        (_initialVolume - writes * (_initialVolume / 32)) * 256 / (float)ushort.MaxValue;
 }

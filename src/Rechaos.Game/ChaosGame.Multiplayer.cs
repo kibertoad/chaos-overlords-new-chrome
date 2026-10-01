@@ -145,6 +145,8 @@ public sealed partial class ChaosGame
     /// <summary>Routes typed characters to whichever text field currently owns focus.</summary>
     private void HandleTextInput(char character)
     {
+        // FND-AUDIO-016: text callbacks must also respect the window-only fade pump.
+        if (_soundtrackFade is not null) return;
         // Gated on the menu being open as well, so a panel flag left set by some other exit can
         // never quietly swallow the keystrokes meant for a server address.
         if (_gameMenuOpen && _bugReportOpen)

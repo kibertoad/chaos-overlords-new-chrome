@@ -20,6 +20,7 @@ public sealed partial class ChaosGame
     private TimeSpan _soundtrackStartDeadline;
     private readonly SoundtrackRestartPoll _soundtrackRestartPoll = new();
     private SoundtrackFade? _soundtrackFade;
+    private readonly SoundtrackFocusState _soundtrackFocus = new();
     private SoundtrackProgramPlayer? _soundtrackProgramPlayer;
 
     private void LoadSoundtrack()
@@ -58,11 +59,12 @@ public sealed partial class ChaosGame
 
     private void UpdateSoundtrack(GameTime gameTime)
     {
-        var poll = _soundtrackRestartPoll.Advance(_soundtrackEnabled, IsActive, gameTime.TotalGameTime);
+        var poll = _soundtrackFade is null && _soundtrackRestartPoll.Advance(
+            _soundtrackEnabled, _soundtrackFocus.WindowActive, gameTime.TotalGameTime);
         try
         {
             if (AdvanceSoundtrackFade(gameTime.TotalGameTime)) return;
-            if (_soundtrackFailed || _soundtrack.Count == 0 || _introMoviesPlaying || !IsActive) return;
+            if (_soundtrackFailed || _soundtrack.Count == 0 || _introMoviesPlaying || !_soundtrackFocus.WindowActive) return;
             // FND-AUDIO-007: the selector stores the mode even while music is disabled and then
             // plays nothing, so re-enabled music waits for the poll (RULE-AUDIO-003).
             SelectSoundtrackMode(SoundtrackContext(), gameTime.TotalGameTime, _restartSoundtrackProgram);
@@ -98,7 +100,7 @@ public sealed partial class ChaosGame
 
     private void StartSoundtrackProgram(TimeSpan now)
     {
-        if (!_soundtrackEnabled || _activeSoundtrack.Count == 0 || !IsActive) return;
+        if (!_soundtrackEnabled || _activeSoundtrack.Count == 0 || !_soundtrackFocus.WindowActive) return;
         try
         {
             // RULE-AUDIO-001, FND-AUDIO-007: a stopped program restarts at its first track.
@@ -141,8 +143,8 @@ public sealed partial class ChaosGame
             return;
         }
 
-        // The update that sees the fade finish calls the selector again with the screen of that
-        // moment, which may have moved on while the fade ran.
+        // FND-AUDIO-016: game events stay blocked until the fade finishes; the next
+        // soundtrack update completes the selector for the pending screen.
         if (MediaPlayer.State == MediaState.Playing)
         {
             BeginSoundtrackFade(now);
@@ -169,6 +171,8 @@ public sealed partial class ChaosGame
         // RULE-AUDIO-001, RULE-AUDIO-003, FND-AUDIO-007: retain integer attenuation,
         // including the final residual volume before the explicit zero and stop.
         _soundtrackFade ??= new SoundtrackFade(MediaPlayer.Volume, now);
+        // FND-AUDIO-016: the first write precedes the zero-deadline dispatch.
+        MediaPlayer.Volume = _soundtrackFade.FirstStepVolume;
         MediaPlayer.Volume = _soundtrackFade.VolumeAt(now);
         _soundtrackAwaitingStart = false;
     }
@@ -187,9 +191,8 @@ public sealed partial class ChaosGame
     {
         if (_soundtrackFade is not { } fade) return;
         _soundtrackFade = null;
-        // FND-AUDIO-007: when music is enabled the original selector plays the new program
-        // straight after the fade, so a track paused by deactivation during the fade must not
-        // be resumed by the next activation. A muting fade leaves a paused device alone.
+        // FND-AUDIO-016: an enabled selector replaces the old program after the fade;
+        // muting uses the conditional stop without replacing a paused position.
         _soundtrackProgramPlayer?.FinishFade(fade.RestoredVolume, release: _soundtrackEnabled);
     }
 
@@ -203,7 +206,7 @@ public sealed partial class ChaosGame
         {
             FinishIntroMovie("movie.failed", exception);
         }
-        if (_soundtrackEnabled)
+        if (_soundtrackFocus.Deactivate(_soundtrackFade is not null) && _soundtrackEnabled)
         {
             try
             {
@@ -231,7 +234,7 @@ public sealed partial class ChaosGame
         {
             FinishIntroMovie("movie.failed", exception);
         }
-        if (!_soundtrackEnabled) return;
+        if (!_soundtrackFocus.Activate(_soundtrackFade is not null) || !_soundtrackEnabled) return;
         try
         {
             // RULE-AUDIO-002, FND-AUDIO-007: activation reapplies levels before resuming.
@@ -274,8 +277,8 @@ public sealed partial class ChaosGame
                 return;
             }
 
-            // RULE-AUDIO-003, FND-AUDIO-007: a level message applies immediately, even
-            // during a fade. Later fade steps and its captured-volume restore can overwrite it.
+            // RULE-AUDIO-003, FND-AUDIO-016: a level applies when the full game event
+            // handler runs; the window-only fade pump does not enter that handler.
             MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(level);
             // RULE-AUDIO-003: enabling music leaves playback to the next poll.
             _soundtrackEnabled = true;

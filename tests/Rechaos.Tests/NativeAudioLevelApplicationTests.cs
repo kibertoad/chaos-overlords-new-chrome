@@ -66,6 +66,11 @@ public sealed class NativeAudioLevelApplicationTests
             // Reset the native loop flag before returning this effect source to
             // the shared pool; Ogg streams do not reset a recycled source's flag.
             voice.IsLooped = false;
+            // IsLooped's setter changes managed state only; apply the native
+            // flag while this looping voice still owns its source.
+            (typeof(SoundEffectInstance).GetMethod("PlatformSetIsLooped",
+                BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new MissingMethodException("PlatformSetIsLooped")).Invoke(voice, [false]);
             voice.Stop();
             MediaPlayer.Stop();
             File.Delete(preferencePath);
