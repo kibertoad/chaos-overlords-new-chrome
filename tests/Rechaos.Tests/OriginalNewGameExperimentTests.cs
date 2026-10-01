@@ -270,7 +270,15 @@ public sealed class OriginalNewGameExperimentTests
                        && (match.Coordinator.ActivePlayer == human || !IsActive(match, human)))
                    && match.Outcome is null)
                 HeadlessMatchRunner.Advance(recorder);
-            if (IsActive(match, human)) recorder.PrepareHireOffers(human);
+            if (!IsActive(match, human) || match.Outcome is not null)
+            {
+                // An eliminated human presses Done no more, and a decided match has no planning
+                // phase, so the recording must end here.
+                Assert.Equal(recorded.DoneCount - 1, turn);
+                break;
+            }
+
+            recorder.PrepareHireOffers(human);
         }
 
         return match;
@@ -410,9 +418,10 @@ public sealed class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedOrder> Orders { get; }
 
         // controller: 0 for a human at this computer (FND-SETUP-002), -2 for one eliminated who has
-        // not yet seen the card (RULE-OBJECTIVE-005).
+        // not yet seen the card and -1 for one who has (RULE-OBJECTIVE-005). Setup fills every
+        // empty slot with a computer player (FND-SETUP-002), so a -1 here is always a retired human.
         public IReadOnlyList<PlayerId> Humans => Enumerable.Range(0, 6)
-            .Where(slot => Term("controller", slot) is 0 or -2).Select(slot => new PlayerId(slot)).ToArray();
+            .Where(slot => Term("controller", slot) is 0 or -1 or -2).Select(slot => new PlayerId(slot)).ToArray();
         public IReadOnlyList<(string Call, int Bound, int Result)> Rolls { get; }
 
         public int Term(string term, int index) => _terms[(term, index)];
