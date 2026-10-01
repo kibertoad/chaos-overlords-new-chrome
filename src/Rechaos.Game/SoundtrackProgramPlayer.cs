@@ -11,6 +11,7 @@ public sealed class SoundtrackProgramPlayer : IDisposable
     private readonly SoundtrackProgramCursor<Song> _cursor;
     private Song? _expectedSong;
     private int _songCompleted;
+    private bool _restartCurrentOnResume;
 
     public SoundtrackProgramPlayer(IReadOnlyList<Song> orderedDisc)
     {
@@ -18,13 +19,15 @@ public sealed class SoundtrackProgramPlayer : IDisposable
         MediaPlayer.ActiveSongChanged += OnActiveSongChanged;
     }
 
-    public bool ReadyToRestart => MediaPlayer.State == MediaState.Stopped
+    public bool ReadyToRestart => MediaPlayer.State == MediaState.Paused || MediaPlayer.State == MediaState.Stopped
         && (_expectedSong is null || (Volatile.Read(ref _songCompleted) != 0 && _cursor.AtEnd));
 
     public void PlayProgram(IReadOnlyList<Song> program)
     {
         CheckOwnerThread();
         Stop();
+        if (MediaPlayer.State == MediaState.Paused) MediaPlayer.Stop();
+        _restartCurrentOnResume = false;
         _cursor.Start(program);
         PlayCurrent();
     }
@@ -42,18 +45,29 @@ public sealed class SoundtrackProgramPlayer : IDisposable
     public void ResumeThroughDiscEnd()
     {
         CheckOwnerThread();
-        if (MediaPlayer.State != MediaState.Paused) return;
         _cursor.ResumeThroughDiscEnd();
-        // RULE-AUDIO-002: retain the paused position; only its eventual end bound changes.
-        MediaPlayer.Resume();
+        // RULE-AUDIO-002: activation sends positionless play regardless of device status.
+        // A playing or paused track retains its position. Explicit CD stop resets it
+        // to the start of the current track; natural completion advances past that track.
+        if (MediaPlayer.State == MediaState.Paused) MediaPlayer.Resume();
+        else if (MediaPlayer.State == MediaState.Stopped && _restartCurrentOnResume)
+        {
+            _restartCurrentOnResume = false;
+            PlayCurrent();
+        }
+        else if (MediaPlayer.State == MediaState.Stopped) AdvanceTrack();
     }
 
     public void Stop()
     {
         CheckOwnerThread();
+        // RULE-AUDIO-003: the original stop helper sends MCI_STOP only while playing.
+        // A paused transport keeps its position for the next activation.
+        if (MediaPlayer.State != MediaState.Playing) return;
+        _restartCurrentOnResume = true;
         Volatile.Write(ref _expectedSong, null);
         Interlocked.Exchange(ref _songCompleted, 0);
-        if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
+        MediaPlayer.Stop();
     }
 
     private void PlayCurrent()
@@ -85,6 +99,7 @@ public sealed class SoundtrackProgramPlayer : IDisposable
     public void Dispose()
     {
         Stop();
+        if (MediaPlayer.State == MediaState.Paused) MediaPlayer.Stop();
         MediaPlayer.ActiveSongChanged -= OnActiveSongChanged;
     }
 }

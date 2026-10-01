@@ -13,6 +13,63 @@ public sealed class NativeSoundtrackCollection;
 [Collection("Native soundtrack")]
 public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
 {
+    [Theory]
+    [InlineData("playing")]
+    [InlineData("paused")]
+    [InlineData("stopped")]
+    [InlineData("completed")]
+    public void ActivationContinuesFromCurrentTrackThroughDiscEnd(string state)
+    {
+        // RULE-AUDIO-002, RULE-AUDIO-003: compare positionless activation with the
+        // original MCI calls and SRC-MCI-PLAY/SRC-MCI-STOP transport semantics.
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-activation-" + Guid.NewGuid());
+        Directory.CreateDirectory(directory);
+        var songs = Enumerable.Range(1, 3).Select(index =>
+        {
+            var path = Path.Combine(directory, $"track{index}.ogg");
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg"), path);
+            return Song.FromUri($"track{index}", new Uri(path));
+        }).ToArray();
+        using var player = new SoundtrackProgramPlayer(songs);
+        try
+        {
+            MediaPlayer.IsRepeating = false;
+            MediaPlayer.IsShuffled = false;
+            MediaPlayer.Volume = 0;
+            // The selected program starts at track two and ends there.
+            player.PlayProgram([songs[1]]);
+            if (state == "paused")
+            {
+                MediaPlayer.Pause();
+                player.Stop(); // The original stop helper leaves a paused device alone.
+                Assert.Equal(MediaState.Paused, MediaPlayer.State);
+                Assert.True(player.ReadyToRestart); // An active poll restarts any nonplaying program.
+            }
+            else if (state == "stopped") player.Stop();
+            else if (state == "completed") WaitFor(() => player.ReadyToRestart);
+
+            player.ResumeThroughDiscEnd();
+            if (state != "completed")
+            {
+                Assert.Equal(MediaState.Playing, MediaPlayer.State);
+                Assert.Same(songs[1], MediaPlayer.Queue.ActiveSong);
+            }
+            WaitFor(() => ReferenceEquals(MediaPlayer.Queue.ActiveSong, songs[2]), player);
+            WaitFor(() => player.ReadyToRestart, player);
+            Assert.Same(songs[2], MediaPlayer.Queue.ActiveSong);
+            // A later restart restores the selected program's normal bounds.
+            player.PlayProgram([songs[1]]);
+            WaitFor(() => player.ReadyToRestart, player);
+            Assert.Same(songs[1], MediaPlayer.Queue.ActiveSong);
+        }
+        finally
+        {
+            player.Dispose();
+            foreach (var song in songs) song.Dispose();
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void NativeCompletionCannotRaceMainThreadAdvancementOrProgramRestart()
     {
@@ -53,6 +110,7 @@ public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
             Assert.Equal(MediaState.Stopped, MediaPlayer.State);
             // Pause the actual worker before it can notify completion: a coincident poll
             // must not rewind the program, and no game-thread advance may start yet.
+            player.ResumeThroughDiscEnd(); // Activation during the worker stop window must also wait.
             Assert.False(player.ReadyToRestart);
             Assert.False(player.AdvanceTrack());
             release.Set();
