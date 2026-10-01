@@ -103,6 +103,12 @@ public sealed class MatchBootstrapTests
                     ? MatchBootstrap.ArmageddonStartingCash
                     : starts[1].StandardStartingCash,
                 match.Players[1].Cash);
+            // RULE-OBJECTIVE-002, FND-SETUP-015: the starting scores count the cash from before the
+            // raise, which is the start's own cash rather than the generator's.
+            if (scenario == ScenarioId.Greed)
+                Assert.Equal(
+                    [starts[0].StandardStartingCash, starts[1].StandardStartingCash],
+                    match.Players.Select(player => player.ScenarioScore));
         }
     }
 

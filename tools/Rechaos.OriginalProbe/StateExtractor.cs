@@ -82,6 +82,18 @@ internal sealed class StateExtractor
         Term(rows, "hide_count", 0x004A25D0, 6, 4);
         Term(rows, "hire_role", 0x00482128, 6, 4);
         Term(rows, "previous_hire_role", 0x00482160, 6, 4);
+        Term(rows, "scenario_score", 0x004A2790, 6, 4);
+        Term(rows, "scenario_standing", 0x004ABC08, 6, 1, signed: false);
+        // A run that ends the match stops at the endgame: its awards are given (RULE-AWARDS-001),
+        // and only the first three entries of each player's list are written.
+        if (ReadByte(0x004ABBD4, signed: false) != 0)
+        {
+            Term(rows, "match_over", 0x004ABBD4, 1, 1, signed: false);
+            for (var slot = 0; slot < 6; slot++)
+                for (var entry = 0; entry < 3; entry++)
+                    rows.Add(new JsonObject { ["term"] = "player_awards", ["index"] = slot * 5 + entry,
+                        ["value"] = BitConverter.ToInt32(_data, Offset(0x00494500 + (uint)(4 * (slot * 5 + entry)), 4)) });
+        }
 
         string[] sectorFields =
         [

@@ -4204,7 +4204,19 @@
         {"term":"previous_hire_role","index":2,"value":0},
         {"term":"previous_hire_role","index":3,"value":0},
         {"term":"previous_hire_role","index":4,"value":0},
-        {"term":"previous_hire_role","index":5,"value":0}
+        {"term":"previous_hire_role","index":5,"value":0},
+        {"term":"scenario_score","index":0,"value":0},
+        {"term":"scenario_score","index":1,"value":0},
+        {"term":"scenario_score","index":2,"value":0},
+        {"term":"scenario_score","index":3,"value":0},
+        {"term":"scenario_score","index":4,"value":0},
+        {"term":"scenario_score","index":5,"value":0},
+        {"term":"scenario_standing","index":0,"value":0},
+        {"term":"scenario_standing","index":1,"value":0},
+        {"term":"scenario_standing","index":2,"value":0},
+        {"term":"scenario_standing","index":3,"value":0},
+        {"term":"scenario_standing","index":4,"value":0},
+        {"term":"scenario_standing","index":5,"value":0}
       ]
     }
   ]

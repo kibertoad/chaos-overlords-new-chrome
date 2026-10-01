@@ -16,6 +16,13 @@ public static class EndgameRankingEvaluator
         return OriginalAiScenarioStandingRules.Score(state, player);
     }
 
+    /// <summary>
+    /// RULE-OBJECTIVE-002: each slot's standing from the scores the last evaluation stored, 0xFF for
+    /// an inactive or empty slot.
+    /// </summary>
+    public static IReadOnlyList<int> StoredStandings(MatchState state) =>
+        OriginalAiScenarioStandingRules.Stored(state);
+
     public static IReadOnlyList<MatchStanding> Evaluate(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);

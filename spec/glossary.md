@@ -1809,8 +1809,8 @@ owned. A constant, 1 [FND-OBJECTIVE-003, SRC-MANUAL-GOG].
 
 ## scenario_score
 
-Each player's score toward the scenario's objective, rebuilt by the end
-evaluation. Any other value the game keeps: `INT32LE[6]`, indexed by player
+Each player's score toward the scenario's objective, rebuilt when a match
+starts and by the end evaluation, and read as stored between them. Any other value the game keeps: `INT32LE[6]`, indexed by player
 slot, at `0x004A2790` [FND-AI-005, FND-TURN-003, FND-PLATFORM-003].
 
 ## scenario_standing

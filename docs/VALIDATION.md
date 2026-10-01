@@ -416,7 +416,10 @@ The same runs also hold each player's running totals (`cash_earned`,
 `cash_spent`, `damage_inflicted`, `casualties`, `overthrow_count`,
 `hide_count`) and their `hire_role` and `previous_hire_role`; the replay
 compares them only in the runs that hold them, and reads the -1 the original
-keeps in a human player's `hire_role` as the rebuild's 0.
+keeps in a human player's `hire_role` as the rebuild's 0. The fixtures also hold
+the `scenario_score` and `scenario_standing` the last evaluation stored. A run
+that ends the match stops when the endgame draws the awards, and its fixture
+holds `match_over` and each player's first three `player_awards` entries.
 `OriginalNewGameExperimentTests` replays every run of the EXP-SETUP and
 EXP-TURN fixtures against the rebuild and names the first roll whose bound or
 result differs, with the original's call instruction, then compares the state
