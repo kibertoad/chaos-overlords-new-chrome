@@ -10,8 +10,10 @@ namespace Rechaos.Tests;
 [Collection("Native soundtrack")]
 public sealed class NativeSoundtrackSelectorTests
 {
-    [Fact]
-    public void ModeChangeWaitsForFadeThenStopsAtZeroBeforeStartingRequestedProgram()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SelectorWaitsForFadeAndReenabledMusicWaitsForPoll(bool mute)
     {
         // RULE-AUDIO-001, RULE-AUDIO-003, FND-AUDIO-016: the selector holds
         // its old mode during the zero-based fade, then stops and selects anew.
@@ -22,7 +24,7 @@ public sealed class NativeSoundtrackSelectorTests
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
         GC.SuppressFinalize(game);
         var screens = new ScreenRouter();
-        screens.Show(ClientScreen.City);
+        screens.Show(mute ? ClientScreen.Title : ClientScreen.City);
         Set(game, "_screens", screens);
         Set(game, "_soundtrack", new Dictionary<string, Song>
         {
@@ -54,6 +56,13 @@ public sealed class NativeSoundtrackSelectorTests
             lock (PreparationLock(gameplay))
             {
                 player.PlayProgram([title]);
+                if (mute)
+                {
+                    Set(game, "_musicVolumeLevel", 0);
+                    typeof(ChaosGame).GetMethod("ApplyAudioVolumeLevels",
+                        BindingFlags.Instance | BindingFlags.NonPublic)!
+                        .Invoke(game, [TimeSpan.Zero]);
+                }
                 Tick(game, 0);
                 Assert.Equal(OriginalSoundtrackMode.Title, Field("_soundtrackMode").GetValue(game));
                 Assert.Same(title, MediaPlayer.Queue.ActiveSong);
@@ -68,6 +77,27 @@ public sealed class NativeSoundtrackSelectorTests
                 Tick(game, 527);
                 Assert.Equal(0f, stoppedVolume);
                 Assert.Null(Field("_soundtrackFade").GetValue(game));
+                if (mute)
+                {
+                    // RULE-AUDIO-002, RULE-AUDIO-003: applying a nonzero level
+                    // does not play. Only the next presentation poll restarts.
+                    Assert.Equal(MediaState.Stopped, MediaPlayer.State);
+                    Assert.Equal(OriginalSoundtrackMode.Title, Field("_soundtrackMode").GetValue(game));
+                    // Consume the pending presentation tick while still muted.
+                    Tick(game, 528);
+                    Set(game, "_musicVolumeLevel", 5);
+                    typeof(ChaosGame).GetMethod("ApplyAudioVolumeLevels",
+                        BindingFlags.Instance | BindingFlags.NonPublic)!
+                        .Invoke(game, [TimeSpan.FromMilliseconds(529)]);
+                    Assert.Equal(MediaState.Stopped, MediaPlayer.State);
+                    Tick(game, 530);
+                    Assert.Equal(MediaState.Stopped, MediaPlayer.State);
+                    Tick(game, 664);
+                    Assert.Equal(MediaState.Playing, MediaPlayer.State);
+                    Assert.Same(title, MediaPlayer.Queue.ActiveSong);
+                    Assert.False((bool)Field("_soundtrackFailed").GetValue(game)!);
+                    return;
+                }
                 Assert.Equal(OriginalSoundtrackMode.Gameplay, Field("_soundtrackMode").GetValue(game));
                 Assert.Same(gameplay, MediaPlayer.Queue.ActiveSong);
                 Assert.Equal(MediaState.Playing, MediaPlayer.State);
