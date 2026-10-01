@@ -13,7 +13,13 @@ namespace Rechaos.Game;
 /// The frame of the Overlord bar's marker the capture showed (FND-UI-038), in place of the one
 /// the clock gives.
 /// </param>
-public sealed record ReferenceFrameRequest(string SavePath, string OutputPath, int? MarkerFrame = null);
+public sealed record ReferenceFrameRequest(string SavePath, string OutputPath, int? MarkerFrame = null)
+{
+    // Keep captures independent of the player's preferences, recovery files and saves.
+    // Retain the directory after exit so failed runs can be diagnosed from their logs.
+    public string UserDataDirectory { get; } = Path.Combine(
+        Path.GetTempPath(), "rechaos-reference-frame-" + Guid.NewGuid().ToString("N"));
+}
 
 public sealed partial class ChaosGame
 {

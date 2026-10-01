@@ -263,7 +263,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
                 _showEndgameStats = false;
         };
-        var userDataRoot = Path.Combine(
+        var userDataRoot = _referenceFrame?.UserDataDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords");
         _saveDirectory = userDataRoot;

@@ -526,7 +526,11 @@ submission remains necessary before claiming full soundtrack parity.
 
 The original probe accepts `new-game --capture` and writes bitmap/hash/marker metadata outside the repository. Capture mode does not patch the original white-key compositor. Driver-dependent behavior must be evaluated on its own terms before a capture is accepted as evidence.
 
-The rebuild accepts `--reference-frame <native-save> <bitmap> [--marker-frame <n>]` to draw a saved first-planning state in a 640-by-460 window, freeze presentation time, and exit after warm-up draws. The saved match must already be at the intended planning entry. The capture workflow and repeated-frame determinism still require runtime validation; no automated original/rebuild pixel comparison has been completed by this tooling change. Unsupported hire-price/status alignment edits and the temporary environment-driven save-writing test have been removed.
+The rebuild accepts `--reference-frame <native-save> <bitmap> [--marker-frame <n>]` to draw a saved first-planning state in a 640-by-460 window, freeze presentation time, and exit after warm-up draws. The saved match must already be at the intended planning entry. Each request uses a new `rechaos-reference-frame-*` directory under the system temporary directory for preferences, saves, recovery files and diagnostic logs. These directories remain available after exit for diagnosis; capture runs do not load the player's preferences or recovery files.
+
+On 2026-10-02, a native save generated from EXP-SETUP-001's first run produced two byte-identical 640-by-460 bitmap files with the marker fixed at frame 0. A staged original executable run with the same seed reproduced all 310 recorded rolls and all 2,760 state entries in that fixture (the current probe also records 66 additional entries). Its PrintWindow and BitBlt copies were identical. With the rebuild's marker set to the recorded frame 6, a direct RGB comparison found 6,714 differing pixels. The original capture visibly contains white blocks at transparency boundaries, so this run is not accepted as a historical rendering reference. The files and memory dumps remain outside the repository. This establishes repeatability for one rebuilt state, not screen parity; driver behavior and the remaining layout/content differences still need investigation.
+
+Unsupported hire-price/status alignment edits and the temporary environment-driven save-writing test have been removed.
 
 ## Failure triage
 
