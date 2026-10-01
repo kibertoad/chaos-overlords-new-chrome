@@ -25,6 +25,7 @@ public sealed class ScenarioLifecycleTests
     {
         var match = CreateEliminateMatch();
 
+        var before = match.FindGang(new GangId(21))!.Force; // FMT-STATE-001, BUG-AI-007
         FinishTurnWithEliminatedPlayerRepeat(match);
 
         var eliminated = match.Players[1];
@@ -35,6 +36,7 @@ public sealed class ScenarioLifecycleTests
             Assert.Null(gang.QueuedCommand);
         });
         var retiredGang = eliminated.Gangs.Single(gang => gang.Id == new GangId(21));
+        Assert.Equal(before, retiredGang.RetiredForce);
         Assert.Equal((short)0, retiredGang.WeaponItemId);
         Assert.Equal((short)24, retiredGang.ArmorItemId);
         Assert.Equal((short)38, retiredGang.MiscellaneousItemId);

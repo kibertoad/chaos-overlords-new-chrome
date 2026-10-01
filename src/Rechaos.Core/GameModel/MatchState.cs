@@ -381,13 +381,14 @@ public sealed partial class MatchState
     {
         var player = FindPlayer(observer) ?? throw new ArgumentOutOfRangeException(nameof(observer));
         var target = FindGang(targetGang) ?? throw new ArgumentOutOfRangeException(nameof(targetGang));
-        if (target.Owner == observer) return true;
-        if (OriginalSetupNameRules.EnablesOmniscience(player.Setup.Name)) return true;
+        var owner = target.Owner == observer;
+        var omniscient = OriginalSetupNameRules.EnablesOmniscience(player.Setup.Name);
+        if (owner || omniscient) return DetectsFromStrength(owner, omniscient, null, 0);
         var observers = player.Gangs.Where(gang => gang.IsActive && gang.SectorId == target.SectorId).ToArray();
-        if (observers.Length == 0) return false;
-        var detection = ManualRules.SectorDetectionStrength(
+        int? detection = observers.Length == 0 ? null : ManualRules.SectorDetectionStrength(
             observers.Select(gang => EffectiveStatisticsCalculator.ForGang(this, gang).Detect));
-        return detection >= EffectiveStatisticsCalculator.ForGang(this, target).Stealth;
+        return DetectsFromStrength(owner, omniscient, detection,
+            EffectiveStatisticsCalculator.ForGang(this, target).Stealth);
     }
     public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
@@ -408,8 +409,43 @@ public sealed partial class MatchState
         SectorBenefitResolver.ActivatePending(this);
         SectorRecordRebuild.BeforePlanning(this);
         EffectiveStatisticsCalculator.RebuildBeforePlanning(this);
+        RecordVisibilityBeforePlanning();
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }
+
+    /// <summary>
+    /// RULE-DETECT-001 writes every active gang's <c>visible_to</c> bytes at each planning entry,
+    /// and no gang moves or changes its statistics between the entries of one planning phase, so
+    /// the bytes the last entry leaves are these. A gone gang keeps the bits it had (BUG-AI-007).
+    /// </summary>
+    private void RecordVisibilityBeforePlanning()
+    {
+        var strengths = new int?[Players.Count, MatchLimits.SectorCount];
+        var omniscient = new bool[Players.Count];
+        for (var index = 0; index < Players.Count; index++)
+        {
+            var player = Players[index];
+            omniscient[index] = OriginalSetupNameRules.EnablesOmniscience(player.Setup.Name);
+            foreach (var sector in player.Gangs.Where(gang => gang.IsActive).GroupBy(gang => gang.SectorId))
+                strengths[index, sector.Key] = ManualRules.SectorDetectionStrength(
+                    sector.Select(gang => EffectiveStatisticsCalculator.ForGang(this, gang).Detect));
+        }
+        foreach (var gang in Players.SelectMany(player => player.Gangs).Where(gang => gang.IsActive))
+        {
+            var stealth = EffectiveStatisticsCalculator.ForGang(this, gang).Stealth;
+            byte mask = 0;
+            for (var index = 0; index < Players.Count; index++)
+                if (DetectsFromStrength(gang.Owner == Players[index].Id, omniscient[index],
+                        strengths[index, gang.SectorId], stealth))
+                    mask |= (byte)(1 << Players[index].Id.Value);
+            gang.VisibilityMask = mask;
+        }
+    }
+
+    // RULE-DETECT-001: only local observers contribute strength; ownership and the setup override reveal all.
+    private static bool DetectsFromStrength(bool owner, bool omniscient, int? sectorStrength, int stealth) =>
+        owner || omniscient || (sectorStrength is { } strength && strength >= stealth);
+
     public TurnTransition FinishCommand(PlayerId player)
     {
         if (Coordinator.Phase == TurnPhase.Command && Coordinator.ActivePlayer == player)
@@ -799,8 +835,7 @@ public sealed partial class MatchState
     {
         // Native Eliminate cleanup writes only inactive sector 100. Force zero is this
         // model's inactive marker; retain equipment so the retired record stays inspectable.
-        gang.Force = 0;
-        gang.Hidden = false;
+        gang.Retire(gang.Force);
     }
 
     private GameEvent AppendEliminationEvent(PlayerId player, EliminationDetails elimination) =>

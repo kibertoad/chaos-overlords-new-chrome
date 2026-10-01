@@ -14,7 +14,7 @@ public static class NativeSaveSerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: the fingerprint and the
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
-    public const int CurrentFormatVersion = 36;
+    public const int CurrentFormatVersion = 37;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -331,7 +331,8 @@ public static class NativeSaveSerializer
             gang.Id.Value, gang.DefinitionId, gang.SectorId, gang.Force,
             gang.Hidden, gang.HiredThisTurn,
             gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId,
-            gang.StoredStatistics is { } statistics ? NativeStatistics.ToArray(statistics) : null)).ToArray(),
+            gang.StoredStatistics is { } statistics ? NativeStatistics.ToArray(statistics) : null,
+            gang.RetiredForce, gang.VisibilityMask)).ToArray(),
         player.HirePool.ToArray(),
         player.PendingHires.ToArray(),
         player.ResearchProgress.OrderBy(entry => entry.Key).ToDictionary(),
@@ -367,7 +368,9 @@ public static class NativeSaveSerializer
                     ?? throw new InvalidDataException("Native save gang statistics are missing.")))
             {
                 Hidden = gang.Hidden,
-                HiredThisTurn = gang.HiredThisTurn
+                HiredThisTurn = gang.HiredThisTurn,
+                RetiredForce = gang.RetiredForce,
+                VisibilityMask = gang.VisibilityMask
             };
             return restored;
         }).ToArray();
@@ -569,7 +572,9 @@ internal sealed record GangDocument(
     short? WeaponItemId,
     short? ArmorItemId,
     short? MiscellaneousItemId,
-    IReadOnlyList<int>? Statistics = null);
+    IReadOnlyList<int>? Statistics = null,
+    int? RetiredForce = null,
+    byte VisibilityMask = 0);
 
 internal sealed record StatisticsDocument(
     long CashEarned,

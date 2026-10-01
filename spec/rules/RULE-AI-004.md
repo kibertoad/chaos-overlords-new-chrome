@@ -4,7 +4,7 @@ title: Queries the computer players' handlers share
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057, FND-SETUP-018, EXP-TURN-021]
+evidence: [FND-AI-072, EXP-TURN-022, FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057, FND-SETUP-018, EXP-TURN-021]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, RULE-RNG-002]
@@ -104,7 +104,8 @@ define previous_action_count(player, s, action):
             n = n + 1
     return n
 
-# The strength test before an AI attack, on the attacker a and the target t
+# The strength test before an AI attack, on the attacker a and the target t.
+# For t == -1 it reads the 32 bytes before gangs[0], zero in every recorded run
 define strength_check(a, t):
     let x = gangs[a]
     let y = gangs[t]
@@ -163,15 +164,21 @@ define owner_is_human(s):
         v = casualties[5]
     return v == 0 or v == 3
 
-# One target draw from the pool of kind; the strength test uses the gang with
-# the same ordinal in the full pool. Returns the drawn target when the test
+# One target draw from the pool of kind. The strength test compares the
+# player's gang in roster slot c with the gang at the same ordinal in the full
+# pool of that gang's sector; every caller passes idx's own slot except the five
+# of BUG-AI-007, which pass idx's sector. Returns the drawn target when the test
 # passes, and -1 when it fails
-define draw_once(player, idx, kind):
+define draw_once(player, idx, kind, c):
     let s = gangs[idx].sector
     let pool = visible_opponents(player, s, kind)
-    let full = visible_opponents(player, s, 0)
     let k = roll(count(pool))
-    if strength_check(idx, full[k - 1]):
+    let a = player * 81 + c
+    let full = visible_opponents(player, gangs[a].sector, 0)
+    let y = -1
+    if k <= count(full):
+        y = full[k - 1]
+    if strength_check(a, y):
         return pool[k - 1]
     return -1
 
@@ -221,7 +228,14 @@ computer gang found before a hostile human gang gives 1. `strength_check`
 divides with truncation toward zero. `solo_control_ok` is strict: equal
 strength fails. The strength test in `draw_once` and `draw_target` reads the
 gang at the drawn position of the full list, which is a different gang from
-the one drawn whenever the pool is a narrower list (BUG-AI-003). With an empty
+the one drawn whenever the pool is a narrower list (BUG-AI-003). When `c` is
+the sector number (BUG-AI-007) the test's attacker is whatever record that
+slot holds: another gang of the player's, a gone gang's record with sector 100,
+or an unused one, all zero but its sector of 100. Its full pool is then that
+record's sector's, which for sector 100 holds the gone gangs of other players
+whose `visible_to` byte for the player was still set when they died
+(FMT-STATE-001), and a draw past its end compares with the zero record
+before `gangs[0]`. With an empty
 pool, `roll(0)` gives 1 and the draw reads the first element of an empty list;
 what the original reads there is not recorded. `previous_action_count` never
 counts an inactive gang, whose sector is 100.

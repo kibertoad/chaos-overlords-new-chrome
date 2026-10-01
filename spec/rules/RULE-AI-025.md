@@ -4,7 +4,7 @@ title: Family-6 computer gangs hunt sectors with visible hostile human gangs and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-029, FND-AI-013, FND-AI-015, FND-AI-033, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-068, FND-AI-069]
+evidence: [EXP-TURN-025, EXP-TURN-026, EXP-TURN-023, EXP-TURN-024, FND-AI-029, FND-AI-013, FND-AI-015, FND-AI-033, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-068, FND-AI-069]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -82,7 +82,7 @@ else:
     let kind = 0
     if w == 10 and hostile_owner(player, s):
         kind = 1
-    let t = draw_once(player, idx, kind)
+    let t = draw_once(player, idx, kind, idx % 81)
     let done = false
     if t != -1:
         plan(idx, ACTION_ATTACK, t / 81, t % 81)
