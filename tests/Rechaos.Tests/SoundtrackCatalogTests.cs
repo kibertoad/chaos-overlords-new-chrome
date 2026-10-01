@@ -32,6 +32,8 @@ public sealed class SoundtrackCatalogTests
     [Theory]
     [InlineData(ClientScreen.Title, OriginalSoundtrackMode.Title)]
     [InlineData(ClientScreen.Setup, OriginalSoundtrackMode.Title)]
+    [InlineData(ClientScreen.Online, OriginalSoundtrackMode.Title)]
+    [InlineData(ClientScreen.Lobby, OriginalSoundtrackMode.Title)]
     [InlineData(ClientScreen.City, OriginalSoundtrackMode.Gameplay)]
     [InlineData(ClientScreen.Handoff, OriginalSoundtrackMode.Gameplay)]
     [InlineData(ClientScreen.Endgame, OriginalSoundtrackMode.Endgame)]
@@ -79,8 +81,19 @@ public sealed class SoundtrackCatalogTests
     [InlineData(ClientScreen.Endgame, ClientScreen.Endgame, false)]
     [InlineData(ClientScreen.Title, ClientScreen.Setup, false)]
     [InlineData(ClientScreen.Setup, ClientScreen.Title, false)]
+    [InlineData(ClientScreen.Options, ClientScreen.Title, false)]
+    [InlineData(ClientScreen.Help, ClientScreen.Title, false)]
+    [InlineData(ClientScreen.City, ClientScreen.Title, true)]
+    [InlineData(ClientScreen.Endgame, ClientScreen.Title, true)]
+    [InlineData(ClientScreen.Elimination, ClientScreen.Title, true)]
     [InlineData(ClientScreen.City, ClientScreen.Gang, false)]
-    public void OriginalEndgameEntriesRestartEvenWhenTheirMusicModeIsAlreadySelected(
+    [InlineData(ClientScreen.Title, ClientScreen.Online, false)]
+    [InlineData(ClientScreen.Online, ClientScreen.Lobby, false)]
+    [InlineData(ClientScreen.Lobby, ClientScreen.Setup, false)]
+    [InlineData(ClientScreen.Setup, ClientScreen.Lobby, false)]
+    [InlineData(ClientScreen.Online, ClientScreen.Title, true)]
+    [InlineData(ClientScreen.Lobby, ClientScreen.Title, true)]
+    public void OriginalSelectorEntriesRestartEvenWhenTheirMusicModeIsAlreadySelected(
         ClientScreen previous, ClientScreen current, bool restart) =>
         Assert.Equal(restart, OriginalSoundtrackPolicy.RestartsOnEntry(previous, current));
 

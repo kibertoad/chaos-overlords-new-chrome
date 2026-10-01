@@ -45,15 +45,19 @@ public static class OriginalSoundtrackPolicy
     public static OriginalSoundtrackMode ModeFor(ClientScreen screen, bool eliminationMusicHeld = false) =>
         screen switch
         {
-            ClientScreen.Title or ClientScreen.Setup => OriginalSoundtrackMode.Title,
+            // RULE-AUDIO-001, FND-AUDIO-001: network preparation does not select game music.
+            ClientScreen.Title or ClientScreen.Setup or ClientScreen.Online or ClientScreen.Lobby
+                => OriginalSoundtrackMode.Title,
             ClientScreen.Endgame or ClientScreen.Elimination => OriginalSoundtrackMode.Endgame,
             _ => eliminationMusicHeld ? OriginalSoundtrackMode.Endgame : OriginalSoundtrackMode.Gameplay
         };
 
-    /// <summary>RULE-AUDIO-001, FND-AUDIO-001: each endgame presentation requests its program anew.</summary>
+    /// <summary>RULE-AUDIO-001, FND-AUDIO-001: endgame entries and returns from a match
+    /// to the title loop request their program anew; setup and modal screens do not.</summary>
     public static bool RestartsOnEntry(ClientScreen previous, ClientScreen current) =>
         previous != current && previous is not (ClientScreen.Options or ClientScreen.Help)
-        && current is ClientScreen.Endgame or ClientScreen.Elimination;
+        && (current is ClientScreen.Endgame or ClientScreen.Elimination
+            || current == ClientScreen.Title && previous != ClientScreen.Setup);
 
     public static float VolumeForLevel(int level)
     {
