@@ -4696,7 +4696,21 @@
         {"format":"FMT-STATE-001","record":411,"field":"blade","value":6},
         {"format":"FMT-STATE-001","record":411,"field":"ranged","value":-2},
         {"format":"FMT-STATE-001","record":411,"field":"fighting","value":0},
-        {"format":"FMT-STATE-001","record":411,"field":"martial_arts","value":0}
+        {"format":"FMT-STATE-001","record":411,"field":"martial_arts","value":0},
+        {"term":"last_turn_report_count","index":0,"value":0},
+        {"term":"last_turn_report_count","index":1,"value":0},
+        {"term":"last_turn_report_count","index":2,"value":0},
+        {"term":"last_turn_report_count","index":3,"value":1},
+        {"term":"last_turn_report_count","index":4,"value":0},
+        {"term":"last_turn_report_count","index":5,"value":1},
+        {"format":"FMT-STATE-006","record":96,"field":"report_type","value":2},
+        {"format":"FMT-STATE-006","record":96,"field":"arg1","value":39},
+        {"format":"FMT-STATE-006","record":96,"field":"arg2","value":-1},
+        {"format":"FMT-STATE-006","record":96,"field":"arg3","value":0},
+        {"format":"FMT-STATE-006","record":160,"field":"report_type","value":2},
+        {"format":"FMT-STATE-006","record":160,"field":"arg1","value":42},
+        {"format":"FMT-STATE-006","record":160,"field":"arg2","value":-1},
+        {"format":"FMT-STATE-006","record":160,"field":"arg3","value":0}
       ]
     }
   ]

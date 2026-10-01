@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Game;
 using Rechaos.Core.Persistence;
 using Xunit;
 
@@ -57,7 +58,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -244,6 +245,41 @@ public sealed class OriginalNewGameExperimentTests
                     Assert.Equal(
                         recorded.Gang(record, $"visible_to[{observer.Id.Value}]") != 0,
                         observer.Id == player.Id || match.CanPlayerDetectGang(observer.Id, gang.Id));
+            }
+        }
+
+        // RULE-EVENT-001, RULE-EVENT-002: each player's Last Turn reports of the last resolution, in
+        // the order they were recorded, as the FMT-STATE-006 records the original holds. The runs
+        // hold the reports of RULE-EVENT-003 (elimination), RULE-EVENT-004 (Crackdown),
+        // RULE-EVENT-006 (site), RULE-EVENT-007 (Research), RULE-EVENT-008 and RULE-EVENT-014
+        // (cash), RULE-EVENT-009 (Hire cash), RULE-EVENT-010 (full sector), RULE-EVENT-012 and
+        // RULE-EVENT-013 (Control).
+        if (recorded.HasTerm("last_turn_report_count", 0))
+        {
+            var eventsBySequence = new Dictionary<long, GameEvent>();
+            foreach (var gameEvent in match.Events) eventsBySequence[gameEvent.Sequence] = gameEvent;
+            foreach (var player in match.Players)
+            {
+                var slot = player.Id.Value;
+                var reports = LastTurnEventProjection.For(match, player.Id)
+                    .Select(notification => LastTurnEventPresentation.Record(match, notification,
+                        notification.RelatedEventSequence is { } sequence
+                            ? eventsBySequence.GetValueOrDefault(sequence)
+                            : null))
+                    .ToArray();
+                // DEV-AI-002: a computer player's Equip it cannot pay for gives no command in the
+                // rebuild, so the cash report the original records when it fails has no counterpart.
+                var expected = Enumerable.Range(0, recorded.Term("last_turn_report_count", slot))
+                    .Select(index => recorded.Report(slot, index))
+                    .Where(report => player.Setup.Controller == PlayerController.Human
+                        || report is not { Type: LastTurnReportRecord.CashShort, Arg1: LastTurnReportRecord.CashShortEquip })
+                    .ToArray();
+                Assert.True(expected.Length == reports.Length,
+                    $"player {slot}: the original holds {expected.Length} reports, the rebuild {reports.Length}: "
+                    + $"original [{string.Join("; ", expected)}], rebuild [{string.Join("; ", reports)}]");
+                for (var index = 0; index < expected.Length; index++)
+                    Assert.True(expected[index] == reports[index],
+                        $"player {slot} report {index}: the original holds {expected[index]}, the rebuild {reports[index]}");
             }
         }
 
@@ -484,6 +520,16 @@ public sealed class OriginalNewGameExperimentTests
         public int Sector(int sector, string field) => _fields[("FMT-STATE-002", sector, field)];
 
         public int Gang(int record, string field) => _fields[("FMT-STATE-001", record, field)];
+
+        public bool HasTerm(string term, int index) => _terms.ContainsKey((term, index));
+
+        /// <summary>FMT-STATE-006: report <paramref name="index"/> of a player's Last Turn reports.</summary>
+        public LastTurnReportRecord Report(int player, int index)
+        {
+            var record = player * 32 + index;
+            return new(_fields[("FMT-STATE-006", record, "report_type")], _fields[("FMT-STATE-006", record, "arg1")],
+                _fields[("FMT-STATE-006", record, "arg2")], _fields[("FMT-STATE-006", record, "arg3")]);
+        }
 
         public IReadOnlyList<int> GangRecords(int player) => _fields.Keys
             .Where(key => key.Item1 == "FMT-STATE-001" && key.Item3 == "player" && key.Item2 / 81 == player)
