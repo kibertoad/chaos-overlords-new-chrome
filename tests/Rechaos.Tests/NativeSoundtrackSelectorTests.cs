@@ -1,0 +1,99 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Media;
+using Rechaos.Game;
+using Xunit;
+
+namespace Rechaos.Tests;
+
+[Collection("Native soundtrack")]
+public sealed class NativeSoundtrackSelectorTests
+{
+    [Fact]
+    public void ModeChangeWaitsForFadeThenStopsAtZeroBeforeStartingRequestedProgram()
+    {
+        // RULE-AUDIO-001, RULE-AUDIO-003, FND-AUDIO-016: the selector holds
+        // its old mode during the zero-based fade, then stops and selects anew.
+        var uri = new Uri(Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg"));
+        using var title = Song.FromUri("selector-title", uri);
+        using var gameplay = Song.FromUri("selector-gameplay", uri);
+        using var player = new SoundtrackProgramPlayer([title, gameplay]);
+        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
+        GC.SuppressFinalize(game);
+        var screens = new ScreenRouter();
+        screens.Show(ClientScreen.City);
+        Set(game, "_screens", screens);
+        Set(game, "_soundtrack", new Dictionary<string, Song>
+        {
+            ["track02.ogg"] = title,
+            ["track03.ogg"] = gameplay
+        });
+        Set(game, "_soundtrackProgramPlayer", player);
+        Set(game, "_soundtrackMode", OriginalSoundtrackMode.Title);
+        Set(game, "_soundtrackEnabled", true);
+        Set(game, "_soundtrackFocus", new SoundtrackFocusState());
+        Set(game, "_soundtrackRestartPoll", new SoundtrackRestartPoll());
+        var active = SongCollection.Empty.Clone();
+        active.Add(title);
+        Set(game, "_activeSoundtrack", active);
+        float? stoppedVolume = null;
+        EventHandler<EventArgs> observeStop = (_, _) =>
+        {
+            if (MediaPlayer.State == MediaState.Stopped) stoppedVolume = MediaPlayer.Volume;
+        };
+        MediaPlayer.MediaStateChanged += observeStop;
+        try
+        {
+            MediaPlayer.IsRepeating = false;
+            MediaPlayer.IsShuffled = false;
+            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(5);
+            // Hold both native preparation locks so natural completion cannot
+            // turn this simulated game-clock comparison into a wall-clock race.
+            lock (PreparationLock(title))
+            lock (PreparationLock(gameplay))
+            {
+                player.PlayProgram([title]);
+                Tick(game, 0);
+                Assert.Equal(OriginalSoundtrackMode.Title, Field("_soundtrackMode").GetValue(game));
+                Assert.Same(title, MediaPlayer.Queue.ActiveSong);
+                Assert.NotNull(Field("_soundtrackFade").GetValue(game));
+                Assert.Equal(new SoundtrackFade(OriginalSoundtrackPolicy.VolumeForLevel(5), TimeSpan.Zero)
+                    .VolumeAt(TimeSpan.Zero), MediaPlayer.Volume);
+                Tick(game, 526);
+                Assert.Equal(OriginalSoundtrackMode.Title, Field("_soundtrackMode").GetValue(game));
+                Assert.Equal(MediaState.Playing, MediaPlayer.State);
+                Assert.Same(title, MediaPlayer.Queue.ActiveSong);
+                Assert.Null(stoppedVolume);
+                Tick(game, 527);
+                Assert.Equal(0f, stoppedVolume);
+                Assert.Null(Field("_soundtrackFade").GetValue(game));
+                Assert.Equal(OriginalSoundtrackMode.Gameplay, Field("_soundtrackMode").GetValue(game));
+                Assert.Same(gameplay, MediaPlayer.Queue.ActiveSong);
+                Assert.Equal(MediaState.Playing, MediaPlayer.State);
+                Assert.Equal(OriginalSoundtrackPolicy.VolumeForLevel(5), MediaPlayer.Volume);
+                Assert.False((bool)Field("_soundtrackFailed").GetValue(game)!);
+            }
+        }
+        finally
+        {
+            MediaPlayer.MediaStateChanged -= observeStop;
+            player.Dispose();
+        }
+    }
+
+    private static object PreparationLock(Song song)
+    {
+        var stream = typeof(Song).GetField("stream", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(song)!;
+        return stream.GetType().GetField("prepareMutex", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(stream)!;
+    }
+
+    private static void Tick(ChaosGame game, int milliseconds) => typeof(ChaosGame)
+        .GetMethod("UpdateSoundtrack", BindingFlags.Instance | BindingFlags.NonPublic)!
+        .Invoke(game, [new GameTime(TimeSpan.FromMilliseconds(milliseconds), TimeSpan.Zero)]);
+    private static void Set(ChaosGame game, string name, object value) => Field(name).SetValue(game, value);
+    private static FieldInfo Field(string name) => typeof(ChaosGame).GetField(name,
+        BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new MissingFieldException(name);
+}
