@@ -62,10 +62,14 @@ internal static class OriginalAiFamilyTenRules
         && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal
         && !hasVisibleOpponent;
 
+    /// <summary>
+    /// RULE-AI-028, FND-AI-071: the handler moves when the selected sector's selector 8 value,
+    /// <see cref="LastFinishedSiteStealth"/>, is strictly greater than the current sector's.
+    /// </summary>
     public static bool ShouldMoveToStealthierSector(
-        int currentCompletedStealth,
-        int selectedCompletedStealth) =>
-        currentCompletedStealth < selectedCompletedStealth;
+        int currentLastFinishedStealth,
+        int selectedLastFinishedStealth) =>
+        currentLastFinishedStealth < selectedLastFinishedStealth;
 
     public static GangAction SelectStationaryAction(int priorChaosCount)
     {

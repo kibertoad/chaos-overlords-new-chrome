@@ -24,12 +24,12 @@ Family 12's handler `0x004353A0` starts from the cached opponent weight of the
 current sector (selector `0xAF`).
 
 With no visible opponent it tries selector `0x61`'s weapon, selector `0x64`'s
-armor and selector `0x74`'s greatest-Chaos miscellaneous item, in that order.
-The weapon and armor must differ from the equipped item, have a cooldown at
-most 0, and cost at most the player's cash; a successful weapon or armor Equip
-writes a cooldown equal to the item's cost (not three times it). The
-miscellaneous item uses the same cash test and writes no cooldown. Then Heal
-when Force is below 10 and effective Heal is at least -3.
+armor and selector `0x74`'s greatest-Detect miscellaneous item (FND-AI-055), in
+that order. The weapon and armor must differ from the equipped item, have a
+cooldown at most 0, and cost at most the player's cash; a successful weapon or
+armor Equip writes a cooldown equal to the item's cost (not three times it).
+The miscellaneous item uses the same cash test and writes no cooldown. Then
+Heal when Force is below 10 and effective Heal is at least -3.
 
 Otherwise it writes Move (10) to the acting gang's planning record
 (`0x00435A46`) and gang record (`0x00435A60`), then calls the sector selector
