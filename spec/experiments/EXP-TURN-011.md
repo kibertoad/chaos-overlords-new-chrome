@@ -72,8 +72,10 @@ damage, which leaves the human's gang at Force 6 when the combat phase ends.
 The run agrees with RULE-ATTACK-001 and RULE-COMBAT-002 for an attack on a gang
 that is not hiding: the opening pool, the success threshold, the retaliation
 at half the target's hits, and damage taken off Force only at the end of the
-phase. The run does not test Damage Inflicted (RULE-COMBAT-003): the fixture
-records it, but this attack left it unchanged. It tests the
+phase. It tests the retaliation half of Damage Inflicted (RULE-COMBAT-003):
+player 4's gang dealt four damage striking back, and player 4's
+`damage_inflicted` ended the run at 0, as did every player's, so no
+retaliation was counted. It tests the
 attitude change (RULE-AI-016) only in part: player 4's attitude toward the
 human, -10 before the turn, rises to -9 at the start of the resolution
 (RULE-AI-015) and ends at -10, where EXP-TURN-010's run without the Attack

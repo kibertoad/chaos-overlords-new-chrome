@@ -312,10 +312,11 @@ public sealed class OriginalNewGameExperimentTests
                 foreach (var (term, value) in totals)
                 {
                     var original = recorded.Term(term, slot);
-                    if (term == "hire_role" && original == -1 && player.Setup.Controller == PlayerController.Human)
-                        original = 0;
-                    Assert.True(original == value,
-                        $"{term} of player {slot}: the original holds {recorded.Term(term, slot)}, the rebuild {value}");
+                    var expected = term == "hire_role" && original == -1 && player.Setup.Controller == PlayerController.Human
+                        ? 0
+                        : original;
+                    Assert.True(expected == value,
+                        $"{term} of player {slot}: the original holds {original}, the rebuild {value}");
                 }
             }
 

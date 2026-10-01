@@ -990,6 +990,7 @@ None.
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
+| [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | evidence |
 | [RULE-EVENT-013](../rules/RULE-EVENT-013.md) | evidence |
 
 ## EXP-TURN-012
@@ -6045,6 +6046,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-002](../bugs/BUG-AI-002.md) | related |
+| [EXP-TURN-017](../experiments/EXP-TURN-017.md) | body |
 | glossary: armor_stealth_upgrade | glossary |
 | glossary: armor_upgrade | glossary |
 | glossary: danger_near | glossary |
