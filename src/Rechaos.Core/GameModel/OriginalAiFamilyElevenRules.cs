@@ -1,7 +1,7 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Action gates recovered from family 11 at 0x00420950.
+/// Action gates recovered from family 11 at 0x00420950 (FND-AI-024).
 /// </summary>
 internal static class OriginalAiFamilyElevenRules
 {

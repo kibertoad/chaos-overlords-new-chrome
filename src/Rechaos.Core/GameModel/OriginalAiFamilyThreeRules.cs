@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Cash-site Influence decisions recovered from original AI family 3 at
-/// 0x00435bd0. Outer target enumeration remains in <see cref="AiTurnPlanner"/>.
+/// 0x00435BD0 (FND-AI-033). Outer target enumeration remains in <see cref="AiTurnPlanner"/>.
 /// </summary>
 internal static class OriginalAiFamilyThreeRules
 {

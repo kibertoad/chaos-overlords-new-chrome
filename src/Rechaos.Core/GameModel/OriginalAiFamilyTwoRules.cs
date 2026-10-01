@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Aggressive territorial decisions recovered from original AI family 2 at
-/// 0x0041fef0.
+/// 0x0041FEF0 (FND-AI-032).
 /// </summary>
 internal static class OriginalAiFamilyTwoRules
 {

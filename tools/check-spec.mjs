@@ -1059,6 +1059,56 @@ function walk(dir, fn) {
   }
 }
 
+// Addresses in code comments: an executable address that a C# comment gives must be recorded in
+// an entry the comment cites, or in an entry that one of those cites. A comment block is a run
+// of consecutive comment lines; the address may appear in an entry's locations or its text,
+// singly or inside a range.
+{
+  const ADDRESS_RE = /\b0x00[4-9A-Fa-f][0-9A-Fa-f]{5}\b/g;
+  const RANGE_RE = /\b(0x[0-9A-Fa-f]{8})(?:\.\.(0x[0-9A-Fa-f]{8}))?\b/g;
+  const recorded = new Map(); // entry ID -> [low, high] ranges
+  const rangesOf = (id) => {
+    if (recorded.has(id)) return recorded.get(id);
+    const e = entries.get(id);
+    const ranges = [];
+    if (e) {
+      const text = [e.body, ...asList(e.meta.locations).map((loc) => String(loc?.address ?? ""))].join("\n");
+      for (const [, low, high] of text.matchAll(RANGE_RE)) ranges.push([parseInt(low, 16), parseInt(high ?? low, 16)]);
+    }
+    recorded.set(id, ranges);
+    return ranges;
+  };
+  const reach = (ids) => {
+    const all = new Set(ids);
+    for (const id of ids) {
+      const e = entries.get(id);
+      if (e) for (const x of idsIn(e.body + "\n" + CLAIM_LINKS.flatMap((k) => asList(e.meta[k])).join(" "))) all.add(x);
+    }
+    return [...all];
+  };
+  for (const { file, text } of codeFiles()) {
+    if (!file.endsWith(".cs")) continue;
+    const lines = text.replace(/\r\n/g, "\n").split("\n");
+    const isComment = (line) => /^\s*\/\//.test(line);
+    for (let i = 0; i < lines.length; i++) {
+      const at = lines[i].indexOf("//");
+      if (at < 0) continue;
+      const addresses = lines[i].slice(at).match(ADDRESS_RE);
+      if (!addresses) continue;
+      let first = i, last = i;
+      while (first > 0 && isComment(lines[first - 1])) first--;
+      while (last < lines.length - 1 && isComment(lines[last + 1])) last++;
+      const cited = idsIn(lines.slice(first, last + 1).join("\n")).filter((x) => entries.has(x));
+      const scope = reach(cited);
+      for (const address of new Set(addresses)) {
+        const value = parseInt(address, 16);
+        if (scope.some((x) => rangesOf(x).some(([low, high]) => value >= low && value <= high))) continue;
+        problem(file, `line ${i + 1} gives ${address} as evidence, but ${cited.length ? `neither ${cited.join(", ")} nor an entry they cite records it` : "the comment cites no entry that records it"}; cite the finding that records it, or record it in a new one`);
+      }
+    }
+  }
+}
+
 // IDs and areas that exist on the base branch must not disappear
 {
   // Without --base, compare with the point this branch left the base branch (the pull request's

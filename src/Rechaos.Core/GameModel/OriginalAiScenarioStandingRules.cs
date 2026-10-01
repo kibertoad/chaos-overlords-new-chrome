@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Scenario scores and zero-based competition standings updated by the original
-/// routine at 0x0047712a before AI planning and end-turn evaluation.
+/// routine at 0x0047712A (FND-AI-005) before AI planning and end-turn evaluation.
 /// </summary>
 internal static class OriginalAiScenarioStandingRules
 {

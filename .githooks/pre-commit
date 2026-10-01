@@ -1,0 +1,14 @@
+#!/bin/sh
+# Runs the spec and document checks of the fast gate (tools/Invoke-Validation.ps1) before a commit,
+# so a spec problem fails here instead of in CI. Enable once per clone with:
+#   git config core.hooksPath .githooks
+# The checks read the working tree, not only what is staged.
+set -e
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit: node is not on the path, so the spec checks were skipped; CI runs them." >&2
+  exit 0
+fi
+root=$(git rev-parse --show-toplevel)
+node "$root/tools/check-spec.mjs" --check --no-ksy
+node "$root/tools/spec-coverage.mjs" --check
+node "$root/tools/update-doc-indexes.mjs" --check
