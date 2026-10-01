@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-030
-title: Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed
+title: Family-12 computer gangs equip and heal when unopposed, step toward their player's first gang, and attack when opposed
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-038, FND-AI-033, FND-AI-069, FND-AI-040, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-042]
+evidence: [EXP-TURN-013, FND-AI-070, FND-AI-033, FND-AI-069, FND-AI-040, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-042]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -14,7 +14,8 @@ related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FM
 
 Family 12 is an Eliminate skirmisher (scenario 7). With no other gang in sight
 a family-12 gang buys a weapon, armor or a Detect item, heals when hurt, and
-otherwise takes one step toward a sector drawn at random from the whole map.
+otherwise takes one step toward the sector of its player's first gang, in
+roster slot 0, which in Eliminate is the Right Hands.
 With a gang in sight it attacks after up to five draws. In Greed, during the
 last three turns, it terminates instead.
 
@@ -56,7 +57,9 @@ if w == 0:
     else if g.force < 10 and g.heal >= -3:
         plan(idx, ACTION_HEAL, 0, 0)
     else:
-        plan(idx, ACTION_MOVE, select_sector(player, s + 0x40, idx), 0)
+        # selector 0x5A for roster slot 0, not for this gang [FND-AI-070]
+        let first = gangs[player * 81].sector
+        plan(idx, ACTION_MOVE, select_sector(player, first + 0x40, idx), 0)
 else:
     let kind = 0
     if w == 10 and hostile_human_owner(player, s):
@@ -74,13 +77,17 @@ No return value. Writes the gang's planned action and targets through `plan`
 (Equip targets the item, Attack the drawn gang's player and roster slot, Move
 the sector `select_sector` returns). A weapon or armor Equip sets the matching
 cooldown to the item's cost. Draws up to five `roll`s in the attack loop, or
-the draws inside `select_sector` for the random step.
+the draws inside `select_sector` for the step toward the first gang.
 
 ## Edge cases
 
-The Move passes the current sector as an encoded mode; the selector then
-zeroes the current sector's score, all 64 sectors tie at 0, and `roll(64)`
-picks the sector to step toward (RULE-AI-006). In a sector owned by a hostile
+The Move passes the sector of the gang in roster slot 0 as an encoded mode,
+so the selector scores only that sector and steps toward it (RULE-AI-006). A
+gang standing in that sector, the first gang itself included, has its score
+removed with the source sector's; every pair then ties at 0, the tie count
+runs on past the pair list, and the draw picks the sector to step toward
+(RULE-AI-006). When roster slot 0 is empty its sector byte is 100, and the
+mode is the guard end marker `0x40 + 100`. In a sector owned by a hostile
 human where every visible gang belongs to a computer player, the human-only
 pool is empty and `roll(0)` gives 1 (RULE-AI-004). The attack loop attacks the
 last drawn target even when all five strength tests failed, and the strength
@@ -97,6 +104,6 @@ None known.
 ## Open questions
 
 - What the original reads for the empty human-only pool is not recorded
-  (FND-AI-038).
+  (FND-AI-070).
 - That "no visible opponent" is a cached weight of 0 is taken from the
   handler's use of that weight (selector `0xAF`).

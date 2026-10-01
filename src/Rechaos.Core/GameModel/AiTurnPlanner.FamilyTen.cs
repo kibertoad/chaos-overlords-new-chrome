@@ -48,8 +48,8 @@ public static partial class AiTurnPlanner
         var selected = SelectFamilyTenStealthSector(
             state, playerId, gang, snapshot);
         if (OriginalAiFamilyTenRules.ShouldMoveToStealthierSector(
-                OriginalAiFamilyTenRules.CompletedStealthScore(state, gang.SectorId),
-                OriginalAiFamilyTenRules.CompletedStealthScore(state, selected)))
+                OriginalAiFamilyTenRules.LastFinishedSiteStealth(state, gang.SectorId),
+                OriginalAiFamilyTenRules.LastFinishedSiteStealth(state, selected)))
         {
             var target = SelectFamilyTenStealthSector(
                 state, playerId, gang, snapshot);

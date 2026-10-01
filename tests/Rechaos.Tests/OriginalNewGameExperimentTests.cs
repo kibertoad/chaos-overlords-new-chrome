@@ -8,39 +8,45 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-011 go on to press Done for one
-/// to twenty-five turns, EXP-TURN-009 to EXP-TURN-011 with orders for the human's gang, and stop at
-/// the next planning phase. Each run gives the seed, every roll(n) with its call site and result, and the state the recording stops at. The rebuild
-/// plays the same match from the same seed and settings and has to make the same rolls in the same
-/// order and reach the same generator position and state. The turns check the turn order
-/// (RULE-TURN-001), the computer players' planning passes, sector choices and hire choices
-/// (RULE-AI-001, RULE-AI-006, RULE-AI-008, RULE-AI-009, RULE-AI-010) and the hire resolution
-/// (RULE-HIRE-001). The computer players' orders take the resolution through its fixed order of
-/// steps (RULE-TURN-002): the instant phase with Heal, Influence and Research (RULE-TURN-003,
-/// RULE-HEAL-001, RULE-INFLUENCE-001, RULE-RESEARCH-001), Equip in the transaction pass
-/// (RULE-EQUIP-001, RULE-EQUIP-002, RULE-EQUIP-003), Move (RULE-MOVE-001), Control
-/// (RULE-CONTROL-001), Chaos and its payout (RULE-CHAOS-001, RULE-CHAOS-002) and upkeep
-/// (RULE-UPKEEP-001). EXP-TURN-009 also gives the human's gang orders: Snitch, Bribe and Hide
-/// (RULE-SNITCH-001, RULE-BRIBE-001, RULE-HIDE-001) and a recurring Chaos (RULE-TURN-004), which
-/// bring on a Crackdown. EXP-TURN-011 has the human's gang attack a computer player's gang, which
-/// strikes back (RULE-ATTACK-001), with the damage taken off Force at the end of the combat phase
-/// (RULE-COMBAT-002). Every EXP-TURN run compares each gang's Combat with its weapon skills
-/// (RULE-COMBAT-001), each sector's base Tolerance after its return toward normal
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-016 go on to press Done for one
+/// to twenty-five turns, EXP-TURN-009 to EXP-TURN-016 with orders for the human's gang, and stop at
+/// the next planning phase. Each run gives the seed, every roll(n) with its call site and result, and
+/// the state the recording stops at. The rebuild plays the same match from the same seed and
+/// settings and has to make the same rolls in the same order and reach the same generator position
+/// and state. The turns check the turn order (RULE-TURN-001), the computer players' planning passes,
+/// family dispatch, sector choices, hire choices and hire placement (RULE-AI-001, RULE-AI-002,
+/// RULE-AI-006, RULE-AI-008, RULE-AI-009, RULE-AI-010, RULE-AI-013) and the hire resolution
+/// (RULE-HIRE-001). EXP-TURN-012 to EXP-TURN-014 play Siege, Eliminate and Big Man, whose computer
+/// gangs take families 10 to 14 (RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031). The computer
+/// players' orders take the resolution through its fixed order of steps (RULE-TURN-002): the instant
+/// phase with Heal, Influence and Research (RULE-TURN-003, RULE-HEAL-001, RULE-INFLUENCE-001,
+/// RULE-RESEARCH-001), Equip in the transaction pass (RULE-EQUIP-001, RULE-EQUIP-002,
+/// RULE-EQUIP-003), Move (RULE-MOVE-001), Control (RULE-CONTROL-001), Chaos and its payout
+/// (RULE-CHAOS-001, RULE-CHAOS-002) and upkeep (RULE-UPKEEP-001). EXP-TURN-009 also gives the human's
+/// gang orders: Snitch, Bribe and Hide (RULE-SNITCH-001, RULE-BRIBE-001, RULE-HIDE-001) and a
+/// recurring Chaos (RULE-TURN-004), which bring on a Crackdown. EXP-TURN-011 has the human's gang
+/// attack a computer player's gang, which strikes back (RULE-ATTACK-001), with the damage taken off
+/// Force at the end of the combat phase (RULE-COMBAT-002). Every run compares each gang's Combat with
+/// its weapon skills (RULE-COMBAT-001), each sector's base Tolerance after its return toward normal
 /// (RULE-TOLERANCE-001) and every attitude after its rise, or at Homicidal Maniac in EXP-TURN-008
 /// without one (RULE-AI-015). EXP-TURN-010's first run brings police attacks and a Crackdown that
-/// neutralizes a sector (RULE-POLICE-001, RULE-POLICE-002, RULE-POLICE-003). No recorded run has a
-/// Give, a Sell or a Terminate yet.
+/// neutralizes a sector (RULE-POLICE-001, RULE-POLICE-002, RULE-POLICE-003). EXP-TURN-016 has the
+/// human's gang buy three items and sell them in one order (RULE-SELL-001). No recorded run has a
+/// Give or a Terminate yet.
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
 
-    // Runs the rebuild does not yet replay, with the first roll that differs. None at present.
+    // Runs the rebuild does not replay, with the first roll that differs.
     private static readonly Dictionary<(string Experiment, int Run), int> KnownDivergences = new()
     {
+        // DEV-AI-007: in turn 5 player 5's gang in sector 9 is given Move to sector 5, which the
+        // original carries out and the rebuild refuses; player 5's next tie count differs.
+        [("EXP-TURN-015", 0)] = 950,
     };
 
     public static TheoryData<string, int> MatchingRuns()
@@ -266,17 +272,24 @@ public sealed class OriginalNewGameExperimentTests
     {
         var gang = match.Players[human.Value].Gangs[order.Slot];
         var action = (GangAction)order.Action;
-        var target = action switch
+        var command = action switch
         {
-            GangAction.Move => CommandTarget.Sector(order.Target),
-            GangAction.Research or GangAction.Equip => CommandTarget.Item(order.Target),
-            // target_2 of an Attack is the target's roster slot, as the acting gang's slot is.
-            GangAction.Attack => CommandTarget.Gang(match.Players[order.Target].Gangs[order.Target2].Id),
+            GangAction.Move => new GameCommand(human, gang.Id, action, CommandTarget.Sector(order.Target), order.Repeat),
+            GangAction.Research or GangAction.Equip =>
+                new GameCommand(human, gang.Id, action, CommandTarget.Item(order.Target), order.Repeat),
+            // target_2 of an Attack is the target's roster slot (FMT-STATE-001), the index of its
+            // player's gang list.
+            GangAction.Attack => new GameCommand(human, gang.Id, action,
+                CommandTarget.Gang(match.Players[order.Target].Gangs[order.Target2].Id), order.Repeat),
+            // target of a Sell is the item mask, weapon 1, armor 2 and misc 4 (FMT-STATE-001); the
+            // rebuild takes the items in that slot order (RULE-SELL-001).
+            GangAction.Sell => SellCommand(human, gang, order.Target, order.Repeat),
             GangAction.Bribe or GangAction.Chaos or GangAction.Control or GangAction.Heal
-                or GangAction.Hide or GangAction.Snitch or GangAction.Terminate => CommandTarget.None,
+                or GangAction.Hide or GangAction.Snitch or GangAction.Terminate =>
+                new GameCommand(human, gang.Id, action, CommandTarget.None, order.Repeat),
             _ => throw new NotSupportedException($"No recorded order of action {action} is replayed yet."),
         };
-        var result = recorder.Submit(new GameCommand(human, gang.Id, action, target, order.Repeat));
+        var result = recorder.Submit(command);
         Assert.True(result.Accepted, $"turn {order.Turn}: the rebuild refused {action}: {result}");
     }
 
@@ -327,6 +340,21 @@ public sealed class OriginalNewGameExperimentTests
         7 => ScenarioId.Eliminate,
         _ => (ScenarioId)value,
     };
+
+    private static GameCommand SellCommand(PlayerId human, MatchGangState gang, int mask, bool repeat)
+    {
+        short?[] slots = [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
+        var items = Enumerable.Range(0, slots.Length)
+            .Where(slot => (mask & (1 << slot)) != 0)
+            .Select(slot => CommandTarget.Item(slots[slot] ?? throw new InvalidOperationException(
+                $"The Sell mask {mask} selects an empty slot.")))
+            .ToArray();
+        if (items.Length == 0)
+            throw new InvalidOperationException($"The Sell mask {mask} selects no slot.");
+        // The repeat flag goes through as recorded, so the rebuild's validation judges it.
+        return new GameCommand(human, gang.Id, GangAction.Sell, items[0], repeat,
+            items.ElementAtOrDefault(1), items.ElementAtOrDefault(2));
+    }
 
     private static RecordedRun Run(string experiment, int run) => Recorded.Value[experiment][run];
 

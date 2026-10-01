@@ -58,7 +58,7 @@ slot again.
 
 Whether "cost strictly less than cash" in selector `0x64` is `<` or `<=` was
 read from the instructions as strict; other handlers use an inclusive cash
-test on the same selector's result (FND-AI-038). Whether the cooldown is set
+test on the same selector's result (FND-AI-070). Whether the cooldown is set
 when the Equip is planned or when it resolves is read as at planning.
 
 ## How to reproduce

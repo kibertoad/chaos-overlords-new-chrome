@@ -260,6 +260,27 @@ public sealed class AiStrategicStateTests
         ],
         difficulty);
 
+    // DEV-AI-007: the original carries out a computer player's Move to a sector several steps away
+    // (RULE-MOVE-001, EXP-TURN-015); the rebuild holds every seat's Move to the neighbours.
+    [Theory]
+    [InlineData(PlayerController.Computer)]
+    [InlineData(PlayerController.Human)]
+    public void NoSeatMovesBeyondTheNeighbours(PlayerController controller)
+    {
+        var match = CreateOnePlayerMatch(controller);
+        var player = new PlayerId(0);
+        match.FinishUpkeep();
+        var gang = match.Players[0].Gangs[0];
+        var column = gang.SectorId % MatchLimits.BoardWidth;
+        var distant = gang.SectorId - column + (column < 4 ? column + 2 : column - 2);
+
+        var validation = CommandValidator.Validate(
+            match, new GameCommand(player, gang.Id, GangAction.Move, CommandTarget.Sector(distant)));
+
+        Assert.False(validation.IsValid);
+        Assert.Equal(CommandValidationCode.DestinationNotAdjacent, validation.Code);
+    }
+
     private static MatchState CreateOnePlayerMatch(
         PlayerController controller = PlayerController.Computer,
         AiDifficulty difficulty = AiDifficulty.Criminal)
