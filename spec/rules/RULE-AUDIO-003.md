@@ -4,7 +4,7 @@ title: Applying the music and effects levels
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-001, FND-AUDIO-002, FND-AUDIO-007, FND-OPTIONS-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-AUDIO-001, FND-AUDIO-002, FND-AUDIO-007, FND-OPTIONS-001, FND-EXE-004, SRC-MANUAL-GOG, SRC-MCI-STOP]
 conflicting: []
 split_with: []
 related: []
@@ -68,6 +68,9 @@ RULE-AUDIO-002 does that once music is enabled.
   38399 on the right, and level 10 gives 64000 and 63999, because the
   sign-extended channel borrows one from the high half.
 - The initialized levels are 6 for effects and 5 for music (RULE-OPTIONS-001).
+- The stop helper sends MCI_STOP only while the device is playing. It resets
+  position within the current track to zero (FND-AUDIO-007, SRC-MCI-STOP); a
+  paused device retains its paused position.
 - The music is stopped with a fade of 32 steps of 17 ms when the CD device
   supports a volume, and at once otherwise.
 - The effects volume goes to the auxiliary device the sound setup finds by the
