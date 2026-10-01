@@ -4,7 +4,7 @@ title: Applying the music and effects levels
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-001, FND-AUDIO-002, FND-AUDIO-007, FND-OPTIONS-001, FND-EXE-004, SRC-MANUAL-GOG, SRC-MCI-STOP]
+evidence: [FND-AUDIO-016, FND-AUDIO-001, FND-AUDIO-002, FND-AUDIO-007, FND-OPTIONS-001, FND-EXE-004, SRC-MANUAL-GOG, SRC-MCI-STOP]
 conflicting: []
 split_with: []
 related: []
@@ -71,13 +71,12 @@ RULE-AUDIO-002 does that once music is enabled.
 - The stop helper sends MCI_STOP only while the device is playing. It resets
   position within the current track to zero (FND-AUDIO-007, SRC-MCI-STOP); a
   paused device retains its paused position.
-- The music is stopped with a fade of 32 steps of 17 ms when the CD device
-  supports a volume, and at once otherwise.
+- The music is stopped with 32 attenuation writes and zero-based wait deadlines
+  from 0 through 527 ms when the CD device supports a volume, and at once otherwise.
 - The fade captures the initial volume, writes zero before stopping, and
-  restores the captured value afterward. A nonzero level chosen by a message
-  during the fade is applied immediately; later fade steps and the final
-  restore can overwrite it. The chosen menu level does not replace the
-  captured volume (FND-AUDIO-007).
+  restores the captured value afterward. The fade dispatches window messages
+  without running the game event handler, so level commands consumed during
+  it do not change the chosen level or apply a new volume (FND-AUDIO-016).
 - The effects volume goes to the auxiliary device the sound setup finds by the
   technology value `0x20`, which no Windows device reports, so it goes to
   device 0 on most machines; the music volume goes to the CD audio device

@@ -439,6 +439,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _inputTime = gameTime.TotalGameTime;
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
+        // FND-AUDIO-016: the fade pumps window messages without game events.
+        var soundtrackUpdated = _soundtrackFade is not null;
+        if (soundtrackUpdated)
+        {
+            UpdateSoundtrack(gameTime);
+            if (_soundtrackFade is not null)
+            {
+                EndUpdate(gameTime, keyboard, mouse);
+                return;
+            }
+        }
         _multiSelectModifier = keyboard.IsKeyDown(Keys.LeftControl)
             || keyboard.IsKeyDown(Keys.RightControl);
         if (Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
@@ -450,7 +461,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             EndUpdate(gameTime, keyboard, mouse);
             return;
         }
-        UpdateSoundtrack(gameTime);
+        if (!soundtrackUpdated) UpdateSoundtrack(gameTime);
+        if (_soundtrackFade is not null)
+        {
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
+        }
         UpdateComlinkAlert(gameTime.TotalGameTime);
         UpdateComlinkCaret(gameTime.TotalGameTime);
         PumpBugReportSend();
