@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-023
 title: Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-072, FND-AI-049, FND-AI-046, FND-AI-048, FND-AI-033, FND-AI-021, FND-AI-002, FND-AI-041, FND-AI-044, FND-EXE-004]
+evidence: [FND-AI-072, FND-AI-049, FND-AI-046, FND-AI-048, FND-AI-033, FND-AI-021, FND-AI-002, FND-AI-041, FND-AI-044, FND-EXE-004, EXP-TURN-040]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
