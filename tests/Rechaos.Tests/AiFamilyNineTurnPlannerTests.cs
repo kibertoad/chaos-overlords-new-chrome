@@ -58,7 +58,7 @@ public sealed class AiFamilyNineTurnPlannerTests
         BeginFamilyNineTurn(match, player);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Move, command.Action);
@@ -76,7 +76,7 @@ public sealed class AiFamilyNineTurnPlannerTests
         BeginFamilyNineTurn(match, player);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(GangAction.Control,
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
@@ -102,7 +102,7 @@ public sealed class AiFamilyNineTurnPlannerTests
             attacker.Force, attackerStats.Combat, attackerStats.Defense,
             target.Force, targetStats.Combat, targetStats.Defense));
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(GangAction.Attack, command.Action);

@@ -73,9 +73,13 @@ public static partial class AiTurnPlanner
                     || state.AiPlanning.PreviousAction(player.Id, entry.slot) != original.Action))
                 continue;
 
+            // Command validation lets a computer player's Move into a full sector through for the
+            // Move repair (DEV-MOVE-001); the expansion does not trade a useful order for one.
             var move = CommandOptionCatalog.LegalCommands(state, player.Id, gang.Id, targets)
                 .Where(command => command.Action == GangAction.Move
-                    && state.Sectors[command.Target.Id].Owner != player.Id)
+                    && state.Sectors[command.Target.Id].Owner != player.Id
+                    && player.Gangs.Count(candidate => candidate.IsActive
+                        && candidate.SectorId == command.Target.Id) < MatchLimits.FriendlyGangsPerSector)
                 .OrderByDescending(command => DestinationValue(
                     state, player.Id, command.Target.Id, state.Setup.Scenario))
                 .ThenBy(command => command.Target.Id)
@@ -87,10 +91,11 @@ public static partial class AiTurnPlanner
     }
 
     // Repeated Chaos, which families 0 and 4 hold an owned sector with (RULE-AI-019, RULE-AI-023),
-    // is left out: it earns, and sending those gangs out as well leaves more gang-turns idle than
-    // the expansion wins (AdvancedAiPlaytestTests.ExpertExpansionImprovesSameSeedPowerCampaignSample).
+    // counts as passive: a defended sector keeps earning from the gangs left in it, and sending the
+    // strong ones out wins more territory than it costs
+    // (AdvancedAiPlaytestTests.ExpertExpansionImprovesSameSeedPowerCampaignSample).
     private static bool IsPassiveExpansionAction(GangAction action) =>
-        action is GangAction.Hide or GangAction.Snitch or GangAction.Bribe;
+        action is GangAction.Hide or GangAction.Snitch or GangAction.Bribe or GangAction.Chaos;
 
     private static bool CanReleaseDefender(
         MatchState state,
@@ -123,19 +128,38 @@ public static partial class AiTurnPlanner
             && state.CanPlayerDetectGang(player, target.Id),
         GangAction.Heal => gang.Force < ManualRules.MaximumForce,
         GangAction.Control => state.Sectors[gang.SectorId].Owner != player,
+        GangAction.Chaos => state.Sectors[gang.SectorId].Owner == player,
         _ => false
     };
 
     private static int AdvancedActionPriority(GangAction action) => action switch
     {
-        GangAction.Heal => 0,
-        GangAction.Attack => 1,
-        GangAction.Control => 2,
-        _ => 3
+        GangAction.Control => 0,
+        GangAction.Chaos => 1,
+        GangAction.Attack => 2,
+        GangAction.Heal => 3,
+        _ => 4
     };
 
     private static int AdvancedTargetPriority(MatchState state, GameCommand command) =>
         command.Action == GangAction.Attack
             ? state.FindGang(new GangId(command.Target.Id))?.Force ?? int.MaxValue
             : command.Target.Id;
+
+    /// <summary>
+    /// The Advanced policy's ranking of a Move destination: an unowned sector, a Siege or Big Man
+    /// objective and income weigh in. The weights are the rebuild's own (DEV-AI-003).
+    /// </summary>
+    internal static int DestinationValue(
+        MatchState state,
+        PlayerId player,
+        int sectorId,
+        ScenarioId scenario)
+    {
+        var sector = state.Sectors[sectorId];
+        var value = sector.Owner == player ? 0 : 100;
+        if (scenario == ScenarioId.Siege && sector.IsImportant) value += 300;
+        if (scenario == ScenarioId.BigMan && sectorId is 27 or 28 or 35 or 36) value += 300;
+        return value + sector.Income * 10;
+    }
 }

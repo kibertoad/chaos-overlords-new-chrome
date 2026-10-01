@@ -24,11 +24,17 @@ public static partial class AiTurnPlanner
                 .ToArray());
     }
 
+    /// <summary>
+    /// RULE-AI-002: dispatches every active gang of the player to its family handler, on the
+    /// sector weights its pass cached (RULE-AI-003).
+    /// </summary>
     internal static void PrepareRecoveredFamilyCommands(
         MatchState state,
-        PlayerId playerId)
+        CachedSectorWeights weights)
     {
         ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(weights);
+        var playerId = weights.Player;
         var player = state.FindPlayer(playerId)
             ?? throw new ArgumentOutOfRangeException(nameof(playerId));
         var snapshot = FamilyPlanningSnapshot.Capture(state, player);
@@ -101,6 +107,7 @@ public static partial class AiTurnPlanner
                     break;
             }
         }
+        state.MarkAiPlanningPrepared(playerId);
     }
 
     private static void PrepareFamilyOneCommand(
@@ -166,7 +173,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, player.Id, gang.SectorId);
-        var visibleWeight = FirstVisibleOpponentWeight(state, player.Id, visible);
+        var visibleWeight = state.AiPlanning.SectorWeight(player.Id, gang.SectorId);
         if (visibleWeight == 10)
         {
             var draw = DrawHumanWeightedAttackTarget(
@@ -216,10 +223,7 @@ public static partial class AiTurnPlanner
             canSoloControl: sectorId => CanSoloControl(state, player.Id, gang, sectorId),
             hasPriorChaos: sectorId =>
                 CountPreviousChaosInSector(state, player.Id, sectorId) > 0,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(player.Id, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
-            state.Random);
+            ownerTests: SelectorOwnerTests(state, player.Id),
+            state.Random, planning: state.AiPlanning);
     }
 }

@@ -33,6 +33,19 @@ public static partial class AiTurnPlanner
         state.AiStrategy.IsHostileToOwnerQuery(playerId, OwnerQuery(state, sectorId));
 
     /// <summary>
+    /// RULE-AI-006, FND-AI-069: the sector selector's common block multiplies when the attitude
+    /// toward the owner query is negative (with FND-AI-048's out-of-row reads) and selector 0x35
+    /// reads the sector's owner as human, a neutral sector included.
+    /// </summary>
+    internal static bool MultipliesSelectorScore(MatchState state, PlayerId playerId, int sectorId) =>
+        IsHostileOwner(state, playerId, sectorId) && OwnerIsHuman(state, sectorId);
+
+    /// <summary>RULE-AI-004, RULE-AI-006: the selector's owner tests, read from live state.</summary>
+    internal static SectorOwnerTests SelectorOwnerTests(MatchState state, PlayerId playerId) => new(
+        sectorId => OwnerIsHuman(state, sectorId),
+        sectorId => MultipliesSelectorScore(state, playerId, sectorId));
+
+    /// <summary>
     /// FND-AI-046: selector 0x5B counts the player's active gangs in the sector whose previous
     /// action was Chaos, the planning gang included. Callers compare the count with the threshold
     /// the FND-AI-046 table gives for their call site (0, below 1 or below 2).
@@ -85,15 +98,6 @@ public static partial class AiTurnPlanner
         visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
                 .Setup.Controller == PlayerController.Human)
             .ToArray();
-
-    /// <summary>Weight of the first visible opponent's owner, or 0 when nobody is visible.</summary>
-    private static int FirstVisibleOpponentWeight(
-        MatchState state,
-        PlayerId playerId,
-        IReadOnlyList<ObjectiveTarget> visible) =>
-        visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
 
     /// <summary>The family 0 and family 4 draw: human-weighted pool, family 12 acceptance test.</summary>
     private static RecoveredAttackDraw DrawHumanWeightedAttackTarget(
@@ -150,7 +154,7 @@ public static partial class AiTurnPlanner
     private static void TerminateForGreed(MatchState state, PlayerId playerId, int gangSlot)
     {
         var turnsRemaining = Math.Max(0,
-            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
+            ScenarioCatalog.TurnLimit(state.Setup.Scenario, state.Setup.Duration) - (state.Coordinator.Turn - 1));
         if (!OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
                 state.Setup.Scenario, turnsRemaining))
             return;

@@ -41,32 +41,19 @@ Closes RULE-AI-001, RULE-AI-002, RULE-AI-005, RULE-AI-006, RULE-AI-010, RULE-AI-
 RULE-AI-019 to RULE-AI-031. Comes after steps 2 to 7 because the handlers read the rules those
 steps change.
 
-- Hunter hires (open claim on RULE-AI-010, 2026-09-26): in 2,688 simulated four-year matches
-  with a simulated human, no computer player of the rebuild hired role 4 in any scenario, and the
-  hunter force reached its guard only in Armageddon. Find out why and whether the original does
-  the same:
-  - compare the rebuild's first hostile sector with `first_hostile` of RULE-AI-010, which reads
-    `sector_weight` 10 from `visible_weight` in RULE-AI-004: the rebuild takes any sector with
-    any detectable gang of any hostile player, human or computer, where the spec takes the first
-    visible gang only and counts it only for a hostile human;
-  - check the family counts the hunter test and the later adjustments read (family 0 or 4,
-    3, 5, 6 or 12, 7) against the spec, since a later adjustment that always fires would explain
-    the missing hunters, and the scheduled hunter slot of each scenario, which is flattened in
-    the same way;
+- Hunter hires (RULE-AI-010): the first hostile sector, the equipment danger test, family 6's
+  guard targets and the handlers read the sector weights the planning pass caches before its
+  hostility step (RULE-AI-003), and the family counts the hire reads match the spec. In 60
+  simulated four-year matches with a simulated human at seat 0, computer players hired 853
+  hunters out of 23,722 hires. Still open:
   - settle with the original: the BUG-AI-001 item of manual_validation_plan.md records whether
-    its computer players hire family-6 gangs at all.
-  Run the paired simulations of the 2026-09-26 decision again after the fix, with the harness
-  kept this time, to see whether the hunter guard then matters.
+    its computer players hire family-6 gangs at all;
+  - run the paired simulations of the 2026-09-26 decision again, with the harness kept this
+    time, to see whether the hunter guard now matters.
 Both AI policies are affected; DEV-AI-003's Advanced AI keeps the original planner's commands.
 
 Tooltips: the Game Information panel's AI policy label and any hover text that describes how
 computer players choose orders.
-
-## Step 9: Remaining rule details
-
-- RULE-POLICE-002's edge case says a count of 103 to 105 then counts down, while RULE-POLICE-003's
-  procedure never lowers a count of 100 or above. The rebuild follows the procedure; the two
-  entries need reconciling from the executable.
 
 ## Step 10: Screens
 
@@ -76,9 +63,6 @@ needs static reads or captures of the original:
 - RULE-TIMER-004: how much lighter a flash copy is and the order of the city-cell copies
   (FND-UI-017); the pressed faces of Influence's Escape, Move and Research, which no finding
   records.
-- SCR-EVENT-001: the captions come from `Chaos Overlords.exe#STRING/33` to `STRING/44`, and the
-  rebuild has no loader for the executable's string resources; the extractor needs one, and the
-  panel then draws them.
 
 ## Step 12: Close the research plans
 

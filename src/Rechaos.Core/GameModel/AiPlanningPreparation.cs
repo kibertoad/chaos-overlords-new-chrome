@@ -77,7 +77,7 @@ internal static class AiPlanningPreparation
             state.Setup.Scenario, activeGangCount, ownedSectorCount,
             playerState.Cash, hasNeutralSector);
         var elapsedTurns = state.Coordinator.Turn - 1;
-        var turnsRemaining = Math.Max(0, ScenarioCatalog.Turns(state.Setup.Duration) - elapsedTurns);
+        var turnsRemaining = Math.Max(0, ScenarioCatalog.TurnLimit(state.Setup.Scenario, state.Setup.Duration) - elapsedTurns);
         if (!OriginalAiHireRoleRules.ShouldAttemptHire(
                 state.Setup.Scenario, activeGangCount, hireGangLimit,
                 turnsRemaining, state.Setup.Duration))
@@ -91,7 +91,7 @@ internal static class AiPlanningPreparation
                 other.Status == PlayerStatus.Active && other.Cash > playerState.Cash),
             firstHostileSector.HasValue,
             firstHostileSector is { } sectorId
-                && HasFamilySixCoverage(state, player, playerState, sectorId),
+                && AiTurnPlanner.FamilySixCovers(state, playerState, sectorId),
             CountFamilies(state, player, playerState, 5),
             CountFamilies(state, player, playerState, 7),
             state.AiPlanning.PreviousHireRole(player),
@@ -193,37 +193,19 @@ internal static class AiPlanningPreparation
             ?? throw new ArgumentOutOfRangeException(nameof(player));
         var firstHostileSector = FirstVisibleHostileSector(state, player)
             ?? OriginalAiHirePlacementRules.InactiveGangSector;
-        var gangSlotZeroSector = playerState.Gangs.Count > 0 && playerState.Gangs[0].IsActive
-            ? playerState.Gangs[0].SectorId
-            : OriginalAiHirePlacementRules.InactiveGangSector;
         return OriginalAiHirePlacementModeRules.Select(
             state.Setup.Scenario, adjustedRole,
             sectorAnchor, firstHostileSector,
-            gangSlotZeroSector);
+            AiTurnPlanner.FirstRosterSlotSector(playerState));
     }
 
+    /// <summary>
+    /// RULE-AI-010's <c>first_hostile</c>: the first sector whose weight the planning pass cached
+    /// as 10 (RULE-AI-003), or none.
+    /// </summary>
     private static int? FirstVisibleHostileSector(MatchState state, PlayerId observer) =>
-        state.Sectors
-            .Where(sector => state.Players.Any(owner =>
-                owner.Id != observer
-                && owner.Status == PlayerStatus.Active
-                && state.AiStrategy.IsHostile(observer, owner.Id)
-                && owner.Gangs.Any(gang => gang.IsActive
-                    && gang.SectorId == sector.Id
-                    && state.CanPlayerDetectGang(observer, gang.Id))))
-            .Select(sector => (int?)sector.Id)
+        Enumerable.Range(0, MatchLimits.SectorCount)
+            .Where(sectorId => state.AiPlanning.SectorWeight(observer, sectorId) == 10)
+            .Select(sectorId => (int?)sectorId)
             .FirstOrDefault();
-
-    private static bool HasFamilySixCoverage(
-        MatchState state,
-        PlayerId player,
-        MatchPlayerState playerState,
-        int sectorId) => playerState.Gangs
-        .Select((gang, slot) => (gang, slot))
-        .Any(entry => entry.gang.IsActive
-            && state.AiPlanning.Family(player, entry.slot) == 6
-            && (state.AiPlanning.FocusValue(player, entry.slot)
-                    != AiPlanningState.InactiveFocusValue
-                ? entry.gang.SectorId
-                : state.AiPlanning.CoverageSector(player, entry.slot)) == sectorId);
 }

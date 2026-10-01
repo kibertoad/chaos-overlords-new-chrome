@@ -26,10 +26,10 @@ public sealed partial class ChaosGame
             new Vector2(GameInformationLayout.ValueLeft, GameInformationLayout.ObjectiveY),
             Color.Lime, 1);
         font.Draw(batch,
-            $"{DifficultyPresentation.Label(state.Setup.AiMentality)} {AiPolicyPresentation.Label(state.Setup.AiPolicy)}",
+            GameInformationPresentation.MentalityField(state.Setup.AiMentality, state.Setup.AiPolicy),
             new Vector2(GameInformationLayout.ValueLeft, GameInformationLayout.AiMentalityY),
             Color.Lime, 1);
-        font.Draw(batch, PlanningTimerPolicy.Label(_selectedPlanningTimeLimit),
+        font.Draw(batch, GameInformationPresentation.PlanningLimit(_selectedPlanningTimeLimit),
             new Vector2(GameInformationLayout.ValueLeft, GameInformationLayout.TurnTimeLimitY),
             Color.Lime, 1);
 
@@ -37,7 +37,6 @@ public sealed partial class ChaosGame
         {
             var row = player.Id.Value;
             var y = GameInformationLayout.PlayerY(row);
-            batch.Draw(pixel, GameInformationLayout.PlayerColor(row), PlayerColors[row]);
             font.Draw(batch, player.Setup.Name,
                 new Vector2(GameInformationLayout.PlayerNameLeft, y), Color.Lime, 1);
             DrawPanelValue(font, batch,

@@ -9,7 +9,7 @@ byte_order: little
 size: 2
 text: false
 definition: fmt_state_004.ksy
-evidence: [FND-CITY-003, FND-CONTROL-001, FND-GANG-001, FND-TURN-001, FND-TURN-003, FND-TURN-004]
+evidence: [FND-CITY-003, FND-CONTROL-001, FND-GANG-001, FND-TURN-001, FND-TURN-003, FND-TURN-004, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: []
@@ -38,8 +38,8 @@ None known.
 
 ## Coverage
 
-A memory structure: nothing has been decoded against a dump of the running
-original.
+A memory structure. EXP-SETUP-001 decoded the 192 site slots of a new match
+from a dump of the running original, every one with progress 0.
 
 ## Open questions
 

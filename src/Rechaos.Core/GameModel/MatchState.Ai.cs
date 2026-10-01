@@ -2,6 +2,14 @@ namespace Rechaos.Core.GameModel;
 
 public sealed partial class MatchState
 {
+    /// <summary>
+    /// The turn each player's family dispatch last wrote its records for, 0 before its first.
+    /// Every driver runs the planning pass and plans from it in one step, so this is neither
+    /// saved nor hashed: it only lets <see cref="AiTurnPlanner.Plan"/> refuse records that were
+    /// not written this turn (RULE-AI-002).
+    /// </summary>
+    private readonly int[] _aiPlanningPreparedTurns = new int[MatchLimits.PlayerCount];
+
     private void RecordAiPlannedAction(GameCommand command)
     {
         var playerId = command.Player;
@@ -28,9 +36,39 @@ public sealed partial class MatchState
         if (!IsPlannedByComputer(player))
             throw new ArgumentException("AI preparation requires a computer-controlled player.", nameof(player));
         AiPlanningPreparation.ApplyFamilyAssignments(this, player);
-        AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(this, player);
+        var weights = RefreshAiSectorRecords(player);
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(this, weights);
         AiPlanningPreparation.RefreshHireAnchor(this, player);
+    }
+
+    /// <summary>Records that the family dispatch wrote the player's records for this turn.</summary>
+    internal void MarkAiPlanningPrepared(PlayerId player) =>
+        _aiPlanningPreparedTurns[player.Value] = Coordinator.Turn;
+
+    /// <summary>Whether the player's family dispatch has written its records for this turn.</summary>
+    internal bool IsAiPlanningPrepared(PlayerId player) =>
+        player.Value is >= 0 and < MatchLimits.PlayerCount
+        && _aiPlanningPreparedTurns[player.Value] == Coordinator.Turn;
+
+    /// <summary>
+    /// RULE-AI-003, FND-AI-045: when a match starts or is loaded, the refresh of the planning pass
+    /// runs once for every player in slot order, humans included, so each row of sector weights
+    /// holds values before its player's first pass and the aliased read of RULE-AI-005 finds a
+    /// human's row filled. A local load calls this; a new match runs it as it is built.
+    /// </summary>
+    internal void RefreshEveryPlayersAiSectorRecords()
+    {
+        foreach (var player in Players) RefreshAiSectorRecords(player.Id);
+    }
+
+    /// <summary>
+    /// RULE-AI-003: the sector weights are cached before the hostility step changes attitudes.
+    /// </summary>
+    private AiTurnPlanner.CachedSectorWeights RefreshAiSectorRecords(PlayerId player)
+    {
+        var weights = AiTurnPlanner.CachedSectorWeights.Cache(this, player);
+        AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
+        return weights;
     }
 
     public AiTurnPlanner.HirePreparation PrepareAiHiring(PlayerId player)

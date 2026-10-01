@@ -12,6 +12,7 @@ public sealed partial class AiTurnPlannerTests
     {
         var match = CreateMatch();
         match.FinishUpkeep();
+        match.PrepareAiPlanning(new PlayerId(0));
         var before = MatchStateHasher.ComputeFingerprint(match);
 
         var first = AiTurnPlanner.Plan(match, new PlayerId(0));
@@ -55,6 +56,7 @@ public sealed partial class AiTurnPlannerTests
             match.AiPlanning.SetPlannedAction(playerId, slot, GangAction.Equip,
                 new AiActionTarget(checked((byte)itemId), 0));
         }
+        match.MarkAiPlanningPrepared(playerId);
 
         var command = Assert.Single(AiTurnPlanner.Plan(match, playerId));
 
@@ -75,7 +77,7 @@ public sealed partial class AiTurnPlannerTests
         var commands = AiTurnPlanner.Plan(match, playerId);
 
         // RULE-AI-001, RULE-AI-002: the first pass flags only slot 0, so the gang in slot 1 stays
-        // in family 99, which has no handler, and gets no order from the provisional fallback.
+        // in family 99, which has no handler, and gets no order.
         Assert.NotEqual(AiPlanningState.UnusedFamily, match.AiPlanning.Family(playerId, 0));
         Assert.Equal(AiPlanningState.UnusedFamily, match.AiPlanning.Family(playerId, 1));
         Assert.DoesNotContain(commands, command => command.Gang == new GangId(11));
@@ -90,6 +92,39 @@ public sealed partial class AiTurnPlannerTests
         var human = CreateMatch(PlayerController.Human);
         human.FinishUpkeep();
         Assert.Throws<ArgumentException>(() => AiTurnPlanner.Plan(human, new PlayerId(0)));
+    }
+
+    [Fact]
+    public void PlannerRefusesRecordsTheDispatchDidNotWriteThisTurn()
+    {
+        var match = CreateMatch();
+        var player = new PlayerId(0);
+        match.FinishUpkeep();
+
+        // RULE-AI-002: before the first pass there are no records to plan from.
+        Assert.Throws<InvalidOperationException>(() => AiTurnPlanner.Plan(match, player));
+
+        match.PrepareAiPlanning(player);
+        AiTurnPlanner.Plan(match, player);
+
+        // A later turn: the player has planned before, but this turn's records are last turn's
+        // orders until the pass rolls them forward.
+        var coordinator = match.Coordinator;
+        for (var id = 0; id < match.Players.Count; id++)
+            coordinator.FinishCommand(new PlayerId(id));
+        foreach (var _ in TurnStructure.ExecutionOrder)
+            coordinator.FinishExecutionPhase();
+        for (var id = 0; id < match.Players.Count; id++)
+            coordinator.FinishHire(new PlayerId(id));
+        coordinator.FinishPlayerElimination();
+        coordinator.FinishUpkeep();
+        Assert.Equal(2, coordinator.Turn);
+        Assert.Equal(player, coordinator.ActivePlayer);
+        Assert.True(match.AiPlanning.HasPlanned(player));
+        Assert.Throws<InvalidOperationException>(() => AiTurnPlanner.Plan(match, player));
+
+        match.PrepareAiPlanning(player);
+        AiTurnPlanner.Plan(match, player);
     }
 
     [Fact]
@@ -121,6 +156,7 @@ public sealed partial class AiTurnPlannerTests
         var match = new MatchState(data,
             new MatchSetup(ScenarioId.KillEmAll, GameDuration.SixMonths, 9, setups), players, sectors);
         match.FinishUpkeep();
+        match.PrepareAiPlanning(new PlayerId(0));
 
         Assert.False(match.CanPlayerDetectGang(new PlayerId(0), new GangId(20)));
         Assert.DoesNotContain(CommandOptionCatalog.LegalCommands(match, new PlayerId(0), new GangId(10)),
@@ -130,24 +166,20 @@ public sealed partial class AiTurnPlannerTests
     }
 
     [Fact]
-    public void DifficultyChangesAggressionWithoutChangingRulesOrConsumingRandomness()
+    public void PlanFromThePassIsLegalAndConsumesNoRandomnessUnderEitherMentality()
     {
         var goon = CreateMatch(difficulty: AiDifficulty.Goon);
         var crimeLord = CreateMatch(difficulty: AiDifficulty.CrimeLord);
         goon.FinishUpkeep();
         crimeLord.FinishUpkeep();
+        goon.PrepareAiPlanning(new PlayerId(0));
+        crimeLord.PrepareAiPlanning(new PlayerId(0));
         var goonConsumption = goon.Random.ConsumptionCount;
         var crimeLordConsumption = crimeLord.Random.ConsumptionCount;
 
         var goonPlan = AiTurnPlanner.Plan(goon, new PlayerId(0));
         var crimeLordPlan = AiTurnPlanner.Plan(crimeLord, new PlayerId(0));
 
-        Assert.True(AiTurnPlanner.DifficultyAttackBias(AiDifficulty.Goon)
-            < AiTurnPlanner.DifficultyAttackBias(AiDifficulty.Criminal));
-        Assert.True(AiTurnPlanner.DifficultyAttackBias(AiDifficulty.Criminal)
-            < AiTurnPlanner.DifficultyAttackBias(AiDifficulty.CrimeLord));
-        Assert.True(AiTurnPlanner.DifficultyAttackBias(AiDifficulty.CrimeLord)
-            < AiTurnPlanner.DifficultyAttackBias(AiDifficulty.HomicidalManiac));
         Assert.All(goonPlan.Concat(crimeLordPlan), command =>
             Assert.True(CommandValidator.Validate(
                 command.Player == new PlayerId(0) && goonPlan.Contains(command) ? goon : crimeLord,
@@ -157,7 +189,7 @@ public sealed partial class AiTurnPlannerTests
     }
 
     [Fact]
-    public void PlannerRequiresStrictSoloControlAdvantageAtOriginalBoundary()
+    public void SoloControlRequiresStrictAdvantageAtOriginalBoundary()
     {
         var data = BundledOriginalData.Load();
         var definition = data.Gangs.First(candidate =>
@@ -173,10 +205,6 @@ public sealed partial class AiTurnPlannerTests
         var advantageGang = advantage.FindGang(new GangId(10))!;
         Assert.False(AiTurnPlanner.CanSoloControl(equal, new PlayerId(0), equalGang));
         Assert.True(AiTurnPlanner.CanSoloControl(advantage, new PlayerId(0), advantageGang));
-        Assert.DoesNotContain(AiTurnPlanner.Plan(equal, new PlayerId(0)),
-            command => command.Action == GangAction.Control);
-        Assert.Contains(AiTurnPlanner.Plan(advantage, new PlayerId(0)),
-            command => command.Action == GangAction.Control);
     }
 
     [Fact]
@@ -216,27 +244,6 @@ public sealed partial class AiTurnPlannerTests
     }
 
     [Fact]
-    public void PlannerUsesOriginalHealForceAndSkillBoundaries()
-    {
-        var data = BundledOriginalData.Load();
-        var capable = data.Gangs.First(candidate => candidate.Stats.Heal >= -3).Id;
-        var incapable = data.Gangs.First(candidate => candidate.Stats.Heal < -3).Id;
-        var forceEight = CreateMatch(definitionId: capable, force: 8);
-        var forceNine = CreateMatch(definitionId: capable, force: 9);
-        var noHealSkill = CreateMatch(definitionId: incapable, force: 8);
-        forceEight.FinishUpkeep();
-        forceNine.FinishUpkeep();
-        noHealSkill.FinishUpkeep();
-
-        Assert.Contains(AiTurnPlanner.Plan(forceEight, new PlayerId(0)),
-            command => command.Action == GangAction.Heal);
-        Assert.DoesNotContain(AiTurnPlanner.Plan(forceNine, new PlayerId(0)),
-            command => command.Action == GangAction.Heal);
-        Assert.DoesNotContain(AiTurnPlanner.Plan(noHealSkill, new PlayerId(0)),
-            command => command.Action == GangAction.Heal);
-    }
-
-    [Fact]
     public void FamilyOneNoActionBranchDrivesLiveHealCrackdownAndOlderSnitchChoices()
     {
         var data = BundledOriginalData.Load();
@@ -247,15 +254,16 @@ public sealed partial class AiTurnPlannerTests
         foreach (var match in new[] { heal, crackdown, priorSnitch })
         {
             match.FinishUpkeep();
+            match.AiPlanning.BeginPlanning(new PlayerId(0));
             match.AiPlanning.SeedFamily(new PlayerId(0), 0, 1);
         }
         crackdown.Sectors[0].CrackdownActive = true;
         priorSnitch.AiPlanning.SetPlannedAction(new PlayerId(0), 0, GangAction.Snitch);
         priorSnitch.AiPlanning.RollActiveGangActions(
             new PlayerId(0), priorSnitch.Players[0].Gangs);
-        priorSnitch.AiPlanning.SetPlannedAction(new PlayerId(0), 0, GangAction.None);
-        priorSnitch.AiPlanning.RollActiveGangActions(
-            new PlayerId(0), priorSnitch.Players[0].Gangs);
+        // The pass rolls the records again, so the Snitch becomes the older action.
+        foreach (var match in new[] { heal, crackdown, priorSnitch })
+            match.PrepareAiPlanning(new PlayerId(0));
 
         Assert.Equal(GangAction.Heal,
             Assert.Single(AiTurnPlanner.Plan(heal, new PlayerId(0))).Action);
@@ -276,10 +284,11 @@ public sealed partial class AiTurnPlannerTests
         foreach (var match in new[] { repeatHeal, takeControl, move })
         {
             match.FinishUpkeep();
+            match.AiPlanning.BeginPlanning(new PlayerId(0));
             match.AiPlanning.SeedFamily(new PlayerId(0), 0, 1);
             match.AiPlanning.SetPlannedAction(new PlayerId(0), 0, GangAction.Heal);
-            match.AiPlanning.RollActiveGangActions(
-                new PlayerId(0), match.Players[0].Gangs);
+            // The pass rolls the Heal into the previous action and runs family 1's handler.
+            match.PrepareAiPlanning(new PlayerId(0));
         }
 
         Assert.Equal(GangAction.Heal,
@@ -575,6 +584,14 @@ public sealed partial class AiTurnPlannerTests
         var player = new PlayerId(0);
         match.Players[1].Gangs[0].SectorId = 27;
         match.Sectors[27].Owner = new PlayerId(1);
+        // RULE-AI-031: the gang fights when turns_remaining() is even, and Big Man plays with a
+        // turn limit of 65535 (FND-SETUP-018), so the second turn is a fighting turn.
+        var coordinator = match.Coordinator;
+        coordinator.FinishUpkeep();
+        foreach (var setup in match.Setup.Players) coordinator.FinishCommand(setup.Id);
+        foreach (var _ in TurnStructure.ExecutionOrder) coordinator.FinishExecutionPhase();
+        foreach (var setup in match.Setup.Players) coordinator.FinishHire(setup.Id);
+        coordinator.FinishPlayerElimination();
         match.AiPlanning.BeginPlanning(player);
         match.AiPlanning.SetCurrentHireRole(player, 1);
         var recorder = new MatchReplayRecorder(match);
@@ -641,7 +658,7 @@ public sealed partial class AiTurnPlannerTests
     }
 
     [Fact]
-    public void PreparedRecoveredMoveToSourceDoesNotInvokeProvisionalFallback()
+    public void PreparedRecoveredMoveToSourcePlansNothing()
     {
         var match = CreateMatch();
         var player = new PlayerId(0);
@@ -650,6 +667,7 @@ public sealed partial class AiTurnPlannerTests
         match.AiPlanning.SeedFamily(player, 0, 1);
         match.AiPlanning.SetPlannedAction(
             player, 0, GangAction.Move, new AiActionTarget(0, 0));
+        match.MarkAiPlanningPrepared(player);
 
         Assert.Empty(AiTurnPlanner.Plan(match, player));
         Assert.Equal(GangAction.Move, match.AiPlanning.PlannedAction(player, 0));
@@ -719,7 +737,7 @@ public sealed partial class AiTurnPlannerTests
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.FinishUpkeep();
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
         Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(player, 0));
@@ -745,7 +763,7 @@ public sealed partial class AiTurnPlannerTests
         match.AiPlanning.RollActiveGangActions(player, match.Players[0].Gangs);
         match.AiPlanning.SetFocusValue(player, 0, 7);
 
-        AiTurnPlanner.PrepareRecoveredFamilyCommands(match, player);
+        AiHandlerPass.Run(match, player);
 
         Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
         Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(player, 0));

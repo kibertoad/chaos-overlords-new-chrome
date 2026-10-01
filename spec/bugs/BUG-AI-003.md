@@ -7,7 +7,7 @@ superseded_by: []
 impact: rules
 intent: unclear
 player_reliance: unknown
-evidence: [FND-AI-033, FND-AI-032, FND-AI-029, FND-AI-038]
+evidence: [FND-AI-033, FND-AI-032, FND-AI-029, FND-AI-070]
 conflicting: []
 split_with: []
 related: [RULE-AI-004]

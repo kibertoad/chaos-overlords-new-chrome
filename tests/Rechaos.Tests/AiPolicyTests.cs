@@ -23,7 +23,8 @@ public sealed class AiPolicyTests
 
         var command = Assert.Single(AiPolicyPlanner.Plan(advanced, player));
 
-        Assert.Equal(GangAction.Heal, command.Action);
+        // The gang stands in a sector nobody controls, so Control comes before Heal.
+        Assert.Equal(GangAction.Control, command.Action);
         Assert.Equal(randomBefore, advanced.Random.ConsumptionCount);
         Assert.True(CommandValidator.Validate(advanced, command).IsValid);
     }
@@ -169,7 +170,7 @@ public sealed class AiPolicyTests
             topic => topic.Title == "Advanced AI");
 
         Assert.Contains("normally keeps every command selected by Original AI", topic.Text);
-        Assert.Contains("Heal an injured gang, Attack a detectable rival", topic.Text);
+        Assert.Contains("Control its current uncontrolled sector, cause Chaos in a sector it controls, Attack a detectable rival in its sector, or Heal an injured gang", topic.Text);
         Assert.Contains("consumes no random numbers", topic.Text);
         Assert.Contains("Goon and Criminal do not use this expansion override", topic.Text);
         Assert.Contains("no extra cash, statistics, discounts, damage, or success chance", topic.Text);
@@ -226,6 +227,8 @@ public sealed class AiPolicyTests
             match.AiPlanning.SeedFamily(setups[0].Id, slot, 0);
             match.AiPlanning.SetPlannedAction(setups[0].Id, slot, GangAction.None);
         }
+        // The records stand in for the family dispatch's output this turn (RULE-AI-002).
+        match.MarkAiPlanningPrepared(setups[0].Id);
         return match;
     }
 }

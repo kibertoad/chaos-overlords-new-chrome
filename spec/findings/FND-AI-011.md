@@ -1,9 +1,9 @@
 ---
 id: FND-AI-011
 title: When no offer is hired, the AI snubs offer slot 0 in Greed and the least efficient offer elsewhere
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-065]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

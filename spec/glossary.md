@@ -552,6 +552,12 @@ to 0; it goes up by 1 after each `resolution`, before the next `turn_start`,
 so it is 0 throughout the first turn. The Crackdown window and history read
 it [FND-TURN-006].
 
+## encoded_sector
+
+`encoded_sector(t)` gives the sector whose score an encoded selector mode
+`0x40 + t` raises: sector `t` for 0 to 63, and sector 37 for the end marker
+100. A function, defined by RULE-AI-006.
+
 ## endgame_rows
 
 The order in which the endgame screen lists the player slots: active players
@@ -812,7 +818,7 @@ in `INT32LE[6]` at `0x00482110`, save block 16 [FND-STATE-003].
 
 The three gangs each player is offered for hire. Any other value the game
 keeps: `INT8[18]`, element `player * 3 + offer slot`, at `0x004ABBC0`
-[FND-HIRE-001, FND-HIRE-002, FND-AI-008]. An element holds a gang definition
+[FND-HIRE-001, FND-HIRE-002, FND-AI-064]. An element holds a gang definition
 number, -100 before the first offer, or the negated number of a gang just
 hired or snubbed, which marks the slot to be refilled [FND-HIRE-001].
 
@@ -965,6 +971,12 @@ Tech cap and affordable. A function, defined by RULE-AI-005.
 
 A function, defined by RULE-EQUIP-003: what a player pays for an item bought
 by a gang in a given sector, with the Factory discount.
+
+## last_finished_stealth
+
+`last_finished_stealth(c)` gives the Stealth of the last finished site in
+sector `c`, in slot order, or 0 when none is finished. A function, defined by
+RULE-AI-028.
 
 ## last_turn_report_count
 
@@ -1309,6 +1321,21 @@ defined by RULE-AI-004.
 sector: -2 under police presence, otherwise the owner byte. A function,
 defined by RULE-AI-004.
 
+## pair_dword
+
+`pair_dword(k)` gives dword `k` of the memory from `selector_pairs` on. A
+function, defined by RULE-AI-006.
+
+## pair_score
+
+`pair_score(n)` gives the score field of pair `n`, read past the end of
+`selector_pairs` when `n` is 64 or more. A function, defined by RULE-AI-006.
+
+## pair_sector
+
+`pair_sector(n)` gives the sector field of pair `n`, read past the end of
+`selector_pairs` when `n` is 64 or more. A function, defined by RULE-AI-006.
+
 ## PanelSlideDrawn
 
 An event: one step of a panel sliding in or out is drawn. It carries the
@@ -1611,6 +1638,11 @@ game keeps: `INT32LE[6]`, indexed by player slot, at `0x004AB650`; the setup
 draw stores 3 to 6 there, and save block 36 copies it [FND-AI-006,
 FND-RNG-005, FND-RNG-006, FND-STATE-003].
 
+## record_dword
+
+`record_dword(k)` gives dword `k` of `planning_records` as the game holds them
+in memory. A function, defined by RULE-AI-006.
+
 ## refresh_anchor
 
 `refresh_anchor(player)` keeps or replaces a player's placement anchor. A
@@ -1725,6 +1757,18 @@ hiring player from 0 to 79, so slot 0 is reused once the Right Hands are dead
 [FND-TURN-005, FND-HIRE-001, FND-TURN-008]. Slot 80 never holds a gang: the
 command bar uses it as scratch space while a sector-wide order is chosen
 [FND-TURN-009].
+
+## scale_element
+
+`scale_element(e)` multiplies dword `e` of the sector selector's score table by
+five, or past the table a dword of player 0's planning records. A function,
+defined by RULE-AI-006.
+
+## scales
+
+`scales(player, s)` tells whether the sector selector's common block
+multiplies for sector `s`: the attitude toward its owner query is negative and
+its owner reads as human. A function, defined by RULE-AI-006.
 
 ## scenario
 
@@ -1870,6 +1914,14 @@ The local setup's selected player card, 0 to 5, the only card whose portrait
 and name can be changed. Any other value the game keeps: `INT32` at
 `0x004854C4` [FND-SETUP-005, FND-STATE-008].
 
+## selector_pairs
+
+The sector selector's list of score and sector pairs. A list the game keeps, of
+64 records of an `INT32` score at +0 and an `INT32` sector at +4, at
+`0x00489F50`, followed in memory by the selector's score table at `0x0048A150`
+and by `planning_records`; only `select_sector` writes it, nothing clears it,
+and it is not saved [FND-AI-066, FND-STATE-007].
+
 ## serial_number
 
 The number the game keeps as its serial number. Any other value the game
@@ -1881,6 +1933,11 @@ stays in memory for the session [FND-OPTIONS-001, FND-OPTIONS-003].
 
 `set_pointer(shape, force)` changes the Windows cursor to a stock shape. A
 function, defined by RULE-UI-007.
+
+## set_record_dword
+
+`set_record_dword(k, v)` stores `v` as dword `k` of `planning_records`, the
+inverse of `record_dword`. A function, defined by RULE-AI-006.
 
 ## site
 
@@ -1960,11 +2017,6 @@ function, defined by RULE-AI-006.
 `startup_drive_check()` runs the drive check at startup and always gives 1. A
 function, defined by RULE-AUDIO-010.
 
-## stealth_sum
-
-`stealth_sum(c)` sums the positive Stealth of sector `c`'s finished sites. A
-function, defined by RULE-AI-028.
-
 ## step_portrait
 
 `step_portrait(slot, delta)` moves a setup slot's `portrait` by `delta`
@@ -2030,9 +2082,11 @@ end of the match is evaluated (the call of `fn_00476857` at `0x00475F61`)
 
 ## turn_limit
 
-The match length of a timed scenario in turns: 26, 52, 104 or 208, and 52
-when the setup screen opens. Any other value the game keeps: `INT32LE` at
-`0x004A5EF8` [SRC-MANUAL-GOG, FND-AI-005, FND-OBJECTIVE-003, FND-SETUP-013].
+The match length in turns: 26, 52, 104 or 208 in a timed scenario (0 to 3),
+52 when the setup screen opens, and 65535 in every other scenario, which each
+match entry writes whatever length was chosen. Any other value the game keeps:
+`INT32LE` at `0x004A5EF8` [SRC-MANUAL-GOG, FND-AI-005, FND-OBJECTIVE-003,
+FND-SETUP-013, FND-SETUP-018].
 
 ## turn_order
 

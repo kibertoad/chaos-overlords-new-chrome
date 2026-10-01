@@ -105,7 +105,12 @@ always run it. The release workflow runs the fast tier only, leaving the repeate
 statistical campaign matrix off its critical path.
 
 For larger statistical samples, the presentation-free runner avoids xUnit and
-lets replay verification be sampled rather than paid for on every match:
+lets replay verification be sampled rather than paid for on every match. It
+runs computer-only matches against the authoritative model without building the
+game window or running graphics, audio, input, animation, or real-time pacing.
+Cases use consecutive seeds and run on a bounded number of workers. Progress and
+the optional per-turn trace go to standard error, and one JSON report goes to
+standard output:
 
 ```powershell
 dotnet run --project src/Rechaos.Tools -c Release --no-build -- ai-tournament `
@@ -113,11 +118,20 @@ dotnet run --project src/Rechaos.Tools -c Release --no-build -- ai-tournament `
   --scenarios objectives --replay-every 10 --trace
 ```
 
-Its periodic heartbeat remains visible without `--trace`; the trace adds each
-live case's scenario, seed, turn, boundary count, event count, and elapsed time.
-The final JSON includes deterministic hashes and territory, defended-territory,
-gang, combat, replay, and timing metrics. Run the same matrix with `--policy
-advanced` for a paired comparison.
+The heartbeat, every five seconds by default, shows completed, running, and
+failed counts without `--trace`; the trace adds each live case's scenario, seed,
+turn, boundary count, event count, and elapsed time. `--replay-every N`
+replay-verifies every Nth case and leaves the others as bare-model simulations;
+`--replay-every 0` turns replay verification off. The final JSON includes
+deterministic hashes and territory, defended-territory, gang, combat, replay,
+and timing metrics. For a paired comparison, run the same seeds, scenario set,
+turn horizon, and worker count with `--policy advanced`.
+
+The workers run separate matches in parallel. Seats inside one match stay
+ordered, because planning preparation, hire offers, and command resolution
+consume shared deterministic state and RNG. Online play may collect order
+documents asynchronously, but every client applies them in the same sealed
+order.
 
 ### Simulated human seats
 
@@ -323,6 +337,79 @@ filtering or aspect correction, and in the colours the game set in its palette.
 The finding or experiment that cites a capture says which tool took it and with
 what settings, and gives its xxh3. Captures, saves and recordings that hold any
 of the game's content are never committed.
+
+### The probe
+
+`tools/Rechaos.OriginalProbe` runs the installed original under the Windows
+debugging interface and records a new local game without anyone at the
+keyboard. It checks the executable's SHA-256 against BLD-GOG-EN-1.1 first.
+
+The GOG install registers compatibility layers for the installed executable's
+path, among them RUNASADMIN, so starting that file needs an elevated prompt.
+A copy at another path escapes them. Put `Chaos Overlords.exe` and
+`SMACKW32.DLL` in a directory outside the repository, add directory junctions
+named `DATA`, `MUSIC` and `HELP` that point into the install (the game finds
+its data next to its own executable), set the other layers for the child
+process, and pass the copy with `--executable`:
+
+```powershell
+$env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--sound]
+dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
+```
+
+`new-game` switches full screen off in memory, silences the game unless
+`--sound` is given (it sets both volumes of the Options dialog, `effects_level`
+and `music_level`, to 0 in memory with the flags RULE-AUDIO-003 derives from
+them, so no effect, movie sound or music plays; nothing the rolls or the state
+depend on reads them), ends the logos and intro movies
+by holding `left_button_down` in memory (RULE-VIDEO-001 ends a movie only when
+the button is held at one of its ticks, so a posted click is missed), presses
+Begin, records the seed and every `roll` with its call site and result, and copies
+the writable sections once the first planning phase waits for input.
+EXP-SETUP-001 gives the breakpoints and the procedure. Without options, Begin
+takes the settings the setup screen opens with (the registry's preferences).
+The options write what the setup screen's controls would commit before Begin
+is pressed: the scenario in the original's numbering, the Mentality, the time
+limit, and the slots that hold humans, each optionally named with one of the
+six name modifiers (`right_hands`, `visibility`, `hire_force`, `elite`,
+`islands`, `cash`), which the probe reads from the running executable. With
+several humans the recording stops at the first human's Ready card, before
+its hire offers are drawn. `--end-turns` presses Done that many times with no
+orders, each once the next planning phase waits for input, which the first
+call of the planning time-limit test `0x0041BDD5` (FND-TIMER-003) after
+`elapsed_turns` has moved on shows, with Warn if Idle Gangs and Detailed Combat switched off in memory so
+nothing waits for input, and dumps the state at the planning phase that
+follows the last one. The human's planning phase opens the Combat Results
+panel (SCR-COMBAT-001) after a fight that involved its gangs, and the Last
+Turn Events panel (SCR-EVENT-001) when it has reports, and waits in each; the
+probe breaks on both handlers and presses Exit before the next Done, and presses
+Done again if a press left the turn unmoved for 20 seconds. `--orders` writes
+an order into a gang record of the first human before the Done press of the
+given turn, counted from 1: the `action`, `target` and `target_2` bytes of
+FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
+as the order screens write them (RULE-TURN-005). The fixture lists each order
+as an `order` input before its Done press, and the replay submits the same
+order as a command; each run records the roll count at every press as
+`done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
+a recorded run can be played again, and `--dump-at-roll` copies the writable
+sections and the top of the stack at the entry of that call of `roll`, counted
+from 0, into
+`at-roll-<n>` in the run directory, to look at the state that led to a
+divergence. `--trace-calls` sets a breakpoint on a function of the original and
+adds a note to `trace.json` for each call: the roll count so far, the calling
+instruction, the first four stack arguments and the returned value. Comparing
+those notes with the same calls in the rebuild shows which call first gave a
+different answer. `extract` refuses runs recorded with different
+settings, since the runs of one experiment differ only in the seed. The run
+directory holds
+the original's memory and never goes into the repository. `extract` reads the
+numbers of the spec's state layouts and glossary terms out of one or more run
+directories and writes them as the runs of an experiment fixture, with no
+names or texts. `OriginalNewGameExperimentTests` replays every run of
+EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-011 against the
+rebuild and names the first roll whose bound or result differs, with the
+original's call instruction.
 
 ## Static binary research
 

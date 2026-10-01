@@ -9,7 +9,7 @@ byte_order: little
 size: 36
 text: false
 definition: fmt_state_002.ksy
-evidence: [FND-CHAOS-002, FND-AI-004, FND-AI-010, FND-CHAOS-001, FND-CONTROL-001, FND-CONTROL-003, FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-GANG-001, FND-GANG-007, FND-HIRE-008, FND-PLATFORM-003, FND-SETUP-003, FND-STATE-001, FND-STATE-002, FND-TOLERANCE-001, FND-TURN-001, FND-TURN-003, FND-UI-015, FND-UI-018, FND-UI-035, FND-UPKEEP-001, FND-UPKEEP-002, FND-EXE-004]
+evidence: [FND-CHAOS-002, FND-AI-004, FND-AI-010, FND-CHAOS-001, FND-CONTROL-001, FND-CONTROL-003, FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-GANG-001, FND-GANG-007, FND-HIRE-008, FND-PLATFORM-003, FND-SETUP-003, FND-STATE-001, FND-STATE-002, FND-TOLERANCE-001, FND-TURN-001, FND-TURN-003, FND-UI-015, FND-UI-018, FND-UI-035, FND-UPKEEP-001, FND-UPKEEP-002, FND-EXE-004, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: []
@@ -77,8 +77,10 @@ None known.
 
 ## Coverage
 
-A memory structure: nothing has been decoded against a dump of the running
-original. The record size and count agree with the 2,304-byte block the save
+A memory structure. EXP-SETUP-001 decoded all 64 records of a new match from
+a dump of the running original, owner, Income, Tolerance, Support, Cash,
+sites and police presence included; no record with a completed site has been
+decoded yet. The record size and count agree with the 2,304-byte block the save
 reader and writer transfer from `0x004A08E8` [FND-PLATFORM-003].
 
 ## Open questions

@@ -11,7 +11,7 @@ public static partial class AiTurnPlanner
     {
         var player = state.FindPlayer(playerId)!;
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var sectorWeight = FirstVisibleOpponentWeight(state, playerId, visible);
+        var sectorWeight = state.AiPlanning.SectorWeight(playerId, gang.SectorId);
 
         if (OriginalAiEquipmentRules.SelectFamilyTwoUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)
@@ -138,14 +138,11 @@ public static partial class AiTurnPlanner
             snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
+            ownerTests: SelectorOwnerTests(state, playerId),
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
-            scenarioStandings: OriginalAiScenarioStandingRules.Build(state));
+            scenarioStandings: OriginalAiScenarioStandingRules.Build(state), planning: state.AiPlanning);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }
 }

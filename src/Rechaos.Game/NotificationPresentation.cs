@@ -24,51 +24,6 @@ public static class NotificationPresentation
         };
     }
 
-    public static string LastTurnStatus(GameNotification notification) =>
-        LastTurnStatus(notification, null);
-
-    public static string LastTurnStatus(
-        GameNotification notification,
-        GameEvent? relatedEvent)
-    {
-        ArgumentNullException.ThrowIfNull(notification);
-        if (relatedEvent is { Kind: GameEventKind.CommandFailed, Resolution: { } resolution })
-        {
-            if (resolution.Code == CommandResolutionCode.InsufficientCash)
-            {
-                if (relatedEvent.Action == GangAction.Bribe) return "INSUFFICIENT CASH TO BRIBE.";
-                if (relatedEvent.Action == GangAction.Equip) return "INSUFFICIENT CASH TO EQUIP.";
-            }
-            var action = SplitWords(relatedEvent.Action.ToString()).ToUpperInvariant();
-            var reason = resolution.Code switch
-            {
-                CommandResolutionCode.InsufficientCash => "NOT ENOUGH CASH",
-                CommandResolutionCode.ItemUnavailable => "ITEM NO LONGER AVAILABLE",
-                CommandResolutionCode.DestinationFull => "DESTINATION IS FULL",
-                CommandResolutionCode.TargetHidden => "TARGET IS HIDDEN",
-                CommandResolutionCode.TargetEvaded => "TARGET EVADED",
-                CommandResolutionCode.SectorInCrackdown => "SECTOR IS IN POLICE CRACKDOWN",
-                CommandResolutionCode.UnsupportedAction => "ACTION IS NOT SUPPORTED",
-                _ => "ORDER COULD NOT BE COMPLETED"
-            };
-            return $"{action} FAILED: {reason}.";
-        }
-
-        return notification.Kind switch
-        {
-            GameNotificationKind.Control => "SECTOR CONTROL ATTAINED.",
-            GameNotificationKind.ControlLost => "SECTOR CONTROL LOST.",
-            GameNotificationKind.Influence => "SITE COOPERATION ACHIEVED.",
-            GameNotificationKind.Research => "RESEARCH COMPLETED.",
-            GameNotificationKind.Crackdown => "POLICE CRACKDOWN.",
-            GameNotificationKind.Elimination => "PLAYER HAS BEEN ELIMINATED.",
-            GameNotificationKind.HireInsufficientCash => "INSUFFICIENT CASH TO HIRE.",
-            GameNotificationKind.HireSectorFull => "UNABLE TO HIRE, SECTOR AT CAPACITY.",
-            GameNotificationKind.HireGangLimit => "UNABLE TO HIRE, MAX GANGS REACHED.",
-            _ => throw new ArgumentOutOfRangeException(nameof(notification))
-        };
-    }
-
     public static string Describe(GameNotification notification)
     {
         ArgumentNullException.ThrowIfNull(notification);

@@ -10,7 +10,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
+        var visibleWeight = state.AiPlanning.SectorWeight(playerId, gang.SectorId);
         var previousAction = state.AiPlanning.PreviousAction(playerId, gangSlot);
         switch (previousAction)
         {
@@ -170,11 +170,8 @@ public static partial class AiTurnPlanner
             snapshot.SectorGangCounts,
             canSoloControl: sectorId => CanSoloControl(state, playerId, gang, sectorId),
             hasPriorChaos: _ => false,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
-            state.Random);
+            ownerTests: SelectorOwnerTests(state, playerId),
+            state.Random, planning: state.AiPlanning);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }
 }

@@ -1,9 +1,9 @@
 ---
 id: FND-AI-037
 title: The family-10 handler improves armor, equips item 44, heals, seeks Stealth sites, then raises Chaos or hides
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-071]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

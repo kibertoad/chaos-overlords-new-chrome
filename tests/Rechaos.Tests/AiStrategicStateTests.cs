@@ -114,18 +114,47 @@ public sealed class AiStrategicStateTests
     }
 
     [Fact]
-    public void PlannerAttacksOnlyVisibleOwnersWithNegativeAttitude()
+    public void PlanningPassLeavesCriminalNeutralAndTurnsTheManiacHostile()
     {
+        // RULE-AI-003. Whether hostility then decides an attack is the family handlers' to test;
+        // AiFamilySevenTurnPlannerTests plans the same accepted draw with and without it.
         var neutral = CreateAttackPlannerMatch(AiDifficulty.Criminal);
         var hostile = CreateAttackPlannerMatch(AiDifficulty.HomicidalManiac);
         neutral.FinishUpkeep();
         hostile.FinishUpkeep();
+        neutral.PrepareAiPlanning(new PlayerId(0));
+        hostile.PrepareAiPlanning(new PlayerId(0));
 
-        Assert.DoesNotContain(AiTurnPlanner.Plan(neutral, new PlayerId(0)),
-            command => command.Action == GangAction.Attack);
-        Assert.Contains(AiTurnPlanner.Plan(hostile, new PlayerId(0)),
-            command => command.Action == GangAction.Attack
-                && command.Target == CommandTarget.Gang(new GangId(20)));
+        Assert.False(neutral.AiStrategy.IsHostile(new PlayerId(0), new PlayerId(1)));
+        Assert.True(hostile.AiStrategy.IsHostile(new PlayerId(0), new PlayerId(1)));
+    }
+
+    // RULE-AI-003: the pass caches the sector weights before its hostility step, so the turn a
+    // human becomes hostile its gangs still weigh 1 in the cache the handlers and the hire read.
+    [Fact]
+    public void SectorWeightsAreCachedBeforeTheHostilityStep()
+    {
+        var match = CreateTerritorialPressureMatch(
+            AiDifficulty.Criminal, PlayerController.Human, advantagedSectors: 4);
+        match.FinishUpkeep();
+        var observer = new PlayerId(0);
+        var before = VisibleWeights(match, observer);
+
+        match.PrepareAiPlanning(observer);
+
+        var after = VisibleWeights(match, observer);
+        Assert.True(match.AiStrategy.IsHostile(observer, new PlayerId(1)));
+        Assert.Contains((byte)10, after);
+        Assert.DoesNotContain((byte)10, before);
+        Assert.Equal(before, Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(sectorId => (byte)match.AiPlanning.SectorWeight(observer, sectorId)));
+    }
+
+    private static byte[] VisibleWeights(MatchState match, PlayerId observer)
+    {
+        var weights = new byte[MatchLimits.SectorCount];
+        AiTurnPlanner.ComputeVisibleWeights(match, observer, weights);
+        return weights;
     }
 
     [Fact]
@@ -230,6 +259,27 @@ public sealed class AiStrategicStateTests
             new MatchPlayerSetup(new PlayerId(1), "CPU", PlayerController.Computer)
         ],
         difficulty);
+
+    // DEV-AI-007: the original carries out a computer player's Move to a sector several steps away
+    // (RULE-MOVE-001, EXP-TURN-015); the rebuild holds every seat's Move to the neighbours.
+    [Theory]
+    [InlineData(PlayerController.Computer)]
+    [InlineData(PlayerController.Human)]
+    public void NoSeatMovesBeyondTheNeighbours(PlayerController controller)
+    {
+        var match = CreateOnePlayerMatch(controller);
+        var player = new PlayerId(0);
+        match.FinishUpkeep();
+        var gang = match.Players[0].Gangs[0];
+        var column = gang.SectorId % MatchLimits.BoardWidth;
+        var distant = gang.SectorId - column + (column < 4 ? column + 2 : column - 2);
+
+        var validation = CommandValidator.Validate(
+            match, new GameCommand(player, gang.Id, GangAction.Move, CommandTarget.Sector(distant)));
+
+        Assert.False(validation.IsValid);
+        Assert.Equal(CommandValidationCode.DestinationNotAdjacent, validation.Code);
+    }
 
     private static MatchState CreateOnePlayerMatch(
         PlayerController controller = PlayerController.Computer,
