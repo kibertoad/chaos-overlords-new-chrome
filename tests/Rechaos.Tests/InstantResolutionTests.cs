@@ -264,6 +264,55 @@ public sealed class InstantResolutionTests
         Assert.Equal(first.PhaseHashes[^1].Fingerprint, second.PhaseHashes[^1].Fingerprint);
     }
 
+    // BUG-INFLUENCE-001: a band-0 player's Influence sets the progress to its reduced pool plus its
+    // successes, so a site already well advanced falls back; any other band adds the successes.
+    [Theory]
+    [InlineData(PlayerController.Computer, AiDifficulty.Goon)]
+    [InlineData(PlayerController.Computer, AiDifficulty.Criminal)]
+    [InlineData(PlayerController.Human, AiDifficulty.Goon)]
+    public void GoonComputerInfluenceReplacesTheSiteProgress(PlayerController controller, AiDifficulty mentality)
+    {
+        var data = BundledOriginalData.Load();
+        var site = data.Sites.OrderByDescending(definition => definition.Resistance).First();
+        var influencer = data.Gangs.Where(gang => gang.Stats.Influence >= 0).OrderBy(gang => gang.Stats.Influence).First();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "ONE", controller),
+            new(new PlayerId(1), "TWO", PlayerController.Human)
+        ];
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, mentality);
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 500, [new MatchGangState(new GangId(10), setups[0].Id, influencer.Id, 0, 1)]),
+            new(setups[1], 500, [new MatchGangState(new GangId(20), setups[1].Id, data.Gangs[0].Id, 1, 5)])
+        ];
+        var progressBefore = site.Resistance - 1;
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, id == 0 ? site.Id : (short)0, id == 0 ? 1 : 0),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 4)
+            ], owner: id == 0 ? setups[0].Id : null))
+            .ToArray();
+        var match = new MatchState(data, setup, players, sectors);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            setups[0].Id, new GangId(10), GangAction.Influence, CommandTarget.Site(0))).Accepted);
+        EnterExecution(match);
+
+        match.FinishExecutionPhase();
+
+        var resolution = match.LastPhaseResolutions.Single().Event!.Resolution!;
+        var gang = match.FindGang(new GangId(10))!;
+        var rawPool = gang.Force + EffectiveStatisticsCalculator.ForGang(match, gang).Influence;
+        var expectedProgress = controller == PlayerController.Computer && mentality == AiDifficulty.Goon
+            ? Math.Min(rawPool - rawPool / 5 + resolution.Successes, site.Resistance)
+            : Math.Min(progressBefore + resolution.Successes, site.Resistance);
+        Assert.True(rawPool - rawPool / 5 + resolution.Successes < progressBefore);
+        Assert.Equal(site.Resistance - expectedProgress, match.FindSite(0)!.Resistance);
+    }
+
     private static void QueueInfluencePair(MatchState match)
     {
         EnterCommand(match);

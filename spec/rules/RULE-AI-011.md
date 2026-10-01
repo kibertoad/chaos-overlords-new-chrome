@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-011
 title: A computer player tries to hire only below a gang limit and outside each scenario's closing turns
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-012, FND-AI-009, FND-EXE-004, FND-SETUP-018]
+evidence: [FND-AI-012, FND-AI-009, FND-EXE-004, FND-SETUP-018, EXP-TURN-028]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, FMT-STATE-001, FMT-STATE-002]
