@@ -1,10 +1,10 @@
 ---
 id: RULE-COMBAT-003
 title: Damage Inflicted counts the full damage of every opening attack and no retaliation
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMBAT-003, SRC-MANUAL-GOG]
+evidence: [FND-COMBAT-003, EXP-TURN-012, EXP-TURN-017, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: []

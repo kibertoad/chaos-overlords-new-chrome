@@ -962,8 +962,10 @@ None.
 | [EXP-TURN-017](../experiments/EXP-TURN-017.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
 | [FND-AI-069](../findings/FND-AI-069.md) | body |
+| [RULE-AI-003](../rules/RULE-AI-003.md) | evidence |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | evidence |
+| [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | evidence |
@@ -983,6 +985,7 @@ None.
 |---|---|
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
 | [RULE-AI-016](../rules/RULE-AI-016.md) | body, evidence |
+| [RULE-AI-017](../rules/RULE-AI-017.md) | evidence |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
@@ -990,7 +993,9 @@ None.
 
 ## EXP-TURN-012
 
-None.
+| Cited by | In |
+|---|---|
+| [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | evidence |
 
 ## EXP-TURN-013
 
@@ -1026,6 +1031,7 @@ None.
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | body, evidence |
 | [EXP-TURN-015](../experiments/EXP-TURN-015.md) | body |
 | [EXP-TURN-027](../experiments/EXP-TURN-027.md) | body |
+| glossary: hire_role | glossary |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | evidence |
 
 ## EXP-TURN-017
@@ -1033,8 +1039,13 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
+| [RULE-AI-003](../rules/RULE-AI-003.md) | evidence |
+| [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
+| [RULE-AI-017](../rules/RULE-AI-017.md) | evidence |
+| [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
+| [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | evidence |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | evidence |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | evidence |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | evidence |
@@ -1044,6 +1055,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-020](../experiments/EXP-TURN-020.md) | body |
+| [RULE-AI-017](../rules/RULE-AI-017.md) | evidence |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
 
 ## EXP-TURN-019
@@ -1086,6 +1098,7 @@ None.
 | [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-POLICE-004](../rules/RULE-POLICE-004.md) | evidence |
 
 ## EXP-TURN-024
 
@@ -1093,6 +1106,7 @@ None.
 |---|---|
 | [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
+| [RULE-POLICE-004](../rules/RULE-POLICE-004.md) | evidence |
 
 ## EXP-TURN-025
 
@@ -1118,6 +1132,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AI-011](../rules/RULE-AI-011.md) | evidence |
+| [RULE-AI-012](../rules/RULE-AI-012.md) | evidence |
 
 ## EXP-TURN-029
 
@@ -1137,6 +1152,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-034](../experiments/EXP-TURN-034.md) | body |
+| [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | evidence |
 

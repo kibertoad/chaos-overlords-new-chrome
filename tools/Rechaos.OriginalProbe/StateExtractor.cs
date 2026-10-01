@@ -74,6 +74,14 @@ internal sealed class StateExtractor
         Term(rows, "modifier_elite", 0x004A2788, 6, 1, signed: false);
         Term(rows, "modifier_islands", 0x004ABC10, 6, 1, signed: false);
         Term(rows, "modifier_cash", 0x0049CA70, 6, 1, signed: false);
+        Term(rows, "cash_earned", 0x004A27E0, 6, 4);
+        Term(rows, "cash_spent", 0x0049CA78, 6, 4);
+        Term(rows, "damage_inflicted", 0x004A5ED8, 6, 4);
+        Term(rows, "casualties", 0x004AB620, 6, 4);
+        Term(rows, "overthrow_count", 0x004A27A8, 6, 4);
+        Term(rows, "hide_count", 0x004A25D0, 6, 4);
+        Term(rows, "hire_role", 0x00482128, 6, 4);
+        Term(rows, "previous_hire_role", 0x00482160, 6, 4);
 
         string[] sectorFields =
         [

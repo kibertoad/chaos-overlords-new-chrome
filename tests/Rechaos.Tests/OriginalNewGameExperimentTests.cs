@@ -55,6 +55,10 @@ namespace Rechaos.Tests;
 /// later roster slot (RULE-EQUIP-001, RULE-EQUIP-002). In EXP-TURN-032 six Snitches in a row drive
 /// a sector's base Tolerance to the clamp at 1 (RULE-SNITCH-001, RULE-TOLERANCE-002). In
 /// EXP-TURN-033 the human bribes every turn until a Bribe meets 2 cash and fails (RULE-BRIBE-001).
+/// Every computer player's pass starts from its sector weights and the hostility step
+/// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
+/// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
+/// around the gang's sector, the centre included, which EXP-TURN-017 needs (RULE-AI-005).
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
@@ -253,7 +257,9 @@ public sealed class OriginalNewGameExperimentTests
         // hold the reports of RULE-EVENT-003 (elimination), RULE-EVENT-004 (Crackdown),
         // RULE-EVENT-006 (site), RULE-EVENT-007 (Research), RULE-EVENT-008 and RULE-EVENT-014
         // (cash), RULE-EVENT-009 (hire cash), RULE-EVENT-010 (full sector), RULE-EVENT-012 and
-        // RULE-EVENT-013 (Control).
+        // RULE-EVENT-013 (Control). A Crackdown report goes to every player that had a gang in the
+        // sector when resolution began (RULE-POLICE-004): EXP-TURN-023 and EXP-TURN-024 report one to
+        // players that raised no Chaos there, and EXP-TURN-024 to one with no gang left there at the end.
         if (recorded.HasTerm("last_turn_report_count", 0))
             foreach (var player in match.Players)
             {
@@ -277,6 +283,31 @@ public sealed class OriginalNewGameExperimentTests
                 for (var index = 0; index < expected.Length; index++)
                     Assert.True(expected[index] == reports[index],
                         $"player {slot} report {index}: the original holds {expected[index]}, the rebuild {reports[index]}");
+            }
+
+        // The running totals the financial panel and the endgame awards read, and the hire roles
+        // the computer players' planning keeps (RULE-AI-010). Damage Inflicted is RULE-COMBAT-003.
+        // The attitudes compared above follow every Control takeover (RULE-AI-017) in EXP-TURN-011,
+        // EXP-TURN-017 and EXP-TURN-018.
+        if (recorded.HasTerm("cash_spent", 0))
+            foreach (var player in match.Players)
+            {
+                var slot = player.Id.Value;
+                (string Term, long Value)[] totals =
+                [
+                    ("cash_earned", player.Statistics.CashEarned), ("cash_spent", player.Statistics.CashSpent),
+                    ("damage_inflicted", player.Statistics.DamageInflicted),
+                    ("casualties", player.Statistics.Casualties), ("overthrow_count", player.Statistics.Overthrows),
+                    ("hide_count", player.Statistics.TimesHidden),
+                    ("hire_role", match.AiPlanning.CurrentHireRole(player.Id)),
+                    ("previous_hire_role", match.AiPlanning.PreviousHireRole(player.Id)),
+                ];
+                // The original starts a human player's hire_role at -1 and the rebuild at 0. No rule
+                // reads a human's entry, so the difference is one of representation.
+                foreach (var (term, value) in totals)
+                    if (player.Setup.Controller != PlayerController.Human || term != "hire_role")
+                        Assert.True(recorded.Term(term, slot) == value,
+                            $"{term} of player {slot}: the original holds {recorded.Term(term, slot)}, the rebuild {value}");
             }
 
         // FND-SETUP-018: the turn limit the computer players read.
