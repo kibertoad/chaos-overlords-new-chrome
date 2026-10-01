@@ -183,6 +183,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AUDIO-011](../findings/FND-AUDIO-011.md) | builds, locations |
 | [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | builds, locations |
 | [FND-AUDIO-013](../findings/FND-AUDIO-013.md) | builds, locations |
+| [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | body, builds, locations |
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | builds, locations |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | builds, locations |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | builds, locations |
@@ -489,6 +490,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | builds |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | builds |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | builds |
+| [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | body, builds |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | builds |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | builds |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | builds |
@@ -2656,6 +2658,7 @@ None.
 |---|---|
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | body, evidence |
 | [FND-AUDIO-006](../findings/FND-AUDIO-006.md) | body |
+| [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | body |
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | body |
 | [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
@@ -2667,6 +2670,7 @@ None.
 | [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | evidence |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | body, evidence |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | body, evidence |
+| [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | evidence |
 
 ## FND-AUDIO-010
 
@@ -2731,6 +2735,12 @@ None.
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
+
+## FND-AUDIO-014
+
+| Cited by | In |
+|---|---|
+| [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | evidence |
 
 ## FND-AWARDS-001
 
@@ -3571,6 +3581,7 @@ None.
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | body |
 | [FND-AUDIO-006](../findings/FND-AUDIO-006.md) | body |
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | body |
+| [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | body |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | body |
 | [FND-COMBAT-007](../findings/FND-COMBAT-007.md) | body |
 | [FND-COMBAT-008](../findings/FND-COMBAT-008.md) | body |
@@ -6467,6 +6478,7 @@ None.
 |---|---|
 | [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | body, related |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | related |
+| [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | related |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body, related |
 | [RULE-UI-007](../rules/RULE-UI-007.md) | body |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | body, related |
@@ -6476,8 +6488,10 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | body |
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | body |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | body |
+| [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | body, related, superseded_by |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | body, related |
 
 ## RULE-AUDIO-003
@@ -6550,6 +6564,10 @@ None.
 | glossary: startup_drive_check | glossary |
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | body |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | body |
+
+## RULE-AUDIO-011
+
+None.
 
 ## RULE-AWARDS-001
 
