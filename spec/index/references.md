@@ -2667,10 +2667,12 @@ None.
 | glossary: music_playing | glossary |
 | glossary: window_inactive | glossary |
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | body, evidence |
-| [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | evidence |
+| [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | body, evidence |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | body, evidence |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | body, evidence |
 | [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | evidence |
+| [SRC-MCI-PLAY](../sources/SRC-MCI-PLAY.md) | body |
+| [SRC-MCI-STOP](../sources/SRC-MCI-STOP.md) | body |
 
 ## FND-AUDIO-010
 
@@ -8169,6 +8171,19 @@ None.
 | [SCR-UI-007](../screens/SCR-UI-007.md) | body, evidence |
 | [SCR-UI-008](../screens/SCR-UI-008.md) | body, evidence |
 | [SCR-UI-009](../screens/SCR-UI-009.md) | body, evidence |
+
+## SRC-MCI-PLAY
+
+| Cited by | In |
+|---|---|
+| [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | body, evidence |
+
+## SRC-MCI-STOP
+
+| Cited by | In |
+|---|---|
+| [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | body, evidence |
+| [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | body, evidence |
 
 ## SRC-RECHAOS-3561D41
 

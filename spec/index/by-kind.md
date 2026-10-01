@@ -12,12 +12,14 @@
 
 ## sources
 
-3 entries.
+5 entries.
 
 | ID | Title | Status |
 |---|---|---|
 | [SRC-HELP-GOG](../sources/SRC-HELP-GOG.md) | Chaos Overlords in-game WinHelp file, read as a document | None |
 | [SRC-MANUAL-GOG](../sources/SRC-MANUAL-GOG.md) | Chaos Overlords manual, image scan shipped with the GOG release | None |
+| [SRC-MCI-PLAY](../sources/SRC-MCI-PLAY.md) | Microsoft MCI_PLAY command reference | None |
+| [SRC-MCI-STOP](../sources/SRC-MCI-STOP.md) | Microsoft MCI_STOP command reference | None |
 | [SRC-RECHAOS-3561D41](../sources/SRC-RECHAOS-3561D41.md) | RE: Chaos Overlords (1996) | None |
 
 ## formats

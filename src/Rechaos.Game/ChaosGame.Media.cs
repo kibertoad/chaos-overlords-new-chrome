@@ -17,7 +17,6 @@ public sealed partial class ChaosGame
     private bool _soundtrackEnabled;
     private bool _soundtrackFailed;
     private bool _soundtrackAwaitingStart;
-    private bool _soundtrackPausedByDeactivation;
     private TimeSpan _soundtrackStartDeadline;
     private readonly SoundtrackRestartPoll _soundtrackRestartPoll = new();
     private SoundtrackFade? _soundtrackFade;
@@ -80,7 +79,6 @@ public sealed partial class ChaosGame
                 _soundtrackAwaitingStart = false;
                 return;
             }
-            if (MediaPlayer.State == MediaState.Paused) return;
 
             if (_soundtrackAwaitingStart)
             {
@@ -126,7 +124,6 @@ public sealed partial class ChaosGame
             if (!_soundtrackEnabled) return;
             _soundtrackMode = null;
             _soundtrackAwaitingStart = false;
-            _soundtrackPausedByDeactivation = false;
             _soundtrackProgramPlayer?.Stop();
         }
         catch
@@ -159,7 +156,6 @@ public sealed partial class ChaosGame
         _soundtrackProgramPlayer?.Stop();
         _soundtrackMode = mode;
         _soundtrackAwaitingStart = false;
-        _soundtrackPausedByDeactivation = false;
         _activeSoundtrack = SongCollection.Empty.Clone();
         // RULE-AUDIO-001: retain the complete CD program while advancing its tracks on the game thread.
         foreach (var fileName in OriginalSoundtrackPolicy.FileNamesFor(mode))
@@ -191,7 +187,11 @@ public sealed partial class ChaosGame
     {
         if (_soundtrackFade is not { } fade) return;
         _soundtrackFade = null;
-        _soundtrackProgramPlayer?.Stop();
+        // FND-AUDIO-007: when music is enabled the original selector plays the new program
+        // straight after the fade, so a track paused by deactivation during the fade must not
+        // be resumed by the next activation. A muting fade leaves a paused device alone.
+        if (_soundtrackEnabled) _soundtrackProgramPlayer?.Release();
+        else _soundtrackProgramPlayer?.Stop();
         // A level chosen while the fade ran wins over the volume the fade started from.
         MediaPlayer.Volume = _soundtrackEnabled
             ? OriginalSoundtrackPolicy.VolumeForLevel(_musicVolumeLevel)
@@ -215,7 +215,6 @@ public sealed partial class ChaosGame
                 if (MediaPlayer.State == MediaState.Playing)
                 {
                     MediaPlayer.Pause();
-                    _soundtrackPausedByDeactivation = true;
                 }
             }
             catch
@@ -251,9 +250,10 @@ public sealed partial class ChaosGame
             {
                 // An effect voice failure must not disable the music.
             }
-            if (_soundtrackPausedByDeactivation && MediaPlayer.State == MediaState.Paused)
-                _soundtrackProgramPlayer?.ResumeThroughDiscEnd();
-            _soundtrackPausedByDeactivation = false;
+            // Background music stays suppressed while the intro movies play.
+            if (_introMoviesPlaying || _soundtrackProgramPlayer?.ResumeThroughDiscEnd() != true) return;
+            _soundtrackAwaitingStart = true;
+            _soundtrackStartDeadline = _inputTime + SoundtrackStartTimeout;
         }
         catch
         {
@@ -275,7 +275,6 @@ public sealed partial class ChaosGame
             {
                 _soundtrackEnabled = false;
                 _soundtrackAwaitingStart = false;
-                _soundtrackPausedByDeactivation = false;
                 if (MediaPlayer.State == MediaState.Playing) BeginSoundtrackFade(now);
                 else if (_soundtrackFade is null)
                     _soundtrackProgramPlayer?.Stop();
@@ -300,10 +299,9 @@ public sealed partial class ChaosGame
         _soundtrackFade = null;
         _soundtrackEnabled = false;
         _soundtrackAwaitingStart = false;
-        _soundtrackPausedByDeactivation = false;
         try
         {
-            _soundtrackProgramPlayer?.Stop();
+            _soundtrackProgramPlayer?.Release();
         }
         catch
         {
