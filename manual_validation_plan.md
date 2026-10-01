@@ -108,8 +108,8 @@ finding or experiment is in the spec.
 - RULE-RESEARCH-001: two gangs of one player researching the same item that
   the first can finish; record the remaining research and the report.
 - RULE-BRIBE-001 / BUG-BRIBE-001: bribe a sector with Tolerance 39 twice in
-  one turn; record 45 (no cap) and cash down by 6. Bribe with 2 cash; record
-  the report and that nothing changed.
+  one turn; record 45 (no cap) and cash down by 6. Capture the Last Turn
+  report of a Bribe at 2 cash (EXP-TURN-033 turn 10 sets it up).
 - RULE-SNITCH-001: Snitch while in debt; record no cash change. EXP-TURN-032
   covers the clamp at 1 with the player's cash positive.
 - RULE-TOLERANCE-001: after one Bribe, record the sector's Tolerance at each
