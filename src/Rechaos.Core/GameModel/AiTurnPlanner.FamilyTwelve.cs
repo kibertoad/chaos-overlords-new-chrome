@@ -94,10 +94,10 @@ public static partial class AiTurnPlanner
     /// Selector 0x5A for roster slot 0: the sector byte of the player's first gang record, which
     /// is 100 while the slot is empty (FMT-STATE-001, RULE-GANG-002).
     /// </summary>
-    private static int FirstRosterSlotSector(MatchPlayerState player) =>
+    internal static int FirstRosterSlotSector(MatchPlayerState player) =>
         player.Gangs.Count > 0 && player.Gangs[0].IsActive
             ? player.Gangs[0].SectorId
-            : OriginalAiSectorSelectionRules.GuardTargetEndMarker;
+            : OriginalAiHirePlacementRules.InactiveGangSector;
 
     private static void SetFamilyTwelveEquipment(
         MatchState state,
