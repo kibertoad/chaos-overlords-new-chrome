@@ -40,7 +40,7 @@ internal static class OriginalAiFamilyTenRules
     /// </summary>
     public static bool CanEquipArmor(int cooldown, int itemCost, int cash)
     {
-        if (itemCost < 0) throw new ArgumentOutOfRangeException(nameof(itemCost));
+        ArgumentOutOfRangeException.ThrowIfNegative(itemCost);
         return cooldown <= 0 && itemCost <= cash;
     }
 
