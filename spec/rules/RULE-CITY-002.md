@@ -1,10 +1,10 @@
 ---
 id: RULE-CITY-002
 title: Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CITY-002, FND-RNG-005]
+evidence: [FND-CITY-002, FND-RNG-005, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003, EXP-SETUP-004]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -80,6 +80,7 @@ Armageddon, for a repeat or for balance.
 Slot 0 is never tested, so a single site may carry any modifiers. In
 Armageddon, definitions 4 and 8 never appear, and each proposal that draws one
 of them costs another draw before the duplicate and balance tests.
+Every site starts with no progress: EXP-SETUP-001 read 0 in all 192.
 
 ## What the sources say
 
@@ -92,9 +93,9 @@ None known.
 
 ## Open questions
 
-- That the generator visits the sectors in ascending order, and places a
-  sector's sites right after that sector's Income, is not recorded; the
-  finding places all the density draws before any site draw.
-- What each slot's `progress` is set to is not recorded.
+- The finding places all the density draws before any site draw, and
+  EXP-SETUP-001 recorded them in that order. Visiting the sectors in ascending
+  order, as written here, gives all 192 sites of that run; the order is not
+  recorded at instruction level.
 - The names of the fourteen modifier fields come from FMT-DATA-001, whose
   offsets rest on an outside source.

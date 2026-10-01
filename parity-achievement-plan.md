@@ -55,12 +55,6 @@ Both AI policies are affected; DEV-AI-003's Advanced AI keeps the original plann
 Tooltips: the Game Information panel's AI policy label and any hover text that describes how
 computer players choose orders.
 
-## Step 9: Remaining rule details
-
-- RULE-POLICE-002's edge case says a count of 103 to 105 then counts down, while RULE-POLICE-003's
-  procedure never lowers a count of 100 or above. The rebuild follows the procedure; the two
-  entries need reconciling from the executable.
-
 ## Step 10: Screens
 
 The screens and interface rules were compared with the findings #181 recorded. What is left

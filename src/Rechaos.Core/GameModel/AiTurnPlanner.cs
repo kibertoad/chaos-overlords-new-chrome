@@ -164,14 +164,11 @@ public static partial class AiTurnPlanner
             snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
+            ownerTests: SelectorOwnerTests(state, playerId),
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
-            formationSectorId: formationSectorId);
+            formationSectorId: formationSectorId, planning: state.AiPlanning);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
         if (storesDestination)
             state.AiPlanning.SetFormationSector(playerId, gangSlot, target);
@@ -207,7 +204,7 @@ public static partial class AiTurnPlanner
                     : null;
             if (OwnerQuery(state, gang.SectorId) != playerId.Value)
             {
-                var turnsRemaining = ScenarioCatalog.Turns(state.Setup.Duration)
+                var turnsRemaining = ScenarioCatalog.TurnLimit(state.Setup.Scenario, state.Setup.Duration)
                     - (state.Coordinator.Turn - 1);
                 if (OriginalAiObjectiveFamilyRules.ShouldScanContestedObjectiveTargets(
                         turnsRemaining, visibleWeight))
@@ -261,10 +258,8 @@ public static partial class AiTurnPlanner
             snapshot.SectorGangCounts,
             sectorId => CanSoloControl(state, playerId, gang, sectorId),
             _ => false,
-            owner => state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-            owner => state.FindPlayer(new PlayerId(owner))?.Setup.Controller
-                == PlayerController.Human,
-            state.Random);
+            SelectorOwnerTests(state, playerId),
+            state.Random, planning: state.AiPlanning);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
         state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }

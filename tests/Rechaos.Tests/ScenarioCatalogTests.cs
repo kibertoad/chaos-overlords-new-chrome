@@ -22,6 +22,17 @@ public sealed class ScenarioCatalogTests
     public void TimeLimitsMatchManual(GameDuration duration, int turns) =>
         Assert.Equal(turns, ScenarioCatalog.Turns(duration));
 
+    // FND-SETUP-018: the timed scenarios keep the chosen length, every other one plays with 65535.
+    [Fact]
+    public void TurnLimitIsTheChosenLengthOnlyInTimedScenarios()
+    {
+        foreach (var scenario in ScenarioCatalog.All)
+        foreach (var duration in Enum.GetValues<GameDuration>())
+            Assert.Equal(
+                scenario.IsTimed ? ScenarioCatalog.Turns(duration) : 65535,
+                ScenarioCatalog.TurnLimit(scenario.Id, duration));
+    }
+
     [Theory]
     [InlineData(GameDuration.SixMonths, 1, 10, 30)]
     [InlineData(GameDuration.OneYear, 1, 30, 100)]

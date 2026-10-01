@@ -70,6 +70,24 @@ public sealed class BoardResolutionTests
         Assert.Equal(CommandValidationCode.DestinationAtCapacity, result.Validation.Code);
     }
 
+    // DEV-MOVE-001, RULE-MOVE-002: the refusal is the order panel's; a computer player's Move into a
+    // full sector is taken as in the original and left to the Move repair.
+    [Fact]
+    public void ComputerMoveIntoDestinationAtFriendlyCapacityIsAccepted()
+    {
+        var playerOneGangs = new List<MatchGangState> { Gang(20, 1, 3, 5) };
+        playerOneGangs.AddRange(Enumerable.Range(0, MatchLimits.FriendlyGangsPerSector)
+            .Select(index => Gang(40 + index, 1, 2, 5)));
+        var match = CreateMatch([Gang(10, 0, 0, 5)], playerOneGangs);
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+
+        var result = match.Submit(new GameCommand(
+            new PlayerId(1), new GangId(20), GangAction.Move, CommandTarget.Sector(2)));
+
+        Assert.True(result.Accepted);
+    }
+
     [Fact]
     public void SimultaneousFriendlyMovesCancelEarlierRosterDestinationFirst()
     {

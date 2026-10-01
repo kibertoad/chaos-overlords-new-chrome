@@ -242,6 +242,9 @@ The reasoning is in `docs/MULTIPLAYER.md`.
   have given a useful order instead is no longer wasted on a Move that cannot happen.
 - Dropped: no
 
+The refusal applies to the orders a person gives only. A Move the computer planner plans into a
+full sector, for a computer seat or for a human seat a simulation hands to the planner, is planned
+as in the original and left to the Move repair, which EXP-TURN-010 depends on.
 Whether the original's panel refuses the order too is in `manual_validation_plan.md`. The rebuild
 counts only the gangs already in the destination, so moving one gang out and another in to a full
 sector takes two turns where the original allows one; counting gangs ordered out of the
@@ -491,6 +494,65 @@ started with.
   reaches the read. What the stray byte holds depends on memory outside the sector list that the
   rebuild does not lay out, and keeping an anchor that names no sector is logic that plainly does
   not do what it was written to do; a setting would choose between a rescan and a guess.
+- Dropped: no
+
+## DEV-AI-005
+
+- Departs from: RULE-AI-006
+- Reason: A routing step of the computer players' sector selector that would leave the city is not
+  taken, and the gang stays in the row or column it is in. The original takes the step whenever
+  the gang count it reads for the new sector number is 5 or less, and that number then lies
+  outside the player's row of `sector_gang_count`: in another player's row, in the constants
+  before the list or in the selector's own pairs after it (FND-AI-066).
+- Setting: None
+- Default: mandatory
+- Justification: Only a target read from past the end of the selector's list can lie off the
+  board, and the step then stores a sector number outside the city as the gang's destination. The
+  Move phase sets the gang's sector to that number and the capacity repair counts it in a 64-entry
+  list (RULE-MOVE-001, RULE-MOVE-002), so the original writes outside that list and leaves a gang
+  on no sector: corrupted state that no player can rely on. No recorded run reaches such a step,
+  and a setting would choose between refusing the step and reproducing the corruption.
+- Dropped: no
+
+## DEV-AI-006
+
+- Departs from: RULE-AI-006
+- Reason: When the sector selector's common block tests a sector of column 7 with a row of 1 or
+  more and the sector passes, the original multiplies a dword past its score table by five: one
+  of the first seven dwords of player 0's planning records, which hold the family, action, target
+  and cooldown bytes of records 0 and 1 (FND-AI-069). The rebuild leaves the records unchanged.
+- Setting: None
+- Default: mandatory
+- Justification: The write is an index past the end of a 64-entry table, and it rewrites another
+  player's planning state with bytes that are no family, action or target any handler assigns: a
+  corruption no player can rely on. While a human holds slot 0 the records are zero bytes and the
+  multiply leaves them zero, so the usual match plays the same. A setting would choose between
+  leaving the records alone and reproducing a corruption the rebuild's planning state refuses to
+  hold.
+- Dropped: no
+
+## DEV-AI-007
+
+- Departs from: RULE-AI-006, RULE-MOVE-001
+- Reason: A computer player's gang moves only to a sector next to its own, as a human's does. The
+  original's sector selector can return a sector several steps away: when the first of its sorted
+  pairs is a neighbour it returns the tie-break's pick, and a pair that the family-0 and family-1
+  filter kept from an earlier call can tie with the neighbours (RULE-AI-006). The Move pass then
+  puts the gang in that sector at once (RULE-MOVE-001, EXP-TURN-015). The rebuild refuses such a
+  Move when the planned action becomes a command, as DEV-AI-002 does with the other planned
+  actions a human could not order, so the gang has no order that turn and keeps its planning
+  history.
+- Setting: None
+- Default: mandatory
+- Justification: The jump comes from a pair left over from another gang's search, which the
+  selector was not written to return, and it lets a computer player's gang do what no human's can:
+  the same rules apply to every player. It costs no measurable balance. Such Moves come to about
+  25 a match in Kill 'Em All and 12 in Power and Big 40. In 973 pairs of matches of every scenario,
+  played to turn 208 from the same seeds with a planner-played human seat that could not jump, the
+  human seat survived to the end in 45% of the matches when the computer players could jump and in
+  47% when they could not, a difference within the matches' noise (95% interval of 2.8 points
+  either way), and its turns survived and sectors held did not change beyond noise either. A
+  setting would keep an unfair advantage that makes no difference a player could notice.
 - Dropped: no
 
 ## DEV-EVENT-001

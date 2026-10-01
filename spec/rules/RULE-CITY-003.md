@@ -1,10 +1,10 @@
 ---
 id: RULE-CITY-003
 title: The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CITY-003, FND-UI-033, FND-RNG-005, FND-EXE-004]
+evidence: [FND-CITY-003, FND-UI-033, FND-RNG-005, FND-EXE-004, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-002, FMT-STATE-004]
@@ -80,4 +80,3 @@ None known.
 - Whether the permutation holds the drawn values 1 to 6 and indexes the table
   with the value minus one, as written here, or stores the zero-based value,
   is not recorded; the result is the same.
-- What the headquarters slot's `progress` is set to is not recorded.

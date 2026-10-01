@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-008
 title: A computer player ranks its three hire offers by the mode of its hire role
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-008, FND-EXE-004]
+evidence: [FND-AI-064, FND-EXE-004, EXP-TURN-003]
 conflicting: []
 split_with: []
 related: []
@@ -13,8 +13,8 @@ related: []
 ## Summary
 
 A computer player looks at its three hire offers and picks the one that best
-fits the job it is hiring for: cheap gangs, healers, researchers, fighters,
-sneaks or spotters. If it cannot pay for the one it picks, it hires nothing
+fits the job it is hiring for: cheap gangs, or gangs strong in Control,
+Influence, fighting, Tech Level and Research, or Stealth. If it cannot pay for the one it picks, it hires nothing
 this turn.
 
 ## When it runs
@@ -28,9 +28,9 @@ None.
 
 ## Inputs
 
-`hire_offers`, `gang_definitions` (`hire_cost`, `upkeep`, `combat`, `heal`,
-`research`, `stealth`, `detect`, `control`, `strength`, `blade`, `range`,
-`fighting`, `martial_arts`), `cash` and `scenario`.
+`hire_offers`, `gang_definitions` (`hire_cost`, `upkeep`, `chaos`, `control`,
+`influence`, `combat`, `strength`, `blade`, `range`, `fighting`,
+`martial_arts`, `tech_level`, `research`, `stealth`), `cash` and `scenario`.
 
 ## Procedure
 
@@ -48,33 +48,34 @@ define rank_offer(player, mode):
     for k in 0..3:
         let d = gang_definitions[hire_offers[player * 3 + k]]
         if mode == 0:
-            if d.upkeep <= best and d.control >= 0:
+            if d.upkeep <= best and d.chaos >= 0:
                 best = d.upkeep
                 choice = k
         else if mode == 1 or mode == 2:
-            let v = d.heal
+            let v = d.control
             if mode == 2:
-                v = d.research
+                v = d.influence
             if v >= best and (scenario != 0 or d.upkeep <= 3):
                 best = v
                 choice = k
         else if mode == 3:
-            let v = d.combat + max(d.blade, 0) + max(d.range, 0) + max(d.fighting, 0) + max(d.martial_arts, 0)
+            let v = d.combat + max(d.strength, 0) + max(d.blade, 0) + max(d.range, 0)
+            v = v + max(d.fighting, 0) + max(d.martial_arts, 0)
             if v >= best:
                 best = v
                 choice = k
         else if mode == 4:
-            let v = d.stealth + d.strength
+            let v = d.tech_level + d.research
             if scenario == 0:
-                if d.upkeep <= 4 and d.strength >= 0 and d.stealth > 3 and v >= best:
+                if d.upkeep <= 4 and d.research >= 0 and d.tech_level > 3 and v >= best:
                     best = v
                     choice = k
-            else if d.strength >= 0 and v > best:
+            else if d.research >= 0 and v > best:
                 best = v
                 choice = k
         else if mode == 5:
-            if d.detect >= best:
-                best = d.detect
+            if d.stealth >= best:
+                best = d.stealth
                 choice = k
     if choice == -1:
         return -1
@@ -92,8 +93,11 @@ offer costs more than the player's cash. Changes no state and makes no draw.
 
 An equal value from a later offer replaces an earlier one in every mode except
 mode 4 outside Greed, where the first of the best offers wins. A player with
-more than 200 cash outside Greed ranks mode 0 requests by Combat instead. An
-unaffordable winner is not replaced by the next-best offer.
+more than 200 cash outside Greed ranks mode 0 requests by fighting strength
+instead. An unaffordable winner is not replaced by the next-best offer.
+
+EXP-TURN-003 reaches mode 0 with an offer whose Chaos is at least 0 and whose
+Control is below 0: the original hires it.
 
 ## What the sources say
 
@@ -105,9 +109,9 @@ None known.
 
 ## Open questions
 
-- The field compared with cash is the gang definition field at +0 of its
-  statistics block, named `force` in the decoded file; that it is the hire
-  price is inferred from the comparison with cash (FND-AI-008).
+- The field compared with cash is `hire_cost`; that it is the price is
+  inferred from the comparison with cash and from the hire resolution
+  (FND-AI-064, FND-HIRE-006).
 - Whether a winner costing exactly the player's cash is hired (`> cash`
   fails) is assumed.
 - The starting best of mode 4 is not recorded; 0 is assumed. The starting

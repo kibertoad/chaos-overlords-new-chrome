@@ -64,8 +64,17 @@ public sealed class DeterministicRandom
         var second = NextRaw();
         var selector = NextRaw();
         var selected = selector > SelectionThreshold ? first : second;
-        return selected % maximum + 1;
+        var result = selected % maximum + 1;
+        RollObserver?.Invoke(maximum, result);
+        return result;
     }
+
+    /// <summary>
+    /// Sees every roll(n) made on this thread, as the bound and the result, so a test can line the
+    /// rebuild's rolls up with an experiment's recorded ones (RULE-RNG-002).
+    /// </summary>
+    [ThreadStatic]
+    internal static Action<int, int>? RollObserver;
 }
 
 public sealed record PhaseBoundaryHash(
@@ -118,7 +127,7 @@ public static class MatchStateHasher
     /// multiplayer session version — so the file is refused as an older format before its
     /// fingerprint is ever compared. <c>StateFingerprintVersionCouplingTests</c> holds the rule.
     /// </remarks>
-    internal const int FormatVersion = 10;
+    internal const int FormatVersion = 11;
 
     /// <summary>The number of lowercase hex characters a fingerprint has.</summary>
     public const int FingerprintLength = 2 * DigestBytes;
@@ -266,6 +275,7 @@ public static class MatchStateHasher
         foreach (var needsFamily in planning.CaptureNeedsFamily()) writer.Write(needsFamily);
         foreach (var raiderMode in planning.CaptureRaiderMode()) writer.Write(raiderMode);
         foreach (var weight in planning.CaptureSectorWeights()) writer.Write(weight);
+        foreach (var score in planning.CaptureSectorChoiceScores()) writer.Write(score);
         writer.Write(checked((byte)planning.FirstCombatRecordDefinition));
     }
 

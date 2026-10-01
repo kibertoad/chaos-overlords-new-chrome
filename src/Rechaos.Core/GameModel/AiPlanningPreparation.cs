@@ -77,7 +77,7 @@ internal static class AiPlanningPreparation
             state.Setup.Scenario, activeGangCount, ownedSectorCount,
             playerState.Cash, hasNeutralSector);
         var elapsedTurns = state.Coordinator.Turn - 1;
-        var turnsRemaining = Math.Max(0, ScenarioCatalog.Turns(state.Setup.Duration) - elapsedTurns);
+        var turnsRemaining = Math.Max(0, ScenarioCatalog.TurnLimit(state.Setup.Scenario, state.Setup.Duration) - elapsedTurns);
         if (!OriginalAiHireRoleRules.ShouldAttemptHire(
                 state.Setup.Scenario, activeGangCount, hireGangLimit,
                 turnsRemaining, state.Setup.Duration))
@@ -193,13 +193,10 @@ internal static class AiPlanningPreparation
             ?? throw new ArgumentOutOfRangeException(nameof(player));
         var firstHostileSector = FirstVisibleHostileSector(state, player)
             ?? OriginalAiHirePlacementRules.InactiveGangSector;
-        var gangSlotZeroSector = playerState.Gangs.Count > 0 && playerState.Gangs[0].IsActive
-            ? playerState.Gangs[0].SectorId
-            : OriginalAiHirePlacementRules.InactiveGangSector;
         return OriginalAiHirePlacementModeRules.Select(
             state.Setup.Scenario, adjustedRole,
             sectorAnchor, firstHostileSector,
-            gangSlotZeroSector);
+            AiTurnPlanner.FirstRosterSlotSector(playerState));
     }
 
     /// <summary>

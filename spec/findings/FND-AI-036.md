@@ -27,7 +27,7 @@ With neither upgrade, a gang in a sector its player owns always writes Move
 through mode 3. In a sector not owned, a cached opponent weight of 10 enters a
 loop of up to five target draws with the same list choice, full-list
 comparison, early exit on success and Attack on the last target after five
-failures as family 12 (FND-AI-038). When the weight is not 10, a previous
+failures as family 12 (FND-AI-070). When the weight is not 10, a previous
 Control writes Move through mode 3 and every other previous action writes
 Control. The handler has no Heal, no miscellaneous Equip and no scenario 0
 override.

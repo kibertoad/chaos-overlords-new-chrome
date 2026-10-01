@@ -204,6 +204,9 @@ public sealed partial class ChaosGame
             if (acted && _state.Coordinator.Turn != startingTurn) break;
             if (_state.Coordinator.Phase == TurnPhase.Command)
             {
+                // RULE-TURN-001, RULE-HIRE-002: the vacant offers are refilled on entry, before the
+                // planner (RULE-AI-001) makes any draw of its own.
+                PrepareCurrentHireOffers();
                 _actions.HotSeatRecorder.PrepareAiPlanning(playerId);
                 var commands = AiPolicyPlanner.Plan(_state, playerId);
                 foreach (var command in commands)
@@ -214,7 +217,6 @@ public sealed partial class ChaosGame
                     ["turn"] = _state.Coordinator.Turn.ToString(),
                     ["commands"] = commands.Count.ToString()
                 });
-                PrepareCurrentHireOffers();
                 var hiring = _actions.HotSeatRecorder.PrepareAiHiring(playerId);
                 if (hiring.Choice is { } planningHire)
                     _actions.HotSeatRecorder.QueueHire(playerId, planningHire.GangDefinitionId, planningHire.SectorId);

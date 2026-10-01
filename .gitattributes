@@ -5,3 +5,8 @@
 # The release process rewrites this file through the GitHub contents API, which
 # writes LF. Keeping the checkout bytes identical avoids a line-ending diff.
 /version.txt text eol=lf
+
+# Experiment fixtures run close to the repository's tracked-file size limit, which
+# Verify-Repository.ps1 measures on the checkout. LF keeps their size the same on
+# every platform instead of growing by one byte per line on Windows.
+/spec/experiments/*.json text eol=lf

@@ -61,6 +61,18 @@ public static class ScenarioCatalog
         _ => throw new ArgumentOutOfRangeException(nameof(duration), duration, null)
     };
 
+    public const int UntimedTurnLimit = 0xFFFF;
+
+    /// <summary>The value of <c>turn_limit</c> a match plays with.</summary>
+    /// <remarks>
+    /// FND-SETUP-018: each match entry writes 65535 when the scenario is not one of the four timed
+    /// ones, whatever length was chosen at setup, so the computer players' reads of
+    /// <c>turn_limit</c> and <c>turns_remaining</c> (RULE-AI-004, RULE-AI-010, RULE-AI-031) see
+    /// 65535 there.
+    /// </remarks>
+    public static int TurnLimit(ScenarioId scenario, GameDuration duration) =>
+        Get(scenario).IsTimed ? Turns(duration) : UntimedTurnLimit;
+
     public static DominanceWeights Weights(GameDuration duration) => duration switch
     {
         GameDuration.SixMonths => new(1, 10, 30),

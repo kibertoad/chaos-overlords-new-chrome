@@ -4,7 +4,7 @@ title: Family-13 and family-14 computer gangs move to the Big Man or Siege objec
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-039, FND-AI-027, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-062, FND-AI-063]
+evidence: [FND-AI-039, FND-AI-069, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-062, FND-AI-063, FND-SETUP-018]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-AI-022, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -154,6 +154,10 @@ A family-14 gang may become family 13. Draws up to five `roll`s on an
 objective, plus the draws inside `select_sector`.
 
 ## Edge cases
+
+Big Man and Siege play with a `turn_limit` of 65535 (FND-SETUP-018), so
+`turns_remaining()` is even exactly when `elapsed_turns` is odd, whatever
+length was chosen at setup.
 
 On a contested objective the gang fights only when the number of turns
 remaining is even, so it alternates between fighting and Control. A gang with

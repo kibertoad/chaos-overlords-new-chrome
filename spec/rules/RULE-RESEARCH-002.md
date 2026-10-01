@@ -1,10 +1,10 @@
 ---
 id: RULE-RESEARCH-002
 title: A new match starts each player with each item's research difficulty, or with every item researched in Armageddon
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-RESEARCH-002, SRC-MANUAL-GOG]
+evidence: [FND-RESEARCH-002, SRC-MANUAL-GOG, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003, EXP-SETUP-004]
 conflicting: []
 split_with: []
 related: [FMT-DATA-003]

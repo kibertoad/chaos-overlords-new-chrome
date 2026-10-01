@@ -101,6 +101,27 @@ public sealed class OriginalAiFamilyTenRulesTests
             OriginalAiFamilyTenRules.CompletedStealthScore(match, 0));
     }
 
+    // RULE-AI-028, FND-AI-071: selector 8 replaces its value with the Stealth of each finished
+    // site in slot order, so it gives the last finished site's Stealth, not a sum, and 0 when no
+    // site is finished.
+    [Fact]
+    public void LastFinishedSiteStealthTakesTheLastFinishedSlot()
+    {
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(data, researchedItems: [], completedStealthSites: true);
+        var sites = match.Sectors[0].Sites;
+
+        Assert.Equal((int)data.Site(sites[1].DefinitionId).Stats.Stealth,
+            OriginalAiFamilyTenRules.LastFinishedSiteStealth(match, 0));
+
+        sites[2].Resistance = 0;
+        Assert.Equal((int)data.Site(sites[2].DefinitionId).Stats.Stealth,
+            OriginalAiFamilyTenRules.LastFinishedSiteStealth(match, 0));
+
+        foreach (var site in sites) site.Resistance = 1;
+        Assert.Equal(0, OriginalAiFamilyTenRules.LastFinishedSiteStealth(match, 0));
+    }
+
     private static MatchState CreateMatch(
         OriginalData data,
         IEnumerable<short> researchedItems,

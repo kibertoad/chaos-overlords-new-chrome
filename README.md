@@ -29,71 +29,62 @@ when importing them.
 
 ## Project status
 
-New Chrome is a broad, playable pre-1.0 recreation. The functional migration is
-substantially complete: a full match can be played locally from setup through
-results, and the deterministic core, original asset importer, modern online
-transport, native saves, and replays are all operational. The remaining work is
-primarily original-runtime corroboration, golden-screen and input comparison,
-release hardening, and optional online experience rather than missing basic
-match flow.
-This is not yet a claim of pixel-perfect or rule-perfect parity with the shipped
-1996 executable. What the original does is written down in the [spec](spec/README.md),
-and how much of each spec entry the rebuild does, and which tests prove it, is
-tracked in the [parity matrix](PARITY.md).
-The technical documentation is cataloged and indexed in
-[docs/README.md](docs/README.md).
+New Chrome is a playable pre-1.0 recreation. A full match runs from setup to
+the awards for one player, several players at one computer, or players online
+through a coordination server. All ten scenarios, all fourteen gang commands,
+combat, police, the computer players, the original screens, Help, music and
+movies are in, using assets imported from a legal GOG copy. Saves, replays and
+bug reports that carry the whole match are rebuild additions.
 
-### Faithfulness audit (2026-09-20)
+### How accurate it is
 
-The documentation maps the 29 currently identified in-scope game subsystems to
-their rules, executable findings, implementation/parity rows, and deliberate
-deviations. It contains 104 stable `BIN-*` findings and 24 `RULE-*` entries,
-and its generated indexes and relative links are current. This is broad,
-traceable coverage of the recovered structure; it is **not** evidence that the
-entire original program structure or every hidden behavior has been recovered.
+The rules, balance, AI, screens and file formats were recovered by reading the
+1996 executable and its data files, and the rebuild implements everything that
+reading found. Every entry of the [spec](spec/README.md) has an implementation,
+and every function of the game's code is cited by at least one entry, so no
+part of the original is known to be left out. The rebuild keeps the original's
+rounding, ordering and quirks, bugs included. Its 65 deliberate departures
+are listed in [DEVIATIONS.md](DEVIATIONS.md); many are interface changes, and
+five have a setting that restores the original behaviour.
 
-The audit does **not** validate New Chrome as fully compliant with the shipped
-1996 logic. The matrix's only explicit `Parity verified` result is the
-values-only gameplay-table row. Native launch-seed/RNG correlation, initial
-city and transaction fixtures, full Original-AI decision traces, several
-objective/police edges, and native visual/input/media comparisons remain open.
-Consequently, the implementation should be regarded as a broad, deterministic,
-evidence-led recreation with high-confidence static coverage in many areas,
-not as a rule-perfect replica. Intentional deviations and quality-of-life
-extensions are recorded in the [deviation log](DEVIATIONS.md), and the product
-decisions behind them in [DECISIONS.md](docs/DECISIONS.md).
+Recorded runs of the original now check it in play. A debugger records every
+random draw of new games from launch and up to twenty-five turns of play, some
+with orders for the human's gang, and the rebuild has to make the same draws and
+reach the same state (EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to
+EXP-TURN-016 in the [spec](spec/README.md)). That covers setup, the computer
+players' planning and hiring, including Siege, Eliminate and Big Man, the
+resolution of most orders, one Attack, one Sell and the police. Deaths in
+combat, the Terminate and Give orders, events and the later game have not been
+recorded yet, and a static reading can still be wrong there. The
+[parity matrix](PARITY.md) shows the state of every rule, format and screen;
+75 of its 222 rows are compared with evidence from the original. The
+[parity achievement plan](parity-achievement-plan.md) and the
+[static](static_validation_plan.md) and [manual](manual_validation_plan.md)
+validation plans list the open questions.
 
-### Implemented
+### Key omissions
 
-| Area | Available now |
-|---|---|
-| Installation and assets | Windows, Linux, and macOS packaging can verify a supported legal GOG installation and import the required assets. The transactional extractor repairs RGB555 graphics, decodes indexed graphics and WinHelp content, imports audio/music/video, validates exact output inventories and hashes, and never copies the original executable. |
-| New Game setup | All ten scenarios are mapped to their correct visual buttons and default to Kill 'Em All. Every mode and game-length button has a rules tooltip. The four duration choices are active only for the timed Greed, Power, Acceptance, and Dominance modes; objective modes run until their goal is reached, hide the duration selection light, and explain why duration clicks are disabled. Setup supports the global AI Mentality, the persisted default-off Advanced AI choice from Options, one-to-six named local humans, portrait/color rearrangement, six total participants after AI fill, and optional None/30-second/2-minute/5-minute planning clocks. |
-| Local and hot-seat play | Deterministic turns run through Upkeep, Command, Execution, Hire, and Elimination. Multiple local humans receive the original private handoff screen. The optional idle-gang warning prevents accidental completion while an active gang has no order. |
-| Commands and economy | All 14 original actions are validated, queued, cancelled, and resolved, with the recovered recurring subset enforced. Dragging a gang onto a neighboring sector queues Move, onto an eligible site queues Influence, and onto a visible enemy gang queues Attack. Hire, Reject, Equip, Give, multi-item Sell, Research, Bribe, Chaos, Control, Heal, Hide, Snitch, and Terminate are playable. The recovered player/roster scans, phase-opening snapshots, simultaneous Move-capacity normalization, attack-visibility gate, Influence takeover behavior, recurring-command cleanup, and end-turn scoring/cleanup are implemented. Cash, upkeep, sector tax, influenced-site income, debt restrictions, site effects, delayed Influence activation, and the recovered Factory/Sell rules are represented. |
-| City, sector, and management UI | The 640x460 interface includes the 8x8 city, 3x3 detailed-sector neighborhood, up to six gang cards, three equipped-item cells in Gang Information, site/item details, City and Sector Finance, Ranking, Hire comparison, Comlink, Game Info, Research/Equipment, Give/Sell, Combat Summary/Detail, Options, Help, and endgame panels. Recovered setup-card hit geometry, main-console controls, shared-panel destinations, sector gang cards, status overlays, keyed and opaque sprite-copy modes, and bounded panel-slide distances now follow the native layouts. Mouse and keyboard input, right-click cancellation, nested-panel return, panel-motion control, and windowed/borderless-fullscreen presentation are wired. |
-| Search and turn reports | Search: Sites exposes all 22 site types with ALL/NONE and individual filters. Controlled sites are always shown as white transparent markers; selected uncontrolled site types appear amber only while the overview is applied. Last Turn Events auto-opens when required, preserves unread progress until every page is viewed, remains reviewable afterward, and uses the recovered native site crop, palette stretch, ordered mask, foreground event art, and footer layout. Options can switch event-site backgrounds from Original to Smooth filtering. |
-| Combat and police | Simultaneous combat, retaliation, Hide/evasion, casualties, equipment loss, Crackdowns, police detection and damage, and combat statistics are implemented with recovered player/roster ordering, phase snapshots, attack visibility, cooperative detection bands, and retired-gang equipment preservation. Summary results are grouped by sector; Detail uses the native combatant, equipment, Force-meter, and animation geometry to replay the chosen fight with decoded eight-frame animations and event-time equipped, unarmed, retaliation, and police sounds. Detailed/Simple presentation changes no authoritative outcome. |
-| Objectives, ranking, and AI | All ten scenarios have timed/objective completion, recovered score tables, competition ranking, tied winners, sole-survivor handling, elimination cleanup, awards/statistics, and Siege objective markers. Deterministic computer players use the recovered difficulty bands, attitudes/reactions, hiring and placement rules, and handlers for every known strategy family. Original AI remains the parity default. Advanced AI composes documented policy deltas over that single planner: idle-gang recovery plus higher-difficulty outward movement for healthy gangs that would otherwise remain idle or repeat passive actions. F1 documents the exact order, thresholds, tie-breaks, and non-bonuses in game. |
-| Saves and replays | Escape opens an in-game Resume/Save/Load/Options/Report-bug/Quit-to-main-menu menu; quitting requires confirmation that unsaved progress will be lost. F5/F9 open a nine-slot save/load browser. Saves suggest an editable name and display timestamp, scenario, single/hot-seat/online type, and human/AI counts. Atomic writes, backups, autosaves, and verified self-healing recovery of missing or corrupt primaries are implemented. F6/F10 save and verify deterministic local replays. Each slot also writes a compressed journal beside it, so a session’s whole history survives a save and a load rather than restarting at the load. Current formats are save v24, replay v28, and canonical hash v27. |
-| Online play | The title screen can host named public or code-only matches through the central service at `chaos-overlords.dinorefurb.com` or a custom self-hosted coordination service. Public waiting and ongoing matches can be browsed and filtered by status, scenario, and AI difficulty. Hosts configure online games through the regular new-game setup, may start alone, and may allow late joiners to claim an AI seat that has never belonged to a human. Players choose the overlord face they sit down under when they create or join, beside the name they take with them, and the lobby roster shows every seat's face. The join-code field has a bounded clipboard Paste button, while lobby codes can be copied out. The escape menu of a match in progress shows that session's join code and password. The host uploads a verified rolling server autosave after every confirmed turn. The game retains up to eight incomplete memberships locally, suggests recovery after an unclean exit, and lets former players browse and reclaim their own seats, including seats temporarily transferred to AI. If the host is absent, the first returning player inherits that role. A departure or wholly missed timed turn opens a unanimous `WAIT`/`USE AI` vote; authenticated activity cancels a pending absence vote, approved takeover and return are recorded at a clean Command boundary, and reconnect reconstruction replays the decision gaplessly. Terminal multiplayer failures persist safe correlation details (operation, status/reason, request id, turn and event sequence) for local diagnostics without retaining credentials, names, settings, or orders. See [Multiplayer](docs/MULTIPLAYER.md). This does not reproduce the original network protocols. |
-| Bug reports | The Escape menu can file a bug report to the project's server: a free-form description and, by default, the whole match as a compressed event-sourced journal that replays from its first turn. Player names become seat labels and Comlink text is redacted before it is compressed, by re-running the match so the result is a valid journal rather than an edited one. The box can be unticked, and what would be sent is spelled out beside it. |
-| Help, media, and options | F1 opens a cross-platform viewer for the imported original Help contents, styles, internal jumps, and definition popups, augmented with verified executable formulas. The recovered title/setup, gameplay, and endgame music programs use the statically verified menu ownership and restart boundaries. Both Smacker movies stream through the managed decoder with deterministic cadence, PCM audio, explicit skip, focus pause, safe failure, first-run playback, and later access from the title screen's `INTRO` button. Independent 0-10 music/effect levels, mapped interface sounds, combat cues, planning warnings, display mode, gang-stat mode, combat detail, panel motion, idle warning, and event-image filter are implemented and persisted. Options can create a bounded, privacy-filtered diagnostics ZIP for explicit user sharing. |
-| Engineering baseline | The authoritative simulation is headless and deterministic; saves, replays, online lockstep, and phase hashes share that state model. Automated coverage spans extraction, persistence/migrations, all command resolvers, scenarios, AI families, UI projections/layouts, networking contracts, installers, and multi-turn deterministic campaigns. Static-analysis findings, confidence, and unresolved behavior are documented rather than silently guessed. |
+- Recorded runs of the original do not reach combat or the late game yet, and
+  no screen has been compared with a capture of the original
+  ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136),
+  [#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
+- Help is drawn by a cross-platform viewer, so its typography and paragraph
+  layout approximate WinHelp's
+  ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
+- Online play has no spectating, lobby chat or Comlink messages between
+  players ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)).
+- Key bindings cannot be changed, and macOS builds are not signed or notarized
+  ([#139](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139)).
+- Save and replay formats may change incompatibly before 1.0.0. The
+  [post-1.0 policy](docs/NATIVE-SAVE-FORMAT.md#compatibility-policy) guarantees
+  migration of 1.x saves within the 1.x line; older replays require a retained
+  verifier. Local replay playback has pause, speed, step, jump and exit controls
+  over a verified journal
+  ([#141](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141)).
 
-### Still missing or provisional
-
-Tracking issues are linked from each area below.
-
-| Area | Remaining work |
-|---|---|
-| [Exact gameplay parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/135) | Capture native launch/setup/city fixtures that correlate the uptime-derived seed, startup `serialNum` state, and resulting RNG stream. Add runtime corroboration for the recovered transaction flow, Crackdown report timing, and special-objective edges that currently rely on static or manual evidence. |
-| [Original AI parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136) | Compare full native AI decisions and RNG consumption against fixed reference traces, expand multi-seed tournament coverage, and establish reliable evidence-led completion behavior for Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon. Current AI is playable and deterministic, but complete outer-planner parity is not proven. |
-| [Visual and input parity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137) | Complete the remaining management-workflow hit maps and golden-screen comparisons, especially Search and the city view; validate the remaining offsets, transparency/color keys, bare-hand style, endgame/hot-seat sequencing, and per-screen right-click behavior against native captures. Configurable key bindings and broader accessibility work are not implemented. |
-| [Online experience](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138) | Late joining is limited to eligible AI seats that have never belonged to a human. Spectating, lobby chat, and online Comlink integration are not implemented. A desync still depends on the host supplying a snapshot, and live-runtime recovery coverage will grow as more failure modes are identified. Security and deployment limitations are documented in [Multiplayer](docs/MULTIPLAYER.md). |
-| [Media and platform polish](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139) | Static analysis recovered the later-turn cue and interrupting effect playback. Original movie trigger/skip capture, broader native A/V validation, any remaining interface/impact sound triggers, and audible effect timing remain. Windows releases can be Authenticode-signed through SSL.com eSigner and Linux `.deb` releases can carry a verified detached OpenPGP signature; macOS signing and notarization, native interactive installer validation, and wider platform QA remain. |
-| [Help fidelity](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140) | Help content and navigation are functional, but exact native WinHelp typography and paragraph geometry are intentionally approximated by the cross-platform viewer. Unsafe legacy macro/external-file execution remains disabled. |
-| [Compatibility and replay UX](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141) | Recreation save/replay formats may change before 1.0.0. The [post-1.0 policy](docs/NATIVE-SAVE-FORMAT.md#compatibility-policy) guarantees migration of 1.x saves within the 1.x line, while older replays require a retained verifier. Local replay playback has pause, speed, step, jump, and exit controls over a verified journal. Importing or exporting original 1996 save files is not planned. |
+The technical documentation is cataloged in [docs/README.md](docs/README.md);
+[HANDOVER.md](docs/HANDOVER.md) describes each area of the rebuild in detail and
+[Multiplayer](docs/MULTIPLAYER.md) the online service.
 
 ### Permanent scope boundaries
 
@@ -189,33 +180,6 @@ presentation-only conveniences that make the original systems easier to read:
   exception messages, and file paths. This complements Report Bug: that feature
   sends a written description and, optionally, an anonymized replay of the match.
 
-## Headless AI tournaments
-
-`Rechaos.Tools ai-tournament` runs computer-only matches directly against the
-authoritative model. It does not construct the game window or execute graphics,
-audio, input, animation, or real-time pacing. Cases use deterministic consecutive
-seeds and can run concurrently on a bounded number of workers. The command writes
-progress and optional per-turn traces to standard error, then emits one stable
-JSON report to standard output:
-
-```powershell
-dotnet run --project src/Rechaos.Tools -c Release --no-build -- ai-tournament `
-  --matches 60 --turns 40 --workers 2 --policy advanced `
-  --scenarios objectives --replay-every 10
-```
-
-The default five-second heartbeat shows completed, running, and failed counts.
-Use `--trace` for each match's turn, phase-boundary, event-count, and elapsed-time
-checkpoints. `--replay-every 0` disables the comparatively expensive replay pass;
-a positive value replay-verifies every Nth case while the other cases remain
-bare-model simulations. Use the same seed, scenario set, turn horizon, and worker
-count for statistically paired Original/Advanced runs.
-
-Parallelism is across independent matches. Seats inside one match remain ordered
-because planning preparation, hire offers, and command resolution consume shared
-deterministic state and RNG; online transport may collect order documents
-asynchronously, but every client still applies them in the same sealed order.
-
 ## Controls
 
 | Action | Keyboard | Mouse |
@@ -253,21 +217,10 @@ The game keeps up to five small local session logs and ten crash reports in
 and match-flow details, but no player names, commands, save contents, or asset
 paths. Nothing is uploaded automatically.
 
-## Documentation
+## Developer documentation
 
-[docs/README.md](docs/README.md) catalogs every technical document by purpose
-and indexes them by game subsystem. The most-used entry points:
-
-| If you want to… | Read |
-|---|---|
-| Build, run, and test from source | [Development guide](docs/DEVELOPMENT.md), [Validation procedure](docs/VALIDATION.md) |
-| Resume development at the current checkpoint | [Handover](docs/HANDOVER.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Static validation plan](static_validation_plan.md), [Manual validation plan](manual_validation_plan.md) |
-| Know how faithful each system is | [Parity matrix](PARITY.md), [Deviation log](DEVIATIONS.md), [Project decisions](docs/DECISIONS.md) |
-| Understand the code layout | [Architecture](docs/ARCHITECTURE.md) |
-| Look up a game rule or an executable finding | [Spec](spec/README.md) and its [indexes](spec/index/by-area.md), [AI specification](docs/AI-SPEC.md) |
-| Work on the original file formats or assets | `FMT-*` and `SCR-*` entries in the [spec](spec/README.md), [Asset pack](docs/ASSET-PACK.md), [Asset catalog](docs/ASSET-CATALOG.md), [Audio and video](docs/AUDIO-VIDEO.md) |
-| Host or extend online play | [Multiplayer](docs/MULTIPLAYER.md), [Server operator manual](multiplayer/README.md) |
-| Cut a release | [Building and releasing installers](docs/RELEASING.md) |
+Building from source, the specification of the original game, and the rest of
+the technical documentation are indexed in [docs/README.md](docs/README.md).
 
 ## Acknowledgements
 

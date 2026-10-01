@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 0 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 211 |
-| `validated` | 11 |
+| `implemented` | 147 |
+| `validated` | 75 |
 
 | Code | Rows |
 |---|---|
@@ -49,8 +49,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-AUDIO-001` | Sound effect files DATA/SNDnnnnn | supported | complete | None | None | implemented | The files are passed whole to the sound library. |
-| `FMT-AUDIO-002` | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported | complete | None | None | implemented | The files are passed whole to the music player. |
+| `FMT-AUDIO-001` | Sound effect files DATA/SNDnnnnn | supported | complete | tests/Rechaos.Tests/OriginalSoundFileTests.cs | None | validated | The files are passed whole to the sound library. |
+| `FMT-AUDIO-002` | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported | complete | tests/Rechaos.Tests/OriginalSoundFileTests.cs | None | validated | The files are passed whole to the music player. |
 | `RULE-AUDIO-001` | Starting a music program | supported | complete | None | None | implemented | Title, game and endgame programs are wired to the matching Ogg tracks; the rebuild plays files in place of CD audio. |
 | `RULE-AUDIO-002` | Music repeats its program when it ends and pauses while the window is inactive | supported | complete | None | None | implemented | Focus loss pauses and focus gain resumes music; the end-of-playback restart was not checked separately. |
 | `RULE-AUDIO-003` | Applying the music and effects levels | supported | complete | None | None | implemented | The 0 to 10 level conversion and the level-5 music default are implemented. |
@@ -88,10 +88,10 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-001-gang-record); every field is held with the same value or a representation no rule can tell apart, and the Give and Sell mask order is pinned by tests. |
-| `FMT-STATE-002` | Sector record, one per city sector | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-002-sector-record); `crackdown_turns` is held as a signed byte and wraps past 127 as in the original. |
+| `FMT-STATE-001` | Gang record, one per player and roster slot | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-001-gang-record); every field is held with the same value or a representation no rule can tell apart, and the Give and Sell mask order is pinned by tests. |
+| `FMT-STATE-002` | Sector record, one per city sector | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-002-sector-record); `crackdown_turns` is held as a signed byte and wraps past 127 as in the original. |
 | `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-003-per-gang-combat-record); every field a rule reads is held with the same value. |
-| `FMT-STATE-004` | Site slot in a sector record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-004-site-slot): `progress` is held as the Resistance still needed, a representation no rule result can tell apart. |
+| `FMT-STATE-004` | Site slot in a sector record | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-004-site-slot): `progress` is held as the Resistance still needed, a representation no rule result can tell apart. |
 | `FMT-STATE-005` | Comlink message record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-005-comlink-message-record); the text is stored without its trailing spaces, and a message of spaces only is dropped as RULE-COMLINK-003 records. |
 | `FMT-STATE-006` | Last Turn report record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record); every report carries the type and arguments SCR-EVENT-001 reads. |
 | `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-007-computer-player-planning-record); every field is held with the same value or a representation no rule can tell apart. |
@@ -102,17 +102,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-RNG-001` | The generator, its step, and its seed at process start | supported | complete | None | `DEV-RNG-001` | implemented | The rebuild seeds the run from the low 16 bits of a process-uptime clock when the game object is created, and takes an explicit full-width seed for replays, tests and online matches (DEV-RNG-001). Each later New Game and each load draws on from where the run's sequence stands, as the original never reseeds. |
-| `RULE-RNG-002` | roll(n) gives a whole number from 1 to n from three draws | supported | complete | None | None | implemented | None |
+| `RULE-RNG-001` | The generator, its step, and its seed at process start | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-RNG-001` | validated | The rebuild seeds the run from the low 16 bits of a process-uptime clock when the game object is created, and takes an explicit full-width seed for replays, tests and online matches (DEV-RNG-001). Each later New Game and each load draws on from where the run's sequence stands, as the original never reseeds. |
+| `RULE-RNG-002` | roll(n) gives a whole number from 1 to n from three draws | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 
 ## TURN
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TURN-001` | A turn is turn start, planning by each active player in slot order, then resolution | supported | complete | None | None | implemented | None |
-| `RULE-TURN-002` | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported | complete | None | None | implemented | None |
-| `RULE-TURN-003` | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported | complete | None | None | implemented | None |
-| `RULE-TURN-004` | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported | complete | None | `DEV-TURN-001` | implemented | None |
+| `RULE-TURN-001` | A turn is turn start, planning by each active player in slot order, then resolution | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-TURN-002` | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-TURN-003` | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The EXP-TURN recordings reach Bribe, Heal, Hide, Influence, Research and Snitch. |
+| `RULE-TURN-004` | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-TURN-001` | validated | None |
 | `RULE-TURN-005` | Giving a gang an order replaces its whole previous order, one-off or recurring | supported | complete | None | `DEV-TURN-001`, `DEV-UI-003` | implemented | The sector screen draws the original's group order strip over the top two cards; its menus leave Research out of the recurring one, and it reaches hiding gangs. Each gang is validated on its own (DEV-UI-003), and recurring Bribe and Snitch are refused from any source (DEV-TURN-001). |
 | `RULE-TURN-006` | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | supported | complete | None | None | implemented | The rebuild marks retired gangs with Force 0 and cleared orders instead of sector 100, which changes no playable state. |
 
@@ -120,13 +120,13 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-SETUP-001` | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported | complete | None | `DEV-SETUP-001` | implemented | None |
+| `RULE-SETUP-001` | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-SETUP-001` | validated | None |
 | `RULE-SETUP-002` | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported | complete | None | None | implemented | The preference lives in the rebuild's own preferences file, so the original's fallback to a stray registry byte when the value is missing does not arise. The rebuild numbers Eliminate 6 and Siege 7, the reverse of the original, but the number leaves the rebuild only in its own save files, state fingerprint and multiplayer settings, which only the rebuild reads, so nothing has to match the original's numbering. |
-| `RULE-SETUP-003` | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | supported | complete | None | None | implemented | None |
-| `RULE-SETUP-004` | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported | complete | None | None | implemented | Reactions for all six slots, then the city, headquarters and Right Hands. Research is set after the city, which changes nothing because it makes no draw and neither step reads what the other writes. The initial-state fixture from the original that would confirm the draw order is still pending. |
-| `RULE-SETUP-005` | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | supported | complete | None | `DEV-SETUP-001` | implemented | None |
-| `RULE-SETUP-006` | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | supported | complete | None | `DEV-SETUP-001` | implemented | None |
-| `RULE-SETUP-007` | A player named with the visibility modifier sees every opposing gang for the whole match | supported | complete | None | `DEV-SETUP-001` | implemented | None |
+| `RULE-SETUP-003` | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-SETUP-004` | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Reactions for all six slots, then the city, headquarters and Right Hands. Research is set after the city, which changes nothing because it makes no draw and neither step reads what the other writes. EXP-SETUP-001 to EXP-SETUP-004 compare the draw count and the resulting state with new games of the original, Armageddon, Homicidal Maniac and every name modifier included. |
+| `RULE-SETUP-005` | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-SETUP-001` | validated | None |
+| `RULE-SETUP-006` | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-SETUP-001` | validated | None |
+| `RULE-SETUP-007` | A player named with the visibility modifier sees every opposing gang for the whole match | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-SETUP-001` | validated | None |
 | `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | complete | None | None | implemented | None |
 | `RULE-SETUP-009` | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported | complete | None | None | implemented | None |
 | `RULE-SETUP-010` | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported | complete | None | None | implemented | The rebuild's online lobby keeps its own seats and does not edit the local roster; entering one still resets the local roster to one human, as the original's lobby reset does. |
@@ -137,19 +137,19 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-CITY-001` | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income | supported | complete | None | None | implemented | No original initial-city fixture has been captured. |
-| `RULE-CITY-002` | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way | supported | complete | None | None | implemented | No original initial-city fixture has been captured. |
-| `RULE-CITY-003` | The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site | supported | complete | None | None | implemented | None |
-| `RULE-CITY-004` | Each player's Right Hands starts in roster slot 0 in its headquarters at Force 10 with no equipment | supported | complete | None | None | implemented | None |
+| `RULE-CITY-001` | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-CITY-002` | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-CITY-003` | The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-CITY-004` | Each player's Right Hands starts in roster slot 0 in its headquarters at Force 10 with no equipment | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 
 ## HIRE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-HIRE-001` | Hires and snubs are carried out player by player and offer slot by offer slot | supported | complete | None | None | implemented | None |
-| `RULE-HIRE-002` | Vacant hire offers are refilled in place at the player's planning entry | supported | complete | None | None | implemented | None |
+| `RULE-HIRE-001` | Hires and snubs are carried out player by player and offer slot by offer slot | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-HIRE-002` | Vacant hire offers are refilled in place at the player's planning entry | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-HIRE-003` | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported | complete | None | `DEV-HIRE-001` | implemented | The rebuild refuses a drop on a sector already holding six friendly gangs, which the original accepts (see deviations). |
-| `RULE-HIRE-004` | A new match starts with every hire offer vacant and no hire order | supported | complete | None | None | implemented | None |
+| `RULE-HIRE-004` | A new match starts with every hire offer vacant and no hire order | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `SCR-HIRE-001` | Hire comparison panel showing the three offers side by side | supported | complete | None | None | implemented | The positions the rebuild took from captures match the ones the spec now records. |
 | `SCR-HIRE-002` | Hire offers on the main console, with drag-to-hire and Reject | supported | complete | None | `DEV-HIRE-001`, `DEV-HIRE-002` | implemented | Adds a hire-shortfall warning and refuses drops on full sectors (see deviations). Portraits sit at (440 + 66s, 373) with the 64-by-64 hire and snub marks over them, and the press regions meet as FND-HIRE-008 records. |
 
@@ -157,59 +157,59 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-HIDE-001` | A gang hides while its action is Hide, and each Hide carried out is counted for its player | supported | complete | None | None | implemented | None |
+| `RULE-HIDE-001` | A gang hides while its action is Hide, and each Hide carried out is counted for its player | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 
 ## INFLUENCE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-INFLUENCE-001` | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported | complete | None | `DEV-AI-002` | implemented | A computer player's planned Influence in a sector it does not control gives no command (DEV-AI-002). |
+| `RULE-INFLUENCE-001` | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002` | validated | A computer player's planned Influence in a sector it does not control gives no command (DEV-AI-002). |
 | `SCR-INFLUENCE-001` | Influence picker for choosing one of the sector's three sites | supported | complete | None | None | implemented | None |
 
 ## HEAL
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-HEAL-001` | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | supported | complete | None | None | implemented | None |
+| `RULE-HEAL-001` | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 
 ## RESEARCH
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-RESEARCH-001` | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported | complete | None | None | implemented | None |
-| `RULE-RESEARCH-002` | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | supported | complete | None | None | implemented | The rebuild leaves the item table's padding records out of the researched set (see deviations). |
+| `RULE-RESEARCH-001` | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-RESEARCH-002` | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The rebuild leaves the item table's padding records out of the researched set (see deviations). |
 | `SCR-RESEARCH-001` | Research panel with item categories and a fixed sixteen-row item list | supported | complete | None | `DEV-RESEARCH-001` | implemented | The list filter follows FND-RESEARCH-003: category from item type (types 0 and 1 together), item order, only unfinished items, Tech Level at most the gang type's and at most 5 or 8 by the research-site level of a sector the player owns. The category cells match. A press selects from panel y 26 and a double-click opens from panel y 19, rows truncating toward zero. |
 
 ## BRIBE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-BRIBE-001` | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported | complete | None | None | implemented | The Bribe changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. |
+| `RULE-BRIBE-001` | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The Bribe changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. |
 
 ## SNITCH
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-SNITCH-001` | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported | complete | None | None | implemented | The Snitch changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. |
+| `RULE-SNITCH-001` | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The Snitch changes the base Tolerance, which reaches the Chaos test at the next rebuild before planning. |
 
 ## TOLERANCE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TOLERANCE-001` | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | supported | complete | None | None | implemented | The base Tolerance moves at the start of the instant phase; the sites' part is added only by the rebuild before planning. |
+| `RULE-TOLERANCE-001` | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every sector's base Tolerance after up to twenty-five resolutions. The base Tolerance moves at the start of the instant phase; the sites' part is added only by the rebuild before planning. |
 | `RULE-TOLERANCE-002` | After the instant phase every sector's base Tolerance is clamped to 1..40 | supported | complete | None | None | implemented | None |
 
 ## SITE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-SITE-001` | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | supported | complete | None | None | implemented | The rebuild also keeps an explicit influencer per site, checked against the sector owner, which the original does not store. |
+| `RULE-SITE-001` | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The rebuild also keeps an explicit influencer per site, checked against the sector owner, which the original does not store. |
 
 ## MOVE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | supported | complete | None | `DEV-MOVE-001` | implemented | None |
+| `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-MOVE-001`, `DEV-AI-007` | validated | None |
 | `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002`, `DEV-MOVE-002` | implemented | The fallback for a mover already sent back draws a random neighbour (RULE-AI-007); after 256 of them DEV-MOVE-002 applies. |
 | `SCR-MOVE-001` | Move panel | supported | complete | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | implemented | The map crop, taken from the same prepared city map as the city screen with its pylons and markers, the off-city bands, arrow, faces and keys follow the original. The enabled cells follow the edge table of FND-MOVE-007, Enter, Execute and Escape press their faces, and only DEV-MOVE-001 refuses a Move into a full sector. |
 
@@ -217,13 +217,13 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-CONTROL-001` | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported | complete | None | `DEV-CONTROL-001`, `DEV-CONTROL-002` | implemented | A sector under police records a failed result for each Control gang (DEV-CONTROL-002); only players with an order and the owner compete (DEV-CONTROL-001). |
+| `RULE-CONTROL-001` | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-CONTROL-001`, `DEV-CONTROL-002` | validated | A sector under police records a failed result for each Control gang (DEV-CONTROL-002); only players with an order and the owner compete (DEV-CONTROL-001). |
 
 ## GANG
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | None | None | implemented | Each rebuilt field keeps its low eight bits, as the original's INT8 fields do; no shipped combination reaches the wrap. |
+| `RULE-GANG-001` | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Each rebuilt field keeps its low eight bits, as the original's INT8 fields do; no shipped combination reaches the wrap. |
 | `RULE-GANG-002` | A gang that dies or is terminated has only its sector byte set to inactive | supported | complete | None | None | implemented | Force 0 marks the empty slot where the original writes sector 100, and a dead gang's orders and Hidden flag are cleared; no rule reads either from an inactive record, so under the 2026-09-26 representation decision this needs no deviation. Items stay in the record, and only a death counts a casualty. |
 | `SCR-GANG-001` | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported | complete | None | `DEV-UI-010` | implemented | Opened from the order panels' portraits with the gang's values, the Force question marks and the recorded positions. The base values are blacked out through bitmap 143 from each area's corner (FND-GANG-011, FND-GFX-006). |
 | `SCR-GANG-002` | Gang information panel for a hired gang | supported | complete | None | `DEV-GANG-001` | implemented | Opened for hired gangs and hire offers, with every recorded position, rotating items, base values 18 pixels to the left, and the close face acting on release. |
@@ -232,9 +232,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-EQUIP-001` | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | supported | complete | None | `DEV-AI-002`, `DEV-EQUIP-001` | implemented | Cash is tested at the Equip's place in the order the player gave Equip and Sell, where the original tests it at the gang's place in the roster scan (DEV-EQUIP-001). A computer player's planned Equip it can no longer pay for gives no command (DEV-AI-002). The failed-Equip report is compared under RULE-EVENT-014. |
-| `RULE-EQUIP-002` | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported | complete | None | `DEV-EQUIP-001` | implemented | Players resolve by slot. Equip and Sell resolve in the order the player gave them, where the original scans roster slots (DEV-EQUIP-001). Give keeps the roster order: the rebuild empties every giver's slots before the pass and delivers after all players' scans, and no Equip or Sell reads a giver's or recipient's slot in between, so the result is the same as delivering after each player's scan. |
-| `RULE-EQUIP-003` | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported | complete | None | None | implemented | None |
+| `RULE-EQUIP-001` | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-EQUIP-001` | validated | Cash is tested at the Equip's place in the order the player gave Equip and Sell, where the original tests it at the gang's place in the roster scan (DEV-EQUIP-001). A computer player's planned Equip it can no longer pay for gives no command (DEV-AI-002). The failed-Equip report is compared under RULE-EVENT-014. |
+| `RULE-EQUIP-002` | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-EQUIP-001` | validated | Players resolve by slot. Equip and Sell resolve in the order the player gave them, where the original scans roster slots (DEV-EQUIP-001). Give keeps the roster order: the rebuild empties every giver's slots before the pass and delivers after all players' scans, and no Equip or Sell reads a giver's or recipient's slot in between, so the result is the same as delivering after each player's scan. The EXP-TURN recordings reach Equip only; no recording has a Give or a Sell yet. |
+| `RULE-EQUIP-003` | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-EQUIP-004` | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported | complete | None | None | implemented | None |
 | `SCR-EQUIP-001` | Equip panel | supported | complete | None | `None` | implemented | Category cells, held item icons, list columns, row mark, frame, faces and keys follow the original, and the portrait double-click opens the compact gang panel. The rebuild's extra keys are DEV-UI-010. |
 
@@ -249,7 +249,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-SELL-001` | Sell removes every selected item but pays half the Cost of only the last selected slot | supported | complete | None | `DEV-EQUIP-001` | implemented | Keeps BUG-SELL-001: a multi-item Sell pays only the last selected slot, so no deviation covers it. |
+| `RULE-SELL-001` | Sell removes every selected item but pays half the Cost of only the last selected slot | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-EQUIP-001` | validated | Keeps BUG-SELL-001: a multi-item Sell pays only the last selected slot, so no deviation covers it. EXP-TURN-016 sells a weapon, an armor and a miscellaneous item in one order. |
 | `SCR-SELL-001` | Sell panel | supported | complete | None | None | implemented | Pictures, names, half prices, highlight, faces and keys follow the original; the rebuild's extra keys are DEV-UI-010. |
 
 ## TERMINATE
@@ -262,7 +262,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-UPKEEP-001` | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | supported | complete | None | None | implemented | None |
+| `RULE-UPKEEP-001` | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 
 ## FINANCE
 
@@ -275,7 +275,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | supported | complete | None | `DEV-HELP-002` | implemented | None |
+| `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-HELP-002` | validated | EXP-TURN-011 replays a human gang's attack on a computer player's gang that is not hiding, with its retaliation. The Hide evasion and the Martial Arts exception have no recorded run. |
 | `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
 | `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | complete | None | `DEV-UI-008` | implemented | Layout, marks, faces, keys, initial selection and double-click panels follow FND-ATTACK-003 and FND-ATTACK-004. The target cards' art and when the Confirm face is first drawn are not recorded, so the target cards are drawn like the acting gang's. |
 
@@ -283,8 +283,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-COMBAT-001` | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | supported | complete | None | None | implemented | None |
-| `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | supported | complete | None | None | implemented | Damage, deaths and order follow the rule. The combat records and the per-sector result rows are held as the combat-phase events, field by field as the FMT-STATE-003 and FMT-STATE-008 sections of [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md) give; byte 0 of player 0's first record, which the computer players read, is kept as state. The copy of the fight marks at `0x00498BC0` feeds only the network result sender (FND-STATE-007) and has no counterpart. |
+| `RULE-COMBAT-001` | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every active gang's Combat with its weapon skills. |
+| `RULE-COMBAT-002` | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-011 replays a gang's attack, its retaliation and the damage taken off Force at the end of the phase, and EXP-TURN-010 two police attacks; no recorded run has a death in combat yet. Damage, deaths and order follow the rule. The combat records and the per-sector result rows are held as the combat-phase events, field by field as the FMT-STATE-003 and FMT-STATE-008 sections of [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md) give; byte 0 of player 0's first record, which the computer players read, is kept as state. The copy of the fight marks at `0x00498BC0` feeds only the network result sender (FND-STATE-007) and has no counterpart. |
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | supported | complete | None | None | implemented | None |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported | complete | None | `DEV-COMBAT-002` | implemented | None |
 | `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | complete | None | `DEV-COMBAT-002` | implemented | Paging, keys, the opponent and police strips, grid cells with portraits, force_start and force_final tracks and the focus outlines follow FND-COMBAT-007 and FND-COMBAT-012. The pressed Exit face on Enter is not drawn as the panel closes at once, and the pressed arrows are not recorded. |
@@ -294,46 +294,46 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-DETECT-001` | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | supported | complete | None | None | implemented | None |
+| `RULE-DETECT-001` | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 
 ## CHAOS
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-CHAOS-001` | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported | complete | None | None | implemented | None |
-| `RULE-CHAOS-002` | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported | complete | None | None | implemented | None |
+| `RULE-CHAOS-001` | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-009 reaches a Crackdown in the human's sector. |
+| `RULE-CHAOS-002` | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 
 ## POLICE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-POLICE-001` | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | supported | complete | None | None | implemented | None |
-| `RULE-POLICE-002` | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | supported | complete | None | None | implemented | None |
-| `RULE-POLICE-003` | Police presence counts down by one at the end of every turn unless it is permanent | supported | complete | None | None | implemented | None |
+| `RULE-POLICE-001` | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010's first run has two police detection draws in turn 23 and 24, each followed by the police dice. |
+| `RULE-POLICE-002` | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010's first run neutralizes a sector with its third Crackdown and draws the police turns. |
+| `RULE-POLICE-003` | Police presence counts down by one at the end of every turn unless it is permanent | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 compares every sector's police turns after the countdown. |
 | `RULE-POLICE-004` | Crackdown reports go to the players who had a gang in the sector when resolution began | supported | complete | None | None | implemented | None |
 
 ## AI
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | complete | None | `DEV-AI-003` | implemented | A seat changes hands only at a clean Command boundary, so the takeover's own planning pass (FND-AI-043) is the pass that turn's planning runs. |
-| `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | Every gang submits the one command its record holds after this turn's family dispatch, when that command is legal; a gang with none, a record missing the target its action needs, and a gang in family 99 plan nothing. The planner refuses a player whose records the dispatch has not written this turn. |
+| `RULE-AI-001` | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-003` | validated | A seat changes hands only at a clean Command boundary, so the takeover's own planning pass (FND-AI-043) is the pass that turn's planning runs. |
+| `RULE-AI-002` | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | Every gang submits the one command its record holds after this turn's family dispatch, when that command is legal; a gang with none, a record missing the target its action needs, and a gang in family 99 plan nothing. The planner refuses a player whose records the dispatch has not written this turn. |
 | `RULE-AI-003` | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported | complete | None | None | implemented | The sector weights and the hostility step also run once for every player, humans included, when a match starts (as it is built) and when it is loaded (a journaled step of the local load), as FND-AI-045 records. |
 | `RULE-AI-004` | Queries the computer players' handlers share | supported | complete | None | None | implemented | hostile_owner reads the attitude cell of owner_query, with the out-of-row reads of FND-AI-048 for a neutral sector and one under police presence. |
 | `RULE-AI-005` | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported | complete | None | None | implemented | None |
-| `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported | complete | None | None | implemented | No call reaches mode 4; the rebuild scores it from the standings bytes and the owner query as FND-AI-056 reads them. |
+| `RULE-AI-006` | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-005`, `DEV-AI-006`, `DEV-AI-007` | validated | No call reaches mode 4; the rebuild scores it from the standings bytes and the owner query as FND-AI-056 reads them. A routing step that would leave the city is not taken (DEV-AI-005). The common block's multiply of an element past the score table leaves player 0's planning records unchanged (DEV-AI-006). A tie count that would run past the planning records stops there. |
 | `RULE-AI-007` | Sector selector mode 0 picks a random neighbouring sector | supported | complete | None | None | implemented | Mode 0 draws one of the eight neighbours with roll(8) and draws again off the map, with no capacity test. |
-| `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | supported | complete | None | None | implemented | None |
-| `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | None | None | implemented | None |
-| `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | complete | None | None | implemented | The hunter guards compare the previous hire role with the scenario's hunter slot number, as the original does (BUG-AI-001), and the per-scenario slot adjustments and the hunter reversion follow FND-AI-050. `first_hostile` reads the sector weights the planning pass cached before its hostility step (RULE-AI-003), and the hunter coverage test follows selector 0x5F (FND-AI-059). In 60 simulated four-year matches with a simulated human, computer players hired 853 hunters out of 23,722 hires. |
+| `RULE-AI-008` | A computer player ranks its three hire offers by the mode of its hire role | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-AI-009` | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-AI-010` | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The hunter guards compare the previous hire role with the scenario's hunter slot number, as the original does (BUG-AI-001), and the per-scenario slot adjustments and the hunter reversion follow FND-AI-050. `first_hostile` reads the sector weights the planning pass cached before its hostility step (RULE-AI-003), and the hunter coverage test follows selector 0x5F (FND-AI-068). In 60 simulated four-year matches with a simulated human, computer players hired 853 hunters out of 23,722 hires. |
 | `RULE-AI-011` | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported | complete | None | None | implemented | None |
 | `RULE-AI-012` | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported | complete | None | None | implemented | None |
-| `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | complete | None | `DEV-AI-004` | implemented | Placement is carried out in the Hire phase. The failed anchor 63 follows FND-AI-051. An anchor of 164 (sector 100) always fails the keep test and is replaced (DEV-AI-004). |
-| `RULE-AI-014` | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported | complete | None | None | implemented | None |
-| `RULE-AI-015` | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | supported | complete | None | None | implemented | None |
-| `RULE-AI-016` | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported | complete | None | None | implemented | None |
+| `RULE-AI-013` | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-004` | validated | Placement is carried out in the Hire phase. The failed anchor 63 follows FND-AI-051. An anchor of 164 (sector 100) always fails the keep test and is replaced (DEV-AI-004). |
+| `RULE-AI-014` | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-AI-015` | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 compares every attitude after twenty-five turns; EXP-TURN-008 runs at Homicidal Maniac, where attitudes do not rise. |
+| `RULE-AI-016` | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | supported | complete | None | None | implemented | EXP-TURN-011's replay in tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs compares every attitude after one Attack, which confirms the drop and the floor of -10. The attitude was already at -9, so the size of the drop, the larger of the reaction and the opening damage, has no recorded run. |
 | `RULE-AI-017` | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | supported | complete | None | None | implemented | None |
-| `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported | complete | None | None | implemented | None |
+| `RULE-AI-018` | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-AI-019` | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-020` | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-021` | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
@@ -343,10 +343,10 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AI-025` | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-026` | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
 | `RULE-AI-027` | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
-| `RULE-AI-028` | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
-| `RULE-AI-029` | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
-| `RULE-AI-030` | Family-12 computer gangs equip and heal when unopposed, wander at random, and attack when opposed | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | None |
-| `RULE-AI-031` | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported | complete | None | `DEV-AI-002`, `DEV-AI-003` | implemented | The Support scan starts from 0, the value the original's unset threshold always holds (BUG-AI-006, FND-AI-063). |
+| `RULE-AI-028` | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-013 reaches the item 44 Equip, the Stealth move, Chaos and Hide; no recorded run reaches the armor upgrade or Heal. |
+| `RULE-AI-029` | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-013 replays family 11 in Eliminate. |
+| `RULE-AI-030` | Family-12 computer gangs equip and heal when unopposed, step toward their player's first gang, and attack when opposed | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | EXP-TURN-013 reaches the weapon and armor Equip, Heal, the step toward the first gang and the Attack; no recorded run reaches the miscellaneous Equip, a failed target comparison or a hostile human owner. |
+| `RULE-AI-031` | Family-13 and family-14 computer gangs move to the Big Man or Siege objectives, fight for them on alternate turns and hold them | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-AI-003` | validated | The Support scan starts from 0, the value the original's unset threshold always holds (BUG-AI-006, FND-AI-063). |
 
 ## EVENT
 
