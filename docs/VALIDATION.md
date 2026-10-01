@@ -440,12 +440,16 @@ static work still open is listed in
 `node tools/check-spec.mjs` runs the documentation standard's
 [checks](https://dinorefurb.com/documentation-standard/#checks) over `spec/`,
 `PARITY.md` and `DEVIATIONS.md`, and writes the indexes in `spec/index/`. It
-also fails when a C# comment gives an executable address (`0x…`, `fn_…` or
-`g_…`) that no entry the comment cites, or an entry one of those cites, records.
-A range of more than 64 KiB, such as a whole section, records none of the
-addresses inside it.
+also fails when a C# comment, `//` or `/* … */`, gives an executable address
+(`0x…`, `fn_…` or `g_…`) that no entry the comment cites, or the evidence of
+one of those, records. Only a value inside the executable's image (base and
+size from FND-EXE-001) counts as an address, so colours and masks are not
+checked, and text inside a string literal is not a comment. A range of more
+than 64 KiB, such as a whole section, records none of the addresses inside it.
 The fast gate runs it with `--check`, and `.githooks/pre-commit` runs it before
-each commit once a clone enables the hook. It compiles the Kaitai definitions when
+each commit once a clone enables the hook. The hook copies the index to a
+temporary directory and checks that, so it judges what is being committed, not
+unstaged edits. It compiles the Kaitai definitions when
 `kaitai-struct-compiler` (or the path in `KSC`) is on the path and warns when
 it is not. Until the patch tool is published with the standard's spec package,
 an experiment that uses a save patch also gives each write as a byte offset and

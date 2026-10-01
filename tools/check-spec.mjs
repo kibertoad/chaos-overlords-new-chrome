@@ -18,6 +18,8 @@
 //
 // No dependencies. The YAML reader understands the subset the standard's front matter uses:
 // scalars, flow lists, and block lists of flat maps. Written to move into the shared toolkit.
+// The address check is the one part tied to this game: ADDRESS_SETTINGS names the files it
+// reads, how their comments are written and the images an address can fall in.
 
 import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, statSync } from "node:fs";
 import { join, dirname, relative, basename } from "node:path";
@@ -1060,17 +1062,36 @@ function walk(dir, fn) {
 }
 
 // Addresses in code comments: an executable address that a C# comment gives, written 0x… or as
-// a neutral name (fn_…, g_…), must be recorded in an entry the comment cites, or in an entry that
-// one of those cites; a superseded entry records nothing. A comment block is a run of
-// consecutive comment lines; a comment that trails code also takes the block above it and the
-// comment lines below it that start in the same column. The address may appear in an entry's
-// locations or its text, written either way, singly or inside a range. A range of more than
-// MAX_RANGE bytes describes a section or the extent of a whole table (FND-EXE-004's game code,
-// FND-DATA-005's image), not a place, and records nothing inside it: it would otherwise vouch for
-// every address in the program on behalf of each of the many entries that cite it. The largest
-// game function in FND-EXE-004 spans under 20 KiB.
+// a neutral name (fn_…, g_…), must be recorded in an entry the comment cites, or in an entry
+// that one of those cites as evidence; a superseded entry records nothing. Comments are found by
+// reading the file as C#, so `//` inside a string is not a comment and `/* … */` is. A comment
+// block is a run of consecutive lines that hold only comment; a comment that trails code also
+// takes the block above it and the comment lines below it that start in the same column. The
+// address may appear in an entry's locations or its text, written either way, singly or inside a
+// range. A range of more than MAX_RANGE bytes describes a section or the extent of a whole table
+// (FND-EXE-004's game code, FND-DATA-005's image), not a place, and records nothing inside it: it
+// would otherwise vouch for every address in the program on behalf of each of the many entries
+// that cite it. The largest game function in FND-EXE-004 spans under 20 KiB.
+//
+// This is the one check here that is specific to a game: the settings below say which files are
+// read, how their comments are written and where the program's images lie. Only a value inside
+// an image counts as an address, so a colour or a mask such as 0x00FF00FF is left alone. Each
+// image names the entry that records its base and size, and the check fails when that entry
+// stops recording them. SMACKW32.DLL is also loaded at 0x00400000 (FND-VIDEO-003) and is smaller
+// than the executable, so its addresses fall inside the executable's extent.
 {
-  const ADDRESS_RE = /\b(?:0x|fn_|g_)(00[4-9A-Fa-f][0-9A-Fa-f]{5})\b/g;
+  const ADDRESS_SETTINGS = {
+    extensions: [".cs"],
+    commentsOf: csharpComments,
+    images: [{ file: "Chaos Overlords.exe", base: 0x00400000, size: 0x000c9000, recordedIn: "FND-EXE-001" }],
+  };
+  const hex8 = (n) => `0x${n.toString(16).toUpperCase().padStart(8, "0")}`;
+  for (const { file, base, size, recordedIn } of ADDRESS_SETTINGS.images) {
+    const body = entries.get(recordedIn)?.body ?? "";
+    for (const n of [base, size]) if (!body.includes(hex8(n))) problem(null, `the address check takes ${file}'s image as ${hex8(base)} plus ${hex8(size)}, but ${recordedIn} does not record ${hex8(n)}`);
+  }
+  const inImage = (value) => ADDRESS_SETTINGS.images.some(({ base, size }) => value >= base && value < base + size);
+  const ADDRESS_RE = /\b(?:0x|fn_|g_)([0-9A-Fa-f]{8})\b/g;
   const RANGE_RE = /\b(?:0x|fn_|g_)([0-9A-Fa-f]{8})(?:\.\.0x([0-9A-Fa-f]{8}))?\b/g;
   const MAX_RANGE = 0x10000;
   const recorded = new Map(); // entry ID -> [low, high] ranges
@@ -1088,36 +1109,97 @@ function walk(dir, fn) {
     recorded.set(id, ranges);
     return ranges;
   };
-  const citedBy = new Map(); // entry ID -> the IDs it cites
-  const citesOf = (id) => {
-    if (!citedBy.has(id)) {
-      const e = entries.get(id);
-      citedBy.set(id, e ? idsIn(e.body + "\n" + CLAIM_LINKS.flatMap((k) => asList(e.meta[k])).join(" ")) : []);
-    }
-    return citedBy.get(id);
-  };
-  const reach = (ids) => [...new Set([...ids, ...ids.flatMap(citesOf)])];
-  const isComment = (line) => /^\s*\/\//.test(line);
+  const reach = (ids) => [...new Set([...ids, ...ids.flatMap((id) => asList(entries.get(id)?.meta.evidence))])];
   for (const { file, text } of codeFiles()) {
-    if (!file.endsWith(".cs")) continue;
-    const lines = text.replace(/\r\n/g, "\n").split("\n");
+    if (!ADDRESS_SETTINGS.extensions.some((ext) => file.endsWith(ext))) continue;
+    const lines = ADDRESS_SETTINGS.commentsOf(text);
+    const commentOnly = (k) => k >= 0 && k < lines.length && !lines[k].code && lines[k].comments.length > 0;
     for (let i = 0; i < lines.length; i++) {
-      const at = lines[i].indexOf("//");
-      if (at < 0) continue;
-      const addresses = [...lines[i].slice(at).matchAll(ADDRESS_RE)];
+      const own = lines[i].comments.map((c) => c.text).join(" ");
+      const addresses = [...own.matchAll(ADDRESS_RE)].filter((m) => inImage(parseInt(m[1], 16)));
       if (!addresses.length) continue;
       let first = i, last = i;
-      while (first > 0 && isComment(lines[first - 1])) first--;
-      const continues = isComment(lines[i]) ? isComment : (line) => isComment(line) && line.indexOf("//") === at;
-      while (last < lines.length - 1 && continues(lines[last + 1])) last++;
-      const cited = idsIn(lines.slice(first, last + 1).join("\n")).filter((x) => entries.has(x));
+      while (commentOnly(first - 1)) first--;
+      const at = lines[i].comments[0].column;
+      const continues = commentOnly(i) ? commentOnly : (k) => commentOnly(k) && lines[k].comments[0].column === at;
+      while (continues(last + 1)) last++;
+      const block = lines.slice(first, last + 1).flatMap((l) => l.comments.map((c) => c.text)).join("\n");
+      const cited = idsIn(block).filter((x) => entries.has(x));
       const scope = reach(cited);
       for (const [address, value] of new Map(addresses.map((m) => [m[0], parseInt(m[1], 16)]))) {
         if (scope.some((x) => rangesOf(x).some(([low, high]) => value >= low && value <= high))) continue;
-        problem(file, `line ${i + 1} gives ${address} as evidence, but ${cited.length ? `neither ${cited.join(", ")} nor an entry they cite records it` : "the comment cites no entry that records it"}; cite the finding that records it, or record it in a new one`);
+        problem(file, `line ${i + 1} gives ${address} as evidence, but ${cited.length ? `neither ${cited.join(", ")} nor the evidence they cite records it` : "the comment cites no entry that records it"}; cite the finding that records it, or record it in a new one`);
       }
     }
   }
+}
+
+// The comments of a C# file, line by line: for each line, whether it holds code and the comment
+// text on it with the column where each piece starts. Strings and character literals (regular,
+// verbatim, interpolated and raw) are skipped, so a `//` inside one starts no comment. An
+// interpolation hole is read as part of its string, which is enough to find comments.
+function csharpComments(source) {
+  const text = source.replace(/\r\n?/g, "\n");
+  const lines = [{ code: false, comments: [] }];
+  let column = 0;
+  const line = () => lines[lines.length - 1];
+  const addComment = (from, to, col) => line().comments.push({ column: col, text: text.slice(from, to) });
+  let i = 0;
+  const advance = (to) => {
+    // move to `to`, opening a new line record at each newline; a comment spanning lines is split
+    for (; i < to; i++) {
+      if (text[i] === "\n") { lines.push({ code: false, comments: [] }); column = 0; } else column++;
+    }
+  };
+  const skipString = (end, escapes) => {
+    // i is past the opening quote(s); stop past the closing ones
+    while (i < text.length) {
+      if (escapes && text[i] === "\\") { advance(i + 2); continue; }
+      if (text.startsWith(end, i)) {
+        if (!escapes && end === '"' && text[i + 1] === '"') { advance(i + 2); continue; } // "" in a verbatim string
+        advance(i + end.length);
+        return;
+      }
+      if (text[i] === "\n" && escapes) { advance(i + 1); return; } // an unterminated regular string ends at the line
+      advance(i + 1);
+    }
+  };
+  while (i < text.length) {
+    const c = text[i];
+    if (c === "\n" || c === " " || c === "\t") { advance(i + 1); continue; }
+    if (text.startsWith("//", i)) {
+      const end = text.indexOf("\n", i) < 0 ? text.length : text.indexOf("\n", i);
+      addComment(i, end, column);
+      advance(end);
+      continue;
+    }
+    if (text.startsWith("/*", i)) {
+      const close = text.indexOf("*/", i + 2);
+      const end = close < 0 ? text.length : close + 2;
+      let from = i, col = column;
+      while (i < end) {
+        const nl = text.indexOf("\n", i);
+        if (nl < 0 || nl >= end) { addComment(from, end, col); advance(end); break; }
+        addComment(from, nl, col);
+        advance(nl + 1);
+        while (i < end && (text[i] === " " || text[i] === "\t")) advance(i + 1);
+        from = i; col = column;
+      }
+      continue;
+    }
+    line().code = true;
+    const prefix = /^(?:\$+@?|@\$*)?(?=")/.exec(text.slice(i, i + 4))?.[0] ?? null;
+    if (prefix !== null) {
+      advance(i + prefix.length);
+      const quotes = /^"{3,}/.exec(text.slice(i, i + 64))?.[0];
+      if (quotes) { advance(i + quotes.length); skipString(quotes, false); }
+      else { advance(i + 1); skipString('"', !prefix.includes("@")); }
+      continue;
+    }
+    if (c === "'") { advance(i + 1); skipString("'", true); continue; }
+    advance(i + 1);
+  }
+  return lines;
 }
 
 // IDs and areas that exist on the base branch must not disappear
