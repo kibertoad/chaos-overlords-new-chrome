@@ -91,7 +91,8 @@ public sealed class SoundtrackProgramPlayer : IDisposable
     }
 
     /// <summary>RULE-AUDIO-003, FND-AUDIO-007: finish at zero, stop, then restore
-    /// the volume captured by the fade, including when a message changed the level.</summary>
+    /// the volume captured by the fade, whatever the device volume was meanwhile
+    /// (level commands do not run during the fade, FND-AUDIO-016).</summary>
     public void FinishFade(float restoredVolume, bool release)
     {
         CheckOwnerThread();
