@@ -1,10 +1,10 @@
 ---
 id: RULE-TERMINATE-001
 title: Terminate pass retires every gang ordered to Terminate, before any Move
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-MOVE-001, FND-MOVE-003, FND-GANG-003, FND-CONTROL-002, SRC-MANUAL-GOG]
+evidence: [EXP-TURN-019, FND-MOVE-001, FND-MOVE-003, FND-GANG-003, FND-CONTROL-002, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-GANG-002, FMT-STATE-001]

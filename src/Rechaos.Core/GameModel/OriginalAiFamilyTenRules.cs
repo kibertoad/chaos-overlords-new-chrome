@@ -34,10 +34,13 @@ internal static class OriginalAiFamilyTenRules
             _ => true);
     }
 
+    /// <summary>
+    /// FND-AI-073: the cost is compared with cash as signed values (<c>JG</c> at 0x0042A784), so a
+    /// player whose upkeep left its cash below 0 (RULE-UPKEEP-001) fails the test.
+    /// </summary>
     public static bool CanEquipArmor(int cooldown, int itemCost, int cash)
     {
-        if (itemCost < 0) throw new ArgumentOutOfRangeException(nameof(itemCost));
-        if (cash < 0) throw new ArgumentOutOfRangeException(nameof(cash));
+        ArgumentOutOfRangeException.ThrowIfNegative(itemCost);
         return cooldown <= 0 && itemCost <= cash;
     }
 
