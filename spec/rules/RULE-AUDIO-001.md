@@ -4,7 +4,7 @@ title: Starting a music program
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-001, FND-AUDIO-007, FND-PLATFORM-006, FND-EXE-004]
+evidence: [FND-AUDIO-015, FND-AUDIO-001, FND-AUDIO-007, FND-PLATFORM-006, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -62,6 +62,11 @@ track to the end of the last, asking for a notification that nothing uses
 (FND-AUDIO-007).
 
 ## Edge cases
+
+- Cancelling local setup, network preparation or the title load dialog does
+  not request the title program again. The title-return selector calls sit
+  after successful preparation and the game loop, rather than after every
+  return from a dialog (FND-AUDIO-015).
 
 - Starting the program that is already selected does not stop the music first;
   it asks MCI to play the program again from its first track. This is how a

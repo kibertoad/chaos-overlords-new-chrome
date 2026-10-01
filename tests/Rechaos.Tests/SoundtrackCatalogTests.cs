@@ -24,7 +24,7 @@ public sealed class SoundtrackCatalogTests
         "track06.ogg", "track07.ogg", "track08.ogg"
     })]
     [InlineData(OriginalSoundtrackMode.Endgame, new[] { "track09.ogg" })]
-    // RULE-AUDIO-001, FND-AUDIO-001: the selector uses these inclusive CD programs.
+    // RULE-AUDIO-001, FND-AUDIO-015: the selector uses these inclusive CD programs.
     public void RecoveredModesUseExactInclusiveCdTrackRanges(
         OriginalSoundtrackMode mode, string[] expected) =>
         Assert.Equal(expected, OriginalSoundtrackPolicy.FileNamesFor(mode));
@@ -70,8 +70,8 @@ public sealed class SoundtrackCatalogTests
             OriginalSoundtrackPolicy.VolumeForLevel(11));
     }
 
-    // RULE-AUDIO-001, FND-AUDIO-001: the two endgame entries request mode 1, and returns to
-    // the title loop from a match or network preparation request mode 0; Options, Help, setup
+    // RULE-AUDIO-001, FND-AUDIO-015: the two endgame entries request mode 1, and returns to
+    // the title loop after a game request mode 0; cancelled network/load preparation, Options, Help, setup
     // navigation and game panels do not call the selector.
     [Theory]
     [InlineData(ClientScreen.Handoff, ClientScreen.Elimination, true)]
@@ -82,6 +82,7 @@ public sealed class SoundtrackCatalogTests
     [InlineData(ClientScreen.Endgame, ClientScreen.Endgame, false)]
     [InlineData(ClientScreen.Title, ClientScreen.Setup, false)]
     [InlineData(ClientScreen.Setup, ClientScreen.Title, false)]
+    [InlineData(ClientScreen.Title, ClientScreen.Title, false)]
     [InlineData(ClientScreen.Options, ClientScreen.Title, false)]
     [InlineData(ClientScreen.Help, ClientScreen.Title, false)]
     [InlineData(ClientScreen.City, ClientScreen.Title, true)]
@@ -92,8 +93,8 @@ public sealed class SoundtrackCatalogTests
     [InlineData(ClientScreen.Online, ClientScreen.Lobby, false)]
     [InlineData(ClientScreen.Lobby, ClientScreen.Setup, false)]
     [InlineData(ClientScreen.Setup, ClientScreen.Lobby, false)]
-    [InlineData(ClientScreen.Online, ClientScreen.Title, true)]
-    [InlineData(ClientScreen.Lobby, ClientScreen.Title, true)]
+    [InlineData(ClientScreen.Online, ClientScreen.Title, false)]
+    [InlineData(ClientScreen.Lobby, ClientScreen.Title, false)]
     public void OriginalSelectorEntriesRestartEvenWhenTheirMusicModeIsAlreadySelected(
         ClientScreen previous, ClientScreen current, bool restart) =>
         Assert.Equal(restart, OriginalSoundtrackPolicy.RestartsOnEntry(previous, current));

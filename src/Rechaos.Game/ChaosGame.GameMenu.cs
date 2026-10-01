@@ -292,13 +292,9 @@ public sealed partial class ChaosGame
         _editingSaveName = false;
         _saveName.IsFocused = false;
         _message = string.Empty;
-        if (_saveBrowserFromTitle)
-        {
-            _gameMenuOpen = false;
-            // RULE-AUDIO-001, FND-AUDIO-001: the title load path calls its selector
-            // again when it returns, even though the title screen never changed.
-            _restartSoundtrackProgram = true;
-        }
+        // RULE-AUDIO-001, FND-AUDIO-015: cancelling the title load dialog
+        // does not enter a game or request the title program again.
+        if (_saveBrowserFromTitle) _gameMenuOpen = false;
     }
 
     private void CloseSaveBrowserAfterLoad()
