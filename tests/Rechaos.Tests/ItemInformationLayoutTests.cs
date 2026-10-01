@@ -6,6 +6,19 @@ namespace Rechaos.Tests;
 
 public sealed class ItemInformationLayoutTests
 {
+    [Theory]
+    [InlineData(0, "0", false)]
+    [InlineData(99999, "99999", false)]
+    [InlineData(-12345, "12345", true)]
+    [InlineData(100000, ":0000", false)]
+    [InlineData(-123456, "<3456", true)]
+    public void ConsoleScoreUsesFiveOriginalNumericCells(int score, string digits, bool negative)
+    {
+        // FND-UI-040, RULE-UI-004: the leading cell retains the whole quotient.
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value(digits, negative, false),
+            NativeTwoCellNumberPresentation.Format(score, NativeTwoCellNumberPresentation.Kind.Baseline, 5));
+    }
+
     [Fact]
     public void UsesTheRecoveredAlternatePanelGeometry()
     {

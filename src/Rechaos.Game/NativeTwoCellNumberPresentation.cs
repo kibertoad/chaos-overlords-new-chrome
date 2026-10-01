@@ -24,8 +24,8 @@ public static class NativeTwoCellNumberPresentation
     /// </summary>
     public static Value Format(int value, Kind kind = Kind.Modifier, int width = 2)
     {
-        if (width is < 1 or > 4)
-            throw new ArgumentOutOfRangeException(nameof(width), "The recovered helpers support one to four glyph cells.");
+        if (width is < 1 or > 5)
+            throw new ArgumentOutOfRangeException(nameof(width), "The recovered helpers support one to five glyph cells.");
         var magnitude = Math.Abs((long)value);
         var divisor = (long)Math.Pow(10, width - 1);
         var leading = magnitude / divisor;

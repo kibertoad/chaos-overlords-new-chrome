@@ -264,8 +264,13 @@ public sealed partial class ChaosGame
             DrawNativeFixedWidthValue(font, batch, remainingTurns, StatusConsoleLayout.RemainingTurnsLeft,
                 StatusConsoleLayout.DateY, 3);
         }
-        DrawPanelValue(font, batch, StatusConsolePresentation.Score(state, player).ToString(),
-            StatusConsoleLayout.ValueRight, StatusConsoleLayout.ScoreY);
+        // FND-UI-040, RULE-UI-004: five opaque numeric cells, including red unsigned magnitudes.
+        const int scoreLeft = 550;
+        const int scoreWidth = 5;
+        batch.Draw(pixel, new Rectangle(scoreLeft, StatusConsoleLayout.ScoreY,
+            scoreWidth * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+        DrawNativeFixedWidthValue(font, batch, player.ScenarioScore, scoreLeft,
+            StatusConsoleLayout.ScoreY, scoreWidth);
         DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
                 StatusConsolePresentation.UnspentCash(state, player),
                 FinanceProjection.Project(state, player, sectorId: null).CashAdjustment),
