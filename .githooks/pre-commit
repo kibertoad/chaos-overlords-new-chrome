@@ -11,9 +11,11 @@ if ! command -v node >/dev/null 2>&1; then
   echo "pre-commit: node is not on the path, so the spec checks were skipped; CI runs them." >&2
   exit 0
 fi
-git_dir=$(cd "$(git rev-parse --git-dir)" && pwd)
+git_dir=$(git rev-parse --absolute-git-dir)
+# A separate step, so a failed mktemp stops the hook instead of leaving $staged empty.
 staged=$(mktemp -d)
 trap 'rm -rf "$staged"' EXIT
+trap 'exit 1' HUP INT TERM
 git checkout-index --all --prefix="$staged/"
 export GIT_DIR="$git_dir" GIT_WORK_TREE="$staged"
 node "$staged/tools/check-spec.mjs" --check --no-ksy

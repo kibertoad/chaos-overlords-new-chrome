@@ -85,7 +85,7 @@ turns out wrong becomes `superseded`. `docs/SPEC-ID-MAP.md` gives the spec ID
 of every identifier the documentation used before the standard.
 
 Evidence lives in the spec, not in the code that relies on it. An address,
-offset or constant that a C# comment, test or commit message gives as
+offset or constant that a code comment, test or commit message gives as
 evidence must already be recorded in an entry it cites, directly or through the
 evidence of an entry that one cites; when none records it, write the finding
 first, in the same change. Before taking a new ID, fetch and look for it on the
@@ -129,8 +129,10 @@ comment, and that row of `PARITY.md` cannot be `complete` while it does.
 
 `node tools/check-spec.mjs` runs the standard's checks over `spec/`,
 `PARITY.md` and `DEVIATIONS.md`, checks that every spec and deviation ID cited
-in the code resolves and that every executable address a C# comment gives
-(`0x…`, `fn_…` or `g_…`) is recorded in an entry the comment cites, and
+in the code resolves and that every executable address a code comment in a
+`.cs`, `.ts`, `.js` or `.mjs` file gives (`0x…` inside the image, `fn_…` or
+`g_…`) is recorded in an entry the comment cites or in its evidence, as the
+toolkit's documentation check does, and
 rewrites the generated indexes in `spec/index/`;
 `--check` fails on a stale index instead of writing it. It compiles the Kaitai
 definitions when `kaitai-struct-compiler` (or the path in `KSC`) is available;
