@@ -254,13 +254,16 @@ public sealed class OriginalNewGameExperimentTests
         // RULE-EVENT-006 (site), RULE-EVENT-007 (Research), RULE-EVENT-008 and RULE-EVENT-014
         // (cash), RULE-EVENT-010 (full sector), RULE-EVENT-012 and RULE-EVENT-013 (Control).
         if (recorded.HasTerm("last_turn_report_count", 0))
+        {
+            var eventsBySequence = new Dictionary<long, GameEvent>();
+            foreach (var gameEvent in match.Events) eventsBySequence[gameEvent.Sequence] = gameEvent;
             foreach (var player in match.Players)
             {
                 var slot = player.Id.Value;
                 var reports = LastTurnEventProjection.For(match, player.Id)
                     .Select(notification => LastTurnEventPresentation.Record(match, notification,
                         notification.RelatedEventSequence is { } sequence
-                            ? match.Events.LastOrDefault(e => e.Sequence == sequence)
+                            ? eventsBySequence.GetValueOrDefault(sequence)
                             : null))
                     .ToArray();
                 // DEV-AI-002: a computer player's Equip it cannot pay for gives no command in the
@@ -277,6 +280,7 @@ public sealed class OriginalNewGameExperimentTests
                     Assert.True(expected[index] == reports[index],
                         $"player {slot} report {index}: the original holds {expected[index]}, the rebuild {reports[index]}");
             }
+        }
 
         // FND-SETUP-018: the turn limit the computer players read.
         Assert.Equal(recorded.Term("turn_limit", 0), ScenarioCatalog.TurnLimit(match.Setup.Scenario, match.Setup.Duration));

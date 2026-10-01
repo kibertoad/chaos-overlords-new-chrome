@@ -1489,6 +1489,11 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
+| [EXP-TURN-011](../experiments/EXP-TURN-011.md) | body |
+| [EXP-TURN-014](../experiments/EXP-TURN-014.md) | body |
+| [EXP-TURN-017](../experiments/EXP-TURN-017.md) | body |
+| [EXP-TURN-033](../experiments/EXP-TURN-033.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: last_turn_reports | glossary |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | body |
