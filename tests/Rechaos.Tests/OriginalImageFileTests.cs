@@ -10,7 +10,7 @@ namespace Rechaos.Tests;
 /// The files carry no width or height; the rebuild takes them from <see cref="PxDimensions"/>,
 /// which is compared with the Coverage table of FMT-GFX-001.
 /// </summary>
-public sealed class OriginalImageFileTests
+public sealed partial class OriginalImageFileTests
 {
     [Fact]
     public void Px16FilesHaveTheFmtGfx001HeaderAndTheDocumentedSizes()
