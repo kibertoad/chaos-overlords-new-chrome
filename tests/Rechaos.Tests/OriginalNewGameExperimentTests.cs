@@ -324,7 +324,7 @@ public sealed class OriginalNewGameExperimentTests
                 CommandTarget.Gang(match.Players[order.Target].Gangs[order.Target2].Id), order.Repeat),
             // target of a Sell is the item mask, weapon 1, armor 2 and misc 4 (FMT-STATE-001); the
             // rebuild takes the items in that slot order (RULE-SELL-001).
-            GangAction.Sell => SellCommand(human, gang, order.Target),
+            GangAction.Sell => SellCommand(human, gang, order.Target, order.Repeat),
             // target of a Give is the item mask and target_2 the recipient's roster slot
             // (FMT-STATE-001, RULE-GIVE-001).
             GangAction.Give => GiveCommand(human, gang, match.Players[human.Value].Gangs[order.Target2], order.Target),
@@ -399,7 +399,7 @@ public sealed class OriginalNewGameExperimentTests
         _ => (ScenarioId)value,
     };
 
-    private static GameCommand SellCommand(PlayerId human, MatchGangState gang, int mask)
+    private static GameCommand SellCommand(PlayerId human, MatchGangState gang, int mask, bool repeat)
     {
         short?[] slots = [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
         var items = Enumerable.Range(0, slots.Length)
@@ -407,7 +407,10 @@ public sealed class OriginalNewGameExperimentTests
             .Select(slot => (CommandTarget?)CommandTarget.Item(slots[slot] ?? throw new InvalidOperationException(
                 $"The Sell mask {mask} selects an empty slot.")))
             .ToArray();
-        return new GameCommand(human, gang.Id, GangAction.Sell, items[0]!.Value, false,
+        if (items.Length == 0)
+            throw new InvalidOperationException($"The Sell mask {mask} selects no slot.");
+        // The repeat flag goes through as recorded, so the rebuild's validation judges it.
+        return new GameCommand(human, gang.Id, GangAction.Sell, items[0]!.Value, repeat,
             items.ElementAtOrDefault(1), items.ElementAtOrDefault(2));
     }
 
