@@ -1065,7 +1065,7 @@ None.
 | [EXP-TURN-020](../experiments/EXP-TURN-020.md) | body |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | evidence |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
-| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, evidence |
 
 ## EXP-TURN-019
 
@@ -1080,7 +1080,7 @@ None.
 |---|---|
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
-| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, evidence |
 
 ## EXP-TURN-021
 
@@ -1125,7 +1125,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
-| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, evidence |
 
 ## EXP-TURN-026
 
