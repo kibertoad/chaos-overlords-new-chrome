@@ -49,7 +49,9 @@ inactive-window flag still suppresses the executable's restart poll.
 
 This is static evidence for the dispatcher, not a recording of audible
 playback or a complete account of the wrapper's decoder and worker. No
-retail system CD device or another replacement DLL was inspected.
+retail system CD device or another replacement DLL was inspected. The
+original executable's live module binding was not captured; this finding
+describes the inventoried DLL's virtual-device path.
 
 ## How to reproduce
 

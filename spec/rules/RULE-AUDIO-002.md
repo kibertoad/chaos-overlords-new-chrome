@@ -67,8 +67,8 @@ of the disc.
 - The poll also restarts music that stopped for any other reason, such as a
   disc change, and it restarts the program once music is enabled again after
   level 0 (RULE-AUDIO-003).
-- On a device implementing the MCI resume, music can run past the last track of the program to the end
-  of the disc before the poll restarts the program.
+- On a device implementing the MCI resume, music can run past the last track
+  of the program to the end of the disc before the poll restarts the program.
 - Without a disc or a CD device the poll sends the status and play commands on
   every tick, and the pointer is switched to the hourglass and back each time
   (RULE-AUDIO-001).

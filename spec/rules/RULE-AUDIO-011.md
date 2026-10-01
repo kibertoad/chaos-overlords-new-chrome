@@ -64,6 +64,8 @@ otherwise. Only the DLL inventoried with BLD-GOG-EN-1.1 was inspected.
 
 ## Open questions
 
+- The original executable's live binding to this installed DLL has not been
+  captured in this investigation.
 - Audible playback across focus changes has not been recorded dynamically.
 - Other play flags, endpoint handling and the decoder/worker are not specified
   by this entry.
