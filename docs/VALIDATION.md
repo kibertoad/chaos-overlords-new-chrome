@@ -15,6 +15,7 @@ Status: maintained canonical procedure
 - [Failure triage](#failure-triage)
 - [First-planning map comparison without the keyboard footer](#first-planning-map-comparison-without-the-keyboard-footer)
 - [All active-player marker frames in the first planning view](#all-active-player-marker-frames-in-the-first-planning-view)
+- [Both selected-sector outline states](#both-selected-sector-outline-states)
 <!-- doc-index:end -->
 
 ## Validation layers
@@ -579,3 +580,25 @@ This verifies frame artwork and placement for one viewer and state. It does
 not measure timing, dropped ticks, focus behavior, other viewed seats, empty
 seat animation, the two-frame selected-sector outline, or gang-status cycles.
 Captures and diagnostic code remain outside Git.
+
+## Both selected-sector outline states
+
+The twelve synchronized original captures above contain both selected-sector
+outline states. Compared with the rebuild's outline 0 and with DEV-UI-023's
+footer omitted in the external diagnostic harness, original captures labelled
+with active-player marker frames 2 through 7 have zero differing nonwhite map
+pixels. The other six captures differ in exactly 200 nonwhite pixels, all
+inside border bounds x 219�270, y 97�146 around the selected cell.
+
+A second external build selected outline 1 explicitly. It matches those six
+captures with zero differing nonwhite map pixels, and differs from the first
+six by the same 200 border pixels. Thus every original map capture matches
+one of the two outline states of FND-UI-017 outside exact-white artifact
+pixels. The independent player-marker labels identify these particular
+captures; they do not imply that the two animation counters share a phase.
+
+This verifies both outline artworks and placement for the selected cell in
+this state. The comparison does not measure their period, reset behavior,
+other cells, dropped ticks or the pixels covered by the expected Windows 11
+artifacts. The gang-status markers are state selections under RULE-UI-006,
+not an additional timed animation.
