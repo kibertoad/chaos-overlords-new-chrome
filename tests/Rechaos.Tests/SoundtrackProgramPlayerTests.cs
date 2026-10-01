@@ -110,6 +110,36 @@ public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void ReenteringSelectedProgramWhilePlayingRestartsAtItsFirstTrack()
+    {
+        // RULE-AUDIO-001, FND-AUDIO-001: a load re-enters the outer game function;
+        // selecting its existing program still requests the first track again.
+        var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg");
+        var songs = Enumerable.Range(1, 3)
+            .Select(index => Song.FromUri($"program{index}", new Uri(path))).ToArray();
+        var player = new SoundtrackProgramPlayer(songs);
+        try
+        {
+            MediaPlayer.IsRepeating = false;
+            MediaPlayer.IsShuffled = false;
+            MediaPlayer.Volume = 0;
+            player.PlayProgram(songs);
+            WaitFor(() => ReferenceEquals(MediaPlayer.Queue.ActiveSong, songs[1]), player);
+            Assert.Equal(MediaState.Playing, MediaPlayer.State);
+            player.PlayProgram(songs);
+            Assert.Same(songs[0], MediaPlayer.Queue.ActiveSong);
+            Assert.Equal(MediaState.Playing, MediaPlayer.State);
+            WaitFor(() => ReferenceEquals(MediaPlayer.Queue.ActiveSong, songs[2]), player);
+            WaitFor(() => player.ReadyToRestart, player);
+        }
+        finally
+        {
+            player.Dispose();
+            foreach (var song in songs) song.Dispose();
+        }
+    }
+
+    [Fact]
     public void NativeCompletionCannotRaceMainThreadAdvancementOrProgramRestart()
     {
         // RULE-AUDIO-001, RULE-AUDIO-002: an intermediate track ending must continue the

@@ -292,6 +292,8 @@ public sealed partial class ChaosGame
         _editingSaveName = false;
         _saveName.IsFocused = false;
         _message = string.Empty;
+        // RULE-AUDIO-001, FND-AUDIO-015: cancelling the title load dialog
+        // does not enter a game or request the title program again.
         if (_saveBrowserFromTitle) _gameMenuOpen = false;
     }
 

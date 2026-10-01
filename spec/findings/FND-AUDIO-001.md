@@ -64,6 +64,9 @@ environment: null
     awards presentation functions;
   - the current mode at `0x00462AE8`, when the main event pump sees that MCI
     playback has stopped.
+- FND-AUDIO-015 records the branch conditions around the five title-return
+  calls: they follow successful preparation and a game returning, not
+  cancellation of a network-preparation screen or the title Load dialog.
 - No selector call sits on the paths from the title to setup, from setup back
   to the title, into or out of Options or Help, or between the panels of a
   game.
