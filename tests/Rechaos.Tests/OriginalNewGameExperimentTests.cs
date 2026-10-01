@@ -8,10 +8,10 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-016 go on to press Done for one
-/// to twenty-five turns, EXP-TURN-009 to EXP-TURN-016 with orders for the human's gang, and stop at
-/// the next planning phase. Each run gives the seed, every roll(n) with its call site and result, and
-/// the state the recording stops at. The rebuild plays the same match from the same seed and
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-019 go on to press Done for one
+/// to thirty turns, EXP-TURN-009 to EXP-TURN-019 other than EXP-TURN-018 with orders for the human's
+/// gang, and stop at the next planning phase. Each run gives the seed, every roll(n) with its call
+/// site and result, and the state the recording stops at. The rebuild plays the same match from the same seed and
 /// settings and has to make the same rolls in the same order and reach the same generator position
 /// and state. The turns check the turn order (RULE-TURN-001), the computer players' planning passes,
 /// family dispatch, sector choices, hire choices and hire placement (RULE-AI-001, RULE-AI-002,
@@ -31,12 +31,15 @@ namespace Rechaos.Tests;
 /// (RULE-TOLERANCE-001) and every attitude after its rise, or at Homicidal Maniac in EXP-TURN-008
 /// without one (RULE-AI-015). EXP-TURN-010's first run brings police attacks and a Crackdown that
 /// neutralizes a sector (RULE-POLICE-001, RULE-POLICE-002, RULE-POLICE-003). EXP-TURN-016 has the
-/// human's gang buy three items and sell them in one order (RULE-SELL-001). No recorded run has a
-/// Give or a Terminate yet.
+/// human's gang buy three items and sell them in one order (RULE-SELL-001). In EXP-TURN-017 computer
+/// players' gangs attack the human's hiding gang, which evades three attacks and dies of the fourth
+/// (RULE-ATTACK-001, RULE-GANG-002), and the replay stops where the eliminated human would plan. In
+/// EXP-TURN-018 the human's gang does not hide and family-2 gangs attack it (RULE-AI-021), and in
+/// EXP-TURN-019 it is ordered to Terminate (RULE-TERMINATE-001). No recorded run has a Give yet.
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -228,8 +231,12 @@ public sealed class OriginalNewGameExperimentTests
         // FND-SETUP-018: the turn limit the computer players read.
         Assert.Equal(recorded.Term("turn_limit", 0), ScenarioCatalog.TurnLimit(match.Setup.Scenario, match.Setup.Duration));
         Assert.Equal(recorded.Term("elapsed_turns", 0), match.Coordinator.Turn - 1);
-        Assert.Equal(human, match.Coordinator.ActivePlayer);
+        if (recorded.Term("controller", human.Value) == 0) Assert.Equal(human, match.Coordinator.ActivePlayer);
+        else Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
     }
+
+    private static bool IsActive(MatchState match, PlayerId player) =>
+        match.FindPlayer(player)!.Status == PlayerStatus.Active;
 
     private static MatchState StartMatch(RecordedRun recorded)
     {
@@ -257,9 +264,13 @@ public sealed class OriginalNewGameExperimentTests
             foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))
                 Submit(recorder, match, human, order);
             recorder.FinishCommand(human);
-            while (!(match.Coordinator.Phase == TurnPhase.Command && match.Coordinator.ActivePlayer == human))
+            // A human eliminated in this turn's resolution plans no more; the recording stops at
+            // the next planning phase that comes (RULE-OBJECTIVE-005).
+            while (!(match.Coordinator.Phase == TurnPhase.Command
+                       && (match.Coordinator.ActivePlayer == human || !IsActive(match, human)))
+                   && match.Outcome is null)
                 HeadlessMatchRunner.Advance(recorder);
-            recorder.PrepareHireOffers(human);
+            if (IsActive(match, human)) recorder.PrepareHireOffers(human);
         }
 
         return match;
@@ -395,9 +406,10 @@ public sealed class OriginalNewGameExperimentTests
         public int DoneCount { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
 
-        // controller: 0 for a human at this computer (FND-SETUP-002).
+        // controller: 0 for a human at this computer (FND-SETUP-002), -2 for one eliminated who has
+        // not yet seen the card (RULE-OBJECTIVE-005).
         public IReadOnlyList<PlayerId> Humans => Enumerable.Range(0, 6)
-            .Where(slot => Term("controller", slot) == 0).Select(slot => new PlayerId(slot)).ToArray();
+            .Where(slot => Term("controller", slot) is 0 or -2).Select(slot => new PlayerId(slot)).ToArray();
         public IReadOnlyList<(string Call, int Bound, int Result)> Rolls { get; }
 
         public int Term(string term, int index) => _terms[(term, index)];

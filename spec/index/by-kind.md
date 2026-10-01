@@ -142,7 +142,7 @@
 | [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player | supported |
 | [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | The Financial panel projects next turn's cash flow for the whole city or one sector | supported |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported |
-| [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | supported |
+| [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | established |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image | supported |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported |
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | supported |
@@ -187,7 +187,7 @@
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | supported |
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported |
-| [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move | supported |
+| [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move | established |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | Planning time limit chosen for a match | supported |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes | supported |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds | supported |
@@ -569,7 +569,7 @@
 
 ## experiments
 
-20 entries.
+23 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -593,6 +593,9 @@
 | [EXP-TURN-014](../experiments/EXP-TURN-014.md) | Do twenty-five turns of a new local Big Man game draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-015](../experiments/EXP-TURN-015.md) | Do a human gang's Equip and Sell orders, and eight turns of the computer players, draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-016](../experiments/EXP-TURN-016.md) | Do a human gang's Equip orders and one Sell of three items pay and resolve as the spec gives? | recorded |
+| [EXP-TURN-017](../experiments/EXP-TURN-017.md) | Do thirty turns of a new local Kill 'Em All game, up to the human's elimination, draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-018](../experiments/EXP-TURN-018.md) | Does a new local Kill 'Em All game in which the human's gang never hides draw and resolve as the spec gives, up to the human's elimination? | recorded |
+| [EXP-TURN-019](../experiments/EXP-TURN-019.md) | Does a human gang's Terminate order retire the gang as the spec gives? | recorded |
 
 ## bugs
 
