@@ -451,6 +451,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             UpdateSoundtrack(gameTime);
             if (_soundtrackFade is not null)
             {
+                CancelSwallowedPointerReleases(mouse);
                 EndUpdate(gameTime, keyboard, mouse);
                 return;
             }
@@ -465,6 +466,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (!soundtrackUpdated) UpdateSoundtrack(gameTime);
         if (_soundtrackFade is not null)
         {
+            CancelSwallowedPointerReleases(mouse);
             EndUpdate(gameTime, keyboard, mouse);
             return;
         }

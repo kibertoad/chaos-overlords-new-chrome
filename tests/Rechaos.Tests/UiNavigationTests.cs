@@ -36,6 +36,17 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void PointerButtonReleaseEdgeFiresOnlyOnPressedToReleasedTransition()
+    {
+        // RULE-AUDIO-003, FND-AUDIO-016: a release during the music fade is detected so its held
+        // press can end.
+        Assert.True(PointerButtonEdges.Released(ButtonState.Released, ButtonState.Pressed));
+        Assert.False(PointerButtonEdges.Released(ButtonState.Released, ButtonState.Released));
+        Assert.False(PointerButtonEdges.Released(ButtonState.Pressed, ButtonState.Released));
+        Assert.False(PointerButtonEdges.Released(ButtonState.Pressed, ButtonState.Pressed));
+    }
+
+    [Fact]
     public void AttackTargetPanelUsesAcquisitionGridApertures()
     {
         Assert.Equal(EquipmentCommandLayout.Panel, AttackCommandLayout.Panel);
