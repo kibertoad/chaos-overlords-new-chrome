@@ -354,7 +354,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--sound]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--sound]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
@@ -390,8 +390,11 @@ given turn, counted from 1: the `action`, `target` and `target_2` bytes of
 FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
 as the order screens write them (RULE-TURN-005). The fixture lists each order
 as an `order` input before its Done press, and the replay submits the same
-order as a command; each run records the roll count at every press as
-`done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
+order as a command. `--hires` writes the sector byte of the first human's
+hire order for an offer slot into `hire_orders` before the Done press of the
+given turn, as the hire screen does (RULE-HIRE-003); the fixture lists it as a
+`hire` input, and the replay hires the gang the rebuild offers in that slot.
+Each run records the roll count at every press as `done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
 a recorded run can be played again, and `--dump-at-roll` copies the writable
 sections and the top of the stack at the entry of that call of `roll`, counted
 from 0, into
@@ -406,10 +409,13 @@ directory holds
 the original's memory and never goes into the repository. `extract` reads the
 numbers of the spec's state layouts and glossary terms out of one or more run
 directories and writes them as the runs of an experiment fixture, with no
-names or texts. `OriginalNewGameExperimentTests` replays every run of
-EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-011 against the
-rebuild and names the first roll whose bound or result differs, with the
-original's call instruction.
+names or texts. Among them are each player's Last Turn reports of the last
+resolution (FMT-STATE-006), which the first run of EXP-TURN-001 and every run
+from EXP-TURN-010 on hold.
+`OriginalNewGameExperimentTests` replays every run of the EXP-SETUP and
+EXP-TURN fixtures against the rebuild and names the first roll whose bound or
+result differs, with the original's call instruction, then compares the state
+and, where the fixture has them, the reports.
 
 ## Static binary research
 

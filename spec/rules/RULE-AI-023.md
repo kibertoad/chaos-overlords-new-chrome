@@ -4,7 +4,7 @@ title: Family-4 computer gangs raise Chaos in owned land, probe weak enemies and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-049, FND-AI-046, FND-AI-048, FND-AI-033, FND-AI-021, FND-AI-002, FND-AI-041, FND-AI-044, FND-EXE-004]
+evidence: [FND-AI-072, FND-AI-049, FND-AI-046, FND-AI-048, FND-AI-033, FND-AI-021, FND-AI-002, FND-AI-041, FND-AI-044, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -58,7 +58,8 @@ if prev == ACTION_NONE or prev == ACTION_CONTROL or prev == ACTION_HEAL:
     aux_records[idx].focus = -1
 else if prev == ACTION_ATTACK or prev == ACTION_HIDE or prev == ACTION_MOVE:
     if w == 10:
-        let t = draw_once(player, idx, kind)
+        # BUG-AI-007: the sector is passed where the slot belongs
+        let t = draw_once(player, idx, kind, s)
         if t != -1:
             plan(idx, ACTION_ATTACK, t / 81, t % 81)
             aux_records[idx].focus = s
@@ -108,6 +109,9 @@ changes the family. Draws one `roll` for a single target draw and up to five
 for the five-draw loop, plus the draws inside `select_sector`.
 
 ## Edge cases
+
+After Attack, Hide or Move the strength test's attacker is the record in the
+roster slot numbered like the gang's sector (BUG-AI-007).
 
 After Chaos or Equip at weight 10, the gang attacks the last target drawn even
 when all five strength tests failed. After Chaos or Equip an owned sector

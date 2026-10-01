@@ -116,6 +116,22 @@ internal sealed class StateExtractor
             }
         }
 
+        // FMT-STATE-006: each player's Last Turn reports of the last resolution, 10-byte records at
+        // 0x004AAE08 + player * 0x140, with the count at 0x004ABCA8 + player * 4.
+        Term(rows, "last_turn_report_count", 0x004ABCA8, 6, 4);
+        string[] reportFields = ["report_type", "arg1", "arg2", "arg3"];
+        for (var player = 0; player < 6; player++)
+        {
+            var count = Math.Min(32, BitConverter.ToInt32(_data, Offset(0x004ABCA8u + (uint)player * 4, 4)));
+            for (var index = 0; index < count; index++)
+            {
+                var at = 0x004AAE08u + (uint)(player * 0x140 + index * 10);
+                for (var i = 0; i < reportFields.Length; i++)
+                    rows.Add(Field("FMT-STATE-006", player * 32 + index, reportFields[i],
+                        BitConverter.ToInt16(_data, Offset(at + 2 + (uint)i * 2, 2))));
+            }
+        }
+
         return rows;
     }
 

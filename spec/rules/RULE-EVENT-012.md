@@ -1,10 +1,10 @@
 ---
 id: RULE-EVENT-012
 title: Taking control of a sector is reported to the new owner
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG]
+evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG, EXP-TURN-010]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]

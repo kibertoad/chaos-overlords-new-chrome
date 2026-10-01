@@ -1,10 +1,10 @@
 ---
 id: RULE-EVENT-003
 title: An elimination is reported to all six player slots
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-003, FND-EVENT-001, FND-EVENT-004]
+evidence: [FND-TURN-003, FND-EVENT-001, FND-EVENT-004, EXP-TURN-017]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]

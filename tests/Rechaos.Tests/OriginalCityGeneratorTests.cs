@@ -148,7 +148,7 @@ public sealed class OriginalCityGeneratorTests
         // so a deliberate move of MatchStateHasher.FormatVersion re-pins it; the random state and
         // the consumption count either side of it are what say the factory itself is unchanged.
         Assert.Equal(
-            "e5f773b576f1c92950cd010abb9f3594:160916660:936",
+            "40adf3f98ce631f8366e8321132f4de1:160916660:936",
             $"{MatchStateHasher.ComputeFingerprint(first)}:{first.Random.State}:{first.Random.ConsumptionCount}");
         Assert.Equal(MatchLimits.PlayerCount, first.Players.Count);
         Assert.Equal(

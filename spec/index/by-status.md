@@ -16,7 +16,7 @@
 
 ## supported
 
-206 entries.
+188 entries.
 
 | ID | Title |
 |---|---|
@@ -66,7 +66,6 @@
 | [RULE-AI-007](../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs |
-| [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns |
 | [RULE-AI-012](../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base |
 | [RULE-AI-016](../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage |
@@ -97,7 +96,6 @@
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left |
-| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation |
@@ -111,29 +109,15 @@
 | [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector |
-| [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
-| [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry |
-| [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution |
-| [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
-| [RULE-EVENT-004](../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
 | [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded |
-| [RULE-EVENT-006](../rules/RULE-EVENT-006.md) | A completed site is reported to the player whose Influence completed it |
-| [RULE-EVENT-007](../rules/RULE-EVENT-007.md) | A completed item is reported to the player whose Research completed it |
-| [RULE-EVENT-008](../rules/RULE-EVENT-008.md) | A Bribe that fails for lack of cash is reported to its player |
-| [RULE-EVENT-009](../rules/RULE-EVENT-009.md) | A Hire that fails for lack of cash is reported to its player |
-| [RULE-EVENT-010](../rules/RULE-EVENT-010.md) | A Hire refused because its sector is full is reported to its player |
 | [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | A Hire refused because the player has the most gangs allowed is reported to its player |
-| [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner |
-| [RULE-EVENT-013](../rules/RULE-EVENT-013.md) | Losing control of a sector is reported to the previous owner |
-| [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player |
 | [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | The Financial panel projects next turn's cash flow for the whole city or one sector |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface |
-| [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | Help Topics does nothing, and no key opens the help file |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player |
@@ -159,12 +143,10 @@
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there |
-| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | Planning time limit chosen for a match |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed |
-| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | A turn is turn start, planning by each active player in slot order, then resolution |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
@@ -229,24 +211,42 @@
 
 ## established
 
-31 entries.
+51 entries.
 
 | ID | Title |
 |---|---|
+| [BUG-AI-007](../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector |
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | A band-0 Influence sets the site's progress to its dice pool plus its successes |
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role |
+| [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site |
 | [RULE-CITY-004](../rules/RULE-CITY-004.md) | Each player's Right Hands starts in roster slot 0 in its headquarters at Force 10 with no equipment |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records |
+| [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
+| [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
+| [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
+| [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
+| [RULE-EVENT-004](../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
+| [RULE-EVENT-006](../rules/RULE-EVENT-006.md) | A completed site is reported to the player whose Influence completed it |
+| [RULE-EVENT-007](../rules/RULE-EVENT-007.md) | A completed item is reported to the player whose Research completed it |
+| [RULE-EVENT-008](../rules/RULE-EVENT-008.md) | A Bribe that fails for lack of cash is reported to its player |
+| [RULE-EVENT-009](../rules/RULE-EVENT-009.md) | A Hire that fails for lack of cash is reported to its player |
+| [RULE-EVENT-010](../rules/RULE-EVENT-010.md) | A Hire refused because its sector is full is reported to its player |
+| [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner |
+| [RULE-EVENT-013](../rules/RULE-EVENT-013.md) | Losing control of a sector is reported to the previous owner |
+| [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive |
+| [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan |
 | [RULE-HIRE-004](../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | Move pass carries out every Move, player by player, after normalizing each player's destinations |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice |
@@ -262,8 +262,10 @@
 | [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | A player named with the island modifier puts every neutral sector under a Crackdown that never ends |
 | [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters |
 | [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | A player named with the visibility modifier sees every opposing gang for the whole match |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash |
 | [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 
 ## disputed
 
@@ -288,7 +290,7 @@
 
 ## recorded
 
-357 entries.
+375 entries.
 
 | ID | Title |
 |---|---|
@@ -315,6 +317,22 @@
 | [EXP-TURN-017](../experiments/EXP-TURN-017.md) | Do thirty turns of a new local Kill 'Em All game, up to the human's elimination, draw and resolve as the spec gives? |
 | [EXP-TURN-018](../experiments/EXP-TURN-018.md) | Does a new local Kill 'Em All game in which the human's gang never hides draw and resolve as the spec gives, up to the human's elimination? |
 | [EXP-TURN-019](../experiments/EXP-TURN-019.md) | Does a human gang's Terminate order retire the gang as the spec gives? |
+| [EXP-TURN-020](../experiments/EXP-TURN-020.md) | Do the family-5 and family-7 attacks on a human gang that walks into computer land draw and resolve as the spec gives? |
+| [EXP-TURN-021](../experiments/EXP-TURN-021.md) | Does a computer gang in an enemy sector count every other player's visible gang there before it plans Control? |
+| [EXP-TURN-022](../experiments/EXP-TURN-022.md) | Does a family-3 gang attack a visible human gang at Mentality 3 as the spec gives? |
+| [EXP-TURN-023](../experiments/EXP-TURN-023.md) | Do family-1 gangs snitch, and does a Goon computer player's Influence advance a site, as the spec gives? |
+| [EXP-TURN-024](../experiments/EXP-TURN-024.md) | Do family-1 gangs attack and snitch at Mentality Crime Lord as the spec gives? |
+| [EXP-TURN-025](../experiments/EXP-TURN-025.md) | Does a family-6 gang that fails its strength test buy equipment, in Kill 'Em All at Homicidal Maniac, as the spec gives? |
+| [EXP-TURN-026](../experiments/EXP-TURN-026.md) | Do family-6 gangs that fail their strength test buy equipment, in Armageddon at Criminal, as the spec gives? |
+| [EXP-TURN-027](../experiments/EXP-TURN-027.md) | Does a human's Give of two items to a gang hired the turn before reach the state the spec gives? |
+| [EXP-TURN-028](../experiments/EXP-TURN-028.md) | Do the computer players stop hiring in the closing turns of a six-month Greed? |
+| [EXP-TURN-029](../experiments/EXP-TURN-029.md) | Does an armed gang strike back at a bare-handed Martial Artist? |
+| [EXP-TURN-030](../experiments/EXP-TURN-030.md) | Do two Gives swap weapons, and does the later of two Gives to one gang replace both the earlier one and a weapon bought that turn? |
+| [EXP-TURN-031](../experiments/EXP-TURN-031.md) | Does an Equip succeed at exactly its price, fail one short, and count a Sell only from an earlier roster slot? |
+| [EXP-TURN-032](../experiments/EXP-TURN-032.md) | Does a Snitch that takes a base Tolerance below 1 leave it at 1? |
+| [EXP-TURN-033](../experiments/EXP-TURN-033.md) | Does a Bribe the player cannot pay for leave the cash and the base Tolerance unchanged? |
+| [EXP-TURN-034](../experiments/EXP-TURN-034.md) | What Last Turn report does a human's Equip one short of its price leave? |
+| [EXP-TURN-035](../experiments/EXP-TURN-035.md) | Does a hire the player could afford at planning fail, with a cash report, once an Equip has spent the cash? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -376,6 +394,7 @@
 | [FND-AI-069](../findings/FND-AI-069.md) | The sector selector scores on the owner query, ends mode 6 after its hostile-human bonus, and multiplies table element x * 9 + y in its common block |
 | [FND-AI-070](../findings/FND-AI-070.md) | The family-12 handler equips and heals when unopposed, otherwise moves toward the sector of the player's first gang, and attacks when opposed |
 | [FND-AI-071](../findings/FND-AI-071.md) | The family-10 handler improves armor, equips item 44, heals, moves when the mode-9 sector's last finished site hides better, then raises Chaos or hides |
+| [FND-AI-072](../findings/FND-AI-072.md) | Five attack draws hand the strength test the gang's sector where it expects a roster slot |
 | [FND-AI-073](../findings/FND-AI-073.md) | Family-10 armor and family-12 weapon and armor gates compare item cost with cash as signed values |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
@@ -505,6 +524,7 @@
 | [FND-INFLUENCE-001](../findings/FND-INFLUENCE-001.md) | The Influence picker selects an unfinished site through three fixed rectangles and opens its details on double-click |
 | [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | The Influence picker draws each site slot as a PX02000 picture with a keyed PX00129 frame, dims completed sites, and shows the chosen slot from a prepared highlighted copy |
 | [FND-INFLUENCE-003](../findings/FND-INFLUENCE-003.md) | The Influence picker sits at screen (104,124), confirms with a control or Enter only when a site is chosen, cancels with a control or Escape, and preselects a pending Influence order |
+| [FND-INFLUENCE-004](../findings/FND-INFLUENCE-004.md) | At difficulty band 0 the Influence resolver keeps the dice pool in the local that holds the site's progress |
 | [FND-MOVE-001](../findings/FND-MOVE-001.md) | The Terminate pass runs before the Move pass, and Move destinations are normalized per player to at most six gangs a sector |
 | [FND-MOVE-002](../findings/FND-MOVE-002.md) | The Move panel maps a 162-by-156 area into a three-by-three grid of neighboring sectors |
 | [FND-MOVE-003](../findings/FND-MOVE-003.md) | The Terminate and Move passes skip inactive gangs, the destination is target, and selector mode 0 draws one of the eight neighbours, which the Move repair stores as the new destination |
@@ -660,20 +680,38 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
+| [BUG-AI-007](../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector |
+| [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | A band-0 Influence sets the site's progress to its dice pool plus its successes |
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role |
+| [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site |
 | [RULE-CITY-004](../rules/RULE-CITY-004.md) | Each player's Right Hands starts in roster slot 0 in its headquarters at Force 10 with no equipment |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records |
+| [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
+| [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
+| [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
+| [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
+| [RULE-EVENT-004](../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
+| [RULE-EVENT-006](../rules/RULE-EVENT-006.md) | A completed site is reported to the player whose Influence completed it |
+| [RULE-EVENT-007](../rules/RULE-EVENT-007.md) | A completed item is reported to the player whose Research completed it |
+| [RULE-EVENT-008](../rules/RULE-EVENT-008.md) | A Bribe that fails for lack of cash is reported to its player |
+| [RULE-EVENT-009](../rules/RULE-EVENT-009.md) | A Hire that fails for lack of cash is reported to its player |
+| [RULE-EVENT-010](../rules/RULE-EVENT-010.md) | A Hire refused because its sector is full is reported to its player |
+| [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner |
+| [RULE-EVENT-013](../rules/RULE-EVENT-013.md) | Losing control of a sector is reported to the previous owner |
+| [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive |
+| [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan |
 | [RULE-HIRE-004](../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | Move pass carries out every Move, player by player, after normalizing each player's destinations |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice |
@@ -689,8 +727,10 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | A player named with the island modifier puts every neutral sector under a Crackdown that never ends |
 | [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters |
 | [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | A player named with the visibility modifier sees every opposing gang for the whole match |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash |
 | [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 
 ## Open questions
 
@@ -703,6 +743,7 @@ Entries whose Open questions section says more than None known.
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list | supported |
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 | supported |
 | [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
+| [BUG-AI-007](../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector | established |
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | The turn-start sound plays even with sound effects turned off | supported |
 | [BUG-AWARDS-001](../bugs/BUG-AWARDS-001.md) | The endgame screen shows at most three awards per player though a player can earn five | supported |
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | Bribe costs 3 instead of the manual's 5 | supported |
@@ -741,7 +782,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | established |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
-| [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported |
+| [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | established |
 | [RULE-AI-012](../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established |
@@ -770,7 +811,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | supported |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported |
-| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | supported |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income | established |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way | established |
@@ -786,10 +827,11 @@ Entries whose Open questions section says more than None known.
 | [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | supported |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported |
-| [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | supported |
-| [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | supported |
-| [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner | supported |
-| [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player | supported |
+| [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | established |
+| [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution | supported |
+| [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | established |
+| [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner | established |
+| [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player | established |
 | [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | The Financial panel projects next turn's cash flow for the whole city or one sector | supported |
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | established |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image | supported |
@@ -828,7 +870,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | supported |
-| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | supported |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | established |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | A turn is turn start, planning by each active player in slot order, then resolution | supported |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported |

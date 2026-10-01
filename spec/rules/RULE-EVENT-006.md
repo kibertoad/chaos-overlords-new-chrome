@@ -1,10 +1,10 @@
 ---
 id: RULE-EVENT-006
 title: A completed site is reported to the player whose Influence completed it
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG]
+evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG, EXP-TURN-010]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]

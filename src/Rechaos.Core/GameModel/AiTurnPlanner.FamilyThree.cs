@@ -93,9 +93,10 @@ public static partial class AiTurnPlanner
                         .Setup.Controller == PlayerController.Human)
                     .ToArray()
                 : visible;
+        // BUG-AI-007, call 0x00436650: the strength test is handed the sector as a slot.
         var draw = DrawRecoveredAttackTarget(
             state, gang, visible, targetPool,
-            OriginalAiFamilyThreeRules.CanAttackSelectedTarget);
+            OriginalAiFamilyThreeRules.CanAttackSelectedTarget, strengthTestSlot: gang.SectorId);
         if (!draw.Accepted)
         {
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.None);
