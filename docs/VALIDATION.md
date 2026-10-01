@@ -12,6 +12,7 @@ Status: maintained canonical procedure
 - [Tests against the original](#tests-against-the-original)
 - [Fixture classes](#fixture-classes)
 - [Native audio backend](#native-audio-backend)
+- [Original pattern resources](#original-pattern-resources)
 - [Failure triage](#failure-triage)
 <!-- doc-index:end -->
 
@@ -520,6 +521,10 @@ This diagnostic intentionally changes decoder position to isolate submission; it
 does not compare audible hardware output. Whole-track decoding alone therefore
 cannot establish the endpoint required by RULE-AUDIO-001. Repairing final-buffer
 submission remains necessary before claiming full soundtrack parity.
+
+## Original pattern resources
+
+`OriginalPatternResourceTests` loads the hash-verified original executable as a data file on Windows, reads bitmap resources 143, 146 and 147, and compares all 192 mask bits with the production pattern helper (FND-UI-031, FND-GFX-006). It does not execute the original or store its resource bytes in the repository. It requires `GAME_DIR` and skips when Windows or the executable is unavailable. This verifies mask shape and row orientation, not raster-operation compositing or rendered-screen parity.
 
 ## Failure triage
 
