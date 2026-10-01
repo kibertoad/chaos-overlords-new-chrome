@@ -31,6 +31,7 @@ public sealed class NativeEffectVoiceTests
             {
                 Play(game, sound);
                 var first = Voice(game);
+                using var nativeLoopReset = new NativeLoopReset(first);
                 // Loop the existing voice before testing interruption: completion cannot
                 // race this assertion on a loaded host. No short fixture timing is assumed.
                 first.IsLooped = true;
@@ -64,6 +65,7 @@ public sealed class NativeEffectVoiceTests
         {
             Play(game, sound);
             var first = Voice(game);
+            using var nativeLoopReset = new NativeLoopReset(first);
             first.IsLooped = true;
             first.Play();
             SetField(game, "_soundEffectVolumeLevel", 0);
@@ -92,6 +94,7 @@ public sealed class NativeEffectVoiceTests
         {
             Play(game, sound);
             var first = Voice(game);
+            using var nativeLoopReset = new NativeLoopReset(first);
             first.IsLooped = true;
             first.Play();
             foreach (var slot in new[] { -1, 5, GeneralSoundSlot.IncomingMessageAlert, 48 })
@@ -103,6 +106,28 @@ public sealed class NativeEffectVoiceTests
             }
         }
         finally { Invoke(game, "StopEffectVoice"); }
+    }
+
+    private sealed class NativeLoopReset : IDisposable
+    {
+        private readonly int _source;
+        public NativeLoopReset(SoundEffectInstance voice) => _source =
+            (int)(typeof(SoundEffectInstance).GetField("SourceId", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new MissingFieldException("SourceId")).GetValue(voice)!;
+
+        public void Dispose()
+        {
+            // The effect under test may already have been disposed and returned its
+            // source to the pool. Clear that exact source's loop flag before an Ogg
+            // stream can reuse it; the backend's recycle path does not reset it.
+            var assembly = typeof(SoundEffect).Assembly;
+            var sourceBoolean = assembly.GetType("MonoGame.OpenAL.ALSourceb", throwOnError: true)!;
+            var al = assembly.GetType("MonoGame.OpenAL.AL", throwOnError: true)!;
+            var setter = al.GetMethod("Source", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
+                binder: null, types: [typeof(int), sourceBoolean, typeof(bool)], modifiers: null)
+                ?? throw new MissingMethodException("AL.Source(int, ALSourceb, bool)");
+            setter.Invoke(null, [_source, Enum.Parse(sourceBoolean, "Looping"), false]);
+        }
     }
 
     private static object StreamingMutex(Song song)
