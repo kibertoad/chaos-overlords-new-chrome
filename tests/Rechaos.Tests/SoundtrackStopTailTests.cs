@@ -19,10 +19,7 @@ public sealed class SoundtrackStopTailTests
         using var shortSong = Song.FromUri("short", new Uri(Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg")));
         using var longSong = Song.FromUri("long", new Uri(Path.Combine(AppContext.BaseDirectory, "Fixtures", "long-silence.ogg")));
         using var player = new SoundtrackProgramPlayer([shortSong, longSong]);
-        var streamType = typeof(Song).Assembly.GetType("Microsoft.Xna.Framework.Audio.OggStreamer", throwOnError: true)!;
-        var streamer = streamType.GetProperty("Instance", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
-        var pending = streamType.GetField("pendingFinish", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        var oldStream = Stream(shortSong);
+        var oldStream = OggStreamOf(shortSong);
         var prepareMutex = oldStream.GetType().GetField("prepareMutex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(oldStream)!;
         MediaPlayer.IsRepeating = false;
         MediaPlayer.IsShuffled = false;
@@ -32,16 +29,17 @@ public sealed class SoundtrackStopTailTests
         try
         {
             player.PlayProgram([shortSong]);
-            WaitFor(() => (bool)pending.GetValue(streamer)!);
+            WaitFor(() => DesktopGlSoundtrackCompletionState.Pending);
             lock (prepareMutex)
             {
                 Assert.Equal(MediaState.Playing, MediaPlayer.State);
-                Assert.True((bool)pending.GetValue(streamer)!);
+                Assert.True(DesktopGlSoundtrackCompletionState.Pending);
                 SetNativeLooping(oldStream, false);
                 player.PlayProgram([longSong]);
             }
             WaitFor(() => player.ReadyToRestart);
-            var reader = Stream(longSong).GetType().GetProperty("Reader", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(Stream(longSong))!;
+            var newStream = OggStreamOf(longSong);
+            var reader = newStream.GetType().GetProperty("Reader", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(newStream)!;
             var decoded = (TimeSpan)reader.GetType().GetProperty("TimePosition")!.GetValue(reader)!;
             // Decoder coverage does not compare audible output or final partial-buffer delivery.
             Assert.Equal(longSong.Duration, decoded);
@@ -63,7 +61,7 @@ public sealed class SoundtrackStopTailTests
         setter.Invoke(null, [sourceId, Enum.Parse(sourceBoolean, "Looping"), value]);
     }
 
-    private static object Stream(Song song) => typeof(Song).GetField("stream", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(song)!;
+    private static object OggStreamOf(Song song) => typeof(Song).GetField("stream", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(song)!;
 
     private static void WaitFor(Func<bool> condition)
     {

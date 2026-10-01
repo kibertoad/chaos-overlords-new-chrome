@@ -11,6 +11,7 @@ Status: maintained canonical procedure
 - [Spec checks](#spec-checks)
 - [Tests against the original](#tests-against-the-original)
 - [Fixture classes](#fixture-classes)
+- [Native audio backend](#native-audio-backend)
 - [Failure triage](#failure-triage)
 <!-- doc-index:end -->
 
@@ -496,6 +497,8 @@ original's result as the deviation changes it.
 - **Save patch:** writes to a base save, committed under
   `spec/experiments/saves/`; the base save itself stays with the maintainer's
   captures.
+
+## Native audio backend
 
 The native soundtrack EOF regression pins the old stream at its decoded end before
 replacing its program, then requires the replacement decoder to reach the end of a

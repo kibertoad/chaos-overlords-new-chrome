@@ -15,6 +15,9 @@ internal static class DesktopGlSoundtrackCompletionState
         BindingFlags.Instance | BindingFlags.NonPublic)
         ?? throw new MissingFieldException(StreamerType.FullName, "pendingFinish");
 
+    /// <summary>Whether the streaming worker holds an end of stream it has not yet delivered.</summary>
+    internal static bool Pending => (bool)PendingFinish.GetValue(Instance.GetValue(null))!;
+
     internal static void ClearBeforeNewSong()
     {
         // RULE-AUDIO-001, RULE-AUDIO-002: every newly started track must run to its end.
