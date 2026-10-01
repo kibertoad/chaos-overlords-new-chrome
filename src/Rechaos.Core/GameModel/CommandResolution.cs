@@ -768,8 +768,8 @@ public static partial class CommandResolver
             // held the site's progress, so the new progress is the pool plus the successes,
             // whatever the progress was. The pool is not clamped there, so a negative one leaves
             // negative progress: more Resistance still needed than the site has.
-            var rawPool = gang.Force + statistics.Influence;
-            var progress = rawPool - rawPool / 5 + successes;
+            var progress = OriginalResolutionRules.GoonReducedPool(
+                gang.Force + statistics.Influence) + successes;
             var resistance = state.Definitions.Site(site.DefinitionId).Resistance;
             site.Resistance = resistance - Math.Min(progress, resistance);
         }

@@ -8,10 +8,10 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// EXP-SETUP-001 to EXP-SETUP-004: new local games of the original, recorded from Begin to the
-/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-026 go on to press Done for one
-/// to thirty turns, EXP-TURN-009 to EXP-TURN-022 other than EXP-TURN-018 with orders for the human's
-/// gang, and stop at the next planning phase. Each run gives the seed, every roll(n) with its call
-/// site and result, and the state the recording stops at. The rebuild plays the same match from the same seed and
+/// first planning phase under a debugger. EXP-TURN-001 to EXP-TURN-033 go on to press Done for one
+/// to thirty turns, EXP-TURN-009 to EXP-TURN-022 other than EXP-TURN-018, EXP-TURN-027 and
+/// EXP-TURN-029 to EXP-TURN-033 with orders for the human's gangs, and stop at the next planning
+/// phase. Each run gives the seed, every roll(n) with its call site and result, and the state the recording stops at. The rebuild plays the same match from the same seed and
 /// settings and has to make the same rolls in the same order and reach the same generator position
 /// and state. The turns check the turn order (RULE-TURN-001), the computer players' planning passes,
 /// family dispatch, sector choices, hire choices and hire placement (RULE-AI-001, RULE-AI-002,

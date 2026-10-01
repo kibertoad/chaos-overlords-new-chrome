@@ -423,11 +423,12 @@ public sealed partial class MatchState
         {
             byte mask = 0;
             foreach (var observer in Players)
-                if (observer.Id == gang.Owner || CanPlayerDetectGang(observer.Id, gang.Id))
+                if (CanPlayerDetectGang(observer.Id, gang.Id))
                     mask |= (byte)(1 << observer.Id.Value);
             gang.VisibilityMask = mask;
         }
     }
+
     public TurnTransition FinishCommand(PlayerId player)
     {
         if (Coordinator.Phase == TurnPhase.Command && Coordinator.ActivePlayer == player)
