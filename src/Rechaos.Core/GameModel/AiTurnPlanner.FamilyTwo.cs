@@ -138,14 +138,11 @@ public static partial class AiTurnPlanner
             snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
+            ownerTests: SelectorOwnerTests(state, playerId),
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
-            scenarioStandings: OriginalAiScenarioStandingRules.Build(state));
+            scenarioStandings: OriginalAiScenarioStandingRules.Build(state), planning: state.AiPlanning);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }
 }

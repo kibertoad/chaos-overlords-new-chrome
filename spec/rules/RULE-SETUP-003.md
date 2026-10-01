@@ -1,10 +1,10 @@
 ---
 id: RULE-SETUP-003
 title: Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-013, FND-SETUP-017, FND-SETUP-002, FND-RNG-005, SRC-HELP-GOG, SRC-MANUAL-GOG]
+evidence: [FND-SETUP-013, FND-SETUP-017, FND-SETUP-002, FND-RNG-005, SRC-HELP-GOG, SRC-MANUAL-GOG, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, RULE-SETUP-001]

@@ -1,9 +1,9 @@
 ---
 id: FND-AI-038
 title: The family-12 handler equips and heals when unopposed and wanders at random, and attacks when opposed
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-070]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

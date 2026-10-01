@@ -1,10 +1,10 @@
 ---
 id: RULE-HIRE-004
 title: A new match starts with every hire offer vacant and no hire order
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-001]
+evidence: [FND-HIRE-001, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: []

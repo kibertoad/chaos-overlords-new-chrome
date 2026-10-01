@@ -1,9 +1,9 @@
 ---
 id: FND-AI-059
 title: The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-068]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

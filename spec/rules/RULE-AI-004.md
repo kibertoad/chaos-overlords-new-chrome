@@ -4,7 +4,7 @@ title: Queries the computer players' handlers share
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057]
+evidence: [FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057, FND-SETUP-018]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, RULE-RNG-002]
@@ -210,6 +210,11 @@ record. `hostile_owner` and `hostile_human_owner` return true or false.
 index of the last target drawn. No other function here draws from `rng`.
 
 ## Edge cases
+
+`turns_remaining` is the length chosen at setup minus `elapsed_turns` only in
+Greed, Power, Acceptance and Dominance. Every other scenario plays with a
+`turn_limit` of 65535 (FND-SETUP-018), so there it is 65535 minus
+`elapsed_turns`: odd on the first turn, and never small.
 
 `visible_weight` decides on the first visible gang it finds: a visible
 computer gang found before a hostile human gang gives 1. `strength_check`

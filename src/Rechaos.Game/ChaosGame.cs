@@ -671,7 +671,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         AcceptAndInvoke(CloseItemDetails);
                     break;
                 case ClientScreen.GameInfo:
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    // SCR-UI-008: Enter or Execute closes the panel.
+                    if (Pressed(keyboard, Keys.Back) || PressedEnterOrExecute(keyboard))
                         AcceptAndInvoke(CloseGameInformation);
                     break;
                 case ClientScreen.Finance:
@@ -900,8 +901,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     AcceptAndInvoke(CloseItemDetails);
                 break;
             case ClientScreen.GameInfo:
-                if (GameInformationLayout.Ok.Contains(point))
-                    AcceptAndInvoke(CloseGameInformation);
+                // SCR-UI-008: the OK face closes the panel; a press outside it is refused.
+                PressPanelFace(point, GameInformationLayout.InputBounds, GameInformationLayout.Ok,
+                    CloseGameInformation);
                 break;
             case ClientScreen.Finance:
                 if (FinanceLayout.Ok.Contains(point))

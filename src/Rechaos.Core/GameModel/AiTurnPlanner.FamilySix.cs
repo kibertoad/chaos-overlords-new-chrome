@@ -97,8 +97,8 @@ public static partial class AiTurnPlanner
         int gangSlot,
         FamilyPlanningSnapshot snapshot)
     {
-        // RULE-AI-025, FND-AI-059: with every weight-10 sector covered the guard target is the
-        // end marker 100, and mode 0x40 + 100 scores no sector, so the tie draw covers the city.
+        // RULE-AI-025, FND-AI-068: with every weight-10 sector covered the guard target is the
+        // end marker 100, and mode 0x40 + 100 scores sector 37 (FND-AI-069).
         // The marker stored as the coverage sector is overwritten by the step below before any
         // other gang plans, so it is not kept.
         var strategicTarget = FirstUncoveredFamilySixTarget(state, playerId);
@@ -112,11 +112,8 @@ public static partial class AiTurnPlanner
             snapshot.SectorOwners, snapshot.SectorDisabled, snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
-            state.Random);
+            ownerTests: SelectorOwnerTests(state, playerId),
+            state.Random, planning: state.AiPlanning);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, destination);
         state.AiPlanning.SetCoverageSector(playerId, gangSlot, destination);
     }
@@ -139,7 +136,7 @@ public static partial class AiTurnPlanner
     }
 
     /// <summary>
-    /// Selector 0x5F (FND-AI-059), RULE-AI-025's <c>covered_by</c> and RULE-AI-010's
+    /// Selector 0x5F (FND-AI-068), RULE-AI-025's <c>covered_by</c> and RULE-AI-010's
     /// <c>hunter_covered</c>: whether an active family-6 gang of the player covers the sector, a
     /// gang with focus -1 by its coverage sector and any other by the sector it stands in.
     /// </summary>

@@ -76,11 +76,8 @@ public static partial class AiTurnPlanner
             snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
-            state.Random);
+            ownerTests: SelectorOwnerTests(state, playerId),
+            state.Random, planning: state.AiPlanning);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }
 

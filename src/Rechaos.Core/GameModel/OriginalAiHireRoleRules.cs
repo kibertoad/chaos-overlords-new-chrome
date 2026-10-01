@@ -43,6 +43,10 @@ internal static class OriginalAiHireRoleRules
         return Math.Min(MatchLimits.GangsPerPlayer, limit);
     }
 
+    // RULE-AI-010: f = turn_limit / 52.0, with the turn limit the match plays with (FND-SETUP-018).
+    private static float DurationFactor(ScenarioId scenario, GameDuration duration) =>
+        ScenarioCatalog.TurnLimit(scenario, duration) / 52f;
+
     public static bool ShouldAttemptHire(
         ScenarioId scenario,
         int activeGangCount,
@@ -149,7 +153,7 @@ internal static class OriginalAiHireRoleRules
                 : inputs.Family5Count == 0 ? 9 : 8;
         }
 
-        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        var durationFactor = DurationFactor(scenario, inputs.Duration);
         if (slot == 8 && inputs.Family2Count >= durationFactor * 4f) slot = 0;
         if (slot == 6 && inputs.Family6Or12Count >= durationFactor * 4f) slot = 0;
         if (slot == 9 && inputs.Family5Count >= durationFactor * 3f) slot = 0;
@@ -169,7 +173,7 @@ internal static class OriginalAiHireRoleRules
         if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
 
         var slot = turn % 10;
-        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        var durationFactor = DurationFactor(ScenarioId.Siege, inputs.Duration);
         if (slot == 9 && inputs.Family5Count >= durationFactor * 3f) slot = 0;
         if (slot == 4 && inputs.Family7Count >= durationFactor) slot = 0;
         if (inputs.Family0Or4Count < 4) slot = 0;
@@ -187,7 +191,7 @@ internal static class OriginalAiHireRoleRules
         if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
 
         var slot = turn % 10;
-        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        var durationFactor = DurationFactor(ScenarioId.Eliminate, inputs.Duration);
         if (slot is 3 or 6 or 8 && inputs.Family3Count >= durationFactor * 4f) slot = 0;
         // FND-AI-050: the quota for slots 5 and 7 uses the float 10.0 at 0x00481030.
         if (slot is 5 or 7 && inputs.Family6Or12Count >= durationFactor * 10f) slot = 0;
@@ -237,7 +241,7 @@ internal static class OriginalAiHireRoleRules
             slot = inputs.Family3Count == 0 ? 9 : 3;
         }
 
-        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        var durationFactor = DurationFactor(ScenarioId.Armageddon, inputs.Duration);
         if (slot == 3 && inputs.Family2Count >= durationFactor * 4f) slot = 0;
         if (slot == 5 && inputs.Family6Or12Count >= durationFactor * 4f) slot = 0;
         if (slot == 9 && inputs.Family3Count >= durationFactor * 3f) slot = 0;
@@ -279,7 +283,7 @@ internal static class OriginalAiHireRoleRules
                 : inputs.Family3Count == 0 ? 3 : 9;
         }
 
-        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        var durationFactor = DurationFactor(ScenarioId.Greed, inputs.Duration);
         if (slot is 3 or 6 or 8 && inputs.Family3Count >= durationFactor * 4f) slot = 0;
         if (slot == 5 && inputs.Family6Or12Count >= durationFactor * 2f) slot = 0;
         if (slot == 9 && (inputs.Family2Count >= durationFactor * 2f
@@ -320,7 +324,7 @@ internal static class OriginalAiHireRoleRules
                 : inputs.Family5Count == 0 ? 4 : 5;
         }
 
-        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        var durationFactor = DurationFactor(ScenarioId.Acceptance, inputs.Duration);
         if (slot is 4 or 6 or 8 && inputs.Family5Count >= durationFactor * 6f) slot = 0;
         if (slot == 5 && inputs.Family2Count >= durationFactor * 2f) slot = 0;
         if (slot == 2 && inputs.Family6Or12Count >= durationFactor * 3f) slot = 0;
@@ -362,7 +366,7 @@ internal static class OriginalAiHireRoleRules
                     : inputs.Family5Count == 0 ? 3 : 5;
         }
 
-        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        var durationFactor = DurationFactor(ScenarioId.Dominance, inputs.Duration);
         if (slot is 3 or 6 && inputs.Family5Count >= durationFactor * 3f) slot = 0;
         if (slot is 2 or 8 && inputs.Family3Count >= durationFactor * 3f) slot = 0;
         if (slot == 5 && inputs.Family2Count >= durationFactor * 2f) slot = 0;

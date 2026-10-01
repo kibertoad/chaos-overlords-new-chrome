@@ -1,10 +1,10 @@
 ---
 id: RULE-RNG-002
 title: roll(n) gives a whole number from 1 to n from three draws
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-RNG-002, FND-RNG-003, FND-RNG-004, FND-RNG-006, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-RNG-002, FND-RNG-003, FND-RNG-004, FND-RNG-006, SRC-MANUAL-GOG, FND-EXE-004, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: [RULE-RNG-001]
@@ -76,5 +76,5 @@ None known.
 
 ## Open questions
 
-- No run of the original has compared a sequence of results with a
-  prediction from a known state.
+None known. EXP-SETUP-001 compared 310 results with this procedure run from a
+known seed.

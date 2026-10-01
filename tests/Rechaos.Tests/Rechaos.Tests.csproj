@@ -21,6 +21,8 @@
          from GAME_DIR. -->
     <None Include="../../spec/builds/BLD-*.md" LinkBase="spec/builds" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../spec/formats/FMT-*.md" LinkBase="spec/formats" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The experiment fixtures, for the tests that replay a run of the original. -->
+    <None Include="../../spec/experiments/EXP-*.json" LinkBase="spec/experiments" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="xunit.v3" Version="4.0.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />

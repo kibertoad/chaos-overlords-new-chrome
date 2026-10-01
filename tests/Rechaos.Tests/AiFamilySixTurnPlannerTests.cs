@@ -26,11 +26,11 @@ public sealed class AiFamilySixTurnPlannerTests
         Assert.Equal(9, match.AiPlanning.CoverageSector(player, 0));
     }
 
-    // RULE-AI-025, FND-AI-059: when a family-6 gang already covers every weight-10 sector the
-    // guard target is the end marker 100, so the move is drawn over the whole city and the
-    // covered sector is left to the gang guarding it.
+    // RULE-AI-025, FND-AI-069: when a family-6 gang already covers every weight-10 sector the
+    // guard target is the end marker 100, whose mode 0xA4 scores sector 37, so the gang steps
+    // toward sector 37 and the covered sector is left to the gang guarding it.
     [Fact]
-    public void CoveredGuardTargetsLeaveTheMoveToTheTieDraw()
+    public void CoveredGuardTargetsSendTheGangTowardSector37()
     {
         var data = BundledOriginalData.Load();
         var player = new PlayerId(0);
@@ -44,8 +44,8 @@ public sealed class AiFamilySixTurnPlannerTests
             match.FinishUpkeep();
 
             match.PrepareAiPlanning(player);
-            var command = AiTurnPlanner.Plan(match, player)
-                .Single(candidate => candidate.Gang == new GangId(10));
+            var command = Assert.Single(AiTurnPlanner.Plan(match, player),
+                candidate => candidate.Gang == new GangId(10));
 
             Assert.Equal(GangAction.Move, command.Action);
             var destination = match.AiPlanning.CoverageSector(player, 0);
@@ -53,12 +53,12 @@ public sealed class AiFamilySixTurnPlannerTests
             destinations.Add(destination);
         }
 
-        // A route toward sector 63 always steps to 9; the tie draw also reaches row 0 or column 0.
-        Assert.Contains(destinations, destination => destination != 9);
+        // From sector 0 a route toward sector 37 always steps to 9.
+        Assert.Equal(9, Assert.Single(destinations));
     }
 
     [Fact]
-    public void EndMarkerModeScoresNoSector()
+    public void EndMarkerModeScoresSector37()
     {
         var owners = Enumerable.Repeat(-1, MatchLimits.SectorCount).ToArray();
         var disabled = new bool[MatchLimits.SectorCount];
@@ -68,11 +68,14 @@ public sealed class AiFamilySixTurnPlannerTests
             destinations.Add(OriginalAiSectorSelectionRules.Select(
                 0x40 + OriginalAiSectorSelectionRules.GuardTargetEndMarker,
                 27, new PlayerId(0), 6, owners, disabled, counts,
-                _ => true, _ => false, _ => false, _ => false,
+                _ => true, _ => false, new SectorOwnerTests(_ => false, _ => false),
                 new DeterministicRandom(seed)));
 
-        // Every sector ties at 0, so the step heads toward a random sector in any direction.
-        Assert.True(destinations.Count > 4);
+        // FND-AI-069: only sector 37 scores, so every seed takes the same step toward it.
+        var destination = Assert.Single(destinations);
+        Assert.Equal(1, Math.Max(
+            Math.Abs(destination % MatchLimits.BoardWidth - 37 % MatchLimits.BoardWidth),
+            Math.Abs(destination / MatchLimits.BoardWidth - 37 / MatchLimits.BoardWidth)));
     }
 
     [Fact]
@@ -109,7 +112,7 @@ public sealed class AiFamilySixTurnPlannerTests
 
         Assert.Equal(6, match.AiPlanning.Family(player, 0));
         Assert.Equal(GangAction.Terminate, command.Action);
-        // FND-AI-059, FND-AI-042: the Greed Terminate flags the record for a family at the next
+        // FND-AI-068, FND-AI-042: the Greed Terminate flags the record for a family at the next
         // dispatch, after the dispatcher cleared the flag it gave family 6 under.
         Assert.True(match.AiPlanning.NeedsFamily(player, 0));
     }

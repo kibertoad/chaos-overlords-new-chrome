@@ -1,10 +1,10 @@
 ---
 id: RULE-MOVE-001
 title: Move pass carries out every Move, player by player, after normalizing each player's destinations
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-MOVE-001, FND-MOVE-002, FND-MOVE-003, FND-CONTROL-002, SRC-MANUAL-GOG]
+evidence: [FND-MOVE-001, FND-MOVE-002, FND-MOVE-003, FND-CONTROL-002, SRC-MANUAL-GOG, EXP-TURN-015]
 conflicting: []
 split_with: []
 related: [RULE-MOVE-002, RULE-TERMINATE-001, FMT-STATE-001]
@@ -55,7 +55,8 @@ made here, and no random draw except those RULE-MOVE-002 makes.
 - The Move panel offers only the eight sectors around the gang's own
   (FND-MOVE-002), but this pass copies whatever destination is stored, so a
   destination set another way, such as by RULE-MOVE-002's fallback or a
-  computer player's order, is carried out as it is.
+  computer player's order, is carried out as it is. A computer player's gang
+  can so move several sectors in one turn [EXP-TURN-015].
 - A gang whose record is inactive (sector 100), such as one that died in this
   turn's combat, keeps its order but does not move [FND-MOVE-003].
 - The destination is the `target` byte, written by the Move panel

@@ -31,17 +31,14 @@ Advanced fixtures.
 Original is the default. Advanced currently makes exactly these changes:
 
 - It gives an active gang left idle by Original at most one locally compelled
-  legal fallback: Heal while injured, Attack a detectable rival in its sector,
-  or Control its current uncontrolled sector, in that strict order. If none is
-  legal, it remains idle. Attack ties prefer lower current target Force and then
-  target ID. The broader initial fallback was rejected after an isolated
-  same-seed sample showed that eliminating all idle turns reduced territorial
-  performance.
+  legal fallback: Control its current uncontrolled sector, Chaos in a sector it
+  controls, Attack a detectable rival in its sector, or Heal while injured, in
+  that strict order. If none is legal, it remains idle. Attack ties prefer lower
+  current target Force and then target ID.
 - On Crime Lord and Homicidal Maniac only, a gang at Force 8 or higher in a sector
   it controls moves to a neighboring non-controlled sector when Original leaves
-  it idle or repeats Hide, Snitch, or Bribe from its preceding turn. Repeated
-  Chaos, which families 0 and 4 hold owned land with, is left out: it earns, and
-  in the same-seed sample moving those gangs too left more gang-turns idle. The move uses
+  it idle or repeats Hide, Snitch, Bribe or Chaos from its preceding turn. The
+  move uses
   the existing objective/income destination score, then lower sector ID. A
   detectable local rival suppresses an Advanced-added move, which may not reduce
   the friendly gangs remaining after already planned outbound moves below one;
@@ -53,16 +50,17 @@ fixtures. Each policy pass requires an isolated A/B case recording idle
 gang-turns, controlled and retained sectors, survival, and scenario progress;
 large combined tournaments supplement these cases but cannot substitute for
 them because one improvement could otherwise conceal another regression.
-The aggregate gates run 12 identical Power seeds for 15 turns per isolated
-feature. Criminal idle recovery retains a strict defended-territory improvement
-gate. After removal of Original policy's non-native replacement-command
-fallback, the Crime Lord expansion sample reduced idle turns from 467 to 427,
-increased outward moves from 343 to 474, controlled-sector turns from 3,104 to
-3,270, and final controlled sectors from 343 to 371. Undefended-sector turns
-rose from 811 to 1,015, leaving defended controlled-sector turns at 2,255 versus
-Original's 2,293 (98.3% retention); the feature gate therefore requires at
-least 98% retention while still requiring strict improvements in expansion,
-controlled-sector turns, and final territory. Seed pairs execute independently
+The aggregate gates run 12 identical seeds for 15 turns per isolated feature:
+Crime Lord expansion on Power and Criminal idle recovery on Kill 'Em All. Each
+gate requires Advanced to control at least as many sector-turns, to end with at
+least as many sectors, and to hold at least as many defended sector-turns as
+Original. The expansion gate also requires more outward moves, the idle gate
+fewer idle gang-turns. In the current samples expansion raises outward moves
+from 632 to 840, controlled-sector turns from 3,707 to 4,255, final controlled
+sectors from 542 to 615 and defended controlled-sector turns from 3,676 to
+4,134. Idle recovery removes all 114 idle gang-turns and raises controlled-sector
+turns from 3,972 to 4,003, final controlled sectors from 540 to 553 and defended
+controlled-sector turns from 3,917 to 3,940. Seed pairs execute independently
 with a maximum of two workers.
 
 These transformations consume no RNG and add no cash, statistics, discounts,
@@ -177,9 +175,9 @@ sectors and capacity-routes toward that draw. Mode 6 is live for family 2 and
 routes toward the current scenario leaders, including tied-leader and active-
 player-leads branches plus hostile-human weighting. Modes 7-9 are live in
 families 5, 3, and 10, objective modes 12-15 are live in families 13/14, and
-encoded `sector + 0x40` is live for family 12. Because family 12 encodes its current
-sector and the common selector later clears the source score, that path uses
-the original all-zero tie draw and one-step routing behavior.
+encoded `sector + 0x40` is live for family 12. Family 12 encodes the sector of
+its player's roster-slot-0 gang (FND-AI-070), so it steps toward that gang; a
+gang already standing there falls back to the all-zero tie draw.
 
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
 six-computer six-month matches. Each scenario is run twice at a fixed seed and
@@ -347,16 +345,17 @@ explicit M6 gap rather than an unmeasured claim.
    upgrade (selector 0x72, FND-AI-055: from the equipped armor or item 1, with
    no cost test) with a literal two-turn cooldown, then a special researched Smoke
    Bombs Equip, then Heal below Force 10 only with no visible local opponent.
-   Otherwise it probes mode 9 for a strictly stronger sum of completed positive
-   site Stealth and calls mode 9 again for the Move destination; without an
+   Otherwise it probes mode 9 for a sector whose last finished site has strictly
+   more Stealth than the current sector's (selector 8, FND-AI-071) and calls
+   mode 9 again for the Move destination; without an
    improvement it chooses Chaos unless another gang in the sector has previous
    Chaos, in which case it Hides. The intentional second selector call and its
    independent tie RNG are replay-recorded.
    Family 12's complete handler branches first on current-sector visibility.
    With no visible opponent it prefers weapon, armor, and maximum-Detect
    miscellaneous upgrades (selector 0x74, FND-AI-055), using raw-cost weapon/armor cooldowns, then Heals
-   below Force 10 at effective Heal `-3` or better, and otherwise uses its
-   encoded-current-sector zero-maximum random Move. With visible opponents it
+   below Force 10 at effective Heal `-3` or better, and otherwise steps toward
+   its player's roster-slot-0 gang through the encoded mode (FND-AI-070). With visible opponents it
    makes up to five bounded target draws, preserves the human-pool/full-pool
    ordinal asymmetry, and attacks the final target even when every combat
    comparison fails. Greed's final three turns overwrite the result with

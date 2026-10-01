@@ -1,10 +1,10 @@
 ---
 id: RULE-CITY-001
 title: A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CITY-001, FND-RNG-005]
+evidence: [FND-CITY-001, FND-RNG-005, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-002]
@@ -79,11 +79,8 @@ None known.
 ## Open questions
 
 - The finding gives the footprints as 2 by 2, 4 by 4 and 6 by 6 over four
-  passes of growing radius. The exact bounds written here (radius `r` covers
-  `centre - r` up to but not including `centre + r`, so radius 0 adds
-  nothing) are not recorded at instruction level.
-- The finding says the average is "rounded". The integer form written here
-  rounds a fractional part of one half or more up; the exact arithmetic is not
-  recorded.
-- Which bytes of the sector record receive the Income and the starting
-  Tolerance is not recorded; FMT-STATE-002 disputes the `income` row.
+  passes of growing radius, and says the average is "rounded". The bounds and
+  the rounding written here give all 64 Incomes of EXP-SETUP-001 from its 40
+  recorded centres, in `base_income` and `income`, and its starting
+  Tolerances in `base_tolerance`; one run cannot show that every bound and the
+  rounding of an exact half are right.

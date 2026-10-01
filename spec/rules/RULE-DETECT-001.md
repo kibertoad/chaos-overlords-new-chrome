@@ -4,7 +4,7 @@ title: A player sees an enemy gang when its Stealth is at most the player's dete
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-DETECT-001, FND-DETECT-002, FND-EXE-004, FND-SETUP-011, SRC-MANUAL-GOG]
+evidence: [FND-DETECT-001, FND-DETECT-002, FND-EXE-004, FND-SETUP-011, SRC-MANUAL-GOG, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]

@@ -1,10 +1,10 @@
 ---
 id: RULE-SETUP-007
 title: A player named with the visibility modifier sees every opposing gang for the whole match
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-015, FND-SETUP-011]
+evidence: [FND-SETUP-015, FND-SETUP-011, EXP-SETUP-004]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-001, RULE-DETECT-001]

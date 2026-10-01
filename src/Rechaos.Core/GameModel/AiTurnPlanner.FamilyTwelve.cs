@@ -71,8 +71,12 @@ public static partial class AiTurnPlanner
             return;
         }
 
+        // RULE-AI-030, FND-AI-070: the Move's encoded target is the sector selector 0x5A gives for
+        // roster slot 0, not for the acting gang, so the family heads for the player's first gang
+        // (100, the inactive sector byte, once that gang is gone). The selector searches from the
+        // acting gang's own sector.
         var target = OriginalAiSectorSelectionRules.Select(
-            mode: 0x40 + gang.SectorId,
+            mode: 0x40 + FirstRosterSlotSector(player),
             sourceSectorId: gang.SectorId,
             player: playerId,
             family: 12,
@@ -81,13 +85,19 @@ public static partial class AiTurnPlanner
             snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
-            isHostileOwner: owner =>
-                state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                .Setup.Controller == PlayerController.Human,
-            state.Random);
+            ownerTests: SelectorOwnerTests(state, playerId),
+            state.Random, planning: state.AiPlanning);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }
+
+    /// <summary>
+    /// Selector 0x5A for roster slot 0: the sector byte of the player's first gang record, which
+    /// is 100 while the slot is empty (FMT-STATE-001, RULE-GANG-002).
+    /// </summary>
+    internal static int FirstRosterSlotSector(MatchPlayerState player) =>
+        player.Gangs.Count > 0 && player.Gangs[0].IsActive
+            ? player.Gangs[0].SectorId
+            : OriginalAiHirePlacementRules.InactiveGangSector;
 
     private static void SetFamilyTwelveEquipment(
         MatchState state,

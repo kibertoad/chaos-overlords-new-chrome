@@ -56,7 +56,7 @@ formation gang (Siege) or an aggressive gang (elsewhere).
 ## Alternatives
 
 Selector `0x5B` is shown elsewhere to count previous Chaos, not Hide
-(FND-AI-019, FND-AI-037). Either the selector takes the action to count as an
+(FND-AI-019, FND-AI-071). Either the selector takes the action to count as an
 argument, or this description of family 0 is wrong about which action it
 counts. The owned-sector choice between Heal and Hide after Equip is not
 written out.

@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-015
 title: At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-006, FND-AI-047, FND-EXE-004]
+evidence: [EXP-TURN-008, EXP-TURN-010, FND-AI-006, FND-AI-047, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []

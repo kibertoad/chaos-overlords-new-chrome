@@ -4,7 +4,7 @@ title: A computer player picks a hire role from its scenario's turn schedule, th
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-050, FND-AI-059, FND-AI-003, FND-AI-009, FND-AI-013, FND-AI-014, FND-AI-017, FND-AI-008, FND-AI-011, FND-AI-042, FND-AI-044, FND-EXE-004, FND-OBJECTIVE-003]
+evidence: [FND-AI-050, FND-AI-068, FND-AI-003, FND-AI-009, FND-AI-013, FND-AI-014, FND-AI-017, FND-AI-064, FND-AI-065, FND-AI-042, FND-AI-044, FND-EXE-004, FND-OBJECTIVE-003, FND-SETUP-018]
 conflicting: []
 split_with: []
 related: [RULE-AI-001, RULE-AI-008, RULE-AI-009, RULE-AI-011, RULE-AI-012, RULE-AI-004, RULE-OBJECTIVE-002, FMT-STATE-001]
@@ -260,8 +260,7 @@ if hire_allowed(player):
     let offer = rank_offer(player, mode)
     if offer == -1:
         let j = offer_to_snub(player)
-        if j >= 0:
-            hire_orders[player * 3 + j] = -2
+        hire_orders[player * 3 + j] = -2
     else:
         let place = placement_anchor[player]
         if k == hunter_slots[scenario]:
@@ -291,6 +290,13 @@ family-6 or family-12 gang's family to 0. Makes no draw: the placement is
 always encoded (RULE-AI-012).
 
 ## Edge cases
+
+Outside the four timed scenarios `turn_limit` is 65535 (FND-SETUP-018), so `f`
+is about 1260, whatever length was chosen at setup. In Kill 'Em All, Big 40,
+Siege, Eliminate and Armageddon no family count reaches a threshold `f`
+scales, so those tests never move the slot to 0, while Eliminate's cash test
+`c < f * 100.0` holds for any cash below 126,029, so its slot 9 always becomes
+0.
 
 The first turn uses schedule slot 0, since `elapsed_turns` starts at 0.
 Scenarios 1, 4 and 5 share the schedule, the hunter test and the quotas;
@@ -328,5 +334,4 @@ None known.
 
 ## Open questions
 
-- When the ranking fails and `offer_to_snub` returns -1 (every value 5000 or
-  more), nothing is snubbed here; that is assumed.
+None.

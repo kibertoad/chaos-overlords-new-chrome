@@ -24,6 +24,7 @@ Status: active at a validated local checkpoint
   - [Extraction, asset verification, and diagnostics](#extraction-asset-verification-and-diagnostics)
 - [Reference environment](#reference-environment)
 - [Recommended next evidence batches](#recommended-next-evidence-batches)
+  - [Recorded runs of the original](#recorded-runs-of-the-original)
 <!-- doc-index:end -->
 
 ## Repository state
@@ -43,8 +44,8 @@ Status: active at a validated local checkpoint
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v27, replays are v31, canonical fingerprint encoding is v2, asset
-  manifests are v6, extracted help is v3, and client preferences are v11. Save
+- Native saves are format v35, replays are v47, the state fingerprint encoding is v10, asset
+  manifests are v7, extracted help is v3, and client preferences are v12. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
 
@@ -62,17 +63,20 @@ used by the shared template. What the original does now lives only in
 ### What exists
 
 - `spec/`: one build (BLD-GOG-EN-1.1, every file hashed with xxh3-128), three
-  sources, 177 findings (two of them dynamic, from window captures), 20 formats
-  (17 binary ones with Kaitai definitions that all compile), 151 rules in
-  pseudocode, 14 bugs and 39 screens, with the glossary and the generated
-  indexes in `spec/index/`. Only static evidence exists for nearly everything, so
-  `supported` is the highest status reached, apart from RULE-SETUP-002, which a
-  window capture made `established`.
+  sources, 334 findings (332 static and two dynamic from window captures;
+  FND-AI-030 and FND-AI-031 are superseded), no experiments, 24 formats (23 binary ones with Kaitai
+  definitions that all compile), 159 rules in pseudocode, 16 bugs and 39
+  screens across 47 areas, with the glossary and the generated indexes in
+  `spec/index/`. All 464 game functions of FND-EXE-004 are cited. Only static
+  evidence exists for nearly everything, so every rule, format and screen is
+  `supported` and none is `established`; BUG-COMBAT-001, a reported freeze, is
+  `unknown`.
 - [PARITY.md](../PARITY.md) and [DEVIATIONS.md](../DEVIATIONS.md) at the root.
-  The Code column of PARITY.md was carried over from the old parity matrix and
-  the conversion notes, not re-read from `src/`; treat `complete` rows as claims
-  to check when their area is next touched. No row lists a test yet, because no
-  test compares the rebuild with evidence from the original.
+  All 222 parity rows have `complete` code. Eleven are `validated` by tests
+  against the shipped files (the data tables, image formats and palette,
+  DATA.Z, the movies, the Help files and the Game Information texts); the
+  other 211 are `implemented` and wait for experiments from the original.
+  DEVIATIONS.md holds 65 entries: 60 mandatory, 3 on and 2 off by default.
 - [static_validation_plan.md](../static_validation_plan.md) and
   [manual_validation_plan.md](../manual_validation_plan.md) at the root: every
   open question found during the conversion, grouped by part of the game.
@@ -853,6 +857,48 @@ plan: one controlled run of the original next to an existing static finding
 makes an entry `established`. The conformance work listed under
 [Documentation standard](#documentation-standard) is the rebuild's side of the
 same goal.
+
+### Recorded runs of the original
+
+`tools/Rechaos.OriginalProbe` runs the original under a debugger, records
+every `roll`, presses Done, can write orders for the human's gang, and dumps
+the state; `OriginalNewGameExperimentTests` replays each run and compares every
+roll and the end state. [VALIDATION.md](VALIDATION.md) gives the commands.
+EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-011 are recorded,
+up to twenty-five turns, and every run replays exactly. The probe runs the
+original silent unless `--sound` is given.
+
+- EXP-TURN-010's first run diverged at call 11610 until FND-AI-069: the sector
+  selector's common block multiplies table element `x * 9 + y` instead of the
+  visited sector, every mode reads the owner query, and mode 6 ends after its
+  hostile-human bonus. The same run also showed that a computer player's Move
+  into a sector holding six of its gangs is planned and left to the Move
+  repair; DEV-MOVE-001 now refuses only human orders.
+- The probe takes a planning phase to wait for input at the first call of the
+  planning time-limit test (FND-TIMER-003) after `elapsed_turns` moves on, so a
+  twenty-five-turn recording takes about 30 seconds. Several humans, which stop
+  at a Ready card, still wait for 8 seconds without a `roll`.
+- A human with no orders is eliminated after about thirty turns, and the probe
+  then waits for a turn that never comes. Longer runs need the human's gang on
+  a recurring Hide (EXP-TURN-010) or the probe needs to stop at the
+  elimination report.
+- EXP-TURN-011 has one Attack by the human, on a gang that is not hiding; no
+  recording has a Terminate, a Give or a Sell, an attack on a hiding gang, a
+  Martial Arts exception or a death in combat. The police and third-Crackdown
+  calls of EXP-TURN-010 now replay to the end of both runs. An Attack order
+  needs the target's roster slot, which a state dump (`--dump-at-roll`) of a
+  run with the same seed gives.
+- Screens have not been compared with captures. The plan: capture the window's
+  client area where the probe already stops, render the same state in the
+  rebuild, and compare each SCR element's rectangle, reporting an element that
+  the original drew as solid white as unverified instead of passing it. Try a
+  DirectDraw wrapper such as DDrawCompat beside the staged executable first,
+  since the white rectangles look like failed blits, and check that it leaves
+  a recorded run's rolls unchanged.
+- A modal panel the probe does not know stalls a run until someone presses its
+  Exit; the probe knows Combat Results and Last Turn Events. Run recordings
+  from PowerShell with the compatibility layers in `__COMPAT_LAYER`, one at a
+  time, and pull `main` before recording or replaying.
 
 For scope and the roadmap, continue with
 [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md).
