@@ -439,6 +439,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-038](../findings/FND-UI-038.md) | builds, locations |
 | [FND-UI-039](../findings/FND-UI-039.md) | builds, locations |
 | [FND-UI-040](../findings/FND-UI-040.md) | body, builds, locations |
+| [FND-UI-041](../findings/FND-UI-041.md) | body, builds |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -5362,6 +5363,7 @@ None.
 |---|---|
 | [FND-UI-039](../findings/FND-UI-039.md) | body |
 | [FND-UI-040](../findings/FND-UI-040.md) | body |
+| [FND-UI-041](../findings/FND-UI-041.md) | body |
 | glossary: no_match_in_play | glossary |
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | body, evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body, evidence |
@@ -6023,7 +6025,14 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-041](../findings/FND-UI-041.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## FND-UI-041
+
+| Cited by | In |
+|---|---|
+| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
 
 ## FND-UPKEEP-001
 
