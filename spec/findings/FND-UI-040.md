@@ -44,9 +44,10 @@ FND-OBJECTIVE-004 identify the player fields.
 
 ## Alternatives
 
+FND-STATE-010 identifies the flag as set after match completion. Thus resource 19 is the final-view caption for every scenario. FND-OBJECTIVE-003 identifies the limit and elapsed-turn fields; during play, the four timed scenarios show the limit minus elapsed turns minus 1. The resource was read from the verified executable with Windows LoadLibraryEx in data-file mode and LoadString, without running the game.
+
 This reading establishes the planning-entry calls, not every later refresh
-path. The nonzero flag branch is recorded without assigning a meaning to
-the flag or reproducing the resource text.
+path. The resource text is not reproduced here.
 
 ## How to reproduce
 

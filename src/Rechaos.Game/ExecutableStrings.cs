@@ -22,6 +22,8 @@ public static class ExecutableStrings
         [0x08] = "ELIMINATE",
         [0x09] = "BIG MAN",
         [0x0A] = "ARMAGEDDON",
+        // FND-UI-040: the calendar companion in the final planning view.
+        [0x13] = "COMPLETE",
         // SCR-EVENT-001: the Last Turn Events captions.
         [0x21] = "NO EVENTS.",
         [0x22] = "POLICE CRACKDOWN.",

@@ -105,6 +105,26 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void CalendarCompanionFollowsOriginalPlanningEntryBranches()
+    {
+        // FND-UI-040, FND-OBJECTIVE-003, FND-STATE-010.
+        Assert.Equal(562, StatusConsoleLayout.RemainingTurnsLeft);
+        Assert.Equal(532, StatusConsoleLayout.CompleteLeft);
+        foreach (var scenario in Enum.GetValues<ScenarioId>())
+        foreach (var duration in Enum.GetValues<GameDuration>())
+        {
+            var limit = ScenarioCatalog.TurnLimit(scenario, duration);
+            var timed = ExecutableStrings.ScenarioNumber(scenario) < 4;
+            Assert.Equal(timed ? limit - 1 : (int?)null,
+                StatusConsolePresentation.RemainingTurns(scenario, duration, 1, false));
+            Assert.Equal(timed ? 0 : (int?)null,
+                StatusConsolePresentation.RemainingTurns(scenario, duration, limit, false));
+            Assert.Null(StatusConsolePresentation.RemainingTurns(scenario, duration, limit, true));
+        }
+        Assert.Equal("COMPLETE", ExecutableStrings.Get(19));
+        Assert.Equal("THE BIG 40", ExecutableStrings.Get(ExecutableStrings.ScenarioNumber(ScenarioId.Big40) + 1));
+    }
+    [Fact]
     public void EveryStatusConsoleStatisticHasAnExplanatoryHoverTooltip()
     {
         Rectangle[] entries =
