@@ -411,10 +411,12 @@ numbers of the spec's state layouts and glossary terms out of one or more run
 directories and writes them as the runs of an experiment fixture, with no
 names or texts. Among them are each player's Last Turn reports of the last
 resolution (FMT-STATE-006), which the first run of EXP-TURN-001 and every run
-from EXP-TURN-010 on hold.
-The EXP-TURN fixtures also hold each player's running totals (`cash_earned`,
+from EXP-TURN-010 on hold, apart from the traced second run of EXP-TURN-021.
+The same runs also hold each player's running totals (`cash_earned`,
 `cash_spent`, `damage_inflicted`, `casualties`, `overthrow_count`,
-`hide_count`) and the computer players' `hire_role` and `previous_hire_role`.
+`hide_count`) and their `hire_role` and `previous_hire_role`; the replay
+compares them only in the runs that hold them, and reads the -1 the original
+keeps in a human player's `hire_role` as the rebuild's 0.
 `OriginalNewGameExperimentTests` replays every run of the EXP-SETUP and
 EXP-TURN fixtures against the rebuild and names the first roll whose bound or
 result differs, with the original's call instruction, then compares the state

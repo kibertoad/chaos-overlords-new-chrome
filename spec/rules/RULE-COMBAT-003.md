@@ -4,7 +4,7 @@ title: Damage Inflicted counts the full damage of every opening attack and no re
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMBAT-003, EXP-TURN-012, EXP-TURN-017, SRC-MANUAL-GOG, EXP-TURN-036]
+evidence: [FND-COMBAT-003, EXP-TURN-011, EXP-TURN-012, EXP-TURN-017, SRC-MANUAL-GOG, EXP-TURN-036]
 conflicting: []
 split_with: []
 related: []

@@ -996,6 +996,7 @@ None.
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
+| [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | evidence |
 | [RULE-EVENT-013](../rules/RULE-EVENT-013.md) | evidence |
 
 ## EXP-TURN-012
@@ -2103,6 +2104,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | body, evidence |
 | [FND-AI-041](../findings/FND-AI-041.md) | body |
@@ -2110,6 +2112,7 @@ None.
 | [FND-AI-057](../findings/FND-AI-057.md) | body |
 | [FND-STATE-003](../findings/FND-STATE-003.md) | body |
 | glossary: ai_started | glossary |
+| glossary: hire_role | glossary |
 | glossary: planning_records | glossary |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | evidence |
@@ -6069,6 +6072,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-002](../bugs/BUG-AI-002.md) | related |
+| [EXP-TURN-017](../experiments/EXP-TURN-017.md) | body |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | glossary: armor_stealth_upgrade | glossary |
 | glossary: armor_upgrade | glossary |

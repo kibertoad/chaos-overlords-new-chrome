@@ -70,8 +70,9 @@ The source runs' replay comparisons agree on the extracted running totals
 and computer players' current and previous hire roles, as well as the draws,
 final gang and sector records, attitudes and Last Turn reports above.
 The human's current hire role differs (-1 in the original, 0 in the replay);
-no rule reads it. That unused field is excluded from the comparison rather
-than claimed as agreement.
+the comparison maps only the original's -1 for a human player to 0, and
+compares every other value. No rule reads the initial human role before the
+first planning pass replaces it (FND-AI-042).
 
 ## Conclusion
 
