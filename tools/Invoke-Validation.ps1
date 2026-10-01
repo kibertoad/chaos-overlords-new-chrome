@@ -37,10 +37,26 @@ $validationBuildRoot = Join-Path $temporaryRoot (
     "rechaos-validation-$($repositoryIdentity.Substring(0, 16))-$([Guid]::NewGuid().ToString('N'))")
 $lock = $null
 
+# A batch/command shim on PATH may reinterpret test filters containing & or |.
+# Honour DOTNET_ROOT when it contains the native host; otherwise resolve that host
+# explicitly on Windows rather than a dotnet.cmd wrapper. Unix keeps dotnet's name.
+$dotnetHostName = if ($PSVersionTable.PSEdition -eq 'Desktop' -or $IsWindows) {
+    'dotnet.exe'
+} else {
+    'dotnet'
+}
+$dotnetExecutable = if ($env:DOTNET_ROOT -and
+        (Test-Path -LiteralPath (Join-Path $env:DOTNET_ROOT $dotnetHostName) -PathType Leaf)) {
+    Join-Path $env:DOTNET_ROOT $dotnetHostName
+} else {
+    (Get-Command -Name $dotnetHostName -CommandType Application -ErrorAction Stop |
+        Select-Object -First 1).Source
+}
+
 function Invoke-CheckedDotnet {
     param([Parameter(Mandatory = $true)][string[]] $Arguments)
 
-    & dotnet @Arguments
+    & $dotnetExecutable @Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet $($Arguments[0]) failed with exit code $LASTEXITCODE."
     }
@@ -213,7 +229,7 @@ try {
 finally {
     if ($ShutdownBuildServersAfterRun) {
         Write-Host 'Stopping .NET build servers for the current user.'
-        & dotnet build-server shutdown
+        & $dotnetExecutable build-server shutdown
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "dotnet build-server shutdown returned exit code $LASTEXITCODE."
         }
