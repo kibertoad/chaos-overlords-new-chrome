@@ -713,9 +713,10 @@ public static class LastTurnEventPresentation
                 new(type, sector, 0, 0),
             LastTurnReportRecord.ControlGained =>
                 new(type, sector, relatedEvent?.Resolution?.PreviousValue ?? -1, 0),
-            // RULE-EVENT-013: a sector lost through Control names its new owner, which the Control
-            // phase, the last of a resolution, left there; one lost through a third Crackdown in
-            // the Chaos phase carries 0.
+            // RULE-EVENT-013: a sector lost through Control names its new owner. No step after the
+            // Control phase changes an owner (RULE-TURN-002), so the owner read here is the one the
+            // original recorded for as long as the state is the one this resolution left. One lost
+            // through a third Crackdown in the Chaos phase carries 0.
             LastTurnReportRecord.ControlLost => new(type, sector,
                 notification.ExecutionPhase != ExecutionPhase.Control ? 0
                     : sector is >= 0 and < MatchLimits.SectorCount ? state.Sectors[sector].Owner?.Value ?? -1 : -1,

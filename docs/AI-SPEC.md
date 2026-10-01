@@ -175,9 +175,9 @@ sectors and capacity-routes toward that draw. Mode 6 is live for family 2 and
 routes toward the current scenario leaders, including tied-leader and active-
 player-leads branches plus hostile-human weighting. Modes 7-9 are live in
 families 5, 3, and 10, objective modes 12-15 are live in families 13/14, and
-encoded `sector + 0x40` is live for family 12. Because family 12 encodes its current
-sector and the common selector later clears the source score, that path uses
-the original all-zero tie draw and one-step routing behavior.
+encoded `sector + 0x40` is live for family 12. Family 12 encodes the sector of
+its player's roster-slot-0 gang (FND-AI-070), so it steps toward that gang; a
+gang already standing there falls back to the all-zero tie draw.
 
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
 six-computer six-month matches. Each scenario is run twice at a fixed seed and
@@ -345,16 +345,17 @@ explicit M6 gap rather than an unmeasured claim.
    upgrade (selector 0x72, FND-AI-055: from the equipped armor or item 1, with
    no cost test) with a literal two-turn cooldown, then a special researched Smoke
    Bombs Equip, then Heal below Force 10 only with no visible local opponent.
-   Otherwise it probes mode 9 for a strictly stronger sum of completed positive
-   site Stealth and calls mode 9 again for the Move destination; without an
+   Otherwise it probes mode 9 for a sector whose last finished site has strictly
+   more Stealth than the current sector's (selector 8, FND-AI-071) and calls
+   mode 9 again for the Move destination; without an
    improvement it chooses Chaos unless another gang in the sector has previous
    Chaos, in which case it Hides. The intentional second selector call and its
    independent tie RNG are replay-recorded.
    Family 12's complete handler branches first on current-sector visibility.
    With no visible opponent it prefers weapon, armor, and maximum-Detect
    miscellaneous upgrades (selector 0x74, FND-AI-055), using raw-cost weapon/armor cooldowns, then Heals
-   below Force 10 at effective Heal `-3` or better, and otherwise uses its
-   encoded-current-sector zero-maximum random Move. With visible opponents it
+   below Force 10 at effective Heal `-3` or better, and otherwise steps toward
+   its player's roster-slot-0 gang through the encoded mode (FND-AI-070). With visible opponents it
    makes up to five bounded target draws, preserves the human-pool/full-pool
    ordinal asymmetry, and attacks the final target even when every combat
    comparison fails. Greed's final three turns overwrite the result with

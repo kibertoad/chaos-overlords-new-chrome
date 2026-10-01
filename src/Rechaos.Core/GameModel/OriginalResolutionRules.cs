@@ -36,9 +36,15 @@ internal static class OriginalResolutionRules
         if (pool <= 0) return 0;
         return band == OriginalResolutionBand.Goon
             && action is GangAction.Chaos or GangAction.Influence or GangAction.Research
-                ? pool - pool / 5
+                ? GoonReducedPool(pool)
                 : pool;
     }
+
+    /// <summary>
+    /// The band-0 pool of Chaos, Influence and Research: a fifth off, rounded toward zero, and
+    /// not clamped, so a negative pool stays negative (RULE-INFLUENCE-001, BUG-INFLUENCE-001).
+    /// </summary>
+    internal static int GoonReducedPool(int pool) => pool - pool / 5;
 
     public static int SuccessThreshold(OriginalResolutionBand band, GangAction action) => action switch
     {

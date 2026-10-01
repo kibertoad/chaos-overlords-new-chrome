@@ -219,12 +219,12 @@ public static class StatusConsoleTooltip
 public static class StatusConsolePresentation
 {
     /// <summary>
-    /// The status-console SCORE row: the same scenario standing score the ranking screen ranks
+    /// The status-console SCORE row: the scenario score the last evaluation stored, when the match
+    /// started or the last turn ended (RULE-OBJECTIVE-002), the same one the ranking screen ranks
     /// by, so objective scenarios show their standing (Big Man points, sectors controlled, HQ
-    /// sectors held, or the inactive-seat count Kill 'Em All and Siege share) rather than only
+    /// sectors held, or the inactive-seat count Kill 'Em All and Eliminate share) rather than only
     /// the timed scenarios' scores.
     /// </summary>
-    /// <summary>The score stored when the last turn ended (RULE-OBJECTIVE-002).</summary>
     public static long Score(MatchState state, MatchPlayerState player) => player.ScenarioScore;
 
     public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>

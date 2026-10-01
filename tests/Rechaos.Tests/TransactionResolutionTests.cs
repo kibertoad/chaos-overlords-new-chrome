@@ -511,6 +511,7 @@ public sealed class TransactionResolutionTests
         var gang = match.FindGang(new GangId(10))!;
         gang.ArmorItemId = 24;
         gang.MiscellaneousItemId = 38;
+        var before = gang.Force; // BUG-AI-007
         EnterCommand(match);
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(10), GangAction.Terminate, CommandTarget.None)).Accepted);
@@ -524,6 +525,7 @@ public sealed class TransactionResolutionTests
 
         match.FinishExecutionPhase();
 
+        Assert.Equal(before, gang.RetiredForce);
         Assert.Equal(0, gang.Force);
         Assert.False(gang.Hidden);
         Assert.Equal(weapon, gang.WeaponItemId);

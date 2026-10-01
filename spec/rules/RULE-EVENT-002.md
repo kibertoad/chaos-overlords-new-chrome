@@ -1,7 +1,7 @@
 ---
 id: RULE-EVENT-002
 title: Recording a Last Turn report keeps the first 32 reports of a resolution
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG, EXP-TURN-010, EXP-TURN-017]
@@ -91,4 +91,13 @@ None known.
 
 ## Open questions
 
-None known.
+- 2026-10-01: the cap of 32 has no run. Existing runs hold at most 8
+  reports for one player. FND-EVENT-004 permits one failed Equip (action 5)
+  per gang; FMT-STATE-001 and RULE-HIRE-001 permit 80 occupied hireable roster
+  slots, so 33 reports are not ruled out by the roster limit. A straightforward
+  33-Equip setup would need 32 successful hires from the one-gang start,
+  spread across at least six sectors because a sector holds at most six of
+  a player's gangs. RULE-HIRE-003 permits one human hire per turn; keeping
+  that roster alive, placing it and draining its cash has not been recorded.
+  The first-32 retention and ordering therefore remain supported by the
+  static reading, without a run that reaches the cap.

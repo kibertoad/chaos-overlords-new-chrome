@@ -257,6 +257,12 @@ None known.
 
 ## Open questions
 
+- EXP-TURN-021 directly checks the owned-sector rejection in `solo_control_ok`
+  when visible defenders include the owner's and a third player's gangs. Its
+  selector trace and call-16671 snapshot do not independently check the other
+  shared queries, the neutral-sector case, equal-strength boundary, invisible
+  defenders, own-sector rejection or Crackdown rejection. The query library
+  therefore remains supported.
 - `crackdown_in_force` is taken to test for a nonzero Crackdown byte; a positive
   test is also possible.
 - Whether `visible_weight` stops at the first visible gang or looks on for one

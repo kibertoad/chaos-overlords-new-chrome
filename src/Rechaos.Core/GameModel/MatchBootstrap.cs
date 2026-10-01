@@ -40,8 +40,21 @@ public static class MatchBootstrap
         var state = new MatchState(definitions, setup, foundation.Players, foundation.Sectors);
         // FND-AI-045: a new match runs the start pass once its layout exists.
         state.RefreshEveryPlayersAiSectorRecords();
+        // RULE-OBJECTIVE-002, FND-SETUP-015: a new match stores its scores from the cash each player
+        // had before SMGFUNDAGE raised it, which is the cash its start gave.
+        var cashBeforeModifier = starts.ToDictionary(
+            start => start.Player,
+            start => StartingCashBeforeModifier(setup.Scenario, start.StandardStartingCash));
+        OriginalAiScenarioStandingRules.Record(state, player => cashBeforeModifier[player.Id]);
         return state;
     }
+
+    /// <summary>
+    /// FND-SETUP-015: the cash a new match gives a player before SMGFUNDAGE raises it, 500 in
+    /// Armageddon and the start's standard cash otherwise.
+    /// </summary>
+    internal static int StartingCashBeforeModifier(ScenarioId scenario, int standardStartingCash) =>
+        scenario == ScenarioId.Armageddon ? ArmageddonStartingCash : standardStartingCash;
 
     /// <summary>
     /// The starting rosters and city on their own, for the original generation path, which finishes
@@ -106,9 +119,7 @@ public static class MatchBootstrap
                 setup.Players[index],
                 OriginalSetupNameRules.ApplyStartingCash(
                     setup.Players[index].Name,
-                    setup.Scenario == ScenarioId.Armageddon
-                        ? ArmageddonStartingCash
-                        : start.StandardStartingCash),
+                    StartingCashBeforeModifier(setup.Scenario, start.StandardStartingCash)),
                 [rightHands], start.HirePool,
                 researchedItems: startingResearch,
                 usesMaximumHireForce: OriginalHireCheatRules.DetectMaximumHireForce(

@@ -51,6 +51,14 @@ public sealed class MatchGangState
     /// </summary>
     public int? RetiredForce { get; internal set; }
 
+    // FMT-STATE-001, BUG-AI-007: retain the original record's Force on every death path.
+    internal void Retire(int recordForce)
+    {
+        RetiredForce = recordForce;
+        Force = 0;
+        Hidden = false;
+    }
+
     /// <summary>
     /// The <c>visible_to</c> bytes of the original's record as one bit per observing player slot:
     /// written for an active gang at each planning entry (RULE-DETECT-001) and kept unchanged once
