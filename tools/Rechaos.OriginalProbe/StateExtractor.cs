@@ -35,12 +35,14 @@ internal sealed class StateExtractor
             ["end_state"] = extractor.EndState(),
         };
         // --capture: the drawing area is kept outside the repository and named by its xxh3 under
-        // GAME_DIR/captures. Counter-only captures have no verified marker frame and must not
-        // become fixture references. Diagnostic bitmaps remain in the external run directory.
-        var capture = Path.Combine(runDirectory, "capture-print.bmp");
+        // GAME_DIR/captures. Only agreeing, non-repainting window copies with a stable marker
+        // counter become references; old PrintWindow and counter-only diagnostics do not.
+        var capture = Path.Combine(runDirectory, "capture-blt.bmp");
+        var repeat = Path.Combine(runDirectory, "capture-blt-repeat.bmp");
         var marker = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>())
             .FirstOrDefault(note => note.StartsWith("marker_frame ", StringComparison.Ordinal));
-        if (File.Exists(capture) && marker is not null)
+        if (marker is not null && File.Exists(capture) && File.Exists(repeat)
+            && File.ReadAllBytes(capture).AsSpan().SequenceEqual(File.ReadAllBytes(repeat)))
         {
             run["capture"] = new JsonObject
             {

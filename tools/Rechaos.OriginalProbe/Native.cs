@@ -116,9 +116,6 @@ internal static partial class Native
     [DllImport("user32.dll")]
     public static extern int ReleaseDC(IntPtr window, IntPtr dc);
 
-    [DllImport("user32.dll")]
-    public static extern bool PrintWindow(IntPtr window, IntPtr dc, uint flags);
-
     [DllImport("gdi32.dll")]
     public static extern IntPtr CreateCompatibleDC(IntPtr dc);
 

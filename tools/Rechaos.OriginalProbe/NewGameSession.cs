@@ -436,20 +436,20 @@ internal sealed class NewGameSession(
     }
 
     // RULE-GFX-002: the 640-by-460 drawing area starts at the client area's top-left corner. The
-    // capture is written to the run directory, outside the repository, once through PrintWindow
-    // and once through a copy from the window's device context.
+    // capture is written twice from the window's device context. PrintWindow is unsuitable here:
+    // it can repaint over animation drawn directly to the window rather than its backing surface.
     private void CaptureDrawingArea(IntPtr window)
     {
         const int width = 640, height = 460;
-        // FND-UI-038 records the counter's increment after the draw. A stable counter does not
-        // prove that the window capture contains that draw; retain it only as a diagnostic.
+        // FND-UI-038: the counter increments after drawing. Require two agreeing window copies
+        // and a stable counter; a repainting capture cannot use this frame relationship.
         for (var attempt = 0; attempt < 10; attempt++)
         {
             var before = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
             var copiesAgree = CaptureDrawingArea(window, width, height);
             var after = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
             if (before != after || !copiesAgree) continue;
-            _notes.Add($"marker_counter {before}; displayed marker frame unverified.");
+            _notes.Add($"marker_frame {(before + 11) % 12}");
             return;
         }
         _notes.Add("Capture rejected: the marker counter moved or the synchronized copies disagreed.");
@@ -461,7 +461,7 @@ internal sealed class NewGameSession(
         _notes.Add($"Client area {client.Right - client.Left} by {client.Bottom - client.Top}.");
         byte[]? firstCopy = null;
         var copiesAgree = false;
-        foreach (var (name, print) in new[] { ("capture-print.bmp", true), ("capture-blt.bmp", false) })
+        foreach (var name in new[] { "capture-blt.bmp", "capture-blt-repeat.bmp" })
         {
             var info = new byte[40];
             BitConverter.GetBytes(40).CopyTo(info, 0);
@@ -484,9 +484,7 @@ internal sealed class NewGameSession(
                 old = Native.SelectObject(memory, bitmap);
                 if (old == IntPtr.Zero || old == new IntPtr(-1))
                     throw new InvalidOperationException("Cannot select the capture bitmap.");
-                var ok = print
-                    ? Native.PrintWindow(window, memory, 1)
-                    : Native.BitBlt(memory, 0, 0, width, height, screen, 0, 0, 0x00CC0020);
+                var ok = Native.BitBlt(memory, 0, 0, width, height, screen, 0, 0, 0x00CC0020);
                 if (!ok) throw new InvalidOperationException($"{name}: the copy failed.");
                 // CreateDIBSection requires GDI drawing to finish before its bits are read directly.
                 // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-createdibsection
