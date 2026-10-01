@@ -39,8 +39,11 @@ public sealed partial class MultiplayerSessionTests
         server.DropStream();
 
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+        // Counting calls is not enough: a call is counted before it is answered, and if the session
+        // connected before the refusals were queued, the third call is a refusal and the live body
+        // only comes with the fourth. The frame waits for a body the session is reading.
         await Until(
-            () => server.CallsTo(HttpMethod.Get, "/stream") >= 3,
+            () => server.CallsTo(HttpMethod.Get, "/stream") >= 3 && !server.Events.Ended,
             "the stream was retried past the proxy's refusals");
         server.Events.Write(SealedFrame(8, 1));
 

@@ -4,7 +4,7 @@ title: Starting a music program
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-015, FND-AUDIO-001, FND-AUDIO-007, FND-PLATFORM-006, FND-EXE-004]
+evidence: [FND-AUDIO-016, FND-AUDIO-015, FND-AUDIO-001, FND-AUDIO-007, FND-PLATFORM-006, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -42,7 +42,7 @@ the Options menu or Help, or opens and closes panels during a game.
 let first_track: INT32[3] = [2, 9, 3]
 let last_track: INT32[3] = [2, 9, 8]
 if mode != music_mode:
-    # faded out over 32 steps of 17 ms when the CD device has a volume control
+    # 32 attenuation writes, with wait deadlines 0 through 527 ms, when volume is supported
     emit MusicStopped()
     if mode != -1:
         music_mode = mode

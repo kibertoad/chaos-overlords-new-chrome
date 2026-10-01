@@ -19,6 +19,9 @@ public static class PointerButtonEdges
 {
     public static bool Pressed(ButtonState current, ButtonState previous) =>
         current == ButtonState.Pressed && previous == ButtonState.Released;
+
+    public static bool Released(ButtonState current, ButtonState previous) =>
+        current == ButtonState.Released && previous == ButtonState.Pressed;
 }
 
 public static class OriginalFontLayout

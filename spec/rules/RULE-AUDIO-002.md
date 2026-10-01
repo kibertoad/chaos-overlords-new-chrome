@@ -4,7 +4,7 @@ title: Music repeats its program when it ends and pauses while the window is ina
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-001, FND-AUDIO-007, FND-UI-023, FND-EXE-004, SRC-MCI-PLAY, SRC-MCI-STOP]
+evidence: [FND-AUDIO-016, FND-AUDIO-001, FND-AUDIO-007, FND-UI-023, FND-EXE-004, SRC-MCI-PLAY, SRC-MCI-STOP]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-001, RULE-AUDIO-003, RULE-UI-008]
@@ -62,6 +62,10 @@ end (SRC-MCI-PLAY). Pause retains the position within the track; an explicit CD
 stop resets it to zero within that track (SRC-MCI-STOP).
 
 ## Edge cases
+
+- A focus message consumed by the fade's window-only pump does not run the
+  pause/resume handler or change `window_inactive`. Actual operating-system
+  focus can therefore differ from that flag afterward (FND-AUDIO-016).
 
 - The poll also restarts music that stopped for any other reason, such as a
   disc change, and it restarts the program once music is enabled again after

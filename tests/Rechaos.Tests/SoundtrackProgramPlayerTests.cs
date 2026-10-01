@@ -17,7 +17,7 @@ public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void FadeStopsAtZeroAndRestoresCapturedVolumeAfterInterveningLevelChange(bool release)
+    public void FadeStopsAtZeroAndRestoresCapturedVolumeAfterInterveningVolumeChange(bool release)
     {
         // RULE-AUDIO-003, FND-AUDIO-007: the fade keeps its local captured volume;
         // messages processed while it waits cannot replace the final restore value.
@@ -47,7 +47,8 @@ public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
                 player.PlayProgram([song]);
                 var fade = new SoundtrackFade(MediaPlayer.Volume, TimeSpan.Zero);
                 MediaPlayer.Volume = fade.VolumeAt(TimeSpan.FromMilliseconds(17));
-                // The original level handler is allowed to run inside a fade wait.
+                // Stress captured-volume restoration with an external volume change;
+                // FND-AUDIO-016 excludes game level handlers during the fade.
                 MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(10);
                 // Deliberately outlast the fixture: completion must stay blocked on a loaded host.
                 Thread.Sleep(song.Duration + TimeSpan.FromMilliseconds(100));
