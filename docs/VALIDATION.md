@@ -14,6 +14,7 @@ Status: maintained canonical procedure
 - [Native audio backend](#native-audio-backend)
 - [Failure triage](#failure-triage)
 - [First-planning map comparison without the keyboard footer](#first-planning-map-comparison-without-the-keyboard-footer)
+- [All active-player marker frames in the first planning view](#all-active-player-marker-frames-in-the-first-planning-view)
 <!-- doc-index:end -->
 
 ## Validation layers
@@ -558,3 +559,23 @@ This comparison supports the unaffected map pixels of one fixed state and
 frame. White pixels were classified separately, not compared as proof of
 underlying sprite fidelity. It does not establish all marker frames, every
 selected sector, search overlays, pointer states or whole-screen parity.
+
+## All active-player marker frames in the first planning view
+
+On 2026-10-02, an external diagnostic copy of the original probe collected
+all twelve active-player marker frames from one seed-52421 first planning
+view. Each accepted frame used the stable post-draw counter relationship of
+FND-UI-038 and two byte-identical non-repainting window captures. The probe
+pumped the original between captures until its counter changed; it did not
+patch the executable or synthesize marker artwork.
+
+Twelve rebuild captures selected frames 0 through 11 explicitly. Every
+capture matched the original over Overlord-bar rectangle `(2,0,432,42)` with
+zero differing RGB pixels. This includes the occupied portraits and the
+marker position for the viewed seat in this state. The external map harness
+suppressed the DEV-UI-023 footer, which lies outside this compared rectangle.
+
+This verifies frame artwork and placement for one viewer and state. It does
+not measure timing, dropped ticks, focus behavior, other viewed seats, empty
+seat animation, the two-frame selected-sector outline, or gang-status cycles.
+Captures and diagnostic code remain outside Git.
