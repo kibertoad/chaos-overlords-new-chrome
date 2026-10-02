@@ -11,10 +11,7 @@ public enum HireDockMark
     Snubbed
 }
 
-public sealed record HireDockEntry(short GangDefinitionId, HireDockMark Mark)
-{
-    public bool Hired => Mark == HireDockMark.Hired;
-}
+public sealed record HireDockEntry(short GangDefinitionId, HireDockMark Mark);
 
 public static class HireDockLayout
 {
@@ -51,12 +48,6 @@ public static class HireDockLayout
         return new Rectangle(472 + slot * 66, 437, 32, 13);
     }
 
-    public static Rectangle PriceCell(int slot)
-    {
-        ValidateSlot(slot);
-        return new Rectangle(438 + slot * 66, 436, 33, 24);
-    }
-
     public static Point Price(int slot)
     {
         ValidateSlot(slot);
@@ -64,10 +55,18 @@ public static class HireDockLayout
         return new Point(450 + slot * 66, 440);
     }
 
+    /// <summary>
+    /// SCR-HIRE-002, FND-HIRE-007, FND-UI-006, FND-UI-023: the number helper fills exactly two
+    /// cells, with leading zeros because the console passes the helper's leading-zero flag. The
+    /// first cell takes the whole quotient by ten, so a price above 99 shows the glyph that many
+    /// places after <c>0</c> in the strip, followed by its last digit. A negative amount gives
+    /// the digits of its magnitude, which the caller draws in red.
+    /// </summary>
     public static string PriceText(int amount)
     {
-        if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
-        return amount < 10 ? $"0{amount}" : amount.ToString();
+        return NativeTwoCellNumberPresentation
+            .Format(amount, NativeTwoCellNumberPresentation.Kind.Baseline)
+            .Digits.PadLeft(2, '0');
     }
 
     public static IReadOnlyList<HireDockEntry?> Project(

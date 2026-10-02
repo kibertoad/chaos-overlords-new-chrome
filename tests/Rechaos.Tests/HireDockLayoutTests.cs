@@ -10,17 +10,22 @@ public sealed class HireDockLayoutTests
     [Fact]
     public void HirePriceSitsBesideRejectControl()
     {
-        Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));
         Assert.Equal(new Rectangle(472, 437, 32, 13), HireDockLayout.Reject(0));
         // SCR-HIRE-002, FND-HIRE-007: retain the original number helper's origin.
         Assert.Equal(new Point(450, 440), HireDockLayout.Price(0));
         Assert.Equal(new Point(516, 440), HireDockLayout.Price(1));
         Assert.Equal(new Point(582, 440), HireDockLayout.Price(2));
+        // FND-UI-006: the console passes the helper's leading-zero flag.
         Assert.Equal("06", HireDockLayout.PriceText(6));
         Assert.Equal("12", HireDockLayout.PriceText(12));
-        Assert.Equal("123", HireDockLayout.PriceText(123));
+        // FND-UI-023: two cells only; the first takes the whole quotient, 12 places after '0'.
+        Assert.Equal("<3", HireDockLayout.PriceText(123));
+        // FND-UI-006: a negative value shows its magnitude; the colour carries the sign.
+        Assert.Equal("07", HireDockLayout.PriceText(-7));
+        // A quotient past the last glyph of the strip has nothing to draw.
+        // RULE-UI-004: an off-strip leading glyph leaves a blank text placeholder.
+        Assert.Equal(" 0", HireDockLayout.PriceText(430));
     }
-
 
     [Fact]
     public void HireDockMatchesOriginalThreeCellStripAndRetainsHiredSlot()
@@ -42,7 +47,6 @@ public sealed class HireDockLayoutTests
         Assert.Equal(new HireDockEntry(1, HireDockMark.None), cells[0]);
         Assert.Equal(new HireDockEntry(2, HireDockMark.Hired), cells[1]);
         Assert.Equal(new HireDockEntry(3, HireDockMark.None), cells[2]);
-        Assert.Equal(new Rectangle(570, 436, 33, 24), HireDockLayout.PriceCell(2));
         Assert.Equal(new Rectangle(604, 437, 32, 13), HireDockLayout.Reject(2));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireDockLayout.Cell(3));
     }
@@ -62,7 +66,6 @@ public sealed class HireDockLayoutTests
         Assert.Equal(
             [HireDockMark.None, HireDockMark.None, HireDockMark.Snubbed],
             cells.Select(cell => cell!.Mark));
-        Assert.False(cells[2]!.Hired);
     }
 
     [Fact]
