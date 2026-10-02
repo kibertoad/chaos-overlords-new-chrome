@@ -26,7 +26,7 @@ internal sealed class StateExtractor
         var rolls = new JsonArray();
         foreach (var roll in trace["Rolls"]!.AsArray())
             rolls.Add(new JsonArray(roll!["Call"]!.GetValue<string>(), roll["Bound"]!.GetValue<int>(), roll["Result"]!.GetValue<int>()));
-        return new JsonObject
+        var run = new JsonObject
         {
             ["rng_state"] = trace["Seed"]!.GetValue<int>(),
             ["done_at_roll"] = doneAtRoll,
@@ -34,6 +34,29 @@ internal sealed class StateExtractor
             ["events"] = new JsonArray(),
             ["end_state"] = extractor.EndState(),
         };
+        // RULE-TIMER-002, RULE-TIMER-003: each timed planning turn the probe let run out, with
+        // the limit, each bar redraw as elapsed milliseconds, width and effect slot, and the elapsed
+        // milliseconds of the last test that did not end the turn and of the one that did.
+        if (trace["Timers"] is JsonArray timerTurns)
+        {
+            var timers = new JsonArray();
+            foreach (var timer in timerTurns)
+            {
+                var bars = new JsonArray();
+                foreach (var bar in timer!["Bars"]!.AsArray())
+                    bars.Add(new JsonArray(bar!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()));
+                timers.Add(new JsonObject
+                {
+                    ["turn"] = timer["Turn"]!.GetValue<int>(),
+                    ["limit_ms"] = timer["LimitMs"]!.GetValue<int>(),
+                    ["bars"] = bars,
+                    ["last_unexpired_ms"] = timer["LastUnexpired"]!.GetValue<int>(),
+                    ["expired_ms"] = timer["Expired"]!.GetValue<int>(),
+                });
+            }
+            run["timers"] = timers;
+        }
+        return run;
     }
 
     /// <summary>The setup choices a run was recorded with, one line each; none for the defaults.</summary>

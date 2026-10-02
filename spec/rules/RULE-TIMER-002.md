@@ -1,10 +1,10 @@
 ---
 id: RULE-TIMER-002
 title: A human planning turn ends when its time limit passes
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-STATE-010, FND-EXE-004]
+evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-STATE-010, FND-EXE-004, EXP-TURN-046, EXP-TURN-047]
 conflicting: []
 split_with: []
 related: [RULE-OPTIONS-003]

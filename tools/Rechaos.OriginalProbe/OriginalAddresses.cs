@@ -41,6 +41,22 @@ internal static class OriginalAddresses
     // planning loop in fn_0046FD80.
     public const uint PlanningTimeCheck = 0x0041BDD5;
 
+    // FND-TIMER-001, FND-TIMER-003: planning_limit_choice, which the match entry maps to
+    // planning_limit_ms; in the start helper fn_0041B8BC, the instruction that stores timer_ms in
+    // planning_start_ms; in the drawing helper fn_0041B8FC, the instruction after the width is
+    // stored, with elapsed * 100 at [ebp-4] and the width at [ebp-8]; in the time-limit test, the
+    // compare with elapsed in eax, and the instruction that runs only when the limit has passed.
+    // fn_00464290 plays an effect slot.
+    public const uint PlanningLimitChoice = 0x00487854;
+    public const uint PlanningLimitMs = 0x0049069C;
+    public const uint PlanningTimerStarted = 0x0041B8C8;
+    public const uint PlanningBarWidth = 0x0041B96D;
+    public const uint PlanningBarDrawStart = 0x0041B8FC;
+    public const uint PlanningBarDrawEnd = 0x0041BCBB;
+    public const uint PlanningTimeCompare = 0x0041BDFD;
+    public const uint PlanningTimeExpired = 0x0041BE09;
+    public const uint PlaySound = 0x00464290;
+
     // elapsed_turns: 0 through the first turn, up by one after each resolution.
     public const uint ElapsedTurns = 0x0049CA68;
 

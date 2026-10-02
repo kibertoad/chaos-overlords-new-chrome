@@ -50,7 +50,7 @@ internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
-    IReadOnlyList<ProbePlanning>? Planning = null)
+    IReadOnlyList<ProbePlanning>? Planning = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -59,6 +59,7 @@ internal sealed record NewGameSettings(
         if (Scenario is { } scenario) yield return $"scenario {scenario}";
         if (Mentality is { } mentality) yield return $"mentality {mentality}";
         if (TurnLimit is { } turns) yield return $"turn_limit {turns}";
+        if (TimeLimit is { } limit) yield return $"planning_limit_choice {limit}";
         if (Humans is null) yield break;
         foreach (var human in Humans)
             yield return human.Modifier is null
@@ -80,12 +81,25 @@ internal sealed record NewGameSettings(
             foreach (var order in orders) yield return ("order", order.ToString());
             foreach (var hire in hires) yield return ("hire", hire.ToString());
             foreach (var write in planning) yield return ("planning", write.ToString());
+            if (ExpireTurns?.Contains(turn) == true)
+            {
+                yield return ("wait", $"no Done press, turn {turn}: the planning time runs out");
+                continue;
+            }
             yield return ("left_click", orders.Length + hires.Length + planning.Length == 0
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
     }
 }
+
+/// <summary>
+/// The planning clock of one human planning turn (RULE-TIMER-002, RULE-TIMER-003): the limit in
+/// milliseconds when the clock started, each redraw of the bar as elapsed milliseconds, width and
+/// the effect slot it played (0 for none), the elapsed milliseconds of the last time-limit test
+/// that did not end the turn, and of the one that did.
+/// </summary>
+internal sealed record TimerRecord(int Turn, int LimitMs, List<int[]> Bars, int LastUnexpired, int Expired);
 
 internal sealed record ProbeTrace(
     string Executable,
@@ -95,7 +109,8 @@ internal sealed record ProbeTrace(
     int RollsBeforeBegin,
     List<int>? RollsAtDone,
     bool Dumped,
-    List<string> Notes);
+    List<string> Notes,
+    List<TimerRecord>? Timers = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -115,6 +130,9 @@ internal sealed class NewGameSession(
     private int _panelsOpen;
     private bool _planningLoopReached;
     private bool _awardsReached;
+    private readonly List<TimerRecord> _timers = [];
+    private TimerRecord? _timer;
+    private int _turn;
 
     public ProbeTrace Run()
     {
@@ -126,6 +144,7 @@ internal sealed class NewGameSession(
         if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
+        if (settings.ExpireTurns is { Count: > 0 }) ArmTimer();
 
         var window = IntPtr.Zero;
         if (!_process.RunUntil(() => (window = _process.FindMainWindow()) != IntPtr.Zero, timeout))
@@ -177,7 +196,10 @@ internal sealed class NewGameSession(
             foreach (var write in (settings.Planning ?? []).Where(write => write.Turn == turn))
                 WritePlanning(write);
             _rollsAtDone.Add(_rolls.Count);
-            Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
+            _turn = turn;
+            var waits = settings.ExpireTurns?.Contains(turn) == true;
+            if (waits) _notes.Add($"turn {turn}: no Done press, waiting for the planning time to run out");
+            else Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
             var target = turn;
             var rollsAtClick = _rolls.Count;
             var clicked = DateTime.UtcNow;
@@ -199,7 +221,7 @@ internal sealed class NewGameSession(
                     Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
                     clicked = DateTime.UtcNow;
                 }
-                if (_rolls.Count == rollsAtClick && _process.ReadInt32(OriginalAddresses.ElapsedTurns) < target
+                if (!waits && _rolls.Count == rollsAtClick && _process.ReadInt32(OriginalAddresses.ElapsedTurns) < target
                     && DateTime.UtcNow - clicked > TimeSpan.FromSeconds(20))
                 {
                     ClosePanels(window);
@@ -241,6 +263,47 @@ internal sealed class NewGameSession(
         _planningLoopReached = false;
         _process.SetBreakpoint(OriginalAddresses.PlanningTimeCheck, _ => _planningLoopReached = true, oneShot: true);
     }
+
+    // RULE-TIMER-002, RULE-TIMER-003: the clock of each timed human planning turn, from its start
+    // to the time-limit test that ends it. Planning ends on the loop's pass after the limit, so the
+    // turn whose Done the probe does not press is recorded from start to expiry.
+    private void ArmTimer()
+    {
+        _process.SetBreakpoint(OriginalAddresses.PlanningTimerStarted, _ =>
+        {
+            _timer = new TimerRecord(_turn + 1, _process.ReadInt32(OriginalAddresses.PlanningLimitMs), [], -1, -1);
+            _lastElapsed = _previousElapsed = -1;
+        }, quiet: true);
+        _process.SetBreakpoint(OriginalAddresses.PlanningBarWidth, context =>
+        {
+            if (_timer is null) return;
+            var elapsed = _process.ReadInt32(context.Ebp - 4) / 100;
+            _timer.Bars.Add([elapsed, _process.ReadInt32(context.Ebp - 8), 0]);
+        }, quiet: true);
+        _process.SetBreakpoint(OriginalAddresses.PlaySound, context =>
+        {
+            if (_timer is not { Bars.Count: > 0 } timer) return;
+            if (context.ReturnAddress is < OriginalAddresses.PlanningBarDrawStart or > OriginalAddresses.PlanningBarDrawEnd) return;
+            timer.Bars[^1][2] = context.Argument(0);
+        }, quiet: true);
+        _process.SetBreakpoint(OriginalAddresses.PlanningTimeCompare, context =>
+        {
+            _previousElapsed = _lastElapsed;
+            _lastElapsed = (int)context.Eax;
+        }, quiet: true);
+        _process.SetBreakpoint(OriginalAddresses.PlanningTimeExpired, _ =>
+        {
+            if (_timer is null) return;
+            // The compare saw this pass's elapsed time, which passed the limit, and the pass before
+            // it the last elapsed time that did not.
+            _timers.Add(_timer with { LastUnexpired = _previousElapsed, Expired = _lastElapsed });
+            _notes.Add($"the planning time of turn {_timer.Turn} ran out after roll {_rolls.Count}");
+            _timer = null;
+        }, quiet: true);
+    }
+
+    private int _lastElapsed = -1;
+    private int _previousElapsed = -1;
 
     // The loop's first pass, then half a second for a panel it opens to reach its handler. Several
     // humans stop at a Ready card before the loop, and a loop not seen within 30 seconds falls back
@@ -395,6 +458,7 @@ internal sealed class NewGameSession(
 
         if (settings.TurnLimit is { } turns) _process.Write(OriginalAddresses.TurnLimit, BitConverter.GetBytes(turns));
         if (settings.Mentality is { } mentality) _process.Write(OriginalAddresses.Mentality, [(byte)mentality]);
+        if (settings.TimeLimit is { } limit) _process.Write(OriginalAddresses.PlanningLimitChoice, [(byte)limit]);
         if (settings.Humans is null) return;
 
         // Humans take portraits 0, 1, 2... in slot order, as Add gives the lowest free one; an
@@ -439,7 +503,8 @@ internal sealed class NewGameSession(
         if (note is not null) _notes.Add(note);
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
-        return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes);
+        return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
+            _timers.Count == 0 ? null : _timers);
     }
 
     private static void Click(IntPtr window, int x, int y)
