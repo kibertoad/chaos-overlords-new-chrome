@@ -29,10 +29,14 @@ public static class CityStatusMessage
 public static class StatusConsoleLayout
 {
     public const int LabelLeft = 480;
-    public const int ValueRight = 579;
+    // FND-UI-040: five six-pixel numeric cells at x 550 end at x 580, exclusive.
+    public const int ValueRight = 580;
+    public const int ScenarioLeft = 481;
+    public const int YearLeft = 481;
+    public const int WeekLeft = 511;
     /// <summary>RULE-UI-011: the sector code and the four sector values start at x 568.</summary>
     public const int SectorValueLeft = 568;
-    public const int ScenarioY = 3;
+    public const int ScenarioY = 6;
     public const int DateY = 15;
     public const int ScoreY = 24;
     public const int CashY = 42;
@@ -46,10 +50,9 @@ public static class StatusConsoleLayout
         return 60 + row * 9;
     }
 
-    public static Rectangle Scenario => new(476, 0, 108, 10);
+    public static Rectangle Scenario => Entry(ScenarioY);
     public static Rectangle Score => Entry(ScoreY);
     public static Rectangle Cash => Entry(CashY);
-    public static Rectangle CashLabel => new(476, SectorValueY(4) - 1, 44, 9);
     public static Rectangle SectorEntry(int row) => Entry(SectorValueY(row));
 
     private static Rectangle Entry(int y) => new(476, y - 1, 108, 9);

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-032, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038, FND-UI-039, FND-OBJECTIVE-004, FND-STATE-010]
+evidence: [FND-UI-032, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038, FND-UI-039, FND-OBJECTIVE-004, FND-STATE-010, FND-UI-040]
 conflicting: []
 split_with: []
 related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-UI-012, RULE-TIMER-002, RULE-TIMER-003, RULE-OPTIONS-003, RULE-AUDIO-001, RULE-AUDIO-007, RULE-AUDIO-008, SCR-UI-004, SCR-UI-005, SCR-UI-008, SCR-OPTIONS-001, SCR-HIRE-001, SCR-HIRE-002, SCR-GANG-002]
@@ -27,6 +27,9 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 | Active-player marker | `DATA/PX16/PX00129` twelve 20-by-20 frames at source y 626, opaque | The viewed player (`0x00487B8C`), which is the planning player on this screen | `(50 + 70*n, 6, 20, 20)`, one frame every 100 ms (timer slot 1) | While player `n` is viewed | FND-UI-017, FND-UI-031, FND-UI-038 |
 | Planning lights | `DATA/PX16/PX00129` `(66,347,20,6)`, or black | Whether a human seat has yet to complete its orders | `(51 + 70*n, 30, 20, 6)` | For each seat in play | FND-UI-017 |
 | Control lights | `DATA/PX16/PX00129` `(488,512,8,16)`, opaque; the control from the back buffer when dark | Events: `events_unviewed`; Comlink: `comlink_pending`; Done: the end-of-match planning visit | Events `(540,126,8,16)`, Comlink `(592,126,8,16)`, Done `(592,282,8,16)` | While the flag is set, lit on alternate even values of `comlink_blink_step` (see Timing) | FND-EVENT-006 |
+| Scenario and calendar | The font strip | Scenario resource; year and week | Scenario `(481,6)`; year `(481,15)` in four cells, week `(511,15)` in two zero-filled cells | Planning entry | FND-UI-040 |
+| Player totals | The numeric font strip | Score and cash | Five cells at `(550,24)` and `(550,42)` | Planning entry | FND-UI-040 |
+| Calendar companion field | The font strip | Remaining turns, or resource 19 | Three cells at `(562,15)` when the flag is zero and the scenario index is below 4; resource at `(532,15)` when the flag is nonzero | Planning entry | FND-UI-040 |
 | Sector values | The font strip of `DATA/PX16/PX00129` | Income, Tolerance, Support and Cash of the selected sector (RULE-UI-011) | Sector name, Income word, Tolerance, Support and Cash at x 568, y 60, 69, 78, 87 and 96; Support and Cash show 0 unless the active player owns the sector | When a sector is selected | FND-UI-017, FND-UI-035 |
 | Pressed console tiles | `DATA/PX16/PX00129` 48-by-48 cells at `(0,512)`, `(48,512)`, `(96,512)`, `(144,512)`, `(192,512)` and `(240,512)`; Done `(288,512,100,48)`; Game Info `(190,386,26,34)`; all opaque | None | Over the tile pressed | While a tile is held and the pointer is over it (RULE-UI-001) | FND-UI-032 |
 | Planning clock bar | `DATA/PX16/PX00129` green strip `(354,0,60,3)` | The remaining planning time, as the width RULE-TIMER-003 gives | `(520,336,60,3)`, drawn full when planning starts and ends | While a timed human player plans | FND-TIMER-001, FND-UI-017 |

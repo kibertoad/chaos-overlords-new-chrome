@@ -90,8 +90,14 @@ public sealed class UiNavigationTests
     [Fact]
     public void StatusConsoleValuesFollowTemplateRows()
     {
-        Assert.Equal(579, StatusConsoleLayout.ValueRight);
-        Assert.Equal(new Rectangle(476, 95, 44, 9), StatusConsoleLayout.CashLabel);
+        // FND-UI-040: planning-entry text and five-cell numeric origins.
+        Assert.Equal(580, StatusConsoleLayout.ValueRight);
+        Assert.Equal(481, StatusConsoleLayout.ScenarioLeft);
+        Assert.Equal(6, StatusConsoleLayout.ScenarioY);
+        Assert.Equal(481, StatusConsoleLayout.YearLeft);
+        Assert.Equal(511, StatusConsoleLayout.WeekLeft);
+        Assert.Equal(15, StatusConsoleLayout.DateY);
+        Assert.Equal(new Rectangle(476, 5, 108, 9), StatusConsoleLayout.Scenario);
         Assert.Equal(new Rectangle(476, 41, 108, 9), StatusConsoleLayout.Cash);
         Assert.Equal(12, StatusConsoleLayout.CashValueMaxCharacters);
         Assert.Equal([60, 69, 78, 87, 96],
