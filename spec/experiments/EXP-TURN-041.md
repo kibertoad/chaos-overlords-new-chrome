@@ -36,7 +36,9 @@ this endpoint (FND-OBJECTIVE-004). Do not infer awards from those stale cells.
 
 The original makes 10647 random calls. Its elapsed-turn count is 25, the
 match-over flag is set, and it presents the final city view for player 0.
-FND-UI-041 records the calendar capture and completion flag.
+FND-UI-041 records the calendar capture and completion flag. The fixture's
+`capture` row gives the xxh3 of the 640-by-460 drawing area and the selection
+marker frame, 11, at that view.
 
 ## Results
 
@@ -47,5 +49,6 @@ this endpoint. Post-awards experiments retain their award comparisons.
 
 ## Conclusion
 
-This experiment covers one natural final-city endpoint. It does not establish
-all scenarios, final-view input, awards presentation or multiplayer end flow.
+The run agrees with RULE-OBJECTIVE-001 and RULE-OBJECTIVE-004. It covers one
+natural final-city endpoint and does not establish all scenarios, final-view
+input, awards presentation or multiplayer end flow.

@@ -1284,6 +1284,8 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-042](../findings/FND-UI-042.md) | body |
+| [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | evidence |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -6022,6 +6024,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-041](../findings/FND-UI-041.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
 
@@ -6037,6 +6040,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UI-041
@@ -6045,7 +6049,7 @@ None.
 |---|---|
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
 | [FND-UI-042](../findings/FND-UI-042.md) | body |
-| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UI-042
 
@@ -7157,6 +7161,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-037](../experiments/EXP-TURN-037.md) | body |
+| [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | body |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | body |
@@ -7191,6 +7196,7 @@ None.
 | [EXP-TURN-037](../experiments/EXP-TURN-037.md) | body |
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
+| [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
 | glossary: dominance_points | glossary |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | body, related |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | related |

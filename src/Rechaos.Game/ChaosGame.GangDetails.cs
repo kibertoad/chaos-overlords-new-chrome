@@ -386,9 +386,18 @@ public sealed partial class ChaosGame
         NativeTwoCellNumberPresentation.Kind kind = NativeTwoCellNumberPresentation.Kind.Baseline)
     {
         var display = NativeTwoCellNumberPresentation.Format(value, kind, width);
-        font.Draw(batch, display.Digits,
+        font.DrawNumber(batch, display,
             new Vector2(left + (width - display.Digits.Length) * OriginalFontLayout.CellWidth, y),
-            display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime, 1);
+            display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime);
+    }
+
+    /// <summary>FND-UI-004: numeric cells are opaque, including their blank pixels.</summary>
+    private static void DrawOpaqueNativeFixedWidthValue(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, int value, int left, int y, int width)
+    {
+        batch.Draw(pixel, new Rectangle(left, y, width * OriginalFontLayout.CellWidth,
+            OriginalFontLayout.GlyphHeight), Color.Black);
+        DrawNativeFixedWidthValue(font, batch, value, left, y, width);
     }
 
     private static void DrawGangPanelValue(
