@@ -9,6 +9,9 @@ namespace Rechaos.Tests;
 [Collection("Native soundtrack")]
 public sealed class SoundtrackBufferDeliveryTests
 {
+    private const BindingFlags Hidden = BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+    private static readonly Assembly MonoGame = typeof(Song).Assembly;
+
     [Theory]
     [InlineData(2.25, 2)]
     [InlineData(1.75, 3)]
@@ -19,7 +22,7 @@ public sealed class SoundtrackBufferDeliveryTests
         using var song = Song.FromUri("tail", new Uri(Path.Combine(AppContext.BaseDirectory, "Fixtures", "long-silence.ogg")));
         using var player = new SoundtrackProgramPlayer([song]);
         var stream = OggStreamOf(song);
-        var reader = stream.GetType().GetProperty("Reader", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
+        var reader = ReaderOf(stream);
         reader.GetType().GetProperty("TimePosition")!.SetValue(reader, TimeSpan.FromSeconds(seekSeconds));
         SetNativeLooping(stream, true);
         try
@@ -27,23 +30,12 @@ public sealed class SoundtrackBufferDeliveryTests
             MediaPlayer.Volume = 0;
             player.PlayProgram([song]);
             WaitFor(() => DesktopGlSoundtrackStreaming.IsPending(song));
-            var assembly = typeof(Song).Assembly;
-            var queryType = assembly.GetType("MonoGame.OpenAL.ALGetSourcei", true)!;
-            var query = assembly.GetType("MonoGame.OpenAL.AL", true)!.GetMethod("GetSource",
-                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
-                [typeof(int), queryType, typeof(int).MakeByRefType()], null)!;
-            var source = stream.GetType().GetField("alSourceId", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
-            object?[] args = [source, Enum.Parse(queryType, "BuffersQueued"), 0];
-            query.Invoke(null, args);
-            Assert.Equal(song.Duration, (TimeSpan)reader.GetType().GetProperty("TimePosition")!.GetValue(reader)!);
-            Assert.Equal(expectedQueued, (int)args[2]!);
-            var bufferQuery = assembly.GetType("MonoGame.OpenAL.ALGetBufferi", true)!;
-            var getBuffer = assembly.GetType("MonoGame.OpenAL.AL", true)!.GetMethod("GetBuffer",
-                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
-                [typeof(int), bufferQuery, typeof(int).MakeByRefType()], null)!;
-            var buffers = (int[])stream.GetType().GetField("alBufferIds", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
+            Assert.Equal(song.Duration, DecodedPosition(stream));
+            Assert.Equal(expectedQueued, BuffersQueued(stream));
+            var bufferQuery = MonoGame.GetType("MonoGame.OpenAL.ALGetBufferi", true)!;
+            var getBuffer = Al("GetBuffer", typeof(int), bufferQuery, typeof(int).MakeByRefType());
             var totalBytes = 0;
-            foreach (var buffer in buffers.Take(expectedQueued))
+            foreach (var buffer in Field<int[]>(stream, "alBufferIds").Take(expectedQueued))
             {
                 object?[] bufferArgs = [buffer, Enum.Parse(bufferQuery, "Size"), 0];
                 getBuffer.Invoke(null, bufferArgs);
@@ -58,8 +50,7 @@ public sealed class SoundtrackBufferDeliveryTests
             Assert.Equal(MediaState.Paused, MediaPlayer.State);
             Assert.False(player.ResumeThroughDiscEnd());
             WaitFor(() => DesktopGlSoundtrackStreaming.IsPending(song));
-            query.Invoke(null, args);
-            Assert.Equal(expectedQueued, (int)args[2]!);
+            Assert.Equal(expectedQueued, BuffersQueued(stream));
         }
         finally
         {
@@ -90,8 +81,7 @@ public sealed class SoundtrackBufferDeliveryTests
                 player.PlayProgram([nextSong]);
             }
             WaitFor(() => player.ReadyToRestart);
-            var reader = OggStreamOf(nextSong).GetType().GetProperty("Reader", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(OggStreamOf(nextSong))!;
-            Assert.Equal(nextSong.Duration, (TimeSpan)reader.GetType().GetProperty("TimePosition")!.GetValue(reader)!);
+            Assert.Equal(nextSong.Duration, DecodedPosition(OggStreamOf(nextSong)));
             Assert.Same(nextSong, MediaPlayer.Queue.ActiveSong);
         }
         finally
@@ -108,7 +98,7 @@ public sealed class SoundtrackBufferDeliveryTests
         using var song = Song.FromUri("rotated", new Uri(Path.Combine(AppContext.BaseDirectory, "Fixtures", "long-silence.ogg")));
         using var player = new SoundtrackProgramPlayer([song]);
         var stream = OggStreamOf(song);
-        var reader = stream.GetType().GetProperty("Reader", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
+        var reader = ReaderOf(stream);
         reader.GetType().GetProperty("TimePosition")!.SetValue(reader, TimeSpan.FromSeconds(1.75));
         SetNativeLooping(stream, true);
         try
@@ -116,28 +106,22 @@ public sealed class SoundtrackBufferDeliveryTests
             MediaPlayer.Volume = 0;
             player.PlayProgram([song]);
             WaitFor(() => DesktopGlSoundtrackStreaming.IsPending(song));
-            var mutex = stream.GetType().GetField("prepareMutex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
-            var assembly = typeof(Song).Assembly;
-            var al = assembly.GetType("MonoGame.OpenAL.AL", true)!;
-            var source = (int)stream.GetType().GetField("alSourceId", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
-            lock (mutex)
+            var source = Field<int>(stream, "alSourceId");
+            lock (Field<object>(stream, "prepareMutex"))
             {
                 SetNativeLooping(stream, false);
-                al.GetMethod("SourcePause", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, [typeof(int)], null)!.Invoke(null, [source]);
-                var integerParameter = assembly.GetType("MonoGame.OpenAL.ALSourcei", true)!;
-                al.GetMethod("Source", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
-                    [typeof(int), integerParameter, typeof(int)], null)!.Invoke(null, [source, Enum.ToObject(integerParameter, Convert.ToInt32(Enum.Parse(assembly.GetType("MonoGame.OpenAL.ALGetSourcei", true)!, "SampleOffset"))), 22050]);
-                var unqueued = (int[])al.GetMethod("SourceUnqueueBuffers", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
-                    null, [typeof(int), typeof(int)], null)!.Invoke(null, [source, 1])!;
-                var buffers = (int[])stream.GetType().GetField("alBufferIds", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
-                Assert.Equal(buffers[0], Assert.Single(unqueued));
+                Al("SourcePause", typeof(int)).Invoke(null, [source]);
+                var integerParameter = MonoGame.GetType("MonoGame.OpenAL.ALSourcei", true)!;
+                var sampleOffset = Enum.ToObject(integerParameter, Convert.ToInt32(Enum.Parse(SourceQuery, "SampleOffset")));
+                Al("Source", typeof(int), integerParameter, typeof(int)).Invoke(null, [source, sampleOffset, 22050]);
+                var unqueued = (int[])Al("SourceUnqueueBuffers", typeof(int), typeof(int)).Invoke(null, [source, 1])!;
+                Assert.Equal(Field<int[]>(stream, "alBufferIds")[0], Assert.Single(unqueued));
                 // The remaining native queue is buffers[1], buffers[2], not its array prefix.
                 SetNativeLooping(stream, true);
-                al.GetMethod("SourcePlay", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, [typeof(int)], null)!.Invoke(null, [source]);
+                Al("SourcePlay", typeof(int)).Invoke(null, [source]);
                 MediaPlayer.Pause();
                 // The controlled queue rotation itself must leave OpenAL error-free.
-                Assert.Equal(0, Convert.ToInt32(al.GetMethod("GetError", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
-                    null, Type.EmptyTypes, null)!.Invoke(null, null)));
+                Assert.Equal(0, Convert.ToInt32(Al("GetError").Invoke(null, null)));
             }
             var pausedCycle = DesktopGlSoundtrackStreaming.CompletedPumpCycles;
             WaitFor(() => DesktopGlSoundtrackStreaming.CompletedPumpCycles >= pausedCycle + 2);
@@ -159,12 +143,34 @@ public sealed class SoundtrackBufferDeliveryTests
             DesktopGlSoundtrackStreaming.Shutdown();
         }
     }
+
+    private static Type SourceQuery => MonoGame.GetType("MonoGame.OpenAL.ALGetSourcei", true)!;
+
+    private static MethodInfo Al(string name, params Type[] parameters) =>
+        MonoGame.GetType("MonoGame.OpenAL.AL", true)!.GetMethod(name, Hidden, null, parameters, null)!;
+
+    private static T Field<T>(object stream, string name) => (T)stream.GetType().GetField(name, Hidden)!.GetValue(stream)!;
+
+    private static object ReaderOf(object stream) => stream.GetType().GetProperty("Reader", Hidden)!.GetValue(stream)!;
+
+    private static TimeSpan DecodedPosition(object stream)
+    {
+        var reader = ReaderOf(stream);
+        return (TimeSpan)reader.GetType().GetProperty("TimePosition")!.GetValue(reader)!;
+    }
+
+    private static int BuffersQueued(object stream)
+    {
+        object?[] args = [Field<int>(stream, "alSourceId"), Enum.Parse(SourceQuery, "BuffersQueued"), 0];
+        Al("GetSource", typeof(int), SourceQuery, typeof(int).MakeByRefType()).Invoke(null, args);
+        return (int)args[2]!;
+    }
+
     private static bool Registered(Song song)
     {
-        var type = typeof(Song).Assembly.GetType("Microsoft.Xna.Framework.Audio.OggStreamer", true)!;
-        var instance = type.GetProperty("Instance", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!.GetValue(null)!;
-        var mutex = type.GetField("iterationMutex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance)!;
-        lock (mutex)
-            return ((System.Collections.IEnumerable)type.GetField("streams", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance)!).Cast<object>().Contains(OggStreamOf(song));
+        var type = MonoGame.GetType("Microsoft.Xna.Framework.Audio.OggStreamer", true)!;
+        var instance = type.GetProperty("Instance", Hidden)!.GetValue(null)!;
+        lock (type.GetField("iterationMutex", Hidden)!.GetValue(instance)!)
+            return ((System.Collections.IEnumerable)type.GetField("streams", Hidden)!.GetValue(instance)!).Cast<object>().Contains(OggStreamOf(song));
     }
 }
