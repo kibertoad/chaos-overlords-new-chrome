@@ -524,7 +524,7 @@ submission remains necessary before claiming full soundtrack parity.
 
 ## Original pattern resources
 
-`OriginalPatternResourceTests` loads the hash-verified original executable as a data file on Windows, reads bitmap resources 143, 146 and 147, and compares all 192 mask bits with the production pattern helper (FND-UI-031, FND-GFX-006). It does not execute the original or store its resource bytes in the repository. It requires `GAME_DIR` and skips when Windows or the executable is unavailable. This verifies mask shape and row orientation, not raster-operation compositing or rendered-screen parity.
+`OriginalPatternResourceTests` reads the hash-verified original executable's bytes, walks its PE resource directory for bitmap resources 143, 146 and 147, checks their headers and black and white palettes, and compares all 192 mask bits with the production pattern helper (FND-UI-031, FND-GFX-006). It does not load or execute the original, so it runs on every platform, and it does not store resource bytes in the repository. It requires `GAME_DIR` and skips when the executable is unavailable. This verifies mask shape, palette and row orientation, not raster-operation compositing or rendered-screen parity.
 
 ## Failure triage
 
