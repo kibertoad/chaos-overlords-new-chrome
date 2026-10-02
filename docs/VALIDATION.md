@@ -12,6 +12,7 @@ Status: maintained canonical procedure
 - [Tests against the original](#tests-against-the-original)
 - [Fixture classes](#fixture-classes)
 - [Audio channel validation](#audio-channel-validation)
+- [Native audio backend](#native-audio-backend)
 - [Failure triage](#failure-triage)
 <!-- doc-index:end -->
 
@@ -521,6 +522,29 @@ left-channel formula cannot establish stereo fidelity. A future repair needs
 independent output-channel control and a native channel-output comparison,
 including level changes and fades. Original auxiliary-device selection and
 startup/exit restoration also remain outside the present comparison coverage.
+
+## Native audio backend
+
+The native soundtrack EOF regression pins the old stream at its decoded end before
+replacing its program, then requires the replacement decoder to reach the end of a
+2.5-second synthetic track. This checks stale completion-state truncation, without
+proving audible output or final partial-buffer delivery. The production adapter
+binds MonoGame DesktopGL 3.8.5.1 `OggStreamer.Instance` and `pendingFinish` through
+reflection: explicit stop removes and synchronizes with the old stream before the
+flag is reset, and the new stream is published afterward. A paused resume retains
+its existing completion state. Dependency upgrades must preserve these boundaries
+or replace this hook with an equivalent supported API.
+
+A separate native diagnostic confirms a remaining tail-delivery defect in the pinned
+backend. Keep the initially prepared 0.5-second buffer playing with native looping,
+seek the decoder of the synthetic 2.5-second track to 2.25 seconds, and wait for
+`pendingFinish`. The decoder reaches 2.5 seconds, but `ALGetSourcei.BuffersQueued`
+is 1 rather than 2: the decoded 0.25-second tail was not queued. The streaming
+worker sets `finished` on that read and queues buffers only when `!finished`.
+This diagnostic intentionally changes decoder position to isolate submission; it
+does not compare audible hardware output. Whole-track decoding alone therefore
+cannot establish the endpoint required by RULE-AUDIO-001. Repairing final-buffer
+submission remains necessary before claiming full soundtrack parity.
 
 ## Failure triage
 
