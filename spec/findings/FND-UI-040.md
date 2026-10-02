@@ -42,6 +42,12 @@ fields. The player score and cash fields share the same five-cell origin;
 their right boundary is x 580, exclusive. FND-STATE-010 and
 FND-OBJECTIVE-004 identify the player fields.
 
+FND-OBJECTIVE-003 identifies `0x004A5EF8` as `turn_limit`, `0x0049CA68` as
+`elapsed_turns` and scenario values 0 to 3 as the four timed scenarios. The
+calendar is therefore `elapsed_turns` split into 52-week years from 2050, and
+the three-cell field at `(562,15)` is `turn_limit - elapsed_turns - 1`, drawn
+only in a timed scenario while the flag is zero.
+
 ## Alternatives
 
 This reading establishes the planning-entry calls, not every later refresh

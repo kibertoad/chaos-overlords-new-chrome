@@ -97,7 +97,7 @@ public sealed class UiNavigationTests
         Assert.Equal(481, StatusConsoleLayout.YearLeft);
         Assert.Equal(511, StatusConsoleLayout.WeekLeft);
         Assert.Equal(15, StatusConsoleLayout.DateY);
-        Assert.True(StatusConsoleLayout.Scenario.Contains(481, 12));
+        Assert.Equal(new Rectangle(476, 5, 108, 9), StatusConsoleLayout.Scenario);
         Assert.Equal(new Rectangle(476, 41, 108, 9), StatusConsoleLayout.Cash);
         Assert.Equal(12, StatusConsoleLayout.CashValueMaxCharacters);
         Assert.Equal([60, 69, 78, 87, 96],

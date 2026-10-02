@@ -4424,6 +4424,7 @@ None.
 | [BUG-AI-001](../bugs/BUG-AI-001.md) | body, evidence |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FND-OBJECTIVE-006](../findings/FND-OBJECTIVE-006.md) | body |
+| [FND-UI-040](../findings/FND-UI-040.md) | body |
 | glossary: match_over | glossary |
 | glossary: player_active | glossary |
 | glossary: scenario | glossary |

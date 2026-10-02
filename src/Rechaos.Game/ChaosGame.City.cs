@@ -240,10 +240,10 @@ public sealed partial class ChaosGame
         var selectedSector = state.Sectors[_cursor];
         var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
         var scenario = ScenarioCatalog.Get(state.Setup.Scenario);
-        // FND-UI-040: separate calendar fields leave the template's separator intact.
         font.Draw(batch, scenario.Name,
             new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
         var (year, week) = TurnCalendar(state.Coordinator.Turn);
+        // FND-UI-040: separate calendar fields leave the template's separator intact.
         // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
         batch.Draw(pixel, new Rectangle(StatusConsoleLayout.YearLeft, StatusConsoleLayout.DateY,
             4 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
