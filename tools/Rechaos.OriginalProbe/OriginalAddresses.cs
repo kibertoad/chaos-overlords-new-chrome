@@ -60,6 +60,14 @@ internal static class OriginalAddresses
     public const int PanelExitX = 137 + 24;
     public const int PanelExitY = 293 + 11;
 
+    // FND-SEARCH-006: the city redraw fn_004123CC(viewer, ...) passes each site marker to
+    // fn_00412AC4(definition, sector, ordinal, controlled). search_filters: one byte per player
+    // and site definition, element player * 22 + definition, at 0x004A24E8 (FND-SEARCH-001).
+    public const uint CityRedraw = 0x004123CC;
+    public const uint SiteMarker = 0x00412AC4;
+    public const uint SearchFilters = 0x004A24E8;
+    public const int SiteDefinitionCount = 22;
+
     public const int DoneX = 500 + 50;
     public const int DoneY = 282 + 24;
 

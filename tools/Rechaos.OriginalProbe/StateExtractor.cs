@@ -26,7 +26,7 @@ internal sealed class StateExtractor
         var rolls = new JsonArray();
         foreach (var roll in trace["Rolls"]!.AsArray())
             rolls.Add(new JsonArray(roll!["Call"]!.GetValue<string>(), roll["Bound"]!.GetValue<int>(), roll["Result"]!.GetValue<int>()));
-        return new JsonObject
+        var run = new JsonObject
         {
             ["rng_state"] = trace["Seed"]!.GetValue<int>(),
             ["done_at_roll"] = doneAtRoll,
@@ -34,6 +34,17 @@ internal sealed class StateExtractor
             ["events"] = new JsonArray(),
             ["end_state"] = extractor.EndState(),
         };
+        // FND-SEARCH-006: the site markers of the last city redraw before the dump, each as
+        // definition, sector, ordinal and controlled flag, with the viewing player.
+        if (trace["Markers"] is JsonObject markers)
+            run["city_markers"] = new JsonObject
+            {
+                ["viewer"] = markers["Viewer"]!.GetValue<int>(),
+                ["markers"] = new JsonArray(markers["Markers"]!.AsArray()
+                    .Select(marker => (JsonNode)new JsonArray(marker!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()))
+                    .ToArray()),
+            };
+        return run;
     }
 
     /// <summary>The setup choices a run was recorded with, one line each; none for the defaults.</summary>

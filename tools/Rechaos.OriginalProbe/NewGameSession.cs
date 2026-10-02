@@ -43,6 +43,22 @@ internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family)
 }
 
 /// <summary>
+/// Search filter entries the probe sets for the first human before the Done press of
+/// <paramref name="Turn"/>: a byte of <c>search_filters</c> per site definition, as the Search panel
+/// writes them (RULE-SEARCH-001).
+/// </summary>
+internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions)
+{
+    public override string ToString() => $"turn {Turn}: search filter {string.Join(" ", Definitions)}";
+}
+
+/// <summary>
+/// One city redraw (FND-SEARCH-006): the viewing player and each site marker it drew as
+/// definition, sector, ordinal and controlled flag.
+/// </summary>
+internal sealed record CityMarkers(int Viewer, List<int[]> Markers);
+
+/// <summary>
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
 /// Scenario numbers are the original's (FND-SETUP-013).
 /// </summary>
@@ -50,7 +66,7 @@ internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
-    IReadOnlyList<ProbePlanning>? Planning = null)
+    IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeSearch>? Search = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -80,7 +96,9 @@ internal sealed record NewGameSettings(
             foreach (var order in orders) yield return ("order", order.ToString());
             foreach (var hire in hires) yield return ("hire", hire.ToString());
             foreach (var write in planning) yield return ("planning", write.ToString());
-            yield return ("left_click", orders.Length + hires.Length + planning.Length == 0
+            var search = (Search ?? []).Where(write => write.Turn == turn).ToArray();
+            foreach (var write in search) yield return ("search", write.ToString());
+            yield return ("left_click", orders.Length + hires.Length + planning.Length + search.Length == 0
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
@@ -95,7 +113,8 @@ internal sealed record ProbeTrace(
     int RollsBeforeBegin,
     List<int>? RollsAtDone,
     bool Dumped,
-    List<string> Notes);
+    List<string> Notes,
+    CityMarkers? Markers = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -115,6 +134,8 @@ internal sealed class NewGameSession(
     private int _panelsOpen;
     private bool _planningLoopReached;
     private bool _awardsReached;
+    private CityMarkers? _redraw;
+    private CityMarkers? _lastRedraw;
 
     public ProbeTrace Run()
     {
@@ -126,6 +147,11 @@ internal sealed class NewGameSession(
         if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
+        if (settings.Search is { Count: > 0 })
+        {
+            _process.SetBreakpoint(OriginalAddresses.CityRedraw, OnCityRedraw);
+            _process.SetBreakpoint(OriginalAddresses.SiteMarker, OnSiteMarker);
+        }
 
         var window = IntPtr.Zero;
         if (!_process.RunUntil(() => (window = _process.FindMainWindow()) != IntPtr.Zero, timeout))
@@ -176,6 +202,8 @@ internal sealed class NewGameSession(
                 WriteHire(hire);
             foreach (var write in (settings.Planning ?? []).Where(write => write.Turn == turn))
                 WritePlanning(write);
+            foreach (var write in (settings.Search ?? []).Where(write => write.Turn == turn))
+                WriteSearch(write);
             _rollsAtDone.Add(_rolls.Count);
             Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
             var target = turn;
@@ -271,6 +299,30 @@ internal sealed class NewGameSession(
 
         return _panelsOpen == 0;
     }
+
+    private void WriteSearch(ProbeSearch write)
+    {
+        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        foreach (var definition in write.Definitions)
+            _process.Write(OriginalAddresses.SearchFilters
+                + (uint)(human * OriginalAddresses.SiteDefinitionCount + definition), [1]);
+    }
+
+    // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
+    // last complete redraw.
+    private void OnCityRedraw(BreakContext context)
+    {
+        var redraw = new CityMarkers(context.Argument(0), []);
+        _redraw = redraw;
+        _process.SetBreakpoint(context.ReturnAddress, _ =>
+        {
+            if (_redraw == redraw) _lastRedraw = redraw;
+            _redraw = null;
+        }, oneShot: true);
+    }
+
+    private void OnSiteMarker(BreakContext context) =>
+        _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3) & 0xFF]);
 
     private void WriteOrder(ProbeOrder order)
     {
@@ -439,7 +491,7 @@ internal sealed class NewGameSession(
         if (note is not null) _notes.Add(note);
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
-        return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes);
+        return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes, _lastRedraw);
     }
 
     private static void Click(IntPtr window, int x, int y)

@@ -292,7 +292,7 @@
 
 ## recorded
 
-389 entries.
+391 entries.
 
 | ID | Title |
 |---|---|
@@ -342,6 +342,7 @@
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | How do raiders and family-4 gangs plan, when the probe sets them in memory? |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | Does the final city entry retain the last resolution's cash-short report? |
+| [EXP-TURN-045](../experiments/EXP-TURN-045.md) | Which site markers does the city show for a Search filter of every even site definition? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -594,6 +595,7 @@
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | The city draws a marker for each site the viewer controls and for each other site whose definition the viewer's Search filter selects |
 | [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | Search rows show the controlled-site icon and the site name, a press flips a row between 0 and 1, the filter is not saved, and the city counts a site as controlled when its progress reaches its Resistance in a sector the viewer owns |
 | [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry |
+| [FND-SEARCH-006](../findings/FND-SEARCH-006.md) | The city redraw passes each site marker's definition, sector, ordinal and controlled flag to fn_00412AC4 from two calls, and takes the viewing player as its first argument |
 | [FND-SELL-001](../findings/FND-SELL-001.md) | The Sell panel handler shows each carried item at half its cost and stores the chosen items as a three-bit mask in the target byte |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | The Sell panel marks each selected row with a 192-by-54 keyed overlay from PX00129 and restores the panel's own pixels for the others |
 | [FND-SETUP-001](../findings/FND-SETUP-001.md) | Starting cash is $500 in Armageddon and $20 otherwise, and one exact player name overrides it with $1,500 after setup |

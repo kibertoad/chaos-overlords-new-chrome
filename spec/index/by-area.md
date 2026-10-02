@@ -224,6 +224,7 @@
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | How do raiders and family-4 gangs plan, when the probe sets them in memory? | recorded |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? | recorded |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | Does the final city entry retain the last resolution's cash-short report? | recorded |
+| [EXP-TURN-045](../experiments/EXP-TURN-045.md) | Which site markers does the city show for a Search filter of every even site definition? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -731,6 +732,7 @@
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | The city draws a marker for each site the viewer controls and for each other site whose definition the viewer's Search filter selects | recorded |
 | [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | Search rows show the controlled-site icon and the site name, a press flips a row between 0 and 1, the filter is not saved, and the city counts a site as controlled when its progress reaches its Resistance in a sector the viewer owns | recorded |
 | [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry | recorded |
+| [FND-SEARCH-006](../findings/FND-SEARCH-006.md) | The city redraw passes each site marker's definition, sector, ordinal and controlled flag to fn_00412AC4 from two calls, and takes the viewing player as its first argument | recorded |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | supported |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | supported |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | Search panel | supported |

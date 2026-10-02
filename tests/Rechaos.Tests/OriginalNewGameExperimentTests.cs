@@ -68,7 +68,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-045"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -412,6 +412,35 @@ public sealed class OriginalNewGameExperimentTests
         else Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
     }
 
+    public static TheoryData<string, int> MarkerRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                if (runs[run].CityMarkers is not null) data.Add(experiment, run);
+        return data;
+    }
+
+    // RULE-SEARCH-002, FND-SEARCH-006: the probe writes the human's Search filter entries as the
+    // Search panel does and keeps every site marker of the last city redraw before the dump:
+    // definition, sector, ordinal and controlled flag, in drawing order. The rebuild's city shows
+    // the same markers for the same filter. EXP-TURN-045 selects every even site definition, so the
+    // ordinals skip the sites left out, and the human's Headquarters is drawn as controlled.
+    [Theory]
+    [MemberData(nameof(MarkerRuns))]
+    public void TheCityShowsTheOriginalsSiteMarkers(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var match = StartMatch(recorded, out _);
+        var drawn = recorded.CityMarkers!;
+        var filter = recorded.SearchFilter.Select(definition => (short)definition).ToHashSet();
+        var markers = CitySiteMarkerProjection.Project(match, new PlayerId(drawn.Viewer), filter)
+            .Select(marker => (marker.SiteDefinitionId, marker.SectorId, marker.VisibleSlot, marker.Controlled ? 1 : 0))
+            .Select(marker => $"{marker.SiteDefinitionId},{marker.SectorId},{marker.VisibleSlot},{marker.Item4}")
+            .ToArray();
+        Assert.Equal(drawn.Markers.Select(marker => string.Join(",", marker)), markers);
+    }
+
     // RULE-OBJECTIVE-005: -2 stops before the card at the human's own slot; -1
     // has dismissed it and lets the remaining slots and resolution finish.
     private static void AdvanceToRecordedEndpoint(MatchReplayRecorder recorder, PlayerId human, int controller)
@@ -635,6 +664,10 @@ public sealed class OriginalNewGameExperimentTests
         }
     }
 
+    // The viewer of the last city redraw and its site markers as definition, sector, ordinal and
+    // controlled flag (FND-SEARCH-006).
+    private sealed record RecordedMarkers(int Viewer, IReadOnlyList<int[]> Markers);
+
     private sealed record RecordedHire(int Turn, int OfferSlot, int Sector)
     {
         // "turn 1: offer slot 0 sector 12", as the probe writes it.
@@ -746,6 +779,19 @@ public sealed class OriginalNewGameExperimentTests
                 .Select(input => RecordedPlanning.Parse(input.GetProperty("value").GetString()!))
                 .ToArray();
             Seed = run.GetProperty("rng_state").GetInt32();
+            // "turn 1: search filter 0 2 4", as the probe writes it.
+            SearchFilter = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "search")
+                .SelectMany(input => input.GetProperty("value").GetString()!.Split(':')[1]
+                    .Replace(" search filter ", "", StringComparison.Ordinal)
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)))
+                .Distinct().ToArray();
+            CityMarkers = run.TryGetProperty("city_markers", out var markers)
+                ? new RecordedMarkers(markers.GetProperty("viewer").GetInt32(),
+                    markers.GetProperty("markers").EnumerateArray()
+                        .Select(marker => marker.EnumerateArray().Select(value => value.GetInt32()).ToArray()).ToArray())
+                : null;
             DoneCount = run.TryGetProperty("done_at_roll", out var done) ? done.GetArrayLength() : 0;
             Rolls = run.GetProperty("rolls").EnumerateArray()
                 .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
@@ -763,6 +809,8 @@ public sealed class OriginalNewGameExperimentTests
 
         public int Seed { get; }
         public int DoneCount { get; }
+        public IReadOnlyList<int> SearchFilter { get; }
+        public RecordedMarkers? CityMarkers { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
         public IReadOnlyList<RecordedPlanning> Planning { get; }
