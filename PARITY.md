@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 96 |
-| `validated` | 122 |
+| `implemented` | 94 |
+| `validated` | 124 |
 
 | Code | Rows |
 |---|---|
@@ -129,7 +129,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-SETUP-005` | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-SETUP-001` | validated | None |
 | `RULE-SETUP-006` | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-SETUP-001` | validated | None |
 | `RULE-SETUP-007` | A player named with the visibility modifier sees every opposing gang for the whole match | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-SETUP-001` | validated | None |
-| `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | complete | None | None | implemented | None |
+| `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-011 and EXP-TURN-031 compare, at every planning entry of one local human, whether Combat Results and then Last Turn Events are shown. The Ready card, Game Information after a load, the Comlink alert and several local humans are not compared. |
 | `RULE-SETUP-009` | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported | complete | None | None | implemented | None |
 | `RULE-SETUP-010` | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported | complete | None | None | implemented | The rebuild's online lobby keeps its own seats and does not edit the local roster; entering one still resets the local roster to one human, as the original's lobby reset does. |
 | `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | None | `DEV-SETUP-002` | implemented | The left panel follows FND-SETUP-013: its rectangles, the refusal area of the time limit, the pressed images and push cue, the commit on release inside, and the light sprite. The stored scenario preference belongs to RULE-SETUP-002. |
@@ -358,7 +358,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EVENT-002` | Recording a Last Turn report keeps the first 32 reports of a resolution | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The rebuild keeps a fuller notification history and derives the first 32 reports of the completed turn from it. The replays compare the records in the order recorded; no run holds more than 8 reports for one player, so the cap of 32 has no run. |
 | `RULE-EVENT-003` | An elimination is reported to all six player slots | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The rebuild has a slot only for each seated player, so an empty slot has no report to receive. EXP-TURN-017, EXP-TURN-018 and EXP-TURN-025 give all six players the report, the eliminated human included. |
 | `RULE-EVENT-004` | A Crackdown is reported to each player who had a gang in its sector | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 and later replays compare the reports. |
-| `RULE-EVENT-005` | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded | supported | complete | None | None | implemented | None |
+| `RULE-EVENT-005` | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-031 compares the planning entries at which the panel opens by itself; the report order is compared under RULE-EVENT-002. Paging, the page kept when the panel closes and the Events light are not compared. |
 | `RULE-EVENT-006` | A completed site is reported to the player whose Influence completed it | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 and later replays compare the reports. |
 | `RULE-EVENT-007` | A completed item is reported to the player whose Research completed it | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 and later replays compare the reports. |
 | `RULE-EVENT-008` | A Bribe that fails for lack of cash is reported to its player | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-033 replays the report of a Bribe at 2 cash. |

@@ -54,6 +54,13 @@ internal sealed record ProbeFinance(int Turn, int Sector)
         : $"Financial, Sector ({OriginalAddresses.FinanceSectorX}, {OriginalAddresses.FinanceSectorY}) with sector {Sector} selected, turn {Turn}";
 }
 
+/// <summary>
+/// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
+/// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
+/// Combat Results function returns at once when no fight qualifies.
+/// </summary>
+internal sealed record PanelRecord(string Panel, int AfterRoll, bool Shown);
+
 /// <summary>The values one Financial panel drew, in the order it drew them (FND-FINANCE-002).</summary>
 internal sealed record FinanceRecord(int Turn, int Sector, int PanelSector, List<int> Values);
 
@@ -113,7 +120,8 @@ internal sealed record ProbeTrace(
     List<int>? RollsAtDone,
     bool Dumped,
     List<string> Notes,
-    List<FinanceRecord>? Finance = null);
+    List<FinanceRecord>? Finance = null,
+    List<PanelRecord>? Panels = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -131,6 +139,9 @@ internal sealed class NewGameSession(
     private int _seed = -1;
     private bool _setupReached;
     private int _panelsOpen;
+    private int _exitPresses;
+    private readonly List<PanelRecord> _panels = [];
+    private readonly List<PanelRecord> _openPanels = [];
     private bool _planningLoopReached;
     private bool _awardsReached;
     private readonly List<FinanceRecord> _finance = [];
@@ -287,7 +298,15 @@ internal sealed class NewGameSession(
     {
         _panelsOpen++;
         _notes.Add($"{panel} opened after roll {_rolls.Count}");
-        _process.SetBreakpoint(context.ReturnAddress, _ => _panelsOpen--, oneShot: true);
+        var presses = _exitPresses;
+        var open = new PanelRecord(panel, _rolls.Count, true);
+        _openPanels.Add(open);
+        _process.SetBreakpoint(context.ReturnAddress, _ =>
+        {
+            _panelsOpen--;
+            _openPanels.Remove(open);
+            _panels.Add(open with { Shown = _exitPresses > presses });
+        }, oneShot: true);
     }
 
     // Presses Exit until every panel handler that opened has returned.
@@ -295,6 +314,7 @@ internal sealed class NewGameSession(
     {
         for (var attempt = 0; _panelsOpen > 0 && attempt < 10; attempt++)
         {
+            _exitPresses++;
             Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
             _process.RunUntil(() => _panelsOpen == 0, TimeSpan.FromSeconds(3));
         }
@@ -515,10 +535,12 @@ internal sealed class NewGameSession(
     private ProbeTrace Finish(bool dumped, string? note, int rollsBeforeBegin = 0)
     {
         if (note is not null) _notes.Add(note);
+        // A panel still open when the run ends was shown at the last planning entry.
+        _panels.AddRange(_openPanels);
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
-            _finance.Count == 0 ? null : _finance);
+            _finance.Count == 0 ? null : _finance, _panels);
     }
 
     private static void Click(IntPtr window, int x, int y)
