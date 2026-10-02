@@ -239,38 +239,34 @@ public sealed partial class ChaosGame
 
         var selectedSector = state.Sectors[_cursor];
         var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
-        // FND-UI-040: separate calendar fields leave the template's separator intact.
-        font.Draw(batch, ExecutableStrings.Get(ExecutableStrings.ScenarioNumber(state.Setup.Scenario) + 1),
+        font.Draw(batch, ExecutableStrings.ScenarioTitle(state.Setup.Scenario),
             new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
-        var (year, week) = MatchCalendar.Of(Math.Max(0, state.Coordinator.Turn - 1));
-        // FND-UI-004: numeric cells are opaque, including their blank pixels.
-        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.YearLeft, StatusConsoleLayout.DateY,
-            4 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+        var (year, week) = TurnCalendar(state.Coordinator.Turn);
+        // FND-UI-040: separate calendar fields leave the template's separator intact.
+        // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
+        DrawOpaqueNativeFixedWidthValue(batch, pixel, font, year, StatusConsoleLayout.YearLeft,
+            StatusConsoleLayout.DateY, 4);
         batch.Draw(pixel, new Rectangle(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY,
             2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
-        DrawNativeFixedWidthValue(font, batch, year, StatusConsoleLayout.YearLeft,
-            StatusConsoleLayout.DateY, 4);
         font.Draw(batch, week.ToString("00"),
             new Vector2(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
         // FND-UI-040, FND-STATE-010: completion replaces the timed countdown in the final view.
+        // FND-UI-019: string cells are copied opaquely, like the numeric cells.
         if (_finalViewPlayer is not null)
-            font.Draw(batch, ExecutableStrings.Get(19),
-                new Vector2(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
-        else if (StatusConsolePresentation.RemainingTurns(state.Setup.Scenario, state.Setup.Duration,
-                     state.Coordinator.Turn, finalView: false) is { } remainingTurns)
         {
-            batch.Draw(pixel, new Rectangle(StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY,
-                3 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
-            DrawNativeFixedWidthValue(font, batch, remainingTurns, StatusConsoleLayout.RemainingTurnsLeft,
-                StatusConsoleLayout.DateY, 3);
+            var complete = ExecutableStrings.Get(StatusConsoleLayout.CompleteString);
+            batch.Draw(pixel, new Rectangle(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY,
+                complete.Length * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+            font.Draw(batch, complete,
+                new Vector2(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
         }
+        else if (StatusConsolePresentation.RemainingTurns(state.Setup.Scenario, state.Setup.Duration,
+                     state.Coordinator.Turn) is { } remainingTurns)
+            DrawOpaqueNativeFixedWidthValue(batch, pixel, font, remainingTurns,
+                StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY, 3);
         // FND-UI-040, RULE-UI-004: five opaque numeric cells, including red unsigned magnitudes.
-        const int scoreLeft = 550;
-        const int scoreWidth = 5;
-        batch.Draw(pixel, new Rectangle(scoreLeft, StatusConsoleLayout.ScoreY,
-            scoreWidth * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
-        DrawNativeFixedWidthValue(font, batch, player.ScenarioScore, scoreLeft,
-            StatusConsoleLayout.ScoreY, scoreWidth);
+        DrawOpaqueNativeFixedWidthValue(batch, pixel, font, StatusConsolePresentation.Score(state, player),
+            StatusConsoleLayout.ScoreLeft, StatusConsoleLayout.ScoreY, StatusConsoleLayout.ScoreCells);
         DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
                 StatusConsolePresentation.UnspentCash(state, player),
                 FinanceProjection.Project(state, player, sectorId: null).CashAdjustment),
@@ -328,9 +324,9 @@ public sealed partial class ChaosGame
     private static void DrawSectorNumber(PixelFont font, SpriteBatch batch, int value, int y, Color color)
     {
         var display = NativeTwoCellNumberPresentation.Format(value, NativeTwoCellNumberPresentation.Kind.Baseline);
-        font.Draw(batch, display.Digits,
+        font.DrawNumber(batch, display,
             new Vector2(StatusConsoleLayout.SectorValueLeft + (2 - display.Digits.Length) * OriginalFontLayout.CellWidth, y),
-            display.IsNegative ? Color.Red : color, 1);
+            display.IsNegative ? Color.Red : color);
     }
 
     /// <summary>A lit console light; a dark one is the console art under it (FND-EVENT-006).</summary>
@@ -460,9 +456,11 @@ public sealed partial class ChaosGame
     private static string SectorCode(int sectorId) =>
         $"{(char)('A' + sectorId % MatchLimits.BoardWidth)}{sectorId / MatchLimits.BoardWidth + 1}";
 
+    private static (int Year, int Week) TurnCalendar(int turn) => MatchCalendar.Of(Math.Max(0, turn - 1));
+
     private static string MatchDate(int turn)
     {
-        var (year, week) = MatchCalendar.Of(Math.Max(0, turn - 1));
+        var (year, week) = TurnCalendar(turn);
         return $"{year}.{week:00}";
     }
 
