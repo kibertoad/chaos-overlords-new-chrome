@@ -239,8 +239,7 @@ public sealed partial class ChaosGame
 
         var selectedSector = state.Sectors[_cursor];
         var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
-        var scenario = ScenarioCatalog.Get(state.Setup.Scenario);
-        font.Draw(batch, scenario.Name,
+        font.Draw(batch, ExecutableStrings.ScenarioTitle(state.Setup.Scenario),
             new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
         var (year, week) = TurnCalendar(state.Coordinator.Turn);
         // FND-UI-040: separate calendar fields leave the template's separator intact.
@@ -253,6 +252,24 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.DateY, 4);
         font.Draw(batch, week.ToString("00"),
             new Vector2(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
+        // FND-UI-040, FND-STATE-010: completion replaces the timed countdown in the final view.
+        // FND-UI-019: string cells are copied opaquely, like the numeric cells.
+        if (_finalViewPlayer is not null)
+        {
+            var complete = ExecutableStrings.Get(StatusConsoleLayout.CompleteString);
+            batch.Draw(pixel, new Rectangle(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY,
+                complete.Length * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+            font.Draw(batch, complete,
+                new Vector2(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
+        }
+        else if (StatusConsolePresentation.RemainingTurns(state.Setup.Scenario, state.Setup.Duration,
+                     state.Coordinator.Turn) is { } remainingTurns)
+        {
+            batch.Draw(pixel, new Rectangle(StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY,
+                3 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+            DrawNativeFixedWidthValue(font, batch, remainingTurns, StatusConsoleLayout.RemainingTurnsLeft,
+                StatusConsoleLayout.DateY, 3);
+        }
         DrawPanelValue(font, batch, StatusConsolePresentation.Score(state, player).ToString(),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.ScoreY);
         DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
