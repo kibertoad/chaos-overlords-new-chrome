@@ -675,10 +675,9 @@ Screenshots, saves and the diagnostic harness remain outside Git.
 
 In the EXP-TURN-042 original final-entry capture, all three 64-by-64 hire
 portraits match the corresponding completed replay render exactly: zero
-RGB differences in each of the 4096-pixel cells. An initial visual impression
-of a different third portrait was disproved by this direct comparison.
-The retained offer IDs and their portrait numbers also agree with the
-numeric original fixture. No new offer draw is required for this final visit.
+RGB differences in each of the 4096-pixel cells. The three retained offer
+IDs also agree with the `hire_offers` values of the numeric original fixture,
+so the rebuild needs no extra offer draw for this final visit.
 
 The earlier layout's price strip `(438,436,198,24)` differed in 158 pixels,
 confined to x 449 through 592 and y 440 through 446. Applying the existing

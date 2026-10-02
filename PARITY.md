@@ -154,6 +154,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-HIRE-004` | A new match starts with every hire offer vacant and no hire order | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `SCR-HIRE-001` | Hire comparison panel showing the three offers side by side | supported | complete | None | None | implemented | The positions the rebuild took from captures match the ones the spec now records. |
 | `SCR-HIRE-002` | Hire offers on the main console, with drag-to-hire and Reject | supported | complete | None | `DEV-HIRE-001`, `DEV-HIRE-002` | implemented | Adds a hire-shortfall warning and refuses drops on full sectors (see deviations). Portraits sit at (440 + 66s, 373) with the 64-by-64 hire and snub marks over them, and the press regions meet as FND-HIRE-008 records. Every offer keeps its price under a hire or snub mark. An isolated completed EXP-TURN-042 render compares all three offer portraits and the full price strip with the original final entry: zero differing RGB pixels after the FND-HIRE-007 price-origin correction (docs/VALIDATION.md). This validates those retained offers and prices, not every mark or input path. HireDockLayoutTests.HirePriceSitsBesideRejectControl checks all three price origins (450 + 66s, 440) against FND-HIRE-007 and the two-cell price text against FND-UI-006 and FND-UI-023; whole-screen pixel parity remains unverified. |
+
 ## HIDE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
