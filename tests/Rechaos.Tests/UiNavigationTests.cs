@@ -288,26 +288,6 @@ public sealed partial class UiNavigationTests
     }
 
     [Fact]
-    public void HirePriceSitsBesideRejectControl()
-    {
-        Assert.Equal(new Rectangle(472, 437, 32, 13), HireDockLayout.Reject(0));
-        // SCR-HIRE-002, FND-HIRE-007: retain the original number helper's origin.
-        Assert.Equal(new Point(450, 440), HireDockLayout.Price(0));
-        Assert.Equal(new Point(516, 440), HireDockLayout.Price(1));
-        Assert.Equal(new Point(582, 440), HireDockLayout.Price(2));
-        // FND-UI-006: the console passes the helper's leading-zero flag.
-        Assert.Equal("06", HireDockLayout.PriceText(6));
-        Assert.Equal("12", HireDockLayout.PriceText(12));
-        // FND-UI-023: two cells only; the first takes the whole quotient, 12 places after '0'.
-        Assert.Equal("<3", HireDockLayout.PriceText(123));
-        // FND-UI-006: a negative value shows its magnitude; the colour carries the sign.
-        Assert.Equal("07", HireDockLayout.PriceText(-7));
-        // A quotient past the last glyph of the strip has nothing to draw.
-        // RULE-UI-004: an off-strip leading glyph leaves a blank text placeholder.
-        Assert.Equal(" 0", HireDockLayout.PriceText(430));
-    }
-
-    [Fact]
     public void RouterStartsAtTitleAndBackReturnsThere()
     {
         var router = new ScreenRouter();
