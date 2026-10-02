@@ -16,7 +16,7 @@
 
 ## supported
 
-171 entries.
+172 entries.
 
 | ID | Title |
 |---|---|
@@ -108,6 +108,7 @@
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface |
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | A keyed image copy leaves out the pixels of maximum white |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | Help Topics does nothing, and no key opens the help file |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player |
@@ -291,7 +292,7 @@
 
 ## recorded
 
-384 entries.
+386 entries.
 
 | ID | Title |
 |---|---|
@@ -339,6 +340,7 @@
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | How does a six-month Dominance end, and does a site completed in the last turn count? |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | How does a six-month Acceptance end, and does a human that always hides get the Big Fat Chicken? |
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | How do raiders and family-4 gangs plan, when the probe sets them in memory? |
+| [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -674,6 +676,7 @@
 | [FND-UI-038](../findings/FND-UI-038.md) | The nine-sector display labels its centre row and column and each neighbour's on the frame, the sector view darkens its background with black through bitmap 143, and the Overlord bar animates on timer slot 1 |
 | [FND-UI-039](../findings/FND-UI-039.md) | The end-of-match planning visit differs from an ordinary one only through the Done light flag and the no-match byte |
 | [FND-UI-040](../findings/FND-UI-040.md) | Planning entry positions the scenario, calendar and player totals in the console |
+| [FND-UI-041](../findings/FND-UI-041.md) | The running original draws the completed-match calendar companion in its final city view |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file |
@@ -863,6 +866,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | established |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image | supported |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported |
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | A keyed image copy leaves out the pixels of maximum white | supported |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | Help Topics does nothing, and no key opens the help file | supported |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player | supported |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | established |

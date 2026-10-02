@@ -71,6 +71,7 @@
 | [FND-GFX-006](../findings/FND-GFX-006.md) | A pattern fill takes its bitmap from the high byte of a 16-bit grey, starts the pattern at the filled rectangle's corner, and outlines the fill with the scratch surface's own pen | recorded |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image | supported |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported |
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | A keyed image copy leaves out the pixels of maximum white | supported |
 
 ## AUDIO
 
@@ -221,6 +222,7 @@
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | How does a six-month Dominance end, and does a site completed in the last turn count? | recorded |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | How does a six-month Acceptance end, and does a human that always hides get the Big Fat Chicken? | recorded |
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | How do raiders and family-4 gangs plan, when the probe sets them in memory? | recorded |
+| [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -819,6 +821,7 @@
 | [FND-UI-038](../findings/FND-UI-038.md) | The nine-sector display labels its centre row and column and each neighbour's on the frame, the sector view darkens its background with black through bitmap 143, and the Overlord bar animates on timer slot 1 | recorded |
 | [FND-UI-039](../findings/FND-UI-039.md) | The end-of-match planning visit differs from an ordinary one only through the Done light flag and the no-match byte | recorded |
 | [FND-UI-040](../findings/FND-UI-040.md) | Planning entry positions the scenario, calendar and player totals in the console | recorded |
+| [FND-UI-041](../findings/FND-UI-041.md) | The running original draws the completed-match calendar companion in its final city view | recorded |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |
