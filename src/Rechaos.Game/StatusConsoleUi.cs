@@ -36,6 +36,8 @@ public static class StatusConsoleLayout
     public const int WeekLeft = 511;
     public const int RemainingTurnsLeft = 562;
     public const int CompleteLeft = 532;
+    /// <summary>FND-UI-040: the string resource drawn at <see cref="CompleteLeft"/> in the final view.</summary>
+    public const int CompleteString = 19;
     /// <summary>RULE-UI-011: the sector code and the four sector values start at x 568.</summary>
     public const int SectorValueLeft = 568;
     public const int ScenarioY = 6;
@@ -224,10 +226,10 @@ public static class StatusConsoleTooltip
 public static class StatusConsolePresentation
 {
     /// <summary>FND-UI-040, FND-OBJECTIVE-003: the planning-entry countdown excludes this turn.</summary>
-    public static int? RemainingTurns(ScenarioId scenario, GameDuration duration, int currentTurn,
-        bool finalView) => finalView || !ScenarioCatalog.Get(scenario).IsTimed
-        ? null
-        : ScenarioCatalog.TurnLimit(scenario, duration) - currentTurn;
+    public static int? RemainingTurns(ScenarioId scenario, GameDuration duration, int currentTurn) =>
+        ScenarioCatalog.Get(scenario).IsTimed
+            ? ScenarioCatalog.TurnLimit(scenario, duration) - currentTurn
+            : null;
 
     /// <summary>
     /// The status-console SCORE row: the scenario score the last evaluation stored, when the match

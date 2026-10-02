@@ -42,9 +42,13 @@ fields. The player score and cash fields share the same five-cell origin;
 their right boundary is x 580, exclusive. FND-STATE-010 and
 FND-OBJECTIVE-004 identify the player fields.
 
-## Alternatives
+FND-STATE-010 identifies `g_004ABC9C` as set once a match has ended, so
+resource 19 is the final-view caption for every scenario. FND-OBJECTIVE-003
+identifies `g_004A5EF8` as `turn_limit` and `g_0049CA68` as
+`elapsed_turns`, so during play the four timed scenarios show the turns left
+after the one being planned.
 
-FND-STATE-010 identifies the flag as set after match completion. Thus resource 19 is the final-view caption for every scenario. FND-OBJECTIVE-003 identifies the limit and elapsed-turn fields; during play, the four timed scenarios show the limit minus elapsed turns minus 1. The resource was read from the verified executable with Windows LoadLibraryEx in data-file mode and LoadString, without running the game.
+## Alternatives
 
 This reading establishes the planning-entry calls, not every later refresh
 path. The resource text is not reproduced here.
@@ -54,4 +58,5 @@ path. The resource text is not reproduced here.
 Verify the executable against BLD-GOG-EN-1.1, then inspect `fn_0046FD80`
 in Ghidra. Follow the text and number calls immediately after the console
 initialization and before the selected-sector refresh. Decode the point
-arguments and retain the numeric width and leading-zero arguments.
+arguments and retain the numeric width and leading-zero arguments. Read
+string resource 19 from the executable's string table (resource type 6).
