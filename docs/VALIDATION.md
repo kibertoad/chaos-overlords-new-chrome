@@ -12,6 +12,7 @@ Status: maintained canonical procedure
 - [Tests against the original](#tests-against-the-original)
 - [Fixture classes](#fixture-classes)
 - [Native audio backend](#native-audio-backend)
+- [Original pattern resources](#original-pattern-resources)
 - [Failure triage](#failure-triage)
 - [First-planning map comparison without the keyboard footer](#first-planning-map-comparison-without-the-keyboard-footer)
 - [All active-player marker frames in the first planning view](#all-active-player-marker-frames-in-the-first-planning-view)
@@ -44,6 +45,18 @@ checkout and caps MSBuild at two workers by default. Before building, it stops
 only a `Rechaos.Game` process whose executable lives inside this checkout; an
 installed copy and unrelated `dotnet` processes are left alone. MSBuild and
 Roslyn server reuse are retained because both materially speed repeated builds.
+
+On Windows, when the first `dotnet` on PATH is a command shim such as
+`dotnet.cmd`, cmd.exe would read the `&` and `|` of a compound test filter as
+shell operators. The gate then runs a native host instead: the `dotnet.exe` in
+`DOTNET_ROOT`, else the first `dotnet.exe` on PATH, taking only one with an
+`sdk` directory beside it so a runtime-only install is skipped. With no such
+host it warns and keeps the shim. Otherwise, and on Unix, it runs `dotnet` from
+PATH. A focused run that matches no test fails:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Validation.ps1 -TestFilter 'FullyQualifiedName~AudioRoutingTests|FullyQualifiedName~SoundtrackCatalogTests'
+```
 
 Every run is a cold build. Since `de425b9` the script restores, builds and tests
 into a fresh GUID-named directory under the temporary root and deletes it
@@ -522,6 +535,10 @@ This diagnostic intentionally changes decoder position to isolate submission; it
 does not compare audible hardware output. Whole-track decoding alone therefore
 cannot establish the endpoint required by RULE-AUDIO-001. Repairing final-buffer
 submission remains necessary before claiming full soundtrack parity.
+
+## Original pattern resources
+
+`OriginalPatternResourceTests` reads the hash-verified original executable's bytes, walks its PE resource directory for bitmap resources 143, 146 and 147, checks their headers and black and white palettes, and compares all 192 mask bits with the production pattern helper (FND-UI-031, FND-GFX-006). It does not load or execute the original, so it runs on every platform, and it does not store resource bytes in the repository. It requires `GAME_DIR` and skips when the executable is unavailable. This verifies mask shape, palette and row orientation, not raster-operation compositing or rendered-screen parity.
 
 ## Failure triage
 
