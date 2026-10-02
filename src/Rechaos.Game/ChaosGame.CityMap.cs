@@ -141,7 +141,7 @@ public sealed partial class ChaosGame
             if (viewed == player.Id)
                 batch.Draw(_uiSprites, OverlordBarLayout.Marker(seat),
                     OriginalSpriteLayout.ActivePlayerMarker(markerFrame), Color.White);
-            if (PlanningLightLit(player))
+            if (PlanningLightLit(state, player))
                 batch.Draw(_uiSprites, OverlordBarLayout.PlanningLight(seat),
                     OverlordBarLayout.PlanningLightSource, Color.White);
             else
@@ -151,22 +151,16 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// FND-UI-017, FND-UI-043: human seats wait until their planning visit completes,
-    /// including local seats. Final visits retain the completed round's dark lights.
+    /// including local seats. Final visits retain the completed round's dark lights. Online the
+    /// turn waits only on human seats, so a seat is lit while the turn is still waiting on its
+    /// orders.
     /// </summary>
-    private bool PlanningLightLit(MatchPlayerState player)
+    private bool PlanningLightLit(MatchState state, MatchPlayerState player)
     {
         if (_session is null)
-        {
-            var coordinator = _state!.Coordinator;
-            var ordersIn = _state.Outcome is not null || (coordinator.Phase switch
-            {
-                TurnPhase.Command => coordinator.ActivePlayer is { } active && player.Id.Value < active.Value,
-                TurnPhase.Execution or TurnPhase.Hire or TurnPhase.PlayerElimination => true,
-                _ => false,
-            });
             return OverlordBarLayout.PlanningLightLit(
-                player.Setup.Controller == PlayerController.Human, ordersIn);
-        }
+                player.Setup.Controller == PlayerController.Human,
+                OverlordBarLayout.LocalOrdersIn(state, player.Id));
         var ownTurnSent = _online.PlanningIsSubmitted;
         return SeatPlanningPresentation.IsDrafting(
             player.Id.Value, _session.Slot, _online.PlanningIsOpen || ownTurnSent, ownTurnSent,

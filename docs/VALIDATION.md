@@ -652,6 +652,7 @@ This validates the existing correction against a later completed-match state,
 in addition to the first-planning layout tests. It does not establish every
 hire/snub mark, other offer combinations or drag and release behavior. The
 reference screenshots and diagnostic renderer remain outside Git.
+
 ## Completed-state local waiting-light comparison
 
 FND-UI-043 establishes that completing a local human planning visit marks

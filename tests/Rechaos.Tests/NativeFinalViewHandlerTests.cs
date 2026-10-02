@@ -69,6 +69,8 @@ public sealed class NativeFinalViewHandlerTests
         {
             state.Players[2].Setup = state.Players[2].Setup with { Controller = PlayerController.Human };
             state.Players[2].Status = PlayerStatus.Active;
+            // FND-UI-043: every local human completed the last round, so the second light is dark too.
+            Assert.False(LocalPlanningLight(state, state.Players[2]));
         }
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
         GC.SuppressFinalize(game);
@@ -115,10 +117,10 @@ public sealed class NativeFinalViewHandlerTests
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
         GC.SuppressFinalize(game);
-        Field("_state").SetValue(game, state);
         return (bool)typeof(ChaosGame).GetMethod("PlanningLightLit",
-            BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(game, [player])!;
+            BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(game, [state, player])!;
     }
+
     private static FieldInfo Field(string name) => typeof(ChaosGame)
         .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!;
     private static void Call(ChaosGame game, string name) => typeof(ChaosGame)
