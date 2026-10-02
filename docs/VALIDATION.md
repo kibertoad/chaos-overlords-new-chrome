@@ -18,6 +18,7 @@ Status: maintained canonical procedure
 - [Both selected-sector outline states](#both-selected-sector-outline-states)
 - [Completed-state final calendar and report capture](#completed-state-final-calendar-and-report-capture)
 - [Final-entry hire dock comparison](#final-entry-hire-dock-comparison)
+- [Completed-state local waiting-light comparison](#completed-state-local-waiting-light-comparison)
 <!-- doc-index:end -->
 
 ## Validation layers
@@ -651,3 +652,28 @@ This validates the existing correction against a later completed-match state,
 in addition to the first-planning layout tests. It does not establish every
 hire/snub mark, other offer combinations or drag and release behavior. The
 reference screenshots and diagnostic renderer remain outside Git.
+## Completed-state local waiting-light comparison
+
+FND-UI-043 establishes that completing a local human planning visit marks
+that seat's orders as submitted and redraws its waiting light black. The
+next round resets the flags; the final city visits retain the completed
+round's flags. The renderer previously assumed only online play submitted
+orders, leaving the local final-view light lit.
+
+The external EXP-TURN-042 renderer was rebuilt with the committed city-map
+renderer, retaining only its diagnostic marker-frame override. It loaded
+the same actual completed replay save, selected player 0 and Events, froze
+updates, and captured marker frame 8. Compared with the paired original,
+the entire Overlord bar `(18,5,404,32)` matches in all 12928 RGB pixels.
+The human waiting light `(51,30,20,6)` matches in all 120 pixels. No artifact
+exclusion is needed for these regions. The console calendar, entire Events
+panel, three hire portraits and hire-price strip remain exact.
+
+The focused fast gate passed 39 tests, with no skips or build warnings or
+errors, including actual rendering-predicate checks for initial planning,
+an earlier completed local seat, a later waiting human and the completed
+EXP-TURN-041 and EXP-TURN-042 states. The hot-seat transition is a synthetic
+state check against static evidence, not an original multi-human capture.
+The pixel comparison covers one final state and marker frame; later local
+rounds, multiple original human viewers and input timing remain unverified.
+Screenshots, saves and the isolated harness remain outside Git.
