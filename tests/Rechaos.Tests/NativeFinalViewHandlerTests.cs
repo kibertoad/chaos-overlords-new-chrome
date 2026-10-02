@@ -27,7 +27,8 @@ public sealed class NativeFinalViewHandlerTests
         if (syntheticReport)
         {
             // Synthetic reports exercise dismissal; EXP-TURN-041 itself has no
-            // reviewable reports for the first viewer at this endpoint.
+            // reviewable reports for the first viewer at this endpoint, and the
+            // original enters that final city with no report panel open (FND-UI-042).
             AddFinalTurnReport(state, new PlayerId(0));
             if (multipleHumans) AddFinalTurnReport(state, new PlayerId(2));
         }
