@@ -6027,6 +6027,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UPKEEP-001

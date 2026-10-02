@@ -244,12 +244,10 @@ public sealed partial class ChaosGame
         var (year, week) = TurnCalendar(state.Coordinator.Turn);
         // FND-UI-040: separate calendar fields leave the template's separator intact.
         // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
-        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.YearLeft, StatusConsoleLayout.DateY,
-            4 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+        DrawOpaqueNativeFixedWidthValue(batch, pixel, font, year, StatusConsoleLayout.YearLeft,
+            StatusConsoleLayout.DateY, 4);
         batch.Draw(pixel, new Rectangle(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY,
             2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
-        DrawNativeFixedWidthValue(font, batch, year, StatusConsoleLayout.YearLeft,
-            StatusConsoleLayout.DateY, 4);
         font.Draw(batch, week.ToString("00"),
             new Vector2(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
         // FND-UI-040, FND-STATE-010: completion replaces the timed countdown in the final view.
@@ -264,14 +262,11 @@ public sealed partial class ChaosGame
         }
         else if (StatusConsolePresentation.RemainingTurns(state.Setup.Scenario, state.Setup.Duration,
                      state.Coordinator.Turn) is { } remainingTurns)
-        {
-            batch.Draw(pixel, new Rectangle(StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY,
-                3 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
-            DrawNativeFixedWidthValue(font, batch, remainingTurns, StatusConsoleLayout.RemainingTurnsLeft,
-                StatusConsoleLayout.DateY, 3);
-        }
-        DrawPanelValue(font, batch, StatusConsolePresentation.Score(state, player).ToString(),
-            StatusConsoleLayout.ValueRight, StatusConsoleLayout.ScoreY);
+            DrawOpaqueNativeFixedWidthValue(batch, pixel, font, remainingTurns,
+                StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY, 3);
+        // FND-UI-040, RULE-UI-004: five opaque numeric cells, including red unsigned magnitudes.
+        DrawOpaqueNativeFixedWidthValue(batch, pixel, font, StatusConsolePresentation.Score(state, player),
+            StatusConsoleLayout.ScoreLeft, StatusConsoleLayout.ScoreY, StatusConsoleLayout.ScoreCells);
         DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
                 StatusConsolePresentation.UnspentCash(state, player),
                 FinanceProjection.Project(state, player, sectorId: null).CashAdjustment),
@@ -329,9 +324,9 @@ public sealed partial class ChaosGame
     private static void DrawSectorNumber(PixelFont font, SpriteBatch batch, int value, int y, Color color)
     {
         var display = NativeTwoCellNumberPresentation.Format(value, NativeTwoCellNumberPresentation.Kind.Baseline);
-        font.Draw(batch, display.Digits,
+        font.DrawNumber(batch, display,
             new Vector2(StatusConsoleLayout.SectorValueLeft + (2 - display.Digits.Length) * OriginalFontLayout.CellWidth, y),
-            display.IsNegative ? Color.Red : color, 1);
+            display.IsNegative ? Color.Red : color);
     }
 
     /// <summary>A lit console light; a dark one is the console art under it (FND-EVENT-006).</summary>
