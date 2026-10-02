@@ -12,6 +12,7 @@ Status: maintained canonical procedure
 - [Tests against the original](#tests-against-the-original)
 - [Fixture classes](#fixture-classes)
 - [Native audio backend](#native-audio-backend)
+- [Native pattern fill reference](#native-pattern-fill-reference)
 - [Original pattern resources](#original-pattern-resources)
 - [Failure triage](#failure-triage)
 - [First-planning map comparison without the keyboard footer](#first-planning-map-comparison-without-the-keyboard-footer)
@@ -534,6 +535,19 @@ This diagnostic intentionally changes decoder position to isolate submission; it
 does not compare audible hardware output. Whole-track decoding alone therefore
 cannot establish the endpoint required by RULE-AUDIO-001. Repairing final-buffer
 submission remains necessary before claiming full soundtrack parity.
+
+## Native pattern fill reference
+
+`NativePatternFillTests` compares the visible pixels from the production
+pattern-fill helper with Windows `Rectangle` in a new memory DC, which holds the
+default black pen, filled with a solid white brush and with a solid black brush,
+the two fills the game uses (FND-GFX-006). It covers the current production
+rectangle sizes, smaller examples and one-pixel-wide strips, without original
+assets. A separate case records that Windows leaves the initialized scratch bitmap
+of a 1-by-1 rectangle unchanged while the helper draws it black; no current game
+caller fills that size, and the helper parity claim excludes it. The tests check
+fill and outline pixels only. The compositor raster operations and screen
+rendering are unverified. They skip outside Windows.
 
 ## Original pattern resources
 

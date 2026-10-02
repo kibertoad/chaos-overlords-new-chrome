@@ -42,7 +42,10 @@ public static class OriginalPatternMask
     /// first row and column sit at the rectangle's top-left corner, a set bit leaves the
     /// destination (transparent here) and a clear bit takes the fill. The fill is drawn with
     /// <c>Rectangle</c>, whose one-pixel border takes <paramref name="outline"/>, the pen of the
-    /// scratch surface, and whose inside takes <paramref name="fill"/>.
+    /// scratch surface, and whose inside takes <paramref name="fill"/>. Windows writes nothing
+    /// for a 1-by-1 <c>Rectangle</c>, so there the original copies whatever slot 11 already
+    /// held; this helper draws the outline instead. No caller fills that size
+    /// (<c>NativePatternFillTests</c> records the difference).
     /// </summary>
     public static Color[] ShadedRectangle(int resourceId, int width, int height, Color fill, Color outline)
     {
