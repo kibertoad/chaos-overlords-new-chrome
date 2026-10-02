@@ -239,12 +239,37 @@ public sealed partial class ChaosGame
 
         var selectedSector = state.Sectors[_cursor];
         var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
-        var scenario = ScenarioCatalog.Get(state.Setup.Scenario);
-        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.LabelLeft, 14, 44, 8), Color.Black);
-        font.Draw(batch, scenario.Name,
-            new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
-        font.Draw(batch, MatchDate(state.Coordinator.Turn),
-            new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
+        font.Draw(batch, ExecutableStrings.ScenarioTitle(state.Setup.Scenario),
+            new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
+        var (year, week) = TurnCalendar(state.Coordinator.Turn);
+        // FND-UI-040: separate calendar fields leave the template's separator intact.
+        // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
+        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.YearLeft, StatusConsoleLayout.DateY,
+            4 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY,
+            2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+        DrawNativeFixedWidthValue(font, batch, year, StatusConsoleLayout.YearLeft,
+            StatusConsoleLayout.DateY, 4);
+        font.Draw(batch, week.ToString("00"),
+            new Vector2(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
+        // FND-UI-040, FND-STATE-010: completion replaces the timed countdown in the final view.
+        // FND-UI-019: string cells are copied opaquely, like the numeric cells.
+        if (_finalViewPlayer is not null)
+        {
+            var complete = ExecutableStrings.Get(StatusConsoleLayout.CompleteString);
+            batch.Draw(pixel, new Rectangle(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY,
+                complete.Length * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+            font.Draw(batch, complete,
+                new Vector2(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
+        }
+        else if (StatusConsolePresentation.RemainingTurns(state.Setup.Scenario, state.Setup.Duration,
+                     state.Coordinator.Turn) is { } remainingTurns)
+        {
+            batch.Draw(pixel, new Rectangle(StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY,
+                3 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+            DrawNativeFixedWidthValue(font, batch, remainingTurns, StatusConsoleLayout.RemainingTurnsLeft,
+                StatusConsoleLayout.DateY, 3);
+        }
         DrawPanelValue(font, batch, StatusConsolePresentation.Score(state, player).ToString(),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.ScoreY);
         DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
@@ -261,10 +286,7 @@ public sealed partial class ChaosGame
         DrawSectorNumber(font, batch, sectorValues.Tolerance, StatusConsoleLayout.SectorValueY(2),
             selectedSectorChaos.Range.CanTriggerCrackdown(selectedSector.Tolerance) ? Color.OrangeRed : Color.Lime);
         DrawSectorNumber(font, batch, sectorValues.Support, StatusConsoleLayout.SectorValueY(3), Color.Lime);
-        batch.Draw(pixel, StatusConsoleLayout.CashLabel, Color.Black);
-        font.Draw(batch, "CASH",
-            new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.SectorValueY(4)),
-            Color.Lime, 1);
+        // FND-UI-035: the sector Cash label is already present in the background art.
         DrawSectorNumber(font, batch, sectorValues.Cash, StatusConsoleLayout.SectorValueY(4), Color.Lime);
         font.Draw(batch, CityStatusMessage.Clip(_message),
             new Vector2(438, 354), Color.Gold, 1);
@@ -439,9 +461,11 @@ public sealed partial class ChaosGame
     private static string SectorCode(int sectorId) =>
         $"{(char)('A' + sectorId % MatchLimits.BoardWidth)}{sectorId / MatchLimits.BoardWidth + 1}";
 
+    private static (int Year, int Week) TurnCalendar(int turn) => MatchCalendar.Of(Math.Max(0, turn - 1));
+
     private static string MatchDate(int turn)
     {
-        var (year, week) = MatchCalendar.Of(Math.Max(0, turn - 1));
+        var (year, week) = TurnCalendar(turn);
         return $"{year}.{week:00}";
     }
 

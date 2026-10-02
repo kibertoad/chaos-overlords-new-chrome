@@ -4,7 +4,7 @@ namespace Rechaos.Game;
 
 /// <summary>
 /// The texts of the executable's STRING resources that the rebuild draws, by resource number.
-/// RULE-UI-009 and SCR-EVENT-001 name them by number. ExecutableStringTableTests compares every
+/// RULE-UI-009, SCR-EVENT-001 and FND-UI-040 name them by number. ExecutableStringTableTests compares every
 /// one with the string table of BLD-GOG-EN-1.1.
 /// </summary>
 public static class ExecutableStrings
@@ -22,6 +22,8 @@ public static class ExecutableStrings
         [0x08] = "ELIMINATE",
         [0x09] = "BIG MAN",
         [0x0A] = "ARMAGEDDON",
+        // FND-UI-040: the calendar companion in the final planning view.
+        [0x13] = "COMPLETE",
         // SCR-EVENT-001: the Last Turn Events captions.
         [0x21] = "NO EVENTS.",
         [0x22] = "POLICE CRACKDOWN.",
@@ -57,6 +59,9 @@ public static class ExecutableStrings
     public static string Get(int id) => Drawn.TryGetValue(id, out var text)
         ? text
         : throw new ArgumentOutOfRangeException(nameof(id), id, "The rebuild does not draw this string.");
+
+    /// <summary>RULE-UI-009, FND-UI-040: the scenario's title, string resource scenario + 1.</summary>
+    public static string ScenarioTitle(ScenarioId scenario) => Get(ScenarioNumber(scenario) + 1);
 
     /// <summary>
     /// The original's number for a scenario (the glossary's <c>scenario</c>), which orders Siege
