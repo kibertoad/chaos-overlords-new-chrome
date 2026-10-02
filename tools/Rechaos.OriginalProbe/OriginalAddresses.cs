@@ -24,6 +24,9 @@ internal static class OriginalAddresses
     public const uint PrefFullScreen = 0x0048786C;
     public const uint PrefFullScreenCopy = 0x00498354;
 
+    // FND-PLATFORM-009: the depth returned by display setup, used to choose the image set.
+    public const uint DisplayDepth = 0x0048787C;
+
     // FND-OPTIONS-001, FND-OPTIONS-002: Warn if Idle Gangs, which asks before Done ends a turn
     // with a gang left idle (RULE-OPTIONS-003), and Detailed Combat, which plays combat as the
     // detailed presentation.
@@ -78,6 +81,9 @@ internal static class OriginalAddresses
     public const int PlanningPlayerStride = 0x510;
     public const int PlanningRecordSize = 0x10;
     public const uint RaiderMode = 0x00482158;
+
+    // FND-UI-038: the 16-bit counter of the viewed player's marker, 0 to 11.
+    public const uint MarkerCounter = 0x00487B90;
     public const uint Cash = 0x004A25E8;
 
     // FND-SETUP-002: the full local setup handler.

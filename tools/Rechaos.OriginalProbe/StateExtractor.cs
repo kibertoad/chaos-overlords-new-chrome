@@ -26,7 +26,7 @@ internal sealed class StateExtractor
         var rolls = new JsonArray();
         foreach (var roll in trace["Rolls"]!.AsArray())
             rolls.Add(new JsonArray(roll!["Call"]!.GetValue<string>(), roll["Bound"]!.GetValue<int>(), roll["Result"]!.GetValue<int>()));
-        return new JsonObject
+        var run = new JsonObject
         {
             ["rng_state"] = trace["Seed"]!.GetValue<int>(),
             ["done_at_roll"] = doneAtRoll,
@@ -34,6 +34,24 @@ internal sealed class StateExtractor
             ["events"] = new JsonArray(),
             ["end_state"] = extractor.EndState(),
         };
+        // --capture: the drawing area is kept outside the repository and named by its xxh3 under
+        // GAME_DIR/captures. Only agreeing, non-repainting window copies with a stable marker
+        // counter become references; old PrintWindow and counter-only diagnostics do not.
+        var capture = Path.Combine(runDirectory, "capture-blt.bmp");
+        var repeat = Path.Combine(runDirectory, "capture-blt-repeat.bmp");
+        var marker = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>())
+            .FirstOrDefault(note => note.StartsWith("marker_frame ", StringComparison.Ordinal));
+        if (marker is not null && File.Exists(capture) && File.Exists(repeat)
+            && File.ReadAllBytes(capture).AsSpan().SequenceEqual(File.ReadAllBytes(repeat)))
+        {
+            run["capture"] = new JsonObject
+            {
+                ["xxh3"] = Convert.ToHexStringLower(System.IO.Hashing.XxHash128.Hash(File.ReadAllBytes(capture))),
+                ["area"] = new JsonArray(0, 0, 640, 460),
+                ["marker_frame"] = int.Parse(marker["marker_frame ".Length..], System.Globalization.CultureInfo.InvariantCulture),
+            };
+        }
+        return run;
     }
 
     /// <summary>The setup choices a run was recorded with, one line each; none for the defaults.</summary>

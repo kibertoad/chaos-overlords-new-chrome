@@ -28,7 +28,7 @@ static int Usage()
               [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
               [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer_slot:sector>,...] [--sound]
-              [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...]
+              [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--capture]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
         """);
@@ -59,7 +59,8 @@ static int NewGame(string[] args)
         Option(args, "--orders") is { } orders ? ParseOrders(orders) : null,
         args.Contains("--sound"),
         Option(args, "--hires") is { } hires ? ParseHires(hires) : null,
-        ParsePlanning(Option(args, "--families"), Option(args, "--raiders")));
+        ParsePlanning(Option(args, "--families"), Option(args, "--raiders")),
+        args.Contains("--capture"));
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).

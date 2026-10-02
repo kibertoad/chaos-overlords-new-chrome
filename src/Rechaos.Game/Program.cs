@@ -19,7 +19,21 @@ GameCulture.Apply();
 
 string? assetRoot = null;
 var platformSmokeTest = args.Contains("--platform-smoke-test", StringComparer.OrdinalIgnoreCase);
-using var diagnostics = RuntimeDiagnostics.OpenDefault();
+// --reference-frame <save> <bitmap> [--marker-frame <n>]: show the save as a new game's first
+// planning entry, write the drawing area and exit (ReferenceFrameRequest).
+ReferenceFrameRequest? referenceFrame;
+try
+{
+    referenceFrame = ReferenceFrameRequest.ParseArguments(args);
+}
+catch (ArgumentException exception)
+{
+    Console.Error.WriteLine(exception.Message);
+    return 2;
+}
+using var diagnostics = referenceFrame is null
+    ? RuntimeDiagnostics.OpenDefault()
+    : RuntimeDiagnostics.Open(Path.Combine(referenceFrame.UserDataDirectory, "Logs"));
 UnhandledExceptionEventHandler unhandledException = (_, eventArgs) =>
 {
     if (eventArgs.ExceptionObject is Exception exception)
@@ -38,7 +52,8 @@ try
     using var game = new ChaosGame(
         assetRoot,
         args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
-        diagnostics);
+        diagnostics,
+        referenceFrame: referenceFrame);
     if (platformSmokeTest)
         return 0;
     try
