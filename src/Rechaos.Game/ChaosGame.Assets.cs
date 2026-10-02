@@ -20,11 +20,7 @@ public sealed partial class ChaosGame
         if (!transparentWhite) return texture;
         var colors = new Color[texture.Width * texture.Height];
         texture.GetData(colors);
-        for (var index = 0; index < colors.Length; index++)
-            // Native mode-1 copies key the maximum RGB555 white. Depending on
-            // the BMP decoder, a maximum five-bit channel expands to 248 or 255.
-            if (colors[index].R >= 248 && colors[index].G >= 248 && colors[index].B >= 248)
-                colors[index] = Color.Transparent;
+        OriginalWhiteKey.Apply(colors);
         texture.SetData(colors);
         return texture;
     }
