@@ -503,13 +503,16 @@ original's result as the deviation changes it.
 RULE-AUDIO-003 and FND-AUDIO-007 record packed auxiliary-device volume values.
 The left channel is `level * 6400`; at level 6 and above the sign-extended
 addition makes the right channel one lower: 38400/38399 at level 6 and
-64000/63999 at level 10. This is recorded original behavior, not a rebuild
-feature or a requirement derived from the GOG wrapper.
+64000/63999 at level 10. The executable computes these values itself; they do
+not come from the GOG wrapper.
 
 The current effect and music level helpers return the left-channel value divided
-by 65535. Music, effects and the intro movie audio, which takes the effects
-level, each apply one scalar gain, without a separate right channel adjustment. `AudioRoutingTests` and `SoundtrackCatalogTests` compare that
-left-channel conversion only. `NativeAudioLevelApplicationTests` compare actual
+by 65535, and music and effects each apply that one scalar gain to both
+channels. The intro movie audio takes the same effects value, which is correct
+for it: RULE-VIDEO-001 records the movie library setting both channels equal,
+so a repair of the borrow must leave the movie path alone.
+`AudioRoutingTests` and `SoundtrackCatalogTests` compare the left-channel
+conversion only. `NativeAudioLevelApplicationTests` compare actual
 handler volume properties, mute behavior and common application order; they do
 not measure or assert independent channel output.
 
