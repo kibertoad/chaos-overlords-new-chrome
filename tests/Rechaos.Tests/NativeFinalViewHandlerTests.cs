@@ -26,6 +26,24 @@ public sealed class NativeFinalViewHandlerTests
         state.Coordinator.FinishCommand(new PlayerId(0));
         Assert.False(LocalPlanningLight(state, state.Players[0]));
         Assert.True(LocalPlanningLight(state, state.Players[2]));
+        // FND-TURN-006, FND-UI-043: the next turn's upkeep runs before the reset, which
+        // relights both seats for the next planning round.
+        while (state.Coordinator.Phase != TurnPhase.Upkeep)
+        {
+            _ = state.Coordinator.Phase switch
+            {
+                TurnPhase.Command => state.FinishCommand(state.Coordinator.ActivePlayer!.Value),
+                TurnPhase.Execution => state.FinishExecutionPhase(),
+                TurnPhase.Hire => state.FinishHire(state.Coordinator.ActivePlayer!.Value),
+                _ => state.FinishPlayerElimination(),
+            };
+        }
+        Assert.Equal(2, state.Coordinator.Turn);
+        Assert.False(LocalPlanningLight(state, state.Players[0]));
+        Assert.False(LocalPlanningLight(state, state.Players[2]));
+        state.FinishUpkeep();
+        Assert.True(LocalPlanningLight(state, state.Players[0]));
+        Assert.True(LocalPlanningLight(state, state.Players[2]));
     }
 
     [Theory]
@@ -111,8 +129,9 @@ public sealed class NativeFinalViewHandlerTests
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
         GC.SuppressFinalize(game);
-        return (bool)typeof(ChaosGame).GetMethod("PlanningLightLit",
-            BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(game, [state, player])!;
+        var method = typeof(ChaosGame).GetMethod("PlanningLightLit", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new MissingMethodException(nameof(ChaosGame), "PlanningLightLit");
+        return (bool)method.Invoke(game, [state, player])!;
     }
 
     [Fact]
@@ -164,6 +183,7 @@ public sealed class NativeFinalViewHandlerTests
         Field("_actions").SetValue(game, new MatchActions(MatchReplayRecorder.Unverified(state)));
         return (game, (ScreenRouter)Field("_screens").GetValue(game)!);
     }
+
     /// <summary>The player the city screens are drawn for and act as, and the final-view seat.</summary>
     private static void AssertViewer(ChaosGame game, PlayerId expected)
     {

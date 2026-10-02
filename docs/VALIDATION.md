@@ -711,9 +711,10 @@ panel, three hire portraits and hire-price strip remain exact.
 
 The focused fast gate passed 39 tests, with no skips or build warnings or
 errors, including actual rendering-predicate checks for initial planning,
-an earlier completed local seat, a later waiting human and the completed
-EXP-TURN-041 and EXP-TURN-042 states. The hot-seat transition is a synthetic
-state check against static evidence, not an original multi-human capture.
+an earlier completed local seat, a later waiting human, the next turn's
+upkeep and reset, and the completed EXP-TURN-041 and EXP-TURN-042 states.
+The hot-seat transition is a synthetic state checked against static
+evidence; no original multi-human capture covers it.
 The pixel comparison covers one final state and marker frame; later local
 rounds, multiple original human viewers and input timing remain unverified.
 Screenshots, saves and the isolated harness remain outside Git.
