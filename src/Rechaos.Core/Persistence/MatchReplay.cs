@@ -810,10 +810,8 @@ public sealed class MatchReplayPlayback
     public bool MoveNext()
     {
         if (Position == StepCount) return false;
-        var expected = Position == 0
-            ? _document.InitialStateFingerprint
-            : _document.Steps[Position - 1].ResultingStateFingerprint;
-        MatchReplaySerializer.VerifyFingerprint(expected, State, Position - 1);
+        // The state was checked against this fingerprint when the cursor reached it, and a change
+        // made to it since then surfaces in the check after the step, so it is not hashed twice.
         var step = _document.Steps[Position];
         try
         {

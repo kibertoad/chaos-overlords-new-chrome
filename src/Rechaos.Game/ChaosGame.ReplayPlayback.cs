@@ -51,7 +51,7 @@ public sealed partial class ChaosGame
         {
             _message = IncompatibleSave.IsIncompatible(exception)
                 ? "REPLAY INCOMPATIBLE"
-                : exception is FileNotFoundException ? "REPLAY NOT FOUND"
+                : exception is FileNotFoundException or DirectoryNotFoundException ? "REPLAY NOT FOUND"
                 : exception is InvalidDataException ? ReplayVerificationMessage(exception)
                 : "REPLAY LOAD FAILED";
         }
@@ -64,7 +64,9 @@ public sealed partial class ChaosGame
 
     private void UpdateReplayPlayback(GameTime gameTime, KeyboardState keyboard, MouseState mouse)
     {
-        if (_replayPlayback is null) return;
+        // A failed seek closes playback part way through this method, so the later handlers read
+        // this local and SeekReplay and CloseReplayPlayback ignore a viewer that is already shut.
+        if (_replayPlayback is not { } playback) return;
         if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)
             || PointerButtonEdges.Pressed(mouse.RightButton, _previousMouse.RightButton))
         {
@@ -75,10 +77,10 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Space)) _replayPlaying = !_replayPlaying;
         if (Pressed(keyboard, Keys.Up)) _replaySpeed = Math.Min(_replaySpeed + 1, ReplaySpeeds.Length - 1);
         if (Pressed(keyboard, Keys.Down)) _replaySpeed = Math.Max(_replaySpeed - 1, 0);
-        if (Pressed(keyboard, Keys.Left)) SeekReplay(_replayPlayback.Position - 1);
-        if (Pressed(keyboard, Keys.Right)) SeekReplay(_replayPlayback.Position + 1);
+        if (Pressed(keyboard, Keys.Left)) SeekReplay(playback.Position - 1);
+        if (Pressed(keyboard, Keys.Right)) SeekReplay(playback.Position + 1);
         if (Pressed(keyboard, Keys.Home)) SeekReplay(0);
-        if (Pressed(keyboard, Keys.End)) SeekReplay(_replayPlayback.StepCount);
+        if (Pressed(keyboard, Keys.End)) SeekReplay(playback.StepCount);
 
         if (PointerButtonEdges.Pressed(mouse.LeftButton, _previousMouse.LeftButton)
             && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var point)
@@ -87,10 +89,10 @@ public sealed partial class ChaosGame
             switch (Math.Clamp(point.X / ReplayControlWidth, 0, ReplayControlLabels.Length - 1))
             {
                 case 0: SeekReplay(0); break;
-                case 1: SeekReplay(_replayPlayback.Position - 1); break;
+                case 1: SeekReplay(playback.Position - 1); break;
                 case 2: _replayPlaying = !_replayPlaying; break;
-                case 3: SeekReplay(_replayPlayback.Position + 1); break;
-                case 4: SeekReplay(_replayPlayback.StepCount); break;
+                case 3: SeekReplay(playback.Position + 1); break;
+                case 4: SeekReplay(playback.StepCount); break;
                 case 5: _replaySpeed = (_replaySpeed + 1) % ReplaySpeeds.Length; break;
                 default: CloseReplayPlayback(); break;
             }
@@ -103,7 +105,7 @@ public sealed partial class ChaosGame
         while (_replayElapsed >= interval && _replayPlaying && stepsThisFrame++ < 16)
         {
             _replayElapsed -= interval;
-            if (!TryMoveReplay(playback => playback.MoveNext()))
+            if (!TryMoveReplay(cursor => cursor.MoveNext()))
             {
                 _replayPlaying = false;
                 break;
@@ -117,9 +119,9 @@ public sealed partial class ChaosGame
         _replayPlaying = false;
         _replayElapsed = 0;
         var target = Math.Clamp(position, 0, _replayPlayback.StepCount);
-        TryMoveReplay(playback =>
+        TryMoveReplay(cursor =>
         {
-            playback.Seek(target);
+            cursor.Seek(target);
             return true;
         });
     }
@@ -157,6 +159,8 @@ public sealed partial class ChaosGame
 
     private void CloseReplayPlayback()
     {
+        // A second close would restore the null left by the first and drop the live match.
+        if (_replayPlayback is null) return;
         _replayPlayback = null;
         _replayPlaying = false;
         _state = _matchBeforeReplay;
