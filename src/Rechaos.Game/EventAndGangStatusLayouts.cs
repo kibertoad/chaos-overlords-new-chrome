@@ -139,13 +139,18 @@ public static class LastTurnEventsLayout
     /// </summary>
     public static Rectangle Artwork => SharedPanelLayout.At(94, 11, 242, 158);
 
+    /// <summary>
+    /// Where an illustration is drawn. The original uploads every illustration as 158 bottom-up
+    /// rows (FND-GFX-005), so a picture with fewer rows, such as PX06008's 157, keeps its native
+    /// scale along the bottom edge of <see cref="Artwork"/>, and the rows above it stay black
+    /// (DEV-GFX-002). A full-size picture fills the whole area.
+    /// </summary>
     public static Rectangle ArtworkDestination(int textureWidth, int textureHeight)
     {
-        // SCR-EVENT-001, FND-GFX-005, DEV-GFX-002: the short illustration's
-        // valid bottom-up rows sit below the undefined extra top row.
         var area = Artwork;
-        return textureWidth == 242 && textureHeight == 157
-            ? new Rectangle(area.X, area.Y + 1, area.Width, 157) : area;
+        return textureWidth == area.Width && textureHeight > 0 && textureHeight < area.Height
+            ? new Rectangle(area.X, area.Bottom - textureHeight, area.Width, textureHeight)
+            : area;
     }
 
     /// <summary>The researched item's 48-by-48 frame at (296, 190) (SCR-EVENT-001).</summary>
