@@ -59,11 +59,9 @@ public static class HireDockLayout
 
     public static Point Price(int slot)
     {
-        var cell = PriceCell(slot);
-        const int twoGlyphWidth = 11; // 5px glyph + 1px advance + 5px glyph.
-        return new Point(
-            cell.X + (cell.Width - twoGlyphWidth) / 2,
-            cell.Y + 4);
+        ValidateSlot(slot);
+        // SCR-HIRE-002, FND-HIRE-007: the number helper's recorded origin, two cells wide.
+        return new Point(450 + slot * 66, 440);
     }
 
     public static string PriceText(int amount)
