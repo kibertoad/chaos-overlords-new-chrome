@@ -4,7 +4,7 @@ title: Drawing numbers in fixed glyph cells
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-006, FND-UI-004, FND-UI-023, FND-EXE-004]
+evidence: [FND-UI-006, FND-UI-004, FND-UI-023, FND-EXE-004, FND-UI-040]
 conflicting: []
 split_with: []
 related: []
@@ -19,7 +19,8 @@ bright green 0; modifiers show 0 as a dim green 0.
 ## When it runs
 
 Whenever a panel draws a number: Gang, Gang Definition, Hire, Gangs in Sector,
-Item and Site Information.
+Item and Site Information, and the main console's year, remaining turns and
+score (FND-UI-040).
 
 ## Parameters
 
@@ -83,6 +84,11 @@ every panel passes `leading_zeros` 0. `modifier_cells` is the modifier helper.
 - A value with more digits than cells puts its whole leading quotient in the
   first cell: 123 in two cells draws glyph 28, the character `<`, and then 3.
   The strip's glyph after `9` is drawn, so the value shows a punctuation mark.
+- A quotient above 42 addresses a glyph past `Z`, the strip's last character.
+  The cell is still copied from `(96 + 6*q, 0, 6, 7)`, or from source y 8 when
+  negative, so it shows whatever art of `PX00129` lies there. Up to a quotient
+  of 68 the cell lies inside the 512-pixel-wide bitmap; from 69 it would start
+  past the bitmap's right edge.
 
 ## What the sources say
 
@@ -96,3 +102,5 @@ None known.
 
 - Which panels use which helper for which field is listed in FND-UI-006 and in
   each screen entry.
+- What the original draws for a cell that starts past the right edge of
+  `PX00129`, a quotient of 69 or more, has not been recorded.

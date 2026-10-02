@@ -97,7 +97,7 @@ public sealed class UiNavigationTests
         Assert.Equal(481, StatusConsoleLayout.YearLeft);
         Assert.Equal(511, StatusConsoleLayout.WeekLeft);
         Assert.Equal(15, StatusConsoleLayout.DateY);
-        Assert.True(StatusConsoleLayout.Scenario.Contains(481, 12));
+        Assert.Equal(new Rectangle(476, 5, 108, 9), StatusConsoleLayout.Scenario);
         Assert.Equal(new Rectangle(476, 41, 108, 9), StatusConsoleLayout.Cash);
         Assert.Equal(12, StatusConsoleLayout.CashValueMaxCharacters);
         Assert.Equal([60, 69, 78, 87, 96],
@@ -108,22 +108,22 @@ public sealed class UiNavigationTests
     public void CalendarCompanionFollowsOriginalPlanningEntryBranches()
     {
         // FND-UI-040, FND-OBJECTIVE-003, FND-STATE-010.
-        Assert.Equal(562, StatusConsoleLayout.RemainingTurnsLeft);
-        Assert.Equal(532, StatusConsoleLayout.CompleteLeft);
+        Assert.Equal((562, 532), (StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.CompleteLeft));
         foreach (var scenario in Enum.GetValues<ScenarioId>())
         foreach (var duration in Enum.GetValues<GameDuration>())
         {
             var limit = ScenarioCatalog.TurnLimit(scenario, duration);
             var timed = ExecutableStrings.ScenarioNumber(scenario) < 4;
             Assert.Equal(timed ? limit - 1 : (int?)null,
-                StatusConsolePresentation.RemainingTurns(scenario, duration, 1, false));
+                StatusConsolePresentation.RemainingTurns(scenario, duration, 1));
             Assert.Equal(timed ? 0 : (int?)null,
-                StatusConsolePresentation.RemainingTurns(scenario, duration, limit, false));
-            Assert.Null(StatusConsolePresentation.RemainingTurns(scenario, duration, limit, true));
+                StatusConsolePresentation.RemainingTurns(scenario, duration, limit));
         }
-        Assert.Equal("COMPLETE", ExecutableStrings.Get(19));
-        Assert.Equal("THE BIG 40", ExecutableStrings.Get(ExecutableStrings.ScenarioNumber(ScenarioId.Big40) + 1));
+        Assert.Equal((19, "COMPLETE"), (StatusConsoleLayout.CompleteString,
+            ExecutableStrings.Get(StatusConsoleLayout.CompleteString)));
+        Assert.Equal("THE BIG 40", ExecutableStrings.ScenarioTitle(ScenarioId.Big40));
     }
+
     [Fact]
     public void EveryStatusConsoleStatisticHasAnExplanatoryHoverTooltip()
     {
