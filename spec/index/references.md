@@ -6022,6 +6022,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-041](../findings/FND-UI-041.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
 
@@ -6036,6 +6037,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UI-041
@@ -6043,7 +6045,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
-| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UPKEEP-001
 
