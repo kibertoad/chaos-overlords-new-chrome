@@ -43,6 +43,18 @@ only a `Rechaos.Game` process whose executable lives inside this checkout; an
 installed copy and unrelated `dotnet` processes are left alone. MSBuild and
 Roslyn server reuse are retained because both materially speed repeated builds.
 
+On Windows, when the first `dotnet` on PATH is a command shim such as
+`dotnet.cmd`, cmd.exe would read the `&` and `|` of a compound test filter as
+shell operators. The gate then runs a native host instead: the `dotnet.exe` in
+`DOTNET_ROOT`, else the first `dotnet.exe` on PATH, taking only one with an
+`sdk` directory beside it so a runtime-only install is skipped. With no such
+host it warns and keeps the shim. Otherwise, and on Unix, it runs `dotnet` from
+PATH. A focused run that matches no test fails:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Validation.ps1 -TestFilter 'FullyQualifiedName~AudioRoutingTests|FullyQualifiedName~SoundtrackCatalogTests'
+```
+
 Every run is a cold build. Since `de425b9` the script restores, builds and tests
 into a fresh GUID-named directory under the temporary root and deletes it
 afterwards, so no `obj` or `bin` from a previous run — or from an editor — takes
