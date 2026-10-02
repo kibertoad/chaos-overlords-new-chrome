@@ -13,12 +13,14 @@ public sealed class NativeFinalViewHandlerTests
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]
-    public void ReadyAndDoneVisitFinalViewersWithoutResolvingAnotherTurn(bool multipleHumans, bool syntheticReport)
+    [InlineData(false, false, "EXP-TURN-042")]
+    public void ReadyAndDoneVisitFinalViewersWithoutResolvingAnotherTurn(bool multipleHumans, bool syntheticReport,
+        string experiment = "EXP-TURN-041")
     {
-        // FND-OBJECTIVE-004, FND-STATE-010, EXP-TURN-041: final views precede awards.
+        // FND-OBJECTIVE-004, FND-STATE-010, EXP-TURN-041, EXP-TURN-042: final views precede awards.
         var flags = BindingFlags.NonPublic | BindingFlags.Static;
         var replayType = typeof(OriginalNewGameExperimentTests);
-        var recorded = replayType.GetMethod("Run", flags)!.Invoke(null, ["EXP-TURN-041", 0]);
+        var recorded = replayType.GetMethod("Run", flags)!.Invoke(null, [experiment, 0]);
         object?[] replayArguments = [recorded, 0];
         var state = (MatchState)replayType.GetMethod("StartMatch", flags)!.Invoke(null, replayArguments)!;
         Assert.NotNull(state.Outcome);
@@ -57,7 +59,8 @@ public sealed class NativeFinalViewHandlerTests
             Assert.Equal(ClientScreen.Handoff, router.Current);
             Call(game, "FinishHandoff");
         }
-        Assert.Equal(syntheticReport ? ClientScreen.Events : ClientScreen.City, router.Current);
+        Assert.Equal(syntheticReport || experiment == "EXP-TURN-042" ? ClientScreen.Events : ClientScreen.City,
+            router.Current);
         CloseReports(game, router);
         Call(game, "AdvanceTurn");
         if (multipleHumans)
