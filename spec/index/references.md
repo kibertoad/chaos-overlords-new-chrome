@@ -1292,7 +1292,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
@@ -6061,7 +6061,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body |
-| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UPKEEP-001
 

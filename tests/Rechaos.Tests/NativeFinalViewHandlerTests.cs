@@ -59,8 +59,19 @@ public sealed class NativeFinalViewHandlerTests
             Assert.Equal(ClientScreen.Handoff, router.Current);
             Call(game, "FinishHandoff");
         }
-        Assert.Equal(syntheticReport || experiment == "EXP-TURN-042" ? ClientScreen.Events : ClientScreen.City,
+        // EXP-TURN-042: the original opens Last Turn Events at a final entry whose viewer holds a
+        // report from the last resolution; EXP-TURN-041's viewer holds none and sees the city.
+        var originalReports = (int)recorded!.GetType().GetMethod("Term")!
+            .Invoke(recorded, ["last_turn_report_count", 0])!;
+        Assert.Equal(syntheticReport || originalReports > 0 ? ClientScreen.Events : ClientScreen.City,
             router.Current);
+        if (!syntheticReport)
+        {
+            // The panel pages through the reports the replay comparator matches with the original.
+            var shown = (IReadOnlyList<GameNotification>)typeof(ChaosGame).GetMethod("ReviewableReports",
+                BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(game, [state, new PlayerId(0)])!;
+            Assert.Equal(originalReports, shown.Count);
+        }
         CloseReports(game, router);
         Call(game, "AdvanceTurn");
         if (multipleHumans)
