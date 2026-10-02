@@ -55,6 +55,7 @@ public sealed class SoundtrackCatalogTests
     [Theory]
     [InlineData(0, 0)]
     [InlineData(5, 32000)]
+    [InlineData(6, 38400)]
     [InlineData(10, 64000)]
     // RULE-AUDIO-003, FND-AUDIO-007: this checks the original left channel only.
     // A scalar gain does not reproduce the right-channel borrow from level 6 upward.

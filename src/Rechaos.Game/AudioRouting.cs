@@ -117,6 +117,8 @@ public static class AudioRouting
         return $"SND005{index:00}.wav";
     }
 
+    /// <summary>RULE-AUDIO-003, FND-AUDIO-007: the left channel of the effects volume as one
+    /// scalar gain. The right channel's one-unit borrow from level 6 upward is not reproduced.</summary>
     public static float EffectVolumeForLevel(int level)
     {
         if (level is < MinimumEffectVolumeLevel or > MaximumEffectVolumeLevel)

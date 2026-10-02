@@ -507,8 +507,8 @@ addition makes the right channel one lower: 38400/38399 at level 6 and
 feature or a requirement derived from the GOG wrapper.
 
 The current effect and music level helpers return the left-channel value divided
-by 65535. Both playback paths apply one scalar gain, without a separate right
-channel adjustment. `AudioRoutingTests` and `SoundtrackCatalogTests` compare that
+by 65535. Music, effects and the intro movie audio, which takes the effects
+level, each apply one scalar gain, without a separate right channel adjustment. `AudioRoutingTests` and `SoundtrackCatalogTests` compare that
 left-channel conversion only. `NativeAudioLevelApplicationTests` compare actual
 handler volume properties, mute behavior and common application order; they do
 not measure or assert independent channel output.

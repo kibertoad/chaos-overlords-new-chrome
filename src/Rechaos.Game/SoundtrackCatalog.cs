@@ -60,6 +60,8 @@ public static class OriginalSoundtrackPolicy
             || current == ClientScreen.Title
                 && previous is not (ClientScreen.Setup or ClientScreen.Online or ClientScreen.Lobby));
 
+    /// <summary>RULE-AUDIO-003, FND-AUDIO-007: the left channel of the music volume as one
+    /// scalar gain. The right channel's one-unit borrow from level 6 upward is not reproduced.</summary>
     public static float VolumeForLevel(int level)
     {
         if (level is < MinimumVolumeLevel or > MaximumVolumeLevel)
