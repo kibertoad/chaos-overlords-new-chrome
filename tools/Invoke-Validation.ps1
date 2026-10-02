@@ -39,34 +39,44 @@ $validationBuildRoot = Join-Path $temporaryRoot (
     "rechaos-validation-$($repositoryIdentity.Substring(0, 16))-$([Guid]::NewGuid().ToString('N'))")
 $lock = $null
 
-# A batch/command shim on PATH may reinterpret test filters containing & or |.
-# Honour DOTNET_ROOT when it contains the native host; otherwise resolve that host
-# explicitly on Windows rather than a dotnet.cmd wrapper. Unix keeps dotnet's name.
-# A DOTNET_ROOT that cannot be probed (a missing drive, which Windows PowerShell's Join-Path
-# rejects, or characters a path cannot hold) falls through to PATH instead of aborting. With no
-# native host on PATH, the plain command name is kept as before, so an unfiltered run still works
-# through a shim; only compound filters are at risk there.
-$dotnetHostName = if ($isWindowsHost) { 'dotnet.exe' } else { 'dotnet' }
-$dotnetRootHost = $null
-if ($env:DOTNET_ROOT) {
+# On Windows the first `dotnet` on PATH can be a dotnet.cmd shim. cmd.exe reparses its
+# arguments, so the & and | of a compound -TestFilter run as shell operators instead of reaching
+# the test runner. Only then does the script pick a native host itself: the dotnet.exe in
+# DOTNET_ROOT, else the first dotnet.exe on PATH, in either case only one with an `sdk`
+# directory beside it, because a runtime-only install (often C:\Program Files\dotnet) cannot
+# restore or build. A DOTNET_ROOT that cannot be probed (a missing drive, characters a path
+# cannot hold) is skipped. With no such host the shim is kept, so an unfiltered run still works;
+# only compound filters are at risk there. When the first `dotnet` is a native host, and on
+# Unix, the plain command name runs as before.
+function Test-DotnetSdkHost {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
     try {
-        $candidate = [IO.Path]::Combine($env:DOTNET_ROOT, $dotnetHostName)
-        if (Test-Path -LiteralPath $candidate -PathType Leaf) { $dotnetRootHost = $candidate }
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
+        $sdkRoot = Join-Path ([IO.Path]::GetDirectoryName($Path)) 'sdk'
+        return [bool](Get-ChildItem -LiteralPath $sdkRoot -Directory -ErrorAction Stop | Select-Object -First 1)
     }
     catch {
-        Write-Warning "DOTNET_ROOT could not be probed for $dotnetHostName; resolving the host from PATH."
+        return $false
     }
 }
-$dotnetExecutable = if ($dotnetRootHost) {
-    $dotnetRootHost
-} else {
-    $nativeHost = Get-Command -Name $dotnetHostName -CommandType Application -ErrorAction SilentlyContinue |
-        Select-Object -First 1
+
+$dotnetExecutable = 'dotnet'
+$pathDotnet = Get-Command -Name 'dotnet' -CommandType Application -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+if ($isWindowsHost -and $pathDotnet -and [IO.Path]::GetExtension($pathDotnet.Source) -ne '.exe') {
+    $hostCandidates = @()
+    if ($env:DOTNET_ROOT) {
+        try { $hostCandidates += [IO.Path]::Combine($env:DOTNET_ROOT, 'dotnet.exe') } catch { }
+    }
+    $hostCandidates += @(Get-Command -Name 'dotnet.exe' -CommandType Application -All -ErrorAction SilentlyContinue |
+        ForEach-Object { $_.Source })
+    $nativeHost = $hostCandidates | Where-Object { Test-DotnetSdkHost -Path $_ } | Select-Object -First 1
     if ($nativeHost) {
-        $nativeHost.Source
-    } else {
-        Write-Warning "No native $dotnetHostName was found on PATH; test filters containing & or | may not reach the runner intact."
-        'dotnet'
+        $dotnetExecutable = $nativeHost
+    }
+    else {
+        Write-Warning "The first dotnet on PATH is $($pathDotnet.Source), and no native dotnet.exe with an SDK was found; test filters containing & or | may not reach the runner intact."
     }
 }
 
