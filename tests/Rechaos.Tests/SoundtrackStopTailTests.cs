@@ -29,11 +29,11 @@ public sealed class SoundtrackStopTailTests
         try
         {
             player.PlayProgram([shortSong]);
-            WaitFor(() => DesktopGlSoundtrackCompletionState.Pending);
+            WaitFor(() => DesktopGlSoundtrackStreaming.IsPending(shortSong));
             lock (prepareMutex)
             {
                 Assert.Equal(MediaState.Playing, MediaPlayer.State);
-                Assert.True(DesktopGlSoundtrackCompletionState.Pending);
+                Assert.True(DesktopGlSoundtrackStreaming.IsPending(shortSong));
                 SetNativeLooping(oldStream, false);
                 player.PlayProgram([longSong]);
             }
@@ -50,7 +50,7 @@ public sealed class SoundtrackStopTailTests
         }
     }
 
-    private static void SetNativeLooping(object stream, bool value)
+    internal static void SetNativeLooping(object stream, bool value)
     {
         var sourceId = (int)stream.GetType().GetField("alSourceId", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(stream)!;
         var assembly = typeof(SoundEffect).Assembly;
@@ -61,9 +61,9 @@ public sealed class SoundtrackStopTailTests
         setter.Invoke(null, [sourceId, Enum.Parse(sourceBoolean, "Looping"), value]);
     }
 
-    private static object OggStreamOf(Song song) => typeof(Song).GetField("stream", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(song)!;
+    internal static object OggStreamOf(Song song) => typeof(Song).GetField("stream", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(song)!;
 
-    private static void WaitFor(Func<bool> condition)
+    internal static void WaitFor(Func<bool> condition)
     {
         var timeout = Stopwatch.StartNew();
         while (!condition() && timeout.Elapsed < TimeSpan.FromSeconds(10))
