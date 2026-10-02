@@ -6027,6 +6027,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UI-041
