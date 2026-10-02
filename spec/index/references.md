@@ -6012,6 +6012,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-041](../findings/FND-UI-041.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
 
@@ -6032,7 +6033,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UPKEEP-001
 
