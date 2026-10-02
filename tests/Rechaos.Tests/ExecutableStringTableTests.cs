@@ -8,7 +8,8 @@ namespace Rechaos.Tests;
 /// <summary>
 /// Compares every executable string the rebuild draws (<see cref="ExecutableStrings"/>) with the
 /// STRING resources of BLD-GOG-EN-1.1's executable: the scenario names, Mentalities, time limits,
-/// lengths and player labels of RULE-UI-009 and the captions of SCR-EVENT-001.
+/// lengths and player labels of RULE-UI-009, the captions of SCR-EVENT-001 and the final-view
+/// calendar companion of FND-UI-040.
 /// </summary>
 public sealed class ExecutableStringTableTests
 {
@@ -33,8 +34,10 @@ public sealed class ExecutableStringTableTests
     [Fact]
     public void DrawnStringsCoverEveryNumberTheEntriesName()
     {
-        // RULE-UI-009 reads 1 to 10 and 0x2E to 0x3C, SCR-EVENT-001 reads 33 to 44.
+        // RULE-UI-009 reads 1 to 10 and 0x2E to 0x3C, SCR-EVENT-001 reads 33 to 44, FND-UI-040
+        // reads 19.
         var expected = Enumerable.Range(1, 10)
+            .Append(19)
             .Concat(Enumerable.Range(33, 12))
             .Concat(Enumerable.Range(0x2E, 0x3C - 0x2E + 1));
         Assert.Equal(expected.Order(), ExecutableStrings.Drawn.Keys.Order());
