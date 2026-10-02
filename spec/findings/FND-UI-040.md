@@ -44,9 +44,12 @@ FND-OBJECTIVE-004 identify the player fields.
 
 FND-STATE-010 identifies `g_004ABC9C` as set once a match has ended, so
 resource 19 is the final-view caption for every scenario. FND-OBJECTIVE-003
-identifies `g_004A5EF8` as `turn_limit` and `g_0049CA68` as
-`elapsed_turns`, so during play the four timed scenarios show the turns left
-after the one being planned.
+identifies `g_004A5EF8` as `turn_limit`, `g_0049CA68` as
+`elapsed_turns` and scenario values 0 to 3 as the four timed scenarios. The
+calendar is therefore `elapsed_turns` split into 52-week years from 2050, and
+the three-cell field at `(562,15)` is `turn_limit - elapsed_turns - 1`, drawn
+only in a timed scenario while the flag is zero. During play it shows the turns
+left after the one being planned.
 
 ## Alternatives
 

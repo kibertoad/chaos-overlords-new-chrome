@@ -239,11 +239,11 @@ public sealed partial class ChaosGame
 
         var selectedSector = state.Sectors[_cursor];
         var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
-        // FND-UI-040: separate calendar fields leave the template's separator intact.
         font.Draw(batch, ExecutableStrings.ScenarioTitle(state.Setup.Scenario),
             new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
-        var (year, week) = MatchCalendar.Of(Math.Max(0, state.Coordinator.Turn - 1));
-        // FND-UI-004: numeric cells are opaque, including their blank pixels.
+        var (year, week) = TurnCalendar(state.Coordinator.Turn);
+        // FND-UI-040: separate calendar fields leave the template's separator intact.
+        // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
         batch.Draw(pixel, new Rectangle(StatusConsoleLayout.YearLeft, StatusConsoleLayout.DateY,
             4 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
         batch.Draw(pixel, new Rectangle(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY,
@@ -461,9 +461,11 @@ public sealed partial class ChaosGame
     private static string SectorCode(int sectorId) =>
         $"{(char)('A' + sectorId % MatchLimits.BoardWidth)}{sectorId / MatchLimits.BoardWidth + 1}";
 
+    private static (int Year, int Week) TurnCalendar(int turn) => MatchCalendar.Of(Math.Max(0, turn - 1));
+
     private static string MatchDate(int turn)
     {
-        var (year, week) = MatchCalendar.Of(Math.Max(0, turn - 1));
+        var (year, week) = TurnCalendar(turn);
         return $"{year}.{week:00}";
     }
 
