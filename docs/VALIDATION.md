@@ -36,20 +36,21 @@ not imply a pass at the next:
 ./tools/Invoke-Validation.ps1
 ```
 
+This is the canonical local validation entry point. It serializes runs for the
+checkout and caps MSBuild at two workers by default. Before building, it stops
+only a `Rechaos.Game` process whose executable lives inside this checkout; an
+installed copy and unrelated `dotnet` processes are left alone. MSBuild and
+Roslyn server reuse are retained because both materially speed repeated builds.
+
 The gate resolves the native .NET host from `DOTNET_ROOT` when available, or
-`dotnet.exe` on the Windows PATH (`dotnet` on Unix). This preserves test-filter
+`dotnet.exe` on the Windows PATH (`dotnet` on Unix), and warns and falls back to
+the plain `dotnet` command when PATH has no native host. This preserves test-filter
 operators through invocation when a command shim appears first on PATH. Focused
 runs retain the default exclusion of long-running tests and reject empty selections:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Validation.ps1 -TestFilter 'FullyQualifiedName~AudioRoutingTests|FullyQualifiedName~SoundtrackCatalogTests'
 ```
-
-This is the canonical local validation entry point. It serializes runs for the
-checkout and caps MSBuild at two workers by default. Before building, it stops
-only a `Rechaos.Game` process whose executable lives inside this checkout; an
-installed copy and unrelated `dotnet` processes are left alone. MSBuild and
-Roslyn server reuse are retained because both materially speed repeated builds.
 
 Every run is a cold build. Since `de425b9` the script restores, builds and tests
 into a fresh GUID-named directory under the temporary root and deletes it

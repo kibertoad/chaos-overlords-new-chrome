@@ -12,6 +12,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+# Windows PowerShell 5.1 has no $IsWindows, and runs only on Windows.
+$isWindowsHost = ($PSVersionTable.PSEdition -eq 'Desktop') -or $IsWindows
 $sha256 = [Security.Cryptography.SHA256]::Create()
 try {
     # -TestFilter combines with -IncludeLongRunningTests (the filter then may reach long-running
@@ -23,8 +25,8 @@ try {
     # The lock and build roots are keyed by the checkout's path. Windows and macOS file systems are
     # case-insensitive by default, so two spellings of one checkout must share a lock there; on
     # Linux they are two checkouts, and folding them together would make one refuse to run while
-    # the other validates. Windows PowerShell 5.1 has no $IsWindows, and runs only on Windows.
-    $caseInsensitivePaths = ($PSVersionTable.PSEdition -eq 'Desktop') -or $IsWindows -or $IsMacOS
+    # the other validates.
+    $caseInsensitivePaths = $isWindowsHost -or $IsMacOS
     $identityPath = if ($caseInsensitivePaths) { $repositoryRoot.ToUpperInvariant() } else { $repositoryRoot }
     $repositoryHash = $sha256.ComputeHash([Text.Encoding]::UTF8.GetBytes($identityPath))
 }
@@ -40,17 +42,32 @@ $lock = $null
 # A batch/command shim on PATH may reinterpret test filters containing & or |.
 # Honour DOTNET_ROOT when it contains the native host; otherwise resolve that host
 # explicitly on Windows rather than a dotnet.cmd wrapper. Unix keeps dotnet's name.
-$dotnetHostName = if ($PSVersionTable.PSEdition -eq 'Desktop' -or $IsWindows) {
-    'dotnet.exe'
-} else {
-    'dotnet'
+# A DOTNET_ROOT that cannot be probed (a missing drive, which Windows PowerShell's Join-Path
+# rejects, or characters a path cannot hold) falls through to PATH instead of aborting. With no
+# native host on PATH, the plain command name is kept as before, so an unfiltered run still works
+# through a shim; only compound filters are at risk there.
+$dotnetHostName = if ($isWindowsHost) { 'dotnet.exe' } else { 'dotnet' }
+$dotnetRootHost = $null
+if ($env:DOTNET_ROOT) {
+    try {
+        $candidate = [IO.Path]::Combine($env:DOTNET_ROOT, $dotnetHostName)
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) { $dotnetRootHost = $candidate }
+    }
+    catch {
+        Write-Warning "DOTNET_ROOT could not be probed for $dotnetHostName; resolving the host from PATH."
+    }
 }
-$dotnetExecutable = if ($env:DOTNET_ROOT -and
-        (Test-Path -LiteralPath (Join-Path $env:DOTNET_ROOT $dotnetHostName) -PathType Leaf)) {
-    Join-Path $env:DOTNET_ROOT $dotnetHostName
+$dotnetExecutable = if ($dotnetRootHost) {
+    $dotnetRootHost
 } else {
-    (Get-Command -Name $dotnetHostName -CommandType Application -ErrorAction Stop |
-        Select-Object -First 1).Source
+    $nativeHost = Get-Command -Name $dotnetHostName -CommandType Application -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if ($nativeHost) {
+        $nativeHost.Source
+    } else {
+        Write-Warning "No native $dotnetHostName was found on PATH; test filters containing & or | may not reach the runner intact."
+        'dotnet'
+    }
 }
 
 function Invoke-CheckedDotnet {
