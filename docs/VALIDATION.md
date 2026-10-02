@@ -648,8 +648,8 @@ picks each one from the sector's state, and no timer cycles them.
 An isolated capture from the actual completed EXP-TURN-042 replay exposed a
 presentation error: its coordinator had moved to turn 27, while the original
 final visit still held elapsed turns 25. Reading the coordinator directly drew
-console week 27 and report week 26. The prior final-calendar diagnostic forced
-turn 26 and therefore did not test this completed-state integration.
+console week 27 and report week 26. A diagnostic that sets the turn to 26
+directly does not exercise this completed state, so it cannot catch the error.
 
 The city and Events renderers now derive presentation elapsed turns from the
 outcome turn after completion, and from the coordinator during an active match.
