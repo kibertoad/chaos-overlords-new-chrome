@@ -25,7 +25,8 @@ public sealed class NativeFinalViewHandlerTests
         if (syntheticReport)
         {
             // Synthetic report exercises dismissal; EXP-TURN-041 itself has no
-            // reviewable reports for the first viewer at this endpoint.
+            // reviewable reports for the first viewer at this endpoint, and the
+            // original enters that final city with no report panel open (FND-UI-042).
             var queue = (NotificationQueue)typeof(MatchState).GetMethod("GetNotificationQueue",
                 BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(state, [new PlayerId(0)])!;
             queue.Enqueue(new GameNotification(long.MaxValue, state.Outcome.Turn,
