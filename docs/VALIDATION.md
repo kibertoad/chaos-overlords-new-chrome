@@ -14,6 +14,7 @@ Status: maintained canonical procedure
 - [Native audio backend](#native-audio-backend)
 - [Original pattern resources](#original-pattern-resources)
 - [Failure triage](#failure-triage)
+- [First-planning map comparison without the keyboard footer](#first-planning-map-comparison-without-the-keyboard-footer)
 <!-- doc-index:end -->
 
 ## Validation layers
@@ -554,3 +555,25 @@ Classify mismatches as:
 
 Reduce a failure to the earliest mismatching phase hash. Preserve the smallest
 replay and all source identities needed to reproduce it.
+
+## First-planning map comparison without the keyboard footer
+
+On 2026-10-02, the deterministic first-planning-entry capture of the
+EXP-SETUP-001 state (seed 52421) at selection-marker frame 6 was compared over
+map rectangle `(2,42,432,416)`. The original window capture and rebuild
+differed in 5,763 RGB pixels. Of these, 5,088 had exact-white original pixels
+and were classified as the Windows 11 white-block artifacts that FND-UI-041
+notes in the city. All 675 remaining differences occurred at y 439 through
+445, where the rebuild draws the mandatory keyboard footer (DEV-UI-023).
+
+An external diagnostic build using the corrected console renderer omitted
+only that footer draw. It produced zero differing nonwhite pixels over the
+same map rectangle; the 5,088 original-white differences remained. The game
+implementation retains its documented footer. Captures, diagnostic projects
+and original memory remain outside Git.
+
+This comparison supports the unaffected map pixels of one fixed state and
+frame. Pixels that are exact white in the original capture were set aside as
+capture artifacts, so the rebuild's sprites under them remain unchecked. It
+does not establish all marker frames, every selected sector, search overlays,
+pointer states or whole-screen parity.
