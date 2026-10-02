@@ -42,7 +42,7 @@ public static class GameInformationPresentation
     public static string ScenarioLabel(ScenarioId scenario, GameDuration duration)
     {
         var number = ExecutableStrings.ScenarioNumber(scenario);
-        var name = ExecutableStrings.Get(number + 1);
+        var name = ExecutableStrings.ScenarioTitle(scenario);
         if (number > 3) return name;
         var turnLimit = ScenarioCatalog.Turns(duration);
         // A length outside the four leaves the name in the suffix.

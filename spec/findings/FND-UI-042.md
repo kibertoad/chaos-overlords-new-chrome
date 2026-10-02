@@ -33,10 +33,13 @@ white-block artifacts do not change the tracked panel count.
 ## Interpretation
 
 This particular final entry has no automatic report panel to dismiss. It
-supports the direct-city branch for the recorded endpoint and rules out
-the possibility that FND-UI-041 reached that city only by dismissing a
-final-entry report. FND-UI-039 still supports ordinary presentation work
-during final visits; this run does not demonstrate its report-bearing path.
+supports the direct-city branch for the recorded endpoint. Because this run
+repeats the seed of FND-UI-041 and reaches the same 10647-call endpoint, it
+also rules out the possibility that FND-UI-041 reached that city only by
+dismissing a final-entry report. FND-UI-039 reads the final visit as an ordinary planning
+visit apart from the Done light and the no-match byte, so a final entry whose
+last turn left reports would open them as an ordinary entry does; this run
+does not exercise that path.
 
 ## Alternatives
 
@@ -47,8 +50,10 @@ controlled input do not reproduce uninterrupted input timing.
 
 ## How to reproduce
 
-Repeat FND-UI-041 with panel entry and return tracking enabled. Dismiss
-ordinary planning-entry reports before Done. At match completion, stop
-before the final-entry dismissal call, record the open-panel count and
-elapsed turns, and capture the window twice without repainting. Verify
-the 10647-call endpoint and that awards have not been entered.
+Repeat FND-UI-041 with breakpoints at the entry and return of the Combat
+Results handler `fn_00451F80` and the Last Turn Events handler `fn_0044F2FC`
+(FND-AUDIO-011), counting the panels open between them. Press Exit on each
+ordinary planning-entry panel before Done. At match completion, stop before
+pressing Exit on any panel or pressing Done, record the open-panel count and
+elapsed turns, and capture the window twice without repainting. Verify the
+10647-call endpoint and that awards have not been entered.

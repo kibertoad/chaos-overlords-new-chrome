@@ -415,8 +415,11 @@ public sealed partial class ChaosGame
         LastTurnReportRecord record)
     {
         var artworkIndex = LastTurnEventPresentation.ArtworkIndex(notification, related);
+        // DEV-GFX-002: a short illustration keeps its native scale and bottom edge; the rows above
+        // it keep the black that DrawLastTurnEventsFrame fills the artwork area with.
         if (artworkIndex > 0 && _lastTurnEventArtwork[artworkIndex] is { } artwork)
-            batch.Draw(artwork, LastTurnEventsLayout.Artwork, Color.White);
+            batch.Draw(artwork,
+                LastTurnEventsLayout.ArtworkDestination(artwork.Width, artwork.Height), Color.White);
         // SCR-EVENT-001: the researched item starts at frame 0 when the panel opens and after
         // each page change.
         if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId
