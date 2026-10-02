@@ -35,6 +35,11 @@ public sealed partial class OriginalImageFileTests
                 throw new InvalidDataException(
                     $"the runtime decoder gives {decodedWidth} x {decodedHeight}, expected {size.Width} x {size.Height}");
             var rgba = (byte[])resultType.GetProperty("Data")!.GetValue(result)!;
+            var keyed = new Microsoft.Xna.Framework.Color[size.Width * size.Height];
+            for (var p = 0; p < keyed.Length; p++)
+                keyed[p] = new Microsoft.Xna.Framework.Color(rgba[p * 4], rgba[p * 4 + 1],
+                    rgba[p * 4 + 2], rgba[p * 4 + 3]);
+            Rechaos.Game.OriginalWhiteKey.Apply(keyed);
             var info = repaired.AsSpan(14, 40).ToArray();
             var outputInfo = (byte[])info.Clone();
             BitConverter.TryWriteBytes(outputInfo.AsSpan(14), (short)32);
@@ -51,6 +56,7 @@ public sealed partial class OriginalImageFileTests
                 if (!GdiFlush()) throw new InvalidDataException("GdiFlush failed");
                 var native = new byte[size.Width * size.Height * 4];
                 Marshal.Copy(pixels, native, 0, native.Length);
+                var stride = (size.Width * 2 + 3) & ~3;
                 var width = Math.Min(documented.Width, size.Width);
                 for (var y = 0; y < Math.Min(documented.Height, size.Height); y++)
                 for (var x = 0; x < width; x++)
@@ -62,6 +68,16 @@ public sealed partial class OriginalImageFileTests
                         throw new InvalidDataException(
                             $"pixel ({x}, bottom-up row {y}) is RGB {rgba[top]}, {rgba[top + 1]}, {rgba[top + 2]}, " +
                             $"SetDIBits gives {native[bottom + 2]}, {native[bottom + 1]}, {native[bottom]}");
+                    // RULE-GFX-003, FMT-GFX-001: the expected key comes from
+                    // the packed file pixel, so a decoder that moves a near-white
+                    // channel across the production threshold fails here. RGB555
+                    // leaves bit 15 unused and both decoders drop it.
+                    var packed = BitConverter.ToUInt16(repaired, 54 + y * stride + x * 2);
+                    var expected = (packed & 0x7fff) == 0x7fff ? Microsoft.Xna.Framework.Color.Transparent
+                        : new Microsoft.Xna.Framework.Color(rgba[top], rgba[top + 1], rgba[top + 2], rgba[top + 3]);
+                    if (keyed[top / 4] != expected)
+                        throw new InvalidDataException($"White key mismatch at ({x}, bottom-up {y}): packed 0x{packed:X4}, "
+                            + $"expected {expected}, got {keyed[top / 4]}.");
                 }
             }
             finally
