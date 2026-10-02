@@ -9,7 +9,7 @@ byte_order: little
 size: 60208
 text: false
 definition: fmt_help_001.ksy
-evidence: [FND-HELP-003, FND-HELP-001, FND-HELP-002, FND-HELP-005, FND-ASSET-001, FND-DATA-006]
+evidence: [FND-HELP-003, FND-HELP-001, FND-HELP-002, FND-HELP-005, FND-HELP-006, FND-ASSET-001, FND-DATA-006]
 conflicting: []
 split_with: []
 related: [RULE-HELP-001]
@@ -24,8 +24,8 @@ that would hand it to the Windows help viewer, but nothing reaches that call, so
 the game never opens the file (RULE-HELP-001, FND-HELP-005). The field names follow the public
 description of the WinHelp format. This entry describes the container, the
 directory and the internal file headers; the contents of the internal files
-are left as blocks of bytes, and FND-HELP-001 and FND-HELP-002 record what
-was read from `|CONTEXT`, `|CTXOMAP`, `|FONT` and `|TOPIC`.
+are left as blocks of bytes, and FND-HELP-001, FND-HELP-002 and FND-HELP-006
+record what was read from `|CONTEXT`, `|CTXOMAP`, `|FONT` and `|TOPIC`.
 
 ### File header
 

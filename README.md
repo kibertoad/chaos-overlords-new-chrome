@@ -67,8 +67,9 @@ validation plans list the open questions.
   no screen has been compared with a capture of the original
   ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136),
   [#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
-- Help is drawn by a cross-platform viewer, so its typography and paragraph
-  layout approximate WinHelp's
+- Help is drawn by a cross-platform viewer using the imported font descriptors,
+  indents, centering and paragraph spacing. Native typography and exact geometry
+  still need comparison with original captures
   ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
 - Online play has no spectating, lobby chat or Comlink messages between
   players ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)).

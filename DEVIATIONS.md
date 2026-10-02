@@ -25,7 +25,8 @@ Dated product decisions behind many of these entries, with their full reasoning,
 - Reason: The rebuild shows the help topics in its own viewer, opened with F1 or from the menu.
   In the original, Help Topics does nothing and no key opens help: the call that would start the
   Windows help program on the help file is never reached (RULE-HELP-001). The viewer reads the
-  player's own help file and approximates the help program's typography.
+  player's own help file, follows its paragraph indents, centring and spacing (FND-HELP-006) on a
+  pixel-font grid, and approximates the help program's font metrics.
 - Setting: None
 - Default: mandatory
 - Justification: The original ships a complete help file and a Help Topics item wired to nothing,

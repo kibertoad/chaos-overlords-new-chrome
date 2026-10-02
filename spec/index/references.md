@@ -286,6 +286,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-HELP-003](../findings/FND-HELP-003.md) | builds, locations |
 | [FND-HELP-004](../findings/FND-HELP-004.md) | builds, locations |
 | [FND-HELP-005](../findings/FND-HELP-005.md) | builds, locations |
+| [FND-HELP-006](../findings/FND-HELP-006.md) | builds, locations |
 | [FND-HIDE-001](../findings/FND-HIDE-001.md) | builds, locations |
 | [FND-HIDE-002](../findings/FND-HIDE-002.md) | builds, locations |
 | [FND-HIRE-001](../findings/FND-HIRE-001.md) | builds, locations |
@@ -4125,6 +4126,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-HELP-001](../formats/FMT-HELP-001.md) | body, evidence |
+| [FND-HELP-006](../findings/FND-HELP-006.md) | body |
 
 ## FND-HELP-003
 
@@ -4154,6 +4156,12 @@ None.
 | [RULE-UI-014](../rules/RULE-UI-014.md) | evidence |
 | [SCR-UI-009](../screens/SCR-UI-009.md) | body, evidence |
 | [SRC-HELP-GOG](../sources/SRC-HELP-GOG.md) | body |
+
+## FND-HELP-006
+
+| Cited by | In |
+|---|---|
+| [FMT-HELP-001](../formats/FMT-HELP-001.md) | body, evidence |
 
 ## FND-HIDE-001
 

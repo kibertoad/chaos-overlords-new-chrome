@@ -292,7 +292,7 @@
 
 ## recorded
 
-388 entries.
+389 entries.
 
 | ID | Title |
 |---|---|
@@ -522,6 +522,7 @@
 | [FND-HELP-003](../findings/FND-HELP-003.md) | Chaos.hlp is a WinHelp 3.1 container with an eleven-file directory at 0xE42 |
 | [FND-HELP-004](../findings/FND-HELP-004.md) | CHAOS.CNT is a 75-line text contents file with 14 headings and 59 topic entries |
 | [FND-HELP-005](../findings/FND-HELP-005.md) | The only call that opens the help file has no callers, so Help Topics does nothing in this build |
+| [FND-HELP-006](../findings/FND-HELP-006.md) | The help text has 418 paragraph records and nine Times New Roman font descriptors in four sizes |
 | [FND-HIDE-001](../findings/FND-HIDE-001.md) | A gang is hidden exactly while its active action is Hide, with no separate hidden flag |
 | [FND-HIDE-002](../findings/FND-HIDE-002.md) | Four places in the resolver read whether a gang hides, and the Hide case itself only counts |
 | [FND-HIRE-001](../findings/FND-HIRE-001.md) | Hire offers start at -100, are refilled only at planning entry, and are negated in place when hired or snubbed |
