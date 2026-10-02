@@ -19,10 +19,16 @@ public sealed class NativeFinalViewHandlerTests
         object?[] replayArguments = [recorded, 0];
         var state = (MatchState)replayType.GetMethod("StartMatch", flags)!.Invoke(null, replayArguments)!;
         Assert.Null(state.Outcome);
+        Assert.True(LocalPlanningLight(state, state.Players[0]));
         var elapsed = MatchCalendar.PresentationElapsedTurns(state);
         Assert.Equal(0, elapsed);
         Assert.Equal((2050, 1), MatchCalendar.Of(elapsed));
         Assert.Null(LastTurnEventsLayout.Date(elapsed));
+        // FND-UI-043: earlier local seats are dark while later humans still wait.
+        state.Players[2].Setup = state.Players[2].Setup with { Controller = PlayerController.Human };
+        state.Coordinator.FinishCommand(new PlayerId(0));
+        Assert.False(LocalPlanningLight(state, state.Players[0]));
+        Assert.True(LocalPlanningLight(state, state.Players[2]));
     }
 
     [Theory]
@@ -41,6 +47,8 @@ public sealed class NativeFinalViewHandlerTests
         object?[] replayArguments = [recorded, 0];
         var state = (MatchState)replayType.GetMethod("StartMatch", flags)!.Invoke(null, replayArguments)!;
         Assert.NotNull(state.Outcome);
+        // FND-UI-043: completed local planning leaves the human light dark.
+        Assert.False(LocalPlanningLight(state, state.Players[0]));
         // FND-UI-041, EXP-TURN-042: original final city is week 26; its
         // last-turn report is week 25, before the elapsed counter increments.
         Assert.Equal(27, state.Coordinator.Turn);
@@ -103,6 +111,14 @@ public sealed class NativeFinalViewHandlerTests
         Assert.False((bool)Field("_idleGangWarningOpen").GetValue(game)!);
     }
 
+    private static bool LocalPlanningLight(MatchState state, MatchPlayerState player)
+    {
+        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
+        GC.SuppressFinalize(game);
+        Field("_state").SetValue(game, state);
+        return (bool)typeof(ChaosGame).GetMethod("PlanningLightLit",
+            BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(game, [player])!;
+    }
     private static FieldInfo Field(string name) => typeof(ChaosGame)
         .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!;
     private static void Call(ChaosGame game, string name) => typeof(ChaosGame)
