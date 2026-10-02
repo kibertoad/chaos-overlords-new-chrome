@@ -1296,7 +1296,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
