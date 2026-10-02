@@ -2714,6 +2714,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
+| [FND-UI-042](../findings/FND-UI-042.md) | body |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | evidence |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
@@ -6055,7 +6056,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UPKEEP-001
 

@@ -85,7 +85,7 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 | Planning | A human player's planning starts | Done is accepted, or the time limit passes (RULE-TIMER-002) | FND-UI-032, FND-TIMER-001 |
 | City view | Planning starts, or SCR-UI-004 is left; the byte `0x00487B88` is 1 | SCR-UI-004 opens and clears it | FND-UI-015 |
 | Waiting | After Done, while other players still plan; the same two views take input and the group strip of SCR-UI-004 is not drawn | The wait loop `fn_00471F06` ends | FND-UI-015, FND-UI-018 |
-| Final view | The end evaluation has finished the match: each local human still in play gets one planning visit, in slot order, after the Ready card when that shows; the Done light blinks, and there is no planning clock and no idle-gang warning | Done is accepted; after the last visit the awards open | FND-OBJECTIVE-004, FND-UI-039, FND-STATE-010 |
+| Final view | The end evaluation has finished the match: each local human still in play gets one planning visit, in slot order, after the Ready card when that shows; the Done light blinks, and there is no planning clock and no idle-gang warning; a final entry with no report to show opens the city directly | Done is accepted; after the last visit the awards open | FND-OBJECTIVE-004, FND-UI-039, FND-STATE-010, FND-UI-042 |
 | Busy | Resolution, setup of a city or loading runs; the pointer is the hourglass (RULE-UI-007) | The work ends; the pointer is the arrow again | FND-UI-034 |
 
 ## Timing
