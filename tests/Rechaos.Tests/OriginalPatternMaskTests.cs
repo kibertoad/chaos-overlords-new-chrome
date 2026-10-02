@@ -7,7 +7,7 @@ namespace Rechaos.Tests;
 public sealed class OriginalPatternMaskTests
 {
     [Fact]
-    public void MasksMatchEmbeddedMonochromeResources()
+    public void MasksHaveRecordedDensitiesAndSamplePositions()
     {
         Assert.Equal(32, CountPreserved(OriginalPatternMask.Half));
         Assert.Equal(16, CountPreserved(OriginalPatternMask.Sparse));

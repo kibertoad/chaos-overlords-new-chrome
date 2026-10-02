@@ -100,9 +100,9 @@ public sealed partial class ChaosGame
         NativeTwoCellNumberPresentation.Kind kind = NativeTwoCellNumberPresentation.Kind.Modifier)
     {
         var display = NativeTwoCellNumberPresentation.Format(value, kind);
-        font.Draw(batch, display.Digits,
+        font.DrawNumber(batch, display,
             new Vector2(GangInformationLayout.ValueTextLeft(left, display.Digits), y),
-            display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime, 1);
+            display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime);
     }
 
     private static void ClearItemValueField(SpriteBatch batch, Texture2D pixel, int left, int y) =>

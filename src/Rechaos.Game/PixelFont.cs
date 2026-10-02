@@ -7,9 +7,11 @@ namespace Rechaos.Game;
 public sealed class PixelFont
 {
     private readonly Texture2D _glyphMask;
+    private readonly Texture2D _uiAtlas;
 
     public PixelFont(GraphicsDevice graphicsDevice, Texture2D uiAtlas)
     {
+        _uiAtlas = uiAtlas;
         var bounds = OriginalFontLayout.AtlasBounds;
         var maskWidth = OriginalFontLayout.MaskWidth;
         var atlas = new Color[uiAtlas.Width * uiAtlas.Height];
@@ -37,6 +39,22 @@ public sealed class PixelFont
         for (var x = 0; x < OriginalFontLayout.CellWidth; x++)
             if (SupplementalFontGlyphs.IsLit(glyph, x, y))
                 mask[y * maskWidth + left + glyph * OriginalFontLayout.CellWidth + x] = Color.White;
+    }
+
+    /// <summary>
+    /// RULE-UI-004: draws formatted cells from <paramref name="position"/>, the left edge of the
+    /// first drawn cell. A leading quotient past the font strip is the raw <c>PX00129</c> cell the
+    /// original copies, or a blank cell when that lies past the bitmap.
+    /// </summary>
+    public void DrawNumber(SpriteBatch batch, NativeTwoCellNumberPresentation.Value display,
+        Vector2 position, Color color)
+    {
+        Draw(batch, display.Digits, position, color, 1);
+        // PLACEHOLDER: RULE-UI-004 - a cell past the bitmap's right edge is left blank.
+        if (display.OffStripGlyph is { } glyph
+            && NativeTwoCellNumberPresentation.AtlasCell(glyph, display.IsNegative, _uiAtlas.Width) is { } source)
+            batch.Draw(_uiAtlas, new Rectangle((int)position.X, (int)position.Y, source.Width, source.Height),
+                source, Color.White);
     }
 
     public void Draw(SpriteBatch batch, string text, Vector2 position, Color color, int scale)
