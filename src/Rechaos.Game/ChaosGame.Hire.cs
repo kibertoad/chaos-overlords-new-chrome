@@ -24,13 +24,11 @@ public sealed partial class ChaosGame
                 batch.Draw(_gangPortraits, HireDockLayout.Portrait(slot),
                     OriginalSpriteLayout.GangPortrait(entry.GangDefinitionId), Color.White);
             DrawHireDockMark(batch, entry.Mark, HireDockLayout.Portrait(slot));
-            if (!entry.Hired)
-            {
-                var definition = state.Definitions.Gang(entry.GangDefinitionId);
-                var price = HireDockLayout.Price(slot);
-                font.Draw(batch, HireDockLayout.PriceText(HireRules.InitialCost(definition)),
-                    price.ToVector2(), Color.Lime, 1);
-            }
+            // SCR-HIRE-002, FND-HIRE-007, FND-HIRE-008: every offer keeps its price; a hire or
+            // snub mark redraws only the portrait above it.
+            var definition = state.Definitions.Gang(entry.GangDefinitionId);
+            font.Draw(batch, HireDockLayout.PriceText(HireRules.InitialCost(definition)),
+                HireDockLayout.Price(slot).ToVector2(), Color.Lime, 1);
         }
     }
 

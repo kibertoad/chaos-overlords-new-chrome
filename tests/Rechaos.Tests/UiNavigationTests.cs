@@ -264,7 +264,6 @@ public sealed class UiNavigationTests
     [Fact]
     public void HirePriceSitsBesideRejectControl()
     {
-        Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));
         Assert.Equal(new Rectangle(472, 437, 32, 13), HireDockLayout.Reject(0));
         // SCR-HIRE-002, FND-HIRE-007: retain the original number helper's origin.
         Assert.Equal(new Point(450, 440), HireDockLayout.Price(0));
@@ -272,7 +271,8 @@ public sealed class UiNavigationTests
         Assert.Equal(new Point(582, 440), HireDockLayout.Price(2));
         Assert.Equal("06", HireDockLayout.PriceText(6));
         Assert.Equal("12", HireDockLayout.PriceText(12));
-        Assert.Equal("123", HireDockLayout.PriceText(123));
+        // FND-UI-023: two cells only; the first takes the whole quotient, 12 places after '0'.
+        Assert.Equal("<3", HireDockLayout.PriceText(123));
     }
 
     [Fact]

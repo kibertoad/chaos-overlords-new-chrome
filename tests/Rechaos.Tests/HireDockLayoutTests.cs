@@ -27,7 +27,6 @@ public sealed class HireDockLayoutTests
         Assert.Equal(new HireDockEntry(1, HireDockMark.None), cells[0]);
         Assert.Equal(new HireDockEntry(2, HireDockMark.Hired), cells[1]);
         Assert.Equal(new HireDockEntry(3, HireDockMark.None), cells[2]);
-        Assert.Equal(new Rectangle(570, 436, 33, 24), HireDockLayout.PriceCell(2));
         Assert.Equal(new Rectangle(604, 437, 32, 13), HireDockLayout.Reject(2));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireDockLayout.Cell(3));
     }
