@@ -55,7 +55,7 @@
 
 ## rules
 
-160 entries.
+161 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -148,6 +148,7 @@
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | established |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image | supported |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported |
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | A keyed image copy leaves out the pixels of maximum white | supported |
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | established |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | supported |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | Help Topics does nothing, and no key opens the help file | supported |
@@ -222,7 +223,7 @@
 
 ## findings
 
-351 entries.
+352 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -572,6 +573,7 @@
 | [FND-UI-038](../findings/FND-UI-038.md) | The nine-sector display labels its centre row and column and each neighbour's on the frame, the sector view darkens its background with black through bitmap 143, and the Overlord bar animates on timer slot 1 | recorded |
 | [FND-UI-039](../findings/FND-UI-039.md) | The end-of-match planning visit differs from an ordinary one only through the Done light flag and the no-match byte | recorded |
 | [FND-UI-040](../findings/FND-UI-040.md) | Planning entry positions the scenario, calendar and player totals in the console | recorded |
+| [FND-UI-041](../findings/FND-UI-041.md) | The running original draws the completed-match calendar companion in its final city view | recorded |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
@@ -580,7 +582,7 @@
 
 ## experiments
 
-44 entries.
+45 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -628,6 +630,7 @@
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | How does a six-month Dominance end, and does a site completed in the last turn count? | recorded |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | How does a six-month Acceptance end, and does a human that always hides get the Big Fat Chicken? | recorded |
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | How do raiders and family-4 gangs plan, when the probe sets them in memory? | recorded |
+| [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? | recorded |
 
 ## bugs
 
