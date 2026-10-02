@@ -46,7 +46,6 @@ public sealed class HireDockLayoutTests
         Assert.Equal(
             [HireDockMark.None, HireDockMark.None, HireDockMark.Snubbed],
             cells.Select(cell => cell!.Mark));
-        Assert.False(cells[2]!.Hired);
     }
 
     [Fact]

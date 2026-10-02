@@ -25,10 +25,12 @@ public sealed partial class ChaosGame
                     OriginalSpriteLayout.GangPortrait(entry.GangDefinitionId), Color.White);
             DrawHireDockMark(batch, entry.Mark, HireDockLayout.Portrait(slot));
             // SCR-HIRE-002, FND-HIRE-007, FND-HIRE-008: every offer keeps its price; a hire or
-            // snub mark redraws only the portrait above it.
+            // snub mark redraws only the portrait above it. FND-UI-006: a negative price is
+            // drawn as its magnitude from the red row.
             var definition = state.Definitions.Gang(entry.GangDefinitionId);
-            font.Draw(batch, HireDockLayout.PriceText(HireRules.InitialCost(definition)),
-                HireDockLayout.Price(slot).ToVector2(), Color.Lime, 1);
+            var price = HireRules.InitialCost(definition);
+            font.Draw(batch, HireDockLayout.PriceText(price),
+                HireDockLayout.Price(slot).ToVector2(), price < 0 ? Color.Red : Color.Lime, 1);
         }
     }
 
