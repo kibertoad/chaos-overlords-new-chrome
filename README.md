@@ -12,7 +12,8 @@ tables are bundled in the open-source core; original art and media are not.
 
 Original save import/export is not supported. Recreation-native saves and
 replays are development formats until 1.0.0 and may change incompatibly before
-then; the versioned migration machinery is retained for post-1.0 compatibility.
+then; stable 1.x releases will carry the save migration guarantee described in
+[the format policy](docs/NATIVE-SAVE-FORMAT.md#compatibility-policy).
 
 ## Quick start
 
@@ -74,7 +75,11 @@ validation plans list the open questions.
   players ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)).
 - Key bindings cannot be changed, and macOS builds are not signed or notarized
   ([#139](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139)).
-- Save and replay formats may change incompatibly before 1.0.0
+- Save and replay formats may change incompatibly before 1.0.0. The
+  [post-1.0 policy](docs/NATIVE-SAVE-FORMAT.md#compatibility-policy) guarantees
+  migration of 1.x saves within the 1.x line; older replays require a retained
+  verifier. Local replay playback has pause, speed, step, jump and exit controls
+  over a verified journal
   ([#141](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141)).
 
 The technical documentation is cataloged in [docs/README.md](docs/README.md);
@@ -200,7 +205,7 @@ presentation-only conveniences that make the original systems easier to read:
 | Credits | Shift+F1 | The original's Help > About screen; any key or click closes it |
 | Online play | Tab between enabled fields; Left/Right turn your overlord face; Enter creates or connects; F5 refreshes the browser | The form asks what you want to do, who you are, which session, and last which server: pick Host A New Game or Join With A Code, the arrows beside the face pick it, Paste fills the join code, Browse Games and Unfinished Sessions are the other ways in, and Copy copies the join code from the lobby |
 | Save / load | F5 / F9 | Use Save Game or Load Game in the Escape menu and choose one of nine slots |
-| Save / load replay | F6 / F10 | Local games only; records or verifies the recreation replay file |
+| Save / play replay | F6 / F10 | Local games only; F10 opens verified playback without replacing the live match. Space pauses, arrows step or change speed, Home/End jump, and Esc exits. |
 | Finish planning | Space | Click the end-turn control |
 | Pause/game menu | Escape | Resume, save, load, adjust options, report a bug, or request a confirmed return to the main menu |
 | Report a bug | Escape, then Report Bug | Tab moves between the box, the checkbox and the buttons; Enter is a new paragraph in the box |

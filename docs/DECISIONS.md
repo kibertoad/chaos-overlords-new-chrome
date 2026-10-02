@@ -25,6 +25,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
 | 2026-09-24 | [Mark objective sectors on the detailed-sector minimap](#2026-09-24--mark-objective-sectors-on-the-detailed-sector-minimap) |
 | 2026-09-24 | [Resolve cash transactions in player order](#2026-09-24--resolve-cash-transactions-in-player-order) |
+| 2026-09-23 | [Preserve stable 1.x saves and verify replays before playback](#2026-09-23--preserve-stable-1x-saves-and-verify-replays-before-playback) |
 | 2026-09-23 | [Do not animate the panel slide-out](#2026-09-23--do-not-animate-the-panel-slide-out) |
 | 2026-09-22 | [Fold the definition set into a fingerprint as a digest](#2026-09-22--fold-the-definition-set-into-a-fingerprint-as-a-digest) |
 | 2026-09-21 | [Fingerprint match state with XxHash128, not SHA-256](#2026-09-21--fingerprint-match-state-with-xxhash128-not-sha-256) |
@@ -263,6 +264,22 @@ next Upkeep income cannot. This deliberate rule deviation changes deterministic
 turn outcomes, so multiplayer session version 9 retires sessions started under
 version 8. Native saves and replay journals retain their format gates because
 their schema and fingerprint encoding have not changed.
+
+## 2026-09-23 — Preserve stable 1.x saves and verify replays before playback
+
+**Decision.** From the first 1.0.0 release, every later 1.x build must load
+saves made by earlier public 1.x builds through bounded deterministic migrations
+with fixtures. A breaking save change that cannot meet this promise requires a
+new major release. Replay journals may stop being playable when their exact
+rules and fingerprint verifier are retired; release notes must identify that
+boundary. An incompatible file remains in place and is reported as incompatible
+rather than damaged. F10 plays a fully verified local journal in a read-only
+viewer, leaving the live match available on exit.
+
+**Reasoning.** Saves represent a player's ongoing match; replays also attest to
+each historical rules implementation. Migration of a save cannot establish the
+authenticity of old replay steps. The current pre-1.0 format gates stay strict
+until a stable baseline and migration fixtures exist.
 
 ## 2026-09-23 — Do not animate the panel slide-out
 

@@ -84,8 +84,7 @@ public sealed partial class ChaosGame
                 journal(loaded) ?? new MatchReplayRecorder(loaded),
                 summary?.RecoveredFromBackup == true
                     ? summary.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
-                    : string.Empty,
-                enteredFromSave: true);
+                    : string.Empty);
             return true;
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -99,33 +98,21 @@ public sealed partial class ChaosGame
     /// Puts a match read from disk on screen, the one way every load does it.
     /// </summary>
     /// <remarks>
-    /// Shared by the save browser and F10's replay load. The replay load had its own copy that
-    /// predated the endgame routing, the hot-seat planning entry and the per-match resets below, so
-    /// a replay of a finished match opened the city instead of the endgame, and the gang selection,
-    /// management return screen and planning-entry flags of the previous match leaked into it.
+    /// The match is entered the way the original enters a loaded game. RULE-RNG-001: it draws on
+    /// from the run's sequence, so reloading a save does not replay its luck. RULE-COMLINK-004,
+    /// FMT-STATE-005: every inbox is emptied, so it starts with no messages. RULE-AI-003,
+    /// FND-AI-045: every player's sector weights and combat-advantage hostility are refreshed, as
+    /// the original's load does. The journal records all three moves, and replays them.
     /// </remarks>
-    /// <param name="enteredFromSave">
-    /// Whether the match is entered the way the original enters a loaded game. RULE-RNG-001: it
-    /// draws on from the run's sequence, so reloading a save does not replay its luck.
-    /// RULE-COMLINK-004, FMT-STATE-005: every inbox is emptied, so it starts with no messages.
-    /// RULE-AI-003, FND-AI-045: every player's sector weights and combat-advantage hostility are
-    /// refreshed, as the original's load does. The journal records all three moves, and replays them. A replay load keeps the sequence and the
-    /// inboxes the journal reached.
-    /// </param>
-    private void AdoptMatch(
-        MatchState loaded, MatchReplayRecorder recorder, string message,
-        bool enteredFromSave = false)
+    private void AdoptMatch(MatchState loaded, MatchReplayRecorder recorder, string message)
     {
         // RULE-AUDIO-001, FND-AUDIO-001: re-entering the outer game starts its
         // program from the first track even when another match was already playing.
         _restartSoundtrackProgram = true;
         ReplaceMatch(loaded, new MatchActions(recorder));
-        if (enteredFromSave)
-        {
-            _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
-            _actions.HotSeatRecorder.EmptyComlinkInboxes();
-            _actions.HotSeatRecorder.RefreshAiSectorRecords();
-        }
+        _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
+        _actions.HotSeatRecorder.EmptyComlinkInboxes();
+        _actions.HotSeatRecorder.RefreshAiSectorRecords();
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
         if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();
@@ -156,9 +143,11 @@ public sealed partial class ChaosGame
     {
         try
         {
-            if (_state is null || _session is not null) return null;
+            // While a replay is open, _state is a historical frame; the live match is set aside.
+            var live = _matchBeforeReplay ?? _state;
+            if (live is null || _session is not null) return null;
             var path = SaveSlotCatalog.CrashRecoveryPath(_saveDirectory);
-            NativeSaveStore.SaveAtomic(path, _state);
+            NativeSaveStore.SaveAtomic(path, live);
             return path;
         }
         catch (Exception exception)
@@ -187,26 +176,6 @@ public sealed partial class ChaosGame
                                           or InvalidOperationException)
         {
             _message = "REPLAY SAVE FAILED";
-        }
-    }
-
-    private void LoadReplay()
-    {
-        if (_state is null || _session is not null) return;
-        try
-        {
-            var result = MatchReplayStore.LoadAndReplayRecoveringBackup(
-                _replayPath, _state.Definitions);
-            AdoptMatch(
-                result.State,
-                new MatchReplayRecorder(result.State),
-                result.RecoveredFromBackup
-                    ? result.PrimaryRepaired ? "REPLAY RECOVERED" : "REPLAY LOADED  REPAIR FAILED"
-                    : string.Empty);
-        }
-        catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            _message = "REPLAY FAILED";
         }
     }
 }

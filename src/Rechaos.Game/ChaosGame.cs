@@ -470,6 +470,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             EndUpdate(gameTime, keyboard, mouse);
             return;
         }
+        if (_replayPlayback is not null)
+        {
+            UpdateReplayPlayback(gameTime, keyboard, mouse);
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
+        }
         UpdateComlinkAlert(gameTime.TotalGameTime);
         UpdateComlinkCaret(gameTime.TotalGameTime);
         PumpBugReportSend();
@@ -765,6 +771,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Back)) CancelSiteSearch();
                     break;
             }
+        }
+        // F10 opened the replay viewer this frame. _state is now a historical frame, so the click
+        // dispatch and the combat-presentation capture below must not run against it.
+        if (_replayPlayback is not null)
+        {
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
         }
         // RULE-UI-003: the original handles no message while a panel slides in, and takes a click
         // made during the slide from the queue once the panel is in place. The pointer is
