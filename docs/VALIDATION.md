@@ -16,6 +16,7 @@ Status: maintained canonical procedure
 - [First-planning map comparison without the keyboard footer](#first-planning-map-comparison-without-the-keyboard-footer)
 - [All active-player marker frames in the first planning view](#all-active-player-marker-frames-in-the-first-planning-view)
 - [Both selected-sector outline states](#both-selected-sector-outline-states)
+- [Completed-state final calendar and report capture](#completed-state-final-calendar-and-report-capture)
 <!-- doc-index:end -->
 
 ## Validation layers
@@ -602,3 +603,30 @@ this state. The comparison does not measure their period, reset behavior,
 other cells, dropped ticks or the pixels covered by the expected Windows 11
 artifacts. The gang-status markers are state selections under RULE-UI-006,
 not an additional timed animation.
+
+## Completed-state final calendar and report capture
+
+An isolated capture from the actual completed EXP-TURN-042 replay exposed a
+presentation error: its coordinator had moved to turn 27, while the original
+final visit still held elapsed turns 25. Reading the coordinator directly drew
+console week 27 and report week 26. The prior final-calendar diagnostic forced
+turn 26 and therefore did not test this completed-state integration.
+
+The city and Events renderers now derive presentation elapsed turns from the
+outcome turn after completion, and from the coordinator during an active match.
+The completed replay retains coordinator turn 27 and outcome turn 26; it draws
+console week 26 and report week 25, matching FND-UI-041 and EXP-TURN-042.
+Report projection continues to select resolution-turn 26 records.
+
+The external renderer loaded the actual completed replay save without changing
+its turn or outcome, selected player 0 and the Events panel, and froze updates.
+With marker frame 8, compared with the paired original EXP-TURN-042 capture,
+the console calendar rectangle `(481,15,101,7)` has zero differing RGB pixels.
+The entire Events panel `(104,124,344,209)` also has zero differing RGB pixels
+across all 71896 pixels, including date, subject, caption, controls and artwork.
+This region has no expected Windows 11 white-block differences to exclude.
+
+The diagnostic selected the viewer and panel directly; handler entry and closing
+are tested separately. This comparison covers one cash-short report and final
+state, not all reports, combat results, multiple viewers or input timing.
+Screenshots, saves and the diagnostic harness remain outside Git.

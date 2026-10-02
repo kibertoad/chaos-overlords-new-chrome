@@ -8,6 +8,23 @@ namespace Rechaos.Tests;
 
 public sealed class NativeFinalViewHandlerTests
 {
+    [Fact]
+    public void ActiveFirstPlanningDateMatchesOriginalEntry()
+    {
+        // EXP-SETUP-001, FND-UI-040: active planning still begins at week 1,
+        // with no previous-turn date available to print in Events.
+        var flags = BindingFlags.NonPublic | BindingFlags.Static;
+        var replayType = typeof(OriginalNewGameExperimentTests);
+        var recorded = replayType.GetMethod("Run", flags)!.Invoke(null, ["EXP-SETUP-001", 0]);
+        object?[] replayArguments = [recorded, 0];
+        var state = (MatchState)replayType.GetMethod("StartMatch", flags)!.Invoke(null, replayArguments)!;
+        Assert.Null(state.Outcome);
+        var elapsed = MatchCalendar.PresentationElapsedTurns(state);
+        Assert.Equal(0, elapsed);
+        Assert.Equal((2050, 1), MatchCalendar.Of(elapsed));
+        Assert.Null(LastTurnEventsLayout.Date(elapsed));
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
@@ -24,6 +41,13 @@ public sealed class NativeFinalViewHandlerTests
         object?[] replayArguments = [recorded, 0];
         var state = (MatchState)replayType.GetMethod("StartMatch", flags)!.Invoke(null, replayArguments)!;
         Assert.NotNull(state.Outcome);
+        // FND-UI-041, EXP-TURN-042: original final city is week 26; its
+        // last-turn report is week 25, before the elapsed counter increments.
+        Assert.Equal(27, state.Coordinator.Turn);
+        var elapsed = MatchCalendar.PresentationElapsedTurns(state);
+        Assert.Equal(25, elapsed);
+        Assert.Equal((2050, 26), MatchCalendar.Of(elapsed));
+        Assert.Equal(("2050", "25"), LastTurnEventsLayout.Date(elapsed));
         if (syntheticReport)
         {
             // Synthetic report exercises dismissal; EXP-TURN-041 itself has no

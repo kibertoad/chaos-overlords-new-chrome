@@ -242,7 +242,7 @@ public sealed partial class ChaosGame
         // FND-UI-040: separate calendar fields leave the template's separator intact.
         font.Draw(batch, ExecutableStrings.Get(ExecutableStrings.ScenarioNumber(state.Setup.Scenario) + 1),
             new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
-        var (year, week) = MatchCalendar.Of(Math.Max(0, state.Coordinator.Turn - 1));
+        var (year, week) = MatchCalendar.Of(MatchCalendar.PresentationElapsedTurns(state));
         // FND-UI-004: numeric cells are opaque, including their blank pixels.
         batch.Draw(pixel, new Rectangle(StatusConsoleLayout.YearLeft, StatusConsoleLayout.DateY,
             4 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
