@@ -17,13 +17,13 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `established` | 0 |
 | `disputed` | 0 |
 | `implemented` | 99 |
-| `validated` | 120 |
+| `validated` | 121 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
 | `partial` | 3 |
-| `complete` | 219 |
+| `complete` | 220 |
 
 ## DATA
 
@@ -39,11 +39,12 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-GFX-001` | 16-bit image files in DATA/PX16 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs, tests/Rechaos.Tests/OriginalImageNativeDecoderTests.cs | None | validated | The rebuild supplies the missing header fields itself. PX00202 and PX00203 are 311 wide as FND-GFX-005 records; PX06008 is decoded as 242 by 157 where the file is 241 wide and the executable reads 242 by 158, which the test allows for. A Windows native reference compares every file-defined RGB pixel in all 215 original PX16 images between SetDIBits and the bundled MonoGame runtime BMP decoder. The production white-key conversion is also compared with every packed original RGB555 pixel: only 0x7FFF becomes transparent; all other colors retain RGBA. GPU upload, per-caller mask selection and compositing remain outside this comparison. |
+| `FMT-GFX-001` | 16-bit image files in DATA/PX16 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs, tests/Rechaos.Tests/OriginalImageNativeDecoderTests.cs | None | validated | The rebuild supplies the missing header fields itself. PX00202 and PX00203 are 311 wide as FND-GFX-005 records; PX06008 is decoded as 242 by 157 where the file is 241 wide and the executable reads 242 by 158, which the test allows for. A Windows native reference compares every file-defined RGB pixel in all 215 original PX16 images between SetDIBits and the bundled MonoGame runtime BMP decoder. GPU upload, transparency and compositing remain outside this comparison; RULE-GFX-003 covers the white key. |
 | `FMT-GFX-002` | 8-bit image files in DATA/PX08 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
 | `FMT-GFX-003` | Palette entry in a PX08 image file | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
 | `RULE-GFX-001` | Decoding the RLE8 pixel data of a PX08 image | supported | complete | tests/Rechaos.Tests/OriginalImageNativeDecoderTests.cs | None | validated | On Windows, every original PX08 file is decoded with SetDIBits, the API used by the original (FND-PLATFORM-002), and every file-defined pixel is compared with the extractor output. This covers all 207 RLE8 files and the seven plain-row files; it does not compare screen compositing or the oversized PX06008 destination rectangle of FND-GFX-005. The reference requires Windows and original fixtures. |
 | `RULE-GFX-002` | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported | complete | None | `DEV-GFX-001` | implemented | The drawing area is the original's 640 by 460, scaled into a window or a borderless full screen (DEV-GFX-001). |
+| `RULE-GFX-003` | A keyed image copy leaves out the pixels of maximum white | supported | complete | tests/Rechaos.Tests/OriginalImageNativeDecoderTests.cs | None | validated | The rebuild keys the decoded texture once at load. On Windows the production key is compared with every pixel of all 215 original PX16 images: exactly the pixels stored as 0x7FFF become transparent and every other pixel keeps its decoded colour. The rebuild keys PX00150 and PX06004, the two mode-1 images, and also PX00129 and PX00140, which FND-PLATFORM-008 does not show as keyed copies. GPU upload and compositing are outside the comparison. |
 
 ## AUDIO
 

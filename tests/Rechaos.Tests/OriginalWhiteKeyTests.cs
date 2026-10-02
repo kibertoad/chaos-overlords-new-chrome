@@ -11,7 +11,7 @@ public sealed class OriginalWhiteKeyTests
     [InlineData(true)]
     public void EveryRgb555ColorPreservesAllButMaximumWhite(bool replicateLowBits)
     {
-        // FMT-GFX-001, FND-PLATFORM-008: maximum packed RGB555 white is
+        // RULE-GFX-003, FND-PLATFORM-008: maximum packed RGB555 white is
         // the key; black and every other packed color remain opaque.
         // Synthetic pixels exercise the full color space without original media.
         var colors = new Color[32768];

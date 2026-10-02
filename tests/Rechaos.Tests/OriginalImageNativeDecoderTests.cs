@@ -43,21 +43,25 @@ public sealed partial class OriginalImageFileTests
                 Assert.True(GdiFlush());
                 var native = new byte[size.Width * size.Height * 4];
                 Marshal.Copy(pixels, native, 0, native.Length);
+                var stride = (size.Width * 2 + 3) & ~3;
                 for (var y = 0; y < size.Height; y++)
                 for (var x = 0; x < size.Width; x++)
                 {
                     var bottom = (y * size.Width + x) * 4;
                     var top = ((size.Height - 1 - y) * size.Width + x) * 4;
-                    Assert.True(native[bottom] == rgba[top + 2]
-                        && native[bottom + 1] == rgba[top + 1]
-                        && native[bottom + 2] == rgba[top], $"RGB mismatch at ({x}, bottom-up {y}).");
-                    // FMT-GFX-001, FND-PLATFORM-008: validate the production
-                    // mask against packed original pixels, not decoded colors.
-                    var packed = BitConverter.ToUInt16(repaired,
-                        54 + y * ((size.Width * 2 + 3) & ~3) + x * 2);
-                    var expected = packed == 0x7fff ? Microsoft.Xna.Framework.Color.Transparent
+                    if (native[bottom] != rgba[top + 2] || native[bottom + 1] != rgba[top + 1]
+                        || native[bottom + 2] != rgba[top])
+                        Assert.Fail($"RGB mismatch at ({x}, bottom-up {y}).");
+                    // RULE-GFX-003, FMT-GFX-001: the expected key comes from
+                    // the packed file pixel, so a decoder that moves a near-white
+                    // channel across the production threshold fails here. RGB555
+                    // leaves bit 15 unused and both decoders drop it.
+                    var packed = BitConverter.ToUInt16(repaired, 54 + y * stride + x * 2);
+                    var expected = (packed & 0x7fff) == 0x7fff ? Microsoft.Xna.Framework.Color.Transparent
                         : new Microsoft.Xna.Framework.Color(rgba[top], rgba[top + 1], rgba[top + 2], rgba[top + 3]);
-                    Assert.Equal(expected, keyed[top / 4]);
+                    if (keyed[top / 4] != expected)
+                        Assert.Fail($"White key mismatch at ({x}, bottom-up {y}): packed 0x{packed:X4}, "
+                            + $"expected {expected}, got {keyed[top / 4]}.");
                 }
             }
             finally { Assert.True(DeleteObject(bitmap)); }
