@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 4 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 99 |
-| `validated` | 119 |
+| `implemented` | 98 |
+| `validated` | 120 |
 
 | Code | Rows |
 |---|---|
@@ -42,7 +42,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-GFX-001` | 16-bit image files in DATA/PX16 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | The rebuild supplies the missing header fields itself. PX00202 and PX00203 are 311 wide as FND-GFX-005 records; PX06008 is decoded as 242 by 157 where the file is 241 wide and the executable reads 242 by 158, which the test allows for. |
 | `FMT-GFX-002` | 8-bit image files in DATA/PX08 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
 | `FMT-GFX-003` | Palette entry in a PX08 image file | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
-| `RULE-GFX-001` | Decoding the RLE8 pixel data of a PX08 image | supported | complete | None | None | implemented | None |
+| `RULE-GFX-001` | Decoding the RLE8 pixel data of a PX08 image | supported | complete | tests/Rechaos.Tests/OriginalImageNativeDecoderTests.cs | None | validated | On Windows, every original PX08 file is decoded with SetDIBits, the API used by the original (FND-PLATFORM-002), and every file-defined pixel is compared with the extractor output. This covers all 207 RLE8 files and the seven plain-row files; it does not compare screen compositing or the oversized PX06008 destination rectangle of FND-GFX-005. The reference requires Windows and original fixtures. |
 | `RULE-GFX-002` | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported | complete | None | `DEV-GFX-001` | implemented | The drawing area is the original's 640 by 460, scaled into a window or a borderless full screen (DEV-GFX-001). |
 
 ## AUDIO
