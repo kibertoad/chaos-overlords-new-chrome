@@ -16,6 +16,7 @@ Status: maintained canonical procedure
 - [Original pattern resources](#original-pattern-resources)
 - [Failure triage](#failure-triage)
 - [First-planning map comparison without the keyboard footer](#first-planning-map-comparison-without-the-keyboard-footer)
+- [All active-player marker frames in the first planning view](#all-active-player-marker-frames-in-the-first-planning-view)
 <!-- doc-index:end -->
 
 ## Validation layers
@@ -591,3 +592,27 @@ frame. Pixels that are exact white in the original capture were set aside as
 capture artifacts, so the rebuild's sprites under them remain unchecked. It
 does not establish all marker frames, every selected sector, search overlays,
 pointer states or whole-screen parity.
+
+## All active-player marker frames in the first planning view
+
+On 2026-10-02, an external diagnostic copy of the original probe collected
+all twelve active-player marker frames from the first planning view of the
+EXP-SETUP-001 state (seed 52421), the state of the previous section.
+FND-UI-038 steps the counter `0x00487B90` after drawing frame `k`, so a
+capture taken while the counter holds `c` shows frame `(c + 11) mod 12`.
+Each accepted frame had the same counter value before and after two
+byte-identical non-repainting window captures. The probe pumped the original
+between captures until its counter changed; it did not patch the executable
+or synthesize marker artwork.
+
+Twelve rebuild captures came from the external diagnostic harness of the
+previous section, which selected frames 0 through 11 explicitly instead of
+running the game's timer, and omitted the DEV-UI-023 footer below the compared
+rectangle. Every capture matched the original over Overlord-bar rectangle
+`(2,0,432,42)` with zero differing RGB pixels. This includes the occupied
+portraits and the marker position for the viewed seat in this state.
+
+This verifies frame artwork and placement for one viewer and state. It does
+not measure timing, dropped ticks, focus behavior, other viewed seats, empty
+seat animation, the two-frame selected-sector outline, or gang-status cycles.
+Captures and diagnostic code remain outside Git.
