@@ -228,11 +228,15 @@ public static partial class CommandResolver
         // RULE-COMBAT-002: the damage is taken off only after every attack and the police have
         // rolled from the Forces at the start of the phase. The original caps each gang's damage at
         // 10 and lets a dead gang's Force go below 0; flooring at 0 gives the same Force for every
-        // gang that lives and the same deaths.
+        // gang that lives and the same deaths, and the dead gang's record keeps the unfloored value
+        // for BUG-AI-007.
+        var retiredForces = new Dictionary<GangId, int>();
         foreach (var (gangId, damage) in incomingDamage)
         {
             var gang = state.FindGang(gangId)!;
-            gang.Force = Math.Max(0, snapshots[gangId].Force - damage);
+            var force = snapshots[gangId].Force - Math.Min(damage, MaximumPhaseDamage);
+            gang.Force = Math.Max(0, force);
+            if (force <= 0 && snapshots[gangId].Force > 0) retiredForces[gangId] = force;
         }
         CreditCombatStatistics(state, outcomes);
 
@@ -296,7 +300,7 @@ public static partial class CommandResolver
                      .OrderBy(snapshot => snapshot.Id.Value))
         {
             var gang = state.FindGang(snapshot.Id)!;
-            EliminateGang(state, gang);
+            EliminateGang(state, gang, retiredForces[gang.Id]);
             state.FindPlayer(gang.Owner)!.Statistics.Casualties++;
             state.QueueNotification(
                 gang.Owner, GameNotificationKind.Elimination, gang.Id, gang.SectorId,
@@ -369,12 +373,11 @@ public static partial class CommandResolver
     /// The native resolver marks the record inactive without clearing its three equipment bytes.
     /// Keep those inaccessible values for parity and post-match inspection.
     /// </remarks>
-    private static void EliminateGang(MatchState state, MatchGangState gang)
+    private static void EliminateGang(MatchState state, MatchGangState gang, int recordForce)
     {
         state.Commands.Cancel(gang.Id);
         gang.QueuedCommand = null;
-        gang.Force = 0;
-        gang.Hidden = false;
+        gang.Retire(recordForce);
     }
 
     private sealed record CombatSnapshot(
@@ -425,7 +428,8 @@ public static partial class CommandResolver
     {
         var gang = state.FindGang(command.Gang)!;
         var before = gang.Force;
-        EliminateGang(state, gang);
+        // The original writes only sector 100, so the record keeps its Force (BUG-AI-007).
+        EliminateGang(state, gang, before);
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, 0),
             GameNotificationKind.Elimination);
@@ -478,6 +482,9 @@ public static partial class CommandResolver
         }
         return results;
     }
+
+    /// <summary>RULE-COMBAT-002: the most damage one gang takes in a combat phase.</summary>
+    private const int MaximumPhaseDamage = 10;
 
     /// <summary>How many reroute draws one move set may spend before the deterministic fallback.</summary>
     private const int MaximumMoveRerouteDraws = 256;
@@ -754,7 +761,19 @@ public static partial class CommandResolver
             band, GangAction.Influence,
             ManualRules.InfluenceDiceCount([(gang.Force, statistics.Influence)]));
         var (rolls, successes) = RollAction(state, band, GangAction.Influence, pool);
-        site.Resistance = ManualRules.ApplyInfluenceProgress(before, successes);
+        if (band == OriginalResolutionBand.Goon)
+        {
+            // BUG-INFLUENCE-001: at band 0 the resolver keeps the reduced pool in the local that
+            // held the site's progress, so the new progress is the pool plus the successes,
+            // whatever the progress was. The pool is not clamped there, so a negative one leaves
+            // negative progress: more Resistance still needed than the site has.
+            var progress = OriginalResolutionRules.GoonReducedPool(
+                gang.Force + statistics.Influence) + successes;
+            var resistance = state.Definitions.Site(site.DefinitionId).Resistance;
+            site.Resistance = resistance - Math.Min(progress, resistance);
+        }
+        else
+            site.Resistance = ManualRules.ApplyInfluenceProgress(before, successes);
 
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(

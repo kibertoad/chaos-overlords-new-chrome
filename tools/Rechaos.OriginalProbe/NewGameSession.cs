@@ -19,13 +19,38 @@ internal sealed record ProbeOrder(int Turn, int Slot, int Action, int Target, in
 }
 
 /// <summary>
+/// A hire the human places before a Done press: the hire offer slot 0 to 2 and the sector it is
+/// dropped on, written into <c>hire_orders</c> as the hire screen does (RULE-HIRE-003).
+/// </summary>
+internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector)
+{
+    public override string ToString() => $"turn {Turn}: offer slot {OfferSlot} sector {Sector}";
+}
+
+/// <summary>
+/// A computer player's planning state written before a Done press, for branches no local match
+/// reaches: family 99 or less writes the <c>family</c> of the player's planning record in the slot
+/// (FMT-STATE-007), and <see cref="Raider"/> sets the player's byte of <c>raider_mode</c>, which a
+/// takeover of a network seat sets (RULE-AI-027).
+/// </summary>
+internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family)
+{
+    public const int Raider = -1;
+
+    public override string ToString() => Family == Raider
+        ? $"turn {Turn}: player {Player} raider_mode 1"
+        : $"turn {Turn}: player {Player} gang slot {Slot} family {Family}";
+}
+
+/// <summary>
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
 /// Scenario numbers are the original's (FND-SETUP-013).
 /// </summary>
 internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
-    IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false)
+    IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
+    IReadOnlyList<ProbePlanning>? Planning = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -50,8 +75,12 @@ internal sealed record NewGameSettings(
         for (var turn = 1; turn <= EndTurns; turn++)
         {
             var orders = (Orders ?? []).Where(order => order.Turn == turn).ToArray();
+            var hires = (Hires ?? []).Where(hire => hire.Turn == turn).ToArray();
+            var planning = (Planning ?? []).Where(write => write.Turn == turn).ToArray();
             foreach (var order in orders) yield return ("order", order.ToString());
-            yield return ("left_click", orders.Length == 0
+            foreach (var hire in hires) yield return ("hire", hire.ToString());
+            foreach (var write in planning) yield return ("planning", write.ToString());
+            yield return ("left_click", orders.Length + hires.Length + planning.Length == 0
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
@@ -85,6 +114,7 @@ internal sealed class NewGameSession(
     private bool _setupReached;
     private int _panelsOpen;
     private bool _planningLoopReached;
+    private bool _awardsReached;
 
     public ProbeTrace Run()
     {
@@ -125,6 +155,9 @@ internal sealed class NewGameSession(
         // Planning has begun when the human's planning loop runs, or, where it does not, when the
         // rolls of the new match have stopped for a while.
         ArmPlanningLoop();
+        // A match that ends reaches the endgame instead of another planning phase; the run stops
+        // there, once the awards are given (RULE-AWARDS-001).
+        _process.SetBreakpoint(OriginalAddresses.AwardsRows, _ => _awardsReached = true, oneShot: true);
         var begun = DateTime.UtcNow;
         var settled = _process.RunUntil(
             () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
@@ -139,6 +172,10 @@ internal sealed class NewGameSession(
                 return Finish(false, $"A panel of turn {turn} never closed.", rollsBeforeBegin);
             foreach (var order in (settings.Orders ?? []).Where(order => order.Turn == turn))
                 WriteOrder(order);
+            foreach (var hire in (settings.Hires ?? []).Where(hire => hire.Turn == turn))
+                WriteHire(hire);
+            foreach (var write in (settings.Planning ?? []).Where(write => write.Turn == turn))
+                WritePlanning(write);
             _rollsAtDone.Add(_rolls.Count);
             Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
             var target = turn;
@@ -149,6 +186,19 @@ internal sealed class NewGameSession(
             // again after a quiet while.
             var next = _process.RunUntil(() =>
             {
+                if (_awardsReached) return true;
+                // FND-OBJECTIVE-004: a match that ends gives each active human one last look at the
+                // city, with the turn's Combat Results open, before the awards controller runs and
+                // before elapsed_turns moves on. Close the panels and press Done there.
+                if (_process.Read(OriginalAddresses.MatchOver, 1)[0] != 0
+                    && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(2)
+                    && DateTime.UtcNow - clicked > TimeSpan.FromSeconds(5))
+                {
+                    _notes.Add($"the match is over; Done pressed at the final view after roll {_rolls.Count}");
+                    ClosePanels(window);
+                    Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
+                    clicked = DateTime.UtcNow;
+                }
                 if (_rolls.Count == rollsAtClick && _process.ReadInt32(OriginalAddresses.ElapsedTurns) < target
                     && DateTime.UtcNow - clicked > TimeSpan.FromSeconds(20))
                 {
@@ -167,7 +217,15 @@ internal sealed class NewGameSession(
 
                 return PlanningWaits(moved.Value);
             }, timeout);
-            if (!next) return Finish(false, $"Turn {turn} never reached the next planning phase.", rollsBeforeBegin);
+            if (!next)
+                return Finish(false, $"Turn {turn} never reached the next planning phase (match_over "
+                    + $"{_process.Read(OriginalAddresses.MatchOver, 1)[0]}, {_panelsOpen} panel(s) open, elapsed_turns "
+                    + $"{_process.ReadInt32(OriginalAddresses.ElapsedTurns)}).", rollsBeforeBegin);
+            if (_awardsReached)
+            {
+                _notes.Add($"The match ended with turn {turn}; the endgame drew the awards after roll {_rolls.Count}.");
+                break;
+            }
         }
 
         DumpWritableSections();
@@ -223,6 +281,24 @@ internal sealed class NewGameSession(
             (byte)order.Action, (byte)order.Target, (byte)order.Target2,
             (byte)(order.Repeat ? order.Action : 0), (byte)(order.Repeat ? order.Target : 0)]);
         _notes.Add($"order after roll {_rolls.Count}: {order}");
+    }
+
+    private void WriteHire(ProbeHire hire)
+    {
+        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        _process.Write(OriginalAddresses.HireOrders + (uint)(human * 3 + hire.OfferSlot), [(byte)hire.Sector]);
+        _notes.Add($"hire after roll {_rolls.Count}: {hire}");
+    }
+
+    private void WritePlanning(ProbePlanning write)
+    {
+        if (write.Family == ProbePlanning.Raider)
+            _process.Write(OriginalAddresses.RaiderMode + (uint)write.Player, [1]);
+        else
+            _process.Write(OriginalAddresses.PlanningRecords
+                + (uint)(write.Player * OriginalAddresses.PlanningPlayerStride
+                    + write.Slot * OriginalAddresses.PlanningRecordSize), [(byte)write.Family]);
+        _notes.Add($"planning after roll {_rolls.Count}: {write}");
     }
 
     // --seed replaces the clock value the process start passes to srand, so a run can be repeated.

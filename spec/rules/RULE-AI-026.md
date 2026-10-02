@@ -4,7 +4,7 @@ title: Family-7 computer gangs sit where sites add the most Research, influence 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060]
+evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060, EXP-TURN-020]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -74,7 +74,7 @@ if w == 10:
     let kind = 0
     if hostile_owner(player, s):
         kind = 1
-    let t = draw_once(player, idx, kind)
+    let t = draw_once(player, idx, kind, idx % 81)
     if t != -1 and attitude[player * 6 + t / 81] < 0:
         plan(idx, ACTION_ATTACK, t / 81, t % 81)
         aux_records[idx].focus = s
@@ -184,6 +184,14 @@ None known.
 
 ## Open questions
 
+- EXP-TURN-020 directly checks the successful weight-10 attack branch: call
+  10549 draws the sole human target and the attack resolves. The fixture
+  compares the complete draw stream and final state, but does not isolate the
+  failed or non-hostile attack fallthrough, weapon and armor upgrade cooldowns,
+  Heal, best-Research-sector routing and ties, Research-site Influence,
+  continuation and type cycling, fallback scans and the fixed item list,
+  research exhaustion and family change, or the late Greed Terminate override.
+  The attack check alone does not establish the research procedure.
 - The item `type` numbers (0 melee, 1 blade, 2 ranged, 3 armor, 4
   miscellaneous) are assumptions shared with RULE-AI-005.
 - A previous Research of an item of type 4 that is not on the fixed list, or of

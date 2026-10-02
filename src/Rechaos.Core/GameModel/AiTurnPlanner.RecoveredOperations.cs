@@ -99,19 +99,24 @@ public static partial class AiTurnPlanner
                 .Setup.Controller == PlayerController.Human)
             .ToArray();
 
-    /// <summary>The family 0 and family 4 draw: human-weighted pool, family 12 acceptance test.</summary>
+    /// <summary>
+    /// The family 0, family 1 and family 4 draw: human-weighted pool, family 12 acceptance test.
+    /// <paramref name="strengthTestSlot"/> is the roster slot the handler passes to the strength
+    /// test when it is not the gang's own (BUG-AI-007).
+    /// </summary>
     private static RecoveredAttackDraw DrawHumanWeightedAttackTarget(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         IReadOnlyList<ObjectiveTarget> visible,
-        int visibleWeight)
+        int visibleWeight,
+        int? strengthTestSlot = null)
     {
         var targetPool = SelectHumanWeightedTargetPool(
             state, playerId, gang.SectorId, visible, visibleWeight);
         return DrawRecoveredAttackTarget(
             state, gang, visible, targetPool,
-            OriginalAiFamilyTwelveRules.CanAttackSelectedTarget);
+            OriginalAiFamilyTwelveRules.CanAttackSelectedTarget, strengthTestSlot);
     }
 
     private static RecoveredAttackDraw DrawRecoveredAttackTarget(
@@ -119,7 +124,8 @@ public static partial class AiTurnPlanner
         MatchGangState gang,
         IReadOnlyList<ObjectiveTarget> visible,
         IReadOnlyList<ObjectiveTarget> targetPool,
-        Func<int, int, int, int, int, int, bool> acceptsComparison)
+        Func<int, int, int, int, int, int, bool> acceptsComparison,
+        int? strengthTestSlot = null)
     {
         // Families 12 and 13/14 clamp their pool before they get here and the other callers only
         // reach this with a hostile list they have already found non-empty. Say so out loud, so a
@@ -128,6 +134,14 @@ public static partial class AiTurnPlanner
             throw new InvalidOperationException("A recovered attack draw needs a non-empty target pool.");
         var ordinal = state.Random.NextInclusive(targetPool.Count);
         var selected = targetPool[ordinal - 1];
+        if (strengthTestSlot is { } slot)
+        {
+            var attacker = OriginalGangRecord.At(state, gang.Owner, slot);
+            var compared = OriginalGangRecord.VisibleAt(state, gang.Owner, attacker.Sector, ordinal);
+            return new RecoveredAttackDraw(selected, acceptsComparison(
+                attacker.Force, attacker.Combat, attacker.Defense,
+                compared.Force, compared.Combat, compared.Defense));
+        }
         var comparisonTarget = visible[ordinal - 1].Gang;
         var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
         var targetStats = EffectiveStatisticsCalculator.ForGang(state, comparisonTarget);

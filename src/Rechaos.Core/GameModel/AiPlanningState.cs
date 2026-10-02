@@ -324,6 +324,12 @@ public sealed class AiPlanningState
                 _needsFamily[GangSlotIndex(player, gangSlot)] = true;
     }
 
+    /// <summary>
+    /// RULE-AI-001: sets only the player's raider flag, with no reset of its records, for a test
+    /// that follows a recording which wrote the original's byte directly.
+    /// </summary>
+    internal void SetRaiderMode(PlayerId player) => _raiderMode[PlayerIndex(player)] = true;
+
     internal void SetNeedsFamily(PlayerId player, int gangSlot) =>
         _needsFamily[GangSlotIndex(player, gangSlot)] = true;
 

@@ -106,6 +106,9 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void AdoptMatch(MatchState loaded, MatchReplayRecorder recorder, string message)
     {
+        // RULE-AUDIO-001, FND-AUDIO-001: re-entering the outer game starts its
+        // program from the first track even when another match was already playing.
+        _restartSoundtrackProgram = true;
         ReplaceMatch(loaded, new MatchActions(recorder));
         _actions.HotSeatRecorder.ContinueRandomStream(_runRandomState);
         _actions.HotSeatRecorder.EmptyComlinkInboxes();

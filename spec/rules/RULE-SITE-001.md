@@ -4,7 +4,7 @@ title: Before planning, each sector record is rebuilt from its completed sites, 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GANG-001, FND-STATE-001, FND-UPKEEP-001, FND-UI-035, FND-TURN-001, FND-CONTROL-001, SRC-MANUAL-GOG, SRC-RECHAOS-3561D41, FND-EXE-004, EXP-SETUP-001]
+evidence: [FND-GANG-001, FND-STATE-001, FND-UPKEEP-001, FND-UI-035, FND-TURN-001, FND-CONTROL-001, SRC-MANUAL-GOG, SRC-RECHAOS-3561D41, FND-EXE-004, EXP-SETUP-001, FND-OBJECTIVE-004, EXP-TURN-038]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -23,7 +23,10 @@ during a turn starts to count only at the next one.
 ## When it runs
 
 In `turn_start`, for every sector, before each gang's effective statistics
-are rebuilt, and in the first turn before the first `planning_phase`.
+are rebuilt, and in the first turn before the first `planning_phase`. It runs
+once more when a match ends, after the end evaluation and before the last look
+at the city, with no upkeep before it [FND-OBJECTIVE-004]: a site completed in
+the final turn then counts [EXP-TURN-038].
 
 ## Parameters
 

@@ -65,12 +65,30 @@ public sealed class PlayerRankingUiTests
         var state = CreateMatch(ScenarioId.BigMan, [0, 0]);
         state.Players[0].BigManPoints = 39;
         state.Sectors[27].Owner = new PlayerId(1);
+        OriginalAiScenarioStandingRules.Record(state);
 
         Assert.Equal(
         [
             new PlayerRankingEntry(new PlayerId(0), 0, 39, 0),
             new PlayerRankingEntry(new PlayerId(1), 1, 0, 136)
         ], PlayerRankingPresentation.Project(state));
+    }
+
+    // RULE-OBJECTIVE-002: the panel shows the score stored when the last turn ended, so cash spent
+    // or earned during a turn moves a Greed portrait only once the next turn ends.
+    [Fact]
+    public void GreedRankingKeepsTheStoredScoreUntilTheTurnEnds()
+    {
+        var state = CreateMatch(ScenarioId.Greed, [100, 50]);
+        state.Players[0].Cash = 10;
+
+        Assert.Equal([100L, 50L], PlayerRankingPresentation.Project(state).Select(entry => entry.Score));
+        Assert.Equal(0, PlayerRankingPresentation.Project(state)[0].Standing);
+
+        OriginalAiScenarioStandingRules.Record(state);
+
+        Assert.Equal([10L, 50L], PlayerRankingPresentation.Project(state).Select(entry => entry.Score));
+        Assert.Equal(1, PlayerRankingPresentation.Project(state)[0].Standing);
     }
 
     [Theory]
@@ -87,9 +105,11 @@ public sealed class PlayerRankingUiTests
     public void StatusConsoleScoreMatchesRankingScore(ScenarioId scenario)
     {
         var state = CreateMatch(scenario, [300, 100], sectorOwners: [0, 0, 1]);
-        state.Players[0].Support = 4;
+        // A completed site of Support 1 in the player's sector (RULE-OBJECTIVE-002).
+        state.Sectors[0].Sites[0].Resistance = 0;
         state.Players[0].BigManPoints = 12;
         state.Sectors[OriginalCityGenerator.HeadquartersCandidates[0]].Owner = new PlayerId(0);
+        OriginalAiScenarioStandingRules.Record(state);
 
         foreach (var entry in PlayerRankingPresentation.Project(state))
             Assert.Equal(entry.Score, StatusConsolePresentation.Score(state, state.Players[entry.Player.Value]));
@@ -109,7 +129,8 @@ public sealed class PlayerRankingUiTests
             "PLAYER 2",
             "PLACE 1 OF 4 (TIED)",
             "GREED RATES: CASH ON HAND",
-            "SCORE: 2,500",
+            "SCORE: 2,500 AT MATCH START",
+            "NOW:",
             "  CASH: $2,500",
             "",
             "ALL SCORES:",
@@ -124,20 +145,41 @@ public sealed class PlayerRankingUiTests
         ], lines);
     }
 
+    // RULE-OBJECTIVE-002: after turn 1 the stored score is the one the last end evaluation wrote.
     [Fact]
-    public void DominanceTooltipShowsWeightedComponentsBehindTheScore()
+    public void TooltipDatesTheScoreToTheLastTurnEndAfterTurnOne()
     {
-        var state = CreateMatch(ScenarioId.Dominance, [400, 0], sectorOwners: [0, 0]);
-        state.Players[0].Support = 3;
+        var state = CreateMatch(ScenarioId.Greed, [100, 50]);
+        var coordinator = state.Coordinator;
+        coordinator.FinishUpkeep();
+        foreach (var setup in state.Setup.Players) coordinator.FinishCommand(setup.Id);
+        foreach (var _ in TurnStructure.ExecutionOrder) coordinator.FinishExecutionPhase();
+        foreach (var setup in state.Setup.Players) coordinator.FinishHire(setup.Id);
+        coordinator.FinishPlayerElimination();
+        Assert.Equal(2, coordinator.Turn);
         var entries = PlayerRankingPresentation.Project(state);
 
         var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
 
-        Assert.Equal("SCORE: 49", lines[3]);
-        Assert.Equal("  CASH          $400 X 1    = 400", lines[4]);
-        Assert.Equal("  SUPPORT          3 X 10   = 30", lines[5]);
-        Assert.Equal("  SECTORS          2 X 30   = 60", lines[6]);
-        Assert.Equal("  TOTAL 490 / 10 = SCORE", lines[7]);
+        Assert.Equal("SCORE: 100 AT LAST TURN'S END", lines[3]);
+    }
+
+    [Fact]
+    public void DominanceTooltipShowsWeightedComponentsBehindTheScore()
+    {
+        var state = CreateMatch(ScenarioId.Dominance, [400, 0], sectorOwners: [0, 0]);
+        // Sector 0's three sites complete, each of Support 1 (RULE-OBJECTIVE-002).
+        foreach (var site in state.Sectors[0].Sites) site.Resistance = 0;
+        OriginalAiScenarioStandingRules.Record(state);
+        var entries = PlayerRankingPresentation.Project(state);
+
+        var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
+
+        Assert.Equal("SCORE: 49 AT MATCH START", lines[3]);
+        Assert.Equal("  CASH          $400 X 1    = 400", lines[5]);
+        Assert.Equal("  SUPPORT          3 X 10   = 30", lines[6]);
+        Assert.Equal("  SECTORS          2 X 30   = 60", lines[7]);
+        Assert.Equal("  TOTAL 490 / 10 = 49", lines[8]);
     }
 
     // RULE-OBJECTIVE-002: Eliminate (7) scores the inactive seats, Siege (6) the headquarters held.
@@ -149,9 +191,9 @@ public sealed class PlayerRankingUiTests
 
         var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
 
-        Assert.Equal("SCORE: 3", lines[3]);
-        Assert.Equal("  6 SEATS - 3 ACTIVE OVERLORDS", lines[4]);
-        Assert.Equal("  SHARED BY EVERY SURVIVING OVERLORD", lines[5]);
+        Assert.Equal("SCORE: 3 AT MATCH START", lines[3]);
+        Assert.Equal("  6 SEATS - 3 ACTIVE OVERLORDS", lines[5]);
+        Assert.Equal("  SHARED BY EVERY SURVIVING OVERLORD", lines[6]);
     }
 
     [Fact]
@@ -162,8 +204,8 @@ public sealed class PlayerRankingUiTests
 
         var lines = PlayerRankingTooltip.Lines(state, entries[0], entries);
 
-        Assert.Equal("SCORE: 0", lines[3]);
-        Assert.Equal("  HQ SECTORS HELD: 0 OF 6 (GOAL)", lines[4]);
+        Assert.Equal("SCORE: 0 AT MATCH START", lines[3]);
+        Assert.Equal("  HQ SECTORS HELD: 0 OF 6 (GOAL)", lines[5]);
     }
 
     [Fact]

@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-003
 title: Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-044, FND-AI-018, FND-AI-040, FND-AI-039, FND-AI-013, FND-AI-019, FND-AI-004, FND-AI-006, FND-AI-045, FND-EXE-004]
+evidence: [FND-AI-044, FND-AI-018, FND-AI-040, FND-AI-039, FND-AI-013, FND-AI-019, FND-AI-004, FND-AI-006, FND-AI-045, FND-EXE-004, EXP-TURN-010, EXP-TURN-017, EXP-TURN-036]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, FMT-STATE-001, FMT-STATE-002]

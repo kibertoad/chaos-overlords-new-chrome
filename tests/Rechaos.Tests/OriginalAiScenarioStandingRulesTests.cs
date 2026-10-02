@@ -39,7 +39,8 @@ public sealed class OriginalAiScenarioStandingRulesTests
     {
         var match = CreateMatch(ScenarioId.Dominance, firstCash: 9, secondCash: 0);
 
-        Assert.Equal(26, OriginalAiScenarioStandingRules.Score(match, match.Players[0]));
+        // (9 cash x 1 + 2 sectors x 30 + 4 Support x 10) / 10
+        Assert.Equal(10, OriginalAiScenarioStandingRules.Score(match, match.Players[0]));
     }
 
     [Fact]
@@ -72,16 +73,20 @@ public sealed class OriginalAiScenarioStandingRulesTests
         [
             new(setups[0], firstCash,
                 [new MatchGangState(new GangId(10), setups[0].Id, 0, 0, 10)],
-                support: 20),
+                support: 4),
             new(setups[1], secondCash,
                 [new MatchGangState(new GangId(20), setups[1].Id, 0, 63, 10)],
-                support: 10)
+                support: 2)
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
                 new MatchSiteState(0, 0, 7),
-                new MatchSiteState(1, 3, 13),
+                // RULE-OBJECTIVE-002: each owned sector's site of definition 3 (Support 2) is
+                // complete, so the first player scores 4 Support and the second 2.
+                id is 0 or 1 or 63
+                    ? new MatchSiteState(1, 3, 0, id == 63 ? setups[1].Id : setups[0].Id)
+                    : new MatchSiteState(1, 3, 13),
                 new MatchSiteState(2, 5, 15)
             ], owner: id is 0 or 1 ? setups[0].Id : id == 63 ? setups[1].Id : null))
             .ToArray();

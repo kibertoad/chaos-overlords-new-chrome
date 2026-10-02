@@ -73,12 +73,20 @@ Planning records 8 and 11 of player 4 held family 1, and 3 and 15 family 0.
 Sector 12 was owned by player 0, the human, and a gang of player 4 stood in
 it; player 4's `attitude` toward player 0 was -10.
 
+At the end of the first run the six players held 0, 3, 3, 3, 3 and 2 Last
+Turn reports (FMT-STATE-006): five completed sites (type 4), six completed
+items (type 5), a Crackdown in sector 50 for player 2 (type 1), and player 4's
+Control of sectors 11 and 14, neither owned before (type 2 with `arg2` -1). At
+the end of the second run they held 0, 3, 1, 2, 1 and 1: two sites and six
+items.
+
 ## Results
 
 Every result is the one RULE-RNG-002 computes from the recorded seed.
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays both runs. The
 rebuild makes both runs' calls with the same bounds and results and reaches the
-same generator position and state after the twenty-five turns.
+same generator position and state after the twenty-five turns, and builds the
+same Last Turn reports for every player.
 
 At call 11610 of the first run the original's call for player 4's gang 8, in
 sector 20, returned 11 with no draw. Sector 12, next to it, is the human's and

@@ -37,12 +37,17 @@ public sealed record PlayerRankingEntry(PlayerId Player, int Standing, long Scor
 
 public static class PlayerRankingPresentation
 {
+    /// <summary>
+    /// SCR-OBJECTIVE-001: the panel reads the scores the last evaluation stored (RULE-OBJECTIVE-002),
+    /// so during a turn it shows them as they stood when the previous turn ended.
+    /// </summary>
     public static IReadOnlyList<PlayerRankingEntry> Project(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
+        var standings = EndgameRankingEvaluator.StoredStandings(state);
         var scored = state.Players
             .Where(player => player.Status == PlayerStatus.Active)
-            .Select(player => (player.Id, Score: Score(state, player)))
+            .Select(player => (player.Id, Score: (long)player.ScenarioScore))
             .OrderBy(entry => entry.Id.Value)
             .ToArray();
         if (scored.Length == 0) return [];
@@ -50,7 +55,7 @@ public static class PlayerRankingPresentation
         var low = scored.Min(entry => entry.Score);
         return scored.Select(entry => new PlayerRankingEntry(
                 entry.Id,
-                scored.Count(candidate => candidate.Score > entry.Score),
+                standings[entry.Id.Value],
                 entry.Score,
                 RailOffset(entry.Score, high, low)))
             .ToArray();
@@ -67,7 +72,4 @@ public static class PlayerRankingPresentation
         var factor = (float)((double)PlayerRankingLayout.RailLength / range);
         return (int)((double)(high - score) * factor);
     }
-
-    private static long Score(MatchState state, MatchPlayerState player)
-        => EndgameRankingEvaluator.Score(state, player);
 }

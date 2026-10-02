@@ -1,10 +1,10 @@
 ---
 id: RULE-OBJECTIVE-001
 title: At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-004, FND-TURN-003, FND-AI-005, SRC-MANUAL-GOG]
+evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-004, FND-TURN-003, FND-AI-005, SRC-MANUAL-GOG, EXP-TURN-037]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-002, RULE-OBJECTIVE-004]

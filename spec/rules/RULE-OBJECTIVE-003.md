@@ -1,10 +1,10 @@
 ---
 id: RULE-OBJECTIVE-003
 title: At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-003, SRC-MANUAL-GOG]
+evidence: [FND-TURN-003, SRC-MANUAL-GOG, EXP-TURN-017, EXP-TURN-022]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -87,4 +87,3 @@ None known.
   `definition`) is not recorded.
 - Whether a player already inactive is skipped in either loop is not
   recorded; the writes are the same either way.
-- `player_active` has no recorded address.

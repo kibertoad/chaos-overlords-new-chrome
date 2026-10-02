@@ -1,10 +1,10 @@
 ---
 id: RULE-OBJECTIVE-002
 title: Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-003, FND-AI-005, FND-TURN-003, FND-UI-033, FND-CITY-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-OBJECTIVE-003, FND-AI-005, FND-TURN-003, FND-UI-033, FND-CITY-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG, FND-EXE-004, FND-SETUP-015, EXP-TURN-012, EXP-TURN-014, EXP-TURN-028, EXP-TURN-039, EXP-TURN-038]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-004, FMT-STATE-002]
@@ -22,8 +22,12 @@ share a standing and the best is 0. Eliminated players have no standing.
 
 ## When it runs
 
-At the start of RULE-OBJECTIVE-001, at the end of every turn. The computer
-players and the Player Rankings panel read its results.
+At the start of RULE-OBJECTIVE-001, at the end of every turn, and once when a
+new match starts, before SMGFUNDAGE raises a player's cash to 1,500
+[FND-SETUP-015]. Nothing else calls it. The computer players and the Player
+Rankings panel read the stored results, so during a turn they see the scores as
+the last turn ended: in Greed, the cash from before the turn's upkeep
+[EXP-TURN-028].
 
 ## Parameters
 

@@ -17,7 +17,7 @@ public static class SiteSearchLayout
     public static Rectangle Site(int index)
     {
         if (index is < 0 or >= MaximumSites) throw new ArgumentOutOfRangeException(nameof(index));
-        // Native Search handler 0x00448e32 constructs these exact half-open
+        // Native Search handler 0x00448E32 (FND-SEARCH-002) constructs these exact half-open
         // targets with Point(102 + 116 * column, 22 + 15 * row), 114, 15.
         return SharedPanelLayout.At(102 + index / RowsPerColumn * 116,
             22 + index % RowsPerColumn * 15, 114, 15);

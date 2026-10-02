@@ -40,8 +40,21 @@ public static class MatchBootstrap
         var state = new MatchState(definitions, setup, foundation.Players, foundation.Sectors);
         // FND-AI-045: a new match runs the start pass once its layout exists.
         state.RefreshEveryPlayersAiSectorRecords();
+        // RULE-OBJECTIVE-002, FND-SETUP-015: a new match stores its scores from the cash each player
+        // had before SMGFUNDAGE raised it, which is the cash its start gave.
+        var cashBeforeModifier = starts.ToDictionary(
+            start => start.Player,
+            start => StartingCashBeforeModifier(setup.Scenario, start.StandardStartingCash));
+        OriginalAiScenarioStandingRules.Record(state, player => cashBeforeModifier[player.Id]);
         return state;
     }
+
+    /// <summary>
+    /// FND-SETUP-015: the cash a new match gives a player before SMGFUNDAGE raises it, 500 in
+    /// Armageddon and the start's standard cash otherwise.
+    /// </summary>
+    internal static int StartingCashBeforeModifier(ScenarioId scenario, int standardStartingCash) =>
+        scenario == ScenarioId.Armageddon ? ArmageddonStartingCash : standardStartingCash;
 
     /// <summary>
     /// The starting rosters and city on their own, for the original generation path, which finishes
@@ -84,10 +97,10 @@ public static class MatchBootstrap
                 throw new ArgumentException("A player's starting sector must contain a Headquarters site.", nameof(sectors));
         }
 
-        // Original initializer 0x0046dc10 copies every ITEMS research-difficulty byte into the
-        // 64-by-6 progress table, or zeroes the entire table for Armageddon. Type-99 records are
-        // padding rather than technologies, so authoritative recreation state deliberately omits
-        // them while preserving the observable result for every real item.
+        // FND-RESEARCH-002: original initializer 0x0046DC10 copies every ITEMS research-difficulty
+        // byte into the 64-by-6 progress table, or zeroes the entire table for Armageddon. Type-99
+        // records are padding rather than technologies, so authoritative recreation state
+        // deliberately omits them while preserving the observable result for every real item.
         var startingResearch = definitions.Items
             .Select((item, index) => (item, index))
             .Where(entry => entry.item.Type != 99
@@ -106,9 +119,7 @@ public static class MatchBootstrap
                 setup.Players[index],
                 OriginalSetupNameRules.ApplyStartingCash(
                     setup.Players[index].Name,
-                    setup.Scenario == ScenarioId.Armageddon
-                        ? ArmageddonStartingCash
-                        : start.StandardStartingCash),
+                    StartingCashBeforeModifier(setup.Scenario, start.StandardStartingCash)),
                 [rightHands], start.HirePool,
                 researchedItems: startingResearch,
                 usesMaximumHireForce: OriginalHireCheatRules.DetectMaximumHireForce(

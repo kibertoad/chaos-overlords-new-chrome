@@ -47,7 +47,7 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Selects the opening page using original View handler <c>0x0045d61a</c>'s
+    /// FND-COMLINK-002: selects the opening page using original View handler <c>0x0045D61A</c>'s
     /// ascending first-unread scan, retaining the existing page after all
     /// retained records have been acknowledged.
     /// </summary>
@@ -96,7 +96,7 @@ public sealed partial class ChaosGame
             CloseComlink();
             return;
         }
-        // Original Send handler 0x0045eab1 submits on Execute. Enter moves its
+        // Original Send handler 0x0045EAB1 (FND-COMLINK-005) submits on Execute. Enter moves its
         // four-row editor cursor, so it must never dispatch a message here.
         if (Pressed(keyboard, Keys.Execute))
         {
@@ -185,7 +185,7 @@ public sealed partial class ChaosGame
 
     private void BeginComlinkSendButton(ComlinkSendButton button)
     {
-        // Native Send handler 0x0045eab1 rejects the face immediately when no
+        // Native Send handler 0x0045EAB1 (FND-COMLINK-003) rejects the face immediately when no
         // recipient is selected; it only enters shared held-button helper
         // 0x00418821 after that predicate passes.
         if (button == ComlinkSendButton.Send && !_comlinkRecipients.Any(selected => selected))

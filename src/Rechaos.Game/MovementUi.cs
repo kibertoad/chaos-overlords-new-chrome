@@ -26,7 +26,7 @@ public static class MovementLayout
     }
 
     /// <summary>
-    /// Native Move handler 0x004413ef maps the 3-by-3 neighborhood in row
+    /// Native Move handler 0x004413EF (FND-MOVE-002) maps the 3-by-3 neighborhood in row
     /// order but excludes its center before it considers a destination.
     /// </summary>
     public static bool IsDestinationCell(int column, int row)

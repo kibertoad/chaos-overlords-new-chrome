@@ -4,7 +4,7 @@ title: Music repeats its program when it ends and pauses while the window is ina
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-001, FND-AUDIO-007, FND-UI-023, FND-EXE-004]
+evidence: [FND-AUDIO-016, FND-AUDIO-001, FND-AUDIO-007, FND-UI-023, FND-EXE-004, SRC-MCI-PLAY, SRC-MCI-STOP]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-001, RULE-AUDIO-003, RULE-UI-008]
@@ -56,14 +56,24 @@ else if message == 2:
 No return value. Starts the current program again, or emits `MusicPaused` or
 `MusicResumed`, and sets `window_inactive`. The pause is sent only while the
 device is playing. The resume is an MCI play command with no start or end
-position, which by the MCI definition plays from the paused position to the end
-of the disc.
+position. It is sent regardless of whether the device is paused, playing or
+stopped. Without these flags playback uses the current position and the disc
+end (SRC-MCI-PLAY). Pause retains the position within the track; an explicit CD
+stop resets it to zero within that track (SRC-MCI-STOP).
 
 ## Edge cases
+
+- A focus message consumed by the fade's window-only pump does not run the
+  pause/resume handler or change `window_inactive`. Actual operating-system
+  focus can therefore differ from that flag afterward (FND-AUDIO-016).
 
 - The poll also restarts music that stopped for any other reason, such as a
   disc change, and it restarts the program once music is enabled again after
   level 0 (RULE-AUDIO-003).
+- Activation after an explicit stop restarts the interrupted track at its
+  beginning and continues to disc end. Activation at a naturally completed
+  program's end proceeds into any remaining tracks rather than restarting the
+  selected program immediately.
 - After a resume the music runs past the last track of the program to the end
   of the disc before the poll restarts the program.
 - Without a disc or a CD device the poll sends the status and play commands on
@@ -72,7 +82,9 @@ of the disc.
 
 ## What the sources say
 
-None of the sources describes the repeat or the pause.
+SRC-MCI-PLAY defines the omitted start/end positions. SRC-MCI-STOP distinguishes
+the position after CD stop from the position retained by pause. The game-specific
+repeat and activation call sites are recorded by FND-AUDIO-007.
 
 ## Differences between builds
 
@@ -80,6 +92,4 @@ None known.
 
 ## Open questions
 
-- How the replacement `winmm.dll` of the GOG build answers the status query and
-  the resume, and so whether the resume really plays past the program there, has
-  not been observed.
+None.

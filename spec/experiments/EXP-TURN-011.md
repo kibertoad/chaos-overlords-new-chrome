@@ -49,24 +49,33 @@ At the end of the run the human's gang had Force 6, `action` and
 Player 4's `attitude` toward player 0 was -10 and player 0's toward player 4
 was 10.
 
+At the end the six players held 0, 1, 5, 3, 4 and 4 Last Turn reports
+(FMT-STATE-006): five completed sites (type 4), six completed items (type 5),
+four Controls taken (type 2) and two lost (type 3). Player 2 lost sector 60
+with `arg2` 5, and player 5 took it with `arg2` 2; player 4 lost sector 19 with
+`arg2` 3, and player 3 took it with `arg2` 4. The other two sectors taken,
+48 and 5, had no owner before, `arg2` -1.
+
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run,
-giving the Attack as a command for player 4's roster slot 18. The rebuild makes
-the same calls with the same bounds and results and reaches the same generator
-position and state. In it the human's gang, Force 10 and Combat 1 against
-Defense 9, rolls two dice and hits with none, so it does no damage; the target,
-Force 9 and Combat 7 against Defense 1, strikes back with fifteen dice, nine of
-them hits, for four damage, which leaves the human's gang at Force 6 when the
-combat phase ends.
+`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run, giving
+the Attack as a command for player 4's roster slot 18. The rebuild makes the
+same calls with the same bounds and results, reaches the same generator
+position and state, and builds the same Last Turn reports for every player. In
+it the human's gang, Force 10 and Combat 1 against Defense 9, rolls two dice
+and hits with none, so it does no damage; the target, Force 9 and Combat 7
+against Defense 1, strikes back with fifteen dice, nine of them hits, for four
+damage, which leaves the human's gang at Force 6 when the combat phase ends.
 
 ## Conclusion
 
 The run agrees with RULE-ATTACK-001 and RULE-COMBAT-002 for an attack on a gang
 that is not hiding: the opening pool, the success threshold, the retaliation
 at half the target's hits, and damage taken off Force only at the end of the
-phase. The run does not test Damage Inflicted (RULE-COMBAT-003), which the
-fixture does not record and which this attack left unchanged. It tests the
+phase. It tests the retaliation half of Damage Inflicted (RULE-COMBAT-003):
+player 4's gang dealt four damage striking back, and player 4's
+`damage_inflicted` ended the run at 0, as did every player's, so no
+retaliation was counted. It tests the
 attitude change (RULE-AI-016) only in part: player 4's attitude toward the
 human, -10 before the turn, rises to -9 at the start of the resolution
 (RULE-AI-015) and ends at -10, where EXP-TURN-010's run without the Attack

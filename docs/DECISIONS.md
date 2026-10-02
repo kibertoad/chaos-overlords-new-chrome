@@ -41,6 +41,12 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
 
+## 2026-10-01 ? Use the original executable as the parity target
+
+- Decision: Parity requires the original executable's behavior, not feature parity with the GOG CD compatibility wrapper.
+- Reason: The wrapper is a separate attempt to fix known issues rather than evidence that the original executable implemented those fixes.
+- Scope: Keep wrapper findings as context and consider its approaches when addressing known issues. There is no requirement to implement the same fixes or reproduce their exact behavior. Any intentional departure from the original still follows the deviation ledger.
+
 ## 2026-09-26 — Keep a replay load's random state and inboxes
 
 - Decision: F10 rebuilds the match from the F6 journal and plays on with the

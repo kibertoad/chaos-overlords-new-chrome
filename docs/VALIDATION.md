@@ -11,6 +11,7 @@ Status: maintained canonical procedure
 - [Spec checks](#spec-checks)
 - [Tests against the original](#tests-against-the-original)
 - [Fixture classes](#fixture-classes)
+- [Native audio backend](#native-audio-backend)
 - [Failure triage](#failure-triage)
 <!-- doc-index:end -->
 
@@ -354,7 +355,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--sound]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--sound]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
@@ -390,8 +391,17 @@ given turn, counted from 1: the `action`, `target` and `target_2` bytes of
 FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
 as the order screens write them (RULE-TURN-005). The fixture lists each order
 as an `order` input before its Done press, and the replay submits the same
-order as a command; each run records the roll count at every press as
-`done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
+order as a command. `--hires` writes the sector byte of the first human's
+hire order for an offer slot into `hire_orders` before the Done press of the
+given turn, as the hire screen does (RULE-HIRE-003); the fixture lists it as a
+`hire` input, and the replay hires the gang the rebuild offers in that slot.
+`--families` writes the `family` byte of a computer player's planning record
+(FMT-STATE-007) and `--raiders` sets the player's byte of `raider_mode`
+(RULE-AI-027), both before the Done press of the given turn, to reach families
+no local match assigns. The fixture lists each as a `planning` input, and the
+replay makes the same change to the rebuild's planning state; since that change
+bypasses the replay recorder, such a run's journal is not verified.
+Each run records the roll count at every press as `done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
 a recorded run can be played again, and `--dump-at-roll` copies the writable
 sections and the top of the stack at the entry of that call of `roll`, counted
 from 0, into
@@ -406,10 +416,21 @@ directory holds
 the original's memory and never goes into the repository. `extract` reads the
 numbers of the spec's state layouts and glossary terms out of one or more run
 directories and writes them as the runs of an experiment fixture, with no
-names or texts. `OriginalNewGameExperimentTests` replays every run of
-EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-011 against the
-rebuild and names the first roll whose bound or result differs, with the
-original's call instruction.
+names or texts. Among them are each player's Last Turn reports of the last
+resolution (FMT-STATE-006), which the first run of EXP-TURN-001 and every run
+from EXP-TURN-010 on hold, apart from the traced second run of EXP-TURN-021.
+The same runs also hold each player's running totals (`cash_earned`,
+`cash_spent`, `damage_inflicted`, `casualties`, `overthrow_count`,
+`hide_count`) and their `hire_role` and `previous_hire_role`; the replay
+compares them only in the runs that hold them, and reads the -1 the original
+keeps in a human player's `hire_role` as the rebuild's 0. The fixtures also hold
+the `scenario_score` and `scenario_standing` the last evaluation stored. A run
+that ends the match stops when the endgame draws the awards, and its fixture
+holds `match_over` and each player's first three `player_awards` entries.
+`OriginalNewGameExperimentTests` replays every run of the EXP-SETUP and
+EXP-TURN fixtures against the rebuild and names the first roll whose bound or
+result differs, with the original's call instruction, then compares the state
+and, where the fixture has them, the reports.
 
 ## Static binary research
 
@@ -428,8 +449,23 @@ static work still open is listed in
 
 `node tools/check-spec.mjs` runs the documentation standard's
 [checks](https://dinorefurb.com/documentation-standard/#checks) over `spec/`,
-`PARITY.md` and `DEVIATIONS.md`, and writes the indexes in `spec/index/`. The
-fast gate runs it with `--check`. It compiles the Kaitai definitions when
+`PARITY.md` and `DEVIATIONS.md`, and writes the indexes in `spec/index/`. It
+also fails when a code comment gives an address that no entry the comment
+cites records, in its locations or text or in the evidence of an entry it
+cites. This is the address check of the toolkit's documentation check
+(kibertoad/refurbished-dinosaurs-template#39), with the same rules: comments
+are read from `.cs`, `.ts`, `.js` and `.mjs` files, so `//` inside a string or
+a regular expression is not a comment and `/* … */` is; a neutral name (`fn_…`,
+`g_…`) is always an address, and a plain `0x…` value is one only inside an
+image given with `--images` (by default the executable's,
+`0x00400000..0x004C9000`, from FND-EXE-001), so colours, masks and offsets are
+left alone. A range larger than `--max-range` (64 KiB by default), such as a
+whole section, records only its two ends, nothing inside it. When a comment
+fails, cite the finding that records the address, or write one.
+The fast gate runs it with `--check`, and `.githooks/pre-commit` runs it before
+each commit once a clone enables the hook. The hook copies the index to a
+temporary directory and checks that, so it judges what is being committed, not
+unstaged edits. It compiles the Kaitai definitions when
 `kaitai-struct-compiler` (or the path in `KSC`) is on the path and warns when
 it is not. Until the patch tool is published with the standard's spec package,
 an experiment that uses a save patch also gives each write as a byte offset and
@@ -461,6 +497,29 @@ original's result as the deviation changes it.
 - **Save patch:** writes to a base save, committed under
   `spec/experiments/saves/`; the base save itself stays with the maintainer's
   captures.
+
+## Native audio backend
+
+The native soundtrack EOF regression pins the old stream at its decoded end before
+replacing its program, then requires the replacement decoder to reach the end of a
+2.5-second synthetic track. This checks stale completion-state truncation, without
+proving audible output or final partial-buffer delivery. The production adapter
+binds MonoGame DesktopGL 3.8.5.1 `OggStreamer.Instance` and `pendingFinish` through
+reflection: explicit stop removes and synchronizes with the old stream before the
+flag is reset, and the new stream is published afterward. A paused resume retains
+its existing completion state. Dependency upgrades must preserve these boundaries
+or replace this hook with an equivalent supported API.
+
+A separate native diagnostic confirms a remaining tail-delivery defect in the pinned
+backend. Keep the initially prepared 0.5-second buffer playing with native looping,
+seek the decoder of the synthetic 2.5-second track to 2.25 seconds, and wait for
+`pendingFinish`. The decoder reaches 2.5 seconds, but `ALGetSourcei.BuffersQueued`
+is 1 rather than 2: the decoded 0.25-second tail was not queued. The streaming
+worker sets `finished` on that read and queues buffers only when `!finished`.
+This diagnostic intentionally changes decoder position to isolate submission; it
+does not compare audible hardware output. Whole-track decoding alone therefore
+cannot establish the endpoint required by RULE-AUDIO-001. Repairing final-buffer
+submission remains necessary before claiming full soundtrack parity.
 
 ## Failure triage
 

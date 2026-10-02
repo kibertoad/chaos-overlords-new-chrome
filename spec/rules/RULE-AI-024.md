@@ -4,7 +4,7 @@ title: Family-5 computer gangs influence the best Support site in owned land, ta
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-034, FND-AI-033, FND-AI-026, FND-AI-028, FND-EXE-004]
+evidence: [FND-AI-072, FND-AI-034, FND-AI-033, FND-AI-026, FND-AI-028, FND-EXE-004, EXP-TURN-020]
 conflicting: []
 split_with: []
 related: [RULE-AI-022]
@@ -46,6 +46,8 @@ auxiliary values of -1 and a family of 11 or 2. Draws as RULE-AI-022.
 
 Mode 7 also skips sectors where another of the player's gangs is continuing an
 Influence (FND-AI-026), so two family-5 gangs rarely gather in one sector.
+The family-5 draw at `0x0043AC6A` passes the sector as the strength test's
+slot, as family 3's does (BUG-AI-007).
 
 ## What the sources say
 
@@ -57,6 +59,14 @@ None known.
 
 ## Open questions
 
+- EXP-TURN-020 directly checks the weight-10 attack branch after Attack, Hide
+  or Move: call 10547 draws the sole human target and the attack resolves. The
+  fixture compares the complete draw stream and final state, but does not
+  isolate the remaining `site_builder` branches: Heal, best Support site and
+  continued Influence, solo Control, mode-7 movement, equipment cooldowns,
+  failed attacks, three-Move family changes, action cases without a body and
+  the late Greed Terminate override. Those branches remain statically supported;
+  the attack check alone does not establish the Support-building procedure.
 - FND-AI-034 says the handler has "the same action switch and ending" as family
   3; that the unrecorded cases and the three-Move test are also the same is
   assumed.
