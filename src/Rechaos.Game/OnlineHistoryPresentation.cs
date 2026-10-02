@@ -10,7 +10,7 @@ namespace Rechaos.Game;
 /// </remarks>
 public static class OnlineHistoryPresentation
 {
-    public const string Hint = "UP/DOWN SELECT  ENTER REJOINS";
+    public const string Hint = "SELECT A ROW  CONFIRM TO REJOIN";
 
     public static string Row(MultiplayerRecovery recovery)
     {

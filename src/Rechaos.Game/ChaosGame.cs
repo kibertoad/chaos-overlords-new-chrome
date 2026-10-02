@@ -37,6 +37,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _autoSavePath;
     private readonly string _replayPath;
     private readonly string _preferencesPath;
+    private readonly string _keyBindingsPath;
+    private KeyBindingMap _keyBindings;
     private readonly string _multiplayerRecoveryPath;
     private readonly bool _debugPhaseStepping;
     private readonly RuntimeDiagnostics? _diagnostics;
@@ -271,6 +273,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _autoSave = new RollingAutoSave(_autoSavePath, ReportAutoSaveFailure);
         _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
         _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
+        _keyBindingsPath = Path.Combine(userDataRoot, "keybindings.json");
+        _keyBindings = KeyBindingStore.LoadOrDefault(_keyBindingsPath);
         _multiplayerRecoveryPath = Path.Combine(userDataRoot, "multiplayer-recovery.json");
         var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
         _musicVolumeLevel = preferences.MusicVolumeLevel;
@@ -440,10 +444,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
         // The rebuild's window shortcuts are not game events, so a fade does not swallow them.
-        if (Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
-        var altEnter = Pressed(keyboard, Keys.Enter)
+        // Alt+Enter is a chord on the physical Enter, whatever Enter is bound to (DEV-UI-024).
+        var editingKeyBindings = EditingKeyBindings;
+        if (!editingKeyBindings && Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
+        var altEnter = !editingKeyBindings && RawPressed(keyboard, Keys.Enter)
             && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
-        if (Pressed(keyboard, Keys.F11) || altEnter) ToggleFullscreen();
+        if ((!editingKeyBindings && Pressed(keyboard, Keys.F11)) || altEnter)
+            ToggleFullscreen();
         // FND-AUDIO-016: the fade pumps window messages without game events.
         var soundtrackUpdated = _soundtrackFade is not null;
         if (soundtrackUpdated)
@@ -774,6 +781,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)
             HandleHelpScroll(virtualPoint, wheelDelta);
+        if (pointerMapped && EditingKeyBindings && KeyBindingsLayout.Panel.Contains(virtualPoint)
+            && wheelDelta != 0)
+            ScrollKeyBindings(wheelDelta);
         if (pointerMapped && mouse.LeftButton == ButtonState.Pressed)
         {
             _dragPoint = virtualPoint;
@@ -974,6 +984,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             && state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id))?.Owner == viewer;
     }
 
-    private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
+    /// <summary>Whether the shortcut <paramref name="key"/> went down this frame (DEV-UI-024).</summary>
+    /// <remarks>
+    /// A text editor reads typed characters from the physical keys, so while one has focus its
+    /// editing keys are physical too. Otherwise a shortcut rebound to a letter would type that
+    /// letter and also confirm, erase or move the caret.
+    /// </remarks>
+    private bool Pressed(KeyboardState current, Keys key) =>
+        RawPressed(current, TextInputHasFocus() ? key : _keyBindings.Physical(key));
+
+    private bool RawPressed(KeyboardState current, Keys key) =>
+        current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
 
 }

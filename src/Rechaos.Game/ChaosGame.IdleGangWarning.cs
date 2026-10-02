@@ -32,9 +32,14 @@ public static class IdleGangWarningPolicy
 
     public static IdleGangWarningChoice KeyboardChoice(
         KeyboardState current,
-        KeyboardState previous)
+        KeyboardState previous,
+        KeyBindingMap? bindings = null)
     {
-        bool Pressed(Keys key) => current.IsKeyDown(key) && !previous.IsKeyDown(key);
+        bool Pressed(Keys key)
+        {
+            var physical = bindings?.Physical(key) ?? key;
+            return current.IsKeyDown(physical) && !previous.IsKeyDown(physical);
+        }
 
         if (Pressed(Keys.Enter) || Pressed(Keys.Execute)) return IdleGangWarningChoice.Confirm;
         return Pressed(Keys.Escape) ? IdleGangWarningChoice.Cancel : IdleGangWarningChoice.None;
@@ -67,7 +72,8 @@ public sealed partial class ChaosGame
 
     private void UpdateIdleGangWarning(KeyboardState keyboard)
     {
-        switch (IdleGangWarningPolicy.KeyboardChoice(keyboard, _previousKeyboard))
+        switch (IdleGangWarningPolicy.KeyboardChoice(keyboard, _previousKeyboard,
+                    _keyBindings))
         {
             // FND-UI-024: the keys go through fn_00418CCC, which shows the face pressed for one
             // tick of the presentation clock before the panel acts (RULE-TIMER-004).

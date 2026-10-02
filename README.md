@@ -72,7 +72,7 @@ validation plans list the open questions.
   ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
 - Online play has no spectating, lobby chat or Comlink messages between
   players ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)).
-- Key bindings cannot be changed, and macOS builds are not signed or notarized
+- Single-key shortcuts can be rebound in Options. macOS builds are not signed or notarized
   ([#139](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139)).
 - Save and replay formats may change incompatibly before 1.0.0
   ([#141](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141)).
@@ -179,6 +179,7 @@ presentation-only conveniences that make the original systems easier to read:
 
 | Action | Keyboard | Mouse |
 |---|---|---|
+| Default shortcut map | The keys below are defaults; use Options > Keys to change them | Mouse controls remain available |
 | Select a sector | Arrow keys or WASD | Click a sector |
 | Open or confirm | Enter | Double-click the selected sector or click a panel control |
 | Cycle gangs | G | Click a gang card |
@@ -193,6 +194,7 @@ presentation-only conveniences that make the original systems easier to read:
 | View/Send Comlink | M / N | Click the matching Comlink control |
 | Scenario information | J | Click Game Info |
 | Presentation and audio options | O | Click Options, then adjust the available gameplay-presentation, display, and audio choices |
+| Key bindings | K from Options | Click Keys in Options. Select a shortcut with Up/Down, the mouse wheel, or a row click; then press Enter or Change and the new key. An occupied key swaps its other shortcut. Reset restores defaults; right-click or Cancel stops key capture. Choices are saved locally. |
 | Windowed/fullscreen display | F11 or Alt+Enter | Use either shortcut from any screen; the choice is remembered between launches |
 | Save a screenshot | F12 | Writes the finished native window backbuffer as a PNG to the game-local `screenshots` folder |
 | Planning timer (setup) | L | Click None, 30 Seconds, 2 Minutes, or 5 Minutes |

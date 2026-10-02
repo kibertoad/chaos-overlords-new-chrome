@@ -910,15 +910,29 @@ Whether the original shows the count is not recorded.
 
 - Departs from: SCR-UI-003, SCR-UI-004
 - Reason: A line at `(438,354)`, between the console and the Hire dock, says in words why an
-  order, a drop or a key was refused. A line along the bottom of the city map lists the rebuild's
-  keys, and in an online match says where the turn stands instead.
+  order, a drop or a key was refused. A line along the bottom of the city map points to Options >
+  Keys, which lists the rebuild's keys, and in an online match says where the turn stands instead.
 - Setting: None
 - Default: mandatory
 - Justification: Both lines add information and change nothing the player can do. The original
   answers a refused order with the reject sound alone, which the rebuild still plays; the line
-  says which rule refused it. The key line names keys DEV-UI-020 adds, which the original's
-  screens cannot show, and online it replaces them with the turn's state, which a player waiting
-  on others needs. A setting that hid them would only take information away.
+  says which rule refused it. The key line leads to the keys DEV-UI-020 adds, which the
+  original's screens cannot show, and online it gives way to the turn's state, which a player
+  waiting on others needs. A setting that hid them would only take information away.
+- Dropped: no
+
+## DEV-UI-024
+
+- Departs from: SCR-UI-003, SCR-UI-004
+- Reason: Options > Keys lists every single key the rebuild's screens read and lets the player
+  bind each to another key. Binding a key that another shortcut holds swaps the two, so no key
+  triggers two shortcuts. The bindings are kept in a local `keybindings.json`. The original reads
+  fixed keys.
+- Setting: None
+- Default: mandatory
+- Justification: With the default map every key does what it does without the editor, including
+  the original's arrows and Enter, and rebinding changes nothing in a match: the bindings never
+  enter a save, a replay or a state hash.
 - Dropped: no
 
 ## DEV-GFX-001
