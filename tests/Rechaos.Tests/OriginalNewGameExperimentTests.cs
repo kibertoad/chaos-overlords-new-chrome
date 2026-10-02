@@ -59,7 +59,8 @@ namespace Rechaos.Tests;
 /// RULE-OBJECTIVE-004) and compares the awards the endgame gives (RULE-AWARDS-001). EXP-TURN-039 and
 /// EXP-TURN-038 do the same in Acceptance and Dominance with the human hiding every turn, where a
 /// site completed in a turn counts in that turn's score (RULE-OBJECTIVE-002) and in the sector and
-/// gang refresh that ends the match (RULE-SITE-001, RULE-GANG-001).
+/// gang refresh that ends the match (RULE-SITE-001, RULE-GANG-001). EXP-TURN-041 plays another
+/// six-month Greed to its end and stops at the final city view, before the awards are given.
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -79,6 +80,11 @@ public sealed class OriginalNewGameExperimentTests
         // original carries out and the rebuild refuses; player 5's next tie count differs.
         [("EXP-TURN-015", 0)] = 950,
     };
+
+    // Runs that stop at the final city view, before the awards controller builds the award table
+    // (FND-OBJECTIVE-004, FND-UI-041). Their fixtures hold no award rows; every other run that
+    // ends the match has to.
+    private static readonly HashSet<string> EndpointsBeforeAwards = ["EXP-TURN-041"];
 
     public static TheoryData<string, int> MatchingRuns()
     {
@@ -144,19 +150,6 @@ public sealed class OriginalNewGameExperimentTests
     // RULE-GANG-001, RULE-DETECT-001, FND-HIRE-005: the rebuild's new match reaches the state the original's first planning phase starts from, with the same
     // number of draws. The state is read with the layouts of FMT-STATE-001, FMT-STATE-002 and
     // FMT-STATE-004.
-    [Fact]
-    public void PostAwardsEndpointsRetainOriginalAwardComparisons()
-    {
-        // EXP-TURN-037 to EXP-TURN-039: these endpoints occur after the awards table is built.
-        foreach (var experiment in new[] { "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039" })
-            TheRebuildStartsTheSameMatch(experiment, 0);
-    }
-    [Fact]
-    public void FinalCityViewMatchesOriginalGreedMatch()
-    {
-        // EXP-TURN-041: a full 26-turn original match, stopped before awards initialization.
-        TheRebuildStartsTheSameMatch("EXP-TURN-041", 0);
-    }
     [Theory]
     [MemberData(nameof(MatchingRuns))]
     public void TheRebuildStartsTheSameMatch(string experiment, int run)
@@ -386,13 +379,14 @@ public sealed class OriginalNewGameExperimentTests
             Assert.NotNull(match.Outcome);
             // The match ends with the resolution of the last recorded Done.
             Assert.Equal(recorded.DoneCount, match.Outcome.Turn);
+            // The original's elapsed-turn count stays one below the deciding turn at the final view
+            // and after the awards. The rebuild's coordinator has already moved to the next turn, so
+            // the count is compared with the outcome turn.
+            Assert.Equal(recorded.Term("elapsed_turns", 0), match.Outcome.Turn - 1);
+            if (EndpointsBeforeAwards.Contains(experiment)) return;
             EndgameAward[] order =
                 [EndgameAward.Fist, EndgameAward.Skull, EndgameAward.BigFatChicken, EndgameAward.DollarSign, EndgameAward.Safe];
-            // EXP-TURN-041 stops at the final city view, before the original builds awards (FND-UI-041).
-            // Award fixtures retain every existing comparison; unbuilt fields are omitted.
-            Assert.True(recorded.HasTerm("player_awards", 0) || experiment == "EXP-TURN-041",
-                "An awards endpoint must retain its original award rows.");
-            if (experiment != "EXP-TURN-041")
+            Assert.True(recorded.HasTerm("player_awards", 0), "a run that ends the match after the awards holds their rows");
             foreach (var player in match.Players)
             {
                 var slot = player.Id.Value;
