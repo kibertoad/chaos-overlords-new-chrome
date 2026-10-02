@@ -26,7 +26,7 @@ internal sealed class StateExtractor
         var rolls = new JsonArray();
         foreach (var roll in trace["Rolls"]!.AsArray())
             rolls.Add(new JsonArray(roll!["Call"]!.GetValue<string>(), roll["Bound"]!.GetValue<int>(), roll["Result"]!.GetValue<int>()));
-        return new JsonObject
+        var run = new JsonObject
         {
             ["rng_state"] = trace["Seed"]!.GetValue<int>(),
             ["done_at_roll"] = doneAtRoll,
@@ -34,6 +34,21 @@ internal sealed class StateExtractor
             ["events"] = new JsonArray(),
             ["end_state"] = extractor.EndState(),
         };
+        // FND-FINANCE-003: the nine numbers of each Financial panel the run opened, in drawing order,
+        // with the sector the panel function was passed.
+        if (trace["Finance"] is JsonArray finance)
+        {
+            var panels = new JsonArray();
+            foreach (var panel in finance)
+                panels.Add(new JsonObject
+                {
+                    ["turn"] = panel!["Turn"]!.GetValue<int>(),
+                    ["sector"] = panel["PanelSector"]!.GetValue<int>(),
+                    ["values"] = new JsonArray(panel["Values"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+                });
+            run["finance"] = panels;
+        }
+        return run;
     }
 
     /// <summary>The setup choices a run was recorded with, one line each; none for the defaults.</summary>

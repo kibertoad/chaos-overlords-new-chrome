@@ -43,6 +43,21 @@ internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family)
 }
 
 /// <summary>
+/// A Financial panel the probe opens before the Done press of <paramref name="Turn"/>, after that
+/// turn's orders and hires are written: the City variant for sector -1, otherwise the Sector variant
+/// of that sector, which the probe selects on the map first (FND-FINANCE-002).
+/// </summary>
+internal sealed record ProbeFinance(int Turn, int Sector)
+{
+    public override string ToString() => Sector < 0
+        ? $"Financial, City ({OriginalAddresses.FinanceCityX}, {OriginalAddresses.FinanceCityY}), turn {Turn}"
+        : $"Financial, Sector ({OriginalAddresses.FinanceSectorX}, {OriginalAddresses.FinanceSectorY}) with sector {Sector} selected, turn {Turn}";
+}
+
+/// <summary>The values one Financial panel drew, in the order it drew them (FND-FINANCE-002).</summary>
+internal sealed record FinanceRecord(int Turn, int Sector, int PanelSector, List<int> Values);
+
+/// <summary>
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
 /// Scenario numbers are the original's (FND-SETUP-013).
 /// </summary>
@@ -50,7 +65,7 @@ internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
-    IReadOnlyList<ProbePlanning>? Planning = null)
+    IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -80,6 +95,8 @@ internal sealed record NewGameSettings(
             foreach (var order in orders) yield return ("order", order.ToString());
             foreach (var hire in hires) yield return ("hire", hire.ToString());
             foreach (var write in planning) yield return ("planning", write.ToString());
+            foreach (var panel in (Finance ?? []).Where(panel => panel.Turn == turn))
+                yield return ("left_click", panel.ToString());
             yield return ("left_click", orders.Length + hires.Length + planning.Length == 0
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
@@ -95,7 +112,8 @@ internal sealed record ProbeTrace(
     int RollsBeforeBegin,
     List<int>? RollsAtDone,
     bool Dumped,
-    List<string> Notes);
+    List<string> Notes,
+    List<FinanceRecord>? Finance = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -115,6 +133,10 @@ internal sealed class NewGameSession(
     private int _panelsOpen;
     private bool _planningLoopReached;
     private bool _awardsReached;
+    private readonly List<FinanceRecord> _finance = [];
+    private FinanceRecord? _financeCapture;
+    private bool _financeOpen;
+    private bool _financeReturned;
 
     public ProbeTrace Run()
     {
@@ -126,6 +148,11 @@ internal sealed class NewGameSession(
         if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
+        if (settings.Finance is { Count: > 0 })
+        {
+            _process.SetBreakpoint(OriginalAddresses.FinancePanel, OnFinancePanel);
+            _process.SetBreakpoint(OriginalAddresses.NumberDraw, OnNumberDraw);
+        }
 
         var window = IntPtr.Zero;
         if (!_process.RunUntil(() => (window = _process.FindMainWindow()) != IntPtr.Zero, timeout))
@@ -176,6 +203,9 @@ internal sealed class NewGameSession(
                 WriteHire(hire);
             foreach (var write in (settings.Planning ?? []).Where(write => write.Turn == turn))
                 WritePlanning(write);
+            foreach (var panel in (settings.Finance ?? []).Where(panel => panel.Turn == turn))
+                if (!CaptureFinance(window, panel))
+                    return Finish(false, $"The Financial panel of turn {turn} for sector {panel.Sector} was not captured.", rollsBeforeBegin);
             _rollsAtDone.Add(_rolls.Count);
             Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
             var target = turn;
@@ -270,6 +300,54 @@ internal sealed class NewGameSession(
         }
 
         return _panelsOpen == 0;
+    }
+
+    // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
+    // of the Financial control that opens the variant, keeps the nine numbers the panel draws, and
+    // presses its close control until the panel function has returned.
+    private bool CaptureFinance(IntPtr window, ProbeFinance panel)
+    {
+        if (panel.Sector >= 0) _process.Write(OriginalAddresses.SelectedSector, BitConverter.GetBytes(panel.Sector));
+        var capture = new FinanceRecord(panel.Turn, panel.Sector, -2, []);
+        _financePanelSector = -2;
+        _financeCapture = capture;
+        _financeReturned = false;
+        if (panel.Sector < 0) Click(window, OriginalAddresses.FinanceCityX, OriginalAddresses.FinanceCityY);
+        else Click(window, OriginalAddresses.FinanceSectorX, OriginalAddresses.FinanceSectorY);
+        var drawn = _process.RunUntil(() => capture.Values.Count == 9, TimeSpan.FromSeconds(10));
+        _process.Pump(TimeSpan.FromSeconds(0.5));
+        for (var attempt = 0; !_financeReturned && attempt < 10; attempt++)
+        {
+            Click(window, OriginalAddresses.FinanceCloseX, OriginalAddresses.FinanceCloseY);
+            _process.RunUntil(() => _financeReturned, TimeSpan.FromSeconds(3));
+        }
+
+        _financeCapture = null;
+        _finance.Add(capture with { PanelSector = _financePanelSector });
+        _notes.Add($"Financial panel of turn {panel.Turn} for sector {panel.Sector} drew [{string.Join(",", capture.Values)}]");
+        return drawn && _financeReturned;
+    }
+
+    private int _financePanelSector = -2;
+
+    private void OnFinancePanel(BreakContext context)
+    {
+        if (_financeCapture is null) return;
+        _financePanelSector = context.Argument(1);
+        _financeOpen = true;
+        _process.SetBreakpoint(context.ReturnAddress, _ =>
+        {
+            _financeOpen = false;
+            _financeReturned = true;
+        }, oneShot: true);
+    }
+
+    private void OnNumberDraw(BreakContext context)
+    {
+        if (!_financeOpen || _financeCapture is not { } capture || capture.Values.Count == 9) return;
+        var call = context.ReturnAddress - 5;
+        if (call < OriginalAddresses.FinanceFirstDraw || call > OriginalAddresses.FinanceLastDraw) return;
+        capture.Values.Add(context.Argument(2));
     }
 
     private void WriteOrder(ProbeOrder order)
@@ -439,7 +517,8 @@ internal sealed class NewGameSession(
         if (note is not null) _notes.Add(note);
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
-        return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes);
+        return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
+            _finance.Count == 0 ? null : _finance);
     }
 
     private static void Click(IntPtr window, int x, int y)

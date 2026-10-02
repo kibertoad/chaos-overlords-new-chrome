@@ -72,6 +72,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | builds |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body, builds |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body, builds |
+| [EXP-TURN-044](../experiments/EXP-TURN-044.md) | body, builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -260,6 +261,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-EXE-005](../findings/FND-EXE-005.md) | builds, locations |
 | [FND-FINANCE-001](../findings/FND-FINANCE-001.md) | builds, locations |
 | [FND-FINANCE-002](../findings/FND-FINANCE-002.md) | builds, locations |
+| [FND-FINANCE-003](../findings/FND-FINANCE-003.md) | builds, locations |
 | [FND-GANG-001](../findings/FND-GANG-001.md) | builds, locations |
 | [FND-GANG-002](../findings/FND-GANG-002.md) | builds, locations |
 | [FND-GANG-003](../findings/FND-GANG-003.md) | builds, locations |
@@ -1201,6 +1203,7 @@ None.
 | [EXP-TURN-034](../experiments/EXP-TURN-034.md) | body |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body |
+| [EXP-TURN-044](../experiments/EXP-TURN-044.md) | body |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | evidence |
 
@@ -1297,6 +1300,12 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## EXP-TURN-044
+
+| Cited by | In |
+|---|---|
+| [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -3878,10 +3887,19 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-044](../experiments/EXP-TURN-044.md) | body |
+| [FND-FINANCE-003](../findings/FND-FINANCE-003.md) | body |
 | glossary: finance_rows | glossary |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | body, evidence |
 | [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | body, evidence |
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, evidence |
+
+## FND-FINANCE-003
+
+| Cited by | In |
+|---|---|
+| [EXP-TURN-044](../experiments/EXP-TURN-044.md) | body |
+| [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | evidence |
 
 ## FND-GANG-001
 
@@ -7035,6 +7053,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-044](../experiments/EXP-TURN-044.md) | body |
 | glossary: finance_rows | glossary |
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, related |
 

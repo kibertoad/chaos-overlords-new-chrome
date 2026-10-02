@@ -375,7 +375,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--sound]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--sound]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
@@ -421,6 +421,15 @@ given turn, as the hire screen does (RULE-HIRE-003); the fixture lists it as a
 no local match assigns. The fixture lists each as a `planning` input, and the
 replay makes the same change to the rebuild's planning state; since that change
 bypasses the replay recorder, such a run's journal is not verified.
+`--finance` opens the Financial panel before the Done press of the given turn,
+once that turn's orders and hires are written: the City variant for sector -1,
+otherwise the Sector variant, after writing the sector into the map selection.
+It presses the part of the console's Financial control that opens the variant
+(SCR-UI-003), keeps the nine numbers the panel draws (FND-FINANCE-003) and the
+sector the panel function was passed, and presses the panel's close control.
+The fixture lists each opening as a `left_click` input before the Done press
+and the run's panels under `finance`; the replay compares them with the
+rebuild's projection of the same panel.
 Each run records the roll count at every press as `done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
 a recorded run can be played again, and `--dump-at-roll` copies the writable
 sections and the top of the stack at the entry of that call of `roll`, counted
