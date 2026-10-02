@@ -74,6 +74,26 @@ internal sealed class StateExtractor
         Term(rows, "modifier_elite", 0x004A2788, 6, 1, signed: false);
         Term(rows, "modifier_islands", 0x004ABC10, 6, 1, signed: false);
         Term(rows, "modifier_cash", 0x0049CA70, 6, 1, signed: false);
+        Term(rows, "cash_earned", 0x004A27E0, 6, 4);
+        Term(rows, "cash_spent", 0x0049CA78, 6, 4);
+        Term(rows, "damage_inflicted", 0x004A5ED8, 6, 4);
+        Term(rows, "casualties", 0x004AB620, 6, 4);
+        Term(rows, "overthrow_count", 0x004A27A8, 6, 4);
+        Term(rows, "hide_count", 0x004A25D0, 6, 4);
+        Term(rows, "hire_role", 0x00482128, 6, 4);
+        Term(rows, "previous_hire_role", 0x00482160, 6, 4);
+        Term(rows, "scenario_score", 0x004A2790, 6, 4);
+        Term(rows, "scenario_standing", 0x004ABC08, 6, 1, signed: false);
+        // A run that ends the match stops at the endgame: its awards are given (RULE-AWARDS-001),
+        // and only the first three entries of each player's list are written.
+        if (ReadByte(0x004ABBD4, signed: false) != 0)
+        {
+            Term(rows, "match_over", 0x004ABBD4, 1, 1, signed: false);
+            for (var slot = 0; slot < 6; slot++)
+                for (var entry = 0; entry < 3; entry++)
+                    rows.Add(new JsonObject { ["term"] = "player_awards", ["index"] = slot * 5 + entry,
+                        ["value"] = BitConverter.ToInt32(_data, Offset(0x00494500 + (uint)(4 * (slot * 5 + entry)), 4)) });
+        }
 
         string[] sectorFields =
         [
@@ -113,6 +133,22 @@ internal sealed class StateExtractor
             {
                 var unsigned = i is 1 or 7 or 10 || (i >= 12 && i < 18);
                 rows.Add(Field("FMT-STATE-001", record, gangFields[i], ReadByte(at + (uint)i, signed: !unsigned)));
+            }
+        }
+
+        // FMT-STATE-006: each player's Last Turn reports of the last resolution, 10-byte records at
+        // 0x004AAE08 + player * 0x140, with the count at 0x004ABCA8 + player * 4.
+        Term(rows, "last_turn_report_count", 0x004ABCA8, 6, 4);
+        string[] reportFields = ["report_type", "arg1", "arg2", "arg3"];
+        for (var player = 0; player < 6; player++)
+        {
+            var count = Math.Min(32, BitConverter.ToInt32(_data, Offset(0x004ABCA8u + (uint)player * 4, 4)));
+            for (var index = 0; index < count; index++)
+            {
+                var at = 0x004AAE08u + (uint)(player * 0x140 + index * 10);
+                for (var i = 0; i < reportFields.Length; i++)
+                    rows.Add(Field("FMT-STATE-006", player * 32 + index, reportFields[i],
+                        BitConverter.ToInt16(_data, Offset(at + 2 + (uint)i * 2, 2))));
             }
         }
 

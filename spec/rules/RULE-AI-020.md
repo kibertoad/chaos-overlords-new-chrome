@@ -4,7 +4,7 @@ title: Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-020, FND-AI-021, FND-AI-004, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-057]
+evidence: [EXP-TURN-023, EXP-TURN-024, FND-AI-072, FND-AI-020, FND-AI-021, FND-AI-004, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-057]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002]
@@ -96,7 +96,8 @@ else if prev == ACTION_ATTACK or prev == ACTION_HIDE or prev == ACTION_MOVE:
         let kind = 0
         if hostile_owner(player, s):
             kind = 1
-        let t = draw_once(player, idx, kind)
+        # BUG-AI-007: the sector is passed where the slot belongs
+        let t = draw_once(player, idx, kind, s)
         if t != -1:
             plan(idx, ACTION_ATTACK, t / 81, t % 81)
             aux_records[idx].focus = s
@@ -137,6 +138,9 @@ the handler writes stores -1. The scenario-0 Terminate also sets
 `draw_once`.
 
 ## Edge cases
+
+After Attack, Hide or Move the strength test's attacker is the record in the
+roster slot numbered like the gang's sector (BUG-AI-007).
 
 No recorded family-1 branch heals a gang at Force 9. After None or Chaos the
 Heal gate is Force below 8, and after Heal it is Force below 9. A computer

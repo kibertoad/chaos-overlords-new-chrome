@@ -44,6 +44,12 @@ internal static class OriginalAddresses
     // elapsed_turns: 0 through the first turn, up by one after each resolution.
     public const uint ElapsedTurns = 0x0049CA68;
 
+    // FND-AWARDS-001: the endgame's row painter, which reads the awards the builder has given.
+    public const uint AwardsRows = 0x0042CE61;
+
+    // match_over: set by the end-of-turn evaluation when the match is finished.
+    public const uint MatchOver = 0x004ABBD4;
+
     // SCR-UI-003: the Done control, (500, 282) with size 100 by 48.
     // SCR-COMBAT-001, RULE-COMBAT-004: with Detailed Combat off, the human's planning opens the
     // Combat Results panel through fn_00451F80 after a fight that involved its gangs. SCR-EVENT-001,
@@ -65,6 +71,13 @@ internal static class OriginalAddresses
     public const uint HireOrderCheck = 0x0047592B;
     public const uint HireOffers = 0x004ABBC0;
     public const uint HireOrders = 0x004A27C8;
+
+    // FMT-STATE-007: the computer players' planning records, 81 of 16 bytes per player, with the
+    // family at offset 0; FND-AI-043: raider_mode, one byte per player.
+    public const uint PlanningRecords = 0x0048A250;
+    public const int PlanningPlayerStride = 0x510;
+    public const int PlanningRecordSize = 0x10;
+    public const uint RaiderMode = 0x00482158;
     public const uint Cash = 0x004A25E8;
 
     // FND-SETUP-002: the full local setup handler.

@@ -148,7 +148,7 @@ public sealed class OriginalCityGeneratorTests
         // so a deliberate move of MatchStateHasher.FormatVersion re-pins it; the random state and
         // the consumption count either side of it are what say the factory itself is unchanged.
         Assert.Equal(
-            "e5f773b576f1c92950cd010abb9f3594:160916660:936",
+            "4864b8312f4ae1a32b4fac0a58df3ff0:160916660:936",
             $"{MatchStateHasher.ComputeFingerprint(first)}:{first.Random.State}:{first.Random.ConsumptionCount}");
         Assert.Equal(MatchLimits.PlayerCount, first.Players.Count);
         Assert.Equal(
@@ -327,6 +327,19 @@ public sealed class OriginalCityGeneratorTests
             gang => gang.SectorId == remote.SectorId);
         Assert.True(enabled.CanPlayerDetectGang(new PlayerId(0), remote.Id));
         Assert.False(wrongCase.CanPlayerDetectGang(new PlayerId(0), wrongCaseRemote.Id));
+    }
+
+    // RULE-OBJECTIVE-002, FND-SETUP-015: a new match stores its scores before SMGFUNDAGE raises the
+    // cash, so a Greed match starts its SMGFUNDAGE player on the standard cash's score.
+    [Fact]
+    public void SmgFundageStartingScoreCountsTheCashBeforeTheRaise()
+    {
+        var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), SetupWithName("SMGFUNDAGE"));
+
+        Assert.Equal(OriginalSetupNameRules.MaximumStartingCash, match.Players[0].Cash);
+        Assert.Equal(OriginalMatchFactory.StandardStartingCash, match.Players[0].ScenarioScore);
+        Assert.All(match.Players.Skip(1), player =>
+            Assert.Equal(OriginalMatchFactory.StandardStartingCash, player.ScenarioScore));
     }
 
     [Theory]

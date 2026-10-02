@@ -17,6 +17,10 @@ files:
     format: PE
     size: 62976
     xxh3: d5fa7d056aa6e61c7f741e82f49897b5
+  - path: winmm.dll
+    format: PE
+    size: 39424
+    xxh3: 80f620dfdda54ba6ab48431bc6623e8d
   - path: DATA/CLT00002
     format: data
     size: 944

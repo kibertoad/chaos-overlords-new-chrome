@@ -523,22 +523,13 @@ public static partial class AiTurnPlanner
 
         var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var attack = ManualRules.ControlStrength([(gang.Force, statistics.Control)]);
-        var defense = sector.Income;
-        if (sector.Owner is { } owner && owner != playerId)
-        {
-            defense = checked(defense + ManualRules.ControlStrength(state.FindPlayer(owner)!.Gangs
-                .Where(candidate => candidate.IsActive
-                    && candidate.SectorId == sector.Id
-                    && state.CanPlayerDetectGang(playerId, candidate.Id))
-                .Select(candidate =>
-                {
-                    var candidateStatistics = EffectiveStatisticsCalculator.ForGang(state, candidate);
-                    return (candidate.Force, candidateStatistics.Control);
-                })));
-            defense = checked(defense + sector.Sites
-                .Where(site => site.InfluencedBy == owner)
-                .Sum(site => state.Definitions.Site(site.DefinitionId).Support));
-        }
+        // RULE-AI-004 solo_control_ok: the sector's income and support, and in an owned sector
+        // every visible gang of every other player there, the owner's or not.
+        var defense = checked(sector.Income + sector.Support);
+        if (sector.Owner is not null)
+            defense = checked(defense + ManualRules.ControlStrength(
+                VisibleOpponentsInSector(state, playerId, sector.Id).Select(target =>
+                    (target.Gang.Force, EffectiveStatisticsCalculator.ForGang(state, target.Gang).Control))));
         return attack > defense;
     }
 

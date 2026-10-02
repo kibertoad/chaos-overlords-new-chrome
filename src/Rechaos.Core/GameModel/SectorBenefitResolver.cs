@@ -6,9 +6,13 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class SectorBenefitResolver
 {
-    public static void ActivatePending(MatchState state)
+    /// <param name="completedTurn">
+    /// The turn whose completions activate: the one before the current turn at an Upkeep, the
+    /// current one when a match ends before the next turn starts.
+    /// </param>
+    public static void ActivatePending(MatchState state, int? completedTurn = null)
     {
-        var completedSites = CompletedLastTurn(state);
+        var completedSites = CompletedIn(state, completedTurn ?? state.Coordinator.Turn - 1);
         foreach (var sector in state.Sectors.OrderBy(value => value.Id))
         {
             if (sector.Owner is not { } owner) continue;
@@ -26,16 +30,15 @@ internal static class SectorBenefitResolver
         }
     }
 
-    /// <summary>The sites whose Resistance reached zero during the turn that has just ended.</summary>
+    /// <summary>The sites whose Resistance reached zero during <paramref name="completedTurn"/>.</summary>
     /// <remarks>
     /// Walked back from the end rather than filtered, the way every other reader of the log does
     /// it. The history is append-only in turn order and this runs at every Upkeep, so scanning all
     /// of it made one turn's cost grow with the number of turns already played — over a full-length
     /// match that is the whole log re-read a couple of hundred times.
     /// </remarks>
-    private static HashSet<int> CompletedLastTurn(MatchState state)
+    private static HashSet<int> CompletedIn(MatchState state, int completedTurn)
     {
-        var completedTurn = state.Coordinator.Turn - 1;
         var completed = new HashSet<int>();
         var events = state.Events;
         for (var index = events.Count - 1; index >= 0; index--)

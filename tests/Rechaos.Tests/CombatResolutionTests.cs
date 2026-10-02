@@ -149,6 +149,8 @@ public sealed class CombatResolutionTests
         var damage = match.LastPhaseResolutions.Sum(
             result => result.Event!.Resolution!.Damage);
         Assert.True(damage > 1);
+        // RULE-COMBAT-002, BUG-AI-007: the retired record keeps overkill below zero.
+        Assert.Equal(1 - Math.Min(damage, 10), match.FindGang(new GangId(20))!.RetiredForce);
         Assert.Equal(0, match.FindGang(new GangId(20))!.Force);
         Assert.Equal(damage, match.Players[0].Statistics.DamageInflicted);
         Assert.Equal(0, match.Players[1].Statistics.DamageInflicted);

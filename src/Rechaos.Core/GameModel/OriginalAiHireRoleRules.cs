@@ -1,7 +1,7 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Unadjusted turn schedule from the original outer AI planner at 0x00458fa0.
+/// Unadjusted turn schedule from the original outer AI planner at 0x00458FA0 (FND-AI-009).
 /// The planner mutates the scheduled slot using the instruction-verified
 /// scenario adjustments below before applying this mapping.
 /// </summary>

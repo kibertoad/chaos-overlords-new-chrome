@@ -127,7 +127,9 @@ public sealed partial class ChaosGame
             ClientScreen.Title or ClientScreen.Setup or ClientScreen.Online
             or ClientScreen.Lobby or ClientScreen.Handoff or ClientScreen.Elimination
             or ClientScreen.Endgame));
-        if (_comlinkAlertCadence.Advance(hasUnread, presentationActive, now)
+        if (_comlinkAlertCadence.Advance(hasUnread, presentationActive, now,
+                enteringPlanning, PlanningViewer is { } viewer && _state is not null
+                    ? _state.ComlinkFor(viewer).NextSequence : null)
             && AudioRouting.IncomingMessageSound(hasUnread) is { } alert)
             PlayGeneralSound(alert);
     }
@@ -686,8 +688,8 @@ public static class LastTurnEventPresentation
     /// RULE-EVENT-012 and RULE-EVENT-013 (Control), RULE-EVENT-006 (site), RULE-EVENT-007
     /// (Research), RULE-EVENT-008, RULE-EVENT-014 and RULE-EVENT-009 (cash), RULE-EVENT-010 and
     /// RULE-EVENT-011 (hire) and RULE-EVENT-003 (elimination). The `arg2` of both Control reports
-    /// names the other player, which the panel never reads; the rebuild fills it only where its
-    /// event carries it and writes -1 otherwise.
+    /// names the other player, which the panel never reads: a gained sector's previous owner from
+    /// its Control event, -1 where no event carries it, and a lost sector's new owner.
     /// </summary>
     public static LastTurnReportRecord Record(
         MatchState state,
@@ -713,7 +715,14 @@ public static class LastTurnEventPresentation
                 new(type, sector, 0, 0),
             LastTurnReportRecord.ControlGained =>
                 new(type, sector, relatedEvent?.Resolution?.PreviousValue ?? -1, 0),
-            LastTurnReportRecord.ControlLost => new(type, sector, -1, 0),
+            // RULE-EVENT-013: a sector lost through Control names its new owner. No step after the
+            // Control phase changes an owner (RULE-TURN-002), so the owner read here is the one the
+            // original recorded for as long as the state is the one this resolution left. One lost
+            // through a third Crackdown in the Chaos phase carries 0.
+            LastTurnReportRecord.ControlLost => new(type, sector,
+                notification.ExecutionPhase != ExecutionPhase.Control ? 0
+                    : sector is >= 0 and < MatchLimits.SectorCount ? state.Sectors[sector].Owner?.Value ?? -1 : -1,
+                0),
             LastTurnReportRecord.SiteCompleted
                 when InfluenceSiteId(notification, relatedEvent) is { } site =>
                 new(type, site / MatchLimits.SitesPerSector, site % MatchLimits.SitesPerSector, 0),

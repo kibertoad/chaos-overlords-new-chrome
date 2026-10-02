@@ -1,10 +1,10 @@
 ---
 id: RULE-OBJECTIVE-004
 title: Each scenario's own end condition, and the Dominance weights
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-006, FND-TURN-003, FND-UI-033, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-006, FND-TURN-003, FND-UI-033, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-037, EXP-TURN-039, EXP-TURN-038]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-002]

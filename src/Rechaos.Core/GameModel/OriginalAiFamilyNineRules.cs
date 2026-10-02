@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Equipment, territorial, and combat branches recovered from original AI
-/// family 9 at 0x004605e0.
+/// family 9 at 0x004605E0 (FND-AI-036).
 /// </summary>
 internal static class OriginalAiFamilyNineRules
 {

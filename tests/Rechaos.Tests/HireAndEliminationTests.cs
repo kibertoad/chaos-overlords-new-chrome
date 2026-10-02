@@ -585,7 +585,10 @@ public sealed class HireAndEliminationTests
         MatchPlayerSetup[] setups =
         [
             new(new PlayerId(0), "ONE", PlayerController.Human),
-            new(new PlayerId(1), "TWO", PlayerController.Computer)
+            new(new PlayerId(1), "TWO", PlayerController.Computer),
+            // A third player keeps the match going, so the end-of-match refresh does not rebuild
+            // the sector over the change this test looks at.
+            new(new PlayerId(2), "THREE", PlayerController.Computer)
         ];
         var setup = new MatchSetup(ScenarioId.Eliminate, GameDuration.SixMonths, 1996, setups);
         MatchPlayerState[] players =
@@ -594,7 +597,8 @@ public sealed class HireAndEliminationTests
             new(setups[0], 10, [new MatchGangState(new GangId(10), new PlayerId(0), 0, 0, 5)]),
             new(setups[1], 10,
                 [new MatchGangState(new GangId(11), new PlayerId(1), 0, 1, 0)],
-                support: siteDefinition.Support)
+                support: siteDefinition.Support),
+            new(setups[2], 10, [new MatchGangState(new GangId(12), new PlayerId(2), 0, 2, 5)])
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
@@ -604,7 +608,7 @@ public sealed class HireAndEliminationTests
                     ? new MatchSiteState(1, siteDefinition.Id, 0, new PlayerId(1))
                     : new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ], owner: id == 0 ? new PlayerId(0) : id == 1 ? new PlayerId(1) : null))
+            ], owner: id == 0 ? new PlayerId(0) : id == 1 ? new PlayerId(1) : id == 2 ? new PlayerId(2) : null))
             .ToArray();
         var match = new MatchState(definitions, setup, players, sectors);
         var sector = match.Sectors[1];

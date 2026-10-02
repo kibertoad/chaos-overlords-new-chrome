@@ -1,10 +1,10 @@
 ---
 id: RULE-EVENT-001
 title: The Last Turn reports are cleared just before each resolution
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG]
+evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG, EXP-TURN-010, EXP-TURN-034]
 conflicting: []
 split_with: []
 related: []

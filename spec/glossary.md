@@ -489,7 +489,7 @@ defined by RULE-OBJECTIVE-004.
 
 ## draw_once
 
-`draw_once(player, idx, kind)` makes one target draw and returns the target
+`draw_once(player, idx, kind, c)` makes one target draw and returns the target
 when the strength test passes, -1 otherwise. A function, defined by
 RULE-AI-004.
 
@@ -842,7 +842,9 @@ and offer slot by offer slot. It runs after `control_phase` and before
 
 The hire role a computer player's schedule chose for its latest hire, 0 to 6.
 Any other value the game keeps: `INT32LE[6]`, indexed by player slot, at
-`0x00482128` [FND-AI-009, FND-AI-014].
+`0x00482128` [FND-AI-009, FND-AI-014]. A human player's entry holds -1 at the
+end of every recorded run [EXP-TURN-016]; a player's first planning pass
+writes 0 there before anything reads it [FND-AI-042].
 
 ## HireCashShort
 
@@ -1807,8 +1809,8 @@ owned. A constant, 1 [FND-OBJECTIVE-003, SRC-MANUAL-GOG].
 
 ## scenario_score
 
-Each player's score toward the scenario's objective, rebuilt by the end
-evaluation. Any other value the game keeps: `INT32LE[6]`, indexed by player
+Each player's score toward the scenario's objective, rebuilt when a match
+starts and by the end evaluation, and read as stored between them. Any other value the game keeps: `INT32LE[6]`, indexed by player
 slot, at `0x004A2790` [FND-AI-005, FND-TURN-003, FND-PLATFORM-003].
 
 ## scenario_standing

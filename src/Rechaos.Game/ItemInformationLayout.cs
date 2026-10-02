@@ -4,7 +4,7 @@ namespace Rechaos.Game;
 
 public static class ItemInformationLayout
 {
-    // Native handler 0x0044b699 copies PX05001's 320-pixel alternate crop.
+    // Native handler 0x0044B699 (FND-UI-004) copies PX05001's 320-pixel alternate crop.
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
     public static Rectangle Portrait => new(162, 141, 48, 48);

@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Support-site Influence decisions recovered from original AI family 5 at
-/// 0x0043a1d0. Outer target enumeration remains in <see cref="AiTurnPlanner"/>.
+/// 0x0043A1D0 (FND-AI-034). Outer target enumeration remains in <see cref="AiTurnPlanner"/>.
 /// </summary>
 internal static class OriginalAiFamilyFiveRules
 {

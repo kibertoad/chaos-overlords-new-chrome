@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-016
 title: Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [EXP-TURN-011, FND-AI-047, FND-AI-006, FND-EXE-004]
+evidence: [EXP-TURN-011, FND-AI-047, FND-AI-006, FND-EXE-004, EXP-TURN-014, EXP-TURN-017]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-004, RULE-ATTACK-001]

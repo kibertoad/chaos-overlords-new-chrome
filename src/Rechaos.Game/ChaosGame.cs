@@ -242,6 +242,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             });
         _screens.Changed += (previous, current) =>
         {
+            if (OriginalSoundtrackPolicy.RestartsOnEntry(previous, current))
+                _restartSoundtrackProgram = true;
             if (!KeepsGangSelection(current)) _gangSelection.Clear();
             // A pressed face acts on the screen it was pressed on; if something else moved the
             // screen during the wait, the key's action is dropped.
@@ -437,18 +439,37 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _inputTime = gameTime.TotalGameTime;
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
-        _multiSelectModifier = keyboard.IsKeyDown(Keys.LeftControl)
-            || keyboard.IsKeyDown(Keys.RightControl);
+        // The rebuild's window shortcuts are not game events, so a fade does not swallow them.
         if (Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
         var altEnter = Pressed(keyboard, Keys.Enter)
             && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
         if (Pressed(keyboard, Keys.F11) || altEnter) ToggleFullscreen();
+        // FND-AUDIO-016: the fade pumps window messages without game events.
+        var soundtrackUpdated = _soundtrackFade is not null;
+        if (soundtrackUpdated)
+        {
+            UpdateSoundtrack(gameTime);
+            if (_soundtrackFade is not null)
+            {
+                CancelSwallowedPointerReleases(mouse);
+                EndUpdate(gameTime, keyboard, mouse);
+                return;
+            }
+        }
+        _multiSelectModifier = keyboard.IsKeyDown(Keys.LeftControl)
+            || keyboard.IsKeyDown(Keys.RightControl);
         if (altEnter || UpdateIntroMovies(gameTime, keyboard, mouse))
         {
             EndUpdate(gameTime, keyboard, mouse);
             return;
         }
-        UpdateSoundtrack(gameTime);
+        if (!soundtrackUpdated) UpdateSoundtrack(gameTime);
+        if (_soundtrackFade is not null)
+        {
+            CancelSwallowedPointerReleases(mouse);
+            EndUpdate(gameTime, keyboard, mouse);
+            return;
+        }
         UpdateComlinkAlert(gameTime.TotalGameTime);
         UpdateComlinkCaret(gameTime.TotalGameTime);
         PumpBugReportSend();

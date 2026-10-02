@@ -77,9 +77,10 @@ public sealed partial class ChaosGame
             return null;
         }
         catch (Exception exception) when (exception is IOException
-            or InvalidOperationException or ArgumentException)
+            or InvalidOperationException or ArgumentException or OutOfMemoryException)
         {
-            // One unreadable effect file is not a reason to stop loading the rest.
+            // RULE-AUDIO-004, FND-AUDIO-006: unreadable files or failed memory
+            // allocation leave the slot empty and do not stop loading the rest.
             return null;
         }
     }

@@ -1,7 +1,7 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Exact terminal boundaries recovered from family handler 1 at 0x00434080.
+/// Exact terminal boundaries recovered from family handler 1 at 0x00434080 (FND-AI-020).
 /// The surrounding target enumeration is intentionally kept outside this
 /// kernel until its remaining selectors are bounded.
 /// </summary>
