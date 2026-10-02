@@ -14,6 +14,9 @@ public sealed class SoundtrackFocusHandlerTests
     {
         // FND-AUDIO-016, RULE-AUDIO-002: window-only dispatch must not enter
         // the game's music pause/resume or level-application branches.
+        // _soundtrack is left unset on purpose: entering the activation branch
+        // with music on makes the level helper throw, and the handler's catch
+        // then disables music, which the _soundtrackFailed checks observe.
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
         GC.SuppressFinalize(game);
         var focus = new SoundtrackFocusState();
@@ -26,15 +29,25 @@ public sealed class SoundtrackFocusHandlerTests
         Invoke(game, "OnActivated");
         Assert.Equal(initiallyActive, focus.WindowActive);
         Assert.True((bool)Field("_soundtrackEnabled").GetValue(game)!);
-        Assert.False((bool)Field("_soundtrackAwaitingStart").GetValue(game)!);
+        Assert.False((bool)Field("_soundtrackFailed").GetValue(game)!);
 
         // A later event after the fade is handled normally, even with music off.
+        // Each call changes the flag, so both handlers are shown to apply it.
         Set(game, "_soundtrackFade", null);
         Set(game, "_soundtrackEnabled", false);
-        Invoke(game, "OnDeactivated");
-        Assert.False(focus.WindowActive);
+        Invoke(game, initiallyActive ? "OnDeactivated" : "OnActivated");
+        Assert.Equal(!initiallyActive, focus.WindowActive);
+        Invoke(game, initiallyActive ? "OnActivated" : "OnDeactivated");
+        Assert.Equal(initiallyActive, focus.WindowActive);
+        Assert.False((bool)Field("_soundtrackFailed").GetValue(game)!);
+
+        // Positive control: with music on and no fade, activation enters the
+        // level-application branch, so the checks above can detect that entry.
+        focus.Deactivate(false);
+        Set(game, "_soundtrackEnabled", true);
         Invoke(game, "OnActivated");
         Assert.True(focus.WindowActive);
+        Assert.True((bool)Field("_soundtrackFailed").GetValue(game)!);
     }
 
     private static FieldInfo Field(string name) => typeof(ChaosGame).GetField(name,
