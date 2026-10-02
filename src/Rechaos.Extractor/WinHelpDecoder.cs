@@ -463,6 +463,7 @@ public static partial class WinHelpDecoder
         return ReadCompressedWord(data, ref offset);
     }
 
+    // The paragraph flags and the optional fields each one enables (FMT-HELP-001, FND-HELP-006).
     private static (int CommandOffset, ExtractedHelpParagraph Paragraph) ReadParagraphFormatting(
         ReadOnlySpan<byte> data)
     {

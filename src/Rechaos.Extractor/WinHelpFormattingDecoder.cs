@@ -5,6 +5,7 @@ namespace Rechaos.Extractor;
 
 public static partial class WinHelpDecoder
 {
+    // The face names and old 11-byte descriptors of |FONT (FMT-HELP-001, FND-HELP-006).
     private static IReadOnlyList<HelpFont> ReadFonts(ReadOnlySpan<byte> data)
     {
         if (data.Length < 8) throw new InvalidDataException("WinHelp font table is truncated.");
@@ -142,17 +143,9 @@ public static partial class WinHelpDecoder
             runs.Add(run);
     }
 
+    // Every field of a run except its text is formatting, so record equality covers new fields.
     private static bool SameFormatting(ExtractedHelpTextRun left, ExtractedHelpTextRun right) =>
-        left.Bold == right.Bold
-        && left.Italic == right.Italic
-        && left.Underline == right.Underline
-        && left.Strikethrough == right.Strikethrough
-        && left.DoubleUnderline == right.DoubleUnderline
-        && left.SmallCaps == right.SmallCaps
-        && left.HalfPoints == right.HalfPoints
-        && left.LinkHash == right.LinkHash
-        && left.Popup == right.Popup
-        && left.FontIndex == right.FontIndex;
+        left with { Text = right.Text } == right;
 
     private readonly record struct HelpFont(
         int Index, string Name, byte Attributes, byte HalfPoints, byte Family,

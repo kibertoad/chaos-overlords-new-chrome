@@ -77,6 +77,8 @@ public static class HelpTextLayout
     {
         ArgumentNullException.ThrowIfNull(topic);
         if (columns <= 0) throw new ArgumentOutOfRangeException(nameof(columns));
+        // Source indents, alignment and spacing on the pixel-font grid (DEV-HELP-001,
+        // FND-HELP-006).
         if (topic.Paragraphs is { Count: > 0 })
         {
             var laidOut = new List<HelpTextLine>();
@@ -220,12 +222,9 @@ public static class HelpTextLayout
         return new HelpTextLine(runs);
     }
 
+    // Every field of a run except its text is style, so record equality covers new fields.
     private static bool SameStyle(ExtractedHelpTextRun left, ExtractedHelpTextRun right) =>
-        left.Bold == right.Bold && left.Italic == right.Italic
-        && left.Underline == right.Underline && left.Strikethrough == right.Strikethrough
-        && left.DoubleUnderline == right.DoubleUnderline && left.SmallCaps == right.SmallCaps
-        && left.HalfPoints == right.HalfPoints && left.LinkHash == right.LinkHash
-        && left.Popup == right.Popup && left.FontIndex == right.FontIndex;
+        ReferenceEquals(left, right) || left with { Text = right.Text } == right;
 
     private readonly record struct HelpStyledCharacter(char Value, ExtractedHelpTextRun Style);
 }

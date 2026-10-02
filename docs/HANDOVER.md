@@ -740,7 +740,7 @@ status of each spec entry is in [PARITY.md](../PARITY.md).
   player-facing entries in the original contents order and omits 21 unlisted
   internal fragments; documents without a contents table safely fall back to
   all decoded topics. Mouse-wheel scrolling follows the topic-list/content pane
-  under the pointer. Asset-pack format 7 preserves all 80 native `|CONTEXT`
+  under the pointer. Asset-pack format 8 preserves all 80 native `|CONTEXT`
   hash/target pairs, verifies every one of the 59 `CHAOS.CNT` context names, and
   records that this file's `|CTXOMAP` contains no numeric IDs. Contextual F1
   routing now uses those exact symbols rather than ambiguous topic-title

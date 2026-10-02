@@ -12,7 +12,16 @@ public sealed class ExtractedHelpStoreTests : IDisposable
     [Fact]
     public void CurrentBoundedDocumentLoads()
     {
-        var expected = Document();
+        var expected = Document() with
+        {
+            Topics = [Topic(0, "Topic", "Readable text", true) with
+            {
+                Paragraphs = [new ExtractedHelpParagraph(
+                    [new ExtractedHelpTextRun("Readable text", FontIndex: 0)], 0x1b7e,
+                    12, 6, 20, 18, 12, -6, HelpParagraphAlignment.Center,
+                    [new ExtractedHelpTabStop(720, 1)], 1, 2, KeepTogether: true)]
+            }]
+        };
         Write(expected);
 
         var actual = Assert.IsType<ExtractedHelpDocument>(
@@ -25,8 +34,17 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             Assert.Equal(expected.Topics[index] with { Runs = null, Paragraphs = null },
                 actual.Topics[index] with { Runs = null, Paragraphs = null });
             Assert.Equal(expected.Topics[index].Runs!, actual.Topics[index].Runs!);
-            Assert.Equal(expected.Topics[index].Paragraphs![0].Runs,
-                actual.Topics[index].Paragraphs![0].Runs);
+            var expectedParagraphs = expected.Topics[index].Paragraphs!;
+            var actualParagraphs = actual.Topics[index].Paragraphs!;
+            Assert.Equal(expectedParagraphs.Count, actualParagraphs.Count);
+            for (var paragraph = 0; paragraph < expectedParagraphs.Count; paragraph++)
+            {
+                Assert.Equal(expectedParagraphs[paragraph] with { Runs = [], TabStops = null },
+                    actualParagraphs[paragraph] with { Runs = [], TabStops = null });
+                Assert.Equal(expectedParagraphs[paragraph].Runs, actualParagraphs[paragraph].Runs);
+                Assert.Equal(expectedParagraphs[paragraph].TabStops!,
+                    actualParagraphs[paragraph].TabStops!);
+            }
         }
         Assert.Equal(expected.Contents, actual.Contents);
         Assert.Equal(expected.Contexts, actual.Contexts);
@@ -59,6 +77,11 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
         Write(Document() with { Fonts = null });
+        Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+        Write(Document() with { Topics = [Topic(0, "Topic", "Readable text", true)
+            with { Paragraphs = [new ExtractedHelpParagraph(
+                Enumerable.Range(0, 4097).Select(_ => new ExtractedHelpTextRun("x")).ToArray(),
+                0, TabStops: [])] }] });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
         Write(Document() with { Topics = [Topic(0, "Topic", "Readable text", true)
             with { Paragraphs = [new ExtractedHelpParagraph(
@@ -181,6 +204,7 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Assert.True(tail.Italic);
     }
 
+    // DEV-HELP-001 draws the paragraph geometry of FND-HELP-006 on the pixel-font grid.
     [Fact]
     public void ParagraphLayoutUsesSourceIndentCenteringAndSpacing()
     {

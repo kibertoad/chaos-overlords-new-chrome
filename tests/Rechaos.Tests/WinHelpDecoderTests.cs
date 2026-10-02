@@ -97,6 +97,7 @@ public sealed class WinHelpDecoderTests
         Assert.Equal(1, Assert.Single(topic.Runs!, run => run.Text.Contains("Bold", StringComparison.Ordinal)).FontIndex);
     }
 
+    // The paragraph fields of a display record (FND-HELP-006).
     [Fact]
     public void DecoderPreservesParagraphGeometryFromDisplayRecord()
     {

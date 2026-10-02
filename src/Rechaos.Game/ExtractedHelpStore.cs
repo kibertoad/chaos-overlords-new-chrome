@@ -58,6 +58,7 @@ public static class ExtractedHelpStore
         var ids = new HashSet<int>();
         var linkHashes = new HashSet<uint>();
         var totalCharacters = 0;
+        var totalParagraphCharacters = 0;
         var previousTopicOffset = -1;
         foreach (var topic in document.Topics)
         {
@@ -84,6 +85,14 @@ public static class ExtractedHelpStore
                     && tab.AlignmentCode is >= 0 and <= 0x7fff)
                 && paragraph.Runs.All(run => IsValidRun(run, document.Fonts.Count))))
                 return false;
+            // Layout draws the paragraph records instead of Runs, so they carry the same bounds.
+            if (topic.Paragraphs.Sum(paragraph => paragraph.Runs.Count) > MaximumRunsPerTopic)
+                return false;
+            var paragraphCharacters = topic.Paragraphs
+                .Sum(paragraph => paragraph.Runs.Sum(run => run.Text.Length));
+            if (paragraphCharacters > MaximumTopicCharacters) return false;
+            totalParagraphCharacters = checked(totalParagraphCharacters + paragraphCharacters);
+            if (totalParagraphCharacters > MaximumTotalCharacters) return false;
             previousTopicOffset = topic.TopicOffset;
             if (!string.Equals(string.Concat(topic.Runs.Select(run => run.Text)),
                     topic.Text, StringComparison.Ordinal))

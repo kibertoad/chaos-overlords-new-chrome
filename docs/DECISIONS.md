@@ -264,7 +264,7 @@ their schema and fingerprint encoding have not changed.
 **Decision.** Preserve the supported help file's font descriptors and
 paragraph geometry in extracted-help format 4, and render source indents,
 centering, and paragraph spacing on the existing bounded pixel-font grid.
-Asset-pack format 7 requires users to regenerate their local extracted pack.
+Asset-pack format 8 requires users to regenerate their local extracted pack.
 Exact native font metrics and line spacing remain pending comparison with
 representative original captures. Legacy macro and external-file execution
 remain disabled.
