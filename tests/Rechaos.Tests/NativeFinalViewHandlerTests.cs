@@ -16,10 +16,34 @@ public sealed class NativeFinalViewHandlerTests
         // with no previous-turn date available to print in Events.
         var state = OriginalNewGameExperimentTests.ReplayedMatch("EXP-SETUP-001", 0);
         Assert.Null(state.Outcome);
+        Assert.True(LocalPlanningLight(state, state.Players[0]));
         var elapsed = MatchCalendar.PresentationElapsedTurns(state);
         Assert.Equal(0, elapsed);
         Assert.Equal((2050, 1), MatchCalendar.Of(elapsed));
         Assert.Null(LastTurnEventsLayout.Date(elapsed));
+        // FND-UI-043: earlier local seats are dark while later humans still wait.
+        state.Players[2].Setup = state.Players[2].Setup with { Controller = PlayerController.Human };
+        state.Coordinator.FinishCommand(new PlayerId(0));
+        Assert.False(LocalPlanningLight(state, state.Players[0]));
+        Assert.True(LocalPlanningLight(state, state.Players[2]));
+        // FND-TURN-006, FND-UI-043: the next turn's upkeep runs before the reset, which
+        // relights both seats for the next planning round.
+        while (state.Coordinator.Phase != TurnPhase.Upkeep)
+        {
+            _ = state.Coordinator.Phase switch
+            {
+                TurnPhase.Command => state.FinishCommand(state.Coordinator.ActivePlayer!.Value),
+                TurnPhase.Execution => state.FinishExecutionPhase(),
+                TurnPhase.Hire => state.FinishHire(state.Coordinator.ActivePlayer!.Value),
+                _ => state.FinishPlayerElimination(),
+            };
+        }
+        Assert.Equal(2, state.Coordinator.Turn);
+        Assert.False(LocalPlanningLight(state, state.Players[0]));
+        Assert.False(LocalPlanningLight(state, state.Players[2]));
+        state.FinishUpkeep();
+        Assert.True(LocalPlanningLight(state, state.Players[0]));
+        Assert.True(LocalPlanningLight(state, state.Players[2]));
     }
 
     [Theory]
@@ -50,10 +74,14 @@ public sealed class NativeFinalViewHandlerTests
         // FND-OBJECTIVE-004, FND-STATE-010, EXP-TURN-041, EXP-TURN-042: final views precede awards.
         var state = OriginalNewGameExperimentTests.ReplayedMatch(experiment, 0);
         Assert.NotNull(state.Outcome);
+        // FND-UI-043: completed local planning leaves the human light dark.
+        Assert.False(LocalPlanningLight(state, state.Players[0]));
         if (multipleHumans)
         {
             state.Players[2].Setup = state.Players[2].Setup with { Controller = PlayerController.Human };
             state.Players[2].Status = PlayerStatus.Active;
+            // FND-UI-043: every local human completed the last round, so the second light is dark too.
+            Assert.False(LocalPlanningLight(state, state.Players[2]));
         }
         if (syntheticReport)
         {
@@ -105,6 +133,15 @@ public sealed class NativeFinalViewHandlerTests
         Assert.Equal(randomState, state.Random.State);
         Assert.Equal(consumption, state.Random.ConsumptionCount);
         Assert.False((bool)Field("_idleGangWarningOpen").GetValue(game)!);
+    }
+
+    private static bool LocalPlanningLight(MatchState state, MatchPlayerState player)
+    {
+        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
+        GC.SuppressFinalize(game);
+        var method = typeof(ChaosGame).GetMethod("PlanningLightLit", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new MissingMethodException(nameof(ChaosGame), "PlanningLightLit");
+        return (bool)method.Invoke(game, [state, player])!;
     }
 
     [Fact]

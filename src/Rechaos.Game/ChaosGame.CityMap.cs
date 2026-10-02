@@ -141,7 +141,7 @@ public sealed partial class ChaosGame
             if (viewed == player.Id)
                 batch.Draw(_uiSprites, OverlordBarLayout.Marker(seat),
                     OriginalSpriteLayout.ActivePlayerMarker(markerFrame), Color.White);
-            if (PlanningLightLit(player))
+            if (PlanningLightLit(state, player))
                 batch.Draw(_uiSprites, OverlordBarLayout.PlanningLight(seat),
                     OverlordBarLayout.PlanningLightSource, Color.White);
             else
@@ -150,16 +150,17 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// FND-UI-017: a human seat's light stays lit until its orders are in. Only the network code
-    /// marks orders as in, so on a machine that seats every player the human seats stay lit. Online
-    /// the turn waits only on human seats, so a seat is lit while the turn is still waiting on its
+    /// FND-UI-017, FND-UI-043: human seats wait until their planning visit completes,
+    /// including local seats. Final visits retain the completed round's dark lights. Online the
+    /// turn waits only on human seats, so a seat is lit while the turn is still waiting on its
     /// orders.
     /// </summary>
-    private bool PlanningLightLit(MatchPlayerState player)
+    private bool PlanningLightLit(MatchState state, MatchPlayerState player)
     {
         if (_session is null)
             return OverlordBarLayout.PlanningLightLit(
-                player.Setup.Controller == PlayerController.Human, ordersIn: false);
+                player.Setup.Controller == PlayerController.Human,
+                OverlordBarLayout.LocalOrdersIn(state, player.Id));
         var ownTurnSent = _online.PlanningIsSubmitted;
         return SeatPlanningPresentation.IsDrafting(
             player.Id.Value, _session.Slot, _online.PlanningIsOpen || ownTurnSent, ownTurnSent,
