@@ -71,6 +71,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | builds |
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | builds |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body, builds |
+| [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body, builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -442,6 +443,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-039](../findings/FND-UI-039.md) | builds, locations |
 | [FND-UI-040](../findings/FND-UI-040.md) | body, builds, locations |
 | [FND-UI-041](../findings/FND-UI-041.md) | body, builds |
+| [FND-UI-042](../findings/FND-UI-042.md) | body, builds |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -1198,6 +1200,7 @@ None.
 |---|---|
 | [EXP-TURN-034](../experiments/EXP-TURN-034.md) | body |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
+| [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | evidence |
 
@@ -1284,8 +1287,16 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body |
+| [FND-UI-042](../findings/FND-UI-042.md) | body |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | evidence |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
+
+## EXP-TURN-042
+
+| Cited by | In |
+|---|---|
+| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -2715,6 +2726,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
+| [FND-UI-042](../findings/FND-UI-042.md) | body |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | evidence |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
@@ -6042,6 +6054,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-042](../findings/FND-UI-042.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UI-040
@@ -6057,6 +6070,14 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
+| [FND-UI-042](../findings/FND-UI-042.md) | body |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## FND-UI-042
+
+| Cited by | In |
+|---|---|
+| [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UPKEEP-001
@@ -7002,6 +7023,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-034](../experiments/EXP-TURN-034.md) | body |
+| [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body |
 | glossary: EquipCashShort | glossary |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | related |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | body |

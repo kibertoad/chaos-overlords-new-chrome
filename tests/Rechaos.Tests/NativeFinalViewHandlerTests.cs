@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
 using Rechaos.Game;
 using Xunit;
 
@@ -9,17 +10,29 @@ namespace Rechaos.Tests;
 public sealed class NativeFinalViewHandlerTests
 {
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ReadyAndDoneVisitFinalViewersWithoutResolvingAnotherTurn(bool multipleHumans)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(false, false, "EXP-TURN-042")]
+    public void ReadyAndDoneVisitFinalViewersWithoutResolvingAnotherTurn(bool multipleHumans, bool syntheticReport,
+        string experiment = "EXP-TURN-041")
     {
-        // FND-OBJECTIVE-004, FND-STATE-010, EXP-TURN-041: final views precede awards.
-        var state = OriginalNewGameExperimentTests.ReplayedMatch("EXP-TURN-041", 0);
+        // FND-OBJECTIVE-004, FND-STATE-010, EXP-TURN-041, EXP-TURN-042: final views precede awards.
+        var state = OriginalNewGameExperimentTests.ReplayedMatch(experiment, 0);
         Assert.NotNull(state.Outcome);
         if (multipleHumans)
         {
             state.Players[2].Setup = state.Players[2].Setup with { Controller = PlayerController.Human };
             state.Players[2].Status = PlayerStatus.Active;
+        }
+        if (syntheticReport)
+        {
+            // Synthetic reports exercise dismissal; EXP-TURN-041 itself has no
+            // reviewable reports for the first viewer at this endpoint, and the
+            // original enters that final city with no report panel open (FND-UI-042).
+            AddFinalTurnReport(state, new PlayerId(0));
+            if (multipleHumans) AddFinalTurnReport(state, new PlayerId(2));
         }
         var (game, router) = FinalViewGame(state);
         var randomState = state.Random.State;
@@ -33,7 +46,9 @@ public sealed class NativeFinalViewHandlerTests
             Assert.Equal(ClientScreen.Handoff, router.Current);
             Call(game, "FinishHandoff");
         }
-        Assert.Equal(ClientScreen.City, router.Current);
+        Assert.Equal(syntheticReport || experiment == "EXP-TURN-042" ? ClientScreen.Events : ClientScreen.City,
+            router.Current);
+        CloseReports(game, router, state);
         Call(game, "AdvanceTurn");
         if (multipleHumans)
         {
@@ -41,7 +56,8 @@ public sealed class NativeFinalViewHandlerTests
             Assert.Equal(ClientScreen.Handoff, router.Current);
             Call(game, "FinishHandoff");
             AssertViewer(game, new PlayerId(2));
-            Assert.Equal(ClientScreen.City, router.Current);
+            if (syntheticReport) Assert.Equal(ClientScreen.Events, router.Current);
+            CloseReports(game, router, state);
             Call(game, "AdvanceTurn");
         }
         Assert.Null(Field("_finalViewPlayer").GetValue(game));
@@ -88,12 +104,17 @@ public sealed class NativeFinalViewHandlerTests
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
         GC.SuppressFinalize(game);
         foreach (var name in new[] { "_pendingFinalViews", "_presentedHotSeatEliminations",
-                     "_gangSelection", "_screens", "_lastTurnReportCache", "_combatResultCache" })
+                     "_gangSelection", "_screens", "_lastTurnReportCache", "_combatResultCache",
+                     "_eventViewedPages", "_lastTurnEventArchive", "_planningTimer" })
         {
             var field = Field(name);
             field.SetValue(game, Activator.CreateInstance(field.FieldType));
         }
         Field("_state").SetValue(game, state);
+        // A timed limit, so a planning clock armed in the final view would show as active.
+        Field("_selectedPlanningTimeLimit").SetValue(game, PlanningTimeLimit.TwoMinutes);
+        // The state was changed outside a recorder above, so the journal does not verify it.
+        Field("_actions").SetValue(game, new MatchActions(MatchReplayRecorder.Unverified(state)));
         return (game, (ScreenRouter)Field("_screens").GetValue(game)!);
     }
 
@@ -112,4 +133,38 @@ public sealed class NativeFinalViewHandlerTests
     private static void Call(ChaosGame game, string name) => (typeof(ChaosGame)
         .GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)
         ?? throw new MissingMethodException(nameof(ChaosGame), name)).Invoke(game, null);
+
+    private static void CloseReports(ChaosGame game, ScreenRouter router, MatchState state)
+    {
+        // SCR-UI-003, FND-STATE-010: reports return to the completed city;
+        // no planning timer is started and Done remains a separate action.
+        var viewer = (PlayerId)Field("_finalViewPlayer").GetValue(game)!;
+        var reports = LastTurnEventProjection.For(state, viewer);
+        // The ordinary planning entry sets this flag, and closing the reports then arms the clock.
+        Assert.False((bool)Field("_deferComlinkAlertUntilPlanningVisible").GetValue(game)!);
+        if (router.Current == ClientScreen.CombatSummary)
+            Call(game, "CloseCombatResults");
+        if (router.Current == ClientScreen.Events)
+            Call(game, "CloseEvents");
+        Assert.Equal(ClientScreen.City, router.Current);
+        Assert.Equal(viewer, Field("_finalViewPlayer").GetValue(game));
+        Assert.False(((PlanningTimer)Field("_planningTimer").GetValue(game)!).IsActive);
+        // Closing the review dismisses the reports and keeps them for the Events button.
+        Assert.Empty(LastTurnEventProjection.For(state, viewer));
+        var archive = (LastTurnEventArchive)Field("_lastTurnEventArchive").GetValue(game)!;
+        Assert.Equal(reports, archive.For(viewer, state.Coordinator.Turn));
+    }
+
+    private static void AddFinalTurnReport(MatchState state, PlayerId player)
+    {
+        // QueueNotification stamps the current turn, and a last-turn report belongs to the
+        // completed one, so the report is built here with the player's next sequence number.
+        var instance = BindingFlags.Instance | BindingFlags.NonPublic;
+        var queue = (NotificationQueue)typeof(MatchState).GetMethod("GetNotificationQueue", instance)!
+            .Invoke(state, [player])!;
+        var sequences = (Dictionary<PlayerId, long>)typeof(MatchState)
+            .GetField("_nextNotificationSequences", instance)!.GetValue(state)!;
+        queue.Enqueue(new GameNotification(sequences[player]++, state.Outcome!.Turn,
+            TurnPhase.Execution, ExecutionPhase.Chaos, GameNotificationKind.Crackdown, SectorId: 0));
+    }
 }

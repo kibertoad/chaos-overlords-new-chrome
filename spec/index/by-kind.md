@@ -223,7 +223,7 @@
 
 ## findings
 
-352 entries.
+353 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -574,6 +574,7 @@
 | [FND-UI-039](../findings/FND-UI-039.md) | The end-of-match planning visit differs from an ordinary one only through the Done light flag and the no-match byte | recorded |
 | [FND-UI-040](../findings/FND-UI-040.md) | Planning entry positions the scenario, calendar and player totals in the console | recorded |
 | [FND-UI-041](../findings/FND-UI-041.md) | The running original draws the completed-match calendar companion in its final city view | recorded |
+| [FND-UI-042](../findings/FND-UI-042.md) | The seeded completed match enters its final city without an open report panel | recorded |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
@@ -582,7 +583,7 @@
 
 ## experiments
 
-45 entries.
+46 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -631,6 +632,7 @@
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | How does a six-month Acceptance end, and does a human that always hides get the Big Fat Chicken? | recorded |
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | How do raiders and family-4 gangs plan, when the probe sets them in memory? | recorded |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? | recorded |
+| [EXP-TURN-042](../experiments/EXP-TURN-042.md) | Does the final city entry retain the last resolution's cash-short report? | recorded |
 
 ## bugs
 
