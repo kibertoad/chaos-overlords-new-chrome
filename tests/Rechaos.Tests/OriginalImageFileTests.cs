@@ -10,7 +10,7 @@ namespace Rechaos.Tests;
 /// The files carry no width or height; the rebuild takes them from <see cref="PxDimensions"/>,
 /// which is compared with the Coverage table of FMT-GFX-001.
 /// </summary>
-public sealed class OriginalImageFileTests
+public sealed partial class OriginalImageFileTests
 {
     [Fact]
     public void Px16FilesHaveTheFmtGfx001HeaderAndTheDocumentedSizes()
@@ -69,8 +69,7 @@ public sealed class OriginalImageFileTests
         {
             "PX05000", "PX05001", "PX05002", "PX05004", "PX05007", "PX05018", "Px05013"
         };
-        var px16 = OriginalFormatFiles.Listed("FMT-GFX-001")
-            .ToDictionary(file => file.Name.ToUpperInvariant(), StringComparer.Ordinal);
+        var px16 = Px16Counterparts();
         OriginalFormatFiles.CheckEach(files, file =>
         {
             var bytes = file.ReadAllBytes();
@@ -81,11 +80,7 @@ public sealed class OriginalImageFileTests
 
             var name = file.Name.ToUpperInvariant();
             var documented = DocumentedSize(name);
-            // The extractor sizes a PX08 file by the PX16 file of the same name.
-            var counterpart = px16[name];
-            var counterpartPath = OriginalGameFiles.Require(OriginalFormatFiles.Build, counterpart.Path,
-                counterpart.Xxh3);
-            var rebuild = RebuildSize(name, new FileInfo(counterpartPath).Length);
+            var rebuild = Px08RebuildSize(name, px16);
             ExpectRebuildSize(name, documented, rebuild);
 
             if (compression == 1)
@@ -120,8 +115,7 @@ public sealed class OriginalImageFileTests
         // FMT-GFX-003 covers the same files as FMT-GFX-002.
         var files = OriginalFormatFiles.Require("FMT-GFX-003");
         Assert.Equal(214, files.Count);
-        var px16 = OriginalFormatFiles.Listed("FMT-GFX-001")
-            .ToDictionary(file => file.Name.ToUpperInvariant(), StringComparer.Ordinal);
+        var px16 = Px16Counterparts();
         OriginalFormatFiles.CheckEach(files, file =>
         {
             var bytes = file.ReadAllBytes();
@@ -131,11 +125,7 @@ public sealed class OriginalImageFileTests
                 if (palette[entry * 4 + 3] != 0)
                     throw new InvalidDataException($"palette entry {entry} has reserved_03 {palette[entry * 4 + 3]}");
 
-            var name = file.Name.ToUpperInvariant();
-            var counterpart = px16[name];
-            var counterpartPath = OriginalGameFiles.Require(OriginalFormatFiles.Build, counterpart.Path,
-                counterpart.Xxh3);
-            var size = RebuildSize(name, new FileInfo(counterpartPath).Length);
+            var size = Px08RebuildSize(file.Name, px16);
             var decoded = Px08BmpDecoder.Decode(bytes, size.Width, size.Height);
             // The decoded bitmap carries the 256 entries unchanged, blue, green, red, reserved.
             if (!decoded.AsSpan(54, 256 * 4).SequenceEqual(palette))
@@ -175,6 +165,20 @@ public sealed class OriginalImageFileTests
             >= 10000 and <= 10006 => new(432, 416),
             _ => throw new InvalidDataException($"{name} is not in the Coverage table of FMT-GFX-001")
         };
+    }
+
+    /// <summary>The PX16 files by upper-case name, which the extractor sizes PX08 files by.</summary>
+    private static Dictionary<string, OriginalFormatFiles.ListedFile> Px16Counterparts() =>
+        OriginalFormatFiles.Listed("FMT-GFX-001")
+            .ToDictionary(file => file.Name.ToUpperInvariant(), StringComparer.Ordinal);
+
+    /// <summary>The extractor sizes a PX08 file by the PX16 file of the same name.</summary>
+    private static PxDimensions.Size Px08RebuildSize(
+        string name, IReadOnlyDictionary<string, OriginalFormatFiles.ListedFile> px16)
+    {
+        var counterpart = px16[name.ToUpperInvariant()];
+        var path = OriginalGameFiles.Require(OriginalFormatFiles.Build, counterpart.Path, counterpart.Xxh3);
+        return RebuildSize(name, new FileInfo(path).Length);
     }
 
     private static PxDimensions.Size RebuildSize(string name, long px16Bytes) =>

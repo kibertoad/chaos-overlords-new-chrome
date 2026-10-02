@@ -90,12 +90,38 @@ public sealed partial class UiNavigationTests
     [Fact]
     public void StatusConsoleValuesFollowTemplateRows()
     {
-        Assert.Equal(579, StatusConsoleLayout.ValueRight);
-        Assert.Equal(new Rectangle(476, 95, 44, 9), StatusConsoleLayout.CashLabel);
+        // FND-UI-040: planning-entry text and five-cell numeric origins.
+        Assert.Equal(580, StatusConsoleLayout.ValueRight);
+        Assert.Equal(481, StatusConsoleLayout.ScenarioLeft);
+        Assert.Equal(6, StatusConsoleLayout.ScenarioY);
+        Assert.Equal(481, StatusConsoleLayout.YearLeft);
+        Assert.Equal(511, StatusConsoleLayout.WeekLeft);
+        Assert.Equal(15, StatusConsoleLayout.DateY);
+        Assert.Equal(new Rectangle(476, 5, 108, 9), StatusConsoleLayout.Scenario);
         Assert.Equal(new Rectangle(476, 41, 108, 9), StatusConsoleLayout.Cash);
         Assert.Equal(12, StatusConsoleLayout.CashValueMaxCharacters);
         Assert.Equal([60, 69, 78, 87, 96],
             Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorValueY));
+    }
+
+    [Fact]
+    public void CalendarCompanionFollowsOriginalPlanningEntryBranches()
+    {
+        // FND-UI-040, FND-OBJECTIVE-003, FND-STATE-010.
+        Assert.Equal((562, 532), (StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.CompleteLeft));
+        foreach (var scenario in Enum.GetValues<ScenarioId>())
+        foreach (var duration in Enum.GetValues<GameDuration>())
+        {
+            var limit = ScenarioCatalog.TurnLimit(scenario, duration);
+            var timed = ExecutableStrings.ScenarioNumber(scenario) < 4;
+            Assert.Equal(timed ? limit - 1 : (int?)null,
+                StatusConsolePresentation.RemainingTurns(scenario, duration, 1));
+            Assert.Equal(timed ? 0 : (int?)null,
+                StatusConsolePresentation.RemainingTurns(scenario, duration, limit));
+        }
+        Assert.Equal((19, "COMPLETE"), (StatusConsoleLayout.CompleteString,
+            ExecutableStrings.Get(StatusConsoleLayout.CompleteString)));
+        Assert.Equal("THE BIG 40", ExecutableStrings.ScenarioTitle(ScenarioId.Big40));
     }
 
     [Fact]
@@ -277,7 +303,8 @@ public sealed partial class UiNavigationTests
         // FND-UI-006: a negative value shows its magnitude; the colour carries the sign.
         Assert.Equal("07", HireDockLayout.PriceText(-7));
         // A quotient past the last glyph of the strip has nothing to draw.
-        Assert.Throws<ArgumentOutOfRangeException>(() => HireDockLayout.PriceText(430));
+        // RULE-UI-004: an off-strip leading glyph leaves a blank text placeholder.
+        Assert.Equal(" 0", HireDockLayout.PriceText(430));
     }
 
     [Fact]
