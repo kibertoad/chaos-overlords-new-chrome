@@ -12,6 +12,8 @@ Status: maintained canonical procedure
 - [Tests against the original](#tests-against-the-original)
 - [Fixture classes](#fixture-classes)
 - [Native audio backend](#native-audio-backend)
+- [Native pattern fill reference](#native-pattern-fill-reference)
+- [Original pattern resources](#original-pattern-resources)
 - [Failure triage](#failure-triage)
 - [First-planning map comparison without the keyboard footer](#first-planning-map-comparison-without-the-keyboard-footer)
 - [All active-player marker frames in the first planning view](#all-active-player-marker-frames-in-the-first-planning-view)
@@ -47,6 +49,18 @@ checkout and caps MSBuild at two workers by default. Before building, it stops
 only a `Rechaos.Game` process whose executable lives inside this checkout; an
 installed copy and unrelated `dotnet` processes are left alone. MSBuild and
 Roslyn server reuse are retained because both materially speed repeated builds.
+
+On Windows, when the first `dotnet` on PATH is a command shim such as
+`dotnet.cmd`, cmd.exe would read the `&` and `|` of a compound test filter as
+shell operators. The gate then runs a native host instead: the `dotnet.exe` in
+`DOTNET_ROOT`, else the first `dotnet.exe` on PATH, taking only one with an
+`sdk` directory beside it so a runtime-only install is skipped. With no such
+host it warns and keeps the shim. Otherwise, and on Unix, it runs `dotnet` from
+PATH. A focused run that matches no test fails:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Validation.ps1 -TestFilter 'FullyQualifiedName~AudioRoutingTests|FullyQualifiedName~SoundtrackCatalogTests'
+```
 
 Every run is a cold build. Since `de425b9` the script restores, builds and tests
 into a fresh GUID-named directory under the temporary root and deletes it
@@ -526,6 +540,23 @@ does not compare audible hardware output. Whole-track decoding alone therefore
 cannot establish the endpoint required by RULE-AUDIO-001. Repairing final-buffer
 submission remains necessary before claiming full soundtrack parity.
 
+## Native pattern fill reference
+
+`NativePatternFillTests` compares the visible pixels from the production
+pattern-fill helper with Windows `Rectangle` in a new memory DC, which holds the
+default black pen, filled with a solid white brush and with a solid black brush,
+the two fills the game uses (FND-GFX-006). It covers the current production
+rectangle sizes, smaller examples and one-pixel-wide strips, without original
+assets. A separate case records that Windows leaves the initialized scratch bitmap
+of a 1-by-1 rectangle unchanged while the helper draws it black; no current game
+caller fills that size, and the helper parity claim excludes it. The tests check
+fill and outline pixels only. The compositor raster operations and screen
+rendering are unverified. They skip outside Windows.
+
+## Original pattern resources
+
+`OriginalPatternResourceTests` reads the hash-verified original executable's bytes, walks its PE resource directory for bitmap resources 143, 146 and 147, checks their headers and black and white palettes, and compares all 192 mask bits with the production pattern helper (FND-UI-031, FND-GFX-006). It does not load or execute the original, so it runs on every platform, and it does not store resource bytes in the repository. It requires `GAME_DIR` and skips when the executable is unavailable. This verifies mask shape, palette and row orientation, not raster-operation compositing or rendered-screen parity.
+
 ## Failure triage
 
 Classify mismatches as:
@@ -545,12 +576,13 @@ replay and all source identities needed to reproduce it.
 
 ## First-planning map comparison without the keyboard footer
 
-On 2026-10-02, the deterministic first-planning-entry capture using seed 52421
-and selection-marker frame 6 was compared over map rectangle `(2,42,432,416)`.
-The original window capture and rebuild differed in 5,763 RGB pixels. Of
-these, 5,088 had exact-white original pixels, in the known Windows 11 artifact
-regions. All 675 remaining differences occurred at y 439 through 445, where
-the rebuild draws the mandatory keyboard footer (DEV-UI-023).
+On 2026-10-02, the deterministic first-planning-entry capture of the
+EXP-SETUP-001 state (seed 52421) at selection-marker frame 6 was compared over
+map rectangle `(2,42,432,416)`. The original window capture and rebuild
+differed in 5,763 RGB pixels. Of these, 5,088 had exact-white original pixels
+and were classified as the Windows 11 white-block artifacts that FND-UI-041
+notes in the city. All 675 remaining differences occurred at y 439 through
+445, where the rebuild draws the mandatory keyboard footer (DEV-UI-023).
 
 An external diagnostic build using the corrected console renderer omitted
 only that footer draw. It produced zero differing nonwhite pixels over the
@@ -559,51 +591,58 @@ implementation retains its documented footer. Captures, diagnostic projects
 and original memory remain outside Git.
 
 This comparison supports the unaffected map pixels of one fixed state and
-frame. White pixels were classified separately, not compared as proof of
-underlying sprite fidelity. It does not establish all marker frames, every
-selected sector, search overlays, pointer states or whole-screen parity.
+frame. Pixels that are exact white in the original capture were set aside as
+capture artifacts, so the rebuild's sprites under them remain unchecked. It
+does not establish all marker frames, every selected sector, search overlays,
+pointer states or whole-screen parity.
 
 ## All active-player marker frames in the first planning view
 
 On 2026-10-02, an external diagnostic copy of the original probe collected
-all twelve active-player marker frames from one seed-52421 first planning
-view. Each accepted frame used the stable post-draw counter relationship of
-FND-UI-038 and two byte-identical non-repainting window captures. The probe
-pumped the original between captures until its counter changed; it did not
-patch the executable or synthesize marker artwork.
+all twelve active-player marker frames from the first planning view of the
+EXP-SETUP-001 state (seed 52421), the state of the previous section.
+FND-UI-038 steps the counter `0x00487B90` after drawing frame `k`, so a
+capture taken while the counter holds `c` shows frame `(c + 11) mod 12`.
+Each accepted frame had the same counter value before and after two
+byte-identical non-repainting window captures. The probe pumped the original
+between captures until its counter changed; it did not patch the executable
+or synthesize marker artwork.
 
-Twelve rebuild captures selected frames 0 through 11 explicitly. Every
-capture matched the original over Overlord-bar rectangle `(2,0,432,42)` with
-zero differing RGB pixels. This includes the occupied portraits and the
-marker position for the viewed seat in this state. The external map harness
-suppressed the DEV-UI-023 footer, which lies outside this compared rectangle.
+Twelve rebuild captures came from the external diagnostic harness of the
+previous section, which selected frames 0 through 11 explicitly instead of
+running the game's timer, and omitted the DEV-UI-023 footer below the compared
+rectangle. Every capture matched the original over Overlord-bar rectangle
+`(2,0,432,42)` with zero differing RGB pixels. This includes the occupied
+portraits and the marker position for the viewed seat in this state.
 
 This verifies frame artwork and placement for one viewer and state. It does
 not measure timing, dropped ticks, focus behavior, other viewed seats, empty
-seat animation, the two-frame selected-sector outline, or gang-status cycles.
+seat animation or the two-frame selected-sector outline.
 Captures and diagnostic code remain outside Git.
 
 ## Both selected-sector outline states
 
 The twelve synchronized original captures above contain both selected-sector
-outline states. Compared with the rebuild's outline 0 and with DEV-UI-023's
-footer omitted in the external diagnostic harness, original captures labelled
-with active-player marker frames 2 through 7 have zero differing nonwhite map
-pixels. The other six captures differ in exactly 200 nonwhite pixels, all
-inside border bounds x 219�270, y 97�146 around the selected cell.
+outline states, the selection frames `f = 0` and `f = 1` of FND-UI-017. They
+were compared over the map with DEV-UI-023's footer omitted in the external
+diagnostic harness. Against the rebuild's frame 0, the original captures
+labelled with active-player marker frames 2 through 7 have zero differing
+nonwhite map pixels. The other six captures differ in exactly 200
+nonwhite pixels, all inside border bounds x 219 through 270, y 97 through 146
+of the selected cell at column 4, row 1.
 
-A second external build selected outline 1 explicitly. It matches those six
+A second external build selected frame 1 explicitly. It matches those six
 captures with zero differing nonwhite map pixels, and differs from the first
 six by the same 200 border pixels. Thus every original map capture matches
-one of the two outline states of FND-UI-017 outside exact-white artifact
-pixels. The independent player-marker labels identify these particular
-captures; they do not imply that the two animation counters share a phase.
+one of the two outline states outside exact-white artifact pixels. The
+independent player-marker labels identify these particular captures; they do
+not imply that the two animation counters share a phase.
 
 This verifies both outline artworks and placement for the selected cell in
 this state. The comparison does not measure their period, reset behavior,
 other cells, dropped ticks or the pixels covered by the expected Windows 11
-artifacts. The gang-status markers are state selections under RULE-UI-006,
-not an additional timed animation.
+artifacts. The gang-status markers need no timing comparison: RULE-UI-006
+picks each one from the sector's state, and no timer cycles them.
 
 ## Completed-state final calendar and report capture
 
@@ -631,6 +670,7 @@ The diagnostic selected the viewer and panel directly; handler entry and closing
 are tested separately. This comparison covers one cash-short report and final
 state, not all reports, combat results, multiple viewers or input timing.
 Screenshots, saves and the diagnostic harness remain outside Git.
+
 ## Final-entry hire dock comparison
 
 In the EXP-TURN-042 original final-entry capture, all three 64-by-64 hire
