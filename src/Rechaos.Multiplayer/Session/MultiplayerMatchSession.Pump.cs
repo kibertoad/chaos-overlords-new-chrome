@@ -209,6 +209,11 @@ public sealed partial class MultiplayerMatchSession
             await HandleAsync(@event, handlerToken).ConfigureAwait(false);
             _resumeAfterSeq = @event.Seq;
         }
+        // The stream ends its enumeration quietly when its token is cancelled, so a resync that
+        // cancels the cycle before the connection opens arrives here, not as an exception. Read as
+        // the stream ending, it stopped the pump for good with the flag still set: no restart, no
+        // failure, and a session that never read the match again.
+        streamToken.ThrowIfCancellationRequested();
         return false;
     }
 }
