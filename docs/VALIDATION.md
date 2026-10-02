@@ -524,7 +524,16 @@ submission remains necessary before claiming full soundtrack parity.
 
 ## Native pattern fill reference
 
-`NativePatternFillTests` compares the visible pixels from the production white pattern-fill helper with Windows `Rectangle` using a new memory DC with its default black pen and white brush (FND-GFX-006). It covers the current production rectangle sizes and smaller nondegenerate examples without original assets. The 1-by-1 case records that Windows leaves the initialized scratch bitmap unchanged while the helper fills it black; no current game caller reaches that size. This boundary remains outside the helper parity claim. The test checks fill and outline pixels, not the compositor raster operations or screen rendering, and skips outside Windows.
+`NativePatternFillTests` compares the visible pixels from the production
+pattern-fill helper with Windows `Rectangle` in a new memory DC, which holds the
+default black pen, filled with a solid white brush and with a solid black brush,
+the two fills the game uses (FND-GFX-006). It covers the current production
+rectangle sizes, smaller examples and one-pixel-wide strips, without original
+assets. A separate case records that Windows leaves the initialized scratch bitmap
+of a 1-by-1 rectangle unchanged while the helper draws it black; no current game
+caller fills that size, and the helper parity claim excludes it. The tests check
+fill and outline pixels only. The compositor raster operations and screen
+rendering are unverified. They skip outside Windows.
 
 ## Failure triage
 
