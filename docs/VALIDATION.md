@@ -11,6 +11,7 @@ Status: maintained canonical procedure
 - [Spec checks](#spec-checks)
 - [Tests against the original](#tests-against-the-original)
 - [Fixture classes](#fixture-classes)
+- [Audio channel validation](#audio-channel-validation)
 - [Native audio backend](#native-audio-backend)
 - [Failure triage](#failure-triage)
 <!-- doc-index:end -->
@@ -509,6 +510,30 @@ original's result as the deviation changes it.
 - **Save patch:** writes to a base save, committed under
   `spec/experiments/saves/`; the base save itself stays with the maintainer's
   captures.
+
+## Audio channel validation
+
+RULE-AUDIO-003 and FND-AUDIO-007 record packed auxiliary-device volume values.
+The left channel is `level * 6400`; at level 6 and above the sign-extended
+addition makes the right channel one lower: 38400/38399 at level 6 and
+64000/63999 at level 10. The executable computes these values itself; they do
+not come from the GOG wrapper.
+
+The current effect and music level helpers return the left-channel value divided
+by 65535, and music and effects each apply that one scalar gain to both
+channels. The intro movie audio takes the same effects value, which is correct
+for it: RULE-VIDEO-001 records the movie library setting both channels equal,
+so a repair of the borrow must leave the movie path alone.
+`AudioRoutingTests` and `SoundtrackCatalogTests` compare the left-channel
+conversion only. `NativeAudioLevelApplicationTests` compare actual
+handler volume properties, mute behavior and common application order; they do
+not measure or assert independent channel output.
+
+The right-channel borrow remains unimplemented. Comparing a scalar volume to the
+left-channel formula cannot establish stereo fidelity. A future repair needs
+independent output-channel control and a native channel-output comparison,
+including level changes and fades. Original auxiliary-device selection and
+startup/exit restoration also remain outside the present comparison coverage.
 
 ## Native audio backend
 
