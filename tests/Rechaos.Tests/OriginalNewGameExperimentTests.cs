@@ -59,7 +59,8 @@ namespace Rechaos.Tests;
 /// RULE-OBJECTIVE-004) and compares the awards the endgame gives (RULE-AWARDS-001). EXP-TURN-039 and
 /// EXP-TURN-038 do the same in Acceptance and Dominance with the human hiding every turn, where a
 /// site completed in a turn counts in that turn's score (RULE-OBJECTIVE-002) and in the sector and
-/// gang refresh that ends the match (RULE-SITE-001, RULE-GANG-001).
+/// gang refresh that ends the match (RULE-SITE-001, RULE-GANG-001). EXP-TURN-041 plays another
+/// six-month Greed to its end and stops at the final city view, before the awards are given.
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -67,7 +68,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -79,6 +80,11 @@ public sealed class OriginalNewGameExperimentTests
         // original carries out and the rebuild refuses; player 5's next tie count differs.
         [("EXP-TURN-015", 0)] = 950,
     };
+
+    // Runs that stop at the final city view, before the awards controller builds the award table
+    // (FND-OBJECTIVE-004, FND-UI-041). Their fixtures hold no award rows; every other run that
+    // ends the match has to.
+    private static readonly HashSet<string> EndpointsBeforeAwards = ["EXP-TURN-041"];
 
     public static TheoryData<string, int> MatchingRuns()
     {
@@ -373,8 +379,14 @@ public sealed class OriginalNewGameExperimentTests
             Assert.NotNull(match.Outcome);
             // The match ends with the resolution of the last recorded Done.
             Assert.Equal(recorded.DoneCount, match.Outcome.Turn);
+            // The original's elapsed-turn count stays one below the deciding turn at the final view
+            // and after the awards. The rebuild's coordinator has already moved to the next turn, so
+            // the count is compared with the outcome turn.
+            Assert.Equal(recorded.Term("elapsed_turns", 0), match.Outcome.Turn - 1);
+            if (EndpointsBeforeAwards.Contains(experiment)) return;
             EndgameAward[] order =
                 [EndgameAward.Fist, EndgameAward.Skull, EndgameAward.BigFatChicken, EndgameAward.DollarSign, EndgameAward.Safe];
+            Assert.True(recorded.HasTerm("player_awards", 0), "a run that ends the match after the awards holds their rows");
             foreach (var player in match.Players)
             {
                 var slot = player.Id.Value;
