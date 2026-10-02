@@ -539,6 +539,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [RULE-GANG-002](../rules/RULE-GANG-002.md) | builds |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | builds |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | builds |
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | builds |
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | builds |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | builds |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | builds |
@@ -1352,6 +1353,7 @@ None.
 |---|---|
 | [FMT-GFX-002](../formats/FMT-GFX-002.md) | body |
 | [FND-UI-006](../findings/FND-UI-006.md) | body |
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | related |
 
 ## FMT-GFX-002
 
@@ -3980,6 +3982,7 @@ None.
 | [FMT-GFX-001](../formats/FMT-GFX-001.md) | body, evidence |
 | [FND-GFX-002](../findings/FND-GFX-002.md) | body |
 | [FND-PLATFORM-002](../findings/FND-PLATFORM-002.md) | body |
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | body, evidence |
 
 ## FND-GFX-002
 
@@ -4651,6 +4654,7 @@ None.
 | [FND-MOVE-005](../findings/FND-MOVE-005.md) | body |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | body |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | body, evidence |
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | body, evidence |
 
 ## FND-PLATFORM-009
 
@@ -7011,8 +7015,13 @@ None.
 | Cited by | In |
 |---|---|
 | glossary: present | glossary |
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | related |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | body, related |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | related |
+
+## RULE-GFX-003
+
+None.
 
 ## RULE-GIVE-001
 
