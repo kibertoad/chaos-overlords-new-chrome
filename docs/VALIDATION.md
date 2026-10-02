@@ -13,7 +13,9 @@ Status: maintained canonical procedure
 - [Fixture classes](#fixture-classes)
 - [Native audio backend](#native-audio-backend)
 - [Native pattern fill reference](#native-pattern-fill-reference)
+- [Original pattern resources](#original-pattern-resources)
 - [Failure triage](#failure-triage)
+- [First-planning map comparison without the keyboard footer](#first-planning-map-comparison-without-the-keyboard-footer)
 <!-- doc-index:end -->
 
 ## Validation layers
@@ -43,6 +45,18 @@ checkout and caps MSBuild at two workers by default. Before building, it stops
 only a `Rechaos.Game` process whose executable lives inside this checkout; an
 installed copy and unrelated `dotnet` processes are left alone. MSBuild and
 Roslyn server reuse are retained because both materially speed repeated builds.
+
+On Windows, when the first `dotnet` on PATH is a command shim such as
+`dotnet.cmd`, cmd.exe would read the `&` and `|` of a compound test filter as
+shell operators. The gate then runs a native host instead: the `dotnet.exe` in
+`DOTNET_ROOT`, else the first `dotnet.exe` on PATH, taking only one with an
+`sdk` directory beside it so a runtime-only install is skipped. With no such
+host it warns and keeps the shim. Otherwise, and on Unix, it runs `dotnet` from
+PATH. A focused run that matches no test fails:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Validation.ps1 -TestFilter 'FullyQualifiedName~AudioRoutingTests|FullyQualifiedName~SoundtrackCatalogTests'
+```
 
 Every run is a cold build. Since `de425b9` the script restores, builds and tests
 into a fresh GUID-named directory under the temporary root and deletes it
@@ -535,6 +549,10 @@ caller fills that size, and the helper parity claim excludes it. The tests check
 fill and outline pixels only. The compositor raster operations and screen
 rendering are unverified. They skip outside Windows.
 
+## Original pattern resources
+
+`OriginalPatternResourceTests` reads the hash-verified original executable's bytes, walks its PE resource directory for bitmap resources 143, 146 and 147, checks their headers and black and white palettes, and compares all 192 mask bits with the production pattern helper (FND-UI-031, FND-GFX-006). It does not load or execute the original, so it runs on every platform, and it does not store resource bytes in the repository. It requires `GAME_DIR` and skips when the executable is unavailable. This verifies mask shape, palette and row orientation, not raster-operation compositing or rendered-screen parity.
+
 ## Failure triage
 
 Classify mismatches as:
@@ -551,3 +569,25 @@ Classify mismatches as:
 
 Reduce a failure to the earliest mismatching phase hash. Preserve the smallest
 replay and all source identities needed to reproduce it.
+
+## First-planning map comparison without the keyboard footer
+
+On 2026-10-02, the deterministic first-planning-entry capture of the
+EXP-SETUP-001 state (seed 52421) at selection-marker frame 6 was compared over
+map rectangle `(2,42,432,416)`. The original window capture and rebuild
+differed in 5,763 RGB pixels. Of these, 5,088 had exact-white original pixels
+and were classified as the Windows 11 white-block artifacts that FND-UI-041
+notes in the city. All 675 remaining differences occurred at y 439 through
+445, where the rebuild draws the mandatory keyboard footer (DEV-UI-023).
+
+An external diagnostic build using the corrected console renderer omitted
+only that footer draw. It produced zero differing nonwhite pixels over the
+same map rectangle; the 5,088 original-white differences remained. The game
+implementation retains its documented footer. Captures, diagnostic projects
+and original memory remain outside Git.
+
+This comparison supports the unaffected map pixels of one fixed state and
+frame. Pixels that are exact white in the original capture were set aside as
+capture artifacts, so the rebuild's sprites under them remain unchecked. It
+does not establish all marker frames, every selected sector, search overlays,
+pointer states or whole-screen parity.
