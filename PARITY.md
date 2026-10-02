@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 4 |
+| `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 99 |
+| `implemented` | 98 |
 | `validated` | 119 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 4 |
-| `complete` | 218 |
+| `partial` | 5 |
+| `complete` | 217 |
 
 ## DATA
 
@@ -428,7 +428,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-001` | A push-button control acts only when released inside | supported | complete | None | None | implemented | None |
 | `RULE-UI-002` | Routing a press on the main console | supported | complete | None | None | implemented | None |
 | `RULE-UI-003` | Panels slide in from the right and out to the right | supported | complete | None | `DEV-TIMER-001`, `DEV-UI-001` | implemented | The slide-in reveals only the panel's left columns up to x 448 over the screen it opened from, in the rule's step and copy sequence at a fixed benchmark of 84 copies a second (DEV-TIMER-001); the slide-out is not animated (DEV-UI-001). |
-| `RULE-UI-004` | Drawing numbers in fixed glyph cells | supported | complete | None | None | implemented | A value wider than its cells puts its whole leading quotient in the first cell, so 123 in two cells draws `<3`. |
+| `RULE-UI-004` | Drawing numbers in fixed glyph cells | supported | partial | None | None | supported | A value wider than its cells puts its whole leading quotient in the first cell, so 123 in two cells draws `<3`. A quotient past the strip copies the raw `PX00129` cell at the same source origin; a cell past the bitmap's right edge, a quotient of 69 or more, is drawn blank as a placeholder because the original's output there is not recorded. |
 | `RULE-UI-005` | Lengths of the site progress and Force meters | supported | complete | None | None | implemented | Site meters truncate progress * 100 / Resistance (100 at Resistance 0) and Force meters are Force * 6 pixels, checked by SectorMeterLengthTests. |
 | `RULE-UI-006` | Choosing a sector's gang-status marker | supported | complete | None | None | implemented | Frames and the one saved cell that loses frame 8 follow the rule. Enemy sight and presence come from a snapshot kept for each planning entry, and the idle test and incoming hires are read live. |
 | `RULE-UI-007` | The pointer shape | supported | complete | None | None | implemented | The stock arrow shows at all times, and the hourglass while a city is set up, a game is loaded or a turn is resolved. |

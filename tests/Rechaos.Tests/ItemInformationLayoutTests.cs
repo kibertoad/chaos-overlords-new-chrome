@@ -14,9 +14,12 @@ public sealed class ItemInformationLayoutTests
     [InlineData(-123456, "<3456", true)]
     public void ConsoleScoreUsesFiveOriginalNumericCells(int score, string digits, bool negative)
     {
-        // FND-UI-040, RULE-UI-004: the leading cell retains the whole quotient.
+        // FND-UI-040, RULE-UI-004: five cells at (550,24); the leading cell retains the whole quotient.
+        Assert.Equal((550, 24, 5), (StatusConsoleLayout.ScoreLeft, StatusConsoleLayout.ScoreY,
+            StatusConsoleLayout.ScoreCells));
         Assert.Equal(new NativeTwoCellNumberPresentation.Value(digits, negative, false),
-            NativeTwoCellNumberPresentation.Format(score, NativeTwoCellNumberPresentation.Kind.Baseline, 5));
+            NativeTwoCellNumberPresentation.Format(score, NativeTwoCellNumberPresentation.Kind.Baseline,
+                StatusConsoleLayout.ScoreCells));
     }
 
     [Fact]
@@ -85,7 +88,24 @@ public sealed class ItemInformationLayoutTests
             NativeTwoCellNumberPresentation.Format(10, width: 1));
         Assert.Equal(new NativeTwoCellNumberPresentation.Value("Z9", false, false),
             NativeTwoCellNumberPresentation.Format(429));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
+    }
+
+    [Fact]
+    public void TakesALeadingQuotientPastTheFontStripFromTheRawAtlasCell()
+    {
+        // RULE-UI-004: glyph 16 + q is copied from (6(16 + q), 0) of PX00129, or from row 8 when
+        // negative, even past the strip's last character; the digits keep a blank in its place.
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value(" 0", false, false, 59),
             NativeTwoCellNumberPresentation.Format(430));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value(" 0000", true, false, 59),
+            NativeTwoCellNumberPresentation.Format(-430000, NativeTwoCellNumberPresentation.Kind.Baseline,
+                StatusConsoleLayout.ScoreCells));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value(" 8", true, false, 214748380),
+            NativeTwoCellNumberPresentation.Format(int.MinValue));
+        Assert.Equal(new Rectangle(354, 0, 6, 7), NativeTwoCellNumberPresentation.AtlasCell(59, false, 512));
+        Assert.Equal(new Rectangle(354, 8, 6, 7), NativeTwoCellNumberPresentation.AtlasCell(59, true, 512));
+        Assert.Equal(new Rectangle(504, 0, 6, 7), NativeTwoCellNumberPresentation.AtlasCell(84, false, 512));
+        Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(85, false, 512));
+        Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(int.MaxValue, false, 512));
     }
 }

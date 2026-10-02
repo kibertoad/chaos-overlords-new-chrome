@@ -31,6 +31,8 @@ public static class StatusConsoleLayout
     public const int LabelLeft = 480;
     // FND-UI-040: five six-pixel numeric cells at x 550 end at x 580, exclusive.
     public const int ValueRight = 580;
+    public const int ScoreCells = 5;
+    public const int ScoreLeft = ValueRight - ScoreCells * OriginalFontLayout.CellWidth;
     public const int ScenarioLeft = 481;
     public const int YearLeft = 481;
     public const int WeekLeft = 511;
@@ -236,7 +238,7 @@ public static class StatusConsolePresentation
     /// sectors held, or the inactive-seat count Kill 'Em All and Eliminate share) rather than only
     /// the timed scenarios' scores.
     /// </summary>
-    public static long Score(MatchState state, MatchPlayerState player) => player.ScenarioScore;
+    public static int Score(MatchState state, MatchPlayerState player) => player.ScenarioScore;
 
     public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>
         range.CanTriggerCrackdown(tolerance) ? Color.Red : Color.Lime;
