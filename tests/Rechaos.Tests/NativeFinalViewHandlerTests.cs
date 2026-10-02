@@ -11,13 +11,9 @@ public sealed class NativeFinalViewHandlerTests
     [Fact]
     public void ActiveFirstPlanningDateMatchesOriginalEntry()
     {
-        // EXP-SETUP-001, FND-UI-040: active planning still begins at week 1,
+        // EXP-SETUP-001, FND-UI-040, SCR-EVENT-001: active planning still begins at week 1,
         // with no previous-turn date available to print in Events.
-        var flags = BindingFlags.NonPublic | BindingFlags.Static;
-        var replayType = typeof(OriginalNewGameExperimentTests);
-        var recorded = replayType.GetMethod("Run", flags)!.Invoke(null, ["EXP-SETUP-001", 0]);
-        object?[] replayArguments = [recorded, 0];
-        var state = (MatchState)replayType.GetMethod("StartMatch", flags)!.Invoke(null, replayArguments)!;
+        var state = StartRecordedMatch("EXP-SETUP-001");
         Assert.Null(state.Outcome);
         var elapsed = MatchCalendar.PresentationElapsedTurns(state);
         Assert.Equal(0, elapsed);
@@ -35,13 +31,9 @@ public sealed class NativeFinalViewHandlerTests
         string experiment = "EXP-TURN-041")
     {
         // FND-OBJECTIVE-004, FND-STATE-010, EXP-TURN-041, EXP-TURN-042: final views precede awards.
-        var flags = BindingFlags.NonPublic | BindingFlags.Static;
-        var replayType = typeof(OriginalNewGameExperimentTests);
-        var recorded = replayType.GetMethod("Run", flags)!.Invoke(null, [experiment, 0]);
-        object?[] replayArguments = [recorded, 0];
-        var state = (MatchState)replayType.GetMethod("StartMatch", flags)!.Invoke(null, replayArguments)!;
+        var state = StartRecordedMatch(experiment);
         Assert.NotNull(state.Outcome);
-        // FND-UI-041, EXP-TURN-042: original final city is week 26; its
+        // FND-UI-041, EXP-TURN-042, SCR-EVENT-001: original final city is week 26; its
         // last-turn report is week 25, before the elapsed counter increments.
         Assert.Equal(27, state.Coordinator.Turn);
         var elapsed = MatchCalendar.PresentationElapsedTurns(state);
@@ -101,6 +93,15 @@ public sealed class NativeFinalViewHandlerTests
         Assert.Equal(randomState, state.Random.State);
         Assert.Equal(consumption, state.Random.ConsumptionCount);
         Assert.False((bool)Field("_idleGangWarningOpen").GetValue(game)!);
+    }
+
+    private static MatchState StartRecordedMatch(string experiment)
+    {
+        var flags = BindingFlags.NonPublic | BindingFlags.Static;
+        var replayType = typeof(OriginalNewGameExperimentTests);
+        var recorded = replayType.GetMethod("Run", flags)!.Invoke(null, [experiment, 0]);
+        object?[] replayArguments = [recorded, 0];
+        return (MatchState)replayType.GetMethod("StartMatch", flags)!.Invoke(null, replayArguments)!;
     }
 
     private static FieldInfo Field(string name) => typeof(ChaosGame)
