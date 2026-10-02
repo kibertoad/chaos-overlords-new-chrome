@@ -9,6 +9,35 @@ namespace Rechaos.Tests;
 
 public sealed class NativeFinalViewHandlerTests
 {
+    [Fact]
+    public void ActiveFirstPlanningDateMatchesOriginalEntry()
+    {
+        // EXP-SETUP-001, FND-UI-040, SCR-EVENT-001: active planning still begins at week 1,
+        // with no previous-turn date available to print in Events.
+        var state = OriginalNewGameExperimentTests.ReplayedMatch("EXP-SETUP-001", 0);
+        Assert.Null(state.Outcome);
+        var elapsed = MatchCalendar.PresentationElapsedTurns(state);
+        Assert.Equal(0, elapsed);
+        Assert.Equal((2050, 1), MatchCalendar.Of(elapsed));
+        Assert.Null(LastTurnEventsLayout.Date(elapsed));
+    }
+
+    [Theory]
+    [InlineData("EXP-TURN-041")]
+    [InlineData("EXP-TURN-042")]
+    public void CompletedMatchDatesPrecedeTheElapsedTurnIncrement(string experiment)
+    {
+        // FND-UI-041, EXP-TURN-042, SCR-EVENT-001: original final city is week 26; its
+        // last-turn report is week 25, before the elapsed counter increments.
+        var state = OriginalNewGameExperimentTests.ReplayedMatch(experiment, 0);
+        Assert.NotNull(state.Outcome);
+        Assert.Equal(27, state.Coordinator.Turn);
+        var elapsed = MatchCalendar.PresentationElapsedTurns(state);
+        Assert.Equal(25, elapsed);
+        Assert.Equal((2050, 26), MatchCalendar.Of(elapsed));
+        Assert.Equal(("2050", "25"), LastTurnEventsLayout.Date(elapsed));
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]

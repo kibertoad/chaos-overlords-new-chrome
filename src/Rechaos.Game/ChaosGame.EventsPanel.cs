@@ -366,7 +366,7 @@ public sealed partial class ChaosGame
         DrawEventArtworkForeground(batch, state, notification, related, record);
         // SCR-EVENT-001: the date is elapsed_turns (turns completed) as year and week, drawn
         // over the panel art's 0000.00 and left out at 0.
-        if (LastTurnEventsLayout.Date(state.Coordinator.Turn - 1) is var (year, week))
+        if (LastTurnEventsLayout.Date(MatchCalendar.PresentationElapsedTurns(state)) is var (year, week))
         {
             DrawDigitCells(batch, pixel, font, year, LastTurnEventsLayout.Year);
             DrawDigitCells(batch, pixel, font, week, LastTurnEventsLayout.Week);
