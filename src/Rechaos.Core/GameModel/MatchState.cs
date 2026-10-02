@@ -48,7 +48,8 @@ public sealed partial class MatchPlayerState
         short? snubbedHireOffer = null,
         IReadOnlyList<HireOfferSlotState>? hireOfferSlots = null,
         int? snubbedHireOfferSlot = null,
-        bool usesMaximumHireForce = false)
+        bool usesMaximumHireForce = false,
+        int scenarioScore = 0)
     {
         if (bigManPoints < 0) throw new ArgumentOutOfRangeException(nameof(bigManPoints));
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
@@ -77,6 +78,7 @@ public sealed partial class MatchPlayerState
         SnubbedHireOffer = snubbedHireOffer;
         SnubbedHireOfferSlot = snubbedHireOfferSlot;
         UsesMaximumHireForce = usesMaximumHireForce;
+        ScenarioScore = scenarioScore;
     }
 
     public MatchPlayerSetup Setup { get; internal set; }
@@ -85,6 +87,13 @@ public sealed partial class MatchPlayerState
     public int Cash { get; internal set; }
     public int Support { get; internal set; }
     public int BigManPoints { get; internal set; }
+
+    /// <summary>
+    /// RULE-OBJECTIVE-002: the score the last evaluation stored, when the match started or at the
+    /// end of the last turn, and -32000 once the player is out. The computer players' standings and
+    /// the Player Rankings panel read this, never a score worked out from the current state.
+    /// </summary>
+    public int ScenarioScore { get; internal set; }
     public IReadOnlyList<MatchGangState> Gangs => _gangs;
     public IReadOnlyList<PendingHireState> PendingHires => _pendingHires;
     public IReadOnlyDictionary<short, int> ResearchProgress => _researchProgress;
@@ -281,7 +290,12 @@ public sealed partial class MatchState
         // now so resolution never meets a gang without them. A saved gang keeps what it saved.
         foreach (var gang in Players.SelectMany(player => player.Gangs))
             gang.StoredStatistics ??= EffectiveStatisticsCalculator.Rebuilt(this, gang);
+        // RULE-OBJECTIVE-002: a match built from rosters as given stores their scores as given.
+        // MatchBootstrap.Create and the generator, which raise a SMGFUNDAGE player's cash, store
+        // them again from the cash before the raise (FND-SETUP-015).
+        if (restore is null) OriginalAiScenarioStandingRules.Record(this);
     }
+
     internal MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -304,6 +318,11 @@ public sealed partial class MatchState
         ArgumentNullException.ThrowIfNull(aiStrategy);
         // FND-AI-045: a new match runs the start pass after the city and the headquarters exist.
         RefreshEveryPlayersAiSectorRecords();
+        // RULE-OBJECTIVE-002, FND-SETUP-015: a new match stores its scores once its city and
+        // headquarters exist, from the cash every player had before SMGFUNDAGE raised it.
+        var cashBeforeModifier = MatchBootstrap.StartingCashBeforeModifier(
+            setup.Scenario, OriginalMatchFactory.StandardStartingCash);
+        OriginalAiScenarioStandingRules.Record(this, _ => cashBeforeModifier);
     }
     public OriginalData Definitions { get; }
     public MatchSetup Setup { get; private set; }
@@ -381,13 +400,14 @@ public sealed partial class MatchState
     {
         var player = FindPlayer(observer) ?? throw new ArgumentOutOfRangeException(nameof(observer));
         var target = FindGang(targetGang) ?? throw new ArgumentOutOfRangeException(nameof(targetGang));
-        if (target.Owner == observer) return true;
-        if (OriginalSetupNameRules.EnablesOmniscience(player.Setup.Name)) return true;
+        var owner = target.Owner == observer;
+        var omniscient = OriginalSetupNameRules.EnablesOmniscience(player.Setup.Name);
+        if (owner || omniscient) return DetectsFromStrength(owner, omniscient, null, 0);
         var observers = player.Gangs.Where(gang => gang.IsActive && gang.SectorId == target.SectorId).ToArray();
-        if (observers.Length == 0) return false;
-        var detection = ManualRules.SectorDetectionStrength(
+        int? detection = observers.Length == 0 ? null : ManualRules.SectorDetectionStrength(
             observers.Select(gang => EffectiveStatisticsCalculator.ForGang(this, gang).Detect));
-        return detection >= EffectiveStatisticsCalculator.ForGang(this, target).Stealth;
+        return DetectsFromStrength(owner, omniscient, detection,
+            EffectiveStatisticsCalculator.ForGang(this, target).Stealth);
     }
     public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
@@ -408,8 +428,43 @@ public sealed partial class MatchState
         SectorBenefitResolver.ActivatePending(this);
         SectorRecordRebuild.BeforePlanning(this);
         EffectiveStatisticsCalculator.RebuildBeforePlanning(this);
+        RecordVisibilityBeforePlanning();
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }
+
+    /// <summary>
+    /// RULE-DETECT-001 writes every active gang's <c>visible_to</c> bytes at each planning entry,
+    /// and no gang moves or changes its statistics between the entries of one planning phase, so
+    /// the bytes the last entry leaves are these. A gone gang keeps the bits it had (BUG-AI-007).
+    /// </summary>
+    private void RecordVisibilityBeforePlanning()
+    {
+        var strengths = new int?[Players.Count, MatchLimits.SectorCount];
+        var omniscient = new bool[Players.Count];
+        for (var index = 0; index < Players.Count; index++)
+        {
+            var player = Players[index];
+            omniscient[index] = OriginalSetupNameRules.EnablesOmniscience(player.Setup.Name);
+            foreach (var sector in player.Gangs.Where(gang => gang.IsActive).GroupBy(gang => gang.SectorId))
+                strengths[index, sector.Key] = ManualRules.SectorDetectionStrength(
+                    sector.Select(gang => EffectiveStatisticsCalculator.ForGang(this, gang).Detect));
+        }
+        foreach (var gang in Players.SelectMany(player => player.Gangs).Where(gang => gang.IsActive))
+        {
+            var stealth = EffectiveStatisticsCalculator.ForGang(this, gang).Stealth;
+            byte mask = 0;
+            for (var index = 0; index < Players.Count; index++)
+                if (DetectsFromStrength(gang.Owner == Players[index].Id, omniscient[index],
+                        strengths[index, gang.SectorId], stealth))
+                    mask |= (byte)(1 << Players[index].Id.Value);
+            gang.VisibilityMask = mask;
+        }
+    }
+
+    // RULE-DETECT-001: only local observers contribute strength; ownership and the setup override reveal all.
+    private static bool DetectsFromStrength(bool owner, bool omniscient, int? sectorStrength, int stealth) =>
+        owner || omniscient || (sectorStrength is { } strength && strength >= stealth);
+
     public TurnTransition FinishCommand(PlayerId player)
     {
         if (Coordinator.Phase == TurnPhase.Command && Coordinator.ActivePlayer == player)
@@ -495,9 +550,16 @@ public sealed partial class MatchState
             player.Setup.Controller == PlayerController.Human && player.Status == PlayerStatus.Active);
         ResolvePlayerEliminations();
         AwardBigManPoints();
+        // RULE-OBJECTIVE-001: the end evaluation stores the scores before it tests for the end.
+        OriginalAiScenarioStandingRules.Record(this);
         if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this, humanActiveAtTurnStart) is { } outcome)
         {
             Outcome = MatchOutcomeValidator.Freeze(outcome);
+            // FND-OBJECTIVE-004: a match that ends refreshes its sectors and gangs before the
+            // final look at the city, as a turn start does, with no upkeep before it.
+            SectorBenefitResolver.ActivatePending(this, Coordinator.Turn);
+            SectorRecordRebuild.BeforePlanning(this);
+            EffectiveStatisticsCalculator.RebuildBeforePlanning(this);
             AppendMatchEndedEvent(Outcome);
         }
         return CaptureBoundary(Coordinator.FinishPlayerElimination());
@@ -799,8 +861,7 @@ public sealed partial class MatchState
     {
         // Native Eliminate cleanup writes only inactive sector 100. Force zero is this
         // model's inactive marker; retain equipment so the retired record stays inspectable.
-        gang.Force = 0;
-        gang.Hidden = false;
+        gang.Retire(gang.Force);
     }
 
     private GameEvent AppendEliminationEvent(PlayerId player, EliminationDetails elimination) =>

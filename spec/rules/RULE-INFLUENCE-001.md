@@ -4,7 +4,7 @@ title: Each Influence gang rolls on its own and adds its successes to the site's
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-001, FND-TURN-007, FND-STATE-002, FND-TURN-009, FND-AI-007, FND-GANG-001, FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003, FND-CONTROL-001, FND-EVENT-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-INFLUENCE-004, EXP-TURN-023, FND-TURN-001, FND-TURN-007, FND-STATE-002, FND-TURN-009, FND-AI-007, FND-GANG-001, FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003, FND-CONTROL-001, FND-EVENT-001, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -51,7 +51,11 @@ if site.progress != resistance:
     for d in 0..pool:
         if roll(6) >= threshold:
             successes = successes + 1
-    site.progress = min(site.progress + successes, resistance)
+    if difficulty_band[player] == 0:
+        # BUG-INFLUENCE-001: the pool is kept where the progress was
+        site.progress = min(pool + successes, resistance)
+    else:
+        site.progress = min(site.progress + successes, resistance)
     if site.progress == resistance:
         emit SiteCooperationAchieved(player, gang.sector, gang.target)
 ```
@@ -72,6 +76,11 @@ when that makes the site complete. Makes one `roll(6)`, three draws from
   `turn_start` (RULE-SITE-001).
 - For a band-0 player the pool loses a fifth, rounded toward zero: a pool of 4
   keeps all four dice, a pool of 5 keeps four.
+- For a band-0 player the new progress is the reduced pool plus the successes,
+  whatever the progress was (BUG-INFLUENCE-001): a pool of 8 with 4 successes
+  completes a site of Resistance 12 at once, and a site whose progress exceeds
+  the pool plus the successes falls back. A pool below 0 leaves progress below
+  0.
 - A pool of 0 or less rolls nothing.
 - The site record has no field naming who influenced it; a complete site
   benefits whoever owns the sector. When the owner changes, the Control pass

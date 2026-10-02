@@ -16,6 +16,24 @@ public static class EndgameRankingEvaluator
         return OriginalAiScenarioStandingRules.Score(state, player);
     }
 
+    /// <summary>
+    /// RULE-OBJECTIVE-002: each slot's standing from the scores the last evaluation stored, 0xFF for
+    /// an inactive or empty slot.
+    /// </summary>
+    public static IReadOnlyList<int> StoredStandings(MatchState state) =>
+        OriginalAiScenarioStandingRules.Stored(state);
+
+    /// <summary>
+    /// RULE-OBJECTIVE-002: the Support Acceptance and Dominance score, that of every completed site
+    /// in the player's sectors.
+    /// </summary>
+    public static int CompletedSiteSupport(MatchState state, MatchPlayerState player)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(player);
+        return OriginalAiScenarioStandingRules.CompletedSiteSupport(state, player.Id);
+    }
+
     public static IReadOnlyList<MatchStanding> Evaluate(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);

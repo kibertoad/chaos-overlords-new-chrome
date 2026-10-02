@@ -12,6 +12,11 @@ the registry, and the defects of the original. The original's network play
 (Winsock networking, TAPI modems and serial links) is described only as far as its
 lobby screens and file transfers. Its save files are described as a format.
 
+The parity target is the original executable and its platform API contract.
+The GOG CD compatibility wrapper is an alternative attempt to address known
+issues: its fixes may inform implementation choices, but reproducing its exact
+behavior is not required.
+
 The spec describes the original game and nothing else. It never names a class,
 file or setting from the rebuild in this repository.
 

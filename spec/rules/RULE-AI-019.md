@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-019
 title: Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-048, FND-AI-046, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-044, FND-EXE-004]
+evidence: [FND-AI-072, FND-AI-048, FND-AI-046, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-044, FND-EXE-004, EXP-TURN-010, EXP-TURN-017, EXP-TURN-036]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -59,7 +59,7 @@ else if prev == ACTION_ATTACK:
     if w != 10:
         plan(idx, ACTION_MOVE, select_sector(player, 5, idx), 0)
     else:
-        let t = draw_once(player, idx, kind)
+        let t = draw_once(player, idx, kind, idx % 81)
         if t != -1:
             plan(idx, ACTION_ATTACK, t / 81, t % 81)
             aux_records[idx].focus = s
@@ -98,7 +98,8 @@ else if prev == ACTION_HEAL or prev == ACTION_HIDE or prev == ACTION_MOVE:
     if heal_ok:
         plan(idx, ACTION_HEAL, 0, 0)
     else if w == 10:
-        let t = draw_once(player, idx, kind)
+        # BUG-AI-007: the sector is passed where the slot belongs
+        let t = draw_once(player, idx, kind, s)
         if t != -1:
             plan(idx, ACTION_ATTACK, t / 81, t % 81)
             aux_records[idx].focus = s
@@ -139,7 +140,9 @@ inside `select_sector`.
 After Chaos or Equip at weight 10, the gang attacks the last target drawn even
 when all five strength tests failed. The strength test can be made on a
 different gang from the one attacked (BUG-AI-003). After Heal, Hide or Move a
-failed single draw leaves the gang doing nothing this turn. The Chaos count
+failed single draw leaves the gang doing nothing this turn, and the strength
+test's attacker is the record in the roster slot numbered like the gang's
+sector (BUG-AI-007). The Chaos count
 includes the gang itself, so a gang that raised Chaos last turn moves on unless
 it is injured or sees an enemy, and after previous Chaos in its own sector it
 heals or raises Chaos again, unless police are present there: the owner query

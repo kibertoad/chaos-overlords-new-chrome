@@ -8,6 +8,32 @@ namespace Rechaos.Tests;
 public sealed class AiFamilyTenTurnPlannerTests
 {
     [Fact]
+    public void NegativeCashRejectsArmorUpgradeWithoutSettingCooldown()
+    {
+        // RULE-UPKEEP-001, RULE-AI-028, FND-AI-073: upkeep may leave cash negative;
+        // selector 0x72 still finds armor, but the signed affordability gate rejects it.
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(data, cash: -5, force: 10, researched: [28]);
+        var player = new PlayerId(0);
+        BeginFamilyTenTurn(match, player);
+        match.FinishUpkeep();
+
+        Assert.True(match.Players[0].Cash < 0);
+        Assert.Equal(28, OriginalAiFamilyTenRules.SelectArmorUpgrade(
+            match, match.Players[0], match.Players[0].Gangs[0]));
+        Assert.Equal(0, match.AiPlanning.ArmorCooldown(player, 0));
+
+        var exception = Record.Exception(() => match.PrepareAiPlanning(player));
+
+        Assert.Null(exception);
+        Assert.Equal(10, match.AiPlanning.Family(player, 0));
+        Assert.NotEqual(GangAction.Equip,
+            Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
+        Assert.NotEqual(OriginalAiFamilyTenRules.ArmorCooldown,
+            match.AiPlanning.ArmorCooldown(player, 0));
+    }
+
+    [Fact]
     public void ArmorUpgradeHasPriorityUsesFixedCooldownAndReplays()
     {
         var data = BundledOriginalData.Load();

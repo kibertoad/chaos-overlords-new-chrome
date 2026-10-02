@@ -1,0 +1,234 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Reflection;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Media;
+using Rechaos.Game;
+using Xunit;
+
+namespace Rechaos.Tests;
+
+[CollectionDefinition("Native soundtrack", DisableParallelization = true)]
+public sealed class NativeSoundtrackCollection;
+
+[Collection("Native soundtrack")]
+public sealed class SoundtrackProgramPlayerTests(ITestOutputHelper output)
+{
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void FadeStopsAtZeroAndRestoresCapturedVolumeAfterInterveningVolumeChange(bool release)
+    {
+        // RULE-AUDIO-003, FND-AUDIO-007: the fade keeps its local captured volume;
+        // messages processed while it waits cannot replace the final restore value.
+        var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg");
+        using var song = Song.FromUri("fade", new Uri(path));
+        var player = new SoundtrackProgramPlayer([song]);
+        float? stoppedVolume = null;
+        EventHandler<EventArgs> observeStop = (_, _) =>
+        {
+            if (MediaPlayer.State == MediaState.Stopped) stoppedVolume = MediaPlayer.Volume;
+        };
+        MediaPlayer.MediaStateChanged += observeStop;
+        try
+        {
+            MediaPlayer.IsRepeating = false;
+            MediaPlayer.IsShuffled = false;
+            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(5);
+            // Pin the DesktopGL streaming worker before playback starts. The owner can
+            // re-enter this lock while stopping; the worker cannot report natural completion.
+            var stream = typeof(Song).GetField("stream", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.GetValue(song) ?? throw new InvalidOperationException("Expected the NVorbis Song backend.");
+            var prepareMutex = stream.GetType().GetField("prepareMutex",
+                BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(stream)
+                ?? throw new InvalidOperationException("Expected the Ogg streaming preparation lock.");
+            lock (prepareMutex)
+            {
+                player.PlayProgram([song]);
+                var fade = new SoundtrackFade(MediaPlayer.Volume, TimeSpan.Zero);
+                MediaPlayer.Volume = fade.VolumeAt(TimeSpan.FromMilliseconds(17));
+                // Stress captured-volume restoration with an external volume change;
+                // FND-AUDIO-016 excludes game level handlers during the fade.
+                MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(10);
+                // Deliberately outlast the fixture: completion must stay blocked on a loaded host.
+                Thread.Sleep(song.Duration + TimeSpan.FromMilliseconds(100));
+                Assert.Equal(MediaState.Playing, MediaPlayer.State);
+                player.FinishFade(fade.RestoredVolume, release);
+                Assert.Equal(MediaState.Stopped, MediaPlayer.State);
+                Assert.Equal(0f, stoppedVolume);
+                Assert.Equal(OriginalSoundtrackPolicy.VolumeForLevel(5), MediaPlayer.Volume);
+            }
+        }
+        finally
+        {
+            MediaPlayer.MediaStateChanged -= observeStop;
+            player.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("playing")]
+    [InlineData("paused")]
+    [InlineData("stopped")]
+    [InlineData("completed")]
+    public void ActivationContinuesFromCurrentTrackThroughDiscEnd(string state)
+    {
+        // RULE-AUDIO-002, RULE-AUDIO-003: compare positionless activation with the
+        // original MCI calls and SRC-MCI-PLAY/SRC-MCI-STOP transport semantics.
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-activation-" + Guid.NewGuid());
+        Directory.CreateDirectory(directory);
+        var songs = Enumerable.Range(1, 3).Select(index =>
+        {
+            var path = Path.Combine(directory, $"track{index}.ogg");
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg"), path);
+            return Song.FromUri($"track{index}", new Uri(path));
+        }).ToArray();
+        var player = new SoundtrackProgramPlayer(songs);
+        try
+        {
+            MediaPlayer.IsRepeating = false;
+            MediaPlayer.IsShuffled = false;
+            MediaPlayer.Volume = 0;
+            // The selected program starts at track two and ends there.
+            player.PlayProgram([songs[1]]);
+            if (state == "paused")
+            {
+                MediaPlayer.Pause();
+                player.Stop(); // The original stop helper leaves a paused device alone.
+                Assert.Equal(MediaState.Paused, MediaPlayer.State);
+                Assert.True(player.ReadyToRestart); // An active poll restarts any nonplaying program.
+            }
+            else if (state == "stopped") player.Stop();
+            else if (state == "completed") WaitFor(() => player.ReadyToRestart);
+
+            // A newly started track is reported so the caller can watch for a failed start.
+            Assert.Equal(state is "stopped" or "completed", player.ResumeThroughDiscEnd());
+            if (state != "completed")
+            {
+                Assert.Equal(MediaState.Playing, MediaPlayer.State);
+                Assert.Same(songs[1], MediaPlayer.Queue.ActiveSong);
+            }
+            WaitFor(() => ReferenceEquals(MediaPlayer.Queue.ActiveSong, songs[2]), player);
+            WaitFor(() => player.ReadyToRestart, player);
+            Assert.Same(songs[2], MediaPlayer.Queue.ActiveSong);
+            // A later restart restores the selected program's normal bounds.
+            player.PlayProgram([songs[1]]);
+            WaitFor(() => player.ReadyToRestart, player);
+            Assert.Same(songs[1], MediaPlayer.Queue.ActiveSong);
+        }
+        finally
+        {
+            player.Dispose();
+            foreach (var song in songs) song.Dispose();
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReenteringSelectedProgramWhilePlayingRestartsAtItsFirstTrack()
+    {
+        // RULE-AUDIO-001, FND-AUDIO-001: a load re-enters the outer game function;
+        // selecting its existing program still requests the first track again.
+        var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg");
+        var songs = Enumerable.Range(1, 3)
+            .Select(index => Song.FromUri($"program{index}", new Uri(path))).ToArray();
+        var player = new SoundtrackProgramPlayer(songs);
+        try
+        {
+            MediaPlayer.IsRepeating = false;
+            MediaPlayer.IsShuffled = false;
+            MediaPlayer.Volume = 0;
+            player.PlayProgram(songs);
+            WaitFor(() => ReferenceEquals(MediaPlayer.Queue.ActiveSong, songs[1]), player);
+            Assert.Equal(MediaState.Playing, MediaPlayer.State);
+            player.PlayProgram(songs);
+            Assert.Same(songs[0], MediaPlayer.Queue.ActiveSong);
+            Assert.Equal(MediaState.Playing, MediaPlayer.State);
+            WaitFor(() => ReferenceEquals(MediaPlayer.Queue.ActiveSong, songs[2]), player);
+            WaitFor(() => player.ReadyToRestart, player);
+        }
+        finally
+        {
+            player.Dispose();
+            foreach (var song in songs) song.Dispose();
+        }
+    }
+
+    [Fact]
+    public void NativeCompletionCannotRaceMainThreadAdvancementOrProgramRestart()
+    {
+        // RULE-AUDIO-001, RULE-AUDIO-002: an intermediate track ending must continue the
+        // program; only its final track ending makes the program eligible for the restart poll.
+        var owner = Environment.CurrentManagedThreadId;
+        var playingThreads = new ConcurrentBag<int>();
+        // Invoke-Validation sets ALSOFT_DRIVERS=null before launching the test process.
+        // A runtime Environment.SetEnvironmentVariable cannot configure native OpenAL on Unix.
+        var audioPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg");
+        var songs = Enumerable.Range(1, 3)
+            .Select(index => Song.FromUri($"silence{index}", new Uri(audioPath))).ToArray();
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var worker = 0;
+        var blockedOnce = 0;
+        var barrierTimedOut = 0;
+        EventHandler<EventArgs> barrier = (_, _) =>
+        {
+            if (MediaPlayer.State == MediaState.Playing)
+                playingThreads.Add(Environment.CurrentManagedThreadId);
+            if (MediaPlayer.State != MediaState.Stopped || !ReferenceEquals(MediaPlayer.Queue.ActiveSong, songs[0])
+                || Interlocked.Exchange(ref blockedOnce, 1) != 0) return;
+            worker = Environment.CurrentManagedThreadId;
+            entered.Set();
+            if (!release.Wait(TimeSpan.FromSeconds(10))) Interlocked.Exchange(ref barrierTimedOut, 1);
+        };
+        MediaPlayer.MediaStateChanged += barrier;
+        using var player = new SoundtrackProgramPlayer(songs);
+        try
+        {
+            MediaPlayer.IsRepeating = false;
+            MediaPlayer.IsShuffled = false;
+            MediaPlayer.Volume = 0;
+            player.PlayProgram(songs);
+            WaitFor(() => entered.IsSet);
+            Assert.NotEqual(owner, worker);
+            Assert.Equal(MediaState.Stopped, MediaPlayer.State);
+            // Pause the actual worker before it can notify completion: a coincident poll
+            // must not rewind the program, and no game-thread advance may start yet.
+            player.ResumeThroughDiscEnd(); // Activation during the worker stop window must also wait.
+            Assert.False(player.ReadyToRestart);
+            Assert.False(player.AdvanceTrack());
+            release.Set();
+            WaitFor(() => ReferenceEquals(MediaPlayer.Queue.ActiveSong, songs[1]), player);
+            WaitFor(() => ReferenceEquals(MediaPlayer.Queue.ActiveSong, songs[2]), player);
+            WaitFor(() => player.ReadyToRestart, player);
+            Assert.Equal(0, Volatile.Read(ref barrierTimedOut));
+            Assert.All(playingThreads, thread => Assert.Equal(owner, thread));
+            Assert.Equal(3, playingThreads.Count);
+
+            // RULE-AUDIO-001: a restart begins at the first track with its normal end bound.
+            player.PlayProgram([songs[0]]);
+            WaitFor(() => player.ReadyToRestart, player);
+            Assert.Same(songs[0], MediaPlayer.Queue.ActiveSong);
+            output.WriteLine($"Owner thread {owner}; completion worker {worker}; all starts stayed on owner.");
+        }
+        finally
+        {
+            release.Set();
+            MediaPlayer.MediaStateChanged -= barrier;
+            player.Dispose();
+            foreach (var song in songs) song.Dispose();
+        }
+    }
+
+    private static void WaitFor(Func<bool> condition, SoundtrackProgramPlayer? player = null)
+    {
+        var deadline = Stopwatch.StartNew();
+        while (!condition() && deadline.Elapsed < TimeSpan.FromSeconds(10))
+        {
+            player?.AdvanceTrack();
+            FrameworkDispatcher.Update();
+            Thread.Sleep(1);
+        }
+        Assert.True(condition(), "Native playback did not reach the expected boundary.");
+    }
+}

@@ -42,8 +42,8 @@ public sealed class LastTurnReportRecordTests
 
         Assert.Equal(type, record.Type);
         Assert.Equal(Sector, record.Arg1);
-        Assert.Equal(kind == GameNotificationKind.Control ? 1 : kind == GameNotificationKind.ControlLost ? -1 : 0,
-            record.Arg2);
+        // A sector lost outside the Control phase was lost to a third Crackdown, which carries 0.
+        Assert.Equal(kind == GameNotificationKind.Control ? 1 : 0, record.Arg2);
         Assert.Equal(type, LastTurnEventPresentation.ArtworkIndex(notification, related));
         Assert.Equal("C2", LastTurnEventPresentation.Subject(State, record));
     }
@@ -142,6 +142,23 @@ public sealed class LastTurnReportRecordTests
         Assert.Equal(new LastTurnReportRecord(9, 1, 0, 0), record);
         Assert.Equal(9, LastTurnEventPresentation.ArtworkIndex(notification, related));
         Assert.Equal("RIVAL", LastTurnEventPresentation.Subject(State, record));
+    }
+
+    // RULE-EVENT-013: a sector lost through Control names the player that owns it after the
+    // Control phase. The owner is player 1, so the record cannot be told from the 0 of a sector
+    // lost through a third Crackdown.
+    [Fact]
+    public void ControlLostThroughControlNamesTheNewOwner()
+    {
+        // RULE-EVENT-013: use a nonzero owner so the Control result cannot match the Crackdown sentinel.
+        var headquarters = State.Players[1].Gangs[0].SectorId;
+        Assert.Equal(new PlayerId(1), State.Sectors[headquarters].Owner);
+        var notification = new GameNotification(41, Turn, TurnPhase.Execution, ExecutionPhase.Control,
+            GameNotificationKind.ControlLost, null, headquarters);
+
+        var record = LastTurnEventPresentation.Record(State, notification, null);
+
+        Assert.Equal(new LastTurnReportRecord(3, headquarters, 1, 0), record);
     }
 
     private static GameEvent Event(

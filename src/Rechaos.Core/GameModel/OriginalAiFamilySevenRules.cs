@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Research-site, item-priority, and continuation rules recovered from
-/// original AI family 7 at 0x00436c70.
+/// original AI family 7 at 0x00436C70 (FND-AI-035).
 /// </summary>
 internal static class OriginalAiFamilySevenRules
 {

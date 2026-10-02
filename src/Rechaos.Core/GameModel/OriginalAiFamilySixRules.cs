@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Coverage, combat, healing, and end-game rules recovered from original AI
-/// family 6 at 0x00431c60.
+/// family 6 at 0x00431C60 (FND-AI-029).
 /// </summary>
 internal static class OriginalAiFamilySixRules
 {

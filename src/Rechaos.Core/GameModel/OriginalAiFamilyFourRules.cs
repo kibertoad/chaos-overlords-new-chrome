@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Previous-action and Chaos-allocation boundaries recovered from original AI
-/// family 4 at 0x00401000.
+/// family 4 at 0x00401000 (FND-AI-049).
 /// </summary>
 internal static class OriginalAiFamilyFourRules
 {

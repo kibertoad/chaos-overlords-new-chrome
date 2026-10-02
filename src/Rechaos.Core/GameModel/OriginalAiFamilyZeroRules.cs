@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Previous-action state-machine boundaries recovered from original AI family
-/// 0 at 0x00428ef0.
+/// 0 at 0x00428EF0 (FND-AI-048).
 /// </summary>
 internal static class OriginalAiFamilyZeroRules
 {

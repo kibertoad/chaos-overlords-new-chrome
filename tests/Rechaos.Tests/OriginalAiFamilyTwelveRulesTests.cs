@@ -14,6 +14,8 @@ public sealed class OriginalAiFamilyTwelveRulesTests
     [InlineData(-1, 10, 10, true)]
     [InlineData(1, 10, 10, false)]
     [InlineData(0, 11, 10, false)]
+    // FND-AI-073: a signed comparison, so cash below 0 fails it.
+    [InlineData(0, 1, -5, false)]
     public void EquipmentGateUsesCooldownAndInclusiveCashBoundary(
         int cooldown,
         int itemCost,

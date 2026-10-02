@@ -10,6 +10,7 @@ public sealed class AudioRoutingTests
     [Fact]
     public void GeneralSoundSlotsPreserveRecoveredLoaderTable()
     {
+        // RULE-AUDIO-004, FND-AUDIO-002, FND-AUDIO-006: the nine general slot assignments.
         Assert.Equal(
             [
                 GeneralSoundSlot.PanelOpen,

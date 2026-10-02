@@ -7,7 +7,7 @@ namespace Rechaos.Game;
 
 public static class IdleGangWarningLayout
 {
-    // Native handler 0x00448718 draws and hit-tests PX05020 from (104,124).
+    // Native handler 0x00448718 (FND-OPTIONS-002) draws and hit-tests PX05020 from (104,124).
     public static Rectangle Panel => new(104, 124, 344, 209);
     public static Rectangle Cancel => new(137, 261, 49, 22);
     public static Rectangle Ok => new(137, 293, 49, 22);

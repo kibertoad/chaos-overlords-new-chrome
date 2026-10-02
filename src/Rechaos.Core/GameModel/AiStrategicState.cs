@@ -140,6 +140,9 @@ public sealed class AiStrategicState
         Decrease(defender, attacker, Math.Max(Reaction(defender), openingDamage));
     }
 
+    /// <summary>
+    /// RULE-AI-017: lowers the previous owner's attitude toward the new owner by twice its reaction.
+    /// </summary>
     internal void RecordControl(PlayerId previousOwner, PlayerId newOwner) =>
         Decrease(previousOwner, newOwner, checked(2 * Reaction(previousOwner)));
 
