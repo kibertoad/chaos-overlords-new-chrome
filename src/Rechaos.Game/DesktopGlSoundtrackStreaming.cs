@@ -81,6 +81,7 @@ internal static class DesktopGlSoundtrackStreaming
         private readonly object _buffersQueued;
         private readonly object _buffersProcessed;
         private PropertyInfo? _timePosition;
+        // Streams whose decoder has reached EOF; a stream is absent until it does.
         private readonly ConcurrentDictionary<object, bool> _atEnd = new();
         private Exception? _failure;
         private readonly Thread _thread;
@@ -257,7 +258,8 @@ internal static class DesktopGlSoundtrackStreaming
                     Call(_queueBuffers, source, filled.Count, filled.ToArray());
                     queued += filled.Count;
                 }
-                _atEnd[stream] = tail;
+                // Only pending EOF is kept, so the stale scan below visits tails alone.
+                if (tail) _atEnd[stream] = true;
                 if (tail && queued == 0)
                 {
                     _removeStream.Invoke(_streamer, [stream]);

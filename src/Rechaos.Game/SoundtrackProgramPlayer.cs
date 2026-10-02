@@ -41,6 +41,12 @@ public sealed class SoundtrackProgramPlayer : IDisposable
         DesktopGlSoundtrackStreaming.EnsureInitialized();
         if (MediaPlayer.State != MediaState.Stopped || _cursor.AtEnd || Volatile.Read(ref _songCompleted) == 0) return false;
         using var transport = DesktopGlSoundtrackStreaming.SerializeTransport();
+        return AdvanceCompletedTrack();
+    }
+
+    /// <summary>Caller holds the transport lock and has already initialized streaming.</summary>
+    private bool AdvanceCompletedTrack()
+    {
         if (MediaPlayer.State != MediaState.Stopped || _cursor.AtEnd
             || Interlocked.Exchange(ref _songCompleted, 0) == 0) return false;
         _cursor.Advance();
@@ -67,7 +73,9 @@ public sealed class SoundtrackProgramPlayer : IDisposable
             return false;
         }
         if (MediaPlayer.State != MediaState.Stopped) return false;
-        if (!_restartCurrentOnResume) return AdvanceTrack();
+        // A completion delivered while this call waited for the lock. Initialization
+        // may join a worker that waits on this lock, so it must not run here.
+        if (!_restartCurrentOnResume) return AdvanceCompletedTrack();
         _restartCurrentOnResume = false;
         PlayCurrent();
         return true;
