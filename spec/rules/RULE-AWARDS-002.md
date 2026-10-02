@@ -4,7 +4,7 @@ title: The endgame lists players by standing, ties in slot order, eliminated pla
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AWARDS-004, FND-OBJECTIVE-004, FND-AWARDS-003, FND-AI-005, FND-AWARDS-001, SRC-MANUAL-GOG]
+evidence: [FND-AWARDS-004, FND-OBJECTIVE-004, FND-AWARDS-003, FND-AI-005, FND-AWARDS-001, FND-AWARDS-005, EXP-TURN-038, EXP-TURN-039, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-AWARDS-001, SCR-AWARDS-001, SCR-AWARDS-002]

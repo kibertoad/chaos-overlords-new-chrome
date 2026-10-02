@@ -421,6 +421,9 @@ given turn, as the hire screen does (RULE-HIRE-003); the fixture lists it as a
 no local match assigns. The fixture lists each as a `planning` input, and the
 replay makes the same change to the rebuild's planning state; since that change
 bypasses the replay recorder, such a run's journal is not verified.
+A run that ends the match keeps the endgame's first drawing: the renderer's
+arguments and the player of each row it lists, ranked, eliminated or the
+victory splash (FND-AWARDS-005), which the fixture holds as `endgame_rows`.
 Each run records the roll count at every press as `done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
 a recorded run can be played again, and `--dump-at-roll` copies the writable
 sections and the top of the stack at the entry of that call of `roll`, counted

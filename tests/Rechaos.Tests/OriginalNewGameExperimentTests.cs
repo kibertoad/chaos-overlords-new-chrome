@@ -412,6 +412,38 @@ public sealed class OriginalNewGameExperimentTests
         else Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
     }
 
+    public static TheoryData<string, int> EndgameRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                if (runs[run].EndgameRows is not null) data.Add(experiment, run);
+        return data;
+    }
+
+    // RULE-AWARDS-002, FND-AWARDS-005: the probe keeps the player of each name the endgame's first
+    // drawing lists, in drawing order, and whether the row is ranked, eliminated or the victory
+    // splash. The rebuild's endgame lists the same players in the same order. EXP-TURN-038 has two
+    // players tied at standing 0 and EXP-TURN-039 two tied at standing 1, listed in slot order.
+    [Theory]
+    [MemberData(nameof(EndgameRuns))]
+    public void TheEndgameListsThePlayersInTheOriginalsOrder(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var match = StartMatch(recorded, out _);
+        var drawn = recorded.EndgameRows!;
+        if (drawn.Kinds is ["splash"])
+        {
+            Assert.Equal(drawn.Players[0], EndgameNoticePresentation.Survivor(match)?.Player.Value);
+            return;
+        }
+        Assert.Null(EndgameNoticePresentation.Survivor(match));
+        var rows = EndgamePresentation.Rows(match);
+        Assert.Equal(drawn.Players, rows.Select(row => row.Player.Value));
+        Assert.Equal(drawn.Kinds, rows.Select(row =>
+            match.FindPlayer(row.Player)!.Status == PlayerStatus.Eliminated ? "eliminated" : "ranked"));
+    }
+
     // RULE-OBJECTIVE-005: -2 stops before the card at the human's own slot; -1
     // has dismissed it and lets the remaining slots and resolution finish.
     private static void AdvanceToRecordedEndpoint(MatchReplayRecorder recorder, PlayerId human, int controller)
@@ -635,6 +667,10 @@ public sealed class OriginalNewGameExperimentTests
         }
     }
 
+    // The players of the names the endgame's first drawing listed, in drawing order, and each row's
+    // kind: splash, ranked or eliminated (FND-AWARDS-005).
+    private sealed record RecordedEndgame(IReadOnlyList<int> Players, IReadOnlyList<string> Kinds);
+
     private sealed record RecordedHire(int Turn, int OfferSlot, int Sector)
     {
         // "turn 1: offer slot 0 sector 12", as the probe writes it.
@@ -746,6 +782,11 @@ public sealed class OriginalNewGameExperimentTests
                 .Select(input => RecordedPlanning.Parse(input.GetProperty("value").GetString()!))
                 .ToArray();
             Seed = run.GetProperty("rng_state").GetInt32();
+            EndgameRows = run.TryGetProperty("endgame_rows", out var endgame)
+                ? new RecordedEndgame(
+                    endgame.GetProperty("players").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+                    endgame.GetProperty("kinds").EnumerateArray().Select(value => value.GetString()!).ToArray())
+                : null;
             DoneCount = run.TryGetProperty("done_at_roll", out var done) ? done.GetArrayLength() : 0;
             Rolls = run.GetProperty("rolls").EnumerateArray()
                 .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
@@ -763,6 +804,7 @@ public sealed class OriginalNewGameExperimentTests
 
         public int Seed { get; }
         public int DoneCount { get; }
+        public RecordedEndgame? EndgameRows { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
         public IReadOnlyList<RecordedPlanning> Planning { get; }
