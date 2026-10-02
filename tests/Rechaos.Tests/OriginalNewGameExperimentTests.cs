@@ -713,6 +713,9 @@ public sealed class OriginalNewGameExperimentTests
 
     private static RecordedRun Run(string experiment, int run) => Recorded.Value[experiment][run];
 
+    /// <summary>The rebuild's match after replaying a recorded run to its endpoint.</summary>
+    internal static MatchState ReplayedMatch(string experiment, int run) => StartMatch(Run(experiment, run), out _);
+
     private static RecordedRun[] LoadRuns(string experiment)
     {
         using var fixture = JsonDocument.Parse(File.ReadAllText(
