@@ -7,6 +7,18 @@ namespace Rechaos.Tests;
 public sealed class LastTurnEventsLayoutTests
 {
     [Fact]
+    public void ShortIllustrationKeepsValidRowsAtNativeScaleBelowUndefinedTopRow()
+    {
+        // SCR-EVENT-001, FND-GFX-005, DEV-GFX-002: the original requested
+        // 158 rows, but the short file supplies only 157; its bottom is unchanged.
+        var destination = LastTurnEventsLayout.ArtworkDestination(242, 157);
+        Assert.Equal(new Rectangle(198, 136, 242, 157), destination);
+        Assert.Equal(LastTurnEventsLayout.Artwork.Bottom, destination.Bottom);
+        Assert.Equal(LastTurnEventsLayout.Artwork,
+            LastTurnEventsLayout.ArtworkDestination(242, 158));
+    }
+
+    [Fact]
     public void PointerTargetsFollowRecoveredLastTurnEventsHandler()
     {
         Assert.Equal(new Rectangle(135, 157, 26, 23), LastTurnEventsLayout.Previous);
