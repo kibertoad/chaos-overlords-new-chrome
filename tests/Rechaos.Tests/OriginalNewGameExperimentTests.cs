@@ -383,10 +383,15 @@ public sealed class OriginalNewGameExperimentTests
             // and after the awards. The rebuild's coordinator has already moved to the next turn, so
             // the count is compared with the outcome turn.
             Assert.Equal(recorded.Term("elapsed_turns", 0), match.Outcome.Turn - 1);
-            if (EndpointsBeforeAwards.Contains(experiment)) return;
+            if (EndpointsBeforeAwards.Contains(experiment))
+            {
+                // A pre-awards fixture holding award rows would leave them uncompared.
+                Assert.False(recorded.HasTerm("player_awards", 0), "a run stopped before the awards holds no award rows");
+                return;
+            }
+            Assert.True(recorded.HasTerm("player_awards", 0), "a run that ends the match after the awards holds their rows");
             EndgameAward[] order =
                 [EndgameAward.Fist, EndgameAward.Skull, EndgameAward.BigFatChicken, EndgameAward.DollarSign, EndgameAward.Safe];
-            Assert.True(recorded.HasTerm("player_awards", 0), "a run that ends the match after the awards holds their rows");
             foreach (var player in match.Players)
             {
                 var slot = player.Id.Value;
@@ -709,6 +714,8 @@ public sealed class OriginalNewGameExperimentTests
 
     /// <summary>The rebuild's match after replaying a recorded run to its endpoint.</summary>
     internal static MatchState ReplayedMatch(string experiment, int run) => StartMatch(Run(experiment, run), out _);
+    internal static int RecordedTerm(string experiment, int run, string term, int index) =>
+        Run(experiment, run).Term(term, index);
 
     private static RecordedRun[] LoadRuns(string experiment)
     {
