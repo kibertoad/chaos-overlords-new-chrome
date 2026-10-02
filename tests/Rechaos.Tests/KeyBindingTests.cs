@@ -4,6 +4,7 @@ using Xunit;
 
 namespace Rechaos.Tests;
 
+/// <summary>DEV-UI-024: the rebindable single-key shortcuts and their local store.</summary>
 public sealed class KeyBindingTests : IDisposable
 {
     private readonly DirectoryInfo _directory =
@@ -44,6 +45,19 @@ public sealed class KeyBindingTests : IDisposable
         Assert.Equal(Keys.F1, KeyBindingStore.LoadOrDefault(path).Physical(Keys.F1));
         File.WriteAllText(path, "invalid json");
         Assert.Equal(Keys.F1, KeyBindingStore.LoadOrDefault(path).Physical(Keys.F1));
+    }
+
+    [Fact]
+    public void SaveLeavesAFileFromANewerBuildInPlace()
+    {
+        var path = Path.Combine(_directory.FullName, "keybindings.json");
+        const string newer = "{\"FormatVersion\":2,\"Entries\":[]}";
+        File.WriteAllText(path, newer);
+        var map = KeyBindingMap.Default();
+        Assert.True(map.Assign(Keys.F1, Keys.F5));
+
+        Assert.False(KeyBindingStore.TrySave(path, map));
+        Assert.Equal(newer, File.ReadAllText(path));
     }
 
     [Fact]

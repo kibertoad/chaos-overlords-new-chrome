@@ -5,7 +5,7 @@ namespace Rechaos.Game;
 
 public sealed record KeyBinding(Keys Logical, Keys Physical);
 
-/// <summary>Single-key shortcuts used by the game's Pressed input path.</summary>
+/// <summary>Single-key shortcuts used by the game's Pressed input path (DEV-UI-024).</summary>
 public sealed class KeyBindingMap
 {
     public static IReadOnlyList<Keys> LogicalKeys { get; } =
@@ -83,7 +83,11 @@ public static class KeyBindingStore
             if (!file.Exists || file.Length > MaximumBytes) return KeyBindingMap.Default();
             var stored = JsonSerializer.Deserialize<StoredKeyBindings>(File.ReadAllText(path));
             if (stored is { FormatVersion: StoredKeyBindings.CurrentFormatVersion }
-                && KeyBindingMap.TryCreate(stored.Entries, out var map)) return map;
+                && KeyBindingMap.TryCreate(stored.Entries, out var map))
+            {
+                NewerBindings.NoteCurrent(path);
+                return map;
+            }
         }
         catch (Exception error) when (error is IOException or JsonException
                                       or UnauthorizedAccessException or ArgumentException)
@@ -92,10 +96,16 @@ public static class KeyBindingStore
         return KeyBindingMap.Default();
     }
 
+    /// <summary>Writes the bindings atomically, unless a newer build owns the file.</summary>
+    /// <remarks>
+    /// A newer build's file loads as defaults here, and writing those back would replace every
+    /// binding the newer build stored. This build keeps its bindings for the session instead.
+    /// </remarks>
     public static bool TrySave(string path, KeyBindingMap map)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(map);
+        if (NewerBindings.IsNewer(path, MaximumBytes)) return false;
         var temporary = path + ".tmp";
         try
         {
@@ -104,12 +114,23 @@ public static class KeyBindingStore
                 new StoredKeyBindings(StoredKeyBindings.CurrentFormatVersion, map.Entries()),
                 JsonOptions));
             File.Move(temporary, path, overwrite: true);
+            NewerBindings.NoteCurrent(path);
             return true;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            try { File.Delete(temporary); } catch (IOException) { }
+            try
+            {
+                File.Delete(temporary);
+            }
+            catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
+            {
+                // A binding write failure must never interrupt the game.
+            }
             return false;
         }
     }
+
+    private static readonly NewerBuildFileGuard NewerBindings = new(
+        nameof(StoredKeyBindings.FormatVersion), StoredKeyBindings.CurrentFormatVersion);
 }

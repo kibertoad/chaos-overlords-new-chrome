@@ -22,6 +22,13 @@ public sealed partial class ChaosGame
     private int _keyBindingOffset;
     private string _keyBindingStatus = string.Empty;
 
+    /// <summary>
+    /// Whether the Keys panel is on screen. The flag alone outlives a forced exit from Options, such
+    /// as the planning clock running out, and would keep F11 and F12 switched off elsewhere.
+    /// </summary>
+    private bool EditingKeyBindings =>
+        _editingKeyBindings && _screens.Current == ClientScreen.Options;
+
     private void OpenKeyBindings()
     {
         _editingKeyBindings = true;

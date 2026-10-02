@@ -38,7 +38,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _replayPath;
     private readonly string _preferencesPath;
     private readonly string _keyBindingsPath;
-    private KeyBindingMap _keyBindings = KeyBindingMap.Default();
+    private KeyBindingMap _keyBindings;
     private readonly string _multiplayerRecoveryPath;
     private readonly bool _debugPhaseStepping;
     private readonly RuntimeDiagnostics? _diagnostics;
@@ -443,10 +443,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var mouse = Mouse.GetState();
         _multiSelectModifier = keyboard.IsKeyDown(Keys.LeftControl)
             || keyboard.IsKeyDown(Keys.RightControl);
-        if (!_editingKeyBindings && Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
-        var altEnter = !_editingKeyBindings && Pressed(keyboard, Keys.Enter)
+        // Alt+Enter is a chord on the physical Enter, whatever Enter is bound to (DEV-UI-024).
+        var editingKeyBindings = EditingKeyBindings;
+        if (!editingKeyBindings && Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
+        var altEnter = !editingKeyBindings && RawPressed(keyboard, Keys.Enter)
             && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
-        if ((!_editingKeyBindings && Pressed(keyboard, Keys.F11)) || altEnter)
+        if ((!editingKeyBindings && Pressed(keyboard, Keys.F11)) || altEnter)
             ToggleFullscreen();
         if (altEnter || UpdateIntroMovies(gameTime, keyboard, mouse))
         {
@@ -758,8 +760,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)
             HandleHelpScroll(virtualPoint, wheelDelta);
-        if (pointerMapped && _screens.Current == ClientScreen.Options
-            && _editingKeyBindings && KeyBindingsLayout.Panel.Contains(virtualPoint)
+        if (pointerMapped && EditingKeyBindings && KeyBindingsLayout.Panel.Contains(virtualPoint)
             && wheelDelta != 0)
             ScrollKeyBindings(wheelDelta);
         if (pointerMapped && mouse.LeftButton == ButtonState.Pressed)
@@ -962,8 +963,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             && state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id))?.Owner == viewer;
     }
 
+    /// <summary>Whether the shortcut <paramref name="key"/> went down this frame (DEV-UI-024).</summary>
+    /// <remarks>
+    /// A text editor reads typed characters from the physical keys, so while one has focus its
+    /// editing keys are physical too. Otherwise a shortcut rebound to a letter would type that
+    /// letter and also confirm, erase or move the caret.
+    /// </remarks>
     private bool Pressed(KeyboardState current, Keys key) =>
-        RawPressed(current, _keyBindings.Physical(key));
+        RawPressed(current, TextInputHasFocus() ? key : _keyBindings.Physical(key));
 
     private bool RawPressed(KeyboardState current, Keys key) =>
         current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
