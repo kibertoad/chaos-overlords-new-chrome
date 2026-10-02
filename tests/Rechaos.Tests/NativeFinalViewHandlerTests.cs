@@ -29,6 +29,22 @@ public sealed class NativeFinalViewHandlerTests
     }
 
     [Theory]
+    [InlineData("EXP-TURN-041")]
+    [InlineData("EXP-TURN-042")]
+    public void CompletedMatchDatesPrecedeTheElapsedTurnIncrement(string experiment)
+    {
+        // FND-UI-041, EXP-TURN-042, SCR-EVENT-001: original final city is week 26; its
+        // last-turn report is week 25, before the elapsed counter increments.
+        var state = OriginalNewGameExperimentTests.ReplayedMatch(experiment, 0);
+        Assert.NotNull(state.Outcome);
+        Assert.Equal(27, state.Coordinator.Turn);
+        var elapsed = MatchCalendar.PresentationElapsedTurns(state);
+        Assert.Equal(25, elapsed);
+        Assert.Equal((2050, 26), MatchCalendar.Of(elapsed));
+        Assert.Equal(("2050", "25"), LastTurnEventsLayout.Date(elapsed));
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]
@@ -42,13 +58,6 @@ public sealed class NativeFinalViewHandlerTests
         Assert.NotNull(state.Outcome);
         // FND-UI-043: completed local planning leaves the human light dark.
         Assert.False(LocalPlanningLight(state, state.Players[0]));
-        // FND-UI-041, EXP-TURN-042, SCR-EVENT-001: original final city is week 26; its
-        // last-turn report is week 25, before the elapsed counter increments.
-        Assert.Equal(27, state.Coordinator.Turn);
-        var elapsed = MatchCalendar.PresentationElapsedTurns(state);
-        Assert.Equal(25, elapsed);
-        Assert.Equal((2050, 26), MatchCalendar.Of(elapsed));
-        Assert.Equal(("2050", "25"), LastTurnEventsLayout.Date(elapsed));
         if (multipleHumans)
         {
             state.Players[2].Setup = state.Players[2].Setup with { Controller = PlayerController.Human };
@@ -136,6 +145,7 @@ public sealed class NativeFinalViewHandlerTests
         Assert.Equal(turn, state.Coordinator.Turn);
         Assert.Equal(randomState, state.Random.State);
     }
+
     private static (ChaosGame Game, ScreenRouter Router) FinalViewGame(MatchState state)
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));

@@ -456,11 +456,9 @@ public sealed partial class ChaosGame
     private static string SectorCode(int sectorId) =>
         $"{(char)('A' + sectorId % MatchLimits.BoardWidth)}{sectorId / MatchLimits.BoardWidth + 1}";
 
-    private static (int Year, int Week) TurnCalendar(int turn) => MatchCalendar.Of(Math.Max(0, turn - 1));
-
     private static string MatchDate(int turn)
     {
-        var (year, week) = TurnCalendar(turn);
+        var (year, week) = MatchCalendar.Of(Math.Max(0, turn - 1));
         return $"{year}.{week:00}";
     }
 

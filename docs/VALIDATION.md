@@ -650,8 +650,8 @@ picks each one from the sector's state, and no timer cycles them.
 An isolated capture from the actual completed EXP-TURN-042 replay exposed a
 presentation error: its coordinator had moved to turn 27, while the original
 final visit still held elapsed turns 25. Reading the coordinator directly drew
-console week 27 and report week 26. The prior final-calendar diagnostic forced
-turn 26 and therefore did not test this completed-state integration.
+console week 27 and report week 26. A diagnostic that sets the turn to 26
+directly does not exercise this completed state, so it cannot catch the error.
 
 The city and Events renderers now derive presentation elapsed turns from the
 outcome turn after completion, and from the coordinator during an active match.
@@ -676,10 +676,9 @@ Screenshots, saves and the diagnostic harness remain outside Git.
 
 In the EXP-TURN-042 original final-entry capture, all three 64-by-64 hire
 portraits match the corresponding completed replay render exactly: zero
-RGB differences in each of the 4096-pixel cells. An initial visual impression
-of a different third portrait was disproved by this direct comparison.
-The retained offer IDs and their portrait numbers also agree with the
-numeric original fixture. No new offer draw is required for this final visit.
+RGB differences in each of the 4096-pixel cells. The three retained offer
+IDs also agree with the `hire_offers` values of the numeric original fixture,
+so the rebuild needs no extra offer draw for this final visit.
 
 The earlier layout's price strip `(438,436,198,24)` differed in 158 pixels,
 confined to x 449 through 592 and y 440 through 446. Applying the existing
