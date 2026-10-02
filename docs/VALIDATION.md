@@ -17,6 +17,7 @@ Status: maintained canonical procedure
 - [All active-player marker frames in the first planning view](#all-active-player-marker-frames-in-the-first-planning-view)
 - [Both selected-sector outline states](#both-selected-sector-outline-states)
 - [Completed-state final calendar and report capture](#completed-state-final-calendar-and-report-capture)
+- [Final-entry hire dock comparison](#final-entry-hire-dock-comparison)
 <!-- doc-index:end -->
 
 ## Validation layers
@@ -630,3 +631,23 @@ The diagnostic selected the viewer and panel directly; handler entry and closing
 are tested separately. This comparison covers one cash-short report and final
 state, not all reports, combat results, multiple viewers or input timing.
 Screenshots, saves and the diagnostic harness remain outside Git.
+## Final-entry hire dock comparison
+
+In the EXP-TURN-042 original final-entry capture, all three 64-by-64 hire
+portraits match the corresponding completed replay render exactly: zero
+RGB differences in each of the 4096-pixel cells. An initial visual impression
+of a different third portrait was disproved by this direct comparison.
+The retained offer IDs and their portrait numbers also agree with the
+numeric original fixture. No new offer draw is required for this final visit.
+
+The earlier layout's price strip `(438,436,198,24)` differed in 158 pixels,
+confined to x 449 through 592 and y 440 through 446. Applying the existing
+hire-price-origin correction from commit `f737f302` places the three prices
+at x 450, 516 and 582, as FND-HIRE-007 records. Repeating the isolated render
+then matches all 4752 pixels of that strip exactly. The calendar and entire
+Events panel remain exact after this correction.
+
+This validates the existing correction against a later completed-match state,
+in addition to the first-planning layout tests. It does not establish every
+hire/snub mark, other offer combinations or drag and release behavior. The
+reference screenshots and diagnostic renderer remain outside Git.
