@@ -453,6 +453,58 @@ public sealed class OriginalNewGameExperimentTests
         Assert.Equal(recorded.Finance.Count, compared);
     }
 
+    public static TheoryData<string, int> PanelRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                if (runs[run].Panels is not null) data.Add(experiment, run);
+        return data;
+    }
+
+    // RULE-SETUP-008, RULE-EVENT-005: the probe records each call of the Combat Results and Last
+    // Turn Events panels at the human's planning entries, and whether the panel stayed open until
+    // Exit was pressed; Combat Results returns at once when no fight qualifies. At each planning
+    // entry the rebuild shows Combat Results when the viewer has combat results and then Last Turn
+    // Events when the viewer has reports, or the city when neither applies, and the panels it
+    // shows match the original's at that entry, in the same order.
+    [Theory]
+    [MemberData(nameof(PanelRuns))]
+    public void ThePlanningEntryShowsTheOriginalsPanels(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var expected = new List<string>[recorded.DoneCount + 1];
+        for (var entry = 0; entry < expected.Length; entry++) expected[entry] = [];
+        foreach (var call in recorded.Panels!.Where(call => call.Shown))
+        {
+            // Entry e follows e Done presses. The resolution after a press makes rolls, so its calls
+            // come after the roll count of press e and no later than that of press e + 1.
+            var entry = recorded.DoneAtRoll.Count(count => count < call.AfterRoll);
+            expected[entry].Add(call.Panel);
+        }
+
+        var shown = new List<string>[recorded.DoneCount + 1];
+        static List<string> Panels(MatchState match, PlayerId human)
+        {
+            var hasCombat = CombatResultProjection.Pages(match, human).SelectMany(page => page.Results).Any();
+            var hasReports = LastTurnEventProjection.For(match, human).Count > 0;
+            return HandoffPresentationOrder.First(hasCombat, hasReports) switch
+            {
+                HandoffPresentationStep.Combat => hasReports ? ["Combat Results", "Last Turn Events"] : ["Combat Results"],
+                HandoffPresentationStep.Events => ["Last Turn Events"],
+                _ => [],
+            };
+        }
+        var match = StartMatch(recorded, out var donePresses,
+            (state, human, turn) => shown[turn - 1] = Panels(state, human));
+        shown[donePresses] = Panels(match, recorded.Humans[0]);
+        // The run stops at the last entry while its first panel is open, so only that panel is seen.
+        if (expected[donePresses].Count > 0) shown[donePresses] = shown[donePresses].Take(1).ToList();
+        for (var entry = 0; entry <= donePresses; entry++)
+            Assert.True(expected[entry].SequenceEqual(shown[entry]),
+                $"planning entry {entry + 1}: the original showed [{string.Join(", ", expected[entry])}], the rebuild [{string.Join(", ", shown[entry])}]");
+    }
+
     // RULE-OBJECTIVE-005: -2 stops before the card at the human's own slot; -1
     // has dismissed it and lets the remaining slots and resolution finish.
     private static void AdvanceToRecordedEndpoint(MatchReplayRecorder recorder, PlayerId human, int controller)
@@ -682,6 +734,10 @@ public sealed class OriginalNewGameExperimentTests
     // was passed (-1 for the City variant) and the nine numbers it drew (FND-FINANCE-003).
     private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
 
+    // A call of a planning entry panel: its name, the roll count when it was called and whether it
+    // stayed open until Exit was pressed (RULE-SETUP-008).
+    private sealed record RecordedPanel(string Panel, int AfterRoll, bool Shown);
+
     private sealed record RecordedHire(int Turn, int OfferSlot, int Sector)
     {
         // "turn 1: offer slot 0 sector 12", as the probe writes it.
@@ -793,6 +849,14 @@ public sealed class OriginalNewGameExperimentTests
                 .Select(input => RecordedPlanning.Parse(input.GetProperty("value").GetString()!))
                 .ToArray();
             Seed = run.GetProperty("rng_state").GetInt32();
+            DoneAtRoll = run.TryGetProperty("done_at_roll", out var doneAt)
+                ? doneAt.EnumerateArray().Select(value => value.GetInt32()).ToArray()
+                : [];
+            Panels = run.TryGetProperty("panels", out var panels)
+                ? panels.EnumerateArray().Select(call => new RecordedPanel(
+                    call.GetProperty("panel").GetString()!, call.GetProperty("after_roll").GetInt32(),
+                    call.GetProperty("shown").GetBoolean())).ToArray()
+                : null;
             Finance = run.TryGetProperty("finance", out var finance)
                 ? finance.EnumerateArray().Select(panel => new RecordedFinance(
                     panel.GetProperty("turn").GetInt32(), panel.GetProperty("sector").GetInt32(),
@@ -815,6 +879,8 @@ public sealed class OriginalNewGameExperimentTests
 
         public int Seed { get; }
         public int DoneCount { get; }
+        public IReadOnlyList<int> DoneAtRoll { get; }
+        public IReadOnlyList<RecordedPanel>? Panels { get; }
         public IReadOnlyList<RecordedFinance> Finance { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }

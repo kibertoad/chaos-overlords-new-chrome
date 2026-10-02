@@ -405,7 +405,11 @@ follows the last one. The human's planning phase opens the Combat Results
 panel (SCR-COMBAT-001) after a fight that involved its gangs, and the Last
 Turn Events panel (SCR-EVENT-001) when it has reports, and waits in each; the
 probe breaks on both handlers and presses Exit before the next Done, and presses
-Done again if a press left the turn unmoved for 20 seconds. `--orders` writes
+Done again if a press left the turn unmoved for 20 seconds. Each call of
+either handler is kept with the roll count at the call and whether the panel
+stayed open until the probe pressed Exit, since the Combat Results handler
+returns at once when no fight qualifies; a panel still open at the dump counts
+as shown. The fixture holds the calls as `panels`. `--orders` writes
 an order into a gang record of the first human before the Done press of the
 given turn, counted from 1: the `action`, `target` and `target_2` bytes of
 FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
