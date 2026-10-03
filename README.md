@@ -10,10 +10,10 @@ creates a local asset pack containing repaired graphics plus the original
 audio, music, video, help, and currently opaque resources. Compact gameplay
 tables are bundled in the open-source core; original art and media are not.
 
-The original had a save system, but its save files are not read or written:
-original save import/export is not supported. The rebuild's own saves and
-replays are development formats until 1.0.0 and may change incompatibly before
-then; the versioned migration machinery is retained for post-1.0 compatibility.
+Saves from the original game cannot be loaded, and the rebuild cannot write
+them. Its own saves and replays are development formats until 1.0.0 and may
+change incompatibly before then; the versioned migration machinery is retained
+for post-1.0 compatibility.
 
 ## Quick start
 
@@ -92,8 +92,7 @@ The technical documentation is cataloged in [docs/README.md](docs/README.md);
 
 - Original copyrighted assets are never bundled; a supported legal copy is
   required for import.
-- Original 1996 save files are not imported or exported; the rebuild saves in
-  its own format.
+- Saves from the original game cannot be loaded or written.
 - WinSock, IPX, modem, serial, AppleTalk, and other legacy protocol
   interoperability will not be recreated. Online play uses the new documented
   transport instead.
