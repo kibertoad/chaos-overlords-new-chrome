@@ -223,7 +223,7 @@
 
 ## findings
 
-353 entries.
+354 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -323,6 +323,7 @@
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not | recorded |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions | recorded |
 | [FND-AWARDS-004](../findings/FND-AWARDS-004.md) | The awards table holds five codes per player, and the results screen shows the victory splash when exactly one player is still active, whoever controls it | recorded |
+| [FND-AWARDS-005](../findings/FND-AWARDS-005.md) | The endgame renderer draws each listed player's name with fn_00413FD5 from three calls, so the name pointer names the player of each row in drawing order | recorded |
 | [FND-BRIBE-001](../findings/FND-BRIBE-001.md) | Bribe needs and costs 3 cash and adds 3 to the sector's Tolerance with no cap | recorded |
 | [FND-CHAOS-001](../findings/FND-CHAOS-001.md) | Chaos is rolled gang by gang in roster order before Combat and paid after Transactions, halved once per player and sector outside the owner's sectors | recorded |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | The Chaos rolls read sector offset 0x04, the Crackdown test sums each player's successes with a band-2 owner's cut by a quarter, and the payout skips gangs that died in combat and also raises cash_earned | recorded |

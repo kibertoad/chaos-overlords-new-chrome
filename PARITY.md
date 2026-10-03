@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 97 |
-| `validated` | 121 |
+| `implemented` | 96 |
+| `validated` | 122 |
 
 | Code | Rows |
 |---|---|
@@ -409,7 +409,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-AWARDS-001` | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-037, EXP-TURN-038 and EXP-TURN-039 end a match and compare each player's awards: the Safe, the Dollar Sign and, to a human that hid every turn, the Big Fat Chicken. No run gives a Fist or a Skull, or ties an award. |
-| `RULE-AWARDS-002` | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported | complete | None | None | implemented | None |
+| `RULE-AWARDS-002` | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-038 and EXP-TURN-039 compare the order of the endgame's rows with the original's, each with two players tied and a standing skipped. No recorded endgame has an eliminated player or a single survivor, so the eliminated rows and the victory splash are not compared. |
 | `SCR-AWARDS-001` | Endgame screen listing the players by place with their awards or their statistics | supported | complete | None | `DEV-SETUP-002` | implemented | Row typography and timing are unconfirmed against captures of the original. |
 | `SCR-AWARDS-002` | Victory splash shown on the endgame's Awards tab when one player is left | supported | complete | None | None | implemented | None |
 

@@ -26,7 +26,7 @@ internal sealed class StateExtractor
         var rolls = new JsonArray();
         foreach (var roll in trace["Rolls"]!.AsArray())
             rolls.Add(new JsonArray(roll!["Call"]!.GetValue<string>(), roll["Bound"]!.GetValue<int>(), roll["Result"]!.GetValue<int>()));
-        return new JsonObject
+        var run = new JsonObject
         {
             ["rng_state"] = trace["Seed"]!.GetValue<int>(),
             ["done_at_roll"] = doneAtRoll,
@@ -34,6 +34,15 @@ internal sealed class StateExtractor
             ["events"] = new JsonArray(),
             ["end_state"] = extractor.EndState(),
         };
+        // FND-AWARDS-005: the players of the endgame's rows in drawing order, and each row's kind.
+        if (trace["Endgame"] is JsonObject endgame)
+            run["endgame_rows"] = new JsonObject
+            {
+                ["arguments"] = endgame["Arguments"]!.DeepClone(),
+                ["players"] = endgame["Rows"]!.DeepClone(),
+                ["kinds"] = endgame["Kinds"]!.DeepClone(),
+            };
+        return run;
     }
 
     /// <summary>The setup choices a run was recorded with, one line each; none for the defaults.</summary>
