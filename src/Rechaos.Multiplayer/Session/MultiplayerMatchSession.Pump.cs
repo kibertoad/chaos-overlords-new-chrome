@@ -209,6 +209,9 @@ public sealed partial class MultiplayerMatchSession
             await HandleAsync(@event, handlerToken).ConfigureAwait(false);
             _resumeAfterSeq = @event.Seq;
         }
+        // Unreachable while the stream keeps its contract: it ends only by throwing, cancellation
+        // included (see `MatchEventStream.ReadAsync`), and a pump that returned here would stop for
+        // good with no restart and no failure.
         return false;
     }
 }
