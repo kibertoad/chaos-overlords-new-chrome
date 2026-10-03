@@ -98,3 +98,12 @@ skip/failure behavior have focused tests. A bounded Windows smoke run completed
 the logo and began the intro without a diagnostic failure; exact original
 trigger/skip policy and native visual/audio fidelity still require reference
 capture before they can be classified as parity.
+
+## Shared codec adoption
+
+RefurbishedDinosaurs.Media.Smacker 1.0.1 supplies the video Huffman and packed audio decoders;
+RefurbishedDinosaurs.Media.Playback 1.0.0 supplies timeline progression. The restoration keeps
+SMK2 admission, bounded demultiplexing, palette byte ordering, rendering and audio policy.
+The Smacker pin requires the toolkit patch release for bit-free constant trees and oversized-run
+rejection. Synthetic adapter tests exercise those cases. Original-media checks remain local and
+were not run for this migration.
