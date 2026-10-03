@@ -141,7 +141,6 @@ internal sealed class NewGameSession(
     private int _panelsOpen;
     private int _exitPresses;
     private readonly List<PanelRecord> _panels = [];
-    private readonly List<PanelRecord> _openPanels = [];
     private bool _planningLoopReached;
     private bool _awardsReached;
     private readonly List<FinanceRecord> _finance = [];
@@ -299,13 +298,14 @@ internal sealed class NewGameSession(
         _panelsOpen++;
         _notes.Add($"{panel} opened after roll {_rolls.Count}");
         var presses = _exitPresses;
-        var open = new PanelRecord(panel, _rolls.Count, true);
-        _openPanels.Add(open);
+        // Kept in the order of the calls. A panel still open when the run ends was shown at the
+        // last planning entry, so it stays marked shown until its handler returns.
+        var index = _panels.Count;
+        _panels.Add(new PanelRecord(panel, _rolls.Count, true));
         _process.SetBreakpoint(context.ReturnAddress, _ =>
         {
             _panelsOpen--;
-            _openPanels.Remove(open);
-            _panels.Add(open with { Shown = _exitPresses > presses });
+            _panels[index] = _panels[index] with { Shown = _exitPresses > presses };
         }, oneShot: true);
     }
 
@@ -535,12 +535,10 @@ internal sealed class NewGameSession(
     private ProbeTrace Finish(bool dumped, string? note, int rollsBeforeBegin = 0)
     {
         if (note is not null) _notes.Add(note);
-        // A panel still open when the run ends was shown at the last planning entry.
-        _panels.AddRange(_openPanels);
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
-            _finance.Count == 0 ? null : _finance, _panels);
+            _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels);
     }
 
     private static void Click(IntPtr window, int x, int y)

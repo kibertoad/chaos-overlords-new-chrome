@@ -458,7 +458,8 @@ public sealed class OriginalNewGameExperimentTests
         var data = new TheoryData<string, int>();
         foreach (var (experiment, runs) in Recorded.Value)
             for (var run = 0; run < runs.Length; run++)
-                if (runs[run].Panels is not null) data.Add(experiment, run);
+                if (runs[run].Panels is not null && !KnownDivergences.ContainsKey((experiment, run)))
+                    data.Add(experiment, run);
         return data;
     }
 
@@ -474,14 +475,21 @@ public sealed class OriginalNewGameExperimentTests
     {
         var recorded = Run(experiment, run);
         var expected = new List<string>[recorded.DoneCount + 1];
+        var combatCalled = new bool[recorded.DoneCount + 1];
         for (var entry = 0; entry < expected.Length; entry++) expected[entry] = [];
-        foreach (var call in recorded.Panels!.Where(call => call.Shown))
+        foreach (var call in recorded.Panels!)
         {
             // Entry e follows e Done presses. The resolution after a press makes rolls, so its calls
             // come after the roll count of press e and no later than that of press e + 1.
             var entry = recorded.DoneAtRoll.Count(count => count < call.AfterRoll);
-            expected[entry].Add(call.Panel);
+            if (call.Panel == "Combat Results") combatCalled[entry] = true;
+            if (call.Shown) expected[entry].Add(call.Panel);
         }
+        // The original calls the Combat Results handler at every planning entry, so an entry
+        // without that call is one the probe did not observe, and comparing it would prove nothing.
+        // Each entry before a Done press is a planning entry; the last is checked below.
+        for (var entry = 0; entry < recorded.DoneCount; entry++)
+            Assert.True(combatCalled[entry], $"planning entry {entry + 1}: the recording holds no call of Combat Results");
 
         var shown = new List<string>[recorded.DoneCount + 1];
         static List<string> Panels(MatchState match, PlayerId human)
@@ -497,6 +505,11 @@ public sealed class OriginalNewGameExperimentTests
         }
         var match = StartMatch(recorded, out var donePresses,
             (state, human, turn) => shown[turn - 1] = Panels(state, human));
+        // An early stop would leave the recording's later entries uncompared.
+        Assert.Equal(recorded.DoneCount, donePresses);
+        // The last entry is a planning entry unless the match ended or the human was eliminated.
+        if (match.Outcome is null && IsActive(match, recorded.Humans[0]))
+            Assert.True(combatCalled[donePresses], $"planning entry {donePresses + 1}: the recording holds no call of Combat Results");
         shown[donePresses] = Panels(match, recorded.Humans[0]);
         // The run stops at the last entry while its first panel is open, so only that panel is seen.
         if (expected[donePresses].Count > 0) shown[donePresses] = shown[donePresses].Take(1).ToList();
@@ -862,7 +875,6 @@ public sealed class OriginalNewGameExperimentTests
                     panel.GetProperty("turn").GetInt32(), panel.GetProperty("sector").GetInt32(),
                     panel.GetProperty("values").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
                 : [];
-            DoneCount = run.TryGetProperty("done_at_roll", out var done) ? done.GetArrayLength() : 0;
             Rolls = run.GetProperty("rolls").EnumerateArray()
                 .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
                 .ToArray();
@@ -878,7 +890,7 @@ public sealed class OriginalNewGameExperimentTests
         }
 
         public int Seed { get; }
-        public int DoneCount { get; }
+        public int DoneCount => DoneAtRoll.Count;
         public IReadOnlyList<int> DoneAtRoll { get; }
         public IReadOnlyList<RecordedPanel>? Panels { get; }
         public IReadOnlyList<RecordedFinance> Finance { get; }

@@ -50,7 +50,7 @@ internal sealed class StateExtractor
         }
         // RULE-SETUP-008: each call of a planning entry panel, with the roll count and whether it
         // was shown, in the order of the calls.
-        if (trace["Panels"] is JsonArray panelCalls && panelCalls.Count > 0)
+        if (trace["Panels"] is JsonArray panelCalls)
         {
             var calls = new JsonArray();
             foreach (var call in panelCalls)
