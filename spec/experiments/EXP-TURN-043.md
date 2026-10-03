@@ -17,7 +17,7 @@ fixture: EXP-TURN-043.json
 
 When a computer player's Moves would put seven of its gangs in one sector,
 does the original send the mover back to the sector it starts from, as the
-first repair loop of RULE-MOVE-002 does?
+first choice of RULE-MOVE-002 does?
 
 ## Setup
 
@@ -42,20 +42,21 @@ runs, nor in all ten scenarios for seeds 61 to 100.
 
 The run made 11416 calls of `roll`, with the Done presses at the counts
 listed in the fixture. At the 25th planning entry player 2 holds six gangs
-in sector 62 and two in sector 54, the sector one of its gangs was moving
-from into sector 62 in the resolution of turn 24.
+in sector 62 and two in sector 54. The recording holds no orders of turn 24,
+so it does not show which gang was ordered to move.
 
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
 rebuild makes the same calls with the same bounds and results and reaches
 the same state. In the rebuild's resolution of turn 24, player 2's Moves
-would put seven of its gangs in sector 62; the first repair loop sends the
-mover from sector 54 back to sector 54, and every gang's sector then agrees
-with the original's.
+would put seven of its gangs in sector 62. The mover comes from sector 54,
+which counts fewer than six, so the repair's first choice takes it and
+rewrites its destination to sector 54, its own sector, and every gang's
+sector then agrees with the original's.
 
 ## Conclusion
 
-The run agrees with the first repair loop of RULE-MOVE-002 for a computer
-player. It makes no draw in the repair, so the fallback of RULE-AI-007 is
-not compared.
+The run agrees with RULE-MOVE-002 for a computer player whose mover comes
+from a sector counting fewer than six. It makes no draw in the repair, so
+the fallback of RULE-AI-007 is not compared.
