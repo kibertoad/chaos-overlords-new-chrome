@@ -33,8 +33,11 @@ Done ten times:
 
 Before each Done press, after the turn's orders and hires are written, open
 the City variant and the Sector variant of sector 51; in turn 10 open the
-Sector variant of sector 52 as well (`--finance` with `t:-1,t:51` for turns 1
-to 10 and `10:52`). The probe presses the upper part of the Financial control
+Sector variant of sector 52 as well:
+
+`--finance 1:-1,1:51,2:-1,2:51,3:-1,3:51,4:-1,4:51,5:-1,5:51,6:-1,6:51,7:-1,7:51,8:-1,8:51,9:-1,9:51,10:-1,10:51,10:52`
+
+The probe presses the upper part of the Financial control
 for the City variant and the lower part for the Sector variant after writing
 the sector into the map selection, keeps the nine numbers the panel draws
 (FND-FINANCE-003) and the sector the panel function was passed, and presses
