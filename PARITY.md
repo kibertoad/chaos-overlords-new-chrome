@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 97 |
-| `validated` | 121 |
+| `implemented` | 94 |
+| `validated` | 124 |
 
 | Code | Rows |
 |---|---|
@@ -417,9 +417,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TIMER-001` | Planning time limit chosen for a match | supported | complete | None | None | implemented | None |
-| `RULE-TIMER-002` | A human planning turn ends when its time limit passes | supported | complete | None | None | implemented | On expiry the rebuild submits the finish-planning operation without the idle-gang warning. |
-| `RULE-TIMER-003` | The planning clock bar and its warning sounds | supported | complete | None | None | implemented | Checks run every sixth fixed update rather than every sixth presentation tick; the two rates were not compared. |
+| `RULE-TIMER-001` | Planning time limit chosen for a match | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | validated | EXP-TURN-046 and EXP-TURN-047 compare the stored limit for the 30-second and 2-minute choices; the 5-minute choice has not been recorded. |
+| `RULE-TIMER-002` | A human planning turn ends when its time limit passes | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | validated | The turn ends once the elapsed whole milliseconds exceed the limit, compared with EXP-TURN-046 and EXP-TURN-047. On expiry the rebuild submits the finish-planning operation without the idle-gang warning. |
+| `RULE-TIMER-003` | The planning clock bar and its warning sounds | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | validated | The bar is redrawn on every sixth presentation tick and keeps its width in between. EXP-TURN-046 and EXP-TURN-047 compare every redraw's width and warning slot and the redraw interval. |
 | `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | complete | None | `DEV-TIMER-001` | implemented | No wait depends on the machine (DEV-TIMER-001). Pressed key faces and the city, site and sector-cell flashes wait on 166 ms ticks. Each flash shows the lit copy, the normal image, the lit copy and the normal image, lightens its area with white through bitmap 143 and its black edge, and draws the labels, frame and meter unlit over it (FND-UI-037). |
 
 ## UI

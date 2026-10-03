@@ -46,15 +46,19 @@ internal sealed class OriginalProcess : IDisposable
     }
 
     /// <summary>Stops at <paramref name="address"/> each time it runs, until removed.</summary>
-    public void SetBreakpoint(uint address, Action<BreakContext> handler, bool oneShot = false)
+    // A quiet breakpoint leaves LastBreakpointUtc alone, for code that runs while the game waits
+    // for input, such as the planning clock.
+    public void SetBreakpoint(uint address, Action<BreakContext> handler, bool oneShot = false, bool quiet = false)
     {
         if (_breakpoints.TryGetValue(address, out var existing))
         {
+            // The breakpoint stays quiet only while every handler on it is.
+            existing.Quiet &= quiet;
             existing.Handlers.Add(new BreakpointHandler(handler, oneShot));
             return;
         }
 
-        var breakpoint = new Breakpoint(address);
+        var breakpoint = new Breakpoint(address) { Quiet = quiet };
         breakpoint.Handlers.Add(new BreakpointHandler(handler, oneShot));
         _breakpoints[address] = breakpoint;
         if (_started) Arm(breakpoint);
@@ -183,7 +187,7 @@ internal sealed class OriginalProcess : IDisposable
         var thread = _threads[threadId];
         var context = new BreakContext(this, thread, address);
         context.Eip = address;
-        LastBreakpointUtc = DateTime.UtcNow;
+        if (!breakpoint.Quiet) LastBreakpointUtc = DateTime.UtcNow;
         foreach (var handler in breakpoint.Handlers.ToArray())
         {
             if (handler.OneShot) breakpoint.Handlers.Remove(handler);
@@ -233,6 +237,7 @@ internal sealed class OriginalProcess : IDisposable
         public uint Address { get; } = address;
         public byte Original { get; set; }
         public bool Armed { get; set; }
+        public bool Quiet { get; set; }
         public List<BreakpointHandler> Handlers { get; } = [];
     }
 }

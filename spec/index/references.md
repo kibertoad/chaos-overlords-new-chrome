@@ -72,6 +72,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | builds |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body, builds |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body, builds |
+| [EXP-TURN-046](../experiments/EXP-TURN-046.md) | body, builds |
+| [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body, builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -1201,6 +1203,8 @@ None.
 | [EXP-TURN-034](../experiments/EXP-TURN-034.md) | body |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body |
+| [EXP-TURN-046](../experiments/EXP-TURN-046.md) | body |
+| [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | evidence |
 
@@ -1297,6 +1301,22 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## EXP-TURN-046
+
+| Cited by | In |
+|---|---|
+| [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | evidence |
+| [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | evidence |
+| [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | evidence |
+
+## EXP-TURN-047
+
+| Cited by | In |
+|---|---|
+| [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | evidence |
+| [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | evidence |
+| [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -5409,6 +5429,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-046](../experiments/EXP-TURN-046.md) | body |
+| [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body |
 | glossary: planning_limit_choice | glossary |
 | glossary: planning_limit_ms | glossary |
 | glossary: planning_start_ms | glossary |
@@ -5436,6 +5458,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-046](../experiments/EXP-TURN-046.md) | body |
+| [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body |
 | [FND-STATE-010](../findings/FND-STATE-010.md) | body |
 | [FND-UI-023](../findings/FND-UI-023.md) | body |
 | glossary: planning_limit_ms | glossary |
@@ -7537,12 +7561,17 @@ None.
 
 ## RULE-TIMER-001
 
-None.
+| Cited by | In |
+|---|---|
+| [EXP-TURN-046](../experiments/EXP-TURN-046.md) | body |
+| [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body |
 
 ## RULE-TIMER-002
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-046](../experiments/EXP-TURN-046.md) | body |
+| [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body |
 | glossary: planning_time_expired | glossary |
 | glossary: planning_timer_start | glossary |
 | glossary: timer_ms | glossary |
@@ -7553,6 +7582,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-046](../experiments/EXP-TURN-046.md) | body |
+| [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body |
 | glossary: timer_ms | glossary |
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | body |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body |
