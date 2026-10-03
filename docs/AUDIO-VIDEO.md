@@ -104,6 +104,6 @@ capture before they can be classified as parity.
 RefurbishedDinosaurs.Media.Smacker 1.0.1 supplies the video Huffman and packed audio decoders;
 RefurbishedDinosaurs.Media.Playback 1.0.0 supplies timeline progression. The restoration keeps
 SMK2 admission, bounded demultiplexing, palette byte ordering, rendering and audio policy.
-The Smacker pin requires the toolkit patch release for bit-free constant trees and oversized-run
-rejection. Synthetic adapter tests exercise those cases. Original-media checks remain local and
-were not run for this migration.
+Smacker 1.0.1 is published with bit-free constant-tree support and oversized-run rejection.
+The migration was revalidated against the NuGet release. Synthetic adapter tests exercise those
+cases. Original-media checks remain local and were not run for this migration.
