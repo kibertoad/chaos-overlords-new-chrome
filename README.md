@@ -10,7 +10,8 @@ creates a local asset pack containing repaired graphics plus the original
 audio, music, video, help, and currently opaque resources. Compact gameplay
 tables are bundled in the open-source core; original art and media are not.
 
-Original save import/export is not supported. Recreation-native saves and
+The original had a save system, but its save files are not read or written:
+original save import/export is not supported. The rebuild's own saves and
 replays are development formats until 1.0.0 and may change incompatibly before
 then; the versioned migration machinery is retained for post-1.0 compatibility.
 
@@ -28,12 +29,15 @@ when importing them.
 
 ## Project status
 
-New Chrome is a playable pre-1.0 recreation. A full match runs from setup to
-the awards for one player, several players at one computer, or players online
-through a coordination server. All ten scenarios, all fourteen gang commands,
-combat, police, the computer players, the original screens, Help, music and
-movies are in, using assets imported from a legal GOG copy. Saves, replays and
-bug reports that carry the whole match are rebuild additions.
+New Chrome is a fully featured reproduction of the original, believed to be
+about 99.9% accurate. A full match runs from setup to the awards for one player,
+several players at one computer, or players online through a coordination
+server. All ten scenarios, all fourteen gang commands, combat, police, the
+computer players, the original screens, saving and loading, Help, music and
+movies are in, using assets imported from a legal GOG copy. The project is now
+in its final phase: hunting down the last small behavioural quirks and nuances
+by comparing the rebuild with recorded runs of the original. Replays, online
+play and bug reports that carry the whole match are rebuild additions.
 
 ### How accurate it is
 
@@ -42,7 +46,10 @@ The rules, balance, AI, screens and file formats were recovered by reading the
 reading found. Every entry of the [spec](spec/README.md) has an implementation,
 and every function of the game's code is cited by at least one entry, so no
 part of the original is known to be left out. The rebuild keeps the original's
-rounding, ordering and quirks, bugs included. Its 65 deliberate departures
+rounding, ordering and quirks, including bugs that players may rely on. It fixes
+only crashes, freezes, corrupted saves and logic that plainly does not do what it
+was written to do; when a bug cannot be told from a design decision, the original
+behaviour stays. Its 65 deliberate departures
 are listed in [DEVIATIONS.md](DEVIATIONS.md); many are interface changes, and
 five have a setting that restores the original behaviour.
 
@@ -85,7 +92,8 @@ The technical documentation is cataloged in [docs/README.md](docs/README.md);
 
 - Original copyrighted assets are never bundled; a supported legal copy is
   required for import.
-- Original 1996 save import/export is not supported.
+- Original 1996 save files are not imported or exported; the rebuild saves in
+  its own format.
 - WinSock, IPX, modem, serial, AppleTalk, and other legacy protocol
   interoperability will not be recreated. Online play uses the new documented
   transport instead.
