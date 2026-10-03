@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="RefurbishedDinosaurs.Core" Version="1.1.0-preview.shared-runtime" />
+    <PackageReference Include="RefurbishedDinosaurs.Media.Audio" Version="1.1.0-preview.shared-runtime" />
     <EmbeddedResource Include="GameData/original-data.json" />
   </ItemGroup>
   <ItemGroup>
