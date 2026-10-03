@@ -433,10 +433,11 @@ public sealed class OriginalNewGameExperimentTests
         var recorded = Run(experiment, run);
         var match = StartMatch(recorded, out _);
         var drawn = recorded.CityMarkers!;
+        // The probe writes the first human's filter, so only that human's redraw is compared.
+        Assert.Equal(recorded.Humans[0].Value, drawn.Viewer);
         var filter = recorded.SearchFilter.Select(definition => (short)definition).ToHashSet();
         var markers = CitySiteMarkerProjection.Project(match, new PlayerId(drawn.Viewer), filter)
-            .Select(marker => (marker.SiteDefinitionId, marker.SectorId, marker.VisibleSlot, marker.Controlled ? 1 : 0))
-            .Select(marker => $"{marker.SiteDefinitionId},{marker.SectorId},{marker.VisibleSlot},{marker.Item4}")
+            .Select(marker => $"{marker.SiteDefinitionId},{marker.SectorId},{marker.VisibleSlot},{(marker.Controlled ? 1 : 0)}")
             .ToArray();
         Assert.Equal(drawn.Markers.Select(marker => string.Join(",", marker)), markers);
     }
@@ -668,6 +669,16 @@ public sealed class OriginalNewGameExperimentTests
     // controlled flag (FND-SEARCH-006).
     private sealed record RecordedMarkers(int Viewer, IReadOnlyList<int[]> Markers);
 
+    // "turn 1: search filter 0 2 4", as the probe writes it: the site definitions whose
+    // search_filters entries the probe set for the first human (RULE-SEARCH-001).
+    private static IEnumerable<int> ParseSearch(string value)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(value, @"^turn \d+: search filter (\d+(?: \d+)*)$");
+        Assert.True(match.Success, value);
+        return match.Groups[1].Value.Split(' ')
+            .Select(definition => int.Parse(definition, System.Globalization.CultureInfo.InvariantCulture));
+    }
+
     private sealed record RecordedHire(int Turn, int OfferSlot, int Sector)
     {
         // "turn 1: offer slot 0 sector 12", as the probe writes it.
@@ -779,13 +790,9 @@ public sealed class OriginalNewGameExperimentTests
                 .Select(input => RecordedPlanning.Parse(input.GetProperty("value").GetString()!))
                 .ToArray();
             Seed = run.GetProperty("rng_state").GetInt32();
-            // "turn 1: search filter 0 2 4", as the probe writes it.
             SearchFilter = inputs.EnumerateArray()
                 .Where(input => input.GetProperty("name").GetString() == "search")
-                .SelectMany(input => input.GetProperty("value").GetString()!.Split(':')[1]
-                    .Replace(" search filter ", "", StringComparison.Ordinal)
-                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)))
+                .SelectMany(input => ParseSearch(input.GetProperty("value").GetString()!))
                 .Distinct().ToArray();
             CityMarkers = run.TryGetProperty("city_markers", out var markers)
                 ? new RecordedMarkers(markers.GetProperty("viewer").GetInt32(),

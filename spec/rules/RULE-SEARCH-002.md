@@ -1,7 +1,7 @@
 ---
 id: RULE-SEARCH-002
 title: The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-SEARCH-003, FND-SEARCH-001, FND-SEARCH-004, FND-SEARCH-006, FND-UI-036, FND-GANG-001, FND-EXE-004, EXP-TURN-045]
