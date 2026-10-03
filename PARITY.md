@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 97 |
-| `validated` | 121 |
+| `implemented` | 96 |
+| `validated` | 122 |
 
 | Code | Rows |
 |---|---|
@@ -212,7 +212,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-MOVE-001`, `DEV-AI-007` | validated | None |
-| `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002`, `DEV-MOVE-002` | implemented | The fallback for a mover already sent back draws a random neighbour (RULE-AI-007); after 256 of them DEV-MOVE-002 applies. |
+| `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-MOVE-002` | validated | EXP-TURN-043 replays a computer player's Moves that would put seven of its gangs in one sector; the repair rewrites the mover's destination to its own sector and the gang sectors agree with the original's. The fallback for a mover already sent back draws a random neighbour (RULE-AI-007); no original run reaches it yet, and after 256 of those draws DEV-MOVE-002 applies. |
 | `SCR-MOVE-001` | Move panel | supported | complete | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | implemented | The map crop, taken from the same prepared city map as the city screen with its pylons and markers, the off-city bands, arrow, faces and keys follow the original. The enabled cells follow the edge table of FND-MOVE-007, Enter, Execute and Escape press their faces, and only DEV-MOVE-001 refuses a Move into a full sector. |
 
 ## CONTROL

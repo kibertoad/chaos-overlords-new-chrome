@@ -72,6 +72,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | builds |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body, builds |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body, builds |
+| [EXP-TURN-043](../experiments/EXP-TURN-043.md) | body, builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -897,6 +898,7 @@ None.
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | body |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
+| [EXP-TURN-043](../experiments/EXP-TURN-043.md) | body |
 
 ## EXP-TURN-002
 
@@ -1297,6 +1299,12 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## EXP-TURN-043
+
+| Cited by | In |
+|---|---|
+| [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -6312,6 +6320,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-043](../experiments/EXP-TURN-043.md) | body |
 | glossary: random_neighbour | glossary |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | body, related |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | body, related |
@@ -7183,6 +7192,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
+| [EXP-TURN-043](../experiments/EXP-TURN-043.md) | body |
 | [FND-MOVE-007](../findings/FND-MOVE-007.md) | body |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | body |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | body, related |
