@@ -72,6 +72,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | builds |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body, builds |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body, builds |
+| [EXP-TURN-045](../experiments/EXP-TURN-045.md) | body, builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -358,6 +359,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | builds, locations |
 | [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | builds, locations |
 | [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | builds, locations |
+| [FND-SEARCH-006](../findings/FND-SEARCH-006.md) | builds, locations |
 | [FND-SELL-001](../findings/FND-SELL-001.md) | builds, locations |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | builds, locations |
 | [FND-SETUP-001](../findings/FND-SETUP-001.md) | builds, locations |
@@ -1201,6 +1203,7 @@ None.
 | [EXP-TURN-034](../experiments/EXP-TURN-034.md) | body |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body |
+| [EXP-TURN-045](../experiments/EXP-TURN-045.md) | body |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | evidence |
 
@@ -1297,6 +1300,12 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## EXP-TURN-045
+
+| Cited by | In |
+|---|---|
+| [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -5010,6 +5019,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-SEARCH-001](../findings/FND-SEARCH-001.md) | body |
+| [FND-SEARCH-006](../findings/FND-SEARCH-006.md) | body |
 | glossary: search_filters | glossary |
 | glossary: SiteMarkerDrawn | glossary |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | evidence |
@@ -5030,6 +5040,13 @@ None.
 |---|---|
 | [FMT-STATE-005](../formats/FMT-STATE-005.md) | body, evidence |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | body, evidence |
+
+## FND-SEARCH-006
+
+| Cited by | In |
+|---|---|
+| [EXP-TURN-045](../experiments/EXP-TURN-045.md) | body |
+| [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | evidence |
 
 ## FND-SELL-001
 
@@ -7393,6 +7410,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-045](../experiments/EXP-TURN-045.md) | body |
+| [FND-SEARCH-006](../findings/FND-SEARCH-006.md) | body |
 | glossary: site_controlled | glossary |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | body |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | body, related |

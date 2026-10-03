@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 97 |
-| `validated` | 121 |
+| `implemented` | 96 |
+| `validated` | 122 |
 
 | Code | Rows |
 |---|---|
@@ -389,7 +389,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-SEARCH-001` | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | supported | complete | None | None | implemented | The rebuild also clears the filters when a save or replay is loaded; whether the original saves them is not known. |
-| `RULE-SEARCH-002` | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | supported | complete | None | None | implemented | None |
+| `RULE-SEARCH-002` | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-045 compares the 98 markers of an original city redraw, for a filter of every even site definition, with their definitions, sectors, ordinals and controlled flags. The only controlled site in the run is the human's Headquarters. |
 | `SCR-SEARCH-001` | Search panel | supported | complete | None | `DEV-SEARCH-001` | implemented | None |
 
 ## OBJECTIVE
