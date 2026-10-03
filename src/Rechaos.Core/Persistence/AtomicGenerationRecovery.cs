@@ -34,48 +34,13 @@ internal static class AtomicGenerationRecovery
         Action<string> load,
         bool trustExistingPrimary = false)
     {
-        Directory.CreateDirectory(directory);
-        var temporaryPath = Path.Combine(
-            directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
-        try
+        RefurbishedDinosaurs.Core.Persistence.RecoverableFile.Write(fullPath, write, candidate =>
         {
-            using (var stream = new FileStream(
-                temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
-                bufferSize: 81920, FileOptions.WriteThrough))
-            {
-                write(stream);
-                stream.Flush(flushToDisk: true);
-            }
-
-            try
-            {
-                load(temporaryPath);
-            }
-            catch (InvalidDataException exception)
-            {
-                throw new IOException(unreadableMessage, exception);
-            }
-            if (!File.Exists(fullPath))
-            {
-                File.Move(temporaryPath, fullPath);
-            }
-            // The rolling autosave reaches this path only after this process has already written
-            // and verified the primary itself. It can keep that generation with File.Replace
-            // without paying another full deserialization just to prove what it already knows.
-            // Everything below rests on the caller holding to that; see the parameter.
-            else if (trustExistingPrimary || IsWorthKeeping(fullPath, load))
-            {
-                File.Replace(temporaryPath, fullPath, fullPath + backupSuffix);
-            }
-            else
-            {
-                File.Move(temporaryPath, fullPath, overwrite: true);
-            }
-        }
-        finally
-        {
-            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
-        }
+            try { load(candidate); }
+            catch (InvalidDataException error) when (candidate != fullPath)
+            { throw new IOException(unreadableMessage, error); }
+        }, error => error is IOException or InvalidDataException,
+            IncompatibleSave.IsIncompatible, backupSuffix, trustExistingPrimary);
     }
 
     /// <summary>
@@ -107,27 +72,6 @@ internal static class AtomicGenerationRecovery
             var fullPath = Path.GetFullPath(path);
             var repaired = TryRestore(fullPath, backupPath, candidate => _ = load(candidate));
             return (value, true, repaired);
-        }
-    }
-
-    /// <summary>
-    /// Whether the existing primary is worth keeping as the next backup generation.
-    /// </summary>
-    /// <remarks>
-    /// A file this build cannot read but that is otherwise intact counts as worth keeping, so the
-    /// save goes through <see cref="File.Replace(string, string, string)"/> and the older or newer
-    /// generation survives under the backup suffix instead of being overwritten in place.
-    /// </remarks>
-    private static bool IsWorthKeeping(string path, Action<string> load)
-    {
-        try
-        {
-            load(path);
-            return true;
-        }
-        catch (Exception exception) when (exception is IOException or InvalidDataException)
-        {
-            return IncompatibleSave.IsIncompatible(exception);
         }
     }
 

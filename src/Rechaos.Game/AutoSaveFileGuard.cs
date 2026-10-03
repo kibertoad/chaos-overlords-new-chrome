@@ -68,27 +68,9 @@ internal sealed class AutoSaveFileGuard
     /// <summary>Opens the lock file exclusively, retrying while another process holds it.</summary>
     public static IDisposable Acquire(string path, TimeSpan timeout)
     {
-        var lockPath = LockPathFor(path);
-        var directory = System.IO.Path.GetDirectoryName(lockPath);
-        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-        var deadline = DateTime.UtcNow + timeout;
-        while (true)
-        {
-            try
-            {
-                return new FileStream(
-                    lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            }
-            catch (IOException) when (DateTime.UtcNow < deadline)
-            {
-                Thread.Sleep(RetryInterval);
-            }
-            catch (IOException exception)
-            {
-                throw new IOException(
-                    "Another copy of the game is using the autosave.", exception);
-            }
-        }
+        try { return RefurbishedDinosaurs.Core.Persistence.FileWriteLock.Acquire(path, timeout); }
+        catch (TimeoutException error)
+        { throw new IOException("Another copy of the game is using the autosave.", error); }
     }
 
     private readonly record struct FileStamp(long Length, DateTime LastWriteUtc)
