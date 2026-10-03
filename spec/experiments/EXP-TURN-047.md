@@ -30,8 +30,14 @@ Run the probe with `--seed 1 --end-turns 1 --time-limit 2 --expire-turns 1`. The
 before Begin and presses no Done in the listed turns. It breaks where the start
 helper stores `planning_start_ms`, where the drawing helper has stored the
 width, on the sound wrapper called from the drawing helper, and in the
-time-limit test (FND-TIMER-001, FND-TIMER-003). Record every random call and
-extract numeric state.
+time-limit test (FND-TIMER-001, FND-TIMER-003). The breakpoints are `0x0041B8C8`
+in the start helper `fn_0041B8BC`, the store of `timer_ms` in
+`planning_start_ms`; `0x0041B96D` in the drawing helper `fn_0041B8FC`, after the
+width is stored, with `elapsed * 100` at `[ebp-4]` and the width at `[ebp-8]`;
+`fn_00464290` when it returns between `0x0041B8FC` and `0x0041BCBB`, with the
+effect slot as its first argument; `0x0041BDFD`, the time-limit test's compare
+with the elapsed time in `eax`; and `0x0041BE09`, which runs only when the limit
+has passed. Record every random call and extract numeric state.
 
 ## Observations
 

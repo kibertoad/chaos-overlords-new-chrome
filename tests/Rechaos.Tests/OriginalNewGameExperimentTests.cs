@@ -439,7 +439,7 @@ public sealed class OriginalNewGameExperimentTests
         var redrawInterval = (int)(PresentationClock.Period * PlanningTimerPolicy.RefreshCountdown).TotalMilliseconds;
         foreach (var timer in recorded.Timers)
         {
-            Assert.Equal(timer.LimitMs, limit);
+            Assert.Equal<int?>(timer.LimitMs, limit);
             foreach (var (elapsed, width, slot) in timer.Bars)
             {
                 Assert.True(PlanningTimerPolicy.RawBarWidth(timer.LimitMs, elapsed) == width,

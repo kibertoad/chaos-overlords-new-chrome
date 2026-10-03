@@ -70,13 +70,19 @@ public static class PlanningTimerPolicy
     public static int VisibleBarWidth(int limitMilliseconds, int elapsedMilliseconds) =>
         Math.Clamp(RawBarWidth(limitMilliseconds, elapsedMilliseconds), 0, BarWidth);
 
+    /// <summary>
+    /// The width for a countdown that is not the original's planning clock, such as an online turn
+    /// deadline of up to a day. The percent is taken in 64 bits, because the 32-bit product of
+    /// <see cref="RawBarWidth(int, int)"/> wraps once more than about six hours have passed.
+    /// </summary>
     public static int VisibleBarWidth(TimeSpan duration, TimeSpan remaining)
     {
         if (duration <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(duration));
         if (remaining >= duration) return BarWidth;
         if (remaining <= TimeSpan.Zero) return 0;
-        var limit = checked((int)(duration.Ticks / TimeSpan.TicksPerMillisecond));
-        return VisibleBarWidth(limit, WholeMilliseconds(duration - remaining));
+        var limit = duration.Ticks / TimeSpan.TicksPerMillisecond;
+        var elapsed = (duration - remaining).Ticks / TimeSpan.TicksPerMillisecond;
+        return BarWidth - (int)(elapsed * 100 / limit * BarWidth / 100);
     }
 
     /// <summary>
@@ -90,8 +96,12 @@ public static class PlanningTimerPolicy
         _ => null,
     };
 
+    // Ten seconds or more never warns, and is not narrowed to 32 bits, where a span of more than
+    // about 24 days would wrap into the warning range.
     public static int? WarningSoundSlot(TimeSpan remaining) =>
-        remaining < TimeSpan.Zero ? null : WarningSoundSlot(WholeMilliseconds(remaining));
+        remaining < TimeSpan.Zero || remaining >= TimeSpan.FromSeconds(10)
+            ? null
+            : WarningSoundSlot(WholeMilliseconds(remaining));
 
     /// <summary>A span in whole milliseconds, as the original's 32-bit millisecond clock counts it.</summary>
     public static int WholeMilliseconds(TimeSpan span) =>
@@ -174,14 +184,20 @@ public sealed class PlanningTimer
         if (_pausedElapsed is not null) return PlanningTimerSignal.None;
         var signal = PlanningTimerSignal.None;
         var tick = PresentationClock.Ticks(now);
-        for (var pending = _lastTick is { } last ? tick - last : 0; pending > 0; pending--)
+        var pending = _lastTick is { } last ? tick - last : 0;
+        _lastTick = tick;
+        if (pending > 0 && pending < _redrawCountdown)
         {
-            if (_redrawCountdown > 0) _redrawCountdown--;
-            if (_redrawCountdown != 0) continue;
-            _redrawCountdown = PlanningTimerPolicy.RefreshCountdown;
+            _redrawCountdown -= (int)pending;
+        }
+        else if (pending > 0)
+        {
+            // The countdown reached zero at least once in these ticks; every redraw among them
+            // happens now, so one is drawn, and the countdown keeps the ticks since the last.
+            var sinceLast = (pending - _redrawCountdown) % PlanningTimerPolicy.RefreshCountdown;
+            _redrawCountdown = PlanningTimerPolicy.RefreshCountdown - (int)sinceLast;
             if (IsActive) signal = Redraw(now);
         }
-        _lastTick = tick;
 
         if (!IsActive) return PlanningTimerSignal.None;
         if (PlanningTimerPolicy.Expired(_limit, Elapsed(now)))

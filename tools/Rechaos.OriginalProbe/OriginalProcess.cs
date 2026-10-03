@@ -52,6 +52,8 @@ internal sealed class OriginalProcess : IDisposable
     {
         if (_breakpoints.TryGetValue(address, out var existing))
         {
+            // The breakpoint stays quiet only while every handler on it is.
+            existing.Quiet &= quiet;
             existing.Handlers.Add(new BreakpointHandler(handler, oneShot));
             return;
         }
@@ -235,7 +237,7 @@ internal sealed class OriginalProcess : IDisposable
         public uint Address { get; } = address;
         public byte Original { get; set; }
         public bool Armed { get; set; }
-        public bool Quiet { get; init; }
+        public bool Quiet { get; set; }
         public List<BreakpointHandler> Handlers { get; } = [];
     }
 }
