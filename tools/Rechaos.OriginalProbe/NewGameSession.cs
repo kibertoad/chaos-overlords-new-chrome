@@ -233,9 +233,14 @@ internal sealed class NewGameSession(
                     + $"{_process.ReadInt32(OriginalAddresses.ElapsedTurns)}).", rollsBeforeBegin);
             if (_awardsReached)
             {
-                // FND-AWARDS-005: let the renderer's first drawing finish, so every row is kept.
+                // FND-AWARDS-005: let the renderer's first drawing finish, so every row is kept. A
+                // drawing that never finished holds only some of the rows, so none are kept.
                 if (!_process.RunUntil(() => _endgameDrawn, TimeSpan.FromSeconds(10)))
-                    _notes.Add("The endgame renderer did not return within 10 seconds.");
+                {
+                    _endgameDrawing = false;
+                    _endgame = null;
+                    _notes.Add("The endgame renderer did not return within 10 seconds; its rows are not kept.");
+                }
                 _notes.Add($"The match ended with turn {turn}; the endgame drew the awards after roll {_rolls.Count}.");
                 break;
             }

@@ -38,9 +38,9 @@ internal sealed class StateExtractor
         if (trace["Endgame"] is JsonObject endgame)
             run["endgame_rows"] = new JsonObject
             {
-                ["arguments"] = new JsonArray(endgame["Arguments"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
-                ["players"] = new JsonArray(endgame["Rows"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
-                ["kinds"] = new JsonArray(endgame["Kinds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<string>()).ToArray()),
+                ["arguments"] = endgame["Arguments"]!.DeepClone(),
+                ["players"] = endgame["Rows"]!.DeepClone(),
+                ["kinds"] = endgame["Kinds"]!.DeepClone(),
             };
         return run;
     }
