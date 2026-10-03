@@ -2,18 +2,10 @@
 
 Validated save promotion, cooperative writer leases and PCM conversion.
 
-Dependencies:
-
-- [Portable paths](https://github.com/kibertoad/refurbished-dinosaurs-toolkit/pull/86)
-- [Input snapshots and bindings](https://github.com/kibertoad/refurbished-dinosaurs-toolkit/pull/87)
-- [Recoverable persistence](https://github.com/kibertoad/refurbished-dinosaurs-toolkit/pull/88)
-- [PCM/audio and streaming WAVE](https://github.com/kibertoad/refurbished-dinosaurs-toolkit/pull/89)
-
-The migration uses `1.1.0-preview.shared-runtime`, built locally from the combined toolkit
-candidates. This is a validation-only version and is not available on nuget.org. The PR remains
-draft until the required toolkit slices are released. Replace candidate references with the
-actual published version, regenerate any NuGet locks against nuget.org, run the canonical fast
-gate and mark ready only after those checks pass. Candidate hashes identify local builds only.
+The migration uses published `1.3.0` NuGet packages for the required shared APIs:
+portable paths, recoverable persistence, and PCM/audio with streaming WAVE.
+Only packages used by this restoration are referenced. Input support is independent
+and is not required by this migration.
 
 Game save payloads, version admission, slot naming, defaults, audio routing, fades, voice limits
 and control policies remain local. Synthetic checks establish migration behavior, not parity
