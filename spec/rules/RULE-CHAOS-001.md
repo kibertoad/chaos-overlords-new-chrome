@@ -1,10 +1,10 @@
 ---
 id: RULE-CHAOS-001
 title: Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-007, FND-CHAOS-001, FND-CHAOS-002, FND-EXE-004, FND-POLICE-001, FND-POLICE-002, FND-POLICE-004, FND-RNG-003, SRC-MANUAL-GOG]
+evidence: [FND-AI-007, FND-CHAOS-001, FND-CHAOS-002, FND-EXE-004, FND-POLICE-001, FND-POLICE-002, FND-POLICE-004, FND-RNG-003, SRC-MANUAL-GOG, EXP-TURN-009, EXP-TURN-061, EXP-TURN-062, EXP-TURN-063]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, RULE-POLICE-002, RULE-POLICE-004, FMT-STATE-001, FMT-STATE-002]

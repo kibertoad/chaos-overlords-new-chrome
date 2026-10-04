@@ -91,6 +91,9 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | builds |
 | [EXP-TURN-059](../experiments/EXP-TURN-059.md) | builds |
 | [EXP-TURN-060](../experiments/EXP-TURN-060.md) | builds |
+| [EXP-TURN-061](../experiments/EXP-TURN-061.md) | builds |
+| [EXP-TURN-062](../experiments/EXP-TURN-062.md) | builds |
+| [EXP-TURN-063](../experiments/EXP-TURN-063.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -944,6 +947,9 @@ None.
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
 | [EXP-TURN-059](../experiments/EXP-TURN-059.md) | body |
 | [EXP-TURN-060](../experiments/EXP-TURN-060.md) | body |
+| [EXP-TURN-061](../experiments/EXP-TURN-061.md) | body |
+| [EXP-TURN-062](../experiments/EXP-TURN-062.md) | body |
+| [EXP-TURN-063](../experiments/EXP-TURN-063.md) | body |
 
 ## EXP-TURN-002
 
@@ -998,6 +1004,9 @@ None.
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
 | [EXP-TURN-059](../experiments/EXP-TURN-059.md) | body |
 | [EXP-TURN-060](../experiments/EXP-TURN-060.md) | body |
+| [EXP-TURN-061](../experiments/EXP-TURN-061.md) | body |
+| [EXP-TURN-062](../experiments/EXP-TURN-062.md) | body |
+| [EXP-TURN-063](../experiments/EXP-TURN-063.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 
 ## EXP-TURN-005
@@ -1031,6 +1040,8 @@ None.
 |---|---|
 | [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
 
 ## EXP-TURN-010
 
@@ -1525,6 +1536,27 @@ None.
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | evidence |
 
+## EXP-TURN-061
+
+| Cited by | In |
+|---|---|
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
+
+## EXP-TURN-062
+
+| Cited by | In |
+|---|---|
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
+
+## EXP-TURN-063
+
+| Cited by | In |
+|---|---|
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
+
 ## FMT-AUDIO-001
 
 | Cited by | In |
@@ -1648,6 +1680,9 @@ None.
 | [BUG-AI-008](../bugs/BUG-AI-008.md) | related |
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
+| [EXP-TURN-061](../experiments/EXP-TURN-061.md) | body |
+| [EXP-TURN-062](../experiments/EXP-TURN-062.md) | body |
+| [EXP-TURN-063](../experiments/EXP-TURN-063.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
