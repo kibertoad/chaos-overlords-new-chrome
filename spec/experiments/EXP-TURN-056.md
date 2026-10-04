@@ -17,7 +17,7 @@ fixture: EXP-TURN-056.json
 
 FND-AI-077 reads family 2's late Control gates as testing the sector
 numbered like the item when the gang plans an Equip. Over twenty-eight turns
-of Acceptance at Crimelord, does the original keep the Equips that reading
+of Acceptance at Crime Lord, does the original keep the Equips that reading
 gives?
 
 ## Setup
