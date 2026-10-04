@@ -593,7 +593,7 @@
 
 ## experiments
 
-81 entries.
+85 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -678,6 +678,10 @@
 | [EXP-TURN-075](../experiments/EXP-TURN-075.md) | Does a hurt family-10 computer gang with no opponent in sight heal, as the spec gives? | recorded |
 | [EXP-TURN-076](../experiments/EXP-TURN-076.md) | Does a family-3 computer gang keep an Attack whose drawn target passes the strength test, as the spec gives? | recorded |
 | [EXP-TURN-077](../experiments/EXP-TURN-077.md) | Does the family-6 guard target skip weight-10 sectors another family-6 gang already covers, as the spec gives? | recorded |
+| [EXP-TURN-078](../experiments/EXP-TURN-078.md) | Does a family-6 computer gang that fails its first draw with nothing to buy make the further draws, as the spec gives? | recorded |
+| [EXP-TURN-079](../experiments/EXP-TURN-079.md) | Does a family-4 computer gang whose previous action was Chaos or Equip draw attacks at weight 10, as the spec gives? | recorded |
+| [EXP-TURN-080](../experiments/EXP-TURN-080.md) | Does a family-12 computer gang in a hostile human's sector draw from every visible gang when its weight is 1, as the spec gives? | recorded |
+| [EXP-TURN-081](../experiments/EXP-TURN-081.md) | Does a family-0 computer gang whose previous action was Snitch move, as the spec gives? | recorded |
 
 ## bugs
 

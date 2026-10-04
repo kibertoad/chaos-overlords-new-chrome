@@ -4,7 +4,7 @@ title: Family-12 computer gangs equip and heal when unopposed, step toward their
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-073, EXP-TURN-013, FND-AI-070, FND-AI-033, FND-AI-069, FND-AI-040, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-042, FND-AI-075, EXP-TURN-053, EXP-TURN-057]
+evidence: [FND-AI-073, EXP-TURN-013, FND-AI-070, FND-AI-033, FND-AI-069, FND-AI-040, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-042, FND-AI-075, EXP-TURN-053, EXP-TURN-057, EXP-TURN-080]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -98,8 +98,10 @@ removed with the source sector's; every pair then ties at 0, the tie count
 runs on past the pair list, and the draw picks the sector to step toward
 (RULE-AI-006). When roster slot 0 is empty its sector byte is 100, and the
 mode is the guard end marker `0x40 + 100`. In a sector owned by a hostile
-human where every visible gang belongs to a computer player, the human-only
-pool is empty and `roll(0)` gives 1 (RULE-AI-004). The attack loop attacks the
+human where the first visible gang belongs to a computer player, the weight
+is 1 and the draw takes every visible gang (EXP-TURN-080). The human-only pool
+is drawn only at weight 10, which needs a visible gang of a human, so it is
+never empty. The attack loop attacks the
 last drawn target even when all five strength tests failed, and the strength
 test can be made on a different gang from the one attacked (BUG-AI-003).
 

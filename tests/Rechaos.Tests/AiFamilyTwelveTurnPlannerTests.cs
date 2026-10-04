@@ -189,7 +189,9 @@ public sealed class AiFamilyTwelveTurnPlannerTests
     }
 
     [Fact]
-    public void EmptyHumanOnlyPoolDegradesToNoActionWithoutThrowing()
+    // RULE-AI-030: in a hostile human's sector where the only visible gang is a computer
+    // player's, the cached weight is 1, so the draw takes every visible gang (EXP-TURN-080).
+    public void WeightOneInHostileHumanSectorDrawsFromEveryVisibleGang()
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -234,8 +236,10 @@ public sealed class AiFamilyTwelveTurnPlannerTests
 
         match.PrepareAiPlanning(player);
 
-        Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(player, 0));
-        Assert.Empty(AiTurnPlanner.Plan(match, player));
+        Assert.Equal(1, match.AiPlanning.SectorWeight(player, 0));
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+        Assert.Equal(GangAction.Attack, command.Action);
+        Assert.Equal(CommandTarget.Gang(new GangId(30)), command.Target);
         Assert.Equal(3, match.Random.ConsumptionCount);
     }
 
