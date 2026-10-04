@@ -96,7 +96,7 @@ namespace Rechaos.Tests;
 /// branches no match had reached: family 7 out of research (RULE-AI-026), family-4 attack draws and
 /// Control (RULE-AI-023), the family-10 Heal (RULE-AI-028), an accepted family-3 attack
 /// (RULE-AI-022) and a family-6 guard target already covered (RULE-AI-025).
-/// EXP-TURN-078 to EXP-TURN-081 do the same in the untimed scenarios and reach the further family-6
+/// EXP-TURN-078 to EXP-TURN-081 do the same in Siege, Big Man and Armageddon and reach the further family-6
 /// draws (RULE-AI-025), the family-3 Heal (RULE-AI-022), family-4 attacks after Chaos or Equip
 /// (RULE-AI-023), the family-12 Detect Equip and draw at weight 1 (RULE-AI-030) and the family-0
 /// Move after a Snitch (RULE-AI-019).

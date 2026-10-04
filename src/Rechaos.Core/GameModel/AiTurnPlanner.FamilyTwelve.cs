@@ -130,21 +130,19 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> visible,
         int visibleWeight)
     {
+        var owner = state.Sectors[gang.SectorId].Owner;
+        // RULE-AI-030: the human-only pool needs weight 10 and hostile_human_owner
+        // (RULE-AI-004): the owner byte, then hostile_owner's query.
+        var targetPool = visibleWeight == 10
+            && owner is { } sectorOwner
+            && IsHostileOwner(state, playerId, gang.SectorId)
+            && state.FindPlayer(sectorOwner)?.Setup.Controller == PlayerController.Human
+                ? HumanTargets(state, visible)
+                : visible;
         ObjectiveTarget? selected = null;
         for (var attempt = 0; attempt < OriginalAiFamilyTwelveRules.AttackAttempts;
              attempt++)
         {
-            var owner = state.Sectors[gang.SectorId].Owner;
-            // RULE-AI-030: the human-only pool needs weight 10 and hostile_human_owner
-            // (RULE-AI-004): the owner byte, then hostile_owner's query.
-            var targetPool = visibleWeight == 10
-                && owner is { } sectorOwner
-                && IsHostileOwner(state, playerId, gang.SectorId)
-                && state.FindPlayer(sectorOwner)?.Setup.Controller == PlayerController.Human
-                    ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
-                            .Setup.Controller == PlayerController.Human)
-                        .ToArray()
-                    : visible;
             var ordinal = state.Random.NextInclusive(Math.Max(1, targetPool.Count));
             selected = ordinal <= targetPool.Count ? targetPool[ordinal - 1] : null;
             if (selected is null) break;
