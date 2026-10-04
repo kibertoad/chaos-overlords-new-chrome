@@ -38,13 +38,10 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         if (OriginalAiFamilyThreeRules.ShouldHeal(gang.Force, effectiveHeal))
-        {
             SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
-            return;
-        }
-
-        PrepareFamilyThreeCashSiteOrTerritorial(
-            state, playerId, gang, gangSlot, snapshot);
+        else
+            PrepareFamilyThreeCashSiteOrTerritorial(
+                state, playerId, gang, gangSlot, snapshot);
         // FND-AI-076: the four branches of this case meet at a store of -1 in the focus, so the
         // Influence and Control planned here leave -1 too.
         state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
@@ -173,7 +170,8 @@ public static partial class AiTurnPlanner
         TerminateForGreed(state, playerId, gangSlot);
     }
 
-    // The handler stores the gang's sector as its focus with every Influence it plans.
+    // The handler stores the gang's sector as its focus with every Influence it plans. In the case
+    // for a previous None, Control, Equip or Heal, -1 overwrites it at once (FND-AI-076).
     private static void SetFamilyThreeInfluence(
         MatchState state,
         PlayerId playerId,

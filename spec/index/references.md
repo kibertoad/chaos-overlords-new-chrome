@@ -2732,6 +2732,7 @@ None.
 |---|---|
 | [EXP-TURN-054](../experiments/EXP-TURN-054.md) | body |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | body, evidence |
+| [RULE-AI-024](../rules/RULE-AI-024.md) | body, evidence |
 
 ## FND-AI-077
 
