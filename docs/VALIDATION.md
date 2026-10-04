@@ -427,6 +427,9 @@ rows do (RULE-SEARCH-001), and keeps the site markers of each city redraw
 (FND-SEARCH-006). The fixture lists each write as a `search` input and holds
 the markers of the last redraw before the dump as `city_markers`; the replay
 compares them with the rebuild's markers for the same filter.
+A run that ends the match keeps the endgame's first drawing: the renderer's
+arguments and the player of each row it lists, ranked, eliminated or the
+victory splash (FND-AWARDS-005), which the fixture holds as `endgame_rows`.
 `--finance` opens the Financial panel before the Done press of the given turn,
 once that turn's orders and hires are written: the City variant for sector -1,
 otherwise the Sector variant, after writing the sector into the map selection.

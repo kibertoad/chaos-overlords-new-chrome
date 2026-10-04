@@ -47,6 +47,16 @@ internal static class OriginalAddresses
     // FND-AWARDS-001: the endgame's row painter, which reads the awards the builder has given.
     public const uint AwardsRows = 0x0042CE61;
 
+    // FND-AWARDS-005: the renderer draws each listed player's name with fn_00413FD5, whose third
+    // argument is the name at 0x004A2589 + 12 * player: the splash's at 0x0042D1A4, the ranked rows'
+    // at 0x0042D2DA and the eliminated rows' at 0x0042DA64.
+    public const uint TextDraw = 0x00413FD5;
+    public const uint SplashNameDraw = 0x0042D1A4;
+    public const uint RankedNameDraw = 0x0042D2DA;
+    public const uint EliminatedNameDraw = 0x0042DA64;
+    public const uint PlayerNames = 0x004A2589;
+    public const int PlayerNameStride = 12;
+
     // match_over: set by the end-of-turn evaluation when the match is finished.
     public const uint MatchOver = 0x004ABBD4;
 

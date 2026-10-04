@@ -768,8 +768,9 @@
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not | recorded |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions | recorded |
 | [FND-AWARDS-004](../findings/FND-AWARDS-004.md) | The awards table holds five codes per player, and the results screen shows the victory splash when exactly one player is still active, whoever controls it | recorded |
+| [FND-AWARDS-005](../findings/FND-AWARDS-005.md) | The endgame renderer draws each listed player's name with fn_00413FD5 from three calls, so the name pointer names the player of each row in drawing order | recorded |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | established |
-| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | established |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | Endgame screen listing the players by place with their awards or their statistics | supported |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | Victory splash shown on the endgame's Awards tab when one player is left | supported |
 
