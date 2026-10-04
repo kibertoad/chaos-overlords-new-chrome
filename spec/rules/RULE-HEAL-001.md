@@ -1,10 +1,10 @@
 ---
 id: RULE-HEAL-001
 title: Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HEAL-001, FND-TURN-007, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-059, EXP-TURN-062, EXP-TURN-063]
+evidence: [FND-HEAL-001, FND-TURN-007, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-059, EXP-TURN-062, EXP-TURN-063, EXP-TURN-068, FND-HEAL-002]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001]
@@ -57,11 +57,13 @@ Makes one `roll(6)`, three draws from `rng`, for each die of the pool of
 - Band 0 and band 1 succeed on 5 or 6; band 2 on 4 to 6. No band loses dice.
 - A negative effective Heal of -4 or less gives a pool of 0 or less, which
   rolls nothing.
-- A gang already at Force 10 still rolls and uses its draws; the cap then
-  keeps it at 10 (FND-HEAL-001).
-- A recurring Heal order is cleared at `turn_start` once the gang is at Force
-  10 (FND-TURN-004), so a gang at full Force normally has no Heal order to
-  carry out.
+- A gang already at Force 10 would still roll and use its draws, the cap then
+  keeping it at 10 (FND-HEAL-001). The order menus grey Heal for a gang at
+  Force 10 (FND-HEAL-002), a recurring Heal order is cleared at `turn_start`
+  once the gang is at Force 10 (FND-TURN-004), and every computer Heal plan
+  needs Force below 10 (RULE-AI-019 to RULE-AI-031), so a gang meets this
+  case only if its Force rose after the order was given, which no finding
+  records.
 
 ## What the sources say
 
@@ -76,7 +78,8 @@ None known.
 
 ## Open questions
 
-- No recorded run reaches a Heal pool of 0 or less, or a Heal by a gang
-  already at Force 10, so the runs of EXP-TURN-059, EXP-TURN-062 and
-  EXP-TURN-063 do not reach those edge cases. They rest on the static reading
-  [FND-HEAL-001].
+- No recorded run reaches a Heal by a gang at Force 10, which play does not
+  give (see Edge cases); that case
+  rests on the static readings [FND-HEAL-001] and [FND-HEAL-002]. The runs of
+  EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 reach the three bands and a Heal
+  capped at 10, and EXP-TURN-068 a pool of 0 or less.

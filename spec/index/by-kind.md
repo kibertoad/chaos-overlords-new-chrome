@@ -150,7 +150,7 @@
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported |
 | [RULE-GFX-003](../rules/RULE-GFX-003.md) | A keyed image copy leaves out the pixels of maximum white | supported |
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | established |
-| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | supported |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | established |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | Help Topics does nothing, and no key opens the help file | supported |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player | established |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | established |
@@ -223,7 +223,7 @@
 
 ## findings
 
-361 entries.
+362 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -419,6 +419,7 @@
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art | recorded |
 | [FND-GIVE-003](../findings/FND-GIVE-003.md) | The Give recipient list fills no background, and dims an ineligible card with black through bitmap 146 from the card's corner | recorded |
 | [FND-HEAL-001](../findings/FND-HEAL-001.md) | The Heal case rolls Heal plus 4 dice without testing Force first, caps Force at 10 and records no report | recorded |
+| [FND-HEAL-002](../findings/FND-HEAL-002.md) | The gang command handler greys Heal in both order menus when the gang is at Force 10 | recorded |
 | [FND-HELP-001](../findings/FND-HELP-001.md) | The help file's context tree holds 80 hashed names, covers every contents target, and defines no numeric contexts | recorded |
 | [FND-HELP-002](../findings/FND-HELP-002.md) | The help text uses nine fonts and 93 internal hotspots, 67 jumps and 26 popups, all resolved through the context tree | recorded |
 | [FND-HELP-003](../findings/FND-HELP-003.md) | Chaos.hlp is a WinHelp 3.1 container with an eleven-file directory at 0xE42 | recorded |
@@ -591,7 +592,7 @@
 
 ## experiments
 
-70 entries.
+72 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -665,6 +666,8 @@
 | [EXP-TURN-064](../experiments/EXP-TURN-064.md) | Does Chaos in a sector under police presence crack down again and pay, as the spec gives? | recorded |
 | [EXP-TURN-065](../experiments/EXP-TURN-065.md) | Do the human's recurring Research, Influence and Control orders end when they are done, as the spec gives? | recorded |
 | [EXP-TURN-066](../experiments/EXP-TURN-066.md) | In Power, does Chaos in a sector under police presence crack down again, as the spec gives? | recorded |
+| [EXP-TURN-067](../experiments/EXP-TURN-067.md) | Does the turn start drop a recurring Heal at Force 10 and the recurring orders of dead gangs, as the spec gives? | recorded |
+| [EXP-TURN-068](../experiments/EXP-TURN-068.md) | Does a Heal with a pool of 0 or less roll nothing, as the spec gives? | recorded |
 
 ## bugs
 

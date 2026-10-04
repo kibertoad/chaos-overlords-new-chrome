@@ -97,6 +97,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-064](../experiments/EXP-TURN-064.md) | builds |
 | [EXP-TURN-065](../experiments/EXP-TURN-065.md) | builds |
 | [EXP-TURN-066](../experiments/EXP-TURN-066.md) | builds |
+| [EXP-TURN-067](../experiments/EXP-TURN-067.md) | builds |
+| [EXP-TURN-068](../experiments/EXP-TURN-068.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -313,6 +315,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | builds, locations |
 | [FND-GIVE-003](../findings/FND-GIVE-003.md) | builds, locations |
 | [FND-HEAL-001](../findings/FND-HEAL-001.md) | builds, locations |
+| [FND-HEAL-002](../findings/FND-HEAL-002.md) | builds, locations |
 | [FND-HELP-001](../findings/FND-HELP-001.md) | builds, locations |
 | [FND-HELP-002](../findings/FND-HELP-002.md) | builds, locations |
 | [FND-HELP-003](../findings/FND-HELP-003.md) | builds, locations |
@@ -957,6 +960,8 @@ None.
 | [EXP-TURN-064](../experiments/EXP-TURN-064.md) | body |
 | [EXP-TURN-065](../experiments/EXP-TURN-065.md) | body |
 | [EXP-TURN-066](../experiments/EXP-TURN-066.md) | body |
+| [EXP-TURN-067](../experiments/EXP-TURN-067.md) | body |
+| [EXP-TURN-068](../experiments/EXP-TURN-068.md) | body |
 
 ## EXP-TURN-002
 
@@ -1016,6 +1021,8 @@ None.
 | [EXP-TURN-063](../experiments/EXP-TURN-063.md) | body |
 | [EXP-TURN-064](../experiments/EXP-TURN-064.md) | body |
 | [EXP-TURN-065](../experiments/EXP-TURN-065.md) | body |
+| [EXP-TURN-067](../experiments/EXP-TURN-067.md) | body |
+| [EXP-TURN-068](../experiments/EXP-TURN-068.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 
 ## EXP-TURN-005
@@ -1606,6 +1613,18 @@ None.
 |---|---|
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
 
+## EXP-TURN-067
+
+| Cited by | In |
+|---|---|
+| [RULE-TURN-004](../rules/RULE-TURN-004.md) | body, evidence |
+
+## EXP-TURN-068
+
+| Cited by | In |
+|---|---|
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
+
 ## FMT-AUDIO-001
 
 | Cited by | In |
@@ -1621,6 +1640,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-068](../experiments/EXP-TURN-068.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
@@ -1733,6 +1753,7 @@ None.
 | [EXP-TURN-062](../experiments/EXP-TURN-062.md) | body |
 | [EXP-TURN-063](../experiments/EXP-TURN-063.md) | body |
 | [EXP-TURN-065](../experiments/EXP-TURN-065.md) | body |
+| [EXP-TURN-067](../experiments/EXP-TURN-067.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
@@ -1744,6 +1765,7 @@ None.
 | [FND-GANG-006](../findings/FND-GANG-006.md) | body |
 | [FND-GANG-010](../findings/FND-GANG-010.md) | body |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | body |
+| [FND-HEAL-002](../findings/FND-HEAL-002.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | [FND-UI-024](../findings/FND-UI-024.md) | body |
 | glossary: gang | glossary |
@@ -4049,6 +4071,7 @@ None.
 | [FND-GFX-006](../findings/FND-GFX-006.md) | body |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | body |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | body |
+| [FND-HEAL-002](../findings/FND-HEAL-002.md) | body |
 | [FND-HIRE-007](../findings/FND-HIRE-007.md) | body |
 | [FND-HIRE-009](../findings/FND-HIRE-009.md) | body |
 | [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | body |
@@ -4508,7 +4531,14 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-067](../experiments/EXP-TURN-067.md) | body |
 | [FND-TURN-007](../findings/FND-TURN-007.md) | body |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
+
+## FND-HEAL-002
+
+| Cited by | In |
+|---|---|
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
 
 ## FND-HELP-001
@@ -5939,6 +5969,7 @@ None.
 |---|---|
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body, evidence |
+| [FND-HEAL-002](../findings/FND-HEAL-002.md) | body |
 | [FND-HIDE-001](../findings/FND-HIDE-001.md) | body |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | body |
 | [FND-TURN-006](../findings/FND-TURN-006.md) | body |
@@ -6262,6 +6293,7 @@ None.
 |---|---|
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body, evidence |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
+| [FND-HEAL-002](../findings/FND-HEAL-002.md) | body |
 | [FND-HELP-005](../findings/FND-HELP-005.md) | body |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
@@ -6855,7 +6887,9 @@ None.
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | related |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | [EXP-TURN-057](../experiments/EXP-TURN-057.md) | body |
+| [FND-HEAL-002](../findings/FND-HEAL-002.md) | body |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body |
 
 ## RULE-AI-020
 
@@ -6971,11 +7005,13 @@ None.
 |---|---|
 | [BUG-AI-006](../bugs/BUG-AI-006.md) | related |
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
+| [FND-HEAL-002](../findings/FND-HEAL-002.md) | body |
 | [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
 | glossary: fight_or_heal | glossary |
 | glossary: objective_site | glossary |
 | glossary: on_objective | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body |
 
 ## RULE-ATTACK-001
 
@@ -7530,6 +7566,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-068](../experiments/EXP-TURN-068.md) | body |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, related |
 
 ## RULE-HELP-001
@@ -8080,6 +8117,7 @@ None.
 |---|---|
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
 | [EXP-TURN-065](../experiments/EXP-TURN-065.md) | body |
+| [EXP-TURN-067](../experiments/EXP-TURN-067.md) | body |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | body |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | body |
