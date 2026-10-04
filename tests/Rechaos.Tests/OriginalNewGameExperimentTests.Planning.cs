@@ -28,11 +28,10 @@ public sealed partial class OriginalNewGameExperimentTests
         for (var record = 0; record < MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer; record++)
         {
             var at = record * AiPlanningState.PlanningRecordSize;
-            // The fixture leaves out a record of zero bytes.
-            var held = recorded.HasField("FMT-STATE-007", record, "family");
+            // The fixture leaves out every field that holds 0.
             for (var i = 0; i < fields.Length; i++)
             {
-                var original = held ? recorded.Field("FMT-STATE-007", record, fields[i]) : 0;
+                var original = recorded.FieldOrZero("FMT-STATE-007", record, fields[i]);
                 var rebuilt = fields[i] is "family" or "older_target" or "older_target_2" or "previous_target"
                     or "previous_target_2" or "planned_target" or "planned_target_2"
                     ? (int)(sbyte)image[at + i]
@@ -42,7 +41,7 @@ public sealed partial class OriginalNewGameExperimentTests
             (string Name, int Offset)[] cooldowns = [("weapon_cooldown", 12), ("armor_cooldown", 14)];
             foreach (var (name, offset) in cooldowns)
             {
-                var original = held ? recorded.Field("FMT-STATE-007", record, name) : 0;
+                var original = recorded.FieldOrZero("FMT-STATE-007", record, name);
                 var rebuilt = BitConverter.ToInt16(image, at + offset);
                 if (original != rebuilt) Expect(original, rebuilt, $"planning record {record} {name}");
             }
@@ -60,7 +59,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 $"placement_anchor of player {slot}");
             for (var sector = 0; sector < MatchLimits.SectorCount; sector++)
             {
-                var original = recorded.Term("sector_weight", slot * MatchLimits.SectorCount + sector);
+                var original = recorded.TermOrZero("sector_weight", slot * MatchLimits.SectorCount + sector);
                 var rebuilt = planning.SectorWeight(player.Id, sector);
                 if (original != rebuilt) Expect(original, rebuilt, $"sector_weight of player {slot} at sector {sector}");
             }
@@ -75,12 +74,77 @@ public sealed partial class OriginalNewGameExperimentTests
             {
                 if (!player.Gangs[gangSlot].IsActive || planning.NeedsFamily(player.Id, gangSlot)) continue;
                 var record = slot * AiPlanningState.GangSlotsPerPlayer + gangSlot;
-                if (recorded.Term("aux_records.focus", record) != planning.FocusValue(player.Id, gangSlot))
-                    auxDifferences.Add($"aux record {record} (family {planning.Family(player.Id, gangSlot)}) focus: the original holds {recorded.Term("aux_records.focus", record)}, the rebuild {planning.FocusValue(player.Id, gangSlot)}");
-                if (recorded.Term("aux_records.coverage_sector", record) != planning.CoverageSector(player.Id, gangSlot))
-                    auxDifferences.Add($"aux record {record} (family {planning.Family(player.Id, gangSlot)}) coverage_sector: the original holds {recorded.Term("aux_records.coverage_sector", record)}, the rebuild {planning.CoverageSector(player.Id, gangSlot)}");
+                if (recorded.TermOrZero("aux_records.focus", record) != planning.FocusValue(player.Id, gangSlot))
+                    auxDifferences.Add($"aux record {record} (family {planning.Family(player.Id, gangSlot)}) focus: the original holds {recorded.TermOrZero("aux_records.focus", record)}, the rebuild {planning.FocusValue(player.Id, gangSlot)}");
+                if (recorded.TermOrZero("aux_records.coverage_sector", record) != planning.CoverageSector(player.Id, gangSlot))
+                    auxDifferences.Add($"aux record {record} (family {planning.Family(player.Id, gangSlot)}) coverage_sector: the original holds {recorded.TermOrZero("aux_records.coverage_sector", record)}, the rebuild {planning.CoverageSector(player.Id, gangSlot)}");
             }
         }
         Assert.True(auxDifferences.Count == 0, string.Join("; ", auxDifferences));
+    }
+
+    // FMT-STATE-003, RULE-COMBAT-002, RULE-POLICE-001: the combat records the last resolution wrote,
+    // rebuilt from its attack and police events. The original writes bytes 0 to 8 only for the gangs
+    // that fought and keeps the bytes of earlier resolutions in the others, so only the records of
+    // gangs that fought are compared, and police_damage in all 486. force_shown is Detailed
+    // Combat's (RULE-COMBAT-004), which the probe switches off, and damage_dealt and
+    // retaliation_taken of a gang that did not attack are undefined (FND-COMBAT-008).
+    private static void AssertCombatRecordsMatch(RecordedRun recorded, MatchState match)
+    {
+        var turn = match.Outcome?.Turn ?? match.Coordinator.Turn - 1;
+        var fought = new Dictionary<int, (CombatantDetails Gang, int Damage)>();
+        var attacks = new Dictionary<int, (int Dealt, int Taken)>();
+        var police = new Dictionary<int, int>();
+        void Fought(CombatantDetails gang, int damage)
+        {
+            var record = gang.Owner.Value * AiPlanningState.GangSlotsPerPlayer + gang.RosterSlot!.Value;
+            fought[record] = (gang, (fought.TryGetValue(record, out var known) ? known.Damage : 0) + damage);
+        }
+        foreach (var gameEvent in match.Events.Where(gameEvent => gameEvent.Turn == turn))
+        {
+            if (gameEvent is { Kind: GameEventKind.PoliceAttackResolved, PoliceAttack: { Detected: true, Target: { } target } found })
+            {
+                Fought(target, found.Successes);
+                police[target.Owner.Value * AiPlanningState.GangSlotsPerPlayer + target.RosterSlot!.Value] = found.Successes;
+            }
+            else if (gameEvent is { Action: GangAction.Attack, Resolution: { Attacker: { } attacker, Defender: { } defender } fight })
+            {
+                var evaded = fight.Code == CommandResolutionCode.TargetEvaded;
+                Fought(attacker, fight.RetaliationDamage);
+                Fought(defender, evaded ? 0 : fight.Damage);
+                attacks[attacker.Owner.Value * AiPlanningState.GangSlotsPerPlayer + attacker.RosterSlot!.Value] =
+                    (evaded ? -1 : fight.Damage, fight.RetaliationDamage);
+            }
+        }
+
+        var differences = new List<string>();
+        void Compare(int record, string field, int rebuilt)
+        {
+            var original = recorded.HasField("FMT-STATE-003", record, field) ? recorded.Field("FMT-STATE-003", record, field) : (int?)null;
+            if (original != rebuilt)
+                differences.Add($"combat record {record} {field}: the original holds {original?.ToString() ?? "nothing"}, the rebuild {rebuilt}");
+        }
+        for (var record = 0; record < 6 * AiPlanningState.GangSlotsPerPlayer; record++)
+        {
+            var original = recorded.HasField("FMT-STATE-003", record, "police_damage")
+                ? recorded.Field("FMT-STATE-003", record, "police_damage")
+                : -1;
+            var rebuilt = police.GetValueOrDefault(record, -1);
+            if (original != rebuilt)
+                differences.Add($"combat record {record} police_damage: the original holds {original}, the rebuild {rebuilt}");
+        }
+        foreach (var (record, (gang, damage)) in fought)
+        {
+            Compare(record, "definition", gang.DefinitionId);
+            Compare(record, "force_start", gang.Force!.Value);
+            Compare(record, "force_final", gang.Force!.Value - Math.Min(damage, 10));
+            Compare(record, "weapon", gang.WeaponItemId ?? -1);
+            Compare(record, "armor", gang.ArmorItemId ?? -1);
+            Compare(record, "misc", gang.MiscellaneousItemId ?? -1);
+            if (!attacks.TryGetValue(record, out var attack)) continue;
+            Compare(record, "damage_dealt", attack.Dealt);
+            Compare(record, "retaliation_taken", attack.Taken);
+        }
+        Assert.True(differences.Count == 0, string.Join("; ", differences));
     }
 }

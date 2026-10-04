@@ -468,11 +468,14 @@ holds `match_over` and each player's first three `player_awards` entries.
 From EXP-TURN-048 on, the fixtures also hold the computer players' planning
 state: every planning record that is not all zero (FMT-STATE-007),
 `ai_started`, `raider_mode`, `placement_anchor`, `sector_weight` and the
-`focus` and `coverage_sector` values of the auxiliary records (FND-AI-044).
+`focus` and `coverage_sector` values of the auxiliary records (FND-AI-044),
+and every combat record a resolution has written (FMT-STATE-003).
 The replay compares the planning records byte for byte, reading an absent
 record as zeros, and the auxiliary values only for computer gangs whose family
 is assigned, since the original leaves the others 0 from the start of a match
-where the rebuild holds -1.
+where the rebuild holds -1. It rebuilds the combat records of the last
+resolution from its attack and police events and compares those of the gangs
+that fought, and `police_damage` in all 486.
 `OriginalNewGameExperimentTests` replays every run of the EXP-SETUP and
 EXP-TURN fixtures against the rebuild and names the first roll whose bound or
 result differs, with the original's call instruction, then compares the state

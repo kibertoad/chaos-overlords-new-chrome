@@ -292,7 +292,7 @@
 
 ## recorded
 
-399 entries.
+400 entries.
 
 | ID | Title |
 |---|---|
@@ -348,6 +348,7 @@
 | [EXP-TURN-048](../experiments/EXP-TURN-048.md) | What planning state do the computer players hold after twenty-four turns of Greed at Crime Lord? |
 | [EXP-TURN-049](../experiments/EXP-TURN-049.md) | What planning state do the computer players hold after twenty-four turns of Kill 'Em All at Crime Lord? |
 | [EXP-TURN-050](../experiments/EXP-TURN-050.md) | Does a family-7 Equip leave the focus its handler compares at the next pass? |
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | What do the combat records hold after an attack, its retaliation and a police kill? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |

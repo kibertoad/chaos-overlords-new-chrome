@@ -32,8 +32,8 @@ As EXP-TURN-004 with Greed (`--scenario 0`), Mentality 2 (`--mentality 2`),
 half a year (`--turns 26`) and twenty-four Done presses (`--end-turns 24`),
 with no orders, once each with `--seed 4801`, `--seed 4802` and
 `--seed 4803`. After the last press the probe reads the planning records,
-the auxiliary focus and coverage values, the sector weights and the three
-per-player values into the end state.
+the auxiliary focus and coverage values, the sector weights, the three
+per-player values and the combat records (FMT-STATE-003) into the end state.
 
 ## Observations
 
