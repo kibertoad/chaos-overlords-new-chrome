@@ -71,6 +71,7 @@ public sealed class PlanningTimerPolicyTests
 
     // RULE-TIMER-003: the bar is drawn at the start and then on every sixth presentation tick,
     // keeping its width in between, and each redraw plays the warning of its remaining time.
+    // RULE-TIMER-002: the clock reports expiry and leaves stopping to the planning loop.
     [Fact]
     public void TimerRedrawsOnEverySixthPresentationTickAndThenExpires()
     {
@@ -100,7 +101,11 @@ public sealed class PlanningTimerPolicyTests
                 redraws++;
                 signals.Add(signal);
             }
-        } while (signal != PlanningTimerSignal.Expired);
+            else
+            {
+                Assert.Equal(PlanningTimerSignal.None, signal);
+            }
+        } while (!timer.HasExpired(period * tickCount));
 
         // 30000 ms is 180.7 ticks: the turn ends at tick 181, before its redraw at tick 186.
         Assert.Equal(181, tickCount);
@@ -108,7 +113,68 @@ public sealed class PlanningTimerPolicyTests
         Assert.Equal(19, signals.Count(entry => entry == PlanningTimerSignal.None));
         Assert.Equal(9, signals.Count(entry => entry == PlanningTimerSignal.LongWarning));
         Assert.Equal(1, signals.Count(entry => entry == PlanningTimerSignal.FinalWarning));
+        Assert.True(timer.IsActive);
+        // Tick 180 is 29880 ms elapsed, 99 percent: 60 - 5940 / 100.
+        Assert.Equal(1, timer.VisibleBarWidth);
+
+        timer.Stop();
         Assert.False(timer.IsActive);
+        Assert.False(timer.HasExpired(period * tickCount));
+        // RULE-TIMER-002: the bar is left as last drawn when planning ends.
+        Assert.True(timer.ShowsBar);
+        Assert.Equal(1, timer.VisibleBarWidth);
+    }
+
+    // RULE-TIMER-002, RULE-TIMER-003: past the limit the clock goes on redrawing until the planning
+    // loop tests it, so a panel open at the limit shows the empty bar, with no warning since the
+    // remaining time is not above 0.
+    [Fact]
+    public void AnExpiredTurnThatIsNotTestedKeepsDrawingTheEmptyBar()
+    {
+        var period = PresentationClock.Period;
+        var timer = new PlanningTimer();
+        timer.Advance(TimeSpan.Zero);
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        for (var tick = 1; tick <= 240; tick++)
+        {
+            var signal = timer.Advance(period * tick);
+            if (tick * PresentationClock.PeriodMilliseconds > 30000)
+                Assert.Equal(PlanningTimerSignal.None, signal);
+        }
+
+        Assert.True(timer.IsActive);
+        Assert.True(timer.HasExpired(period * 240));
+        // Tick 240 redraws at 39840 ms elapsed, 132 percent, a width below 1: the empty bar.
+        Assert.Equal(0, timer.VisibleBarWidth);
+    }
+
+    // RULE-TIMER-002: an untimed start and leaving the match forget the bar; a timed start draws
+    // it full.
+    [Fact]
+    public void ClearingAndUntimedStartsForgetTheBar()
+    {
+        var timer = new PlanningTimer();
+        timer.Advance(TimeSpan.Zero);
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        timer.Advance(TimeSpan.FromSeconds(10));
+        timer.Stop();
+        Assert.True(timer.ShowsBar);
+        Assert.Equal(41, timer.VisibleBarWidth);
+
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.FromSeconds(20));
+        Assert.True(timer.ShowsBar);
+        Assert.Equal(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
+
+        timer.Advance(TimeSpan.FromSeconds(30));
+        timer.Clear();
+        Assert.False(timer.IsActive);
+        Assert.False(timer.ShowsBar);
+        Assert.Equal(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
+
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.FromSeconds(40));
+        timer.Advance(TimeSpan.FromSeconds(50));
+        timer.Start(PlanningTimeLimit.None, TimeSpan.FromSeconds(60));
+        Assert.False(timer.ShowsBar);
     }
 
     [Fact]
@@ -120,6 +186,8 @@ public sealed class PlanningTimerPolicyTests
 
         Assert.False(timer.IsActive);
         Assert.Equal(PlanningTimerSignal.None, timer.Advance(TimeSpan.FromDays(1)));
+        Assert.False(timer.HasExpired(TimeSpan.FromDays(1)));
+        Assert.False(timer.ShowsBar);
         Assert.Equal(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
     }
 
@@ -158,13 +226,12 @@ public sealed class PlanningTimerPolicyTests
         timer.Pause(TimeSpan.FromSeconds(10));
 
         Assert.Equal(PlanningTimerSignal.None, timer.Advance(TimeSpan.FromHours(1)));
+        Assert.False(timer.HasExpired(TimeSpan.FromHours(1)));
         Assert.Equal(41, timer.VisibleBarWidth);
 
         timer.Resume(TimeSpan.FromHours(1));
 
-        Assert.NotEqual(PlanningTimerSignal.Expired,
-            timer.Advance(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(20)));
-        Assert.Equal(PlanningTimerSignal.Expired,
-            timer.Advance(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(20.001)));
+        Assert.False(timer.HasExpired(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(20)));
+        Assert.True(timer.HasExpired(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(20.001)));
     }
 }

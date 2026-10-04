@@ -366,7 +366,7 @@ public sealed partial class ChaosGame
         _bugReportOpen = false;
         _quitToMainMenuConfirmationOpen = false;
         _saveBrowserMode = SaveBrowserMode.None;
-        StopPlanningTimer();
+        ClearPlanningTimer();
         ResetTransientMatchUi();
         if (_session is not null)
         {

@@ -14,16 +14,16 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `unknown` | 0 |
 | `sourced` | 0 |
 | `supported` | 5 |
-| `established` | 2 |
+| `established` | 1 |
 | `disputed` | 0 |
 | `implemented` | 85 |
-| `validated` | 131 |
+| `validated` | 132 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 7 |
-| `complete` | 216 |
+| `partial` | 6 |
+| `complete` | 217 |
 
 ## DATA
 
@@ -418,8 +418,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-TIMER-001` | Planning time limit chosen for a match | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | validated | EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052 compare the stored limit for the 30-second, 2-minute and 5-minute choices. |
-| `RULE-TIMER-002` | A human planning turn ends when its time limit passes | established | partial | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | established | The turn ends once the elapsed whole milliseconds exceed the limit, compared with EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052. On expiry the rebuild submits the finish-planning operation without the idle-gang warning. Partial: the rebuild ends the turn on the first update past the limit even with a panel open or a drag held, where the original waits for the planning loop's next pass, and it clears the bar when planning stops (issue #355). |
-| `RULE-TIMER-003` | The planning clock bar and its warning sounds | established | partial | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | established | The bar is redrawn on every sixth presentation tick and keeps its width in between. EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052 compare every redraw's width and warning slot and the redraw interval with the policy arithmetic. Partial: the bar is not left as last drawn when planning stops, and no test drives the rebuild's PlanningTimer with the recorded redraws (issue #355). |
+| `RULE-TIMER-002` | A human planning turn ends when its time limit passes | established | partial | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs, tests/Rechaos.Tests/PlanningTimerLoopTests.cs | None | established | The turn ends once the elapsed whole milliseconds exceed the limit, compared with EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052 through the rebuild's PlanningTimer. On expiry the rebuild submits the finish-planning operation without the idle-gang warning. The limit is tested only on the city and the detailed sector view, with no idle-gang warning open and no offer, reject cross, console tile, back control or gang held, so a panel open at the limit keeps the turn going until it closes; the bar is left as last drawn when planning ends. Partial: a held gang deferring the test is a placeholder, because how the original starts a gang drag is not recorded (FND-TURN-009). |
+| `RULE-TIMER-003` | The planning clock bar and its warning sounds | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | validated | The bar is redrawn on every sixth presentation tick and keeps its width in between. EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052 drive the rebuild's PlanningTimer through every recorded redraw and compare its width and warning slot. Past the limit with a panel open the empty bar is redrawn with no warning. |
 | `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | complete | None | `DEV-TIMER-001` | implemented | No wait depends on the machine (DEV-TIMER-001). Pressed key faces and the city, site and sector-cell flashes wait on 166 ms ticks. Each flash shows the lit copy, the normal image, the lit copy and the normal image, lightens its area with white through bitmap 143 and its black edge, and draws the labels, frame and meter unlit over it (FND-UI-037). |
 
 ## UI
