@@ -197,6 +197,91 @@ internal sealed class StateExtractor
             }
         }
 
+        // FMT-STATE-003: the combat records, 10 bytes per player and roster slot at
+        // 0x004A11E8 + (player * 81 + slot) * 10. A record no resolution has written, zero but its
+        // police_damage of -1, is left out.
+        string[] combatFields =
+        [
+            "definition", "force_start", "force_final", "force_shown", "damage_dealt", "retaliation_taken",
+            "weapon", "armor", "misc", "police_damage",
+        ];
+        for (var record = 0; record < 486; record++)
+        {
+            var at = 0x004A11E8u + (uint)record * 10;
+            if (_data.AsSpan(Offset(at, 9), 9).IndexOfAnyExcept((byte)0) < 0 && ReadByte(at + 9, signed: true) == -1)
+                continue;
+            for (var i = 0; i < combatFields.Length; i++)
+                rows.Add(Field("FMT-STATE-003", record, combatFields[i], ReadByte(at + (uint)i, signed: i != 0)));
+        }
+
+        // FMT-STATE-008: the combat result rows, 0x96 bytes per sector at 0x004A8888 + sector * 0x96:
+        // six entries of gang and target per player, then police_hit per player. Only the entries
+        // that hold a gang and the police_hit values that are not 0 are written.
+        for (var sector = 0; sector < 64; sector++)
+        {
+            var at = 0x004A8888u + (uint)sector * 0x96;
+            for (var player = 0; player < 6; player++)
+            {
+                for (var k = 0; k < 6; k++)
+                {
+                    var entry = at + (uint)(player * 6 + k) * 4;
+                    var gang = BitConverter.ToInt16(_data, Offset(entry, 2));
+                    if (gang == -1) continue;
+                    rows.Add(Field("FMT-STATE-008", sector, $"players[{player}][{k}].gang", gang));
+                    rows.Add(Field("FMT-STATE-008", sector, $"players[{player}][{k}].target",
+                        BitConverter.ToInt16(_data, Offset(entry + 2, 2))));
+                }
+                if (ReadByte(at + 0x90 + (uint)player, signed: false) is var hit and not 0)
+                    rows.Add(Field("FMT-STATE-008", sector, $"police_hit[{player}]", hit));
+            }
+        }
+
+        // FMT-STATE-007: the computer players' planning records, 16 bytes per player and roster slot
+        // at 0x0048A250 + (player * 81 + slot) * 16. Only the fields that are not 0 are written, so a
+        // record of zero bytes, which a player that has never planned keeps in every slot, has no row.
+        string[] planningFields =
+        [
+            "family", "needs_family", "older_action", "older_target", "older_target_2", "previous_action",
+            "previous_target", "previous_target_2", "planned_action", "planned_target", "planned_target_2",
+            "unk_0B",
+        ];
+        for (var record = 0; record < 486; record++)
+        {
+            var at = 0x0048A250u + (uint)record * 0x10;
+            for (var i = 0; i < planningFields.Length; i++)
+            {
+                var signed = planningFields[i] is "family" or "older_target" or "older_target_2" or "previous_target"
+                    or "previous_target_2" or "planned_target" or "planned_target_2";
+                if (ReadByte(at + (uint)i, signed) is var value and not 0)
+                    rows.Add(Field("FMT-STATE-007", record, planningFields[i], value));
+            }
+            if (BitConverter.ToInt16(_data, Offset(at + 0x0C, 2)) is var weapon and not 0)
+                rows.Add(Field("FMT-STATE-007", record, "weapon_cooldown", weapon));
+            if (BitConverter.ToInt16(_data, Offset(at + 0x0E, 2)) is var armor and not 0)
+                rows.Add(Field("FMT-STATE-007", record, "armor_cooldown", armor));
+        }
+
+        // The computer players' other planning state (FND-AI-019, FND-AI-044, FND-AI-045): ai_started at
+        // 0x00482108, raider_mode at 0x00482158, placement_anchor at 0x0048E2F8, the two 16-bit values of
+        // aux_records (14-byte records at 0x0048C0B0, focus at +0x0A and coverage_sector at +0x0C)
+        // and sector_weight, the 16-bit value at +2 of the 14-byte records at
+        // 0x0048E310 + player * 0x380 + sector * 14. An aux value or weight of 0 has no row.
+        Term(rows, "ai_started", 0x00482108, 6, 1, signed: false);
+        Term(rows, "raider_mode", 0x00482158, 6, 1, signed: false);
+        Term(rows, "placement_anchor", 0x0048E2F8, 6, 4);
+        for (var record = 0; record < 486; record++)
+        {
+            var at = 0x0048C0B0u + (uint)record * 14;
+            if (BitConverter.ToInt16(_data, Offset(at + 0x0A, 2)) is var focus and not 0)
+                rows.Add(new JsonObject { ["term"] = "aux_records.focus", ["index"] = record, ["value"] = focus });
+            if (BitConverter.ToInt16(_data, Offset(at + 0x0C, 2)) is var coverage and not 0)
+                rows.Add(new JsonObject { ["term"] = "aux_records.coverage_sector", ["index"] = record, ["value"] = coverage });
+        }
+        for (var player = 0; player < 6; player++)
+            for (var sector = 0; sector < 64; sector++)
+                if (BitConverter.ToInt16(_data, Offset(0x0048E310u + (uint)(player * 0x380 + sector * 14 + 2), 2)) is var weight and not 0)
+                    rows.Add(new JsonObject { ["term"] = "sector_weight", ["index"] = player * 64 + sector, ["value"] = weight });
+
         return rows;
     }
 

@@ -469,6 +469,19 @@ keeps in a human player's `hire_role` as the rebuild's 0. The fixtures also hold
 the `scenario_score` and `scenario_standing` the last evaluation stored. A run
 that ends the match stops when the endgame draws the awards, and its fixture
 holds `match_over` and each player's first three `player_awards` entries.
+From EXP-TURN-048 on, the fixtures also hold the computer players' planning
+state: the planning record fields (FMT-STATE-007), `ai_started`,
+`raider_mode`, `placement_anchor`, `sector_weight` and the `focus` and
+`coverage_sector` values of the auxiliary records (FND-AI-044), each left out
+when it holds 0; every combat record a resolution has written
+(FMT-STATE-003); and the entries of the combat result rows that hold a gang,
+with the `police_hit` values that are not 0 (FMT-STATE-008). The replay
+compares the planning records byte for byte, and the auxiliary values only
+for computer gangs whose family is assigned, since the original leaves the
+others 0 from the start of a match where the rebuild holds -1. It rebuilds
+the combat records and result rows of the last resolution from its attack and
+police events, and compares the records of the gangs that fought,
+`police_damage` in all 486 records and every result row.
 `OriginalNewGameExperimentTests` replays every run of the EXP-SETUP and
 EXP-TURN fixtures against the rebuild and names the first roll whose bound or
 result differs, with the original's call instruction, then compares the state

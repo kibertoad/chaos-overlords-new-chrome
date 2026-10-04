@@ -176,6 +176,16 @@ public sealed partial class OriginalNewGameExperimentTests
 
         public bool HasTerm(string term, int index) => _terms.ContainsKey((term, index));
 
+        public int Field(string format, int record, string field) => _fields[(format, record, field)];
+
+        public bool HasField(string format, int record, string field) => _fields.ContainsKey((format, record, field));
+
+        /// <summary>A field or term of a sparse table, which the fixture leaves out when it holds 0.</summary>
+        public int FieldOrZero(string format, int record, string field) => _fields.GetValueOrDefault((format, record, field));
+
+        /// <inheritdoc cref="FieldOrZero"/>
+        public int TermOrZero(string term, int index) => _terms.GetValueOrDefault((term, index));
+
         /// <summary>FMT-STATE-006: report <paramref name="index"/> of a player's Last Turn reports.</summary>
         public LastTurnReportRecord Report(int player, int index)
         {

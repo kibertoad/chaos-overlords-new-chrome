@@ -9,7 +9,7 @@ byte_order: little
 size: 150
 text: false
 definition: fmt_state_008.ksy
-evidence: [FND-COMBAT-007, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-012, FND-SAVE-001]
+evidence: [FND-COMBAT-007, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-012, FND-SAVE-001, EXP-TURN-049, EXP-TURN-051]
 conflicting: []
 split_with: []
 related: [RULE-COMBAT-002, RULE-COMBAT-004]
@@ -47,8 +47,10 @@ None known.
 
 ## Coverage
 
-A memory structure: nothing has been decoded against a dump of the running
-original. The size agrees with the 9,600-byte block the save reader and
+The rows were read from the running original at the end of EXP-TURN-048 to
+EXP-TURN-051. EXP-TURN-051 holds an attacker and its target in one row and a
+gang the police found in another, and one run of EXP-TURN-049 an attacker and
+its target; the values agree with the layout. The size agrees with the 9,600-byte block the save reader and
 writer transfer from `0x004A8888` [FND-SAVE-001].
 
 ## Open questions

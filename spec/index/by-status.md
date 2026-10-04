@@ -292,7 +292,7 @@
 
 ## recorded
 
-395 entries.
+400 entries.
 
 | ID | Title |
 |---|---|
@@ -345,6 +345,10 @@
 | [EXP-TURN-043](../experiments/EXP-TURN-043.md) | Does the Move-capacity repair send a computer player's mover back when its Moves would put seven of its gangs in one sector? |
 | [EXP-TURN-044](../experiments/EXP-TURN-044.md) | What numbers does the Financial panel draw for the orders and hires of a planning turn? |
 | [EXP-TURN-045](../experiments/EXP-TURN-045.md) | Which site markers does the city show for a Search filter of every even site definition? |
+| [EXP-TURN-048](../experiments/EXP-TURN-048.md) | What planning state do the computer players hold after twenty-four turns of Greed at Crime Lord? |
+| [EXP-TURN-049](../experiments/EXP-TURN-049.md) | What planning state do the computer players hold after twenty-four turns of Kill 'Em All at Crime Lord? |
+| [EXP-TURN-050](../experiments/EXP-TURN-050.md) | Does a family-7 Equip leave the focus its handler compares at the next pass? |
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | What do the combat records hold after an attack, its retaliation and a police kill? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -408,6 +412,7 @@
 | [FND-AI-071](../findings/FND-AI-071.md) | The family-10 handler improves armor, equips item 44, heals, moves when the mode-9 sector's last finished site hides better, then raises Chaos or hides |
 | [FND-AI-072](../findings/FND-AI-072.md) | Five attack draws hand the strength test the gang's sector where it expects a roster slot |
 | [FND-AI-073](../findings/FND-AI-073.md) | Family-10 armor and family-12 weapon and armor gates compare item cost with cash as signed values |
+| [FND-AI-074](../findings/FND-AI-074.md) | The family handlers write only the target bytes an action uses, and families 3, 5 and 7 store the focus by action |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |
