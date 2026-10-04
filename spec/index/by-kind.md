@@ -189,7 +189,7 @@
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported |
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported |
-| [RULE-SITE-001](../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | supported |
+| [RULE-SITE-001](../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | established |
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | established |
 | [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move | established |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | Planning time limit chosen for a match | established |
@@ -223,7 +223,7 @@
 
 ## findings
 
-362 entries.
+363 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -372,6 +372,7 @@
 | [FND-DATA-008](../findings/FND-DATA-008.md) | No code path in the executable can open DATA/DATA.Z | recorded |
 | [FND-DATA-009](../findings/FND-DATA-009.md) | DATA/DATA.Z is an InstallShield 3 archive of 459 files in five directories whose tables account for every byte | recorded |
 | [FND-DATA-010](../findings/FND-DATA-010.md) | The 459 blocks of DATA/DATA.Z expand to 449 installed files unchanged, and its remaining header and entry bytes are sizes or constants | recorded |
+| [FND-DATA-011](../findings/FND-DATA-011.md) | The site table keeps the two research specials out of one sector and every sector sum far inside a signed byte | recorded |
 | [FND-DETECT-001](../findings/FND-DETECT-001.md) | The visibility rebuild takes each sector's best Detect and adds a helper bonus from every other friendly gang there | recorded |
 | [FND-DETECT-002](../findings/FND-DETECT-002.md) | The visibility rebuild runs for all six observer slots, writes 0 before 1 for every active opposing gang, and leaves inactive records alone | recorded |
 | [FND-EQUIP-001](../findings/FND-EQUIP-001.md) | A Factory lowers an item's price by its cost divided by three, truncated | recorded |
@@ -592,7 +593,7 @@
 
 ## experiments
 
-72 entries.
+73 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -668,6 +669,7 @@
 | [EXP-TURN-066](../experiments/EXP-TURN-066.md) | In Power, does Chaos in a sector under police presence crack down again, as the spec gives? | recorded |
 | [EXP-TURN-067](../experiments/EXP-TURN-067.md) | Does the turn start drop a recurring Heal at Force 10 and the recurring orders of dead gangs, as the spec gives? | recorded |
 | [EXP-TURN-068](../experiments/EXP-TURN-068.md) | Does a Heal with a pool of 0 or less roll nothing, as the spec gives? | recorded |
+| [EXP-TURN-069](../experiments/EXP-TURN-069.md) | Does an Influence with a pool of 0 or less roll nothing and leave the site unchanged, as the spec gives? | recorded |
 
 ## bugs
 

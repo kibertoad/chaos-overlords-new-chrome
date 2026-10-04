@@ -165,7 +165,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-INFLUENCE-001` | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002` | validated | A computer player's planned Influence in a sector it does not control gives no command (DEV-AI-002). EXP-TURN-023 checks a Goon computer player's Influence, whose progress is its pool plus its successes (BUG-INFLUENCE-001). EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 reach the three bands, a site already complete that rolls nothing, completed sites, and Goon Influences whose progress jumps ahead and falls back. No recorded run reaches a pool of 0 or less. |
+| `RULE-INFLUENCE-001` | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002` | validated | A computer player's planned Influence in a sector it does not control gives no command (DEV-AI-002). EXP-TURN-023 checks a Goon computer player's Influence, whose progress is its pool plus its successes (BUG-INFLUENCE-001). EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 reach the three bands, a site already complete that rolls nothing, completed sites, and Goon Influences whose progress jumps ahead and falls back. EXP-TURN-069 reaches a pool of 0 or less at band 1. No recorded run reaches one at band 0, where a negative pool leaves negative progress. |
 | `SCR-INFLUENCE-001` | Influence picker for choosing one of the sector's three sites | supported | complete | None | None | implemented | None |
 
 ## HEAL
@@ -205,7 +205,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-SITE-001` | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The rebuild also keeps an explicit influencer per site, checked against the sector owner, which the original does not store. The rebuild at the end of a match first activates the sites completed in the final turn (EXP-TURN-038). EXP-TURN-059 and EXP-TURN-062 reach completed Science Centers, Research Labs and Factories, and sites of Resistance 0. No recorded run completes both research specials in one sector or wraps a sum. |
+| `RULE-SITE-001` | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The rebuild also keeps an explicit influencer per site, checked against the sector owner, which the original does not store. The rebuild at the end of a match first activates the sites completed in the final turn (EXP-TURN-038). EXP-TURN-059 and EXP-TURN-062 reach completed Science Centers, Research Labs and Factories, and sites of Resistance 0. No recorded run completes both research specials in one sector or wraps a sum; the shipped site table allows neither (FND-DATA-011). |
 
 ## MOVE
 
