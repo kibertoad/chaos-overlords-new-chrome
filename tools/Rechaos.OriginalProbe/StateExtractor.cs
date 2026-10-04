@@ -42,6 +42,20 @@ internal sealed class StateExtractor
                 ["players"] = endgame["Rows"]!.DeepClone(),
                 ["kinds"] = endgame["Kinds"]!.DeepClone(),
             };
+        // FND-FINANCE-003: the nine numbers of each Financial panel the run opened, in drawing order,
+        // with the sector the panel function was passed.
+        if (trace["Finance"] is JsonArray finance)
+        {
+            var panels = new JsonArray();
+            foreach (var panel in finance)
+                panels.Add(new JsonObject
+                {
+                    ["turn"] = panel!["Turn"]!.GetValue<int>(),
+                    ["sector"] = panel["PanelSector"]!.GetValue<int>(),
+                    ["values"] = new JsonArray(panel["Values"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+                });
+            run["finance"] = panels;
+        }
         return run;
     }
 

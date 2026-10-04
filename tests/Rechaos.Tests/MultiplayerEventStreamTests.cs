@@ -294,6 +294,34 @@ public sealed class MultiplayerEventStreamTests
     }
 
     /// <summary>
+    /// A read cancelled before it connects throws rather than ending as though the log had.
+    /// </summary>
+    /// <remarks>
+    /// The session's pump reads a stream that ends without throwing as one that finished, and stops
+    /// for good. A resync cancels the pump's cycle, and one that landed after the cycle was
+    /// published but before the stream connected used to end the read quietly here: the pump
+    /// returned with the resync still pending and never read the match again.
+    /// </remarks>
+    [Fact]
+    public async Task ThrowsWhenCancelledBeforeItConnects()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        var stream = new MatchEventStream(Handle(http));
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var _ in stream.ReadAsync(0, cancelled.Token))
+            {
+            }
+        });
+
+        Assert.Equal(0, server.CallsTo(HttpMethod.Get, "/stream"));
+    }
+
+    /// <summary>
     /// A bounded retry can end while its last error is still only a failed transport attempt.
     /// An outbox is allowed to begin another window for its idempotent whole-document PUT; a
     /// protocol refusal and a caller-requested cancellation do not take this path.
