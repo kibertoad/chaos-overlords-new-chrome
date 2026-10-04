@@ -72,6 +72,7 @@ screenshots/
 # step too late.
 /.dotnet-cli/
 /.pnpm-store/
+/node_modules/
 /tmp/
 /.artifacts-*/
 

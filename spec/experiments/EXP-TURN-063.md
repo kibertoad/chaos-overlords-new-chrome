@@ -1,6 +1,6 @@
 ---
 id: EXP-TURN-063
-title: Does a Big 40 match at Crimelord with a standing Chaos order play 30 turns as the spec gives?
+title: Does a Big 40 match at Crime Lord with a standing Chaos order play 30 turns as the spec gives?
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -16,7 +16,7 @@ fixture: EXP-TURN-063.json
 ## Question
 
 When the human's gang holds a standing Chaos order from turn 1, do the
-computer players of a Big 40 match at Crimelord plan and resolve over 30
+computer players of a Big 40 match at Crime Lord plan and resolve over 30
 turns as the spec gives?
 
 ## Setup

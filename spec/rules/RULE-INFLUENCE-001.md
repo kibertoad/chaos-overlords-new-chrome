@@ -106,6 +106,10 @@ None known.
 
 ## Open questions
 
+- No recorded run reaches an Influence pool of 0 or less, so the runs of
+  EXP-TURN-023, EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 do not reach the
+  edge cases of an empty pool and of negative progress at band 0. They rest
+  on the static reading [FND-INFLUENCE-004].
 - The report itself is RULE-EVENT-006, the handler of `SiteCooperationAchieved`.
 - The picker's own rule for which sites can be chosen is in SCR-INFLUENCE-001.
   The resolver's case does not check that the player owns the sector

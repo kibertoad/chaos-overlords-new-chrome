@@ -110,4 +110,9 @@ None known.
 
 ## Open questions
 
-- No run of the original has confirmed when a recurring order is dropped.
+- EXP-TURN-065 drops a recurring Research once the item is researched, a
+  recurring Influence once the site is complete and a recurring Control once
+  the sector is the player's. No recorded run drops a recurring Heal, a
+  Control in a sector under police, an Influence in a sector the player lost,
+  or the recurring order of a dead gang; those rest on the static reading
+  [FND-TURN-004].

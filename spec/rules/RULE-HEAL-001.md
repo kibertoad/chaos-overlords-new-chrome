@@ -76,4 +76,7 @@ None known.
 
 ## Open questions
 
-None known.
+- No recorded run reaches a Heal pool of 0 or less, or a Heal by a gang
+  already at Force 10, so the runs of EXP-TURN-059, EXP-TURN-062 and
+  EXP-TURN-063 do not reach those edge cases. They rest on the static reading
+  [FND-HEAL-001].

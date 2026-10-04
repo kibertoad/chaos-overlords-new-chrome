@@ -1220,7 +1220,7 @@ None.
 | [FND-INFLUENCE-004](../findings/FND-INFLUENCE-004.md) | body |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
-| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | body, evidence |
 | [RULE-POLICE-004](../rules/RULE-POLICE-004.md) | evidence |
 
 ## EXP-TURN-024
@@ -1540,8 +1540,8 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
-| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | evidence |
-| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | body, evidence |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | evidence |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | evidence |
@@ -1568,8 +1568,8 @@ None.
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | evidence |
-| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | evidence |
-| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | body, evidence |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
 
 ## EXP-TURN-063
@@ -1578,8 +1578,8 @@ None.
 |---|---|
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
-| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | evidence |
-| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | body, evidence |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
 
 ## EXP-TURN-064
@@ -1594,7 +1594,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-TURN-004](../rules/RULE-TURN-004.md) | evidence |
+| [RULE-TURN-004](../rules/RULE-TURN-004.md) | body, evidence |
 
 ## EXP-TURN-066
 
@@ -4710,7 +4710,7 @@ None.
 |---|---|
 | [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | body, evidence |
 | [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
-| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | body, evidence |
 
 ## FND-MOVE-001
 
@@ -5943,7 +5943,7 @@ None.
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | evidence |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | body, evidence |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | evidence |
-| [RULE-TURN-004](../rules/RULE-TURN-004.md) | evidence |
+| [RULE-TURN-004](../rules/RULE-TURN-004.md) | body, evidence |
 
 ## FND-TURN-005
 
