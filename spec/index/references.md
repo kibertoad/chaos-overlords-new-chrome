@@ -1971,6 +1971,7 @@ None.
 | [FND-AI-002](../findings/FND-AI-002.md) | body |
 | [FND-AI-013](../findings/FND-AI-013.md) | body |
 | [FND-AI-044](../findings/FND-AI-044.md) | body |
+| [FND-AI-074](../findings/FND-AI-074.md) | body |
 | glossary: aux_records | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | evidence |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |

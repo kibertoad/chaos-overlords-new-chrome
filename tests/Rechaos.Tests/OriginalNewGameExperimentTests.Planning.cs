@@ -19,7 +19,13 @@ public sealed partial class OriginalNewGameExperimentTests
             "previous_target", "previous_target_2", "planned_action", "planned_target", "planned_target_2",
             "unk_0B",
         ];
-        for (var record = 0; record < 6 * AiPlanningState.GangSlotsPerPlayer; record++)
+        // The message is built only for a value that differs.
+        static void Expect(int original, int rebuilt, string what)
+        {
+            if (original != rebuilt) Assert.Fail($"{what}: the original holds {original}, the rebuild {rebuilt}");
+        }
+
+        for (var record = 0; record < MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer; record++)
         {
             var at = record * AiPlanningState.PlanningRecordSize;
             // The fixture leaves out a record of zero bytes.
@@ -31,16 +37,14 @@ public sealed partial class OriginalNewGameExperimentTests
                     or "previous_target_2" or "planned_target" or "planned_target_2"
                     ? (int)(sbyte)image[at + i]
                     : image[at + i];
-                Assert.True(original == rebuilt,
-                    $"planning record {record} {fields[i]}: the original holds {original}, the rebuild {rebuilt}");
+                if (original != rebuilt) Expect(original, rebuilt, $"planning record {record} {fields[i]}");
             }
             (string Name, int Offset)[] cooldowns = [("weapon_cooldown", 12), ("armor_cooldown", 14)];
             foreach (var (name, offset) in cooldowns)
             {
                 var original = held ? recorded.Field("FMT-STATE-007", record, name) : 0;
                 var rebuilt = BitConverter.ToInt16(image, at + offset);
-                Assert.True(original == rebuilt,
-                    $"planning record {record} {name}: the original holds {original}, the rebuild {rebuilt}");
+                if (original != rebuilt) Expect(original, rebuilt, $"planning record {record} {name}");
             }
         }
 
@@ -48,15 +52,18 @@ public sealed partial class OriginalNewGameExperimentTests
         foreach (var player in match.Players)
         {
             var slot = player.Id.Value;
-            Assert.True(recorded.Term("ai_started", slot) != 0 == planning.HasPlanned(player.Id),
-                $"ai_started of player {slot}: the original holds {recorded.Term("ai_started", slot)}");
-            Assert.True(recorded.Term("raider_mode", slot) != 0 == planning.RaiderMode(player.Id),
-                $"raider_mode of player {slot}: the original holds {recorded.Term("raider_mode", slot)}");
-            Assert.True(recorded.Term("placement_anchor", slot) == planning.SectorAnchor(player.Id),
-                $"placement_anchor of player {slot}: the original holds {recorded.Term("placement_anchor", slot)}, the rebuild {planning.SectorAnchor(player.Id)}");
-            for (var sector = 0; sector < 64; sector++)
-                Assert.True(recorded.Term("sector_weight", slot * 64 + sector) == planning.SectorWeight(player.Id, sector),
-                    $"sector_weight of player {slot} at sector {sector}: the original holds {recorded.Term("sector_weight", slot * 64 + sector)}, the rebuild {planning.SectorWeight(player.Id, sector)}");
+            Expect(recorded.Term("ai_started", slot) != 0 ? 1 : 0, planning.HasPlanned(player.Id) ? 1 : 0,
+                $"ai_started of player {slot} (as 0 or 1)");
+            Expect(recorded.Term("raider_mode", slot) != 0 ? 1 : 0, planning.RaiderMode(player.Id) ? 1 : 0,
+                $"raider_mode of player {slot} (as 0 or 1)");
+            Expect(recorded.Term("placement_anchor", slot), planning.SectorAnchor(player.Id),
+                $"placement_anchor of player {slot}");
+            for (var sector = 0; sector < MatchLimits.SectorCount; sector++)
+            {
+                var original = recorded.Term("sector_weight", slot * MatchLimits.SectorCount + sector);
+                var rebuilt = planning.SectorWeight(player.Id, sector);
+                if (original != rebuilt) Expect(original, rebuilt, $"sector_weight of player {slot} at sector {sector}");
+            }
             // FND-AI-044: the original writes an aux record only when a planning pass finds the slot
             // flagged for a family, and every reader reads a computer player's active gang after
             // that. The rebuild starts every record at -1 or the gang's sector where the original
