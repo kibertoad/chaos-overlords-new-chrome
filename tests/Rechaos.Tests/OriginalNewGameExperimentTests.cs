@@ -424,8 +424,9 @@ public sealed class OriginalNewGameExperimentTests
 
     // RULE-AWARDS-002, FND-AWARDS-005: the probe keeps the player of each name the endgame's first
     // drawing lists, in drawing order, and whether the row is ranked, eliminated or the victory
-    // splash. The rebuild's endgame lists the same players in the same order. EXP-TURN-038 has two
-    // players tied at standing 0 and EXP-TURN-039 two tied at standing 1, listed in slot order.
+    // splash. The rebuild's endgame lists the same players in the same order and places.
+    // EXP-TURN-038 has two players tied at standing 0 and EXP-TURN-039 two tied at standing 1,
+    // listed in slot order.
     [Theory]
     [MemberData(nameof(EndgameRuns))]
     public void TheEndgameListsThePlayersInTheOriginalsOrder(string experiment, int run)
@@ -443,6 +444,13 @@ public sealed class OriginalNewGameExperimentTests
         Assert.Equal(drawn.Players, rows.Select(row => row.Player.Value));
         Assert.Equal(drawn.Kinds, rows.Select(row =>
             match.FindPlayer(row.Player)!.Status == PlayerStatus.Eliminated ? "eliminated" : "ranked"));
+        // RULE-OBJECTIVE-002: the original draws a ranked row at the player's stored standing, so a
+        // tie shares a place and the standing after it is skipped. The rebuild's place is that
+        // standing plus one, and 0 for an eliminated row.
+        Assert.Equal(
+            drawn.Players.Zip(drawn.Kinds, (player, kind) =>
+                kind == "ranked" ? recorded.Term("scenario_standing", player) + 1 : 0),
+            rows.Select(row => row.Place));
     }
 
     // RULE-OBJECTIVE-005: -2 stops before the card at the human's own slot; -1

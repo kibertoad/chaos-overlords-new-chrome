@@ -56,7 +56,7 @@ the same players. The scores count a site from the evaluation of the turn
 that completes it, and the sectors count it after the rebuild that ends the
 match.
 
-The rebuild's endgame lists the players in the same order
+The rebuild's endgame lists the players in the same order and places
 (`TheEndgameListsThePlayersInTheOriginalsOrder`).
 
 ## Conclusion

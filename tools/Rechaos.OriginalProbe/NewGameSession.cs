@@ -123,7 +123,6 @@ internal sealed class NewGameSession(
     private bool _planningLoopReached;
     private bool _awardsReached;
     private EndgameDrawing? _endgame;
-    private bool _endgameDrawing;
     private bool _endgameDrawn;
 
     public ProbeTrace Run()
@@ -237,7 +236,6 @@ internal sealed class NewGameSession(
                 // drawing that never finished holds only some of the rows, so none are kept.
                 if (!_process.RunUntil(() => _endgameDrawn, TimeSpan.FromSeconds(10)))
                 {
-                    _endgameDrawing = false;
                     _endgame = null;
                     _notes.Add("The endgame renderer did not return within 10 seconds; its rows are not kept.");
                 }
@@ -295,19 +293,14 @@ internal sealed class NewGameSession(
     {
         _awardsReached = true;
         _endgame = new EndgameDrawing([context.Argument(0), context.Argument(1), context.Argument(2)], [], []);
-        _endgameDrawing = true;
         // Set only now: the helper draws every text of the game.
         _process.SetBreakpoint(OriginalAddresses.TextDraw, OnTextDraw);
-        _process.SetBreakpoint(context.ReturnAddress, _ =>
-        {
-            _endgameDrawing = false;
-            _endgameDrawn = true;
-        }, oneShot: true);
+        _process.SetBreakpoint(context.ReturnAddress, _ => _endgameDrawn = true, oneShot: true);
     }
 
     private void OnTextDraw(BreakContext context)
     {
-        if (!_endgameDrawing || _endgame is not { } endgame) return;
+        if (_endgameDrawn || _endgame is not { } endgame) return;
         var kind = (context.ReturnAddress - 5) switch
         {
             OriginalAddresses.SplashNameDraw => "splash",

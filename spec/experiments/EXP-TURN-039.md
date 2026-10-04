@@ -55,7 +55,7 @@ players' last planning reads the gangs' statistics as the refresh at the end
 of the match leaves them; without that refresh the rebuild's rolls part from
 the original's in the hire-offer scan of the final turn.
 
-The rebuild's endgame lists the players in the same order
+The rebuild's endgame lists the players in the same order and places
 (`TheEndgameListsThePlayersInTheOriginalsOrder`).
 
 ## Conclusion
