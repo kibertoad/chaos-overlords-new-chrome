@@ -119,23 +119,30 @@ public sealed partial class OriginalNewGameExperimentTests
     // A known divergence stays where it was found; when a fix moves it, the entry above goes.
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(DivergingRuns))]
-    public void AKnownDivergenceIsStillWhereItWasFound(string experiment, int run)
+    public void AKnownDivergenceIsStillWhereItWasFound(string experiment, int run) =>
+        Assert.Equal(KnownDivergences[(experiment, run)], FirstDifferingRoll(Run(experiment, run)));
+
+    // DEV-AI-007 on: in turn 5 player 5's gang in sector 9 is given Move to sector 5, which the
+    // original carries out and the rebuild refuses; player 5's next tie count differs (EXP-TURN-015).
+    [Fact]
+    public void WithDevAi007OnExpTurn015PartsAtTheRefusedMove() =>
+        Assert.Equal(950, FirstDifferingRoll(Run("EXP-TURN-015", 0), computerMovesToNeighboursOnly: true));
+
+    private static int FirstDifferingRoll(RecordedRun recorded, bool computerMovesToNeighboursOnly = false)
     {
-        var recorded = Run(experiment, run);
         var rolls = new List<(int Bound, int Result)>();
         DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
         try
         {
-            StartMatch(recorded, out _);
+            StartMatch(recorded, out _, computerMovesToNeighboursOnly: computerMovesToNeighboursOnly);
         }
         finally
         {
             DeterministicRandom.RollObserver = null;
         }
 
-        var first = Enumerable.Range(0, Math.Min(rolls.Count, recorded.Rolls.Count))
+        return Enumerable.Range(0, Math.Min(rolls.Count, recorded.Rolls.Count))
             .First(index => rolls[index] != (recorded.Rolls[index].Bound, recorded.Rolls[index].Result));
-        Assert.Equal(KnownDivergences[(experiment, run)], first);
     }
 
     public static TheoryData<string, int> Runs()
@@ -714,7 +721,8 @@ public sealed partial class OriginalNewGameExperimentTests
         match.FindPlayer(player)!.Status == PlayerStatus.Active;
 
     private static MatchState StartMatch(
-        RecordedRun recorded, out int donePresses, Action<MatchState, PlayerId, int>? beforeDone = null)
+        RecordedRun recorded, out int donePresses, Action<MatchState, PlayerId, int>? beforeDone = null,
+        bool computerMovesToNeighboursOnly = false)
     {
         var scenario = OriginalScenario(recorded.Term("scenario", 0));
         var setup = new MatchSetup(
@@ -725,8 +733,9 @@ public sealed partial class OriginalNewGameExperimentTests
                 slot, Name(recorded, slot.Value), PlayerController.Human, (short)recorded.Term("portrait", slot.Value))).ToArray(),
             (AiDifficulty)recorded.Term("mentality", 0),
             allowSparsePlayerIds: true,
-            // DEV-AI-007 switched off, so the computer's Moves go where the original's do.
-            computerMovesToNeighboursOnly: false);
+            // DEV-AI-007 switched off unless a test asks for it, so the computer's Moves go where
+            // the original's do.
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly);
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);
         match.FinishUpkeep();
         // RULE-SETUP-008: with several local humans the planning phase waits on the Ready card

@@ -314,16 +314,16 @@ public static class CommandValidator
         // setting off, the planner's Move goes anywhere, as in the original.
         if (!state.Setup.ComputerMovesToNeighboursOnly && state.IsPlannedByComputer(actor.Owner))
             return CommandValidation.Valid();
-        var sourceX = actor.SectorId % MatchLimits.BoardWidth;
-        var sourceY = actor.SectorId / MatchLimits.BoardWidth;
-        var targetX = target.Id % MatchLimits.BoardWidth;
-        var targetY = target.Id / MatchLimits.BoardWidth;
-        var deltaX = Math.Abs(sourceX - targetX);
-        var deltaY = Math.Abs(sourceY - targetY);
-        return Math.Max(deltaX, deltaY) == 1
+        return AreNeighbours(actor.SectorId, target.Id)
             ? CommandValidation.Valid()
             : CommandValidation.Reject(CommandValidationCode.DestinationNotAdjacent);
     }
+
+    /// <summary>Whether two sectors touch, along an edge or at a corner.</summary>
+    internal static bool AreNeighbours(int first, int second) =>
+        Math.Max(
+            Math.Abs(first % MatchLimits.BoardWidth - second % MatchLimits.BoardWidth),
+            Math.Abs(first / MatchLimits.BoardWidth - second / MatchLimits.BoardWidth)) == 1;
 
     private static CommandValidation ValidateSiteTarget(
         MatchState state,
