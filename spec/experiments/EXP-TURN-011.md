@@ -9,7 +9,7 @@ reproduced_by: []
 environment: Windows 11 Pro 10.0.26200, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, run with the compatibility layers DWM8And16BitMitigation, WINXPSP2, DISABLEDWM, 640X480 and DISABLEDXMAXIMIZEDWINDOWEDMODE, windowed, Warn if Idle Gangs and Detailed Combat switched off and the sound levels set to 0 in memory, under the Windows debugging interface of tools/Rechaos.OriginalProbe
 starting_state: new-game
 recording: null
-repetitions: 1
+repetitions: 2
 fixture: EXP-TURN-011.json
 ---
 
@@ -56,6 +56,13 @@ with `arg2` 5, and player 5 took it with `arg2` 2; player 4 lost sector 19 with
 `arg2` 3, and player 3 took it with `arg2` 4. The other two sectors taken,
 48 and 5, had no owner before, `arg2` -1.
 
+A second run with the same inputs, recorded once the probe kept each call of
+the planning entry panels and whether it stayed open (RULE-SETUP-008), made the
+same calls of `roll` and reached the same end state. Combat Results was called
+at all 25 planning entries and stayed open only at the last, after the attack
+of turn 24; the run ended there with the panel open. Last Turn Events was not
+called before that. The fixture holds this run.
+
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run, giving
@@ -80,4 +87,5 @@ attitude change (RULE-AI-016) only in part: player 4's attitude toward the
 human, -10 before the turn, rises to -9 at the start of the resolution
 (RULE-AI-015) and ends at -10, where EXP-TURN-010's run without the Attack
 goes on to -8 a turn later, so the Attack lowered it by at least one, and the
-floor of -10 hides by how much.
+floor of -10 hides by how much. At every planning entry the rebuild shows
+Combat Results exactly where the original did (RULE-SETUP-008).

@@ -775,14 +775,14 @@ public static class MatchReplayStore
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(recorder);
         var fullPath = Path.GetFullPath(path);
-        var directory = Path.GetDirectoryName(fullPath)
-            ?? throw new ArgumentException("Replay path has no parent directory.", nameof(path));
+        if (Path.GetDirectoryName(fullPath) is null)
+            throw new ArgumentException("Replay path has no parent directory.", nameof(path));
         // Replays are long-lived verification artifacts. Read back the new
         // file before promotion and preserve the last valid generation. A replay that cannot
         // reproduce itself reaches the player as a failed save, so report it as one rather than
         // as an InvalidDataException no caller filters for.
         AtomicGenerationRecovery.SaveAtomic(
-            fullPath, directory, BackupSuffix,
+            fullPath, BackupSuffix,
             "The replay was written but could not be replayed back, so it was not promoted.",
             stream => MatchReplaySerializer.Save(stream, recorder),
             candidate => _ = LoadAndReplay(candidate, recorder.State.Definitions));

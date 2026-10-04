@@ -14,16 +14,16 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `unknown` | 0 |
 | `sourced` | 0 |
 | `supported` | 5 |
-| `established` | 0 |
+| `established` | 2 |
 | `disputed` | 0 |
-| `implemented` | 90 |
-| `validated` | 128 |
+| `implemented` | 85 |
+| `validated` | 131 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 5 |
-| `complete` | 218 |
+| `partial` | 7 |
+| `complete` | 216 |
 
 ## DATA
 
@@ -129,7 +129,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-SETUP-005` | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-SETUP-001` | validated | None |
 | `RULE-SETUP-006` | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-SETUP-001` | validated | None |
 | `RULE-SETUP-007` | A player named with the visibility modifier sees every opposing gang for the whole match | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-SETUP-001` | validated | None |
-| `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | complete | None | None | implemented | None |
+| `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-011 and EXP-TURN-031 compare, at every planning entry of one local human, whether Combat Results and then Last Turn Events are shown. The Ready card, Game Information after a load, the Comlink alert and several local humans are not compared. |
 | `RULE-SETUP-009` | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported | complete | None | None | implemented | None |
 | `RULE-SETUP-010` | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported | complete | None | None | implemented | The rebuild's online lobby keeps its own seats and does not edit the local roster; entering one still resets the local roster to one human, as the original's lobby reset does. |
 | `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | None | `DEV-SETUP-002` | implemented | The left panel follows FND-SETUP-013: its rectangles, the refusal area of the time limit, the pressed images and push cue, the commit on release inside, and the light sprite. The stored scenario preference belongs to RULE-SETUP-002. |
@@ -279,7 +279,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-HELP-002` | validated | EXP-TURN-011 replays a human gang's attack on a computer player's gang that is not hiding, with its retaliation. EXP-TURN-017 replays four attacks by computer players' gangs on the human's hiding gang, three evaded and one that hits. EXP-TURN-029 replays a bare-handed Martial Artist's attack on an armed gang, which does not strike back. |
 | `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
-| `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | complete | None | `DEV-UI-008` | implemented | Layout, marks, faces, keys, initial selection and double-click panels follow FND-ATTACK-003 and FND-ATTACK-004. The target cards' art and when the Confirm face is first drawn are not recorded, so the target cards are drawn like the acting gang's. |
+| `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | complete | None | `DEV-UI-008` | implemented | Layout, marks, faces, keys, initial selection and double-click panels follow FND-ATTACK-003 and FND-ATTACK-004; the target cards (frame, portrait, Force track, items) follow FND-ATTACK-005. When the Confirm face is first drawn is not recorded. |
 
 ## COMBAT
 
@@ -358,7 +358,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EVENT-002` | Recording a Last Turn report keeps the first 32 reports of a resolution | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The rebuild keeps a fuller notification history and derives the first 32 reports of the completed turn from it. The replays compare the records in the order recorded; no run holds more than 8 reports for one player, so the cap of 32 has no run. |
 | `RULE-EVENT-003` | An elimination is reported to all six player slots | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The rebuild has a slot only for each seated player, so an empty slot has no report to receive. EXP-TURN-017, EXP-TURN-018 and EXP-TURN-025 give all six players the report, the eliminated human included. |
 | `RULE-EVENT-004` | A Crackdown is reported to each player who had a gang in its sector | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 and later replays compare the reports. |
-| `RULE-EVENT-005` | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded | supported | complete | None | None | implemented | None |
+| `RULE-EVENT-005` | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-031 compares the planning entries at which the panel opens by itself; the report order is compared under RULE-EVENT-002. Paging, the page kept when the panel closes and the Events light are not compared. |
 | `RULE-EVENT-006` | A completed site is reported to the player whose Influence completed it | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 and later replays compare the reports. |
 | `RULE-EVENT-007` | A completed item is reported to the player whose Research completed it | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-010 and later replays compare the reports. |
 | `RULE-EVENT-008` | A Bribe that fails for lack of cash is reported to its player | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-033 replays the report of a Bribe at 2 cash. |
@@ -417,9 +417,9 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-TIMER-001` | Planning time limit chosen for a match | supported | complete | None | None | implemented | None |
-| `RULE-TIMER-002` | A human planning turn ends when its time limit passes | supported | complete | None | None | implemented | On expiry the rebuild submits the finish-planning operation without the idle-gang warning. |
-| `RULE-TIMER-003` | The planning clock bar and its warning sounds | supported | complete | None | None | implemented | Checks run every sixth fixed update rather than every sixth presentation tick; the two rates were not compared. |
+| `RULE-TIMER-001` | Planning time limit chosen for a match | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | validated | EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052 compare the stored limit for the 30-second, 2-minute and 5-minute choices. |
+| `RULE-TIMER-002` | A human planning turn ends when its time limit passes | established | partial | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | established | The turn ends once the elapsed whole milliseconds exceed the limit, compared with EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052. On expiry the rebuild submits the finish-planning operation without the idle-gang warning. Partial: the rebuild ends the turn on the first update past the limit even with a panel open or a drag held, where the original waits for the planning loop's next pass, and it clears the bar when planning stops (issue #355). |
+| `RULE-TIMER-003` | The planning clock bar and its warning sounds | established | partial | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | established | The bar is redrawn on every sixth presentation tick and keeps its width in between. EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052 compare every redraw's width and warning slot and the redraw interval with the policy arithmetic. Partial: the bar is not left as last drawn when planning stops, and no test drives the rebuild's PlanningTimer with the recorded redraws (issue #355). |
 | `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | complete | None | `DEV-TIMER-001` | implemented | No wait depends on the machine (DEV-TIMER-001). Pressed key faces and the city, site and sector-cell flashes wait on 166 ms ticks. Each flash shows the lit copy, the normal image, the lit copy and the normal image, lightens its area with white through bitmap 143 and its black edge, and draws the labels, frame and meter unlit over it (FND-UI-037). |
 
 ## UI

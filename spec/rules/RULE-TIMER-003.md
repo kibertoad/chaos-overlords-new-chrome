@@ -1,10 +1,10 @@
 ---
 id: RULE-TIMER-003
 title: The planning clock bar and its warning sounds
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-001, FND-TIMER-003, FND-UI-023, FND-EXE-004]
+evidence: [FND-TIMER-001, FND-TIMER-003, FND-UI-023, FND-EXE-004, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005, RULE-UI-008]

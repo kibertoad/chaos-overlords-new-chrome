@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-ATTACK-001, FND-ATTACK-002, FND-ATTACK-003, FND-ATTACK-004, FND-AUDIO-002, FND-AUDIO-011, FND-COMBAT-013, FND-DETECT-001, FND-EXE-004, FND-GFX-005, SRC-MANUAL-GOG]
+evidence: [FND-ATTACK-001, FND-ATTACK-002, FND-ATTACK-003, FND-ATTACK-004, FND-ATTACK-005, FND-AUDIO-002, FND-AUDIO-011, FND-COMBAT-009, FND-COMBAT-013, FND-DETECT-001, FND-EXE-004, FND-GFX-005, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-ATTACK-002]
@@ -25,7 +25,10 @@ FND-EXE-004).
 | Acting gang | 64-by-64 cell of `DATA/PX16/PX03000` (surface 3), chosen by the definition's portrait number; a blank from surface 6 for definition -1 | The gang being ordered | Local `(26, 17, 64, 64)` | While the picker is open | FND-ATTACK-003, FND-COMBAT-013 |
 | Acting gang's equipment | 20-by-20 icons of `DATA/PX16/PX04999` (surface 5 from x 120), row `20 * id` for the item's `id` | The weapon, armor and miscellaneous item, each when not -1 | Local `(26, 82, 20, 20)`, `(48, 82, 20, 20)` and `(70, 82, 20, 20)` | While the picker is open | FND-ATTACK-003 |
 | Opponent portraits | Surface 6 rows 480 (enabled) and 594 (disabled), column by the opponent's colour byte | The five other players in ascending slot order, skipping the acting player, one per cell | Local `(98, 16 + 36 * n, 32, 32)` for `n` 0 to 4 | While the picker is open; a disabled opponent's cell does not react | FND-ATTACK-001 |
-| Target cards | Not recorded | The selected opponent's targetable gangs, from RULE-ATTACK-002 | Local target area `(135, 16, 202, 177)`, in six cells of RULE-ATTACK-002's list | After an opponent is selected | FND-ATTACK-001, FND-DETECT-001 |
+| Target card frame | `DATA/PX16/PX00129` crop `(0,299,66,87)` | One card per listed target, with a portrait well and three item boxes | Local `(135 + 68 * (c % 3), 16 + 90 * (c / 3), 66, 87)` for cell `c` | After an opponent is selected, one per gang of RULE-ATTACK-002's list | FND-ATTACK-005, FND-DETECT-001 |
+| Target portrait | 64-by-64 cell of `DATA/PX16/PX03000` (surface 3), chosen by the definition's portrait number | The target gang | The card's corner plus `(1, 1)` | With the card | FND-ATTACK-005 |
+| Target Force track | Black fill, then `DATA/PX16/PX00129` crop `(354,3,60,3)`, then the first `6 * Force` pixels of crop `(354,0,60,3)` | The target's Force | Black fill at the card's corner plus `(2, 58, 62, 5)`; track at plus `(3, 59, 60, 3)` | With the card | FND-ATTACK-005, FND-COMBAT-009 |
+| Target equipment | 20-by-20 icons of `DATA/PX16/PX04999` (surface 5 from x 120), row `20 * id` | The target's weapon, armor and miscellaneous item, each when not -1 | The card's corner plus `(1, 66)`, `(23, 66)` and `(45, 66)` | With the card | FND-ATTACK-005 |
 | Opponent frame | `DATA/PX16/PX00129` crop `(120,171,34,34)`, keyed on exact white | Which opponent is chosen | Local `(97, 15 + 36 * n, 34, 34)`, one pixel outside portrait `n` | After an opponent is chosen | FND-ATTACK-002 |
 | Target marker | `DATA/PX16/PX00129` crop `(66,299,48,48)`, keyed on exact white | Which target cell is chosen | Local `(143 + 68 * (c % 3), 18 + 90 * (c / 3), 48, 48)` for cell `c`, 8 pixels right of and 2 below the cell's corner | After a target is chosen | FND-ATTACK-002 |
 

@@ -95,6 +95,32 @@ public static class AttackCommandLayout
         return SharedPanelLayout.At(x, 16 + row * 89, width, row == 0 ? 89 : 88);
     }
 
+    /// <summary>SCR-ATTACK-001, FND-ATTACK-005: the 66-by-87 card of target cell <paramref name="targetSlot"/>.</summary>
+    public static Rectangle TargetCard(int targetSlot)
+    {
+        if (targetSlot is < 0 or >= VisibleTargets)
+            throw new ArgumentOutOfRangeException(nameof(targetSlot));
+        return SharedPanelLayout.At(135 + targetSlot % 3 * 68, 16 + targetSlot / 3 * 90, 66, 87);
+    }
+
+    /// <summary>SCR-ATTACK-001, FND-ATTACK-005: the card frame, with its portrait well and item boxes, in PX00129.</summary>
+    public static Rectangle TargetCardSource => new(0, 299, 66, 87);
+
+    /// <summary>SCR-ATTACK-001, FND-ATTACK-005: the black fill under a target's Force track.</summary>
+    public static Rectangle TargetForceBackground(int targetSlot)
+    {
+        var card = TargetCard(targetSlot);
+        return new Rectangle(card.X + 2, card.Y + 58, 62, 5);
+    }
+
+    /// <summary>SCR-ATTACK-001, FND-ATTACK-005: a target's 60-by-3 Force track.</summary>
+    public static Rectangle TargetForceTrack(int targetSlot)
+    {
+        var card = TargetCard(targetSlot);
+        return new Rectangle(card.X + 3, card.Y + 59, CombatPanelLayout.RedTrackSource.Width,
+            CombatPanelLayout.ForceBarHeight);
+    }
+
     /// <summary>SCR-ATTACK-001, FND-ATTACK-004: the portrait of target cell <paramref name="targetSlot"/>.</summary>
     public static Rectangle TargetPortrait(int targetSlot)
     {

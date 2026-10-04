@@ -46,16 +46,18 @@ internal sealed class OriginalProcess : IDisposable
     }
 
     /// <summary>Stops at <paramref name="address"/> each time it runs, until removed.</summary>
-    public void SetBreakpoint(uint address, Action<BreakContext> handler, bool oneShot = false)
+    // A quiet breakpoint leaves LastBreakpointUtc alone, for code that runs while the game waits
+    // for input, such as the planning clock.
+    public void SetBreakpoint(uint address, Action<BreakContext> handler, bool oneShot = false, bool quiet = false)
     {
         if (_breakpoints.TryGetValue(address, out var existing))
         {
-            existing.Handlers.Add(new BreakpointHandler(handler, oneShot));
+            existing.Handlers.Add(new BreakpointHandler(handler, oneShot, quiet));
             return;
         }
 
         var breakpoint = new Breakpoint(address);
-        breakpoint.Handlers.Add(new BreakpointHandler(handler, oneShot));
+        breakpoint.Handlers.Add(new BreakpointHandler(handler, oneShot, quiet));
         _breakpoints[address] = breakpoint;
         if (_started) Arm(breakpoint);
     }
@@ -183,7 +185,7 @@ internal sealed class OriginalProcess : IDisposable
         var thread = _threads[threadId];
         var context = new BreakContext(this, thread, address);
         context.Eip = address;
-        LastBreakpointUtc = DateTime.UtcNow;
+        if (!breakpoint.Quiet) LastBreakpointUtc = DateTime.UtcNow;
         foreach (var handler in breakpoint.Handlers.ToArray())
         {
             if (handler.OneShot) breakpoint.Handlers.Remove(handler);
@@ -226,7 +228,7 @@ internal sealed class OriginalProcess : IDisposable
         if (handle != IntPtr.Zero) Native.CloseHandle(handle);
     }
 
-    private sealed record BreakpointHandler(Action<BreakContext> Action, bool OneShot);
+    private sealed record BreakpointHandler(Action<BreakContext> Action, bool OneShot, bool Quiet);
 
     private sealed class Breakpoint(uint address)
     {
@@ -234,6 +236,10 @@ internal sealed class OriginalProcess : IDisposable
         public byte Original { get; set; }
         public bool Armed { get; set; }
         public List<BreakpointHandler> Handlers { get; } = [];
+
+        // The breakpoint is quiet only while every handler still on it is, so it turns quiet again
+        // once a one-shot handler that was not quiet has fired and been removed.
+        public bool Quiet => Handlers.TrueForAll(handler => handler.Quiet);
     }
 }
 
