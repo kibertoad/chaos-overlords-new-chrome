@@ -118,21 +118,27 @@ public enum PlanningTimerSignal
 {
     None,
     LongWarning,
-    FinalWarning,
-    Expired
+    FinalWarning
 }
 
 /// <summary>
 /// The planning clock of a timed human turn (RULE-TIMER-002, RULE-TIMER-003).
 /// </summary>
 /// <remarks>
+/// <para>
 /// The bar is drawn when the clock starts and then on every sixth tick of the presentation clock,
 /// and it keeps the width of its last redraw in between. The redraw countdown runs on the ticks of
 /// untimed turns too and is not reset when a turn starts, so the first redraw after the start comes
 /// one to six ticks later. While a timed turn is paused (the game menu open) the countdown stops,
 /// and <see cref="Resume"/> drops the ticks that passed. Each redraw plays the warning its
-/// remaining time calls for. The turn expires on the first update whose elapsed whole milliseconds
-/// exceed the limit.
+/// remaining time calls for.
+/// </para>
+/// <para>
+/// The clock only reports expiry; the caller decides when to test it, because the original tests
+/// it only on a pass of the planning loop. Until then a timed turn past its limit keeps redrawing
+/// the empty bar. <see cref="Stop"/> leaves the bar as last drawn, and <see cref="ShowsBar"/> stays
+/// set until the next start or <see cref="Clear"/> (RULE-TIMER-002).
+/// </para>
 /// </remarks>
 public sealed class PlanningTimer
 {
@@ -147,10 +153,17 @@ public sealed class PlanningTimer
     /// <summary>The width the bar was last drawn with, 0 to 60.</summary>
     public int VisibleBarWidth { get; private set; } = PlanningTimerPolicy.BarWidth;
 
+    /// <summary>Whether a timed turn has drawn the bar since the last untimed start or clear.</summary>
+    public bool ShowsBar { get; private set; }
+
     public void Start(PlanningTimeLimit limit, TimeSpan now)
     {
         Stop();
-        if (PlanningTimerPolicy.LimitMilliseconds(limit) is not { } milliseconds) return;
+        if (PlanningTimerPolicy.LimitMilliseconds(limit) is not { } milliseconds)
+        {
+            Clear();
+            return;
+        }
         _limit = milliseconds;
         _start = now;
         IsActive = true;
@@ -158,14 +171,29 @@ public sealed class PlanningTimer
         Redraw(now);
     }
 
+    /// <summary>Ends the timed turn and leaves the bar as last drawn (RULE-TIMER-002).</summary>
     public void Stop()
     {
         IsActive = false;
         _limit = 0;
         _start = TimeSpan.Zero;
         _pausedElapsed = null;
+    }
+
+    /// <summary>Ends the timed turn and forgets the bar, for leaving the match.</summary>
+    public void Clear()
+    {
+        Stop();
+        ShowsBar = false;
         VisibleBarWidth = PlanningTimerPolicy.BarWidth;
     }
+
+    /// <summary>
+    /// RULE-TIMER-002: whether the running turn's elapsed whole milliseconds exceed its limit. A
+    /// paused turn has not expired.
+    /// </summary>
+    public bool HasExpired(TimeSpan now) =>
+        IsActive && _pausedElapsed is null && PlanningTimerPolicy.Expired(_limit, Elapsed(now));
 
     public void Pause(TimeSpan now)
     {
@@ -181,11 +209,17 @@ public sealed class PlanningTimer
         _lastTick = PresentationClock.Ticks(now);
     }
 
-    public PlanningTimerSignal Advance(TimeSpan now)
+    public PlanningTimerSignal Advance(TimeSpan now) => Advance(now, PresentationClock.Ticks(now));
+
+    /// <summary>
+    /// Counts the presentation ticks up to <paramref name="tick"/> and redraws the bar when the
+    /// countdown runs out. Tests pass the tick themselves to replay a recorded run of the original,
+    /// whose ticks do not fall on exact multiples of the period.
+    /// </summary>
+    internal PlanningTimerSignal Advance(TimeSpan now, long tick)
     {
         if (_pausedElapsed is not null) return PlanningTimerSignal.None;
         var signal = PlanningTimerSignal.None;
-        var tick = PresentationClock.Ticks(now);
         var pending = _lastTick is { } last ? tick - last : 0;
         _lastTick = tick;
         if (pending > 0 && pending < _redrawCountdown)
@@ -200,13 +234,6 @@ public sealed class PlanningTimer
             _redrawCountdown = PlanningTimerPolicy.RefreshCountdown - (int)sinceLast;
             if (IsActive) signal = Redraw(now);
         }
-
-        if (!IsActive) return PlanningTimerSignal.None;
-        if (PlanningTimerPolicy.Expired(_limit, Elapsed(now)))
-        {
-            Stop();
-            return PlanningTimerSignal.Expired;
-        }
         return signal;
     }
 
@@ -216,6 +243,7 @@ public sealed class PlanningTimer
     {
         var elapsed = Elapsed(now);
         VisibleBarWidth = PlanningTimerPolicy.VisibleBarWidth(_limit, elapsed);
+        ShowsBar = true;
         return PlanningTimerPolicy.WarningSoundSlot(unchecked(_limit - elapsed)) switch
         {
             7 => PlanningTimerSignal.LongWarning,
@@ -255,8 +283,8 @@ public sealed class OnlineDeadlineWarnings
     /// The warning owed for this frame, if any.
     /// </summary>
     /// <remarks>
-    /// Never <see cref="PlanningTimerSignal.Expired"/>: a client does not end an online turn, and
-    /// answering the deadline locally is exactly what the online path must not do.
+    /// Only warnings: a client does not end an online turn, and answering the deadline locally is
+    /// exactly what the online path must not do.
     /// </remarks>
     public PlanningTimerSignal Advance(int turn, DateTimeOffset? deadline, DateTimeOffset now)
     {
@@ -330,6 +358,30 @@ public sealed partial class ChaosGame
 
     private void StopPlanningTimer() => _planningTimer.Stop();
 
+    /// <summary>Stops the clock and forgets its bar, when the match leaves the screen.</summary>
+    private void ClearPlanningTimer() => _planningTimer.Clear();
+
+    /// <summary>
+    /// RULE-TIMER-002: whether this update stands for a pass of the original's planning loop, the
+    /// only place it tests the time limit. The city and the detailed sector view are that loop
+    /// (SCR-UI-003, SCR-UI-004). A panel runs its own loop, and so does the Hire handler from a
+    /// press on an offer until the button is released (FND-HIRE-008); the idle-gang warning is
+    /// answered before the test.
+    /// </summary>
+    private bool AtPlanningLoopPass() =>
+        _screens.Current is ClientScreen.City or ClientScreen.Sector
+        && !_idleGangWarningOpen
+        && _draggedHireDefinitionId is null
+        // PLACEHOLDER: RULE-TIMER-002. How the original starts a gang drag is not recorded
+        // (FND-TURN-009); a held gang is taken to run in its handler as a held offer does.
+        && _draggedGangId is null;
+
+    /// <summary>The screens that are not the match, where no planning clock is drawn or run.</summary>
+    private bool LeftMatchScreen() =>
+        _screens.Current is ClientScreen.Title or ClientScreen.Setup
+            or ClientScreen.Online or ClientScreen.Lobby
+            or ClientScreen.Handoff or ClientScreen.Elimination or ClientScreen.Endgame;
+
     private bool UpdatePlanningTimer(TimeSpan now)
     {
         if (!_planningTimer.IsActive)
@@ -341,9 +393,7 @@ public sealed partial class ChaosGame
         if (_state?.Coordinator.ActivePlayer is not { } playerId
             || _state.Coordinator.Phase != TurnPhase.Command
             || _state.FindPlayer(playerId)?.Setup.Controller != PlayerController.Human
-            || _screens.Current is ClientScreen.Title or ClientScreen.Setup
-                or ClientScreen.Online or ClientScreen.Lobby
-                or ClientScreen.Handoff or ClientScreen.Elimination or ClientScreen.Endgame)
+            || LeftMatchScreen())
         {
             StopPlanningTimer();
             return false;
@@ -353,24 +403,23 @@ public sealed partial class ChaosGame
         {
             case PlanningTimerSignal.LongWarning:
                 PlayGeneralSound(GeneralSoundSlot.CountdownWarning);
-                return false;
+                break;
             case PlanningTimerSignal.FinalWarning:
                 PlayGeneralSound(GeneralSoundSlot.FinalSecondWarning);
-                return false;
-            case PlanningTimerSignal.None:
-                return false;
-            case PlanningTimerSignal.Expired:
-                _idleGangWarningOpen = false;
-                _message = string.Empty;
-                // Online this never fires, because the clock is not armed there. It still goes
-                // through the online path rather than straight to the local resolution, so that
-                // arming it later cannot silently resolve a turn on one client alone.
-                if (_session is not null) SubmitOnlineTurn();
-                else FinishPlanningTurn();
-                return true;
-            default:
-                throw new InvalidOperationException("Unknown planning timer signal.");
+                break;
         }
+        // A panel open past the limit keeps the empty bar up, and the turn ends on the first pass
+        // after it closes.
+        if (!AtPlanningLoopPass() || !_planningTimer.HasExpired(now)) return false;
+
+        _planningTimer.Stop();
+        _message = string.Empty;
+        // Online this never runs, because the clock is not armed there. It still goes through the
+        // online path rather than straight to the local resolution, so that arming it later cannot
+        // silently resolve a turn on one client alone.
+        if (_session is not null) SubmitOnlineTurn();
+        else FinishPlanningTurn();
+        return true;
     }
 
     /// <summary>
@@ -425,9 +474,11 @@ public sealed partial class ChaosGame
         if (_screens.Current is ClientScreen.Options or ClientScreen.Help || _idleGangWarningOpen)
             return;
         // Online the bar comes from the server's deadline; the local timer is never armed there.
+        // Locally the bar stays as last drawn after planning ends, through the resolution, until
+        // the next timed start redraws it (RULE-TIMER-002).
         var width = _session is not null
             ? OnlineBarWidth()
-            : _planningTimer.IsActive ? _planningTimer.VisibleBarWidth : null;
+            : _planningTimer.ShowsBar && !LeftMatchScreen() ? _planningTimer.VisibleBarWidth : null;
         if (width is not { } visible) return;
 
         batch.Draw(pixel, PlanningTimerLayout.Bar, Color.Black);
