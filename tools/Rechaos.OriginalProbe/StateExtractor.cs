@@ -40,9 +40,7 @@ internal sealed class StateExtractor
             run["city_markers"] = new JsonObject
             {
                 ["viewer"] = markers["Viewer"]!.GetValue<int>(),
-                ["markers"] = new JsonArray(markers["Markers"]!.AsArray()
-                    .Select(marker => (JsonNode)new JsonArray(marker!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()))
-                    .ToArray()),
+                ["markers"] = markers["Markers"]!.DeepClone(),
             };
         return run;
     }

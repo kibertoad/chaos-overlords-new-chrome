@@ -306,6 +306,7 @@ internal sealed class NewGameSession(
         foreach (var definition in write.Definitions)
             _process.Write(OriginalAddresses.SearchFilters
                 + (uint)(human * OriginalAddresses.SiteDefinitionCount + definition), [1]);
+        _notes.Add($"search after roll {_rolls.Count}: {write}");
     }
 
     // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the

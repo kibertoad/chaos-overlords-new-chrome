@@ -669,14 +669,19 @@ public sealed class OriginalNewGameExperimentTests
     // controlled flag (FND-SEARCH-006).
     private sealed record RecordedMarkers(int Viewer, IReadOnlyList<int[]> Markers);
 
-    // "turn 1: search filter 0 2 4", as the probe writes it: the site definitions whose
-    // search_filters entries the probe set for the first human (RULE-SEARCH-001).
-    private static IEnumerable<int> ParseSearch(string value)
+    // The site definitions whose search_filters entries the probe set for the first human before
+    // the Done press of the turn (RULE-SEARCH-001).
+    private sealed record RecordedSearch(int Turn, IReadOnlyList<int> Definitions)
     {
-        var match = System.Text.RegularExpressions.Regex.Match(value, @"^turn \d+: search filter (\d+(?: \d+)*)$");
-        Assert.True(match.Success, value);
-        return match.Groups[1].Value.Split(' ')
-            .Select(definition => int.Parse(definition, System.Globalization.CultureInfo.InvariantCulture));
+        // "turn 1: search filter 0 2 4", as the probe writes it.
+        public static RecordedSearch Parse(string value)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): search filter (\d+(?: \d+)*)$");
+            Assert.True(match.Success, value);
+            return new(int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                match.Groups[2].Value.Split(' ')
+                    .Select(definition => int.Parse(definition, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
+        }
     }
 
     private sealed record RecordedHire(int Turn, int OfferSlot, int Sector)
@@ -790,16 +795,20 @@ public sealed class OriginalNewGameExperimentTests
                 .Select(input => RecordedPlanning.Parse(input.GetProperty("value").GetString()!))
                 .ToArray();
             Seed = run.GetProperty("rng_state").GetInt32();
-            SearchFilter = inputs.EnumerateArray()
-                .Where(input => input.GetProperty("name").GetString() == "search")
-                .SelectMany(input => ParseSearch(input.GetProperty("value").GetString()!))
-                .Distinct().ToArray();
             CityMarkers = run.TryGetProperty("city_markers", out var markers)
                 ? new RecordedMarkers(markers.GetProperty("viewer").GetInt32(),
                     markers.GetProperty("markers").EnumerateArray()
                         .Select(marker => marker.EnumerateArray().Select(value => value.GetInt32()).ToArray()).ToArray())
                 : null;
             DoneCount = run.TryGetProperty("done_at_roll", out var done) ? done.GetArrayLength() : 0;
+            // The inputs list every turn up to --end-turns, but a match that ends early presses
+            // Done fewer times, and the probe writes a turn's filter entries only before its press.
+            SearchFilter = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "search")
+                .Select(input => RecordedSearch.Parse(input.GetProperty("value").GetString()!))
+                .Where(write => write.Turn <= DoneCount)
+                .SelectMany(write => write.Definitions)
+                .Distinct().ToArray();
             Rolls = run.GetProperty("rolls").EnumerateArray()
                 .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
                 .ToArray();
