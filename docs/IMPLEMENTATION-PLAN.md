@@ -48,6 +48,7 @@ release of *Chaos Overlords*, requiring a user-owned original asset pack.
   - [Active while Computer Use is unavailable](#active-while-computer-use-is-unavailable)
   - [Deferred until Computer Use works or equivalent captures are supplied](#deferred-until-computer-use-works-or-equivalent-captures-are-supplied)
 - [10. Source hierarchy](#10-source-hierarchy)
+- [Shared runtime primitives migration](#shared-runtime-primitives-migration)
 <!-- doc-index:end -->
 
 ## 1. Definition of complete
@@ -1148,3 +1149,11 @@ fingerprinted GOG data and executable. The upstream research used executable
 SHA-256 `0791e6209d573a79882675d1236737f5c9b369ea4af541a7dbd03cbadf4493d5`,
 which differs from the locally available GOG executable, so a `re-chaos`
 finding alone cannot establish behavioral parity for this build.
+
+## Shared runtime primitives migration
+
+Delegate staged save promotion and cooperative autosave leases to shared persistence. Retain
+incompatible-version admission, optional quarantine repair, worker scheduling and trust policy.
+Share PCM widening without changing soundtrack routing. The shared code comes from the published
+`1.3.0` toolkit packages; see [SHARED-RUNTIME-MIGRATION.md](SHARED-RUNTIME-MIGRATION.md).
+Validate synthetic controls and the default fast gate; original formats and rules remain local.
