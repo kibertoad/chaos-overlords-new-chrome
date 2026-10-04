@@ -60,7 +60,9 @@ namespace Rechaos.Tests;
 /// EXP-TURN-038 do the same in Acceptance and Dominance with the human hiding every turn, where a
 /// site completed in a turn counts in that turn's score (RULE-OBJECTIVE-002) and in the sector and
 /// gang refresh that ends the match (RULE-SITE-001, RULE-GANG-001). EXP-TURN-041 plays another
-/// six-month Greed to its end and stops at the final city view, before the awards are given.
+/// six-month Greed to its end and stops at the final city view, before the awards are given. In
+/// EXP-TURN-043 a computer player's Moves would put seven of its gangs in one sector, and the Move
+/// repair keeps the mover in its own sector (RULE-MOVE-002).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -68,7 +70,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-044"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -242,6 +244,9 @@ public sealed class OriginalNewGameExperimentTests
             }
         }
 
+        // RULE-MOVE-002: in EXP-TURN-043 a computer player's Moves would put seven of its gangs in
+        // one sector, and the repair keeps the mover in its own sector; the gang sectors compared
+        // here agree with that, and TheMoveRepairSendsTheMoverBack checks that the repair ran.
         foreach (var player in match.Players)
         {
             var gangs = player.Gangs.Where(gang => gang.IsActive).ToArray();
@@ -420,6 +425,23 @@ public sealed class OriginalNewGameExperimentTests
                 if (runs[run].EndgameRows is not null && !KnownDivergences.ContainsKey((experiment, run)))
                     data.Add(experiment, run);
         return data;
+    }
+
+    // RULE-MOVE-002, EXP-TURN-043: the gang sectors compared above cannot tell the repair from a
+    // Move that never ran, so this checks that the replay reaches the repair. In turn 24 player 2
+    // orders Moves that would put seven of its gangs in sector 62, and the one mover sent back,
+    // from sector 54, resolves in its own sector.
+    [Fact]
+    public void TheMoveRepairSendsTheMoverBack()
+    {
+        var match = ReplayedMatch("EXP-TURN-043", 0);
+        var moves = match.Events
+            .Where(e => e.Turn == 24 && e.Player == new PlayerId(2) && e.Action == GangAction.Move)
+            .ToArray();
+        var sentBack = Assert.Single(moves, e => e.Kind == GameEventKind.CommandResolved
+            && e.Resolution is { PreviousValue: 54, ResultValue: 54 });
+        Assert.Contains(moves, e => e.Kind == GameEventKind.CommandQueued
+            && e.Gang == sentBack.Gang && e.Target == CommandTarget.Sector(62));
     }
 
     public static TheoryData<string, int> FinanceRuns()
