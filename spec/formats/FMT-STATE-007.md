@@ -60,10 +60,10 @@ None known.
 
 Every record of the 486 was read from the running original at the end of
 EXP-TURN-048 to EXP-TURN-051, runs of Greed, Kill 'Em All and the setup
-screen's defaults, and the values agree with the layout:
-families 0 to 7 and 99, action numbers of FMT-STATE-001, target bytes as the
-AI rules give them and cooldowns as 16-bit values. The matching block of a save
-file was not decoded.
+screen's defaults, and the values agree with the layout: families 0, 1, 2, 3,
+5, 7 and 99 (no run holds family 4 or 6), action numbers of FMT-STATE-001,
+target bytes as the AI rules give them and cooldowns as 16-bit values. The
+matching block of a save file was not decoded.
 
 ## Open questions
 

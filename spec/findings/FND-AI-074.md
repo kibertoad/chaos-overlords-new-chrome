@@ -77,10 +77,12 @@ pass stored them, as when the Greed Terminate or family 2's Control override
 replaces a planned Move or Attack: the record keeps that action's targets.
 
 Families 3 and 5 keep their focus in step with the action: the sector of the
-site they influence or the fight they start, and -1 otherwise. Family 7's
-Equip keeps the focus of the pass before, which family 7 compares with its
-best research sector at its next pass (FND-AI-035), so an item number left
-there from a Research can match a sector number.
+site they influence or the fight they start, -1 after Heal, Move, Equip and a
+failed draw, and unchanged after Control. Family 7's Equip keeps the focus of
+the pass before, which family 7 compares with its best research sector at its
+next pass (FND-AI-035), so an item number left there from a Research can match
+a sector number. This corrects FND-AI-035 and FND-AI-015, which read family
+7's Equip as storing -1 in the focus.
 
 ## Alternatives
 
