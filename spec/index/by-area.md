@@ -245,6 +245,9 @@
 | [EXP-TURN-061](../experiments/EXP-TURN-061.md) | Does a Power match at Homicidal Maniac with a standing Chaos order play 25 turns as the spec gives? | recorded |
 | [EXP-TURN-062](../experiments/EXP-TURN-062.md) | Does a Greed match at Goon with a standing Chaos order play 26 turns as the spec gives? | recorded |
 | [EXP-TURN-063](../experiments/EXP-TURN-063.md) | Does a Big 40 match at Crimelord with a standing Chaos order play 30 turns as the spec gives? | recorded |
+| [EXP-TURN-064](../experiments/EXP-TURN-064.md) | Does Chaos in a sector under police presence crack down again and pay, as the spec gives? | recorded |
+| [EXP-TURN-065](../experiments/EXP-TURN-065.md) | Do the human's recurring Research, Influence and Control orders end when they are done, as the spec gives? | recorded |
+| [EXP-TURN-066](../experiments/EXP-TURN-066.md) | In Power, does Chaos in a sector under police presence crack down again, as the spec gives? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -256,7 +259,7 @@
 | [FND-TURN-009](../findings/FND-TURN-009.md) | How the order handlers write targets, and roster slot 80 as the sector-wide order's scratch record | recorded |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | A turn is turn start, planning by each active player in slot order, then resolution | supported |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported |
-| [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported |
+| [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | established |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | Giving a gang an order replaces its whole previous order, one-off or recurring | supported |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | established |
@@ -338,7 +341,7 @@
 |---|---|---|
 | [FND-HIDE-001](../findings/FND-HIDE-001.md) | A gang is hidden exactly while its active action is Hide, with no separate hidden flag | recorded |
 | [FND-HIDE-002](../findings/FND-HIDE-002.md) | Four places in the resolver read whether a gang hides, and the Hide case itself only counts | recorded |
-| [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player | supported |
+| [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player | established |
 
 ## INFLUENCE
 
@@ -368,7 +371,7 @@
 | [FND-RESEARCH-003](../findings/FND-RESEARCH-003.md) | The Research list builder lists unresearched items of the chosen category up to the gang type's Tech Level, capped by the sector's research-site level, with each item's remaining research | recorded |
 | [FND-RESEARCH-004](../findings/FND-RESEARCH-004.md) | The Research panel selects a row on a press, opens Item Information on a double-clicked row and the gang definition on a double-clicked portrait, and shares the command-panel controls | recorded |
 | [FND-RESEARCH-005](../findings/FND-RESEARCH-005.md) | The Research panel's Enter, Execute and Escape draw the pressed confirm and Cancel faces before they act | recorded |
-| [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported |
+| [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | established |
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | established |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | Research panel with item categories and a fixed sixteen-row item list | supported |
 
@@ -498,7 +501,7 @@
 |---|---|---|
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
-| [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | supported |
+| [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | established |
 
 ## FINANCE
 
@@ -556,7 +559,7 @@
 |---|---|---|
 | [FND-DETECT-001](../findings/FND-DETECT-001.md) | The visibility rebuild takes each sector's best Detect and adds a helper bonus from every other friendly gang there | recorded |
 | [FND-DETECT-002](../findings/FND-DETECT-002.md) | The visibility rebuild runs for all six observer slots, writes 0 before 1 for every active opposing gang, and leaves inactive records alone | recorded |
-| [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | supported |
+| [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | established |
 
 ## CHAOS
 
@@ -564,8 +567,8 @@
 |---|---|---|
 | [FND-CHAOS-001](../findings/FND-CHAOS-001.md) | Chaos is rolled gang by gang in roster order before Combat and paid after Transactions, halved once per player and sector outside the owner's sectors | recorded |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | The Chaos rolls read sector offset 0x04, the Crackdown test sums each player's successes with a band-2 owner's cut by a quarter, and the payout skips gangs that died in combat and also raises cash_earned | recorded |
-| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
-| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported |
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | established |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | established |
 
 ## POLICE
 

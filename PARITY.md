@@ -113,8 +113,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-TURN-001` | A turn is turn start, planning by each active player in slot order, then resolution | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
 | `RULE-TURN-002` | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
-| `RULE-TURN-003` | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The EXP-TURN recordings reach Bribe, Heal, Hide, Influence, Research and Snitch. |
-| `RULE-TURN-004` | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-TURN-001` | validated | None |
+| `RULE-TURN-003` | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-009 reaches Snitch, Bribe and Hide, and EXP-TURN-059 Heal, Influence and Research. |
+| `RULE-TURN-004` | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-TURN-001` | validated | The replays compare each human gang's recurring order at the end of a run that does not end the match. EXP-TURN-065 clears a recurring Research once the item is researched, a recurring Influence once the site is complete and a recurring Control once the sector is the player's, and EXP-TURN-009 carries a recurring Chaos and ends a one-off Hide. No recorded run clears a recurring Heal, a Control in a sector under police, an Influence in a sector lost, or the order of a dead gang. |
 | `RULE-TURN-005` | Giving a gang an order replaces its whole previous order, one-off or recurring | supported | complete | None | `DEV-TURN-001`, `DEV-UI-003` | implemented | The sector screen draws the original's group order strip over the top two cards; its menus leave Research out of the recurring one, and it reaches hiding gangs. Each gang is validated on its own (DEV-UI-003), and recurring Bribe and Snitch are refused from any source (DEV-TURN-001). |
 | `RULE-TURN-006` | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare `player_active`, the elimination reports and the stored scores after the eliminations of EXP-TURN-017, EXP-TURN-018, EXP-TURN-020, EXP-TURN-022 and EXP-TURN-025, which show the end evaluation after the elimination. The rebuild marks retired gangs with Force 0 and cleared orders instead of sector 100, which changes no playable state. |
 
@@ -159,26 +159,26 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-HIDE-001` | A gang hides while its action is Hide, and each Hide carried out is counted for its player | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-HIDE-001` | A gang hides while its action is Hide, and each Hide carried out is counted for its player | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-057 reaches a one-off Hide and EXP-TURN-010 a recurring one; the replays compare every player's Hide count. |
 
 ## INFLUENCE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-INFLUENCE-001` | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002` | validated | A computer player's planned Influence in a sector it does not control gives no command (DEV-AI-002). EXP-TURN-023 checks a Goon computer player's Influence, whose progress is its pool plus its successes (BUG-INFLUENCE-001). |
+| `RULE-INFLUENCE-001` | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002` | validated | A computer player's planned Influence in a sector it does not control gives no command (DEV-AI-002). EXP-TURN-023 checks a Goon computer player's Influence, whose progress is its pool plus its successes (BUG-INFLUENCE-001). EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 reach the three bands, a site already complete that rolls nothing, completed sites, and Goon Influences whose progress jumps ahead and falls back. No recorded run reaches a pool of 0 or less. |
 | `SCR-INFLUENCE-001` | Influence picker for choosing one of the sector's three sites | supported | complete | None | None | implemented | None |
 
 ## HEAL
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-HEAL-001` | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-HEAL-001` | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 reach the three bands and a Heal capped at 10. No recorded run reaches a pool of 0 or less, or a Heal by a gang already at Force 10. |
 
 ## RESEARCH
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-RESEARCH-001` | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-RESEARCH-001` | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 reach the three bands, an item already researched that rolls nothing, and completions that land on 0 and that overshoot it; the replays compare every player's remaining research. |
 | `RULE-RESEARCH-002` | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The rebuild leaves the item table's padding records out of the researched set (see deviations). |
 | `SCR-RESEARCH-001` | Research panel with item categories and a fixed sixteen-row item list | supported | complete | None | `DEV-RESEARCH-001` | implemented | The list filter follows FND-RESEARCH-003: category from item type (types 0 and 1 together), item order, only unfinished items, Tech Level at most the gang type's and at most 5 or 8 by the research-site level of a sector the player owns. The category cells match. A press selects from panel y 26 and a double-click opens from panel y 19, rows truncating toward zero. |
 
@@ -264,7 +264,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-UPKEEP-001` | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-UPKEEP-001` | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-059 reaches a negative Upkeep, sectors whose Cash is negative, 0 and positive, and cash left below 0; the replays compare cash, cash earned and cash spent. |
 
 ## FINANCE
 
@@ -296,14 +296,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-DETECT-001` | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | None |
+| `RULE-DETECT-001` | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every active gang's `visible_to` bytes. EXP-SETUP-004 reaches the visibility name modifier, EXP-TURN-025 an observer out of the match, and EXP-TURN-062 helpers with Detect above and at most 9, a tie for the base, and a Stealth equal to the strength. |
 
 ## CHAOS
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-CHAOS-001` | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-009 reaches a Crackdown in the human's sector. The replays reach all three bands, the band-2 owner's quarter, a total equal to the Tolerance and a Crackdown reported to a player present without a Chaos order; EXP-TURN-061 to EXP-TURN-063 give the human's gang a standing Chaos order for a whole run. No recorded run rolls Chaos in a sector under police presence. |
-| `RULE-CHAOS-002` | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every player's cash at the end of the run; EXP-TURN-061 to EXP-TURN-063 pay Chaos both in a player's own sectors and, halved, outside them, and the replays reach a Chaos gang killed in Combat before the payout. No recorded run pays Chaos in a sector under police presence. |
+| `RULE-CHAOS-001` | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-009 reaches a Crackdown in the human's sector. The replays reach all three bands, the band-2 owner's quarter, a total equal to the Tolerance and a Crackdown reported to a player present without a Chaos order; EXP-TURN-061 to EXP-TURN-063 give the human's gang a standing Chaos order for a whole run. EXP-TURN-064 and EXP-TURN-066 crack down again in a sector under police presence. |
+| `RULE-CHAOS-002` | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every player's cash at the end of the run; EXP-TURN-061 to EXP-TURN-063 pay Chaos both in a player's own sectors and, halved, outside them, and the replays reach a Chaos gang killed in Combat before the payout. EXP-TURN-064 pays Chaos in a sector under police presence. |
 
 ## POLICE
 

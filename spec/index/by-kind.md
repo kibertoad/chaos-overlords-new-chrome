@@ -106,8 +106,8 @@
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | established |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | established |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established |
-| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
-| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported |
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | established |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | established |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income | established |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way | established |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site | established |
@@ -124,7 +124,7 @@
 | [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | supported |
 | [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | supported |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported |
-| [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | supported |
+| [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | established |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | established |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | established |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported |
@@ -152,7 +152,7 @@
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | established |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | supported |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | Help Topics does nothing, and no key opens the help file | supported |
-| [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player | supported |
+| [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player | established |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | established |
 | [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | Vacant hire offers are refilled in place at the player's planning entry | supported |
 | [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported |
@@ -172,7 +172,7 @@
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | established |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent | established |
 | [RULE-POLICE-004](../rules/RULE-POLICE-004.md) | Crackdown reports go to the players who had a gang in the sector when resolution began | established |
-| [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | supported |
+| [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | established |
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | established |
 | [RULE-RNG-001](../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start | established |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws | established |
@@ -200,7 +200,7 @@
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 | established |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | A turn is turn start, planning by each active player in slot order, then resolution | supported |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported |
-| [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | supported |
+| [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | established |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | Giving a gang an order replaces its whole previous order, one-off or recurring | supported |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | established |
@@ -218,7 +218,7 @@
 | [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map | supported |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
-| [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | supported |
+| [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | established |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | The intro plays the logos movie and then the intro movie, each ended by the left button | supported |
 
 ## findings
@@ -591,7 +591,7 @@
 
 ## experiments
 
-67 entries.
+70 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -662,6 +662,9 @@
 | [EXP-TURN-061](../experiments/EXP-TURN-061.md) | Does a Power match at Homicidal Maniac with a standing Chaos order play 25 turns as the spec gives? | recorded |
 | [EXP-TURN-062](../experiments/EXP-TURN-062.md) | Does a Greed match at Goon with a standing Chaos order play 26 turns as the spec gives? | recorded |
 | [EXP-TURN-063](../experiments/EXP-TURN-063.md) | Does a Big 40 match at Crimelord with a standing Chaos order play 30 turns as the spec gives? | recorded |
+| [EXP-TURN-064](../experiments/EXP-TURN-064.md) | Does Chaos in a sector under police presence crack down again and pay, as the spec gives? | recorded |
+| [EXP-TURN-065](../experiments/EXP-TURN-065.md) | Do the human's recurring Research, Influence and Control orders end when they are done, as the spec gives? | recorded |
+| [EXP-TURN-066](../experiments/EXP-TURN-066.md) | In Power, does Chaos in a sector under police presence crack down again, as the spec gives? | recorded |
 
 ## bugs
 

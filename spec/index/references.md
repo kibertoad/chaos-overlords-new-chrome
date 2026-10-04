@@ -94,6 +94,9 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-061](../experiments/EXP-TURN-061.md) | builds |
 | [EXP-TURN-062](../experiments/EXP-TURN-062.md) | builds |
 | [EXP-TURN-063](../experiments/EXP-TURN-063.md) | builds |
+| [EXP-TURN-064](../experiments/EXP-TURN-064.md) | builds |
+| [EXP-TURN-065](../experiments/EXP-TURN-065.md) | builds |
+| [EXP-TURN-066](../experiments/EXP-TURN-066.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -884,6 +887,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | evidence |
+| [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | evidence |
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | evidence |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | evidence |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
@@ -950,6 +954,9 @@ None.
 | [EXP-TURN-061](../experiments/EXP-TURN-061.md) | body |
 | [EXP-TURN-062](../experiments/EXP-TURN-062.md) | body |
 | [EXP-TURN-063](../experiments/EXP-TURN-063.md) | body |
+| [EXP-TURN-064](../experiments/EXP-TURN-064.md) | body |
+| [EXP-TURN-065](../experiments/EXP-TURN-065.md) | body |
+| [EXP-TURN-066](../experiments/EXP-TURN-066.md) | body |
 
 ## EXP-TURN-002
 
@@ -1007,6 +1014,8 @@ None.
 | [EXP-TURN-061](../experiments/EXP-TURN-061.md) | body |
 | [EXP-TURN-062](../experiments/EXP-TURN-062.md) | body |
 | [EXP-TURN-063](../experiments/EXP-TURN-063.md) | body |
+| [EXP-TURN-064](../experiments/EXP-TURN-064.md) | body |
+| [EXP-TURN-065](../experiments/EXP-TURN-065.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 
 ## EXP-TURN-005
@@ -1042,6 +1051,7 @@ None.
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
+| [RULE-TURN-003](../rules/RULE-TURN-003.md) | evidence |
 
 ## EXP-TURN-010
 
@@ -1068,6 +1078,7 @@ None.
 | [RULE-EVENT-006](../rules/RULE-EVENT-006.md) | evidence |
 | [RULE-EVENT-007](../rules/RULE-EVENT-007.md) | evidence |
 | [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | evidence |
+| [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | evidence |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | evidence |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | evidence |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | evidence |
@@ -1226,6 +1237,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
+| [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | evidence |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, evidence |
 
 ## EXP-TURN-026
@@ -1510,6 +1522,7 @@ None.
 | [RULE-AI-028](../rules/RULE-AI-028.md) | evidence |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | evidence |
 | [RULE-AI-030](../rules/RULE-AI-030.md) | evidence |
+| [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | evidence |
 
 ## EXP-TURN-058
 
@@ -1527,7 +1540,12 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | evidence |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | evidence |
+| [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
+| [RULE-TURN-003](../rules/RULE-TURN-003.md) | evidence |
+| [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | evidence |
 
 ## EXP-TURN-060
 
@@ -1549,6 +1567,10 @@ None.
 |---|---|
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
+| [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | evidence |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | evidence |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
 
 ## EXP-TURN-063
 
@@ -1556,6 +1578,29 @@ None.
 |---|---|
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | evidence |
+| [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
+| [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
+
+## EXP-TURN-064
+
+| Cited by | In |
+|---|---|
+| [EXP-TURN-066](../experiments/EXP-TURN-066.md) | body |
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
+
+## EXP-TURN-065
+
+| Cited by | In |
+|---|---|
+| [RULE-TURN-004](../rules/RULE-TURN-004.md) | evidence |
+
+## EXP-TURN-066
+
+| Cited by | In |
+|---|---|
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -1683,6 +1728,7 @@ None.
 | [EXP-TURN-061](../experiments/EXP-TURN-061.md) | body |
 | [EXP-TURN-062](../experiments/EXP-TURN-062.md) | body |
 | [EXP-TURN-063](../experiments/EXP-TURN-063.md) | body |
+| [EXP-TURN-065](../experiments/EXP-TURN-065.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
@@ -7083,6 +7129,8 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
+| [EXP-TURN-064](../experiments/EXP-TURN-064.md) | body |
+| [EXP-TURN-066](../experiments/EXP-TURN-066.md) | body |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | body |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | body |
 | [RULE-POLICE-004](../rules/RULE-POLICE-004.md) | body |
@@ -7092,6 +7140,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-064](../experiments/EXP-TURN-064.md) | body |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | body |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | body, related |
 
@@ -8026,6 +8075,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
+| [EXP-TURN-065](../experiments/EXP-TURN-065.md) | body |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | body |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | body |

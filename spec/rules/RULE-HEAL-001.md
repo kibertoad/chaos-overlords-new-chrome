@@ -4,7 +4,7 @@ title: Heal rolls four dice plus the gang's Heal and adds each success to Force,
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HEAL-001, FND-TURN-007, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-HEAL-001, FND-TURN-007, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-059, EXP-TURN-062, EXP-TURN-063]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001]

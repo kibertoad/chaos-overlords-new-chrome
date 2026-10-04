@@ -4,7 +4,7 @@ title: At turn start, recurring actions that can no longer apply are cleared and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-004, FND-TURN-006, FND-TURN-009, FND-HIDE-001, FND-TURN-002, FND-RESEARCH-001, FND-PLATFORM-003, FND-COMBAT-004, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-TURN-004, FND-TURN-006, FND-TURN-009, FND-HIDE-001, FND-TURN-002, FND-RESEARCH-001, FND-PLATFORM-003, FND-COMBAT-004, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-065]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
