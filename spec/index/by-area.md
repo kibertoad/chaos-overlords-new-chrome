@@ -252,6 +252,9 @@
 | [EXP-TURN-067](../experiments/EXP-TURN-067.md) | Does the turn start drop a recurring Heal at Force 10 and the recurring orders of dead gangs, as the spec gives? | recorded |
 | [EXP-TURN-068](../experiments/EXP-TURN-068.md) | Does a Heal with a pool of 0 or less roll nothing, as the spec gives? | recorded |
 | [EXP-TURN-069](../experiments/EXP-TURN-069.md) | Does an Influence with a pool of 0 or less roll nothing and leave the site unchanged, as the spec gives? | recorded |
+| [EXP-TURN-070](../experiments/EXP-TURN-070.md) | Does the turn start drop a recurring Control in a sector under police presence, as the spec gives? | recorded |
+| [EXP-TURN-071](../experiments/EXP-TURN-071.md) | Does the turn start drop a recurring Control under police presence in a Criminal game, as the spec gives? | recorded |
+| [EXP-TURN-072](../experiments/EXP-TURN-072.md) | Is an item bought beside another player's completed Factory sold at full Cost, as the spec gives? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -470,7 +473,7 @@
 | [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | The Equip panel handler's faces, keys and double-clicks, and the chosen row redrawn in the second font of PX00129 inside a green frame | recorded |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | established |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | established |
-| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported |
+| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | established |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | Equip panel | supported |
 

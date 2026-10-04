@@ -4,7 +4,7 @@ title: At turn start, recurring actions that can no longer apply are cleared and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-004, FND-TURN-006, FND-TURN-009, FND-HIDE-001, FND-TURN-002, FND-RESEARCH-001, FND-PLATFORM-003, FND-COMBAT-004, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-065, EXP-TURN-067]
+evidence: [FND-TURN-004, FND-TURN-006, FND-TURN-009, FND-HIDE-001, FND-TURN-002, FND-RESEARCH-001, FND-PLATFORM-003, FND-COMBAT-004, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-065, EXP-TURN-067, EXP-TURN-070, EXP-TURN-071]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -112,7 +112,9 @@ None known.
 
 - EXP-TURN-065 drops a recurring Research once the item is researched, a
   recurring Influence once the site is complete and a recurring Control once
-  the sector is the player's, and EXP-TURN-067 a recurring Heal once the gang
-  is at Force 10 and the recurring orders of gangs killed in Combat. No
-  recorded run drops a Control in a sector under police or an Influence in a
-  sector the player lost; those rest on the static reading [FND-TURN-004].
+  the sector is the player's, EXP-TURN-067 a recurring Heal once the gang is
+  at Force 10 and the recurring orders of gangs killed in Combat, and
+  EXP-TURN-070 and EXP-TURN-071 a recurring Control in a sector under police
+  presence, with the Control gang still active at the end of the recording.
+  No recorded run drops an Influence in a sector the player lost; that case
+  rests on the static reading [FND-TURN-004].

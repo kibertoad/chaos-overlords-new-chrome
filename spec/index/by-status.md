@@ -16,7 +16,7 @@
 
 ## supported
 
-157 entries.
+156 entries.
 
 | ID | Title |
 |---|---|
@@ -95,7 +95,6 @@
 | [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters |
 | [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin |
-| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution |
 | [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded |
@@ -180,7 +179,7 @@
 
 ## established
 
-84 entries.
+85 entries.
 
 | ID | Title |
 |---|---|
@@ -218,6 +217,7 @@
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
+| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
 | [RULE-EVENT-004](../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
@@ -293,7 +293,7 @@
 
 ## recorded
 
-426 entries.
+429 entries.
 
 | ID | Title |
 |---|---|
@@ -370,6 +370,9 @@
 | [EXP-TURN-067](../experiments/EXP-TURN-067.md) | Does the turn start drop a recurring Heal at Force 10 and the recurring orders of dead gangs, as the spec gives? |
 | [EXP-TURN-068](../experiments/EXP-TURN-068.md) | Does a Heal with a pool of 0 or less roll nothing, as the spec gives? |
 | [EXP-TURN-069](../experiments/EXP-TURN-069.md) | Does an Influence with a pool of 0 or less roll nothing and leave the site unchanged, as the spec gives? |
+| [EXP-TURN-070](../experiments/EXP-TURN-070.md) | Does the turn start drop a recurring Control in a sector under police presence, as the spec gives? |
+| [EXP-TURN-071](../experiments/EXP-TURN-071.md) | Does the turn start drop a recurring Control under police presence in a Criminal game, as the spec gives? |
+| [EXP-TURN-072](../experiments/EXP-TURN-072.md) | Is an item bought beside another player's completed Factory sold at full Cost, as the spec gives? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -768,6 +771,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
+| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
 | [RULE-EVENT-004](../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
@@ -914,7 +918,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | supported |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | established |
-| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported |
+| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | established |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | established |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution | supported |

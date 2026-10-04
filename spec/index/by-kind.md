@@ -127,7 +127,7 @@
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | established |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | established |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | established |
-| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | supported |
+| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | established |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | established |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution | supported |
@@ -593,7 +593,7 @@
 
 ## experiments
 
-73 entries.
+76 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -670,6 +670,9 @@
 | [EXP-TURN-067](../experiments/EXP-TURN-067.md) | Does the turn start drop a recurring Heal at Force 10 and the recurring orders of dead gangs, as the spec gives? | recorded |
 | [EXP-TURN-068](../experiments/EXP-TURN-068.md) | Does a Heal with a pool of 0 or less roll nothing, as the spec gives? | recorded |
 | [EXP-TURN-069](../experiments/EXP-TURN-069.md) | Does an Influence with a pool of 0 or less roll nothing and leave the site unchanged, as the spec gives? | recorded |
+| [EXP-TURN-070](../experiments/EXP-TURN-070.md) | Does the turn start drop a recurring Control in a sector under police presence, as the spec gives? | recorded |
+| [EXP-TURN-071](../experiments/EXP-TURN-071.md) | Does the turn start drop a recurring Control under police presence in a Criminal game, as the spec gives? | recorded |
+| [EXP-TURN-072](../experiments/EXP-TURN-072.md) | Is an item bought beside another player's completed Factory sold at full Cost, as the spec gives? | recorded |
 
 ## bugs
 
