@@ -67,9 +67,9 @@ namespace Rechaos.Tests;
 /// compares byte for byte (FMT-STATE-007, FND-AI-074): Greed, whose Terminate keeps the targets of
 /// the action it replaces, Kill 'Em All with families 5 and 7, and a family-7 Equip that leaves the
 /// focus its handler compares at the next pass (RULE-AI-004, RULE-AI-022, RULE-AI-024, RULE-AI-026).
-/// They hold the combat records too, which the replay rebuilds from the last resolution's attack and
-/// police events; in EXP-TURN-051 the human's gang attacks and the police kill a gang (FMT-STATE-003,
-/// RULE-COMBAT-002, RULE-POLICE-001).
+/// They hold the combat records and result rows too, which the replay rebuilds from the last
+/// resolution's attack and police events; in EXP-TURN-051 the human's gang attacks and the police
+/// kill a gang (FMT-STATE-003, FMT-STATE-008, RULE-COMBAT-002, RULE-POLICE-001).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -294,8 +294,8 @@ public sealed partial class OriginalNewGameExperimentTests
         if (recorded.HasTerm("ai_started", 0))
         {
             AssertPlanningStateMatches(recorded, match);
-            // The fixtures that hold the planning state also hold the combat records.
-            AssertCombatRecordsMatch(recorded, match);
+            // The fixtures that hold the planning state also hold the combat records and result rows.
+            AssertLastCombatMatches(recorded, match);
         }
 
         // RULE-EVENT-001, RULE-EVENT-002: each player's Last Turn reports of the last resolution, in

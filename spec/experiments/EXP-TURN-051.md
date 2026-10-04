@@ -30,8 +30,8 @@ As EXP-TURN-001.
 As EXP-TURN-011's first step: `--seed 61038 --end-turns 24 --orders
 1:0:8:0:0:1,24:0:1:4:18:0`. The human's gang hides every turn and, in the
 twenty-fourth, attacks gang 18 of player 4. After the last press the probe
-reads every combat record that a resolution has written into the end state,
-with the planning state of EXP-TURN-048.
+reads every combat record that a resolution has written and the combat
+result rows into the end state, with the planning state of EXP-TURN-048.
 
 ## Observations
 
@@ -42,7 +42,10 @@ Record 342, its target: definition 33, Force 9 before and after, weapon 0 and
 armor 26, `police_damage` -1, and 9 and -1 in the two bytes FND-COMBAT-008
 calls undefined. Record 327, a gang of player 4 the police found:
 `force_start` 1, `force_final` -6, `police_damage` 7. `force_shown` is 0
-in all three, since Detailed Combat is switched off.
+in all three, since Detailed Combat is switched off. The result row of sector
+12 lists record 0 for player 0 with target 342 and record 342 for player 4
+with target -1, and the row of sector 31 lists record 327 for player 4 with
+`police_hit` 1 for player 4 (FMT-STATE-008).
 
 ## Results
 
@@ -50,7 +53,7 @@ in all three, since Detailed Combat is switched off.
 rebuild makes the same calls with the same bounds and results and reaches the
 same state, and the records rebuilt from its attack and police events of the
 last resolution hold the same definition, Forces, items, opening and
-retaliation damage and police damage.
+retaliation damage and police damage, and every combat result row matches.
 
 ## Conclusion
 

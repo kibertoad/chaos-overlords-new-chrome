@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 91 |
-| `validated` | 127 |
+| `implemented` | 90 |
+| `validated` | 128 |
 
 | Code | Rows |
 |---|---|
@@ -97,7 +97,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-STATE-005` | Comlink message record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-005-comlink-message-record); the text is stored without its trailing spaces, and a message of spaces only is dropped as RULE-COMLINK-003 records. |
 | `FMT-STATE-006` | Last Turn report record | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/LastTurnReportRecordTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record); every report carries the type and arguments SCR-EVENT-001 reads. The replays compare every player's records of the last resolution with the original's. The format stays supported because type 8 has no run and save block 24 has not been decoded against the same memory state; EXP-TURN-035 supplies type 6 with arg1 4. |
 | `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-007-computer-player-planning-record); every field is held with the same value or a representation no rule can tell apart. EXP-TURN-048 to EXP-TURN-051 compare every record byte for byte with the original's after 10 to 24 turns, with `sector_weight`, the three per-player values and the focus and coverage sector of each assigned computer gang. |
-| `FMT-STATE-008` | Combat result row of one sector | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-008-combat-result-row-of-one-sector); the gang entries follow RULE-COMBAT-004. |
+| `FMT-STATE-008` | Combat result row of one sector | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-008-combat-result-row-of-one-sector); the gang entries follow RULE-COMBAT-004. EXP-TURN-049 and EXP-TURN-051 compare every row with the rows the rebuild's attack and police events give: the gangs that fought by player and roster slot, each attacker's target and `police_hit`. |
 | `FMT-STATE-009` | Input event record | supported | complete | None | `DEV-UI-018` | implemented | The rebuild polls input once per frame and keeps no event record (DEV-UI-018); only RULE-UI-014 reads the record ([docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-009-input-event-record)). |
 
 ## RNG
