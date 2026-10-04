@@ -5653,6 +5653,7 @@ None.
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | evidence |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-TOLERANCE-001
 

@@ -179,7 +179,7 @@ public sealed partial class ChaosGame
             return;
         }
         ResetTransientMatchUi();
-        StopPlanningTimer();
+        ClearPlanningTimer();
         ClearMatch();
         _screens.Show(ClientScreen.Title);
     }
