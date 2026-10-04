@@ -76,6 +76,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-048](../experiments/EXP-TURN-048.md) | builds |
 | [EXP-TURN-049](../experiments/EXP-TURN-049.md) | builds |
 | [EXP-TURN-050](../experiments/EXP-TURN-050.md) | builds |
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -905,6 +906,7 @@ None.
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
 | [EXP-TURN-048](../experiments/EXP-TURN-048.md) | body |
 | [EXP-TURN-049](../experiments/EXP-TURN-049.md) | body |
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
 
 ## EXP-TURN-002
 
@@ -1020,6 +1022,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
 | [RULE-AI-016](../rules/RULE-AI-016.md) | body, evidence |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | evidence |
@@ -1322,6 +1325,8 @@ None.
 |---|---|
 | [EXP-TURN-049](../experiments/EXP-TURN-049.md) | body |
 | [EXP-TURN-050](../experiments/EXP-TURN-050.md) | body |
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
+| [FMT-STATE-003](../formats/FMT-STATE-003.md) | body |
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | body, evidence |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
@@ -1330,7 +1335,8 @@ None.
 
 | Cited by | In |
 |---|---|
-| [FMT-STATE-007](../formats/FMT-STATE-007.md) | body, evidence |
+| [FMT-STATE-003](../formats/FMT-STATE-003.md) | body |
+| [FMT-STATE-007](../formats/FMT-STATE-007.md) | evidence |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
@@ -1339,9 +1345,18 @@ None.
 
 | Cited by | In |
 |---|---|
-| [FMT-STATE-007](../formats/FMT-STATE-007.md) | body, evidence |
+| [FMT-STATE-007](../formats/FMT-STATE-007.md) | evidence |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
+
+## EXP-TURN-051
+
+| Cited by | In |
+|---|---|
+| [FMT-STATE-003](../formats/FMT-STATE-003.md) | body, evidence |
+| [FMT-STATE-007](../formats/FMT-STATE-007.md) | body, evidence |
+| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
+| [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -1616,6 +1631,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-048](../experiments/EXP-TURN-048.md) | body |
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | body |
@@ -3057,6 +3074,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | [FMT-STATE-003](../formats/FMT-STATE-003.md) | body, evidence |
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | body, evidence |
@@ -6834,6 +6852,7 @@ None.
 |---|---|
 | [EXP-TURN-011](../experiments/EXP-TURN-011.md) | body |
 | [EXP-TURN-017](../experiments/EXP-TURN-017.md) | body |
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | related |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | body |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, related |
@@ -7353,6 +7372,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body, related |
 | [SRC-MANUAL-GOG](../sources/SRC-MANUAL-GOG.md) | body |
 
