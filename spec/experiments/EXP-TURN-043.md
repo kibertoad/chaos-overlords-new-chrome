@@ -1,6 +1,6 @@
 ---
 id: EXP-TURN-043
-title: Does the Move-capacity repair send back a computer player's mover into a sector that would hold seven of its gangs?
+title: Does the Move-capacity repair send a computer player's mover back when its Moves would put seven of its gangs in one sector?
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -21,9 +21,10 @@ first choice of RULE-MOVE-002 does?
 
 ## Setup
 
-As EXP-TURN-001, with scenario 4 (Kill 'Em All), Mentality 2, a 52-turn
-limit and seed 18. The original executable is hash-verified against
-BLD-GOG-EN-1.1.
+As EXP-TURN-001, with scenario 4 (Kill 'Em All), Mentality 2 and seed 18.
+The probe is also given a 52-turn limit, which Kill 'Em All does not use:
+the run stores `turn_limit` 65535. The original executable is hash-verified
+against BLD-GOG-EN-1.1.
 
 ## Procedure
 

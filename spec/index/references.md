@@ -1304,7 +1304,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | evidence |
+| [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | body, evidence |
 
 ## FMT-AUDIO-001
 

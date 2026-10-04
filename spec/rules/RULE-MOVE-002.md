@@ -122,3 +122,7 @@ None known.
 - Whether the Move panel and the computer players let a player give the
   orders that make the loop cycle, and whether the original then hangs in a
   run, is not recorded [FND-MOVE-006].
+- EXP-TURN-043 runs only the first choice, with a mover whose source counts
+  fewer than six. No run of the original has reached the second choice or the
+  mode-0 fallback (RULE-AI-007), so the status stays `supported` until one
+  does.

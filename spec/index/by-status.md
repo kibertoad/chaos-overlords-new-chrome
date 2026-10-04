@@ -342,7 +342,7 @@
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | How do raiders and family-4 gangs plan, when the probe sets them in memory? |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | Does the final city entry retain the last resolution's cash-short report? |
-| [EXP-TURN-043](../experiments/EXP-TURN-043.md) | Does the Move-capacity repair send back a computer player's mover into a sector that would hold seven of its gangs? |
+| [EXP-TURN-043](../experiments/EXP-TURN-043.md) | Does the Move-capacity repair send a computer player's mover back when its Moves would put seven of its gangs in one sector? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |

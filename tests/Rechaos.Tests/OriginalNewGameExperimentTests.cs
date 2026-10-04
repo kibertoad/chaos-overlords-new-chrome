@@ -246,7 +246,7 @@ public sealed class OriginalNewGameExperimentTests
 
         // RULE-MOVE-002: in EXP-TURN-043 a computer player's Moves would put seven of its gangs in
         // one sector, and the repair keeps the mover in its own sector; the gang sectors compared
-        // here agree with that, though they cannot tell the repair from a Move that never ran.
+        // here agree with that, and TheMoveRepairSendsTheMoverBack checks that the repair ran.
         foreach (var player in match.Players)
         {
             var gangs = player.Gangs.Where(gang => gang.IsActive).ToArray();
@@ -415,6 +415,23 @@ public sealed class OriginalNewGameExperimentTests
         Assert.Equal(recorded.Term("elapsed_turns", 0), match.Coordinator.Turn - 1);
         if (recorded.Term("controller", human.Value) == 0) Assert.Equal(human, match.Coordinator.ActivePlayer);
         else Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
+    }
+
+    // RULE-MOVE-002, EXP-TURN-043: the gang sectors compared above cannot tell the repair from a
+    // Move that never ran, so this checks that the replay reaches the repair. In turn 24 player 2
+    // orders Moves that would put seven of its gangs in sector 62, and the one mover sent back,
+    // from sector 54, resolves in its own sector.
+    [Fact]
+    public void TheMoveRepairSendsTheMoverBack()
+    {
+        var match = ReplayedMatch("EXP-TURN-043", 0);
+        var moves = match.Events
+            .Where(e => e.Turn == 24 && e.Player == new PlayerId(2) && e.Action == GangAction.Move)
+            .ToArray();
+        var sentBack = Assert.Single(moves, e => e.Kind == GameEventKind.CommandResolved
+            && e.Resolution is { PreviousValue: 54, ResultValue: 54 });
+        Assert.Contains(moves, e => e.Kind == GameEventKind.CommandQueued
+            && e.Gang == sentBack.Gang && e.Target == CommandTarget.Sector(62));
     }
 
     // RULE-OBJECTIVE-005: -2 stops before the card at the human's own slot; -1
