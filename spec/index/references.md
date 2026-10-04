@@ -185,6 +185,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | builds, locations |
 | [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | builds, locations |
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | builds, locations |
+| [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | builds, locations |
 | [FND-AUDIO-001](../findings/FND-AUDIO-001.md) | builds, locations |
 | [FND-AUDIO-002](../findings/FND-AUDIO-002.md) | builds, locations |
 | [FND-AUDIO-003](../findings/FND-AUDIO-003.md) | builds, locations |
@@ -2687,6 +2688,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 
@@ -2696,6 +2698,12 @@ None.
 |---|---|
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | evidence |
+
+## FND-ATTACK-005
+
+| Cited by | In |
+|---|---|
+| [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 
 ## FND-AUDIO-001
 
@@ -3167,9 +3175,11 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | body |
 | [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | body |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 
@@ -3778,6 +3788,7 @@ None.
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | body |
 | [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | body |
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | body |
+| [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | body |
 | [FND-AUDIO-006](../findings/FND-AUDIO-006.md) | body |
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | body |
 | [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | body |
@@ -5478,6 +5489,7 @@ None.
 |---|---|
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
+| [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | body |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | body |
 | [FND-COMBAT-008](../findings/FND-COMBAT-008.md) | body |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | body, evidence |
@@ -6115,6 +6127,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | body |
+| [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | body |
 | [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | body |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | body |
 | [FND-EVENT-005](../findings/FND-EVENT-005.md) | body |

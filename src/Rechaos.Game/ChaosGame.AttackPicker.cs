@@ -202,14 +202,18 @@ public sealed partial class ChaosGame
                 AttackCommandLayout.OpponentSource(opponent.Setup.PortraitId, enabled), Color.White);
         }
 
-        // SCR-ATTACK-001: the target cards' art is not recorded; the rebuild draws each target's
-        // portrait and items at the rectangles FND-ATTACK-004 tests, as for the acting gang.
+        // SCR-ATTACK-001, FND-ATTACK-005: each target gets a card frame, its portrait, a black
+        // fill with its Force track over the portrait's bottom, and its items in the card's boxes.
         var cells = AttackPicker.TargetCells(state, _commandTargetOptions, _attackSelection.Opponent);
         for (var cell = 0; cell < cells.Count; cell++)
         {
             var candidate = state.FindGang(new GangId(_commandTargetOptions[cells[cell]].Target.Id))!;
+            if (_uiSprites is not null)
+                batch.Draw(_uiSprites, AttackCommandLayout.TargetCard(cell),
+                    AttackCommandLayout.TargetCardSource, Color.White);
             DrawAttackGang(batch, candidate, AttackCommandLayout.TargetPortrait(cell),
-                itemSlot => AttackCommandLayout.TargetItem(cell, itemSlot));
+                itemSlot => AttackCommandLayout.TargetItem(cell, itemSlot),
+                () => DrawAttackTargetForce(batch, pixel, candidate, cell));
         }
 
         if (_uiKeyedSprites is not null)
@@ -248,15 +252,33 @@ public sealed partial class ChaosGame
         SpriteBatch batch,
         MatchGangState gang,
         Rectangle portrait,
-        Func<int, Rectangle> itemDestination)
+        Func<int, Rectangle> itemDestination,
+        Action? drawOverPortrait = null)
     {
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, portrait,
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
+        drawOverPortrait?.Invoke();
         if (_itemPortraits is null) return;
         for (var slot = 0; slot < AttackCommandLayout.EquippedItemCount; slot++)
             if (EquippedItem(gang, slot) is { } itemId)
                 batch.Draw(_itemPortraits, itemDestination(slot),
                     OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
+    }
+
+    /// <summary>
+    /// SCR-ATTACK-001, FND-ATTACK-005: the black fill, the red track and 6 pixels of the green
+    /// strip per point of the target's Force.
+    /// </summary>
+    private void DrawAttackTargetForce(SpriteBatch batch, Texture2D pixel, MatchGangState gang, int cell)
+    {
+        batch.Draw(pixel, AttackCommandLayout.TargetForceBackground(cell), Color.Black);
+        if (_uiSprites is null) return;
+        var track = AttackCommandLayout.TargetForceTrack(cell);
+        batch.Draw(_uiSprites, track, CombatPanelLayout.RedTrackSource, Color.White);
+        var fill = CombatPanelLayout.TrackFill(gang.Force);
+        if (fill == 0) return;
+        batch.Draw(_uiSprites, new Rectangle(track.X, track.Y, fill, track.Height),
+            CombatPanelLayout.GreenTrackSource(fill), Color.White);
     }
 }
