@@ -138,6 +138,8 @@ public sealed class FinanceUiTests
             [
                 "20 - CASH: MONEY ON HAND RIGHT NOW.",
                 "[13] - UNSPENT: CASH LEFT AFTER QUEUED BRIBES AND EQUIPS.",
+                "  20 CASH - 2 BRIBES - 5 EQUIPS = 13",
+                "  BRIBES PAY FIRST, THEN EQUIPS IN SUBMISSION ORDER.",
                 "(-5) - DELTA: ESTIMATED CHANGE OVER THE WHOLE TURN.",
                 "QUEUED SPENDING IN RESOLUTION ORDER:"
             ],
