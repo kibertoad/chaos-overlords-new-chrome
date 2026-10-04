@@ -106,8 +106,8 @@
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | established |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | established |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established |
-| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | established |
-| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | established |
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income | established |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way | established |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site | established |

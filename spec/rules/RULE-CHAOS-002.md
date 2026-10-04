@@ -1,7 +1,7 @@
 ---
 id: RULE-CHAOS-002
 title: Chaos pays one cash per success, halved once per player and sector outside the player's own sectors
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-CHAOS-001, FND-CHAOS-002, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-009, EXP-TURN-061, EXP-TURN-062, EXP-TURN-063]

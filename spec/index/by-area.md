@@ -564,8 +564,8 @@
 |---|---|---|
 | [FND-CHAOS-001](../findings/FND-CHAOS-001.md) | Chaos is rolled gang by gang in roster order before Combat and paid after Transactions, halved once per player and sector outside the owner's sectors | recorded |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | The Chaos rolls read sector offset 0x04, the Crackdown test sums each player's successes with a band-2 owner's cut by a quarter, and the payout skips gangs that died in combat and also raises cash_earned | recorded |
-| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | established |
-| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | established |
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported |
 
 ## POLICE
 
