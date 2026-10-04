@@ -27,8 +27,8 @@ As EXP-TURN-001.
 As EXP-TURN-004 with Greed (`--scenario 0`), Mentality 0 (`--mentality 0`),
 three Done presses (`--end-turns 3`) and `--seed 23`. In turn 1 write a hire
 order for offer slot 0 into sector 51 (`--hires 1:0:51`); the offer holds a
-gang of Force 3 and Heal -6 (FMT-DATA-001). Before turn 2, write a one-off
-Heal (7) by roster slot 1, the hired gang, into its `action`
+gang whose effective Heal there is -4 or less (FMT-DATA-002). Before turn 2,
+write a one-off Heal (7) by roster slot 1, the hired gang, into its `action`
 (`--orders 2:1:7:0:0:0`).
 
 ## Observations

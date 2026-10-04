@@ -35,8 +35,10 @@ them.
 
 ## Interpretation
 
-A human cannot give a gang at Force 10 a Heal order, one-off or recurring.
-Together with the turn-start clear of a recurring Heal at Force 10
+This places the greying of Heal that FND-UI-021 describes for the gang card's
+menus. The group bar's Heal changes only gangs below Force 10 (FND-UI-021), so
+a human cannot give a gang at Force 10 a Heal order, one-off or recurring, from
+either. Together with the turn-start clear of a recurring Heal at Force 10
 (FND-TURN-004) and the computer's Heal plans, which all require Force below 10
 (RULE-AI-019 to RULE-AI-031), a gang reaches the instant phase at Force 10
 with a Heal order only if its Force rose after the order was given.
