@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 94 |
-| `validated` | 124 |
+| `implemented` | 91 |
+| `validated` | 127 |
 
 | Code | Rows |
 |---|---|
@@ -212,7 +212,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-MOVE-001` | Move pass carries out every Move, player by player, after normalizing each player's destinations | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-MOVE-001`, `DEV-AI-007` | validated | None |
-| `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | None | `DEV-AI-002`, `DEV-MOVE-002` | implemented | The fallback for a mover already sent back draws a random neighbour (RULE-AI-007); after 256 of them DEV-MOVE-002 applies. |
+| `RULE-MOVE-002` | Move destinations are rewritten until no sector would hold more than six of the player's gangs | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-MOVE-002` | validated | EXP-TURN-043 replays a computer player's Moves that would put seven of its gangs in one sector; the repair rewrites the mover's destination to its own sector and the gang sectors agree with the original's. The fallback for a mover already sent back draws a random neighbour (RULE-AI-007); no original run reaches it yet, and after 256 of those draws DEV-MOVE-002 applies. |
 | `SCR-MOVE-001` | Move panel | supported | complete | None | `DEV-MOVE-001`, `DEV-UI-003`, `DEV-UI-008` | implemented | The map crop, taken from the same prepared city map as the city screen with its pylons and markers, the off-city bands, arrow, faces and keys follow the original. The enabled cells follow the edge table of FND-MOVE-007, Enter, Execute and Escape press their faces, and only DEV-MOVE-001 refuses a Move into a full sector. |
 
 ## CONTROL
@@ -270,7 +270,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-FINANCE-001` | The Financial panel projects next turn's cash flow for the whole city or one sector | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-FINANCE-001` | validated | Each row follows FND-FINANCE-002 except the Sell credit of DEV-FINANCE-001: terminating gangs give back their Upkeep, the Sector variant charges a moving gang to its destination, and the Chaos row is a third of Income + Chaos + Force, halved outside the player's sectors. EXP-TURN-044 compares the nine numbers of 21 original panels, City and Sector, with Equip, a hire, Bribe, a one-item Sell, Chaos in an owned sector and a Move out of the sector and into another. Site Protection stays 0, and Terminate, the halved Chaos estimate, the Factory price and a Sell of several items (DEV-FINANCE-001) are not reached. |
+| `RULE-FINANCE-001` | The Financial panel projects next turn's cash flow for the whole city or one sector | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.Presentation.cs | `DEV-FINANCE-001` | validated | Each row follows FND-FINANCE-002 except the Sell credit of DEV-FINANCE-001: terminating gangs give back their Upkeep, the Sector variant charges a moving gang to its destination, and the Chaos row is a third of Income + Chaos + Force, halved outside the player's sectors. EXP-TURN-044 compares the nine numbers of 21 original panels, City and Sector, with Equip, a hire, Bribe, a one-item Sell, Chaos in an owned sector and a Move out of the sector and into another. Site Protection stays 0, and Terminate, the halved Chaos estimate, the Factory price and a Sell of several items (DEV-FINANCE-001) are not reached. |
 | `SCR-FINANCE-001` | Financial panel, City and Sector | supported | complete | None | `DEV-FINANCE-001`, `DEV-UI-006` | implemented | Panel, portrait, close control, row labels, fields, gang count and the Sector variant's sector code follow the original, and Enter or Execute closes it. What the Sector variant draws in the portrait box is not recorded. |
 
 ## ATTACK
@@ -389,7 +389,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-SEARCH-001` | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | supported | complete | None | None | implemented | The rebuild also clears the filters when a save or replay is loaded; whether the original saves them is not known. |
-| `RULE-SEARCH-002` | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | supported | complete | None | None | implemented | None |
+| `RULE-SEARCH-002` | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.Presentation.cs | None | validated | EXP-TURN-045 compares the 98 markers of an original city redraw, for a filter of every even site definition, with their definitions, sectors, ordinals and controlled flags. The only controlled site in the run is the human's Headquarters. |
 | `SCR-SEARCH-001` | Search panel | supported | complete | None | `DEV-SEARCH-001` | implemented | None |
 
 ## OBJECTIVE
@@ -409,7 +409,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-AWARDS-001` | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-037, EXP-TURN-038 and EXP-TURN-039 end a match and compare each player's awards: the Safe, the Dollar Sign and, to a human that hid every turn, the Big Fat Chicken. No run gives a Fist or a Skull, or ties an award. |
-| `RULE-AWARDS-002` | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported | complete | None | None | implemented | None |
+| `RULE-AWARDS-002` | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.Presentation.cs | None | validated | EXP-TURN-038 and EXP-TURN-039 compare the order and places of the endgame's rows with the original's, each with two players tied and a standing skipped. No recorded endgame has an eliminated player or a single survivor, so the eliminated rows and the victory splash are not compared. |
 | `SCR-AWARDS-001` | Endgame screen listing the players by place with their awards or their statistics | supported | complete | None | `DEV-SETUP-002` | implemented | Row typography and timing are unconfirmed against captures of the original. |
 | `SCR-AWARDS-002` | Victory splash shown on the endgame's Awards tab when one player is left | supported | complete | None | None | implemented | None |
 

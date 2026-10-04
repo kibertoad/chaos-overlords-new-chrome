@@ -43,6 +43,21 @@ internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family)
 }
 
 /// <summary>
+/// Search filter entries the probe sets for the first human before the Done press of
+/// <paramref name="Turn"/>: a byte of <c>search_filters</c> per site definition, as the Search panel
+/// writes them (RULE-SEARCH-001).
+/// </summary>
+internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions)
+{
+    public override string ToString() => $"turn {Turn}: search filter {string.Join(" ", Definitions)}";
+}
+
+/// <summary>
+/// One city redraw (FND-SEARCH-006): the viewing player and each site marker it drew as
+/// definition, sector, ordinal and controlled flag.
+/// </summary>
+internal sealed record CityMarkers(int Viewer, List<int[]> Markers);
+
 /// A Financial panel the probe opens before the Done press of <paramref name="Turn"/>, after that
 /// turn's orders and hires are written: the City variant for sector -1, otherwise the Sector variant
 /// of that sector, which the probe selects on the map first (FND-FINANCE-002).
@@ -68,7 +83,8 @@ internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
-    IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null)
+    IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
+    IReadOnlyList<ProbeSearch>? Search = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -98,14 +114,22 @@ internal sealed record NewGameSettings(
             foreach (var order in orders) yield return ("order", order.ToString());
             foreach (var hire in hires) yield return ("hire", hire.ToString());
             foreach (var write in planning) yield return ("planning", write.ToString());
+            var search = (Search ?? []).Where(write => write.Turn == turn).ToArray();
+            foreach (var write in search) yield return ("search", write.ToString());
             foreach (var panel in (Finance ?? []).Where(panel => panel.Turn == turn))
                 yield return ("left_click", panel.ToString());
-            yield return ("left_click", orders.Length + hires.Length + planning.Length == 0
+            yield return ("left_click", orders.Length + hires.Length + planning.Length + search.Length == 0
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
     }
 }
+
+/// <summary>
+/// The first drawing of the endgame (FND-AWARDS-005): the renderer's three arguments and the player
+/// of each name it drew, in drawing order, with the kind of row: splash, ranked or eliminated.
+/// </summary>
+internal sealed record EndgameDrawing(List<int> Arguments, List<int> Rows, List<string> Kinds);
 
 internal sealed record ProbeTrace(
     string Executable,
@@ -116,7 +140,9 @@ internal sealed record ProbeTrace(
     List<int>? RollsAtDone,
     bool Dumped,
     List<string> Notes,
-    List<FinanceRecord>? Finance = null);
+    EndgameDrawing? Endgame = null,
+    List<FinanceRecord>? Finance = null,
+    CityMarkers? Markers = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -136,6 +162,10 @@ internal sealed class NewGameSession(
     private int _panelsOpen;
     private bool _planningLoopReached;
     private bool _awardsReached;
+    private EndgameDrawing? _endgame;
+    private bool _endgameDrawn;
+    private CityMarkers? _redraw;
+    private CityMarkers? _lastRedraw;
     private readonly List<FinanceRecord> _finance = [];
     private FinanceRecord? _financeCapture;
     private int _financePanelSector = -2;
@@ -155,6 +185,11 @@ internal sealed class NewGameSession(
         {
             _process.SetBreakpoint(OriginalAddresses.FinancePanel, OnFinancePanel);
             _process.SetBreakpoint(OriginalAddresses.NumberDraw, OnNumberDraw);
+        }
+        if (settings.Search is { Count: > 0 })
+        {
+            _process.SetBreakpoint(OriginalAddresses.CityRedraw, OnCityRedraw);
+            _process.SetBreakpoint(OriginalAddresses.SiteMarker, OnSiteMarker);
         }
 
         var window = IntPtr.Zero;
@@ -187,7 +222,7 @@ internal sealed class NewGameSession(
         ArmPlanningLoop();
         // A match that ends reaches the endgame instead of another planning phase; the run stops
         // there, once the awards are given (RULE-AWARDS-001).
-        _process.SetBreakpoint(OriginalAddresses.AwardsRows, _ => _awardsReached = true, oneShot: true);
+        _process.SetBreakpoint(OriginalAddresses.AwardsRows, OnAwardsRows, oneShot: true);
         var begun = DateTime.UtcNow;
         var settled = _process.RunUntil(
             () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
@@ -206,6 +241,8 @@ internal sealed class NewGameSession(
                 WriteHire(hire);
             foreach (var write in (settings.Planning ?? []).Where(write => write.Turn == turn))
                 WritePlanning(write);
+            foreach (var write in (settings.Search ?? []).Where(write => write.Turn == turn))
+                WriteSearch(write);
             foreach (var panel in (settings.Finance ?? []).Where(panel => panel.Turn == turn))
                 if (!CaptureFinance(window, panel))
                     return Finish(false, $"The Financial panel of turn {turn} for sector {panel.Sector} was not captured.", rollsBeforeBegin);
@@ -256,6 +293,13 @@ internal sealed class NewGameSession(
                     + $"{_process.ReadInt32(OriginalAddresses.ElapsedTurns)}).", rollsBeforeBegin);
             if (_awardsReached)
             {
+                // FND-AWARDS-005: let the renderer's first drawing finish, so every row is kept. A
+                // drawing that never finished holds only some of the rows, so none are kept.
+                if (!_process.RunUntil(() => _endgameDrawn, TimeSpan.FromSeconds(10)))
+                {
+                    _endgame = null;
+                    _notes.Add("The endgame renderer did not return within 10 seconds; its rows are not kept.");
+                }
                 _notes.Add($"The match ended with turn {turn}; the endgame drew the awards after roll {_rolls.Count}.");
                 break;
             }
@@ -304,6 +348,56 @@ internal sealed class NewGameSession(
 
         return _panelsOpen == 0;
     }
+
+    // FND-AWARDS-005: the renderer's first call, kept until it returns.
+    private void OnAwardsRows(BreakContext context)
+    {
+        _awardsReached = true;
+        _endgame = new EndgameDrawing([context.Argument(0), context.Argument(1), context.Argument(2)], [], []);
+        // Set only now: the helper draws every text of the game.
+        _process.SetBreakpoint(OriginalAddresses.TextDraw, OnTextDraw);
+        _process.SetBreakpoint(context.ReturnAddress, _ => _endgameDrawn = true, oneShot: true);
+    }
+
+    private void OnTextDraw(BreakContext context)
+    {
+        if (_endgameDrawn || _endgame is not { } endgame) return;
+        var kind = (context.ReturnAddress - 5) switch
+        {
+            OriginalAddresses.SplashNameDraw => "splash",
+            OriginalAddresses.RankedNameDraw => "ranked",
+            OriginalAddresses.EliminatedNameDraw => "eliminated",
+            _ => null,
+        };
+        if (kind is null) return;
+        endgame.Rows.Add((int)(((uint)context.Argument(2) - OriginalAddresses.PlayerNames) / OriginalAddresses.PlayerNameStride));
+        endgame.Kinds.Add(kind);
+    }
+
+    private void WriteSearch(ProbeSearch write)
+    {
+        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        foreach (var definition in write.Definitions)
+            _process.Write(OriginalAddresses.SearchFilters
+                + (uint)(human * OriginalAddresses.SiteDefinitionCount + definition), [1]);
+        _notes.Add($"search after roll {_rolls.Count}: {write}");
+    }
+
+    // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
+    // last complete redraw.
+    private void OnCityRedraw(BreakContext context)
+    {
+        var redraw = new CityMarkers(context.Argument(0), []);
+        _redraw = redraw;
+        _process.SetBreakpoint(context.ReturnAddress, _ =>
+        {
+            if (_redraw == redraw) _lastRedraw = redraw;
+            _redraw = null;
+        }, oneShot: true);
+    }
+
+    private void OnSiteMarker(BreakContext context) =>
+        _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3) & 0xFF]);
 
     // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
     // of the Financial control that opens the variant, keeps the nine numbers the panel draws, and
@@ -518,7 +612,7 @@ internal sealed class NewGameSession(
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
-            _finance.Count == 0 ? null : _finance);
+            _endgame, _finance.Count == 0 ? null : _finance, _lastRedraw);
     }
 
     private static void Click(IntPtr window, int x, int y)

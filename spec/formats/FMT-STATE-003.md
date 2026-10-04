@@ -58,7 +58,7 @@ None known.
 
 The records were read from the running original at the end of EXP-TURN-048
 to EXP-TURN-051: an attacker, its target and a gang the police killed in
-EXP-TURN-051, and two records in EXP-TURN-049. The values agree
+EXP-TURN-051, and two records in one run of EXP-TURN-049. The values agree
 with the layout. The 486 records match the 4,860-byte block the save reader and writer
 transfer from `0x004A11E8` [FND-PLATFORM-003], so the records of the last
 resolution are saved with the game.
