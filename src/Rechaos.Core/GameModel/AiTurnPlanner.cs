@@ -289,10 +289,10 @@ public static partial class AiTurnPlanner
     }
 
     /// <summary>
-    /// RULE-AI-031, FND-AI-062: up to five draws from the pool, made only when the pool is not
-    /// empty. A drawn gang and Force of at least 5 attack; otherwise a gang that passes the Heal
-    /// test heals, and one that fails it gets no write and keeps the action it started the pass
-    /// with.
+    /// RULE-AI-031, FND-AI-062: up to five draws from the pool. An empty pool still draws once,
+    /// as roll(0), and its lookup gives no gang, which stops the loop (EXP-TURN-084). A drawn
+    /// gang and Force of at least 5 attack; otherwise a gang that passes the Heal test heals, and
+    /// one that fails it gets no write and keeps the action it started the pass with.
     /// </summary>
     private static void PrepareObjectiveFightOrHeal(
         MatchState state,
@@ -304,10 +304,13 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> targetPool)
     {
         RecoveredAttackDraw? draw = null;
-        for (var attempt = 0;
-             targetPool.Count > 0 && attempt < OriginalAiObjectiveFamilyRules.AttackDraws;
-             attempt++)
+        for (var attempt = 0; attempt < OriginalAiObjectiveFamilyRules.AttackDraws; attempt++)
         {
+            if (targetPool.Count == 0)
+            {
+                state.Random.NextInclusive(0);
+                break;
+            }
             draw = DrawRecoveredAttackTarget(
                 state, gang, visible, targetPool,
                 OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry);

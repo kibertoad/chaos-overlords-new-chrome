@@ -59,12 +59,13 @@ public sealed class DeterministicRandom
 
     public int NextInclusive(int maximum)
     {
-        if (maximum < 1) maximum = 1;
+        // RULE-RNG-002: a bound below 1 rolls as 1, but the call still passed its own bound.
+        var bound = maximum < 1 ? 1 : maximum;
         var first = NextRaw();
         var second = NextRaw();
         var selector = NextRaw();
         var selected = selector > SelectionThreshold ? first : second;
-        var result = selected % maximum + 1;
+        var result = selected % bound + 1;
         RollObserver?.Invoke(maximum, result);
         return result;
     }

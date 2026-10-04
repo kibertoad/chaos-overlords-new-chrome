@@ -56,10 +56,12 @@ reaches the same state, the planning records included. Before the rebuild was
 corrected it diverged at call 3335: the original drew at `0x004354A9` among
 three gangs, the draw from every visible gang (FND-RNG-006), where the rebuild
 drew among the one human gang because it took the human-only pool without
-testing the weight. The corrected rebuild makes the same draw, and also
-reaches the Equip of a Detect item.
+testing the weight. The corrected rebuild makes the same draw. The run also
+reaches the human-only pool at weight 10, a further draw after a failed
+strength test, and the Equip of a Detect item.
 
 ## Conclusion
 
-The run agrees with RULE-AI-030: the human-only pool needs weight 10, and an
-unopposed family-12 gang equips a Detect item when it has nothing else to buy.
+The run agrees with RULE-AI-030: the human-only pool needs weight 10, a failed
+strength test draws again, and an unopposed family-12 gang equips a Detect
+item when it has nothing else to buy.

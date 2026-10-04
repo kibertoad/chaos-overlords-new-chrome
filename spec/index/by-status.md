@@ -293,7 +293,7 @@
 
 ## recorded
 
-438 entries.
+443 entries.
 
 | ID | Title |
 |---|---|
@@ -374,7 +374,7 @@
 | [EXP-TURN-071](../experiments/EXP-TURN-071.md) | Does the turn start drop a recurring Control under police presence in a Criminal game, as the spec gives? |
 | [EXP-TURN-072](../experiments/EXP-TURN-072.md) | Is an item bought beside another player's completed Factory sold at full Cost, as the spec gives? |
 | [EXP-TURN-073](../experiments/EXP-TURN-073.md) | Does a family-7 computer gang with no item left to research fall back to family 0 and move, as the spec gives? |
-| [EXP-TURN-074](../experiments/EXP-TURN-074.md) | Do family-4 computer gangs draw attacks at weight 10 and take a sector after repeated Moves, as the spec gives? |
+| [EXP-TURN-074](../experiments/EXP-TURN-074.md) | Do family-4 computer gangs heal, raise Chaos and draw attacks at weight 10, as the spec gives? |
 | [EXP-TURN-075](../experiments/EXP-TURN-075.md) | Does a hurt family-10 computer gang with no opponent in sight heal, as the spec gives? |
 | [EXP-TURN-076](../experiments/EXP-TURN-076.md) | Does a family-3 computer gang keep an Attack whose drawn target passes the strength test, as the spec gives? |
 | [EXP-TURN-077](../experiments/EXP-TURN-077.md) | Does the family-6 guard target skip weight-10 sectors another family-6 gang already covers, as the spec gives? |
@@ -382,6 +382,11 @@
 | [EXP-TURN-079](../experiments/EXP-TURN-079.md) | Does a family-4 computer gang whose previous action was Chaos or Equip draw attacks at weight 10, as the spec gives? |
 | [EXP-TURN-080](../experiments/EXP-TURN-080.md) | Does a family-12 computer gang in a hostile human's sector draw from every visible gang when its weight is 1, as the spec gives? |
 | [EXP-TURN-081](../experiments/EXP-TURN-081.md) | Does a family-0 computer gang whose previous action was Snitch move, as the spec gives? |
+| [EXP-TURN-082](../experiments/EXP-TURN-082.md) | Does a family-4 computer gang that has moved twice take the sector by Control, as the spec gives? |
+| [EXP-TURN-083](../experiments/EXP-TURN-083.md) | Does a family-7 computer gang in a hostile human's sector draw only human gangs, and does a computer's Influence outside its own sectors resolve? |
+| [EXP-TURN-084](../experiments/EXP-TURN-084.md) | Does a family-14 computer gang on a contested objective draw even when the pool is empty, as the static reading gives? |
+| [EXP-TURN-085](../experiments/EXP-TURN-085.md) | Does a Greed computer player force a hunter hire when a hostile human gang is in sight, as the spec gives? |
+| [EXP-TURN-086](../experiments/EXP-TURN-086.md) | Does a Dominance computer player force a hunter hire when a hostile human gang is in sight, as the spec gives? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
