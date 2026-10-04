@@ -44,7 +44,9 @@ identifiers, special-site mapping, item category ranges, combat-media bounds,
 and the eleven unused item sentinels.
 
 Pass `--debug-phases` to the game to expose individual deterministic resolution
-steps during development.
+steps during development. Pass `--original-computer-moves` to let the computer
+players' Moves go to any sector in the local matches started in that session,
+as the original's do (DEV-AI-007).
 
 ## Build and test
 

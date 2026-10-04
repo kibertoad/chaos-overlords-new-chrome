@@ -543,8 +543,10 @@ started with.
   Move when the planned action becomes a command, as DEV-AI-002 does with the other planned
   actions a human could not order, so the gang has no order that turn and keeps its planning
   history.
-- Setting: None
-- Default: mandatory
+- Setting: `--original-computer-moves` on the game's command line, inverted (the flag switches the
+  deviation off for the local matches started in that session). No screen offers it, and an
+  online match keeps the deviation on.
+- Default: on
 - Justification: The jump comes from a pair left over from another gang's search, which the
   selector was not written to return, and it lets a computer player's gang do what no human's can:
   the same rules apply to every player. It costs no measurable balance. Such Moves come to about
@@ -552,8 +554,10 @@ started with.
   played to turn 208 from the same seeds with a planner-played human seat that could not jump, the
   human seat survived to the end in 45% of the matches when the computer players could jump and in
   47% when they could not, a difference within the matches' noise (95% interval of 2.8 points
-  either way), and its turns survived and sectors held did not change beyond noise either. A
-  setting would keep an unfair advantage that makes no difference a player could notice.
+  either way), and its turns survived and sectors held did not change beyond noise either. Since
+  no player can notice the difference, the setting stays off the Options screen; the flag serves
+  the replays of recorded runs, which run with it switched off, and a player who wants the
+  original's Moves.
 - Dropped: no
 
 ## DEV-EVENT-001

@@ -64,6 +64,7 @@
     "spec/experiments/EXP-TURN-017.json",
     "spec/experiments/EXP-TURN-021.json",
     "spec/experiments/EXP-TURN-048.json",
-    "spec/experiments/EXP-TURN-049.json"
+    "spec/experiments/EXP-TURN-049.json",
+    "spec/experiments/EXP-TURN-059.json"
   ]
 }

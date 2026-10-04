@@ -17,7 +17,8 @@ public sealed record HeadlessMatchOptions(
     int? ThroughTurn = null,
     bool VerifyReplay = false,
     int ProgressEveryTurns = 10,
-    IReadOnlyList<PlayerId>? SimulatedHumans = null);
+    IReadOnlyList<PlayerId>? SimulatedHumans = null,
+    bool ComputerMovesToNeighboursOnly = true);
 
 /// <summary>A stable progress point emitted at an upkeep boundary.</summary>
 public sealed record HeadlessMatchProgress(
@@ -68,7 +69,8 @@ public static class HeadlessMatchRunner
             .ToArray();
         var setup = new MatchSetup(
             options.Scenario, options.Duration, options.Seed, players,
-            aiPolicy: options.AiPolicy);
+            aiPolicy: options.AiPolicy,
+            computerMovesToNeighboursOnly: options.ComputerMovesToNeighboursOnly);
         var initial = OriginalMatchFactory.Create(definitions, setup);
         foreach (var player in simulatedHumans) initial.SimulateHuman(player);
         var recorder = new MatchReplayRecorder(initial);

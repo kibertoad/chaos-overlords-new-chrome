@@ -310,7 +310,10 @@ public static class CommandValidator
         if (rule.SpatialConstraint != SpatialConstraint.AdjacentSector)
             return CommandValidation.Valid();
         // DEV-AI-007: every seat's Move goes to a neighbour, the computer planner's included, where
-        // the original carries out a planned Move to any distance (RULE-MOVE-001).
+        // the original carries out a planned Move to any distance (RULE-MOVE-001). With the
+        // setting off, the planner's Move goes anywhere, as in the original.
+        if (!state.Setup.ComputerMovesToNeighboursOnly && state.IsPlannedByComputer(actor.Owner))
+            return CommandValidation.Valid();
         var sourceX = actor.SectorId % MatchLimits.BoardWidth;
         var sourceY = actor.SectorId / MatchLimits.BoardWidth;
         var targetX = target.Id % MatchLimits.BoardWidth;
