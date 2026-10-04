@@ -591,7 +591,7 @@
 
 ## experiments
 
-64 entries.
+67 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -659,6 +659,9 @@
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | Does a Big Man match at Criminal end on the same turn with the same planning state and awards? | recorded |
 | [EXP-TURN-059](../experiments/EXP-TURN-059.md) | Does a Dominance match at Criminal played for 34 turns draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-060](../experiments/EXP-TURN-060.md) | Does a Siege match at Criminal played for 23 turns draw and resolve as the spec gives? | recorded |
+| [EXP-TURN-061](../experiments/EXP-TURN-061.md) | Does a Power match at Homicidal Maniac with a standing Chaos order play 25 turns as the spec gives? | recorded |
+| [EXP-TURN-062](../experiments/EXP-TURN-062.md) | Does a Greed match at Goon with a standing Chaos order play 26 turns as the spec gives? | recorded |
+| [EXP-TURN-063](../experiments/EXP-TURN-063.md) | Does a Big 40 match at Crime Lord with a standing Chaos order play 30 turns as the spec gives? | recorded |
 
 ## bugs
 
