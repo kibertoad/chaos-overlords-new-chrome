@@ -19044,7 +19044,12 @@
         {"format":"FMT-STATE-006","record":161,"field":"arg1","value":28},
         {"format":"FMT-STATE-006","record":161,"field":"arg2","value":0},
         {"format":"FMT-STATE-006","record":161,"field":"arg3","value":0}
-      ]
+      ],
+      "endgame_rows": {
+        "arguments": [0,0,5],
+        "players": [3,4,2,1,5,0],
+        "kinds": ["ranked","ranked","ranked","ranked","ranked","ranked"]
+      }
     }
   ]
 }

@@ -417,6 +417,16 @@ public sealed class OriginalNewGameExperimentTests
         else Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
     }
 
+    public static TheoryData<string, int> EndgameRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                if (runs[run].EndgameRows is not null && !KnownDivergences.ContainsKey((experiment, run)))
+                    data.Add(experiment, run);
+        return data;
+    }
+
     // RULE-MOVE-002, EXP-TURN-043: the gang sectors compared above cannot tell the repair from a
     // Move that never ran, so this checks that the replay reaches the repair. In turn 24 player 2
     // orders Moves that would put seven of its gangs in sector 62, and the one mover sent back,
@@ -442,6 +452,37 @@ public sealed class OriginalNewGameExperimentTests
                 if (runs[run].Finance.Count > 0 && !KnownDivergences.ContainsKey((experiment, run)))
                     data.Add(experiment, run);
         return data;
+    }
+
+    // RULE-AWARDS-002, FND-AWARDS-005: the probe keeps the player of each name the endgame's first
+    // drawing lists, in drawing order, and whether the row is ranked, eliminated or the victory
+    // splash. The rebuild's endgame lists the same players in the same order and places.
+    // EXP-TURN-038 has two players tied at standing 0 and EXP-TURN-039 two tied at standing 1,
+    // listed in slot order.
+    [Theory]
+    [MemberData(nameof(EndgameRuns))]
+    public void TheEndgameListsThePlayersInTheOriginalsOrder(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var match = StartMatch(recorded, out _);
+        var drawn = recorded.EndgameRows!;
+        if (drawn.Kinds is ["splash"])
+        {
+            Assert.Equal(drawn.Players[0], EndgameNoticePresentation.Survivor(match)?.Player.Value);
+            return;
+        }
+        Assert.Null(EndgameNoticePresentation.Survivor(match));
+        var rows = EndgamePresentation.Rows(match);
+        Assert.Equal(drawn.Players, rows.Select(row => row.Player.Value));
+        Assert.Equal(drawn.Kinds, rows.Select(row =>
+            match.FindPlayer(row.Player)!.Status == PlayerStatus.Eliminated ? "eliminated" : "ranked"));
+        // RULE-OBJECTIVE-002: the original draws a ranked row at the player's stored standing, so a
+        // tie shares a place and the standing after it is skipped. The rebuild's place is that
+        // standing plus one, and 0 for an eliminated row.
+        Assert.Equal(
+            drawn.Players.Zip(drawn.Kinds, (player, kind) =>
+                kind == "ranked" ? recorded.Term("scenario_standing", player) + 1 : 0),
+            rows.Select(row => row.Place));
     }
 
     // RULE-FINANCE-001, FND-FINANCE-003: before a Done press the probe opens the Financial panel and
@@ -701,6 +742,9 @@ public sealed class OriginalNewGameExperimentTests
         }
     }
 
+    // The players of the names the endgame's first drawing listed, in drawing order, and each row's
+    // kind: splash, ranked or eliminated (FND-AWARDS-005).
+    private sealed record RecordedEndgame(IReadOnlyList<int> Players, IReadOnlyList<string> Kinds);
     // A Financial panel the probe opened before the Done press of Turn, with the sector its function
     // was passed (-1 for the City variant) and the nine numbers it drew (FND-FINANCE-003).
     private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
@@ -816,6 +860,11 @@ public sealed class OriginalNewGameExperimentTests
                 .Select(input => RecordedPlanning.Parse(input.GetProperty("value").GetString()!))
                 .ToArray();
             Seed = run.GetProperty("rng_state").GetInt32();
+            EndgameRows = run.TryGetProperty("endgame_rows", out var endgame)
+                ? new RecordedEndgame(
+                    endgame.GetProperty("players").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+                    endgame.GetProperty("kinds").EnumerateArray().Select(value => value.GetString()!).ToArray())
+                : null;
             Finance = run.TryGetProperty("finance", out var finance)
                 ? finance.EnumerateArray().Select(panel => new RecordedFinance(
                     panel.GetProperty("turn").GetInt32(), panel.GetProperty("sector").GetInt32(),
@@ -838,6 +887,7 @@ public sealed class OriginalNewGameExperimentTests
 
         public int Seed { get; }
         public int DoneCount { get; }
+        public RecordedEndgame? EndgameRows { get; }
         public IReadOnlyList<RecordedFinance> Finance { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
