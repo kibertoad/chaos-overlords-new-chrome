@@ -61,7 +61,10 @@ internal sealed record ProbeFinance(int Turn, int Sector)
 /// </summary>
 internal sealed record PanelRecord(string Panel, int AfterRoll, bool Shown);
 
-/// <summary>The values one Financial panel drew, in the order it drew them (FND-FINANCE-002).</summary>
+/// <summary>
+/// The values one Financial panel drew, in the order it drew them (FND-FINANCE-003), with the sector
+/// the probe asked for and the sector the panel function was passed, -2 when it was not called.
+/// </summary>
 internal sealed record FinanceRecord(int Turn, int Sector, int PanelSector, List<int> Values);
 
 /// <summary>
@@ -145,7 +148,7 @@ internal sealed class NewGameSession(
     private bool _awardsReached;
     private readonly List<FinanceRecord> _finance = [];
     private FinanceRecord? _financeCapture;
-    private bool _financeOpen;
+    private int _financePanelSector = -2;
     private bool _financeReturned;
 
     public ProbeTrace Run()
@@ -324,7 +327,9 @@ internal sealed class NewGameSession(
 
     // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
     // of the Financial control that opens the variant, keeps the nine numbers the panel draws, and
-    // presses its close control until the panel function has returned.
+    // presses its close control until the panel function has returned. A capture counts only when
+    // the panel function was passed the asked sector, -1 for the City variant, so a press that opens
+    // the other variant cannot be recorded as this one.
     private bool CaptureFinance(IntPtr window, ProbeFinance panel)
     {
         if (panel.Sector >= 0) _process.Write(OriginalAddresses.SelectedSector, BitConverter.GetBytes(panel.Sector));
@@ -344,27 +349,22 @@ internal sealed class NewGameSession(
 
         _financeCapture = null;
         _finance.Add(capture with { PanelSector = _financePanelSector });
-        _notes.Add($"Financial panel of turn {panel.Turn} for sector {panel.Sector} drew [{string.Join(",", capture.Values)}]");
-        return drawn && _financeReturned;
+        _notes.Add($"Financial panel of turn {panel.Turn} for sector {panel.Sector} opened for sector {_financePanelSector} and drew [{string.Join(",", capture.Values)}]");
+        return drawn && _financeReturned && _financePanelSector == panel.Sector;
     }
-
-    private int _financePanelSector = -2;
 
     private void OnFinancePanel(BreakContext context)
     {
         if (_financeCapture is null) return;
         _financePanelSector = context.Argument(1);
-        _financeOpen = true;
-        _process.SetBreakpoint(context.ReturnAddress, _ =>
-        {
-            _financeOpen = false;
-            _financeReturned = true;
-        }, oneShot: true);
+        _process.SetBreakpoint(context.ReturnAddress, _ => _financeReturned = true, oneShot: true);
     }
 
+    // FND-FINANCE-003: only the panel's own draws in fn_0044D1BB lie in the checked range, so a draw
+    // there is the open panel's.
     private void OnNumberDraw(BreakContext context)
     {
-        if (!_financeOpen || _financeCapture is not { } capture || capture.Values.Count == 9) return;
+        if (_financeCapture is not { } capture || capture.Values.Count == 9) return;
         var call = context.ReturnAddress - 5;
         if (call < OriginalAddresses.FinanceFirstDraw || call > OriginalAddresses.FinanceLastDraw) return;
         capture.Values.Add(context.Argument(2));

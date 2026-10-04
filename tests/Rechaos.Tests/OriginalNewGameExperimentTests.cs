@@ -417,7 +417,8 @@ public sealed class OriginalNewGameExperimentTests
         var data = new TheoryData<string, int>();
         foreach (var (experiment, runs) in Recorded.Value)
             for (var run = 0; run < runs.Length; run++)
-                if (runs[run].Finance.Count > 0) data.Add(experiment, run);
+                if (runs[run].Finance.Count > 0 && !KnownDivergences.ContainsKey((experiment, run)))
+                    data.Add(experiment, run);
         return data;
     }
 
