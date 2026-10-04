@@ -75,7 +75,7 @@ public sealed class AiPlanningStateTests
             new(new GangId(21), player, 1, 0, 0)
         ];
         planning.SetPlannedAction(player, 0, GangAction.Attack, new AiActionTarget(1, 4));
-        planning.SetPlannedAction(player, 1, GangAction.Hide, new AiActionTarget(9, 9));
+        planning.SetPlannedAction(player, 1, GangAction.Influence, new AiActionTarget(9, 0));
         planning.RollActiveGangActions(player, gangs);
         planning.SetPlannedAction(player, 0, GangAction.Move, new AiActionTarget(62, 0));
 
@@ -89,8 +89,8 @@ public sealed class AiPlanningStateTests
         Assert.Equal(AiActionTarget.None, planning.PlannedTarget(player, 0));
         Assert.Equal(GangAction.None, planning.OlderAction(player, 1));
         Assert.Equal(GangAction.None, planning.PreviousAction(player, 1));
-        Assert.Equal(GangAction.Hide, planning.PlannedAction(player, 1));
-        Assert.Equal(new AiActionTarget(9, 9), planning.PlannedTarget(player, 1));
+        Assert.Equal(GangAction.Influence, planning.PlannedAction(player, 1));
+        Assert.Equal(new AiActionTarget(9, 0), planning.PlannedTarget(player, 1));
     }
 
     [Fact]

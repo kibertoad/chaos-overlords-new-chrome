@@ -223,7 +223,7 @@
 
 ## findings
 
-354 entries.
+355 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -300,6 +300,7 @@
 | [FND-AI-071](../findings/FND-AI-071.md) | The family-10 handler improves armor, equips item 44, heals, moves when the mode-9 sector's last finished site hides better, then raises Chaos or hides | recorded |
 | [FND-AI-072](../findings/FND-AI-072.md) | Five attack draws hand the strength test the gang's sector where it expects a roster slot | recorded |
 | [FND-AI-073](../findings/FND-AI-073.md) | Family-10 armor and family-12 weapon and armor gates compare item cost with cash as signed values | recorded |
+| [FND-AI-074](../findings/FND-AI-074.md) | The family handlers write only the target bytes an action uses, and families 3, 5 and 7 store the focus by action | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -584,7 +585,7 @@
 
 ## experiments
 
-47 entries.
+50 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -635,6 +636,9 @@
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? | recorded |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | Does the final city entry retain the last resolution's cash-short report? | recorded |
 | [EXP-TURN-044](../experiments/EXP-TURN-044.md) | What numbers does the Financial panel draw for the orders and hires of a planning turn? | recorded |
+| [EXP-TURN-048](../experiments/EXP-TURN-048.md) | What planning state do the computer players hold after twenty-four turns of Greed at Crime Lord? | recorded |
+| [EXP-TURN-049](../experiments/EXP-TURN-049.md) | What planning state do the computer players hold after twenty-four turns of Kill 'Em All at Crime Lord? | recorded |
+| [EXP-TURN-050](../experiments/EXP-TURN-050.md) | Does a family-7 Equip leave the focus its handler compares at the next pass? | recorded |
 
 ## bugs
 

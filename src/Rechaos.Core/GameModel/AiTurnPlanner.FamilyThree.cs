@@ -39,7 +39,7 @@ public static partial class AiTurnPlanner
     {
         if (OriginalAiFamilyThreeRules.ShouldHeal(gang.Force, effectiveHeal))
         {
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
             return;
         }
 
@@ -58,7 +58,7 @@ public static partial class AiTurnPlanner
             && OriginalAiFamilyThreeRules.SelectHighestCashUnfinishedSite(
                 state, gang.SectorId) is { } siteSlot)
         {
-            SetFamilyThreeInfluence(state, playerId, gangSlot, siteSlot);
+            SetFamilyThreeInfluence(state, playerId, gang, gangSlot, siteSlot);
             return;
         }
 
@@ -100,10 +100,12 @@ public static partial class AiTurnPlanner
         if (!draw.Accepted)
         {
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.None);
+            state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+            state.AiPlanning.SetCoverageSector(playerId, gangSlot, AiPlanningState.InactiveCoverageSector);
             return;
         }
 
-        SetRecoveredAttackAction(state, playerId, gangSlot, draw.Selected);
+        SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
     }
 
     private static void PrepareFamilyThreeInfluenceContinuation(
@@ -118,14 +120,14 @@ public static partial class AiTurnPlanner
         if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)
         {
-            SetRecoveredReplacementEquipmentAction(
-                state, playerId, gangSlot, upgrade.ItemId, upgrade.Slot);
+            SetRecoveredFocusedReplacementEquipmentAction(
+                state, playerId, gangSlot, upgrade);
             return;
         }
 
         if (OriginalAiFamilyThreeRules.ShouldHeal(gang.Force, effectiveHeal))
         {
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
             return;
         }
 
@@ -137,14 +139,14 @@ public static partial class AiTurnPlanner
                 && state.Sectors[gang.SectorId].Sites[previousSiteSlot].Resistance > 0)
             {
                 SetFamilyThreeInfluence(
-                    state, playerId, gangSlot, previousSiteSlot);
+                    state, playerId, gang, gangSlot, previousSiteSlot);
                 return;
             }
 
             if (OriginalAiFamilyThreeRules.SelectHighestCashUnfinishedSite(
                     state, gang.SectorId) is { } siteSlot)
             {
-                SetFamilyThreeInfluence(state, playerId, gangSlot, siteSlot);
+                SetFamilyThreeInfluence(state, playerId, gang, gangSlot, siteSlot);
                 return;
             }
         }
@@ -168,14 +170,19 @@ public static partial class AiTurnPlanner
         TerminateForGreed(state, playerId, gangSlot);
     }
 
+    // The handler stores the gang's sector as its focus with every Influence it plans.
     private static void SetFamilyThreeInfluence(
         MatchState state,
         PlayerId playerId,
+        MatchGangState gang,
         int gangSlot,
-        int siteSlot) =>
+        int siteSlot)
+    {
         state.AiPlanning.SetPlannedAction(
             playerId, gangSlot, GangAction.Influence,
             new AiActionTarget(checked((byte)siteSlot), 0));
+        state.AiPlanning.SetFocusValue(playerId, gangSlot, gang.SectorId);
+    }
 
     private static void PrepareFamilyThreeMove(
         MatchState state,
@@ -198,6 +205,6 @@ public static partial class AiTurnPlanner
             state.Random,
             unfinishedSiteScore: sectorId =>
                 OriginalAiFamilyThreeRules.UnfinishedCashScore(state, sectorId), planning: state.AiPlanning);
-        SetRecoveredMoveAction(state, playerId, gangSlot, target);
+        SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }
 }

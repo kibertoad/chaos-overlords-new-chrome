@@ -4,7 +4,7 @@ title: Family-5 computer gangs influence the best Support site in owned land, ta
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-072, FND-AI-034, FND-AI-033, FND-AI-026, FND-AI-028, FND-EXE-004, EXP-TURN-020]
+evidence: [FND-AI-072, FND-AI-034, FND-AI-033, FND-AI-026, FND-AI-028, FND-EXE-004, EXP-TURN-020, FND-AI-074, EXP-TURN-049]
 conflicting: []
 split_with: []
 related: [RULE-AI-022]

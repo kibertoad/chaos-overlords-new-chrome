@@ -167,6 +167,50 @@ internal sealed class StateExtractor
             }
         }
 
+        // FMT-STATE-007: the computer players' planning records, 16 bytes per player and roster slot
+        // at 0x0048A250 + (player * 81 + slot) * 16. A record of zero bytes, which a player that has
+        // never planned keeps in every slot, is left out.
+        string[] planningFields =
+        [
+            "family", "needs_family", "older_action", "older_target", "older_target_2", "previous_action",
+            "previous_target", "previous_target_2", "planned_action", "planned_target", "planned_target_2",
+            "unk_0B",
+        ];
+        for (var record = 0; record < 486; record++)
+        {
+            var at = 0x0048A250u + (uint)record * 0x10;
+            if (_data.AsSpan(Offset(at, 0x10), 0x10).IndexOfAnyExcept((byte)0) < 0) continue;
+            for (var i = 0; i < planningFields.Length; i++)
+            {
+                var signed = planningFields[i] is "family" or "older_target" or "older_target_2" or "previous_target"
+                    or "previous_target_2" or "planned_target" or "planned_target_2";
+                rows.Add(Field("FMT-STATE-007", record, planningFields[i], ReadByte(at + (uint)i, signed)));
+            }
+            rows.Add(Field("FMT-STATE-007", record, "weapon_cooldown", BitConverter.ToInt16(_data, Offset(at + 0x0C, 2))));
+            rows.Add(Field("FMT-STATE-007", record, "armor_cooldown", BitConverter.ToInt16(_data, Offset(at + 0x0E, 2))));
+        }
+
+        // The computer players' other planning state (FND-AI-019, FND-AI-044, FND-AI-045): ai_started at
+        // 0x00482108, raider_mode at 0x00482158, placement_anchor at 0x0048E2F8, the two 16-bit values of
+        // aux_records (14-byte records at 0x0048C0B0, focus at +0x0A and coverage_sector at +0x0C)
+        // and sector_weight, the 16-bit value at +2 of the 14-byte records at
+        // 0x0048E310 + player * 0x380 + sector * 14.
+        Term(rows, "ai_started", 0x00482108, 6, 1, signed: false);
+        Term(rows, "raider_mode", 0x00482158, 6, 1, signed: false);
+        Term(rows, "placement_anchor", 0x0048E2F8, 6, 4);
+        for (var record = 0; record < 486; record++)
+        {
+            var at = 0x0048C0B0u + (uint)record * 14;
+            rows.Add(new JsonObject { ["term"] = "aux_records.focus", ["index"] = record,
+                ["value"] = BitConverter.ToInt16(_data, Offset(at + 0x0A, 2)) });
+            rows.Add(new JsonObject { ["term"] = "aux_records.coverage_sector", ["index"] = record,
+                ["value"] = BitConverter.ToInt16(_data, Offset(at + 0x0C, 2)) });
+        }
+        for (var player = 0; player < 6; player++)
+            for (var sector = 0; sector < 64; sector++)
+                rows.Add(new JsonObject { ["term"] = "sector_weight", ["index"] = player * 64 + sector,
+                    ["value"] = BitConverter.ToInt16(_data, Offset(0x0048E310u + (uint)(player * 0x380 + sector * 14 + 2), 2)) });
+
         return rows;
     }
 
