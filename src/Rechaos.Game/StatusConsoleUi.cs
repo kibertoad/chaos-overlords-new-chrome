@@ -272,9 +272,10 @@ public static class StatusConsolePresentation
     {
         ArgumentNullException.ThrowIfNull(spends);
         ArgumentNullException.ThrowIfNull(projection);
-        var bribes = spends.Where(spend => spend.Action == GangAction.Bribe).Sum(spend => spend.Price);
-        var equips = spends.Where(spend => spend.Action == GangAction.Equip).Sum(spend => spend.Price);
-        var unspent = checked(cash - bribes - equips);
+        var bribes = spends.Where(spend => spend.Kind == QueuedSpendKind.Bribe).Sum(spend => spend.Price);
+        var equips = spends.Where(spend => spend.Kind == QueuedSpendKind.Equip).Sum(spend => spend.Price);
+        var hires = spends.Where(spend => spend.Kind == QueuedSpendKind.Hire).Sum(spend => spend.Price);
+        var unspent = checked(cash - bribes - equips - hires);
         var delta = ProjectedChange(projection.CashAdjustment);
         List<string> lines =
         [
@@ -282,18 +283,16 @@ public static class StatusConsolePresentation
             "",
             $"{cash} - CASH: MONEY ON HAND RIGHT NOW.",
             "",
-            $"[{unspent}] - UNSPENT: CASH LEFT AFTER QUEUED BRIBES AND EQUIPS.",
+            $"[{unspent}] - UNSPENT: CASH LEFT AFTER QUEUED BRIBES, EQUIPS AND HIRES.",
             "",
-            $"  {cash} CASH - {bribes} BRIBES - {equips} EQUIPS = {unspent}",
+            $"  CASH {cash} - BRIBES {bribes} - EQUIPS {equips} - HIRES {hires} = UNSPENT {unspent}",
             "",
             "  BRIBES PAY FIRST, THEN EQUIPS IN SUBMISSION ORDER.",
-            "  NO CASH IS RESERVED; EARLIER SELLS MAY FUND EQUIPS.",
-            "  BELOW ZERO, A QUEUED PURCHASE MAY FAIL.",
             // RULE-TURN-002, RULE-HIRE-001: hire_phase comes after the transactions and the Chaos
             // payout, and a hire costing more than the cash left then fails.
-            "  HIRES PAY LAST, AFTER CHAOS INCOME, IN OFFER ORDER.",
-            "  UNSPENT DOES NOT SUBTRACT THEM: A HIRE COSTING",
-            "  MORE THAN THE CASH LEFT AT THAT POINT FAILS.",
+            "  HIRES PAY LAST, AFTER CHAOS INCOME.",
+            "  NO CASH IS RESERVED; EARLIER SELLS MAY FUND EQUIPS.",
+            "  BELOW ZERO, A QUEUED PURCHASE MAY FAIL.",
             "",
             $"({delta}) - DELTA: ESTIMATED CHANGE OVER THE WHOLE TURN."
         ];
@@ -323,22 +322,35 @@ public static class StatusConsolePresentation
     ];
 
     public static IReadOnlyList<QueuedCashSpend> QueuedCashSpends(
-        MatchState state, MatchPlayerState player) => state.Commands.ExecutionPlan()
+        MatchState state, MatchPlayerState player)
+    {
         // The plan is ordered by phase and then by sequence, so Instant Bribes precede every
         // Transaction Equip and each group keeps the submission order the resolver uses.
-        .Where(entry => entry.Command.Player == player.Id
-            && entry.Command.Action is GangAction.Bribe or GangAction.Equip)
-        .Select((entry, index) =>
+        var purchases = state.Commands.ExecutionPlan()
+            .Where(entry => entry.Command.Player == player.Id
+                && entry.Command.Action is GangAction.Bribe or GangAction.Equip)
+            .Select(entry =>
+            {
+                var gang = state.FindGang(entry.Command.Gang)!;
+                var gangName = state.Definitions.Gang(gang.DefinitionId).Name;
+                if (entry.Command.Action == GangAction.Bribe)
+                    return new QueuedCashSpend(0, gang.Id, gangName, QueuedSpendKind.Bribe,
+                        "BRIBE", CommandRules.ByAction[GangAction.Bribe].CashCost);
+                var item = state.Definitions.Items[entry.Command.Target.Id];
+                return new QueuedCashSpend(0, gang.Id, gangName, QueuedSpendKind.Equip,
+                    item.Name, SpecialSiteRules.EquipmentCost(state, gang, item));
+            });
+        // RULE-TURN-002, RULE-HIRE-001: hire_phase pays the hires after every purchase. A hire
+        // whose cost was already paid takes no more cash.
+        var hires = player.PendingHires.Where(hire => !hire.InitialCostPaid).Select(hire =>
         {
-            var gang = state.FindGang(entry.Command.Gang)!;
-            var gangName = state.Definitions.Gang(gang.DefinitionId).Name;
-            if (entry.Command.Action == GangAction.Bribe)
-                return new QueuedCashSpend(index + 1, gang.Id, gangName, GangAction.Bribe,
-                    "BRIBE", CommandRules.ByAction[GangAction.Bribe].CashCost);
-            var item = state.Definitions.Items[entry.Command.Target.Id];
-            return new QueuedCashSpend(index + 1, gang.Id, gangName, GangAction.Equip,
-                item.Name, SpecialSiteRules.EquipmentCost(state, gang, item));
-        }).ToArray();
+            var definition = state.Definitions.Gang(hire.GangDefinitionId);
+            return new QueuedCashSpend(0, null, definition.Name, QueuedSpendKind.Hire,
+                "HIRE", HireRules.InitialCost(definition));
+        });
+        return purchases.Concat(hires)
+            .Select((spend, index) => spend with { Position = index + 1 }).ToArray();
+    }
 
     public static int UnspentCash(MatchState state, MatchPlayerState player) =>
         UnspentCash(player, QueuedCashSpends(state, player));
@@ -405,8 +417,16 @@ public static class StatusConsolePresentation
     }
 }
 
+public enum QueuedSpendKind
+{
+    Bribe,
+    Equip,
+    Hire
+}
+
+/// <summary>A queued purchase. A hire has no gang yet, so its <paramref name="Gang"/> is null.</summary>
 public sealed record QueuedCashSpend(
-    int Position, GangId Gang, string GangName, GangAction Action, string Description, int Price);
+    int Position, GangId? Gang, string GangName, QueuedSpendKind Kind, string Description, int Price);
 
 public static class HoverTooltipLayout
 {
