@@ -1,0 +1,157 @@
+using System.Text.Json;
+using Rechaos.Core.GameModel;
+using Rechaos.Game;
+using Xunit;
+
+namespace Rechaos.Tests;
+
+public sealed partial class OriginalNewGameExperimentTests
+{
+    private sealed record RecordedOrder(int Turn, int Slot, int Action, int Target, int Target2, bool Repeat)
+    {
+        // "turn 3: gang slot 0 action 13 target 0 target_2 0 repeat 0", as the probe writes it.
+        public static RecordedOrder Parse(string value)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(value,
+                @"^turn (-?\d+): gang slot (-?\d+) action (-?\d+) target (-?\d+) target_2 (-?\d+) repeat ([01])$");
+            Assert.True(match.Success, value);
+            var numbers = match.Groups.Values.Skip(1)
+                .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            return new(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5] != 0);
+        }
+    }
+
+    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider)
+    {
+        // "turn 2: player 1 gang slot 0 family 4" or "turn 1: player 3 raider_mode 1", as the
+        // probe writes them.
+        public static RecordedPlanning Parse(string value)
+        {
+            var raider = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([1-5]) raider_mode 1$");
+            if (raider.Success)
+                return new(int.Parse(raider.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(raider.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), 0, 0, true);
+            var match = System.Text.RegularExpressions.Regex.Match(value,
+                @"^turn (\d+): player ([1-5]) gang slot (\d+) family (\d+)$");
+            Assert.True(match.Success, value);
+            var numbers = match.Groups.Values.Skip(1)
+                .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            return new(numbers[0], numbers[1], numbers[2], numbers[3], false);
+        }
+    }
+
+    // The players of the names the endgame's first drawing listed, in drawing order, and each row's
+    // kind: splash, ranked or eliminated (FND-AWARDS-005).
+    private sealed record RecordedEndgame(IReadOnlyList<int> Players, IReadOnlyList<string> Kinds);
+    // A Financial panel the probe opened before the Done press of Turn, with the sector its function
+    // was passed (-1 for the City variant) and the nine numbers it drew (FND-FINANCE-003).
+    private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
+
+    // A call of a planning entry panel: its name, the roll count when it was called and whether it
+    // stayed open until Exit was pressed (RULE-SETUP-008).
+    private sealed record RecordedPanel(string Panel, int AfterRoll, bool Shown);
+
+    private sealed record RecordedHire(int Turn, int OfferSlot, int Sector)
+    {
+        // "turn 1: offer slot 0 sector 12", as the probe writes it.
+        public static RecordedHire Parse(string value)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(value,
+                @"^turn (\d+): offer slot ([0-2]) sector (\d+)$");
+            Assert.True(match.Success, value);
+            var numbers = match.Groups.Values.Skip(1)
+                .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            return new(numbers[0], numbers[1], numbers[2]);
+        }
+    }
+
+    private sealed class RecordedRun
+    {
+        private readonly Dictionary<(string, int), int> _terms = [];
+        private readonly Dictionary<(string, int, string), int> _fields = [];
+
+        public RecordedRun(JsonElement run, JsonElement inputs)
+        {
+            Orders = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "order")
+                .Select(input => RecordedOrder.Parse(input.GetProperty("value").GetString()!))
+                .ToArray();
+            Hires = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "hire")
+                .Select(input => RecordedHire.Parse(input.GetProperty("value").GetString()!))
+                .ToArray();
+            Planning = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "planning")
+                .Select(input => RecordedPlanning.Parse(input.GetProperty("value").GetString()!))
+                .ToArray();
+            Seed = run.GetProperty("rng_state").GetInt32();
+            DoneAtRoll = run.TryGetProperty("done_at_roll", out var doneAt)
+                ? doneAt.EnumerateArray().Select(value => value.GetInt32()).ToArray()
+                : [];
+            Panels = run.TryGetProperty("panels", out var panels)
+                ? panels.EnumerateArray().Select(call => new RecordedPanel(
+                    call.GetProperty("panel").GetString()!, call.GetProperty("after_roll").GetInt32(),
+                    call.GetProperty("shown").GetBoolean())).ToArray()
+                : null;
+            EndgameRows = run.TryGetProperty("endgame_rows", out var endgame)
+                ? new RecordedEndgame(
+                    endgame.GetProperty("players").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+                    endgame.GetProperty("kinds").EnumerateArray().Select(value => value.GetString()!).ToArray())
+                : null;
+            Finance = run.TryGetProperty("finance", out var finance)
+                ? finance.EnumerateArray().Select(panel => new RecordedFinance(
+                    panel.GetProperty("turn").GetInt32(), panel.GetProperty("sector").GetInt32(),
+                    panel.GetProperty("values").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : [];
+            Rolls = run.GetProperty("rolls").EnumerateArray()
+                .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
+                .ToArray();
+            foreach (var row in run.GetProperty("end_state").EnumerateArray())
+            {
+                var value = row.GetProperty("value").GetInt32();
+                if (row.TryGetProperty("term", out var term))
+                    _terms[(term.GetString()!, row.GetProperty("index").GetInt32())] = value;
+                else
+                    _fields[(row.GetProperty("format").GetString()!, row.GetProperty("record").GetInt32(),
+                        row.GetProperty("field").GetString()!)] = value;
+            }
+        }
+
+        public int Seed { get; }
+        public int DoneCount => DoneAtRoll.Count;
+        public IReadOnlyList<int> DoneAtRoll { get; }
+        public IReadOnlyList<RecordedPanel>? Panels { get; }
+        public RecordedEndgame? EndgameRows { get; }
+        public IReadOnlyList<RecordedFinance> Finance { get; }
+        public IReadOnlyList<RecordedOrder> Orders { get; }
+        public IReadOnlyList<RecordedHire> Hires { get; }
+        public IReadOnlyList<RecordedPlanning> Planning { get; }
+
+        // controller: 0 for a human at this computer (FND-SETUP-002), -2 for one eliminated who has
+        // not yet seen the card and -1 for one who has (RULE-OBJECTIVE-005). Setup fills every
+        // empty slot with a computer player (FND-SETUP-002), so a -1 here is always a retired human.
+        public IReadOnlyList<PlayerId> Humans => Enumerable.Range(0, 6)
+            .Where(slot => Term("controller", slot) is 0 or -1 or -2).Select(slot => new PlayerId(slot)).ToArray();
+        public IReadOnlyList<(string Call, int Bound, int Result)> Rolls { get; }
+
+        public int Term(string term, int index) => _terms[(term, index)];
+
+        public int Sector(int sector, string field) => _fields[("FMT-STATE-002", sector, field)];
+
+        public int Gang(int record, string field) => _fields[("FMT-STATE-001", record, field)];
+
+        public bool HasTerm(string term, int index) => _terms.ContainsKey((term, index));
+
+        /// <summary>FMT-STATE-006: report <paramref name="index"/> of a player's Last Turn reports.</summary>
+        public LastTurnReportRecord Report(int player, int index)
+        {
+            var record = player * 32 + index;
+            return new(_fields[("FMT-STATE-006", record, "report_type")], _fields[("FMT-STATE-006", record, "arg1")],
+                _fields[("FMT-STATE-006", record, "arg2")], _fields[("FMT-STATE-006", record, "arg3")]);
+        }
+
+        public IReadOnlyList<int> GangRecords(int player) => _fields.Keys
+            .Where(key => key.Item1 == "FMT-STATE-001" && key.Item3 == "player" && key.Item2 / 81 == player)
+            .Select(key => key.Item2).Order().ToArray();
+    }
+}

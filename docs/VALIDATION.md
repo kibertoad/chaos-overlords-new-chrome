@@ -425,6 +425,9 @@ given turn, as the hire screen does (RULE-HIRE-003); the fixture lists it as a
 no local match assigns. The fixture lists each as a `planning` input, and the
 replay makes the same change to the rebuild's planning state; since that change
 bypasses the replay recorder, such a run's journal is not verified.
+A run that ends the match keeps the endgame's first drawing: the renderer's
+arguments and the player of each row it lists, ranked, eliminated or the
+victory splash (FND-AWARDS-005), which the fixture holds as `endgame_rows`.
 `--finance` opens the Financial panel before the Done press of the given turn,
 once that turn's orders and hires are written: the City variant for sector -1,
 otherwise the Sector variant, after writing the sector into the map selection.

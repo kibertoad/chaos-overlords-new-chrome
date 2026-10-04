@@ -194,6 +194,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | builds, locations |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | builds, locations |
 | [FND-AWARDS-004](../findings/FND-AWARDS-004.md) | builds, locations |
+| [FND-AWARDS-005](../findings/FND-AWARDS-005.md) | builds, locations |
 | [FND-BRIBE-001](../findings/FND-BRIBE-001.md) | builds, locations |
 | [FND-CHAOS-001](../findings/FND-CHAOS-001.md) | builds, locations |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | builds, locations |
@@ -1271,6 +1272,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | body, evidence |
@@ -1280,6 +1282,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | body, evidence |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
@@ -2815,6 +2818,7 @@ None.
 |---|---|
 | [BUG-AWARDS-001](../bugs/BUG-AWARDS-001.md) | evidence |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
+| [FND-AWARDS-005](../findings/FND-AWARDS-005.md) | body |
 | glossary: cash_spent | glossary |
 | glossary: damage_inflicted | glossary |
 | glossary: hide_count | glossary |
@@ -2838,6 +2842,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-AWARDS-004](../findings/FND-AWARDS-004.md) | body |
+| [FND-AWARDS-005](../findings/FND-AWARDS-005.md) | body |
 | [FND-OBJECTIVE-002](../findings/FND-OBJECTIVE-002.md) | body |
 | glossary: endgame_rows | glossary |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
@@ -2855,6 +2860,14 @@ None.
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, evidence |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
+
+## FND-AWARDS-005
+
+| Cited by | In |
+|---|---|
+| [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
+| [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 
 ## FND-BRIBE-001
 
@@ -5660,6 +5673,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
+| [FND-AWARDS-005](../findings/FND-AWARDS-005.md) | body |
 | glossary: player_names | glossary |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | evidence |
 | [RULE-UI-009](../rules/RULE-UI-009.md) | evidence |
@@ -6712,6 +6726,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
+| [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, related |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, related |
 

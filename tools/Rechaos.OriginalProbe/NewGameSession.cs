@@ -114,6 +114,12 @@ internal sealed record NewGameSettings(
     }
 }
 
+/// <summary>
+/// The first drawing of the endgame (FND-AWARDS-005): the renderer's three arguments and the player
+/// of each name it drew, in drawing order, with the kind of row: splash, ranked or eliminated.
+/// </summary>
+internal sealed record EndgameDrawing(List<int> Arguments, List<int> Rows, List<string> Kinds);
+
 internal sealed record ProbeTrace(
     string Executable,
     NewGameSettings? Settings,
@@ -123,6 +129,7 @@ internal sealed record ProbeTrace(
     List<int>? RollsAtDone,
     bool Dumped,
     List<string> Notes,
+    EndgameDrawing? Endgame = null,
     List<FinanceRecord>? Finance = null,
     List<PanelRecord>? Panels = null);
 
@@ -146,6 +153,8 @@ internal sealed class NewGameSession(
     private readonly List<PanelRecord> _panels = [];
     private bool _planningLoopReached;
     private bool _awardsReached;
+    private EndgameDrawing? _endgame;
+    private bool _endgameDrawn;
     private readonly List<FinanceRecord> _finance = [];
     private FinanceRecord? _financeCapture;
     private int _financePanelSector = -2;
@@ -197,7 +206,7 @@ internal sealed class NewGameSession(
         ArmPlanningLoop();
         // A match that ends reaches the endgame instead of another planning phase; the run stops
         // there, once the awards are given (RULE-AWARDS-001).
-        _process.SetBreakpoint(OriginalAddresses.AwardsRows, _ => _awardsReached = true, oneShot: true);
+        _process.SetBreakpoint(OriginalAddresses.AwardsRows, OnAwardsRows, oneShot: true);
         var begun = DateTime.UtcNow;
         var settled = _process.RunUntil(
             () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
@@ -266,6 +275,13 @@ internal sealed class NewGameSession(
                     + $"{_process.ReadInt32(OriginalAddresses.ElapsedTurns)}).", rollsBeforeBegin);
             if (_awardsReached)
             {
+                // FND-AWARDS-005: let the renderer's first drawing finish, so every row is kept. A
+                // drawing that never finished holds only some of the rows, so none are kept.
+                if (!_process.RunUntil(() => _endgameDrawn, TimeSpan.FromSeconds(10)))
+                {
+                    _endgame = null;
+                    _notes.Add("The endgame renderer did not return within 10 seconds; its rows are not kept.");
+                }
                 _notes.Add($"The match ended with turn {turn}; the endgame drew the awards after roll {_rolls.Count}.");
                 break;
             }
@@ -323,6 +339,31 @@ internal sealed class NewGameSession(
         }
 
         return _panelsOpen == 0;
+    }
+
+    // FND-AWARDS-005: the renderer's first call, kept until it returns.
+    private void OnAwardsRows(BreakContext context)
+    {
+        _awardsReached = true;
+        _endgame = new EndgameDrawing([context.Argument(0), context.Argument(1), context.Argument(2)], [], []);
+        // Set only now: the helper draws every text of the game.
+        _process.SetBreakpoint(OriginalAddresses.TextDraw, OnTextDraw);
+        _process.SetBreakpoint(context.ReturnAddress, _ => _endgameDrawn = true, oneShot: true);
+    }
+
+    private void OnTextDraw(BreakContext context)
+    {
+        if (_endgameDrawn || _endgame is not { } endgame) return;
+        var kind = (context.ReturnAddress - 5) switch
+        {
+            OriginalAddresses.SplashNameDraw => "splash",
+            OriginalAddresses.RankedNameDraw => "ranked",
+            OriginalAddresses.EliminatedNameDraw => "eliminated",
+            _ => null,
+        };
+        if (kind is null) return;
+        endgame.Rows.Add((int)(((uint)context.Argument(2) - OriginalAddresses.PlayerNames) / OriginalAddresses.PlayerNameStride));
+        endgame.Kinds.Add(kind);
     }
 
     // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
@@ -538,7 +579,7 @@ internal sealed class NewGameSession(
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
-            _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels);
+            _endgame, _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels);
     }
 
     private static void Click(IntPtr window, int x, int y)

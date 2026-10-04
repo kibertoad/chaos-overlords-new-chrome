@@ -34,6 +34,14 @@ internal sealed class StateExtractor
             ["events"] = new JsonArray(),
             ["end_state"] = extractor.EndState(),
         };
+        // FND-AWARDS-005: the players of the endgame's rows in drawing order, and each row's kind.
+        if (trace["Endgame"] is JsonObject endgame)
+            run["endgame_rows"] = new JsonObject
+            {
+                ["arguments"] = endgame["Arguments"]!.DeepClone(),
+                ["players"] = endgame["Rows"]!.DeepClone(),
+                ["kinds"] = endgame["Kinds"]!.DeepClone(),
+            };
         // FND-FINANCE-003: the nine numbers of each Financial panel the run opened, in drawing order,
         // with the sector the panel function was passed.
         if (trace["Finance"] is JsonArray finance)
