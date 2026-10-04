@@ -223,7 +223,7 @@
 
 ## findings
 
-360 entries.
+361 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -303,6 +303,7 @@
 | [FND-AI-074](../findings/FND-AI-074.md) | The family handlers write only the target bytes an action uses, and families 3, 5 and 7 store the focus by action | recorded |
 | [FND-AI-075](../findings/FND-AI-075.md) | Family 12 stores the focus with every action it plans and a Move's destination as the coverage sector | recorded |
 | [FND-AI-076](../findings/FND-AI-076.md) | Family 3 stores -1 in the focus after every action it plans after None, Control, Equip or Heal | recorded |
+| [FND-AI-077](../findings/FND-AI-077.md) | Family 2's late Control gates read a local that holds the item of a planned Equip | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -590,7 +591,7 @@
 
 ## experiments
 
-58 entries.
+60 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -652,10 +653,12 @@
 | [EXP-TURN-052](../experiments/EXP-TURN-052.md) | How does the planning clock run out with a limit of 5 minutes? | recorded |
 | [EXP-TURN-053](../experiments/EXP-TURN-053.md) | What planning state do family-11 and family-12 gangs leave after forty turns of Eliminate? | recorded |
 | [EXP-TURN-054](../experiments/EXP-TURN-054.md) | What focus does a family-3 gang hold after planning Influence in its first case? | recorded |
+| [EXP-TURN-055](../experiments/EXP-TURN-055.md) | Does a family-2 Equip in a hostile human's sector survive the late Control gates in Big 40? | recorded |
+| [EXP-TURN-056](../experiments/EXP-TURN-056.md) | Does a family-2 Equip in a hostile human's sector survive the late Control gates in Acceptance? | recorded |
 
 ## bugs
 
-18 entries.
+19 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -666,6 +669,7 @@
 | [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
 | [BUG-AI-006](../bugs/BUG-AI-006.md) | An objective gang with nothing else to do picks its Influence site against a threshold the planner never sets | supported |
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector | established |
+| [BUG-AI-008](../bugs/BUG-AI-008.md) | Family 2's late Control gates test the sector numbered like the item of a planned Equip | established |
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | The turn-start sound plays even with sound effects turned off | supported |
 | [BUG-AWARDS-001](../bugs/BUG-AWARDS-001.md) | The endgame screen shows at most three awards per player though a player can earn five | supported |
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | Bribe costs 3 instead of the manual's 5 | supported |

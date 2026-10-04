@@ -190,11 +190,12 @@
 
 ## established
 
-73 entries.
+74 entries.
 
 | ID | Title |
 |---|---|
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector |
+| [BUG-AI-008](../bugs/BUG-AI-008.md) | Family 2's late Control gates test the sector numbered like the item of a planned Equip |
 | [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | A band-0 Influence sets the site's progress to its dice pool plus its successes |
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility |
@@ -292,7 +293,7 @@
 
 ## recorded
 
-408 entries.
+411 entries.
 
 | ID | Title |
 |---|---|
@@ -354,6 +355,8 @@
 | [EXP-TURN-052](../experiments/EXP-TURN-052.md) | How does the planning clock run out with a limit of 5 minutes? |
 | [EXP-TURN-053](../experiments/EXP-TURN-053.md) | What planning state do family-11 and family-12 gangs leave after forty turns of Eliminate? |
 | [EXP-TURN-054](../experiments/EXP-TURN-054.md) | What focus does a family-3 gang hold after planning Influence in its first case? |
+| [EXP-TURN-055](../experiments/EXP-TURN-055.md) | Does a family-2 Equip in a hostile human's sector survive the late Control gates in Big 40? |
+| [EXP-TURN-056](../experiments/EXP-TURN-056.md) | Does a family-2 Equip in a hostile human's sector survive the late Control gates in Acceptance? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -420,6 +423,7 @@
 | [FND-AI-074](../findings/FND-AI-074.md) | The family handlers write only the target bytes an action uses, and families 3, 5 and 7 store the focus by action |
 | [FND-AI-075](../findings/FND-AI-075.md) | Family 12 stores the focus with every action it plans and a Move's destination as the coverage sector |
 | [FND-AI-076](../findings/FND-AI-076.md) | Family 3 stores -1 in the focus after every action it plans after None, Control, Equip or Heal |
+| [FND-AI-077](../findings/FND-AI-077.md) | Family 2's late Control gates read a local that holds the item of a planned Equip |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |
@@ -716,6 +720,7 @@ Entries whose status is established and whose findings and experiments are all o
 | ID | Title |
 |---|---|
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector |
+| [BUG-AI-008](../bugs/BUG-AI-008.md) | Family 2's late Control gates test the sector numbered like the item of a planned Equip |
 | [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | A band-0 Influence sets the site's progress to its dice pool plus its successes |
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility |
