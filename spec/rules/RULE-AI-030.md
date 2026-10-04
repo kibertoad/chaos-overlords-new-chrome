@@ -4,7 +4,7 @@ title: Family-12 computer gangs equip and heal when unopposed, step toward their
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-073, EXP-TURN-013, FND-AI-070, FND-AI-033, FND-AI-069, FND-AI-040, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-042, FND-AI-075, EXP-TURN-053]
+evidence: [FND-AI-073, EXP-TURN-013, FND-AI-070, FND-AI-033, FND-AI-069, FND-AI-040, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-042, FND-AI-075, EXP-TURN-053, EXP-TURN-057]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]

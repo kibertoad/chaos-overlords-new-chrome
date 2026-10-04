@@ -4,7 +4,7 @@ title: Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-073, EXP-TURN-013, FND-AI-071, FND-AI-046, FND-AI-019, FND-AI-026, FND-AI-028, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055]
+evidence: [FND-AI-073, EXP-TURN-013, FND-AI-071, FND-AI-046, FND-AI-019, FND-AI-026, FND-AI-028, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, EXP-TURN-057]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]

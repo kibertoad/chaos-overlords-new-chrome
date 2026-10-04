@@ -37,8 +37,10 @@ rows into the end state, as in EXP-TURN-048 and EXP-TURN-037.
 The run made 4662 calls of `roll` over twenty-five Done presses. At the
 end `match_over` is 1 and `elapsed_turns` 24; player 2 holds a scenario
 score of 40, players 4 and 1 hold 27 and 17. The endgame ranks players 2, 4,
-1, 5, 0 and 3. The human holds award 4 and player 2 award 3. The planning
-records of living gangs hold families 13 (12 records) and 14 (4).
+1, 5, 0 and 3. The human holds award 4 and player 2 award 3. At the end 28
+computer gangs are alive. Their planning records hold family 0 in 12, 13 in 9
+and 14 in 4, and the reset value 99 in 3. Three more records hold family 13
+for slots whose gang has died.
 
 ## Results
 
@@ -52,4 +54,5 @@ is assigned, focus and coverage sector.
 ## Conclusion
 
 The run agrees with RULE-OBJECTIVE-001, RULE-OBJECTIVE-002,
-RULE-OBJECTIVE-004 and RULE-AI-031 for a whole match.
+RULE-OBJECTIVE-004, RULE-AWARDS-001, RULE-AWARDS-002 and RULE-AI-031 for a
+whole match.

@@ -1,6 +1,6 @@
 ---
 id: EXP-TURN-057
-title: What planning state do the computer players hold after thirty turns of Eliminate at Crimelord?
+title: What planning state do the computer players hold after thirty turns of Eliminate at Crime Lord?
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -16,8 +16,8 @@ fixture: EXP-TURN-057.json
 ## Question
 
 EXP-TURN-053 compares the planning state of Eliminate at Goon. After thirty
-turns at Crimelord, where the computer gangs take families 3, 7 and 10 to 12,
-does the original hold the planning state the rebuild holds?
+turns at Crime Lord, where the computer gangs take families 0, 3, 7 and 10 to
+12, does the original hold the planning state the rebuild holds?
 
 ## Setup
 
@@ -33,8 +33,9 @@ state, as in EXP-TURN-048.
 
 ## Observations
 
-The run made 12518 calls of `roll`. At the end the planning records of
-living gangs hold families 3 (22 records), 7 (7), 10 (5), 11 (8) and 12 (9).
+The run made 12518 calls of `roll`. At the end 102 computer gangs are alive.
+Their planning records hold family 0 in 47, 3 in 22, 7 in 7, 10 in 5, 11 in 8
+and 12 in 9, and the reset value 99 in 4.
 
 ## Results
 
@@ -46,5 +47,5 @@ focus and coverage sector.
 
 ## Conclusion
 
-The run agrees with RULE-AI-022, RULE-AI-026, RULE-AI-028, RULE-AI-029 and
-RULE-AI-030 for thirty turns of Eliminate.
+The run agrees with RULE-AI-019, RULE-AI-022, RULE-AI-026, RULE-AI-028,
+RULE-AI-029 and RULE-AI-030 for thirty turns of Eliminate.

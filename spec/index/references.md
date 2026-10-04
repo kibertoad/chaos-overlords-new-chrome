@@ -1485,13 +1485,24 @@ None.
 
 ## EXP-TURN-057
 
-None.
+| Cited by | In |
+|---|---|
+| [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
+| [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
+| [RULE-AI-028](../rules/RULE-AI-028.md) | evidence |
+| [RULE-AI-029](../rules/RULE-AI-029.md) | evidence |
+| [RULE-AI-030](../rules/RULE-AI-030.md) | evidence |
 
 ## EXP-TURN-058
 
 | Cited by | In |
 |---|---|
 | [RULE-AI-031](../rules/RULE-AI-031.md) | evidence |
+| [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
+| [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | evidence |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
 
 ## FMT-AUDIO-001
@@ -6736,6 +6747,7 @@ None.
 |---|---|
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | related |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
+| [EXP-TURN-057](../experiments/EXP-TURN-057.md) | body |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 
 ## RULE-AI-020
@@ -6983,6 +6995,7 @@ None.
 | [EXP-TURN-037](../experiments/EXP-TURN-037.md) | body |
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
+| [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
 | glossary: award_least | glossary |
 | glossary: award_most | glossary |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body, related |
@@ -6994,6 +7007,7 @@ None.
 |---|---|
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
+| [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, related |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, related |
 
