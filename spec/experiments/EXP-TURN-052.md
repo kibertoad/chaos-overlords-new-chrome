@@ -15,7 +15,7 @@ fixture: EXP-TURN-052.json
 
 ## Question
 
-With a planning time limit of 2 minutes, what limit does the match store, how
+With a planning time limit of 5 minutes, what limit does the match store, how
 often is the clock bar redrawn, with which width and warning sound, and at
 which elapsed time does the turn end?
 

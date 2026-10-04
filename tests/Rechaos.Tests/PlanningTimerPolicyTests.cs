@@ -123,18 +123,42 @@ public sealed class PlanningTimerPolicyTests
         Assert.Equal(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
     }
 
+    // RULE-TIMER-003: the redraw countdown runs between turns and is not reset when a turn starts,
+    // so the first redraw after the start comes as many ticks later as the countdown had left.
+    [Fact]
+    public void StartingATurnLeavesTheRedrawCountdownWhereItWas()
+    {
+        var period = PresentationClock.Period;
+        var timer = new PlanningTimer();
+        timer.Advance(TimeSpan.Zero);
+        for (var tick = 1; tick <= 4; tick++) timer.Advance(period * tick);
+
+        // Started on tick 4, the countdown has two ticks left: the redraws fall on ticks 6 and 12.
+        // A countdown reset at the start would redraw on tick 10 instead, at 996 ms elapsed, which
+        // is 3 percent and width 59.
+        timer.Start(PlanningTimeLimit.ThirtySeconds, period * 4);
+        for (var tick = 5; tick <= 11; tick++) timer.Advance(period * tick);
+        Assert.Equal(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
+
+        // Tick 12 is 1328 ms elapsed, 4 percent: 60 - 240 / 100.
+        timer.Advance(period * 12);
+        Assert.Equal(58, timer.VisibleBarWidth);
+    }
+
     [Fact]
     public void PausedTimerPreservesItsElapsedTimeUntilResumed()
     {
         var timer = new PlanningTimer();
+        timer.Advance(TimeSpan.Zero);
         timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
         timer.Advance(TimeSpan.FromSeconds(10));
-        var width = timer.VisibleBarWidth;
+        // 10000 ms of 30000 is 33 percent: 60 - 1980 / 100.
+        Assert.Equal(41, timer.VisibleBarWidth);
 
         timer.Pause(TimeSpan.FromSeconds(10));
 
         Assert.Equal(PlanningTimerSignal.None, timer.Advance(TimeSpan.FromHours(1)));
-        Assert.Equal(width, timer.VisibleBarWidth);
+        Assert.Equal(41, timer.VisibleBarWidth);
 
         timer.Resume(TimeSpan.FromHours(1));
 

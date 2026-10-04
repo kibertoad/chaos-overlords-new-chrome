@@ -198,6 +198,8 @@ internal sealed class NewGameSession(
     private readonly List<TimerRecord> _timers = [];
     private TimerRecord? _timer;
     private int _turn;
+    private int _lastElapsed = -1;
+    private int _previousElapsed = -1;
 
     public ProbeTrace Run()
     {
@@ -278,6 +280,11 @@ internal sealed class NewGameSession(
             _rollsAtDone.Add(_rolls.Count);
             _turn = turn;
             var waits = settings.ExpireTurns?.Contains(turn) == true;
+            // A turn left to run out takes its planning limit before the resolution even starts, so
+            // the wait for the next planning phase gets the limit on top of --timeout.
+            var turnTimeout = waits
+                ? timeout + TimeSpan.FromMilliseconds(Math.Max(0, _process.ReadInt32(OriginalAddresses.PlanningLimitMs)))
+                : timeout;
             if (waits) _notes.Add($"turn {turn}: no Done press, waiting for the planning time to run out");
             else Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
             var target = turn;
@@ -318,7 +325,7 @@ internal sealed class NewGameSession(
                 }
 
                 return PlanningWaits(moved.Value);
-            }, timeout);
+            }, turnTimeout);
             if (!next)
                 return Finish(false, $"Turn {turn} never reached the next planning phase (match_over "
                     + $"{_process.Read(OriginalAddresses.MatchOver, 1)[0]}, {_panelsOpen} panel(s) open, elapsed_turns "
@@ -388,9 +395,6 @@ internal sealed class NewGameSession(
             _timer = null;
         }, quiet: true);
     }
-
-    private int _lastElapsed = -1;
-    private int _previousElapsed = -1;
 
     // The loop's first pass, then half a second for a panel it opens to reach its handler. Several
     // humans stop at a Ready card before the loop, and a loop not seen within 30 seconds falls back

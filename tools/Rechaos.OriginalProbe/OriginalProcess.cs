@@ -52,14 +52,12 @@ internal sealed class OriginalProcess : IDisposable
     {
         if (_breakpoints.TryGetValue(address, out var existing))
         {
-            // The breakpoint stays quiet only while every handler on it is.
-            existing.Quiet &= quiet;
-            existing.Handlers.Add(new BreakpointHandler(handler, oneShot));
+            existing.Handlers.Add(new BreakpointHandler(handler, oneShot, quiet));
             return;
         }
 
-        var breakpoint = new Breakpoint(address) { Quiet = quiet };
-        breakpoint.Handlers.Add(new BreakpointHandler(handler, oneShot));
+        var breakpoint = new Breakpoint(address);
+        breakpoint.Handlers.Add(new BreakpointHandler(handler, oneShot, quiet));
         _breakpoints[address] = breakpoint;
         if (_started) Arm(breakpoint);
     }
@@ -230,15 +228,18 @@ internal sealed class OriginalProcess : IDisposable
         if (handle != IntPtr.Zero) Native.CloseHandle(handle);
     }
 
-    private sealed record BreakpointHandler(Action<BreakContext> Action, bool OneShot);
+    private sealed record BreakpointHandler(Action<BreakContext> Action, bool OneShot, bool Quiet);
 
     private sealed class Breakpoint(uint address)
     {
         public uint Address { get; } = address;
         public byte Original { get; set; }
         public bool Armed { get; set; }
-        public bool Quiet { get; set; }
         public List<BreakpointHandler> Handlers { get; } = [];
+
+        // The breakpoint is quiet only while every handler still on it is, so it turns quiet again
+        // once a one-shot handler that was not quiet has fired and been removed.
+        public bool Quiet => Handlers.TrueForAll(handler => handler.Quiet);
     }
 }
 
