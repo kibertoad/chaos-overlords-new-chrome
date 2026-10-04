@@ -31,16 +31,21 @@ same orders with sector 19 as the neutral neighbour
 
 ## Observations
 
-The run made 1452 calls of `roll` over seven Done presses. At the end
-`elapsed_turns` is 7, every player is still active and every player's
-`difficulty_band` is 1.
+The run made 1182 calls of `roll` over six Done presses. At the end
+`elapsed_turns` is 6, every player is still active and every player's
+`difficulty_band` is 1. The human's three gangs are in sector 19: roster
+slots 0 and 2 with `action` and `repeat_action` 3 (Chaos), and roster slot 1,
+the Control gang, with `action` and `repeat_action` 0. Sector 19 has no owner
+and `crackdown_turns` 3 (FMT-STATE-002).
 
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
 DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
 and results and reaches the same state, and at the end each human gang's
-recurring order matches the original's `repeat_action`.
+recurring order matches the original's `repeat_action`. The Crackdown comes to
+sector 19 in turn 6, and the start of turn 7 drops the Control of roster slot
+1 and keeps the Chaos of the other two.
 
 ## Conclusion
 

@@ -90,8 +90,8 @@ namespace Rechaos.Tests;
 /// Combat (RULE-TURN-004), and in EXP-TURN-068 a Heal with a pool below 1 rolls nothing
 /// (RULE-HEAL-001). In EXP-TURN-069 an Influence with a pool below 1 rolls nothing
 /// (RULE-INFLUENCE-001). EXP-TURN-070 and EXP-TURN-071 drop a recurring Control in a sector
-/// under police presence (RULE-TURN-004), and EXP-TURN-072 prices an item beside another
-/// player's completed Factory (RULE-EQUIP-003).
+/// under police presence (RULE-TURN-004), and EXP-TURN-072 prices an item at full Cost beside
+/// another player's completed Factory (RULE-EQUIP-003).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger

@@ -26,7 +26,7 @@ As EXP-TURN-001.
 ## Procedure
 
 As EXP-TURN-004 with Greed (`--scenario 0`), Mentality 0 (`--mentality 0`),
-seven Done presses (`--end-turns 7`) and `--seed 24`. In turns 1 and 2 write a
+six Done presses (`--end-turns 6`) and `--seed 24`. In turns 1 and 2 write a
 hire order for offer slot 0 into sector 33, the headquarters sector
 (`--hires 1:0:33,2:0:33`); the gang hired in turn 1, roster slot 1, has a
 Force plus Control below the Income of sector 26 (FMT-DATA-002). With these
@@ -42,8 +42,12 @@ orders, each written into `action` and, for a recurring order,
 
 ## Observations
 
-The run made 1316 calls of `roll` over seven Done presses. At the end
-`elapsed_turns` is 7 and every player is still active.
+The run made 1077 calls of `roll` over six Done presses. At the end
+`elapsed_turns` is 6 and every player is still active. The human has two
+gangs, both in sector 26: roster slot 0 with `action` and `repeat_action` 3
+(Chaos), and roster slot 1, the Control gang, with `action` and
+`repeat_action` 0. Sector 26 has no owner and `crackdown_turns` 4
+(FMT-STATE-002).
 
 ## Results
 
@@ -52,7 +56,12 @@ DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
 and results and reaches the same state, and at the end each human gang's
 recurring order matches the original's `repeat_action`. The Control of roster
 slot 1 fails each turn until the Chaos of the other two brings a Crackdown to
-sector 26, and the next turn start drops it.
+sector 26 in turn 6, in which the police kill roster slot 2. The start of turn
+7 drops the Control of roster slot 1, which is still active, and keeps the
+Chaos of roster slot 0.
+
+A rebuild that kept the Control at that turn start would hold Control as the
+gang's recurring order and fail the comparison of `repeat_action`.
 
 ## Conclusion
 
