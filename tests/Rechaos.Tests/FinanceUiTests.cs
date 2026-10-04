@@ -148,6 +148,9 @@ public sealed class FinanceUiTests
         Assert.Contains("  GANG UPKEEP       -3", lines);
         Assert.Contains("  CHAOS ESTIMATE    +4", lines);
         Assert.Contains("  TOTAL             -5", lines);
+        // RULE-TURN-002: Chaos income can fund a hire and never an Equip.
+        Assert.Contains("  A POSITIVE DELTA CANNOT PAY FOR AN EQUIP.", lines);
+        Assert.Contains("  HIRES, SO IT CAN PAY FOR A NEW GANG.", lines);
         Assert.DoesNotContain(lines, line => line.StartsWith("  NEW CONTRACTS", StringComparison.Ordinal)
             || line.StartsWith("  SITE CASH", StringComparison.Ordinal));
     }

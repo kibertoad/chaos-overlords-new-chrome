@@ -61,24 +61,9 @@ public static class LocalSetupPolicy
     }
 }
 
-/// <summary>Hover text for the local setup's roster controls (RULE-SETUP-009, RULE-SETUP-010).</summary>
+/// <summary>Hover text for the local setup.</summary>
 public static class SetupRosterTooltip
 {
-    public static IReadOnlyList<string> PortraitArrow { get; } =
-    [
-        "PORTRAIT",
-        "STEPS TO THE NEXT PORTRAIT NO OTHER",
-        "PLAYER HOLDS, WRAPPING AT EITHER END."
-    ];
-
-    public static IReadOnlyList<string> AddPlayer { get; } =
-    [
-        "ADD PLAYER",
-        "PUTS A HUMAN IN THE LOWEST EMPTY COLOUR",
-        "WITH THE LOWEST PORTRAIT NOBODY HOLDS.",
-        "BEGIN KEEPS THE PLAYERS FOR THE NEXT GAME."
-    ];
-
     /// <summary>RULE-SETUP-002: added under a local setup's scenario description.</summary>
     public const string ScenarioRemembered = "THE NEXT NEW GAME STARTS ON YOUR CHOICE.";
 }

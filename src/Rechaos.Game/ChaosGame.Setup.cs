@@ -738,12 +738,6 @@ public sealed partial class ChaosGame
                     DurationSetupTooltip.Lines(Durations[duration.Index]));
             else if (control is { Kind: SetupPanelControlKind.AiMentality } difficulty)
                 DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)difficulty.Index);
-            else if (!_configuringOnlineLobby && SetupButtonLayout.HitTest(hover) == SetupPushButton.AddPlayer)
-                DrawHoverTooltip(batch, pixel, font, hover, SetupRosterTooltip.AddPlayer);
-            else if (!_configuringOnlineLobby && _localSetupRoster.IsHuman(_selectedSetupPlayerSlot)
-                     && (PlayerPortraitLayout.PreviousHit(_selectedSetupPlayerSlot).Contains(hover)
-                         || PlayerPortraitLayout.NextHit(_selectedSetupPlayerSlot).Contains(hover)))
-                DrawHoverTooltip(batch, pixel, font, hover, SetupRosterTooltip.PortraitArrow);
         }
     }
 
