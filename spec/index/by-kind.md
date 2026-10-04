@@ -591,7 +591,7 @@
 
 ## experiments
 
-60 entries.
+62 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -655,6 +655,8 @@
 | [EXP-TURN-054](../experiments/EXP-TURN-054.md) | What focus does a family-3 gang hold after planning Influence in its first case? | recorded |
 | [EXP-TURN-055](../experiments/EXP-TURN-055.md) | Does a family-2 Equip in a hostile human's sector survive the late Control gates in Big 40? | recorded |
 | [EXP-TURN-056](../experiments/EXP-TURN-056.md) | Does a family-2 Equip in a hostile human's sector survive the late Control gates in Acceptance? | recorded |
+| [EXP-TURN-057](../experiments/EXP-TURN-057.md) | What planning state do the computer players hold after thirty turns of Eliminate at Crime Lord? | recorded |
+| [EXP-TURN-058](../experiments/EXP-TURN-058.md) | Does a Big Man match at Criminal end on the same turn with the same planning state and awards? | recorded |
 
 ## bugs
 
