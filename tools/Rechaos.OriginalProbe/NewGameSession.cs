@@ -43,6 +43,46 @@ internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family)
 }
 
 /// <summary>
+/// Search filter entries the probe sets for the first human before the Done press of
+/// <paramref name="Turn"/>: a byte of <c>search_filters</c> per site definition, as the Search panel
+/// writes them (RULE-SEARCH-001).
+/// </summary>
+internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions)
+{
+    public override string ToString() => $"turn {Turn}: search filter {string.Join(" ", Definitions)}";
+}
+
+/// <summary>
+/// One city redraw (FND-SEARCH-006): the viewing player and each site marker it drew as
+/// definition, sector, ordinal and controlled flag.
+/// </summary>
+internal sealed record CityMarkers(int Viewer, List<int[]> Markers);
+
+/// A Financial panel the probe opens before the Done press of <paramref name="Turn"/>, after that
+/// turn's orders and hires are written: the City variant for sector -1, otherwise the Sector variant
+/// of that sector, which the probe selects on the map first (FND-FINANCE-002).
+/// </summary>
+internal sealed record ProbeFinance(int Turn, int Sector)
+{
+    public override string ToString() => Sector < 0
+        ? $"Financial, City ({OriginalAddresses.FinanceCityX}, {OriginalAddresses.FinanceCityY}), turn {Turn}"
+        : $"Financial, Sector ({OriginalAddresses.FinanceSectorX}, {OriginalAddresses.FinanceSectorY}) with sector {Sector} selected, turn {Turn}";
+}
+
+/// <summary>
+/// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
+/// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
+/// Combat Results function returns at once when no fight qualifies.
+/// </summary>
+internal sealed record PanelRecord(string Panel, int AfterRoll, bool Shown);
+
+/// <summary>
+/// The values one Financial panel drew, in the order it drew them (FND-FINANCE-003), with the sector
+/// the probe asked for and the sector the panel function was passed, -2 when it was not called.
+/// </summary>
+internal sealed record FinanceRecord(int Turn, int Sector, int PanelSector, List<int> Values);
+
+/// <summary>
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
 /// Scenario numbers are the original's (FND-SETUP-013).
 /// </summary>
@@ -50,7 +90,8 @@ internal sealed record NewGameSettings(
     int? Scenario, int? Mentality, int? TurnLimit, IReadOnlyList<HumanSlot>? Humans, int EndTurns = 0,
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
-    IReadOnlyList<ProbePlanning>? Planning = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null)
+    IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
+    IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -81,17 +122,27 @@ internal sealed record NewGameSettings(
             foreach (var order in orders) yield return ("order", order.ToString());
             foreach (var hire in hires) yield return ("hire", hire.ToString());
             foreach (var write in planning) yield return ("planning", write.ToString());
+            var search = (Search ?? []).Where(write => write.Turn == turn).ToArray();
+            foreach (var write in search) yield return ("search", write.ToString());
+            foreach (var panel in (Finance ?? []).Where(panel => panel.Turn == turn))
+                yield return ("left_click", panel.ToString());
             if (ExpireTurns?.Contains(turn) == true)
             {
                 yield return ("wait", $"no Done press, turn {turn}: the planning time runs out");
                 continue;
             }
-            yield return ("left_click", orders.Length + hires.Length + planning.Length == 0
+            yield return ("left_click", orders.Length + hires.Length + planning.Length + search.Length == 0
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
     }
 }
+
+/// <summary>
+/// The first drawing of the endgame (FND-AWARDS-005): the renderer's three arguments and the player
+/// of each name it drew, in drawing order, with the kind of row: splash, ranked or eliminated.
+/// </summary>
+internal sealed record EndgameDrawing(List<int> Arguments, List<int> Rows, List<string> Kinds);
 
 /// <summary>
 /// The planning clock of one human planning turn (RULE-TIMER-002, RULE-TIMER-003): the limit in
@@ -110,6 +161,10 @@ internal sealed record ProbeTrace(
     List<int>? RollsAtDone,
     bool Dumped,
     List<string> Notes,
+    EndgameDrawing? Endgame = null,
+    List<FinanceRecord>? Finance = null,
+    List<PanelRecord>? Panels = null,
+    CityMarkers? Markers = null,
     List<TimerRecord>? Timers = null);
 
 /// <summary>
@@ -128,8 +183,18 @@ internal sealed class NewGameSession(
     private int _seed = -1;
     private bool _setupReached;
     private int _panelsOpen;
+    private int _exitPresses;
+    private readonly List<PanelRecord> _panels = [];
     private bool _planningLoopReached;
     private bool _awardsReached;
+    private EndgameDrawing? _endgame;
+    private bool _endgameDrawn;
+    private CityMarkers? _redraw;
+    private CityMarkers? _lastRedraw;
+    private readonly List<FinanceRecord> _finance = [];
+    private FinanceRecord? _financeCapture;
+    private int _financePanelSector = -2;
+    private bool _financeReturned;
     private readonly List<TimerRecord> _timers = [];
     private TimerRecord? _timer;
     private int _turn;
@@ -144,6 +209,16 @@ internal sealed class NewGameSession(
         if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
+        if (settings.Finance is { Count: > 0 })
+        {
+            _process.SetBreakpoint(OriginalAddresses.FinancePanel, OnFinancePanel);
+            _process.SetBreakpoint(OriginalAddresses.NumberDraw, OnNumberDraw);
+        }
+        if (settings.Search is { Count: > 0 })
+        {
+            _process.SetBreakpoint(OriginalAddresses.CityRedraw, OnCityRedraw, quiet: true);
+            _process.SetBreakpoint(OriginalAddresses.SiteMarker, OnSiteMarker, quiet: true);
+        }
         if (settings.ExpireTurns is { Count: > 0 }) ArmTimer();
 
         var window = IntPtr.Zero;
@@ -176,7 +251,7 @@ internal sealed class NewGameSession(
         ArmPlanningLoop();
         // A match that ends reaches the endgame instead of another planning phase; the run stops
         // there, once the awards are given (RULE-AWARDS-001).
-        _process.SetBreakpoint(OriginalAddresses.AwardsRows, _ => _awardsReached = true, oneShot: true);
+        _process.SetBreakpoint(OriginalAddresses.AwardsRows, OnAwardsRows, oneShot: true);
         var begun = DateTime.UtcNow;
         var settled = _process.RunUntil(
             () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
@@ -195,6 +270,11 @@ internal sealed class NewGameSession(
                 WriteHire(hire);
             foreach (var write in (settings.Planning ?? []).Where(write => write.Turn == turn))
                 WritePlanning(write);
+            foreach (var write in (settings.Search ?? []).Where(write => write.Turn == turn))
+                WriteSearch(write);
+            foreach (var panel in (settings.Finance ?? []).Where(panel => panel.Turn == turn))
+                if (!CaptureFinance(window, panel))
+                    return Finish(false, $"The Financial panel of turn {turn} for sector {panel.Sector} was not captured.", rollsBeforeBegin);
             _rollsAtDone.Add(_rolls.Count);
             _turn = turn;
             var waits = settings.ExpireTurns?.Contains(turn) == true;
@@ -245,6 +325,13 @@ internal sealed class NewGameSession(
                     + $"{_process.ReadInt32(OriginalAddresses.ElapsedTurns)}).", rollsBeforeBegin);
             if (_awardsReached)
             {
+                // FND-AWARDS-005: let the renderer's first drawing finish, so every row is kept. A
+                // drawing that never finished holds only some of the rows, so none are kept.
+                if (!_process.RunUntil(() => _endgameDrawn, TimeSpan.FromSeconds(10)))
+                {
+                    _endgame = null;
+                    _notes.Add("The endgame renderer did not return within 10 seconds; its rows are not kept.");
+                }
                 _notes.Add($"The match ended with turn {turn}; the endgame drew the awards after roll {_rolls.Count}.");
                 break;
             }
@@ -320,7 +407,16 @@ internal sealed class NewGameSession(
     {
         _panelsOpen++;
         _notes.Add($"{panel} opened after roll {_rolls.Count}");
-        _process.SetBreakpoint(context.ReturnAddress, _ => _panelsOpen--, oneShot: true);
+        var presses = _exitPresses;
+        // Kept in the order of the calls. A panel still open when the run ends was shown at the
+        // last planning entry, so it stays marked shown until its handler returns.
+        var index = _panels.Count;
+        _panels.Add(new PanelRecord(panel, _rolls.Count, true));
+        _process.SetBreakpoint(context.ReturnAddress, _ =>
+        {
+            _panelsOpen--;
+            _panels[index] = _panels[index] with { Shown = _exitPresses > presses };
+        }, oneShot: true);
     }
 
     // Presses Exit until every panel handler that opened has returned.
@@ -328,11 +424,107 @@ internal sealed class NewGameSession(
     {
         for (var attempt = 0; _panelsOpen > 0 && attempt < 10; attempt++)
         {
+            _exitPresses++;
             Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
             _process.RunUntil(() => _panelsOpen == 0, TimeSpan.FromSeconds(3));
         }
 
         return _panelsOpen == 0;
+    }
+
+    // FND-AWARDS-005: the renderer's first call, kept until it returns.
+    private void OnAwardsRows(BreakContext context)
+    {
+        _awardsReached = true;
+        _endgame = new EndgameDrawing([context.Argument(0), context.Argument(1), context.Argument(2)], [], []);
+        // Set only now: the helper draws every text of the game.
+        _process.SetBreakpoint(OriginalAddresses.TextDraw, OnTextDraw);
+        _process.SetBreakpoint(context.ReturnAddress, _ => _endgameDrawn = true, oneShot: true);
+    }
+
+    private void OnTextDraw(BreakContext context)
+    {
+        if (_endgameDrawn || _endgame is not { } endgame) return;
+        var kind = (context.ReturnAddress - 5) switch
+        {
+            OriginalAddresses.SplashNameDraw => "splash",
+            OriginalAddresses.RankedNameDraw => "ranked",
+            OriginalAddresses.EliminatedNameDraw => "eliminated",
+            _ => null,
+        };
+        if (kind is null) return;
+        endgame.Rows.Add((int)(((uint)context.Argument(2) - OriginalAddresses.PlayerNames) / OriginalAddresses.PlayerNameStride));
+        endgame.Kinds.Add(kind);
+    }
+
+    private void WriteSearch(ProbeSearch write)
+    {
+        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        foreach (var definition in write.Definitions)
+            _process.Write(OriginalAddresses.SearchFilters
+                + (uint)(human * OriginalAddresses.SiteDefinitionCount + definition), [1]);
+        _notes.Add($"search after roll {_rolls.Count}: {write}");
+    }
+
+    // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
+    // last complete redraw.
+    private void OnCityRedraw(BreakContext context)
+    {
+        var redraw = new CityMarkers(context.Argument(0), []);
+        _redraw = redraw;
+        _process.SetBreakpoint(context.ReturnAddress, _ =>
+        {
+            if (_redraw == redraw) _lastRedraw = redraw;
+            _redraw = null;
+        }, oneShot: true);
+    }
+
+    private void OnSiteMarker(BreakContext context) =>
+        _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3) & 0xFF]);
+
+    // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
+    // of the Financial control that opens the variant, keeps the nine numbers the panel draws, and
+    // presses its close control until the panel function has returned. A capture counts only when
+    // the panel function was passed the asked sector, -1 for the City variant, so a press that opens
+    // the other variant cannot be recorded as this one.
+    private bool CaptureFinance(IntPtr window, ProbeFinance panel)
+    {
+        if (panel.Sector >= 0) _process.Write(OriginalAddresses.SelectedSector, BitConverter.GetBytes(panel.Sector));
+        var capture = new FinanceRecord(panel.Turn, panel.Sector, -2, []);
+        _financePanelSector = -2;
+        _financeCapture = capture;
+        _financeReturned = false;
+        if (panel.Sector < 0) Click(window, OriginalAddresses.FinanceCityX, OriginalAddresses.FinanceCityY);
+        else Click(window, OriginalAddresses.FinanceSectorX, OriginalAddresses.FinanceSectorY);
+        var drawn = _process.RunUntil(() => capture.Values.Count == 9, TimeSpan.FromSeconds(10));
+        _process.Pump(TimeSpan.FromSeconds(0.5));
+        for (var attempt = 0; !_financeReturned && attempt < 10; attempt++)
+        {
+            Click(window, OriginalAddresses.FinanceCloseX, OriginalAddresses.FinanceCloseY);
+            _process.RunUntil(() => _financeReturned, TimeSpan.FromSeconds(3));
+        }
+
+        _financeCapture = null;
+        _finance.Add(capture with { PanelSector = _financePanelSector });
+        _notes.Add($"Financial panel of turn {panel.Turn} for sector {panel.Sector} opened for sector {_financePanelSector} and drew [{string.Join(",", capture.Values)}]");
+        return drawn && _financeReturned && _financePanelSector == panel.Sector;
+    }
+
+    private void OnFinancePanel(BreakContext context)
+    {
+        if (_financeCapture is null) return;
+        _financePanelSector = context.Argument(1);
+        _process.SetBreakpoint(context.ReturnAddress, _ => _financeReturned = true, oneShot: true);
+    }
+
+    // FND-FINANCE-003: only the panel's own draws in fn_0044D1BB lie in the checked range, so a draw
+    // there is the open panel's.
+    private void OnNumberDraw(BreakContext context)
+    {
+        if (_financeCapture is not { } capture || capture.Values.Count == 9) return;
+        var call = context.ReturnAddress - 5;
+        if (call < OriginalAddresses.FinanceFirstDraw || call > OriginalAddresses.FinanceLastDraw) return;
+        capture.Values.Add(context.Argument(2));
     }
 
     private void WriteOrder(ProbeOrder order)
@@ -504,6 +696,7 @@ internal sealed class NewGameSession(
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
+            _endgame, _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels, _lastRedraw,
             _timers.Count == 0 ? null : _timers);
     }
 

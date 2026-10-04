@@ -16,7 +16,7 @@
 
 ## supported
 
-169 entries.
+167 entries.
 
 | ID | Title |
 |---|---|
@@ -86,7 +86,6 @@
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc |
-| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack |
@@ -122,7 +121,6 @@
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows |
-| [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events |
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players |
@@ -192,7 +190,7 @@
 
 ## established
 
-71 entries.
+73 entries.
 
 | ID | Title |
 |---|---|
@@ -215,6 +213,7 @@
 | [RULE-AI-027](../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way |
@@ -252,6 +251,7 @@
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon |
 | [RULE-RNG-001](../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws |
+| [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name |
@@ -292,7 +292,7 @@
 
 ## recorded
 
-391 entries.
+397 entries.
 
 | ID | Title |
 |---|---|
@@ -342,6 +342,9 @@
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | How do raiders and family-4 gangs plan, when the probe sets them in memory? |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | Does the final city entry retain the last resolution's cash-short report? |
+| [EXP-TURN-043](../experiments/EXP-TURN-043.md) | Does the Move-capacity repair send a computer player's mover back when its Moves would put seven of its gangs in one sector? |
+| [EXP-TURN-044](../experiments/EXP-TURN-044.md) | What numbers does the Financial panel draw for the orders and hires of a planning turn? |
+| [EXP-TURN-045](../experiments/EXP-TURN-045.md) | Which site markers does the city show for a Search filter of every even site definition? |
 | [EXP-TURN-046](../experiments/EXP-TURN-046.md) | How does the planning clock run out with a limit of 30 seconds? |
 | [EXP-TURN-047](../experiments/EXP-TURN-047.md) | How does the planning clock run out with a limit of 2 minutes? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
@@ -430,6 +433,7 @@
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions |
 | [FND-AWARDS-004](../findings/FND-AWARDS-004.md) | The awards table holds five codes per player, and the results screen shows the victory splash when exactly one player is still active, whoever controls it |
+| [FND-AWARDS-005](../findings/FND-AWARDS-005.md) | The endgame renderer draws each listed player's name with fn_00413FD5 from three calls, so the name pointer names the player of each row in drawing order |
 | [FND-BRIBE-001](../findings/FND-BRIBE-001.md) | Bribe needs and costs 3 cash and adds 3 to the sector's Tolerance with no cap |
 | [FND-CHAOS-001](../findings/FND-CHAOS-001.md) | Chaos is rolled gang by gang in roster order before Combat and paid after Transactions, halved once per player and sector outside the owner's sectors |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | The Chaos rolls read sector offset 0x04, the Crackdown test sums each player's successes with a band-2 owner's cut by a quarter, and the payout skips gangs that died in combat and also raises cash_earned |
@@ -498,6 +502,7 @@
 | [FND-EXE-005](../findings/FND-EXE-005.md) | The resource section holds five menus, one accelerator table, 27 dialogs, 104 strings, four bitmaps, eight icon groups and a version record, and the code loads each kind through one place |
 | [FND-FINANCE-001](../findings/FND-FINANCE-001.md) | The Financial panel is drawn as the 320-pixel alternate panel with four-cell value fields and its own close control |
 | [FND-FINANCE-002](../findings/FND-FINANCE-002.md) | The Financial panel sums eight amounts from the queued orders, hires and owned sectors; the Sector variant opens PX05019 when a sector is passed and limits every sum to that sector |
+| [FND-FINANCE-003](../findings/FND-FINANCE-003.md) | The Financial panel draws its nine numbers through fn_00414187, passing each value as the third argument, from nine fixed calls in drawing order |
 | [FND-GANG-001](../findings/FND-GANG-001.md) | Before planning, each active gang's fourteen statistics are rebuilt from its definition, its three items and its owned sector's completed sites |
 | [FND-GANG-002](../findings/FND-GANG-002.md) | The gang definition panel is the 320-pixel alternate panel PX05022 with its own field origins |
 | [FND-GANG-003](../findings/FND-GANG-003.md) | Death and Terminate write only the gang record's sector byte, leaving its items and other fields in place |
@@ -596,6 +601,7 @@
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | The city draws a marker for each site the viewer controls and for each other site whose definition the viewer's Search filter selects |
 | [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | Search rows show the controlled-site icon and the site name, a press flips a row between 0 and 1, the filter is not saved, and the city counts a site as controlled when its progress reaches its Resistance in a sector the viewer owns |
 | [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry |
+| [FND-SEARCH-006](../findings/FND-SEARCH-006.md) | The city redraw passes each site marker's definition, sector, ordinal and controlled flag to fn_00412AC4 from two calls, and takes the viewing player as its first argument |
 | [FND-SELL-001](../findings/FND-SELL-001.md) | The Sell panel handler shows each carried item at half its cost and stores the chosen items as a three-bit mask in the target byte |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | The Sell panel marks each selected row with a 192-by-54 keyed overlay from PX00129 and restores the panel's own pixels for the others |
 | [FND-SETUP-001](../findings/FND-SETUP-001.md) | Starting cash is $500 in Armageddon and $20 otherwise, and one exact player name overrides it with $1,500 after setup |
@@ -717,6 +723,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-AI-027](../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way |
@@ -754,6 +761,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon |
 | [RULE-RNG-001](../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws |
+| [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name |
@@ -848,7 +856,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
 | [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM | superseded |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | established |
-| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | established |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income | established |
@@ -896,7 +904,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | established |
 | [RULE-RNG-001](../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start | established |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws | established |
-| [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | supported |
+| [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | established |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | established |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | established |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported |

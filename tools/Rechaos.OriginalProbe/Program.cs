@@ -29,6 +29,8 @@ static int Usage()
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
               [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer_slot:sector>,...] [--sound]
               [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...]
+              [--search <turn:definition+definition...>,...]
+              [--finance <turn:sector>,...]
               [--time-limit <0-3>] [--expire-turns <turn>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -66,6 +68,8 @@ static int NewGame(string[] args)
         args.Contains("--sound"),
         Option(args, "--hires") is { } hires ? ParseHires(hires) : null,
         ParsePlanning(Option(args, "--families"), Option(args, "--raiders")),
+        Option(args, "--finance") is { } finance ? ParseFinance(finance) : null,
+        Option(args, "--search") is { } search ? ParseSearch(search) : null,
         IntOption(args, "--time-limit"),
         Option(args, "--expire-turns")?.Split(',').Select(value =>
             int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
@@ -169,6 +173,29 @@ static IReadOnlyList<ProbeHire> ParseHires(string value) =>
         if (parts.Length != 3 || parts[1] is < 0 or > 2 || parts[2] is < 0 or > 63)
             throw new FormatException($"A hire needs a turn, an offer slot 0 to 2 and a sector 0 to 63: {hire}");
         return new ProbeHire(parts[0], parts[1], parts[2]);
+    }).ToArray();
+
+// --search turn:definition+definition+...,... sets the human's Search filter entries (ProbeSearch).
+static IReadOnlyList<ProbeSearch> ParseSearch(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        if (parts.Length != 2) throw new FormatException($"A Search write needs a turn and definitions: {entry}");
+        var definitions = parts[1].Split('+').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        if (definitions.Any(definition => definition is < 0 or >= OriginalAddresses.SiteDefinitionCount))
+            throw new FormatException($"A site definition is 0 to 21: {entry}");
+        return new ProbeSearch(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), definitions);
+    }).ToArray();
+
+// --finance turn:sector,... opens the Financial panel before that turn's Done, the City variant for
+// sector -1 (ProbeFinance).
+static IReadOnlyList<ProbeFinance> ParseFinance(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(panel =>
+    {
+        var parts = panel.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        if (parts.Length != 2 || parts[1] is < -1 or > 63)
+            throw new FormatException($"A Financial panel needs a turn and a sector -1 to 63: {panel}");
+        return new ProbeFinance(parts[0], parts[1]);
     }).ToArray();
 
 // --families turn:player:slot:family,... writes a planning record's family; --raiders

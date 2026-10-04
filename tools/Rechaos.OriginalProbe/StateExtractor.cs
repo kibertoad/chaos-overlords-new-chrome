@@ -34,6 +34,50 @@ internal sealed class StateExtractor
             ["events"] = new JsonArray(),
             ["end_state"] = extractor.EndState(),
         };
+        // FND-AWARDS-005: the players of the endgame's rows in drawing order, and each row's kind.
+        if (trace["Endgame"] is JsonObject endgame)
+            run["endgame_rows"] = new JsonObject
+            {
+                ["arguments"] = endgame["Arguments"]!.DeepClone(),
+                ["players"] = endgame["Rows"]!.DeepClone(),
+                ["kinds"] = endgame["Kinds"]!.DeepClone(),
+            };
+        // FND-SEARCH-006: the site markers of the last city redraw before the dump, each as
+        // definition, sector, ordinal and controlled flag, with the viewing player.
+        if (trace["Markers"] is JsonObject markers)
+            run["city_markers"] = new JsonObject
+            {
+                ["viewer"] = markers["Viewer"]!.GetValue<int>(),
+                ["markers"] = markers["Markers"]!.DeepClone(),
+            };
+        // FND-FINANCE-003: the nine numbers of each Financial panel the run opened, in drawing order,
+        // with the sector the panel function was passed.
+        if (trace["Finance"] is JsonArray finance)
+        {
+            var panels = new JsonArray();
+            foreach (var panel in finance)
+                panels.Add(new JsonObject
+                {
+                    ["turn"] = panel!["Turn"]!.GetValue<int>(),
+                    ["sector"] = panel["PanelSector"]!.GetValue<int>(),
+                    ["values"] = new JsonArray(panel["Values"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+                });
+            run["finance"] = panels;
+        }
+        // RULE-SETUP-008: each call of a planning entry panel, with the roll count and whether it
+        // was shown, in the order of the calls.
+        if (trace["Panels"] is JsonArray panelCalls)
+        {
+            var calls = new JsonArray();
+            foreach (var call in panelCalls)
+                calls.Add(new JsonObject
+                {
+                    ["panel"] = call!["Panel"]!.GetValue<string>(),
+                    ["after_roll"] = call["AfterRoll"]!.GetValue<int>(),
+                    ["shown"] = call["Shown"]!.GetValue<bool>(),
+                });
+            run["panels"] = calls;
+        }
         // RULE-TIMER-002, RULE-TIMER-003: each timed planning turn the probe let run out, with
         // the limit, each bar redraw as elapsed milliseconds, width and effect slot, and the elapsed
         // milliseconds of the last test that did not end the turn and of the one that did.

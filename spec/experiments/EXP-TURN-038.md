@@ -9,7 +9,7 @@ reproduced_by: []
 environment: Windows 11 Pro 10.0.26200, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, run with the compatibility layers DWM8And16BitMitigation, WINXPSP2, DISABLEDWM, 640X480 and DISABLEDXMAXIMIZEDWINDOWEDMODE, windowed, Warn if Idle Gangs and Detailed Combat switched off and the sound levels set to 0 in memory, under the Windows debugging interface of tools/Rechaos.OriginalProbe
 starting_state: new-game
 recording: null
-repetitions: 1
+repetitions: 2
 fixture: EXP-TURN-038.json
 ---
 
@@ -41,6 +41,12 @@ the sectors' Support and Tolerance at the end count it. The human held award
 2 (Big Fat Chicken) and award 4 (Safe), player 3 held award 3 (Dollar Sign),
 and no other player held one.
 
+A second run with the same inputs, recorded once the probe kept the players
+of the endgame's rows (FND-AWARDS-005), made the same calls of `roll` with
+the same results and reached the same end state. The endgame's first drawing
+was the table, with every player in a ranked row, in the order 3, 4, 2, 1, 5 and 0:
+players 3 and 4, tied at standing 0, are listed in slot order and no player is listed at standing 1. The fixture holds this run.
+
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
@@ -50,7 +56,11 @@ the same players. The scores count a site from the evaluation of the turn
 that completes it, and the sectors count it after the rebuild that ends the
 match.
 
+The rebuild's endgame lists the players in the same order and places
+(`TheEndgameListsThePlayersInTheOriginalsOrder`).
+
 ## Conclusion
 
 The run agrees with RULE-OBJECTIVE-002, RULE-OBJECTIVE-004, RULE-AWARDS-001
-and the rebuild of RULE-SITE-001 at the end of a match.
+and the rebuild of RULE-SITE-001 at the end of a match, and with RULE-AWARDS-002
+for a table with a tie and a skipped standing.
