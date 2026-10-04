@@ -83,9 +83,18 @@ public sealed class MatchEventStream(
     /// Events from <paramref name="afterSeq"/> onwards, reconnecting until cancelled.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A refusal the server will keep repeating — a revoked token, a deleted match — ends the
     /// stream rather than being retried forever. One that describes this attempt (a timeout, a rate
     /// limit) is retried with backoff; see <see cref="MultiplayerApiException.EndsTheStream"/>.
+    /// </para>
+    /// <para>
+    /// The enumeration never ends on its own: it ends by throwing, and cancellation throws too,
+    /// whenever it lands. It used to end quietly when the token was cancelled before a connection
+    /// opened or while a failed one was being retried, and the session's pump read that as the
+    /// stream finishing: a resync that cancelled the cycle in that window stopped the pump for
+    /// good with the resync still pending, no restart and no failure.
+    /// </para>
     /// </remarks>
     public async IAsyncEnumerable<MatchEvent> ReadAsync(
         int afterSeq,
@@ -96,8 +105,9 @@ public sealed class MatchEventStream(
         var attempt = 0;
         var outage = new System.Diagnostics.Stopwatch();
         Exception? lastFailure = null;
-        while (!cancellationToken.IsCancellationRequested)
+        while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // Establish the protocol again on every fresh connection. A stream that reconnects
             // through a redeploy is exactly the case where the server on the other end may no
             // longer be the one this session handshook with, and every call made after it would go
@@ -121,6 +131,8 @@ public sealed class MatchEventStream(
                     if (!moved) failure ??= new IOException("the server closed the event stream");
                     if (failure is not null)
                     {
+                        // A connection torn down because the read was cancelled is not an outage.
+                        cancellationToken.ThrowIfCancellationRequested();
                         lastFailure = failure;
                         onReconnect?.Invoke(failure, attempt + 1);
                         if (!outage.IsRunning) outage.Start();
@@ -144,11 +156,11 @@ public sealed class MatchEventStream(
             }
             else if (connected.Failure is { } failure)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 lastFailure = failure;
                 onReconnect?.Invoke(failure, attempt + 1);
                 if (!outage.IsRunning) outage.Start();
             }
-            if (cancellationToken.IsCancellationRequested) yield break;
             attempt++;
             if (_policy.NextDelay(lastFailure, attempt, outage.Elapsed) is not { } delay)
                 throw new RetryExhaustedException(
