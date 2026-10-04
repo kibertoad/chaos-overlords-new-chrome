@@ -154,7 +154,7 @@ result. The rebuild groups the combat-phase `GameEvent`s by sector instead
 | Field | Offset | Rules | Rebuild state | Match | Notes |
 |---|---|---|---|---|---|
 | `players[p][k].gang` | `0x00` | RULE-COMBAT-002 (writes), RULE-COMBAT-004 | `GameEvent.Gang` of attack and police events, grouped by `CombatantDetails.SectorId`, ordered by roster slot | not checked | RULE-COMBAT-004 plays only the viewer's gangs that fought. `CombatPresentationOrder.Order` follows that order, then also plays every other event of the phase the viewer can see. Whether that matches the rule was not checked. |
-| `players[p][k].target` | `0x02` | RULE-COMBAT-002 (writes), RULE-COMBAT-004 | `GameEvent.Target` of the attack event | representation | -1 when the gang did not attack: no attack event. |
+| `players[p][k].target` | `0x02` | RULE-COMBAT-002 (writes), RULE-COMBAT-004 | `GameEvent.Target` of the attack event | representation | -1 when the gang did not attack: no attack event. EXP-TURN-049 and EXP-TURN-051 compare the rows the events give, gang and target entries and `police_hit`, with the original's. |
 | `police_hit` | `0x90` | RULE-POLICE-001 (writes), RULE-COMBAT-004 | `PoliceAttackResolutionDetails.Detected` | representation | |
 
 Verdict: the gang entries follow RULE-COMBAT-004: sector order, the viewer's own attack and

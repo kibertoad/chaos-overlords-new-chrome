@@ -83,17 +83,18 @@ public sealed partial class OriginalNewGameExperimentTests
         Assert.True(auxDifferences.Count == 0, string.Join("; ", auxDifferences));
     }
 
-    // FMT-STATE-003, RULE-COMBAT-002, RULE-POLICE-001: the combat records the last resolution wrote,
-    // rebuilt from its attack and police events. The original writes bytes 0 to 8 only for the gangs
-    // that fought and keeps the bytes of earlier resolutions in the others, so only the records of
-    // gangs that fought are compared, and police_damage in all 486. force_shown is Detailed
-    // Combat's (RULE-COMBAT-004), which the probe switches off, and damage_dealt and
-    // retaliation_taken of a gang that did not attack are undefined (FND-COMBAT-008).
-    private static void AssertCombatRecordsMatch(RecordedRun recorded, MatchState match)
+    // FMT-STATE-003, FMT-STATE-008, RULE-COMBAT-002, RULE-POLICE-001: the combat records and result
+    // rows the last resolution wrote, rebuilt from its attack and police events. The original writes
+    // bytes 0 to 8 of a record only for the gangs that fought and keeps the bytes of earlier
+    // resolutions in the others, so only the records of gangs that fought are compared, and
+    // police_damage in all 486. force_shown is Detailed Combat's (RULE-COMBAT-004), which the probe
+    // switches off, and damage_dealt and retaliation_taken of a gang that did not attack are
+    // undefined (FND-COMBAT-008). Every result row is compared.
+    private static void AssertLastCombatMatches(RecordedRun recorded, MatchState match)
     {
         var turn = match.Outcome?.Turn ?? match.Coordinator.Turn - 1;
         var fought = new Dictionary<int, (CombatantDetails Gang, int Damage)>();
-        var attacks = new Dictionary<int, (int Dealt, int Taken)>();
+        var attacks = new Dictionary<int, (int Dealt, int Taken, int Target)>();
         var police = new Dictionary<int, int>();
         void Fought(CombatantDetails gang, int damage)
         {
@@ -113,7 +114,8 @@ public sealed partial class OriginalNewGameExperimentTests
                 Fought(attacker, fight.RetaliationDamage);
                 Fought(defender, evaded ? 0 : fight.Damage);
                 attacks[attacker.Owner.Value * AiPlanningState.GangSlotsPerPlayer + attacker.RosterSlot!.Value] =
-                    (evaded ? -1 : fight.Damage, fight.RetaliationDamage);
+                    (evaded ? -1 : fight.Damage, fight.RetaliationDamage,
+                        defender.Owner.Value * AiPlanningState.GangSlotsPerPlayer + defender.RosterSlot!.Value);
             }
         }
 
@@ -145,6 +147,35 @@ public sealed partial class OriginalNewGameExperimentTests
             Compare(record, "damage_dealt", attack.Dealt);
             Compare(record, "retaliation_taken", attack.Taken);
         }
+
+        // FMT-STATE-008, RULE-COMBAT-002: the result row of each sector lists, per player, the gangs
+        // that fought there in roster order, with the target of each attacker, and marks the players
+        // the police found there. A row the phase left empty is not in the fixture.
+        for (var sector = 0; sector < 64; sector++)
+            for (var player = 0; player < 6; player++)
+            {
+                var gangs = fought
+                    .Where(entry => entry.Key / AiPlanningState.GangSlotsPerPlayer == player && entry.Value.Gang.SectorId == sector)
+                    .Select(entry => entry.Key).Order().ToArray();
+                for (var k = 0; k < 6; k++)
+                {
+                    var gang = k < gangs.Length ? gangs[k] : -1;
+                    var target = gang != -1 && attacks.TryGetValue(gang, out var attack) ? attack.Target : -1;
+                    (string Field, int Rebuilt)[] entry = [($"players[{player}][{k}].gang", gang), ($"players[{player}][{k}].target", target)];
+                    foreach (var (field, rebuilt) in entry)
+                    {
+                        var original = recorded.HasField("FMT-STATE-008", sector, $"players[{player}][{k}].gang")
+                            ? recorded.Field("FMT-STATE-008", sector, field)
+                            : -1;
+                        if (original != rebuilt)
+                            differences.Add($"combat result row {sector} {field}: the original holds {original}, the rebuild {rebuilt}");
+                    }
+                }
+                var hit = recorded.FieldOrZero("FMT-STATE-008", sector, $"police_hit[{player}]");
+                var found = police.Keys.Any(record => record / AiPlanningState.GangSlotsPerPlayer == player && fought[record].Gang.SectorId == sector) ? 1 : 0;
+                if (hit != found)
+                    differences.Add($"combat result row {sector} police_hit[{player}]: the original holds {hit}, the rebuild {found}");
+            }
         Assert.True(differences.Count == 0, string.Join("; ", differences));
     }
 }

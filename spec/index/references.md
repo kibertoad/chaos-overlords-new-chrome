@@ -1351,6 +1351,7 @@ None.
 | [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
 | [FMT-STATE-003](../formats/FMT-STATE-003.md) | body |
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | body, evidence |
+| [FMT-STATE-008](../formats/FMT-STATE-008.md) | body |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
 
@@ -1360,9 +1361,11 @@ None.
 |---|---|
 | [FMT-STATE-003](../formats/FMT-STATE-003.md) | body |
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | evidence |
+| [FMT-STATE-008](../formats/FMT-STATE-008.md) | body, evidence |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
+| [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 
 ## EXP-TURN-050
 
@@ -1378,6 +1381,7 @@ None.
 |---|---|
 | [FMT-STATE-003](../formats/FMT-STATE-003.md) | body, evidence |
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | body, evidence |
+| [FMT-STATE-008](../formats/FMT-STATE-008.md) | body, evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | evidence |
 
@@ -1742,6 +1746,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-048](../experiments/EXP-TURN-048.md) | body |
+| [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | body, related |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, related |
