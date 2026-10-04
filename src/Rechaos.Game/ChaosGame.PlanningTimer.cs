@@ -127,10 +127,12 @@ public enum PlanningTimerSignal
 /// </summary>
 /// <remarks>
 /// The bar is drawn when the clock starts and then on every sixth tick of the presentation clock,
-/// and it keeps the width of its last redraw in between. The redraw countdown runs on every tick
-/// whether or not a turn is timed and is not reset when a turn starts, so the first redraw after
-/// the start comes one to six ticks later. Each redraw plays the warning its remaining time calls
-/// for. The turn expires on the first update whose elapsed whole milliseconds exceed the limit.
+/// and it keeps the width of its last redraw in between. The redraw countdown runs on the ticks of
+/// untimed turns too and is not reset when a turn starts, so the first redraw after the start comes
+/// one to six ticks later. While a timed turn is paused (the game menu open) the countdown stops,
+/// and <see cref="Resume"/> drops the ticks that passed. Each redraw plays the warning its
+/// remaining time calls for. The turn expires on the first update whose elapsed whole milliseconds
+/// exceed the limit.
 /// </remarks>
 public sealed class PlanningTimer
 {
