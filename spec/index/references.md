@@ -1544,6 +1544,7 @@ None.
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | body, evidence |
 | [RULE-MOVE-001](../rules/RULE-MOVE-001.md) | evidence |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
+| [RULE-SITE-001](../rules/RULE-SITE-001.md) | evidence |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | evidence |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | evidence |
 
@@ -1568,9 +1569,12 @@ None.
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
 | [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | evidence |
+| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | body, evidence |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
+| [RULE-HIRE-002](../rules/RULE-HIRE-002.md) | evidence |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | body, evidence |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
+| [RULE-SITE-001](../rules/RULE-SITE-001.md) | evidence |
 
 ## EXP-TURN-063
 
@@ -3739,7 +3743,7 @@ None.
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
 | [FND-EQUIP-006](../findings/FND-EQUIP-006.md) | body |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
-| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | evidence |
+| [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | body, evidence |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | body, evidence |
 
 ## FND-EQUIP-002
@@ -4298,7 +4302,7 @@ None.
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | evidence |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | evidence |
-| [RULE-SITE-001](../rules/RULE-SITE-001.md) | evidence |
+| [RULE-SITE-001](../rules/RULE-SITE-001.md) | body, evidence |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | evidence |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, evidence |
 

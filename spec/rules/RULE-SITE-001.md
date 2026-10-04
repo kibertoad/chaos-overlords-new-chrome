@@ -4,7 +4,7 @@ title: Before planning, each sector record is rebuilt from its completed sites, 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GANG-001, FND-STATE-001, FND-UPKEEP-001, FND-UI-035, FND-TURN-001, FND-CONTROL-001, SRC-MANUAL-GOG, SRC-RECHAOS-3561D41, FND-EXE-004, EXP-SETUP-001, FND-OBJECTIVE-004, EXP-TURN-038]
+evidence: [FND-GANG-001, FND-STATE-001, FND-UPKEEP-001, FND-UI-035, FND-TURN-001, FND-CONTROL-001, SRC-MANUAL-GOG, SRC-RECHAOS-3561D41, FND-EXE-004, EXP-SETUP-001, FND-OBJECTIVE-004, EXP-TURN-038, EXP-TURN-059, EXP-TURN-062]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -136,6 +136,10 @@ None known.
 
 ## Open questions
 
+- No recorded run completes both a Science Center and a Research Lab in one
+  sector, where the order of the special tests decides `research_level`, and
+  no run reaches a sum that wraps the signed byte. Those cases rest on the
+  static readings [FND-GANG-001, FND-STATE-001].
 - The site definition fields read here are placed in FMT-DATA-001 from its
   own evidence; this rule does not confirm their offsets.
 - Where `turn_start` calls this recomputation relative to `upkeep_phase` is given
