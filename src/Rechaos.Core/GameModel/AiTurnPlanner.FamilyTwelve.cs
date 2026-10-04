@@ -157,11 +157,7 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Attack,
-            new AiActionTarget(
-                checked((byte)selected.Value.Gang.Owner.Value),
-                checked((byte)selected.Value.Slot)));
-        state.AiPlanning.SetFocusValue(playerId, gangSlot, gang.SectorId);
+        // FND-AI-075: the Attack stores the gang's sector as the focus.
+        SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, selected.Value);
     }
 }
