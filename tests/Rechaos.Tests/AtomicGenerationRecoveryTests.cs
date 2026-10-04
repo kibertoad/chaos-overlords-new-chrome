@@ -80,7 +80,7 @@ public sealed class AtomicGenerationRecoveryTests
             File.WriteAllText(path, "previous generation");
 
             AtomicGenerationRecovery.SaveAtomic(
-                path, directory, ".bak", "unreadable",
+                path, ".bak", "unreadable",
                 stream => stream.Write("next generation"u8),
                 candidate => validated.Add(Path.GetFullPath(candidate)),
                 trustExistingPrimary: true);

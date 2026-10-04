@@ -64,6 +64,20 @@ internal sealed class StateExtractor
                 });
             run["finance"] = panels;
         }
+        // RULE-SETUP-008: each call of a planning entry panel, with the roll count and whether it
+        // was shown, in the order of the calls.
+        if (trace["Panels"] is JsonArray panelCalls)
+        {
+            var calls = new JsonArray();
+            foreach (var call in panelCalls)
+                calls.Add(new JsonObject
+                {
+                    ["panel"] = call!["Panel"]!.GetValue<string>(),
+                    ["after_roll"] = call["AfterRoll"]!.GetValue<int>(),
+                    ["shown"] = call["Shown"]!.GetValue<bool>(),
+                });
+            run["panels"] = calls;
+        }
         return run;
     }
 

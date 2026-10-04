@@ -1036,6 +1036,7 @@ None.
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | evidence |
 | [RULE-EVENT-013](../rules/RULE-EVENT-013.md) | evidence |
+| [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | evidence |
 
 ## EXP-TURN-012
 
@@ -1223,6 +1224,8 @@ None.
 | [EXP-TURN-050](../experiments/EXP-TURN-050.md) | body |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | evidence |
+| [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | evidence |
+| [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | evidence |
 
 ## EXP-TURN-032
 
@@ -7084,6 +7087,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-031](../experiments/EXP-TURN-031.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | related |
 | glossary: events_page_drawn | glossary |
 | glossary: events_planning_start | glossary |
@@ -7622,6 +7626,8 @@ None.
 |---|---|
 | [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
 | [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
+| [EXP-TURN-011](../experiments/EXP-TURN-011.md) | body |
+| [EXP-TURN-031](../experiments/EXP-TURN-031.md) | body |
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | body, related |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | body, related |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body |
