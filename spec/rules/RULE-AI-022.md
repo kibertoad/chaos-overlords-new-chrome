@@ -4,7 +4,7 @@ title: Family-3 computer gangs influence the best Cash site in owned land, take 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-072, FND-AI-033, FND-AI-034, FND-AI-021, FND-AI-026, FND-AI-028, FND-EXE-004, FND-AI-042, EXP-TURN-022, FND-AI-074, EXP-TURN-048, EXP-TURN-049]
+evidence: [FND-AI-072, FND-AI-033, FND-AI-034, FND-AI-021, FND-AI-026, FND-AI-028, FND-EXE-004, FND-AI-042, EXP-TURN-022, FND-AI-074, EXP-TURN-048, EXP-TURN-049, FND-AI-076, EXP-TURN-054]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -84,6 +84,9 @@ define site_builder(player, slot, kind):
         else:
             plan(idx, ACTION_MOVE, select_sector(player, mode, idx), 0)
             aux_records[idx].focus = -1
+        # family 3 only: the four branches meet at a store of -1 (FND-AI-076)
+        if kind == 0:
+            aux_records[idx].focus = -1
     else if prev == ACTION_SNITCH:
         plan(idx, ACTION_MOVE, select_sector(player, mode, idx), 0)
         aux_records[idx].focus = -1
@@ -160,7 +163,9 @@ slot, Move the sector `select_sector` returns, Equip the item. An Equip sets
 the matching cooldown to three times the item's cost. May set the gang's
 auxiliary values to -1 and its family to 11 or 2. Sets `focus` to the gang's
 sector after Influence and Attack and to -1 after Heal, Move, Equip and a
-failed draw; Control leaves it (FND-AI-074). Draws one `roll` for the
+failed draw; Control leaves it (FND-AI-074). Family 3 then stores -1 after
+every action it plans after None, Control, Equip or Heal, so there its
+Influence and Control leave -1 too (FND-AI-076). Draws one `roll` for the
 single target draw, plus the draws inside `select_sector`.
 
 ## Edge cases

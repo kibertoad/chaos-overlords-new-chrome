@@ -223,7 +223,7 @@
 
 ## findings
 
-359 entries.
+360 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -302,6 +302,7 @@
 | [FND-AI-073](../findings/FND-AI-073.md) | Family-10 armor and family-12 weapon and armor gates compare item cost with cash as signed values | recorded |
 | [FND-AI-074](../findings/FND-AI-074.md) | The family handlers write only the target bytes an action uses, and families 3, 5 and 7 store the focus by action | recorded |
 | [FND-AI-075](../findings/FND-AI-075.md) | Family 12 stores the focus with every action it plans and a Move's destination as the coverage sector | recorded |
+| [FND-AI-076](../findings/FND-AI-076.md) | Family 3 stores -1 in the focus after every action it plans after None, Control, Equip or Heal | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -589,7 +590,7 @@
 
 ## experiments
 
-57 entries.
+58 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -650,6 +651,7 @@
 | [EXP-TURN-051](../experiments/EXP-TURN-051.md) | What do the combat records hold after an attack, its retaliation and a police kill? | recorded |
 | [EXP-TURN-052](../experiments/EXP-TURN-052.md) | How does the planning clock run out with a limit of 5 minutes? | recorded |
 | [EXP-TURN-053](../experiments/EXP-TURN-053.md) | What planning state do family-11 and family-12 gangs leave after forty turns of Eliminate? | recorded |
+| [EXP-TURN-054](../experiments/EXP-TURN-054.md) | What focus does a family-3 gang hold after planning Influence in its first case? | recorded |
 
 ## bugs
 

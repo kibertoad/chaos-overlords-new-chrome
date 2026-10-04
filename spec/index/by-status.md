@@ -292,7 +292,7 @@
 
 ## recorded
 
-406 entries.
+408 entries.
 
 | ID | Title |
 |---|---|
@@ -353,6 +353,7 @@
 | [EXP-TURN-051](../experiments/EXP-TURN-051.md) | What do the combat records hold after an attack, its retaliation and a police kill? |
 | [EXP-TURN-052](../experiments/EXP-TURN-052.md) | How does the planning clock run out with a limit of 5 minutes? |
 | [EXP-TURN-053](../experiments/EXP-TURN-053.md) | What planning state do family-11 and family-12 gangs leave after forty turns of Eliminate? |
+| [EXP-TURN-054](../experiments/EXP-TURN-054.md) | What focus does a family-3 gang hold after planning Influence in its first case? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -418,6 +419,7 @@
 | [FND-AI-073](../findings/FND-AI-073.md) | Family-10 armor and family-12 weapon and armor gates compare item cost with cash as signed values |
 | [FND-AI-074](../findings/FND-AI-074.md) | The family handlers write only the target bytes an action uses, and families 3, 5 and 7 store the focus by action |
 | [FND-AI-075](../findings/FND-AI-075.md) | Family 12 stores the focus with every action it plans and a Move's destination as the coverage sector |
+| [FND-AI-076](../findings/FND-AI-076.md) | Family 3 stores -1 in the focus after every action it plans after None, Control, Equip or Heal |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 |
