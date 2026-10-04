@@ -224,6 +224,7 @@
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | How do raiders and family-4 gangs plan, when the probe sets them in memory? | recorded |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? | recorded |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | Does the final city entry retain the last resolution's cash-short report? | recorded |
+| [EXP-TURN-043](../experiments/EXP-TURN-043.md) | Does the Move-capacity repair send a computer player's mover back when its Moves would put seven of its gangs in one sector? | recorded |
 | [EXP-TURN-044](../experiments/EXP-TURN-044.md) | What numbers does the Financial panel draw for the orders and hires of a planning turn? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
