@@ -158,12 +158,12 @@ public sealed class PlanningTimer
 
     public void Start(PlanningTimeLimit limit, TimeSpan now)
     {
-        Stop();
         if (PlanningTimerPolicy.LimitMilliseconds(limit) is not { } milliseconds)
         {
             Clear();
             return;
         }
+        Stop();
         _limit = milliseconds;
         _start = now;
         IsActive = true;
@@ -365,13 +365,17 @@ public sealed partial class ChaosGame
     /// RULE-TIMER-002: whether this update stands for a pass of the original's planning loop, the
     /// only place it tests the time limit. The city and the detailed sector view are that loop
     /// (SCR-UI-003, SCR-UI-004). A panel runs its own loop, and so does the Hire handler from a
-    /// press on an offer until the button is released (FND-HIRE-008); the idle-gang warning is
-    /// answered before the test.
+    /// press on an offer or its reject cross until the button is released (FND-HIRE-008), as do
+    /// the console tile helper (FND-UI-032) and the sector view's back control (FND-UI-015); the
+    /// idle-gang warning is answered before the test.
     /// </summary>
     private bool AtPlanningLoopPass() =>
         _screens.Current is ClientScreen.City or ClientScreen.Sector
         && !_idleGangWarningOpen
         && _draggedHireDefinitionId is null
+        && _pressedHireRejectSlot is null
+        && _pressedCityConsoleControl is null
+        && _pressedPanelFace is null
         // PLACEHOLDER: RULE-TIMER-002. How the original starts a gang drag is not recorded
         // (FND-TURN-009); a held gang is taken to run in its handler as a held offer does.
         && _draggedGangId is null;
@@ -412,7 +416,7 @@ public sealed partial class ChaosGame
         // after it closes.
         if (!AtPlanningLoopPass() || !_planningTimer.HasExpired(now)) return false;
 
-        _planningTimer.Stop();
+        StopPlanningTimer();
         _message = string.Empty;
         // Online this never runs, because the clock is not armed there. It still goes through the
         // online path rather than straight to the local resolution, so that arming it later cannot

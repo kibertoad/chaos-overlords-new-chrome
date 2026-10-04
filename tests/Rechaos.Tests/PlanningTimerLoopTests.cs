@@ -7,7 +7,8 @@ using Xunit;
 namespace Rechaos.Tests;
 
 // RULE-TIMER-002: the original tests the time limit only on a pass of the planning loop, so a
-// panel open or an offer held at the limit keeps the turn going until it is closed or let go.
+// panel open or an offer or control held at the limit keeps the turn going until it is closed or
+// let go.
 public sealed class PlanningTimerLoopTests
 {
     [Fact]
@@ -38,6 +39,16 @@ public sealed class PlanningTimerLoopTests
         Assert.False(AtPlanningLoopPass(game));
 
         Field("_draggedHireDefinitionId").SetValue(game, null);
+        // FND-HIRE-008, FND-UI-032: the reject cross and a console tile are held in their own
+        // loops until the button is released.
+        Field("_pressedHireRejectSlot").SetValue(game, 0);
+        Assert.False(UpdatePlanningTimer(game, pastLimit));
+        Assert.True(timer.IsActive);
+        Field("_pressedHireRejectSlot").SetValue(game, null);
+        Field("_pressedCityConsoleControl").SetValue(game, CityConsoleControl.Done);
+        Assert.False(UpdatePlanningTimer(game, pastLimit));
+        Assert.True(timer.IsActive);
+        Field("_pressedCityConsoleControl").SetValue(game, null);
         Assert.True(AtPlanningLoopPass(game));
         router.Show(ClientScreen.Sector);
         Assert.True(AtPlanningLoopPass(game));
