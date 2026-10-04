@@ -77,7 +77,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -429,6 +429,53 @@ public sealed partial class OriginalNewGameExperimentTests
         Assert.Equal(recorded.Term("elapsed_turns", 0), match.Coordinator.Turn - 1);
         if (recorded.Term("controller", human.Value) == 0) Assert.Equal(human, match.Coordinator.ActivePlayer);
         else Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
+    }
+
+    public static TheoryData<string, int> TimerRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                if (runs[run].Timers.Count > 0) data.Add(experiment, run);
+        return data;
+    }
+
+    // RULE-TIMER-001, RULE-TIMER-002, RULE-TIMER-003: the probe chooses a planning time limit and
+    // lets turns run out without a Done press. It records the limit the match entry stored, each
+    // redraw of the bar with the elapsed milliseconds, width and warning slot, and the elapsed
+    // milliseconds of the last time-limit test that let planning go on and of the one that ended
+    // it. The rebuild stores the same limit for the choice, draws the same width and plays the same
+    // warning for each elapsed time, and lets the turn go on and end at the same elapsed times. The
+    // original's redraws came between five and seven presentation ticks apart, the clock's jitter
+    // around the six ticks the rebuild waits. The expiry ends the turn as a Done press does, which
+    // the replay of every run checks.
+    [Theory]
+    [MemberData(nameof(TimerRuns))]
+    public void ThePlanningClockMatchesTheOriginals(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var limit = PlanningTimerPolicy.LimitMilliseconds((PlanningTimeLimit)recorded.PlanningLimitChoice);
+        var redrawInterval = (int)(PresentationClock.Period * PlanningTimerPolicy.RefreshCountdown).TotalMilliseconds;
+        foreach (var timer in recorded.Timers)
+        {
+            Assert.Equal<int?>(timer.LimitMs, limit);
+            foreach (var (elapsed, width, slot) in timer.Bars)
+            {
+                Assert.True(PlanningTimerPolicy.RawBarWidth(timer.LimitMs, elapsed) == width,
+                    $"turn {timer.Turn}, {elapsed} ms: the original drew width {width}");
+                Assert.True((PlanningTimerPolicy.WarningSoundSlot(timer.LimitMs - elapsed) ?? 0) == slot,
+                    $"turn {timer.Turn}, {elapsed} ms: the original played slot {slot}");
+            }
+            Assert.Equal(0, timer.Bars[0].Elapsed);
+            for (var bar = 2; bar < timer.Bars.Count; bar++)
+            {
+                var interval = timer.Bars[bar].Elapsed - timer.Bars[bar - 1].Elapsed;
+                Assert.InRange(interval, redrawInterval - PresentationClock.PeriodMilliseconds,
+                    redrawInterval + PresentationClock.PeriodMilliseconds);
+            }
+            Assert.False(PlanningTimerPolicy.Expired(timer.LimitMs, timer.LastUnexpiredMs));
+            Assert.True(PlanningTimerPolicy.Expired(timer.LimitMs, timer.ExpiredMs));
+        }
     }
 
     public static TheoryData<string, int> PanelRuns()

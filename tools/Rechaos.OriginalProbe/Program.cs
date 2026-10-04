@@ -31,6 +31,7 @@ static int Usage()
               [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...]
               [--search <turn:definition+definition...>,...]
               [--finance <turn:sector>,...]
+              [--time-limit <0-3>] [--expire-turns <turn>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
         """);
@@ -43,6 +44,11 @@ static int NewGame(string[] args)
     var output = Option(args, "--out");
     var timeout = int.Parse(Option(args, "--timeout") ?? "180", System.Globalization.CultureInfo.InvariantCulture);
     if (output is null) return Usage();
+    if (IntOption(args, "--time-limit") is { } timeLimit and not (>= 0 and <= 3))
+        throw new ArgumentException($"--time-limit takes 0 to 3, not {timeLimit}.");
+    // --expire-turns waits for the planning time to run out, which needs a limit to run out.
+    if (Option(args, "--expire-turns") is not null && IntOption(args, "--time-limit") is not (>= 1 and <= 3))
+        throw new ArgumentException("--expire-turns needs --time-limit 1, 2 or 3.");
     var settings = new NewGameSettings(
         IntOption(args, "--scenario"), IntOption(args, "--mentality"), IntOption(args, "--turns"),
         Option(args, "--humans")?.Split(',').Select(entry =>
@@ -63,7 +69,10 @@ static int NewGame(string[] args)
         Option(args, "--hires") is { } hires ? ParseHires(hires) : null,
         ParsePlanning(Option(args, "--families"), Option(args, "--raiders")),
         Option(args, "--finance") is { } finance ? ParseFinance(finance) : null,
-        Option(args, "--search") is { } search ? ParseSearch(search) : null);
+        Option(args, "--search") is { } search ? ParseSearch(search) : null,
+        IntOption(args, "--time-limit"),
+        Option(args, "--expire-turns")?.Split(',').Select(value =>
+            int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).

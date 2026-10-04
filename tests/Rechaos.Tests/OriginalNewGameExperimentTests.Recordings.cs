@@ -70,6 +70,12 @@ public sealed partial class OriginalNewGameExperimentTests
     // stayed open until Exit was pressed (RULE-SETUP-008).
     private sealed record RecordedPanel(string Panel, int AfterRoll, bool Shown);
 
+    // The planning clock of a turn that ran out: the limit, each redraw of the bar as elapsed
+    // milliseconds, width and warning slot (0 for none), and the elapsed milliseconds of the last
+    // time-limit test that let planning go on and of the one that ended it (RULE-TIMER-002).
+    private sealed record RecordedTimer(
+        int Turn, int LimitMs, IReadOnlyList<(int Elapsed, int Width, int Slot)> Bars, int LastUnexpiredMs, int ExpiredMs);
+
     private sealed record RecordedHire(int Turn, int OfferSlot, int Sector)
     {
         // "turn 1: offer slot 0 sector 12", as the probe writes it.
@@ -104,6 +110,20 @@ public sealed partial class OriginalNewGameExperimentTests
                 .Select(input => RecordedPlanning.Parse(input.GetProperty("value").GetString()!))
                 .ToArray();
             Seed = run.GetProperty("rng_state").GetInt32();
+            // "planning_limit_choice 1", as the probe writes a setup choice.
+            PlanningLimitChoice = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "setup")
+                .Select(input => input.GetProperty("value").GetString()!)
+                .Where(value => value.StartsWith("planning_limit_choice ", StringComparison.Ordinal))
+                .Select(value => int.Parse(value["planning_limit_choice ".Length..], System.Globalization.CultureInfo.InvariantCulture))
+                .FirstOrDefault();
+            Timers = run.TryGetProperty("timers", out var timers)
+                ? timers.EnumerateArray().Select(timer => new RecordedTimer(
+                    timer.GetProperty("turn").GetInt32(), timer.GetProperty("limit_ms").GetInt32(),
+                    timer.GetProperty("bars").EnumerateArray()
+                        .Select(bar => (bar[0].GetInt32(), bar[1].GetInt32(), bar[2].GetInt32())).ToArray(),
+                    timer.GetProperty("last_unexpired_ms").GetInt32(), timer.GetProperty("expired_ms").GetInt32())).ToArray()
+                : [];
             DoneAtRoll = run.TryGetProperty("done_at_roll", out var doneAt)
                 ? doneAt.EnumerateArray().Select(value => value.GetInt32()).ToArray()
                 : [];
@@ -152,6 +172,8 @@ public sealed partial class OriginalNewGameExperimentTests
         public int Seed { get; }
         public int DoneCount => DoneAtRoll.Count;
         public IReadOnlyList<int> DoneAtRoll { get; }
+        public int PlanningLimitChoice { get; }
+        public IReadOnlyList<RecordedTimer> Timers { get; }
         public IReadOnlyList<RecordedPanel>? Panels { get; }
         public RecordedEndgame? EndgameRows { get; }
         public IReadOnlyList<int> SearchFilter { get; }

@@ -78,6 +78,28 @@ internal sealed class StateExtractor
                 });
             run["panels"] = calls;
         }
+        // RULE-TIMER-002, RULE-TIMER-003: each timed planning turn the probe let run out, with
+        // the limit, each bar redraw as elapsed milliseconds, width and effect slot, and the elapsed
+        // milliseconds of the last test that did not end the turn and of the one that did.
+        if (trace["Timers"] is JsonArray timerTurns)
+        {
+            var timers = new JsonArray();
+            foreach (var timer in timerTurns)
+            {
+                var bars = new JsonArray();
+                foreach (var bar in timer!["Bars"]!.AsArray())
+                    bars.Add(new JsonArray(bar!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()));
+                timers.Add(new JsonObject
+                {
+                    ["turn"] = timer["Turn"]!.GetValue<int>(),
+                    ["limit_ms"] = timer["LimitMs"]!.GetValue<int>(),
+                    ["bars"] = bars,
+                    ["last_unexpired_ms"] = timer["LastUnexpired"]!.GetValue<int>(),
+                    ["expired_ms"] = timer["Expired"]!.GetValue<int>(),
+                });
+            }
+            run["timers"] = timers;
+        }
         return run;
     }
 
