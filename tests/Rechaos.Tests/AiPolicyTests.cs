@@ -160,6 +160,28 @@ public sealed class AiPolicyTests
     }
 
     [Fact]
+    public void ComputerHireSettingRoundTripsThroughSaveAndReplay()
+    {
+        // DEV-AI-008: the setting is part of the setup, so the fingerprint, a save and a journal
+        // all carry it.
+        var match = IdleMatch(AiPolicyMode.Original, computerHiresWhereHumansCan: false);
+        var data = match.Definitions;
+        Assert.NotEqual(MatchStateHasher.ComputeFingerprint(IdleMatch(AiPolicyMode.Original)),
+            MatchStateHasher.ComputeFingerprint(match));
+        using var save = new MemoryStream();
+        NativeSaveSerializer.Save(save, match);
+        save.Position = 0;
+
+        Assert.False(NativeSaveSerializer.Load(save, data).Setup.ComputerHiresWhereHumansCan);
+
+        var recorder = new MatchReplayRecorder(match);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        Assert.False(MatchReplaySerializer.LoadAndReplay(replay, data).Setup.ComputerHiresWhereHumansCan);
+    }
+
+    [Fact]
     public void OnlineSettingsCarryPolicyAndOldBlobsDefaultToOriginal()
     {
         var advanced = new MultiplayerGameSettings(
@@ -229,7 +251,8 @@ public sealed class AiPolicyTests
         int gangCount = 1,
         int rivalSector = 1,
         bool computerMovesToNeighboursOnly = true,
-        bool ownedNeighbours = false)
+        bool ownedNeighbours = false,
+        bool computerHiresWhereHumansCan = true)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -240,7 +263,8 @@ public sealed class AiPolicyTests
         var setup = new MatchSetup(
             ScenarioId.Greed, GameDuration.SixMonths, 31, setups,
             aiMentality: difficulty, aiPolicy: policy,
-            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly);
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
         MatchPlayerState[] players =
         [
             new(setups[0], 50,

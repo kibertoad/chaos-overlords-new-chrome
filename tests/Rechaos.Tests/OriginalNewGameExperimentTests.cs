@@ -104,6 +104,12 @@ namespace Rechaos.Tests;
 /// family-7 draw from human gangs only (RULE-AI-026), EXP-TURN-084 a family-14 draw from an empty
 /// pool (RULE-AI-031), and EXP-TURN-085 and EXP-TURN-086 the forced hunter hire roles
 /// (RULE-AI-010). EXP-TURN-083 is a known divergence under DEV-AI-002.
+/// EXP-TURN-087, EXP-TURN-089 and EXP-TURN-091 reach refused family-4, family-5 and family-0
+/// draws at weight 10 (RULE-AI-023, RULE-AI-024, RULE-AI-019, BUG-AI-007), and EXP-TURN-088 a
+/// family-7 draw that gives no Attack (RULE-AI-026).
+/// EXP-TURN-090 records a computer hire into a sector the player neither controls nor holds a
+/// gang in (RULE-HIRE-001, DEV-AI-008), and EXP-TURN-093 and EXP-TURN-094 the family-5 draw from
+/// human gangs only (RULE-AI-024).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -111,7 +117,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -158,13 +164,21 @@ public sealed partial class OriginalNewGameExperimentTests
     public void WithDevAi007OnExpTurn015PartsAtTheRefusedMove() =>
         Assert.Equal(950, FirstDifferingRoll(Run("EXP-TURN-015", 0), computerMovesToNeighboursOnly: true));
 
-    private static int FirstDifferingRoll(RecordedRun recorded, bool computerMovesToNeighboursOnly = false)
+    // DEV-AI-008 on: in turn 20 player 3 hires into sector 36, which it neither controls nor holds
+    // a gang in; the original rolls the new gang's Force and the rebuild drops the hire (EXP-TURN-090).
+    [Fact]
+    public void WithDevAi008OnExpTurn090PartsAtTheDroppedHire() =>
+        Assert.Equal(3335, FirstDifferingRoll(Run("EXP-TURN-090", 0), computerHiresWhereHumansCan: true));
+
+    private static int FirstDifferingRoll(
+        RecordedRun recorded, bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false)
     {
         var rolls = new List<(int Bound, int Result)>();
         DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
         try
         {
-            StartMatch(recorded, out _, computerMovesToNeighboursOnly: computerMovesToNeighboursOnly);
+            StartMatch(recorded, out _, computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+                computerHiresWhereHumansCan: computerHiresWhereHumansCan);
         }
         finally
         {
@@ -764,7 +778,7 @@ public sealed partial class OriginalNewGameExperimentTests
 
     private static MatchState StartMatch(
         RecordedRun recorded, out int donePresses, Action<MatchState, PlayerId, int>? beforeDone = null,
-        bool computerMovesToNeighboursOnly = false)
+        bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false)
     {
         var scenario = OriginalScenario(recorded.Term("scenario", 0));
         var setup = new MatchSetup(
@@ -775,9 +789,10 @@ public sealed partial class OriginalNewGameExperimentTests
                 slot, Name(recorded, slot.Value), PlayerController.Human, (short)recorded.Term("portrait", slot.Value))).ToArray(),
             (AiDifficulty)recorded.Term("mentality", 0),
             allowSparsePlayerIds: true,
-            // DEV-AI-007 switched off unless a test asks for it, so the computer's Moves go where
-            // the original's do.
-            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly);
+            // DEV-AI-007 and DEV-AI-008 switched off unless a test asks for them, so the computer's
+            // Moves and hires go where the original's do.
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);
         match.FinishUpkeep();
         // RULE-SETUP-008: with several local humans the planning phase waits on the Ready card

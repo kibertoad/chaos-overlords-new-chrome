@@ -94,11 +94,15 @@ public static class HireRules
             context => context.Player!.Status != PlayerStatus.Active),
         new DelegateRule(HireValidationCode.OfferUnavailable,
             context => !context.Player!.HirePool.Contains(context.GangDefinitionId)),
+        // DEV-AI-008: with the setting off, a computer player's hire goes to any sector, as the
+        // original resolves it (EXP-TURN-090); a human's, simulated or not, keeps the test.
         new DelegateRule(HireValidationCode.SectorNotControlled,
             context => !MatchLimits.IsSectorId(context.TargetSectorId) ||
                 context.State.Sectors[context.TargetSectorId].Owner != context.PlayerId
                 && !context.Player!.Gangs.Any(gang =>
-                    gang.IsActive && gang.SectorId == context.TargetSectorId))
+                    gang.IsActive && gang.SectorId == context.TargetSectorId)
+                && (context.State.Setup.ComputerHiresWhereHumansCan
+                    || context.Player.Setup.Controller != PlayerController.Computer))
     ];
 
     private static readonly IReadOnlyList<IValidationRule<Context, HireValidationCode>> LegacyImmediatePaymentRules =
@@ -364,3 +368,4 @@ internal static class HireResolver
         return selected;
     }
 }
+

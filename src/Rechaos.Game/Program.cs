@@ -41,7 +41,10 @@ try
         diagnostics,
         // DEV-AI-007: local matches started in this session let the computer planner's Moves go
         // to any sector, as the original's do.
-        originalComputerMoves: args.Contains("--original-computer-moves", StringComparer.OrdinalIgnoreCase));
+        originalComputerMoves: args.Contains("--original-computer-moves", StringComparer.OrdinalIgnoreCase),
+        // DEV-AI-008: local matches started in this session let the computer planner's hires go
+        // to any sector, as the original's do.
+        originalComputerHires: args.Contains("--original-computer-hires", StringComparer.OrdinalIgnoreCase));
     if (platformSmokeTest)
         return 0;
     try
