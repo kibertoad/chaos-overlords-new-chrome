@@ -6,10 +6,10 @@ namespace Rechaos.Game;
 /// </summary>
 /// <remarks>
 /// Every write and every load of the autosave holds an exclusive handle on a lock file beside it
-/// (<c>autosave.rchsave.lock</c>). A second process that finds the handle taken retries every
-/// <see cref="RetryInterval"/> until <see cref="DefaultTimeout"/> passes, then gives up with an
-/// <see cref="IOException"/>, which the autosave reports as a failed write. The operating system
-/// releases the handle when a process ends, so a crashed copy never leaves the lock held.
+/// (<c>autosave.rchsave.lock</c>), taken through the shared <c>FileWriteLock</c>. A second process
+/// that finds the handle taken retries until <see cref="DefaultTimeout"/> passes, then gives up
+/// with an <see cref="IOException"/>, which the autosave reports as a failed write. The operating
+/// system releases the handle when a process ends, so a crashed copy never leaves the lock held.
 /// <para>
 /// A write that would keep the existing primary as the backup without reading it back first
 /// (<c>trustExistingPrimary</c>) is allowed only while the primary still has the length and
@@ -20,7 +20,6 @@ namespace Rechaos.Game;
 internal sealed class AutoSaveFileGuard
 {
     public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(10);
-    public static readonly TimeSpan RetryInterval = TimeSpan.FromMilliseconds(50);
 
     private readonly string _path;
     private readonly TimeSpan _timeout;
@@ -31,6 +30,10 @@ internal sealed class AutoSaveFileGuard
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         _path = System.IO.Path.GetFullPath(path);
         _timeout = timeout ?? DefaultTimeout;
+        // The shared lock rejects these timeouts on every acquire, with an exception the
+        // autosave worker does not treat as a failed write; refuse them here instead.
+        if (_timeout < TimeSpan.Zero || _timeout.TotalMilliseconds > int.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(timeout));
     }
 
     /// <summary>The autosave file this guard protects.</summary>
