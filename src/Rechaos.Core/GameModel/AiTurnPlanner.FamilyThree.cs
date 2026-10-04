@@ -45,6 +45,9 @@ public static partial class AiTurnPlanner
 
         PrepareFamilyThreeCashSiteOrTerritorial(
             state, playerId, gang, gangSlot, snapshot);
+        // FND-AI-076: the four branches of this case meet at a store of -1 in the focus, so the
+        // Influence and Control planned here leave -1 too.
+        state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static void PrepareFamilyThreeCashSiteOrTerritorial(
