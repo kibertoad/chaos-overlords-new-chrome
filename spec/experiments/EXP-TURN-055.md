@@ -56,6 +56,7 @@ coverage sector.
 ## Conclusion
 
 The run agrees with FND-AI-077 and BUG-AI-008. A rebuild whose gates read
-the gang's sector replaces the Equip with Control in the fifteenth pass,
-and from the next pass its draws differ: the original refills a hire offer
-at roll 5275 where that rebuild makes a sector selector draw.
+the gang's sector replaces the Equip with Control in the pass after the
+fifteenth Done press, and from the next pass its draws differ: the original
+refills a hire offer at roll 5275 where that rebuild makes a sector selector
+draw.

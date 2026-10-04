@@ -112,17 +112,21 @@ cost. Draws up to five `roll`s in the attack loop, plus the draws inside
 
 The attack loop attacks the last drawn target even when all five strength tests
 fail, and the strength test can be made on a different gang from the one
-attacked (BUG-AI-003). A gang whose previous action was Attack never equips. In
-a sector the player owns, the late gates never fire, because both need an
-owner the player is hostile to. The Greed override replaces every other choice,
-including an Equip whose cooldown has already been set. The late gates also
-replace an Equip or a Heal and leave the cooldown in place. After an Equip they
-test the owner, the hostility and the owner's visible gangs of the sector
-numbered like the item, while the human gang count and the human-owner test
-still read the gang's own sector (BUG-AI-008); item numbers stay below 64, so
-that sector exists. Under police
-presence the owner query is -2, so a gang in its own sector skips the mode-6
-Move and goes on to the attack step. The attack step needs at least one
+attacked (BUG-AI-003). A gang whose previous action was Attack never equips.
+After any action but an Equip, the late gates never fire in a sector the
+player owns, because both need an owner the player is hostile to. The Greed
+override replaces every other choice, including an Equip whose cooldown has
+already been set. The late gates also replace an Equip or a Heal and leave the
+cooldown in place. After an Equip they test the owner, the hostility and the
+owner's visible gangs of the sector numbered like the item, while the human
+gang count and the human-owner test still read the gang's own sector
+(BUG-AI-008); item numbers stay below 64, so that sector exists. The second
+gate can then replace an Equip with Control in a sector the player owns, when
+the sector numbered like the item belongs to an opponent the player is hostile
+to and holds a combat-advantage flag for, and the player sees none of that
+opponent's gangs there. Under police presence the owner
+query is -2, so a gang in its own sector skips the mode-6 Move and goes on to
+the attack step. The attack step needs at least one
 visible gang of a player the player is hostile to, even at weight 10, where
 the draw then takes the human pool (FND-AI-058).
 
