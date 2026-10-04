@@ -76,9 +76,10 @@ namespace Rechaos.Tests;
 /// EXP-TURN-055 and EXP-TURN-056 a family-2 gang plans Equip in a human's sector, and the late
 /// Control gates test the sector numbered like the item and keep the Equip (RULE-AI-021,
 /// BUG-AI-008).
-/// EXP-TURN-057 compares the planning state of thirty turns of Eliminate at Crimelord, with
-/// families 3, 7 and 10 to 12, and EXP-TURN-058 plays Big Man, with families 13 and 14, to its end (RULE-AI-031,
-/// RULE-OBJECTIVE-004).
+/// EXP-TURN-057 compares the planning state of thirty turns of Eliminate at Crime Lord, with
+/// families 0, 3, 7 and 10 to 12 (RULE-AI-019, RULE-AI-022, RULE-AI-026, RULE-AI-028 to
+/// RULE-AI-030). EXP-TURN-058 plays Big Man, with families 13 and 14, to its end and compares the
+/// awards and the endgame rows (RULE-AI-031, RULE-OBJECTIVE-004, RULE-AWARDS-001, RULE-AWARDS-002).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
