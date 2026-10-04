@@ -458,7 +458,10 @@ public sealed class OriginalNewGameExperimentTests
         var data = new TheoryData<string, int>();
         foreach (var (experiment, runs) in Recorded.Value)
             for (var run = 0; run < runs.Length; run++)
-                if (runs[run].Panels is not null && !KnownDivergences.ContainsKey((experiment, run)))
+                // The probe breaks on the handlers at every local human's planning entry, and the
+                // replay compares only the first human's, so a run with several humans is left out.
+                if (runs[run].Panels is not null && runs[run].Humans.Count == 1
+                    && !KnownDivergences.ContainsKey((experiment, run)))
                     data.Add(experiment, run);
         return data;
     }
@@ -507,13 +510,19 @@ public sealed class OriginalNewGameExperimentTests
             (state, human, turn) => shown[turn - 1] = Panels(state, human));
         // An early stop would leave the recording's later entries uncompared.
         Assert.Equal(recorded.DoneCount, donePresses);
-        // The last entry is a planning entry unless the match ended or the human was eliminated.
+        // The last entry is a planning entry unless the match ended or the human was eliminated. An
+        // eliminated human has none, and the final view of an ended match is closed by the probe
+        // with every panel it opens, so neither is compared.
+        var compared = donePresses;
         if (match.Outcome is null && IsActive(match, recorded.Humans[0]))
+        {
             Assert.True(combatCalled[donePresses], $"planning entry {donePresses + 1}: the recording holds no call of Combat Results");
-        shown[donePresses] = Panels(match, recorded.Humans[0]);
-        // The run stops at the last entry while its first panel is open, so only that panel is seen.
-        if (expected[donePresses].Count > 0) shown[donePresses] = shown[donePresses].Take(1).ToList();
-        for (var entry = 0; entry <= donePresses; entry++)
+            shown[donePresses] = Panels(match, recorded.Humans[0]);
+            // The run stops at the last entry while its first panel is open, so only that panel is seen.
+            if (expected[donePresses].Count > 0) shown[donePresses] = shown[donePresses].Take(1).ToList();
+            compared++;
+        }
+        for (var entry = 0; entry < compared; entry++)
             Assert.True(expected[entry].SequenceEqual(shown[entry]),
                 $"planning entry {entry + 1}: the original showed [{string.Join(", ", expected[entry])}], the rebuild [{string.Join(", ", shown[entry])}]");
     }
