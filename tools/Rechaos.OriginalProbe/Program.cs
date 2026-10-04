@@ -30,6 +30,7 @@ static int Usage()
               [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer_slot:sector>,...] [--sound]
               [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...]
               [--search <turn:definition+definition...>,...]
+              [--finance <turn:sector>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
         """);
@@ -61,6 +62,7 @@ static int NewGame(string[] args)
         args.Contains("--sound"),
         Option(args, "--hires") is { } hires ? ParseHires(hires) : null,
         ParsePlanning(Option(args, "--families"), Option(args, "--raiders")),
+        Option(args, "--finance") is { } finance ? ParseFinance(finance) : null,
         Option(args, "--search") is { } search ? ParseSearch(search) : null);
 
     // --executable runs a copy from another path in the game directory, which escapes the
@@ -174,6 +176,17 @@ static IReadOnlyList<ProbeSearch> ParseSearch(string value) =>
         if (definitions.Any(definition => definition is < 0 or >= OriginalAddresses.SiteDefinitionCount))
             throw new FormatException($"A site definition is 0 to 21: {entry}");
         return new ProbeSearch(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), definitions);
+    }).ToArray();
+
+// --finance turn:sector,... opens the Financial panel before that turn's Done, the City variant for
+// sector -1 (ProbeFinance).
+static IReadOnlyList<ProbeFinance> ParseFinance(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(panel =>
+    {
+        var parts = panel.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        if (parts.Length != 2 || parts[1] is < -1 or > 63)
+            throw new FormatException($"A Financial panel needs a turn and a sector -1 to 63: {panel}");
+        return new ProbeFinance(parts[0], parts[1]);
     }).ToArray();
 
 // --families turn:player:slot:family,... writes a planning record's family; --raiders

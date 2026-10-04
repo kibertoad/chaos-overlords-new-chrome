@@ -223,7 +223,7 @@
 
 ## findings
 
-354 entries.
+355 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -391,6 +391,7 @@
 | [FND-EXE-005](../findings/FND-EXE-005.md) | The resource section holds five menus, one accelerator table, 27 dialogs, 104 strings, four bitmaps, eight icon groups and a version record, and the code loads each kind through one place | recorded |
 | [FND-FINANCE-001](../findings/FND-FINANCE-001.md) | The Financial panel is drawn as the 320-pixel alternate panel with four-cell value fields and its own close control | recorded |
 | [FND-FINANCE-002](../findings/FND-FINANCE-002.md) | The Financial panel sums eight amounts from the queued orders, hires and owned sectors; the Sector variant opens PX05019 when a sector is passed and limits every sum to that sector | recorded |
+| [FND-FINANCE-003](../findings/FND-FINANCE-003.md) | The Financial panel draws its nine numbers through fn_00414187, passing each value as the third argument, from nine fixed calls in drawing order | recorded |
 | [FND-GANG-001](../findings/FND-GANG-001.md) | Before planning, each active gang's fourteen statistics are rebuilt from its definition, its three items and its owned sector's completed sites | recorded |
 | [FND-GANG-002](../findings/FND-GANG-002.md) | The gang definition panel is the 320-pixel alternate panel PX05022 with its own field origins | recorded |
 | [FND-GANG-003](../findings/FND-GANG-003.md) | Death and Terminate write only the gang record's sector byte, leaving its items and other fields in place | recorded |
@@ -584,7 +585,7 @@
 
 ## experiments
 
-47 entries.
+48 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -634,6 +635,7 @@
 | [EXP-TURN-040](../experiments/EXP-TURN-040.md) | How do raiders and family-4 gangs plan, when the probe sets them in memory? | recorded |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | Does a 26-turn Greed match reach the same final city state before awards? | recorded |
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | Does the final city entry retain the last resolution's cash-short report? | recorded |
+| [EXP-TURN-044](../experiments/EXP-TURN-044.md) | What numbers does the Financial panel draw for the orders and hires of a planning turn? | recorded |
 | [EXP-TURN-045](../experiments/EXP-TURN-045.md) | Which site markers does the city show for a Search filter of every even site definition? | recorded |
 
 ## bugs

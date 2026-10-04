@@ -68,6 +68,24 @@ internal static class OriginalAddresses
     public const uint SearchFilters = 0x004A24E8;
     public const int SiteDefinitionCount = 22;
 
+    // FND-FINANCE-002: fn_0044D1BB(player, sector) builds and draws the Financial panel, -1 for the
+    // City variant; the upper part of the console's Financial control, (552, 178, 48, 33), opens the
+    // City variant and the lower part, (552, 211, 48, 15), the Sector variant of the selected sector
+    // at 0x004ABC80 (SCR-UI-003). FND-FINANCE-003: the panel draws its nine numbers with
+    // fn_00414187, whose third argument is the value, from the calls at 0x0044DFEB to 0x0044E2AB.
+    // It closes on its control at (161, 293, 49, 22) (SCR-FINANCE-001).
+    public const uint FinancePanel = 0x0044D1BB;
+    public const uint NumberDraw = 0x00414187;
+    public const uint FinanceFirstDraw = 0x0044DFEB;
+    public const uint FinanceLastDraw = 0x0044E2AB;
+    public const uint SelectedSector = 0x004ABC80;
+    public const int FinanceCityX = 552 + 24;
+    public const int FinanceCityY = 178 + 16;
+    public const int FinanceSectorX = 552 + 24;
+    public const int FinanceSectorY = 211 + 7;
+    public const int FinanceCloseX = 161 + 24;
+    public const int FinanceCloseY = 293 + 11;
+
     public const int DoneX = 500 + 50;
     public const int DoneY = 282 + 24;
 

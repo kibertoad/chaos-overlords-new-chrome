@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 96 |
-| `validated` | 122 |
+| `implemented` | 95 |
+| `validated` | 123 |
 
 | Code | Rows |
 |---|---|
@@ -270,7 +270,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-FINANCE-001` | The Financial panel projects next turn's cash flow for the whole city or one sector | supported | complete | None | `DEV-FINANCE-001` | implemented | Each row follows FND-FINANCE-002 except the Sell credit of DEV-FINANCE-001: terminating gangs give back their Upkeep, the Sector variant charges a moving gang to its destination, and the Chaos row is a third of Income + Chaos + Force, halved outside the player's sectors. |
+| `RULE-FINANCE-001` | The Financial panel projects next turn's cash flow for the whole city or one sector | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-FINANCE-001` | validated | Each row follows FND-FINANCE-002 except the Sell credit of DEV-FINANCE-001: terminating gangs give back their Upkeep, the Sector variant charges a moving gang to its destination, and the Chaos row is a third of Income + Chaos + Force, halved outside the player's sectors. EXP-TURN-044 compares the nine numbers of 21 original panels, City and Sector, with Equip, a hire, Bribe, a one-item Sell, Chaos in an owned sector and a Move out of the sector and into another. Site Protection stays 0, and Terminate, the halved Chaos estimate, the Factory price and a Sell of several items (DEV-FINANCE-001) are not reached. |
 | `SCR-FINANCE-001` | Financial panel, City and Sector | supported | complete | None | `DEV-FINANCE-001`, `DEV-UI-006` | implemented | Panel, portrait, close control, row labels, fields, gang count and the Sector variant's sector code follow the original, and Enter or Execute closes it. What the Sector variant draws in the portrait box is not recorded. |
 
 ## ATTACK
