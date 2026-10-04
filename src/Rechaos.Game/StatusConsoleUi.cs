@@ -287,6 +287,11 @@ public static class StatusConsolePresentation
             "  BRIBES PAY FIRST, THEN EQUIPS IN SUBMISSION ORDER.",
             "  NO CASH IS RESERVED; EARLIER SELLS MAY FUND EQUIPS.",
             "  BELOW ZERO, A QUEUED PURCHASE MAY FAIL.",
+            // RULE-TURN-002, RULE-HIRE-001: hire_phase comes after the transactions and the Chaos
+            // payout, and a hire costing more than the cash left then fails.
+            "  HIRES PAY LAST, AFTER CHAOS INCOME, IN OFFER ORDER.",
+            "  UNSPENT DOES NOT SUBTRACT THEM: A HIRE COSTING",
+            "  MORE THAN THE CASH LEFT AT THAT POINT FAILS.",
             "",
             $"({delta}) - DELTA: ESTIMATED CHANGE OVER THE WHOLE TURN."
         ];

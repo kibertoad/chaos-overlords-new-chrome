@@ -145,6 +145,7 @@ public sealed class FinanceUiTests
                 .Where(entry => entry.index > 0 && lines[entry.index - 1].Length == 0)
                 .Select(entry => entry.line));
         Assert.Contains("  20 CASH - 2 BRIBES - 5 EQUIPS = 13", lines);
+        Assert.Contains("  HIRES PAY LAST, AFTER CHAOS INCOME, IN OFFER ORDER.", lines);
         Assert.Contains("  GANG UPKEEP       -3", lines);
         Assert.Contains("  CHAOS ESTIMATE    +4", lines);
         Assert.Contains("  TOTAL             -5", lines);
