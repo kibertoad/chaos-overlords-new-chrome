@@ -115,5 +115,6 @@ None known.
   the sector is the player's, EXP-TURN-067 a recurring Heal once the gang is
   at Force 10 and the recurring orders of gangs killed in Combat, and
   EXP-TURN-070 and EXP-TURN-071 a recurring Control in a sector under police
-  presence. No recorded run drops an Influence in a sector the player lost;
-  that case rests on the static reading [FND-TURN-004].
+  presence, with the Control gang still active at the end of the recording.
+  No recorded run drops an Influence in a sector the player lost; that case
+  rests on the static reading [FND-TURN-004].
