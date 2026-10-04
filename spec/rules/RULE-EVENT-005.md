@@ -4,7 +4,7 @@ title: The Last Turn Events panel shows the viewer's recorded reports in the ord
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, FND-EVENT-002, FND-EVENT-003, FND-EVENT-005, FND-EVENT-006, SRC-MANUAL-GOG]
+evidence: [FND-EVENT-001, FND-EVENT-002, FND-EVENT-003, FND-EVENT-005, FND-EVENT-006, EXP-TURN-031, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [SCR-EVENT-001, FMT-STATE-006]
