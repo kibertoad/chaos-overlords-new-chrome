@@ -38,7 +38,10 @@ try
     using var game = new ChaosGame(
         assetRoot,
         args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
-        diagnostics);
+        diagnostics,
+        // DEV-AI-007: local matches started in this session let the computer planner's Moves go
+        // to any sector, as the original's do.
+        originalComputerMoves: args.Contains("--original-computer-moves", StringComparer.OrdinalIgnoreCase));
     if (platformSmokeTest)
         return 0;
     try

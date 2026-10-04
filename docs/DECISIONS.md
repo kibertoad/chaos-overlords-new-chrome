@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-04 | [Switch DEV-AI-007 off from the command line only](#2026-10-04--switch-dev-ai-007-off-from-the-command-line-only) |
 | 2026-09-26 | [Keep a replay load's random state and inboxes](#2026-09-26--keep-a-replay-loads-random-state-and-inboxes) |
 | 2026-09-26 | [Keep the original hunter guard and drop DEV-AI-001](#2026-09-26--keep-the-original-hunter-guard-and-drop-dev-ai-001) |
 | 2026-09-26 | [Keep the rule and AI corrections mandatory](#2026-09-26--keep-the-rule-and-ai-corrections-mandatory) |
@@ -39,6 +40,21 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-04 — Switch DEV-AI-007 off from the command line only
+
+- Decision: DEV-AI-007 (a computer player's Move goes to a neighbour) becomes a setting that
+  starts on, switched off by `--original-computer-moves` on the game's command line. No screen
+  offers it. The match setup carries it, so saves, replay journals and state fingerprints record
+  it; online matches keep it on.
+- Reason: with the deviation mandatory, every recorded run of the original in which a computer
+  player jumps several sectors stopped matching at that Move, and those runs had to be recorded
+  shorter or kept as known divergences. Run with the setting off, they replay to the end. The
+  deviation's Justification shows that no player can notice the difference, so an Options entry
+  would add clutter for nothing; the flag still lets a player who wants the original's Moves
+  have them.
+- Boundary: the flag reaches local matches started in the session it is given to. A loaded save
+  or journal keeps the value it was started with.
 
 ## 2026-10-01 ? Use the original executable as the parity target
 

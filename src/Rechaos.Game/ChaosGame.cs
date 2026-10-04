@@ -228,9 +228,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         string assetRoot,
         bool debugPhaseStepping = false,
         RuntimeDiagnostics? diagnostics = null,
-        string? screenshotFolder = null)
+        string? screenshotFolder = null,
+        bool originalComputerMoves = false)
     {
         _assetRoot = assetRoot;
+        _originalComputerMoves = originalComputerMoves;
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;
         _screens.Changed += (previous, current) => _diagnostics?.Write(

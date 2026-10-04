@@ -4,7 +4,7 @@ title: Move pass carries out every Move, player by player, after normalizing eac
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-MOVE-001, FND-MOVE-002, FND-MOVE-003, FND-CONTROL-002, SRC-MANUAL-GOG, EXP-TURN-015]
+evidence: [FND-MOVE-001, FND-MOVE-002, FND-MOVE-003, FND-CONTROL-002, SRC-MANUAL-GOG, EXP-TURN-015, EXP-TURN-059, EXP-TURN-060]
 conflicting: []
 split_with: []
 related: [RULE-MOVE-002, RULE-TERMINATE-001, FMT-STATE-001]

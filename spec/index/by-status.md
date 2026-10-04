@@ -293,7 +293,7 @@
 
 ## recorded
 
-413 entries.
+415 entries.
 
 | ID | Title |
 |---|---|
@@ -359,6 +359,8 @@
 | [EXP-TURN-056](../experiments/EXP-TURN-056.md) | Does a family-2 Equip in a hostile human's sector survive the late Control gates in Acceptance? |
 | [EXP-TURN-057](../experiments/EXP-TURN-057.md) | What planning state do the computer players hold after thirty turns of Eliminate at Crime Lord? |
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | Does a Big Man match at Criminal end on the same turn with the same planning state and awards? |
+| [EXP-TURN-059](../experiments/EXP-TURN-059.md) | Does a Dominance match at Criminal played for 34 turns draw and resolve as the spec gives? |
+| [EXP-TURN-060](../experiments/EXP-TURN-060.md) | Does a Siege match at Criminal played for 23 turns draw and resolve as the spec gives? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |

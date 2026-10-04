@@ -267,23 +267,40 @@ public sealed class AiStrategicStateTests
     [InlineData(PlayerController.Human)]
     public void NoSeatMovesBeyondTheNeighbours(PlayerController controller)
     {
-        var match = CreateOnePlayerMatch(controller);
-        var player = new PlayerId(0);
-        match.FinishUpkeep();
-        var gang = match.Players[0].Gangs[0];
-        var column = gang.SectorId % MatchLimits.BoardWidth;
-        var distant = gang.SectorId - column + (column < 4 ? column + 2 : column - 2);
-
-        var validation = CommandValidator.Validate(
-            match, new GameCommand(player, gang.Id, GangAction.Move, CommandTarget.Sector(distant)));
+        var validation = ValidateDistantMove(CreateOnePlayerMatch(controller));
 
         Assert.False(validation.IsValid);
         Assert.Equal(CommandValidationCode.DestinationNotAdjacent, validation.Code);
     }
 
+    // DEV-AI-007 switched off: the computer planner's Move goes to any sector, as in the original
+    // (RULE-MOVE-001), and a human's Move still goes to a neighbour.
+    [Theory]
+    [InlineData(PlayerController.Computer, true)]
+    [InlineData(PlayerController.Human, false)]
+    public void WithTheSettingOffOnlyTheComputerMovesBeyondTheNeighbours(
+        PlayerController controller, bool valid)
+    {
+        var validation = ValidateDistantMove(
+            CreateOnePlayerMatch(controller, computerMovesToNeighboursOnly: false));
+
+        Assert.Equal(valid, validation.IsValid);
+    }
+
+    private static CommandValidation ValidateDistantMove(MatchState match)
+    {
+        match.FinishUpkeep();
+        var gang = match.Players[0].Gangs[0];
+        var column = gang.SectorId % MatchLimits.BoardWidth;
+        var distant = gang.SectorId - column + (column < 4 ? column + 2 : column - 2);
+        return CommandValidator.Validate(
+            match, new GameCommand(new PlayerId(0), gang.Id, GangAction.Move, CommandTarget.Sector(distant)));
+    }
+
     private static MatchState CreateOnePlayerMatch(
         PlayerController controller = PlayerController.Computer,
-        AiDifficulty difficulty = AiDifficulty.Criminal)
+        AiDifficulty difficulty = AiDifficulty.Criminal,
+        bool computerMovesToNeighboursOnly = true)
     {
         var definitions = BundledOriginalData.Load();
         var setup = new MatchSetup(
@@ -291,7 +308,8 @@ public sealed class AiStrategicStateTests
             GameDuration.SixMonths,
             1996,
             [new MatchPlayerSetup(new PlayerId(0), "PLAYER", controller)],
-            difficulty);
+            difficulty,
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
