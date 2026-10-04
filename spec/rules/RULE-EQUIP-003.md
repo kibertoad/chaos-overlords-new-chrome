@@ -1,10 +1,10 @@
 ---
 id: RULE-EQUIP-003
 title: An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-FINANCE-002, FND-STATE-001, SRC-MANUAL-GOG, EXP-TURN-062]
+evidence: [FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-FINANCE-002, FND-STATE-001, SRC-MANUAL-GOG, EXP-TURN-062, EXP-TURN-053, EXP-TURN-072]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, FMT-DATA-003]
@@ -77,8 +77,7 @@ None known.
 
 ## Open questions
 
-- The replays reach the discount for Costs of every remainder by three, in
-  EXP-TURN-062 among others. No recorded run prices an item in a sector whose
-  completed Factory belongs to another player, or one completed in the same
-  turn; those cases rest on the static readings [FND-EQUIP-001,
-  FND-STATE-001].
+- None about the price. The replays reach the discount for Costs of every
+  remainder by three, in EXP-TURN-062 among others; EXP-TURN-072 prices an
+  item beside another player's completed Factory at full Cost, and EXP-TURN-053
+  one beside a Factory completed in the same turn.
