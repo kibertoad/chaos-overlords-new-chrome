@@ -53,5 +53,6 @@ coverage sector.
 
 The run agrees with FND-AI-075. The family-11 and family-0 coverage sectors
 are those the gangs stored as family 12 before a later pass gave them another
-family: a rebuild whose family 12 stores neither value differs in all ten
-values listed above.
+family. A rebuild whose family 12 stores neither value differs in ten values:
+the coverage sectors of family-12, family-11 and family-0 gangs, those above
+among them, and one family-12 focus.
