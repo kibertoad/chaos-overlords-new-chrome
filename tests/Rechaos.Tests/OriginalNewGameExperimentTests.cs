@@ -71,9 +71,8 @@ namespace Rechaos.Tests;
 /// resolution's attack and police events; in EXP-TURN-051 the human's gang attacks and the police
 /// kill a gang (FMT-STATE-003, FMT-STATE-008, RULE-COMBAT-002, RULE-POLICE-001). EXP-TURN-053 plays
 /// forty turns of Eliminate, where family-12 gangs keep their focus and their Moves' destinations
-/// and carry those into a later family (RULE-AI-030, FND-AI-075). In EXP-TURN-054 family-3 gangs
-/// that plan Influence or Control after None, Control, Equip or Heal store -1 in the focus
-/// (RULE-AI-022, FND-AI-076).
+/// and carry those into a later family (RULE-AI-030, FND-AI-075). In EXP-TURN-054 a family-3 gang
+/// that plans Influence after None stores -1 in the focus (RULE-AI-022, FND-AI-076).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
