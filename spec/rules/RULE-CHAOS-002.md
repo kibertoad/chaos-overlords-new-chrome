@@ -1,10 +1,10 @@
 ---
 id: RULE-CHAOS-002
 title: Chaos pays one cash per success, halved once per player and sector outside the player's own sectors
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CHAOS-001, FND-CHAOS-002, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-009, EXP-TURN-061, EXP-TURN-062, EXP-TURN-063]
+evidence: [FND-CHAOS-001, FND-CHAOS-002, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-009, EXP-TURN-061, EXP-TURN-062, EXP-TURN-063, EXP-TURN-064]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002]
@@ -87,7 +87,4 @@ None known.
 
 ## Open questions
 
-- No recorded run pays Chaos in a sector under police presence, so the runs
-  of EXP-TURN-009 and EXP-TURN-061 to EXP-TURN-063 do not reach the edge case
-  that pays such a sector in full. It rests on the static reading
-  [FND-CHAOS-002].
+None known.

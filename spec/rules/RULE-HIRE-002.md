@@ -1,10 +1,10 @@
 ---
 id: RULE-HIRE-002
 title: Vacant hire offers are refilled in place at the player's planning entry
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-001, FND-HIRE-007, FND-EXE-004, SRC-MANUAL-GOG, EXP-SETUP-001]
+evidence: [FND-HIRE-001, FND-HIRE-007, FND-EXE-004, SRC-MANUAL-GOG, EXP-SETUP-001, EXP-TURN-062]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002]

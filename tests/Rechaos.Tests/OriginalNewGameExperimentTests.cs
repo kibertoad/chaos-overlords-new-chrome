@@ -83,6 +83,13 @@ namespace Rechaos.Tests;
 /// EXP-TURN-061 to EXP-TURN-063 give the human's gang a standing Chaos order from turn 1 in Power,
 /// Greed and Big 40, which pays Chaos in a player's own sectors and, halved, outside them and
 /// brings on Crackdowns (RULE-CHAOS-001, RULE-CHAOS-002).
+/// In EXP-TURN-064 and EXP-TURN-066 the human's gangs keep doing Chaos in a sector under police
+/// presence, which cracks down again and pays (RULE-CHAOS-001, RULE-CHAOS-002). In EXP-TURN-065 the
+/// human's recurring Research, Influence and Control end once done (RULE-TURN-004).
+/// EXP-TURN-067 drops a recurring Heal at Force 10 and the recurring Chaos of gangs killed in
+/// Combat (RULE-TURN-004), and in EXP-TURN-068 a Heal with a pool below 1 rolls nothing
+/// (RULE-HEAL-001). In EXP-TURN-069 an Influence with a pool below 1 rolls nothing
+/// (RULE-INFLUENCE-001).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -90,7 +97,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -274,6 +281,8 @@ public sealed partial class OriginalNewGameExperimentTests
             var gangs = player.Gangs.Where(gang => gang.IsActive).ToArray();
             var records = recorded.GangRecords(player.Id.Value);
             Assert.Equal(records.Count, gangs.Length);
+            // A run that ends the match has no further turn start (RULE-TURN-004).
+            var comparesRecurringOrders = recorded.Term("controller", player.Id.Value) == 0 && match.Outcome is null;
             for (var slot = 0; slot < gangs.Length; slot++)
             {
                 var record = records[slot];
@@ -285,6 +294,16 @@ public sealed partial class OriginalNewGameExperimentTests
                 Assert.Equal(recorded.Gang(record, "weapon"), gang.WeaponItemId ?? -1);
                 Assert.Equal(recorded.Gang(record, "armor"), gang.ArmorItemId ?? -1);
                 Assert.Equal(recorded.Gang(record, "misc"), gang.MiscellaneousItemId ?? -1);
+                // RULE-TURN-004: at a human's planning entry each gang's action is its recurring
+                // order, or none once the turn start has cleared it; the rebuild keeps only the
+                // recurring orders that carry on.
+                if (comparesRecurringOrders)
+                {
+                    var carried = gang.QueuedCommand is { Command.Repeat: true } queued ? (int)queued.Command.Action : 0;
+                    Assert.True(recorded.Gang(record, "repeat_action") == carried,
+                        $"player {player.Id.Value} gang {slot}: the original has repeat_action {recorded.Gang(record, "repeat_action")}, the rebuild {carried}");
+                    Assert.Equal(recorded.Gang(record, "repeat_action"), recorded.Gang(record, "action"));
+                }
                 var stats = EffectiveStatisticsCalculator.ForGang(match, gang);
                 int[] values =
                 [
@@ -810,6 +829,9 @@ public sealed partial class OriginalNewGameExperimentTests
             // target of a Give is the item mask and target_2 the recipient's roster slot
             // (FMT-STATE-001, RULE-GIVE-001).
             GangAction.Give => GiveCommand(human, gang, match.Players[human.Value].Gangs[order.Target2], order.Target),
+            // target of an Influence is the site slot, 0 to 2, of the gang's sector (FMT-STATE-001).
+            GangAction.Influence => new GameCommand(human, gang.Id, action,
+                CommandTarget.Site(gang.SectorId * MatchLimits.SitesPerSector + order.Target), order.Repeat),
             GangAction.Bribe or GangAction.Chaos or GangAction.Control or GangAction.Heal
                 or GangAction.Hide or GangAction.Snitch or GangAction.Terminate =>
                 new GameCommand(human, gang.Id, action, CommandTarget.None, order.Repeat),
