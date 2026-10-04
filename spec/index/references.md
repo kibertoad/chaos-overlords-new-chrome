@@ -1678,8 +1678,6 @@ None.
 
 | Cited by | In |
 |---|---|
-| [EXP-TURN-068](../experiments/EXP-TURN-068.md) | body |
-| [EXP-TURN-069](../experiments/EXP-TURN-069.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FND-DATA-011](../findings/FND-DATA-011.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
@@ -1697,6 +1695,9 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-068](../experiments/EXP-TURN-068.md) | body |
+| [EXP-TURN-069](../experiments/EXP-TURN-069.md) | body |
+| [EXP-TURN-070](../experiments/EXP-TURN-070.md) | body |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body |
 | [FND-AI-054](../findings/FND-AI-054.md) | body |
 | [FND-AI-064](../findings/FND-AI-064.md) | body |
@@ -6345,6 +6346,7 @@ None.
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | evidence |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | evidence |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | body, evidence |

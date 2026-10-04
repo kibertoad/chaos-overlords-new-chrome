@@ -172,7 +172,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-HEAL-001` | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 reach the three bands and a Heal capped at 10, and EXP-TURN-068 a pool of 0 or less. The menus and the computer never order a Heal at Force 10 (FND-HEAL-002). |
+| `RULE-HEAL-001` | Heal rolls four dice plus the gang's Heal and adds each success to Force, up to 10 | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 reach the three bands and a Heal capped at 10, and EXP-TURN-068 a pool of 0 or less. No recorded run reaches a Heal at Force 10, which the menus, the group bar and the computer never order (FND-HEAL-002, FND-UI-021). |
 
 ## RESEARCH
 
@@ -296,7 +296,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-DETECT-001` | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every active gang's `visible_to` bytes. EXP-SETUP-004 reaches the visibility name modifier, EXP-TURN-025 an observer out of the match, and EXP-TURN-062 helpers with Detect above and at most 9, a tie for the base, and a Stealth equal to the strength. |
+| `RULE-DETECT-001` | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | The replays compare every active gang's `visible_to` bytes. EXP-SETUP-004 reaches the visibility name modifier, EXP-TURN-025 an observer out of the match, and EXP-TURN-062 helpers with Detect above and at most 9, a tie for the base, and a Stealth equal to the strength. No replay compares the `visible_to` bytes an inactive gang keeps (FND-DETECT-002). |
 
 ## CHAOS
 

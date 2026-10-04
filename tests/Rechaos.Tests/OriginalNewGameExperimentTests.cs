@@ -283,6 +283,8 @@ public sealed partial class OriginalNewGameExperimentTests
             var gangs = player.Gangs.Where(gang => gang.IsActive).ToArray();
             var records = recorded.GangRecords(player.Id.Value);
             Assert.Equal(records.Count, gangs.Length);
+            // A run that ends the match has no further turn start (RULE-TURN-004).
+            var comparesRecurringOrders = recorded.Term("controller", player.Id.Value) == 0 && match.Outcome is null;
             for (var slot = 0; slot < gangs.Length; slot++)
             {
                 var record = records[slot];
@@ -296,8 +298,8 @@ public sealed partial class OriginalNewGameExperimentTests
                 Assert.Equal(recorded.Gang(record, "misc"), gang.MiscellaneousItemId ?? -1);
                 // RULE-TURN-004: at a human's planning entry each gang's action is its recurring
                 // order, or none once the turn start has cleared it; the rebuild keeps only the
-                // recurring orders that carry on. A run that ends the match has no further turn start.
-                if (recorded.Term("controller", player.Id.Value) == 0 && match.Outcome is null)
+                // recurring orders that carry on.
+                if (comparesRecurringOrders)
                 {
                     var carried = gang.QueuedCommand is { Command.Repeat: true } queued ? (int)queued.Command.Action : 0;
                     Assert.True(recorded.Gang(record, "repeat_action") == carried,

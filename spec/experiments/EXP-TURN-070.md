@@ -29,9 +29,9 @@ As EXP-TURN-004 with Greed (`--scenario 0`), Mentality 0 (`--mentality 0`),
 seven Done presses (`--end-turns 7`) and `--seed 24`. In turns 1 and 2 write a
 hire order for offer slot 0 into sector 33, the headquarters sector
 (`--hires 1:0:33,2:0:33`); the gang hired in turn 1, roster slot 1, has a
-Force plus Control below the Income of sector 26. With these orders, each
-written into `action` and, for a recurring order, `repeat_action` of the
-human's gang (FMT-STATE-001):
+Force plus Control below the Income of sector 26 (FMT-DATA-002). With these
+orders, each written into `action` and, for a recurring order,
+`repeat_action` of the human's gang (FMT-STATE-001):
 
 - before turn 3, Move (10) to sector 26, a neutral neighbour, by roster
   slots 0, 1 and 2, once;

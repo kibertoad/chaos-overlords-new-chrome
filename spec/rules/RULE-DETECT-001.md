@@ -110,4 +110,6 @@ None known.
 
 ## Open questions
 
-None known.
+- The replays compare the `visible_to` bytes of active gangs only. No recorded
+  run compares the bytes an inactive gang keeps from when it died, left or was
+  hired over; that case rests on the static reading [FND-DETECT-002].
