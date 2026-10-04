@@ -4,7 +4,7 @@ title: Planning time limit chosen for a match
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-001, FND-UI-003, FND-EXE-004, SRC-MANUAL-GOG, SRC-HELP-GOG, EXP-TURN-046, EXP-TURN-047]
+evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-001, FND-UI-003, FND-EXE-004, SRC-MANUAL-GOG, SRC-HELP-GOG, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052]
 conflicting: []
 split_with: []
 related: []
