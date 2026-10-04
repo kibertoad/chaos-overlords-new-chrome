@@ -61,13 +61,14 @@ public static partial class AiTurnPlanner
             state.AiPlanning.SetPlannedAction(
                 playerId, gangSlot, GangAction.Equip,
                 new AiActionTarget(checked((byte)miscellaneousId), 0));
+            state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
             return;
         }
 
         var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
         if (OriginalAiFamilyTwelveRules.ShouldHeal(gang.Force, effectiveHeal))
         {
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
             return;
         }
 
@@ -87,7 +88,9 @@ public static partial class AiTurnPlanner
             hasPriorChaos: _ => false,
             ownerTests: SelectorOwnerTests(state, playerId),
             state.Random, planning: state.AiPlanning);
-        SetRecoveredMoveAction(state, playerId, gangSlot, target);
+        // FND-AI-075: the Move clears the focus and keeps its destination as the coverage sector.
+        SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
+        state.AiPlanning.SetCoverageSector(playerId, gangSlot, target);
     }
 
     /// <summary>
@@ -113,6 +116,7 @@ public static partial class AiTurnPlanner
             playerId, gangSlot, slot,
             OriginalAiFamilyTwelveRules.EquipmentCooldown(
                 state.Definitions.Items[itemId].Cost));
+        state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static void PrepareFamilyTwelveAttack(
@@ -153,10 +157,7 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Attack,
-            new AiActionTarget(
-                checked((byte)selected.Value.Gang.Owner.Value),
-                checked((byte)selected.Value.Slot)));
+        // FND-AI-075: the Attack stores the gang's sector as the focus.
+        SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, selected.Value);
     }
 }
