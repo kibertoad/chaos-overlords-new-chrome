@@ -244,7 +244,7 @@
 | [EXP-TURN-060](../experiments/EXP-TURN-060.md) | Does a Siege match at Criminal played for 23 turns draw and resolve as the spec gives? | recorded |
 | [EXP-TURN-061](../experiments/EXP-TURN-061.md) | Does a Power match at Homicidal Maniac with a standing Chaos order play 25 turns as the spec gives? | recorded |
 | [EXP-TURN-062](../experiments/EXP-TURN-062.md) | Does a Greed match at Goon with a standing Chaos order play 26 turns as the spec gives? | recorded |
-| [EXP-TURN-063](../experiments/EXP-TURN-063.md) | Does a Big 40 match at Crimelord with a standing Chaos order play 30 turns as the spec gives? | recorded |
+| [EXP-TURN-063](../experiments/EXP-TURN-063.md) | Does a Big 40 match at Crime Lord with a standing Chaos order play 30 turns as the spec gives? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |

@@ -80,6 +80,9 @@ namespace Rechaos.Tests;
 /// families 0, 3, 7 and 10 to 12 (RULE-AI-019, RULE-AI-022, RULE-AI-026, RULE-AI-028 to
 /// RULE-AI-030). EXP-TURN-058 plays Big Man, with families 13 and 14, to its end and compares the
 /// awards and the endgame rows (RULE-AI-031, RULE-OBJECTIVE-004, RULE-AWARDS-001, RULE-AWARDS-002).
+/// EXP-TURN-061 to EXP-TURN-063 give the human's gang a standing Chaos order from turn 1 in Power,
+/// Greed and Big 40, which pays Chaos in a player's own sectors and, halved, outside them and
+/// brings on Crackdowns (RULE-CHAOS-001, RULE-CHAOS-002).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger

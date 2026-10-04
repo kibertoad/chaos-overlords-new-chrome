@@ -363,7 +363,7 @@
 | [EXP-TURN-060](../experiments/EXP-TURN-060.md) | Does a Siege match at Criminal played for 23 turns draw and resolve as the spec gives? |
 | [EXP-TURN-061](../experiments/EXP-TURN-061.md) | Does a Power match at Homicidal Maniac with a standing Chaos order play 25 turns as the spec gives? |
 | [EXP-TURN-062](../experiments/EXP-TURN-062.md) | Does a Greed match at Goon with a standing Chaos order play 26 turns as the spec gives? |
-| [EXP-TURN-063](../experiments/EXP-TURN-063.md) | Does a Big 40 match at Crimelord with a standing Chaos order play 30 turns as the spec gives? |
+| [EXP-TURN-063](../experiments/EXP-TURN-063.md) | Does a Big 40 match at Crime Lord with a standing Chaos order play 30 turns as the spec gives? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -882,6 +882,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | established |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established |
 | [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | Chaos is rolled gang by gang, and a sector whose Chaos exceeds its Tolerance gets a Crackdown | supported |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | Chaos pays one cash per success, halved once per player and sector outside the player's own sectors | supported |
 | [RULE-CITY-001](../rules/RULE-CITY-001.md) | A new city's sector Income comes from a random density field, and its starting Tolerance is 17 minus the Income | established |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | Each sector's three sites are drawn uniformly and redrawn until they differ and their modifiers stay within six either way | established |
 | [RULE-CITY-003](../rules/RULE-CITY-003.md) | The six players get the six fixed headquarters sectors in a random order, and each headquarters' first site becomes the headquarters site | established |

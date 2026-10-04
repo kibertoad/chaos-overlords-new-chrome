@@ -87,4 +87,7 @@ None known.
 
 ## Open questions
 
-None known.
+- No recorded run pays Chaos in a sector under police presence, so the runs
+  of EXP-TURN-009 and EXP-TURN-061 to EXP-TURN-063 do not reach the edge case
+  that pays such a sector in full. It rests on the static reading
+  [FND-CHAOS-002].

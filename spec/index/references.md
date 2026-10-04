@@ -1040,8 +1040,8 @@ None.
 |---|---|
 | [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
-| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
-| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | body, evidence |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | body, evidence |
 
 ## EXP-TURN-010
 
@@ -1540,8 +1540,8 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
-| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | body, evidence |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | body, evidence |
 
 ## EXP-TURN-062
 
@@ -1554,8 +1554,8 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | evidence |
-| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | evidence |
+| [RULE-CHAOS-001](../rules/RULE-CHAOS-001.md) | body, evidence |
+| [RULE-CHAOS-002](../rules/RULE-CHAOS-002.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
