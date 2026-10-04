@@ -295,12 +295,10 @@ public static class StatusConsolePresentation
         lines.AddRange(components.Select(component =>
             $"  {component.Label,-18}{ProjectedChange(component.Value)}"));
         lines.Add($"  {"TOTAL",-18}{delta}");
-        // RULE-TURN-002: Chaos income is paid after the transactions and before hiring; Upkeep,
-        // tax and site cash are settled at the next turn start (RULE-UPKEEP-001).
-        lines.Add("  A POSITIVE DELTA CANNOT PAY FOR AN EQUIP.");
-        lines.Add("  CHAOS INCOME ARRIVES AFTER EQUIPS AND BEFORE");
-        lines.Add("  HIRES, SO IT CAN PAY FOR A NEW GANG.");
-        lines.Add("  TAX AND SITE CASH ARRIVE NEXT TURN, AFTER BOTH.");
+        // RULE-TURN-002, RULE-UPKEEP-001: tax and site cash arrive at the next turn start and Chaos
+        // income after the transactions, so the delta comes too late for this turn's purchases.
+        lines.Add("  THE DELTA CANNOT PAY FOR EQUIPS OR NEW GANGS:");
+        lines.Add("  ONLY UNSPENT CASH FROM THE TURN START CAN.");
         lines.Add("");
         lines.Add("QUEUED SPENDING IN RESOLUTION ORDER:");
         return lines;
