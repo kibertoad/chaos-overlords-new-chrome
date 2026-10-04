@@ -43,6 +43,25 @@ public sealed partial class OriginalNewGameExperimentTests
     // The players of the names the endgame's first drawing listed, in drawing order, and each row's
     // kind: splash, ranked or eliminated (FND-AWARDS-005).
     private sealed record RecordedEndgame(IReadOnlyList<int> Players, IReadOnlyList<string> Kinds);
+    // The viewer of the last city redraw and its site markers as definition, sector, ordinal and
+    // controlled flag (FND-SEARCH-006).
+    private sealed record RecordedMarkers(int Viewer, IReadOnlyList<int[]> Markers);
+
+    // The site definitions whose search_filters entries the probe set for the first human before
+    // the Done press of the turn (RULE-SEARCH-001).
+    private sealed record RecordedSearch(int Turn, IReadOnlyList<int> Definitions)
+    {
+        // "turn 1: search filter 0 2 4", as the probe writes it.
+        public static RecordedSearch Parse(string value)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): search filter (\d+(?: \d+)*)$");
+            Assert.True(match.Success, value);
+            return new(int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                match.Groups[2].Value.Split(' ')
+                    .Select(definition => int.Parse(definition, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
+        }
+    }
+
     // A Financial panel the probe opened before the Done press of Turn, with the sector its function
     // was passed (-1 for the City variant) and the nine numbers it drew (FND-FINANCE-003).
     private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
@@ -98,11 +117,24 @@ public sealed partial class OriginalNewGameExperimentTests
                     endgame.GetProperty("players").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
                     endgame.GetProperty("kinds").EnumerateArray().Select(value => value.GetString()!).ToArray())
                 : null;
+            CityMarkers = run.TryGetProperty("city_markers", out var markers)
+                ? new RecordedMarkers(markers.GetProperty("viewer").GetInt32(),
+                    markers.GetProperty("markers").EnumerateArray()
+                        .Select(marker => marker.EnumerateArray().Select(value => value.GetInt32()).ToArray()).ToArray())
+                : null;
             Finance = run.TryGetProperty("finance", out var finance)
                 ? finance.EnumerateArray().Select(panel => new RecordedFinance(
                     panel.GetProperty("turn").GetInt32(), panel.GetProperty("sector").GetInt32(),
                     panel.GetProperty("values").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
                 : [];
+            // The inputs list every turn up to --end-turns, but a match that ends early presses
+            // Done fewer times, and the probe writes a turn's filter entries only before its press.
+            SearchFilter = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "search")
+                .Select(input => RecordedSearch.Parse(input.GetProperty("value").GetString()!))
+                .Where(write => write.Turn <= DoneCount)
+                .SelectMany(write => write.Definitions)
+                .Distinct().ToArray();
             Rolls = run.GetProperty("rolls").EnumerateArray()
                 .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
                 .ToArray();
@@ -122,6 +154,8 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<int> DoneAtRoll { get; }
         public IReadOnlyList<RecordedPanel>? Panels { get; }
         public RecordedEndgame? EndgameRows { get; }
+        public IReadOnlyList<int> SearchFilter { get; }
+        public RecordedMarkers? CityMarkers { get; }
         public IReadOnlyList<RecordedFinance> Finance { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }

@@ -70,6 +70,14 @@ internal static class OriginalAddresses
     public const int PanelExitX = 137 + 24;
     public const int PanelExitY = 293 + 11;
 
+    // FND-SEARCH-006: the city redraw fn_004123CC(viewer, ...) passes each site marker to
+    // fn_00412AC4(definition, sector, ordinal, controlled). search_filters: one byte per player
+    // and site definition, element player * 22 + definition, at 0x004A24E8 (FND-SEARCH-001).
+    public const uint CityRedraw = 0x004123CC;
+    public const uint SiteMarker = 0x00412AC4;
+    public const uint SearchFilters = 0x004A24E8;
+    public const int SiteDefinitionCount = 22;
+
     // FND-FINANCE-002: fn_0044D1BB(player, sector) builds and draws the Financial panel, -1 for the
     // City variant; the upper part of the console's Financial control, (552, 178, 48, 33), opens the
     // City variant and the lower part, (552, 211, 48, 15), the Sector variant of the selected sector

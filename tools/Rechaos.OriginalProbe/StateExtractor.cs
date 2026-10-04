@@ -42,6 +42,14 @@ internal sealed class StateExtractor
                 ["players"] = endgame["Rows"]!.DeepClone(),
                 ["kinds"] = endgame["Kinds"]!.DeepClone(),
             };
+        // FND-SEARCH-006: the site markers of the last city redraw before the dump, each as
+        // definition, sector, ordinal and controlled flag, with the viewing player.
+        if (trace["Markers"] is JsonObject markers)
+            run["city_markers"] = new JsonObject
+            {
+                ["viewer"] = markers["Viewer"]!.GetValue<int>(),
+                ["markers"] = markers["Markers"]!.DeepClone(),
+            };
         // FND-FINANCE-003: the nine numbers of each Financial panel the run opened, in drawing order,
         // with the sector the panel function was passed.
         if (trace["Finance"] is JsonArray finance)
