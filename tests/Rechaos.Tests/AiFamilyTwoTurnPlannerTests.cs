@@ -215,6 +215,39 @@ public sealed class AiFamilyTwoTurnPlannerTests
             Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
     }
 
+    // BUG-AI-008, RULE-AI-021: the late gates test the sector numbered like the planned item. The
+    // gang stands in a neutral sector, which the gang-sector reading leaves alone (the owner query
+    // of -1 is never hostile for player 0), while the human owns the sector numbered like the
+    // armor, so the gate fires there and the Equip becomes Control. No recorded run of the
+    // original reaches this direction; EXP-TURN-055 and EXP-TURN-056 reach the kept one.
+    [Fact]
+    public void LateGateOnTheItemNumberedSectorReplacesTheEquipWithControl()
+    {
+        var data = BundledOriginalData.Load();
+        var researched = data.Items
+            .Select((item, index) => (item, index))
+            .Where(value => value.item.Type != 99)
+            .Select(value => checked((short)value.index));
+        var match = CreateMatch(data, researched: researched, cash: 500,
+            attackerDefinitionId: 5, mentality: AiDifficulty.HomicidalManiac);
+        var player = new PlayerId(0);
+        var armor = Assert.IsType<int>(OriginalAiEquipmentRules.SelectArmorUpgrade(
+            match, match.Players[0], match.Players[0].Gangs[0], 500));
+        Assert.InRange(armor, 1, MatchLimits.SectorCount - 1);
+        match.Sectors[0].Owner = null;
+        match.Sectors[armor].Owner = new PlayerId(1);
+        BeginFamilyTwoTurn(match, player);
+        match.FinishUpkeep();
+
+        match.PrepareAiPlanning(player);
+
+        // Read on the gang's own sector, the gates would leave the Equip.
+        Assert.False(AiTurnPlanner.IsHostileOwner(match, player, 0));
+        Assert.True(AiTurnPlanner.IsHostileOwner(match, player, armor));
+        Assert.Equal(GangAction.Control,
+            Assert.Single(AiTurnPlanner.Plan(match, player)).Action);
+    }
+
     [Fact]
     public void FinalThreeGreedTurnsOverridePreparedActionWithTerminate()
     {

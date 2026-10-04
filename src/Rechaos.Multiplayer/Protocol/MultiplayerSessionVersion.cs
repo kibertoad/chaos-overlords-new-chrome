@@ -19,7 +19,7 @@ namespace Rechaos.Multiplayer.Protocol;
 /// </remarks>
 public static class MultiplayerSessionVersion
 {
-    public const int Current = 44;
+    public const int Current = 45;
 
     /// <summary>
     /// What a record that predates the field is read as.

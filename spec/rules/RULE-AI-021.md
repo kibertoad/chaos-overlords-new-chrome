@@ -4,7 +4,7 @@ title: Family-2 computer gangs equip, heal, attack visible hostile gangs and tak
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [EXP-TURN-018, FND-AI-032, FND-AI-033, FND-AI-018, FND-AI-015, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-058, FND-AI-057]
+evidence: [EXP-TURN-018, FND-AI-032, FND-AI-033, FND-AI-018, FND-AI-015, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-058, FND-AI-057, FND-AI-077, EXP-TURN-055, EXP-TURN-056]
 conflicting: []
 split_with: []
 related: [RULE-AI-003, RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -45,6 +45,8 @@ let s = g.sector
 let prev = r.previous_action
 let w = sector_weight[player * 64 + s]
 let done = false
+# the sector the late gates read (BUG-AI-008)
+let gs = s
 if prev != ACTION_ATTACK:
     let ar = armor_upgrade(player, idx)
     let wp = weapon_upgrade(player, idx)
@@ -52,11 +54,13 @@ if prev != ACTION_ATTACK:
         plan(idx, ACTION_EQUIP, ar, 0)
         r.armor_cooldown = item_definitions[ar].cost * 3
         aux_records[idx].focus = -1
+        gs = ar
         done = true
     else if wp != -1 and r.weapon_cooldown <= 0:
         plan(idx, ACTION_EQUIP, wp, 0)
         r.weapon_cooldown = item_definitions[wp].cost * 3
         aux_records[idx].focus = -1
+        gs = wp
         done = true
 if not done and g.force < 8 and g.heal >= -3 and w < 5:
     plan(idx, ACTION_HEAL, 0, 0)
@@ -81,12 +85,12 @@ if not done:
         plan(idx, ACTION_CONTROL, 0, 0)
     aux_records[idx].focus = -1
 # two late gates that can replace any action chosen above; a cooldown stays
-let q = owner_query(s)
+let q = owner_query(gs)
 let gate_1 = false
-if hostile_owner(player, s) and count(visible_opponents(player, s, 1)) == 0:
+if hostile_owner(player, gs) and count(visible_opponents(player, s, 1)) == 0:
     gate_1 = owner_is_human(s) and prev != ACTION_CONTROL
 let gate_2 = false
-if hostile_owner(player, s) and count(visible_opponents(player, s, 3)) == 0:
+if hostile_owner(player, gs) and count(visible_opponents(player, gs, 3)) == 0:
     gate_2 = combat_advantage[player * 6 + q] != 0
 if gate_1 or gate_2:
     plan(idx, ACTION_CONTROL, 0, 0)
@@ -108,13 +112,21 @@ cost. Draws up to five `roll`s in the attack loop, plus the draws inside
 
 The attack loop attacks the last drawn target even when all five strength tests
 fail, and the strength test can be made on a different gang from the one
-attacked (BUG-AI-003). A gang whose previous action was Attack never equips. In
-a sector the player owns, the late gates never fire, because both need an
-owner the player is hostile to. The Greed override replaces every other choice,
-including an Equip whose cooldown has already been set. The late gates also
-replace an Equip or a Heal and leave the cooldown in place. Under police
-presence the owner query is -2, so a gang in its own sector skips the mode-6
-Move and goes on to the attack step. The attack step needs at least one
+attacked (BUG-AI-003). A gang whose previous action was Attack never equips.
+After any action but an Equip, the late gates never fire in a sector the
+player owns, because both need an owner the player is hostile to. The Greed
+override replaces every other choice, including an Equip whose cooldown has
+already been set. The late gates also replace an Equip or a Heal and leave the
+cooldown in place. After an Equip they test the owner, the hostility and the
+owner's visible gangs of the sector numbered like the item, while the human
+gang count and the human-owner test still read the gang's own sector
+(BUG-AI-008); item numbers stay below 64, so that sector exists. The second
+gate can then replace an Equip with Control in a sector the player owns, when
+the sector numbered like the item belongs to an opponent the player is hostile
+to and holds a combat-advantage flag for, and the player sees none of that
+opponent's gangs there. Under police presence the owner
+query is -2, so a gang in its own sector skips the mode-6 Move and goes on to
+the attack step. The attack step needs at least one
 visible gang of a player the player is hostile to, even at weight 10, where
 the draw then takes the human pool (FND-AI-058).
 
