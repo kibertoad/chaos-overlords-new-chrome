@@ -375,7 +375,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--sound]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--sound]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
@@ -421,6 +421,12 @@ given turn, as the hire screen does (RULE-HIRE-003); the fixture lists it as a
 no local match assigns. The fixture lists each as a `planning` input, and the
 replay makes the same change to the rebuild's planning state; since that change
 bypasses the replay recorder, such a run's journal is not verified.
+`--search` sets the first human's `search_filters` entries for the given site
+definitions before the Done press of the given turn, as the Search panel's
+rows do (RULE-SEARCH-001), and keeps the site markers of each city redraw
+(FND-SEARCH-006). The fixture lists each write as a `search` input and holds
+the markers of the last redraw before the dump as `city_markers`; the replay
+compares them with the rebuild's markers for the same filter.
 A run that ends the match keeps the endgame's first drawing: the renderer's
 arguments and the player of each row it lists, ranked, eliminated or the
 victory splash (FND-AWARDS-005), which the fixture holds as `endgame_rows`.

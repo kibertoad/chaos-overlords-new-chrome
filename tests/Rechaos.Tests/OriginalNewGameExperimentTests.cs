@@ -70,7 +70,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -427,6 +427,36 @@ public sealed class OriginalNewGameExperimentTests
         return data;
     }
 
+    public static TheoryData<string, int> MarkerRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                if (runs[run].CityMarkers is not null) data.Add(experiment, run);
+        return data;
+    }
+
+    // RULE-SEARCH-002, FND-SEARCH-006: the probe writes the human's Search filter entries as the
+    // Search panel does and keeps every site marker of the last city redraw before the dump:
+    // definition, sector, ordinal and controlled flag, in drawing order. The rebuild's city shows
+    // the same markers for the same filter. EXP-TURN-045 selects every even site definition, so the
+    // ordinals skip the sites left out, and the human's Headquarters is drawn as controlled.
+    [Theory]
+    [MemberData(nameof(MarkerRuns))]
+    public void TheCityShowsTheOriginalsSiteMarkers(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var match = StartMatch(recorded, out _);
+        var drawn = recorded.CityMarkers!;
+        // The probe writes the first human's filter, so only that human's redraw is compared.
+        Assert.Equal(recorded.Humans[0].Value, drawn.Viewer);
+        var filter = recorded.SearchFilter.Select(definition => (short)definition).ToHashSet();
+        var markers = CitySiteMarkerProjection.Project(match, new PlayerId(drawn.Viewer), filter)
+            .Select(marker => $"{marker.SiteDefinitionId},{marker.SectorId},{marker.VisibleSlot},{(marker.Controlled ? 1 : 0)}")
+            .ToArray();
+        Assert.Equal(drawn.Markers.Select(marker => string.Join(",", marker)), markers);
+    }
+
     // RULE-MOVE-002, EXP-TURN-043: the gang sectors compared above cannot tell the repair from a
     // Move that never ran, so this checks that the replay reaches the repair. In turn 24 player 2
     // orders Moves that would put seven of its gangs in sector 62, and the one mover sent back,
@@ -745,6 +775,25 @@ public sealed class OriginalNewGameExperimentTests
     // The players of the names the endgame's first drawing listed, in drawing order, and each row's
     // kind: splash, ranked or eliminated (FND-AWARDS-005).
     private sealed record RecordedEndgame(IReadOnlyList<int> Players, IReadOnlyList<string> Kinds);
+    // The viewer of the last city redraw and its site markers as definition, sector, ordinal and
+    // controlled flag (FND-SEARCH-006).
+    private sealed record RecordedMarkers(int Viewer, IReadOnlyList<int[]> Markers);
+
+    // The site definitions whose search_filters entries the probe set for the first human before
+    // the Done press of the turn (RULE-SEARCH-001).
+    private sealed record RecordedSearch(int Turn, IReadOnlyList<int> Definitions)
+    {
+        // "turn 1: search filter 0 2 4", as the probe writes it.
+        public static RecordedSearch Parse(string value)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): search filter (\d+(?: \d+)*)$");
+            Assert.True(match.Success, value);
+            return new(int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                match.Groups[2].Value.Split(' ')
+                    .Select(definition => int.Parse(definition, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
+        }
+    }
+
     // A Financial panel the probe opened before the Done press of Turn, with the sector its function
     // was passed (-1 for the City variant) and the nine numbers it drew (FND-FINANCE-003).
     private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
@@ -865,12 +914,25 @@ public sealed class OriginalNewGameExperimentTests
                     endgame.GetProperty("players").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
                     endgame.GetProperty("kinds").EnumerateArray().Select(value => value.GetString()!).ToArray())
                 : null;
+            CityMarkers = run.TryGetProperty("city_markers", out var markers)
+                ? new RecordedMarkers(markers.GetProperty("viewer").GetInt32(),
+                    markers.GetProperty("markers").EnumerateArray()
+                        .Select(marker => marker.EnumerateArray().Select(value => value.GetInt32()).ToArray()).ToArray())
+                : null;
             Finance = run.TryGetProperty("finance", out var finance)
                 ? finance.EnumerateArray().Select(panel => new RecordedFinance(
                     panel.GetProperty("turn").GetInt32(), panel.GetProperty("sector").GetInt32(),
                     panel.GetProperty("values").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
                 : [];
             DoneCount = run.TryGetProperty("done_at_roll", out var done) ? done.GetArrayLength() : 0;
+            // The inputs list every turn up to --end-turns, but a match that ends early presses
+            // Done fewer times, and the probe writes a turn's filter entries only before its press.
+            SearchFilter = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "search")
+                .Select(input => RecordedSearch.Parse(input.GetProperty("value").GetString()!))
+                .Where(write => write.Turn <= DoneCount)
+                .SelectMany(write => write.Definitions)
+                .Distinct().ToArray();
             Rolls = run.GetProperty("rolls").EnumerateArray()
                 .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
                 .ToArray();
@@ -888,6 +950,8 @@ public sealed class OriginalNewGameExperimentTests
         public int Seed { get; }
         public int DoneCount { get; }
         public RecordedEndgame? EndgameRows { get; }
+        public IReadOnlyList<int> SearchFilter { get; }
+        public RecordedMarkers? CityMarkers { get; }
         public IReadOnlyList<RecordedFinance> Finance { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
