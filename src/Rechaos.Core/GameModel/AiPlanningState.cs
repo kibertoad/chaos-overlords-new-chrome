@@ -502,6 +502,12 @@ public sealed class AiPlanningState
     internal void SetPlannedAction(PlayerId player, int gangSlot, GangAction action)
         => SetPlannedAction(player, gangSlot, action, AiActionTarget.None);
 
+    /// <summary>
+    /// FMT-STATE-007, RULE-AI-004: <c>plan</c> writes the action and only the target bytes the
+    /// action uses. An Attack writes both, a Move, Equip, Influence or Research the first, and any
+    /// other action neither, so a later write in the same pass, such as a Control override or the
+    /// Greed Terminate, keeps the targets an earlier one stored.
+    /// </summary>
     internal void SetPlannedAction(
         PlayerId player,
         int gangSlot,
@@ -511,7 +517,13 @@ public sealed class AiPlanningState
         if (!IsValidAction(action)) throw new ArgumentOutOfRangeException(nameof(action));
         var index = GangSlotIndex(player, gangSlot);
         _plannedActions[index] = action;
-        _plannedTargets[index] = target;
+        _plannedTargets[index] = action switch
+        {
+            GangAction.Attack => target,
+            GangAction.Move or GangAction.Equip or GangAction.Influence or GangAction.Research =>
+                new AiActionTarget(target.First, _plannedTargets[index].Second),
+            _ => _plannedTargets[index],
+        };
     }
 
     /// <summary>The first pass's reset of RULE-AI-001, which also clears both auxiliary values.</summary>

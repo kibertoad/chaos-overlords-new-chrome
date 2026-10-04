@@ -4,7 +4,7 @@ title: Family-3 computer gangs influence the best Cash site in owned land, take 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-072, FND-AI-033, FND-AI-034, FND-AI-021, FND-AI-026, FND-AI-028, FND-EXE-004, FND-AI-042, EXP-TURN-022]
+evidence: [FND-AI-072, FND-AI-033, FND-AI-034, FND-AI-021, FND-AI-026, FND-AI-028, FND-EXE-004, FND-AI-042, EXP-TURN-022, FND-AI-074, EXP-TURN-048, EXP-TURN-049]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -75,14 +75,18 @@ define site_builder(player, slot, kind):
     if prev == ACTION_NONE or prev == ACTION_CONTROL or prev == ACTION_EQUIP or prev == ACTION_HEAL:
         if heal_ok:
             plan(idx, ACTION_HEAL, 0, 0)
+            aux_records[idx].focus = -1
         else if site != -1:
             plan(idx, ACTION_INFLUENCE, site, 0)
+            aux_records[idx].focus = s
         else if solo_control_ok(player, idx, s):
             plan(idx, ACTION_CONTROL, 0, 0)
         else:
             plan(idx, ACTION_MOVE, select_sector(player, mode, idx), 0)
+            aux_records[idx].focus = -1
     else if prev == ACTION_SNITCH:
         plan(idx, ACTION_MOVE, select_sector(player, mode, idx), 0)
+        aux_records[idx].focus = -1
     else if prev == ACTION_INFLUENCE:
         let done = false
         if danger_near(player, idx):
@@ -91,28 +95,36 @@ define site_builder(player, slot, kind):
             if wp != -1 and r.weapon_cooldown <= 0:
                 plan(idx, ACTION_EQUIP, wp, 0)
                 r.weapon_cooldown = item_definitions[wp].cost * 3
+                aux_records[idx].focus = -1
                 done = true
             else if ar != -1 and r.armor_cooldown <= 0:
                 plan(idx, ACTION_EQUIP, ar, 0)
                 r.armor_cooldown = item_definitions[ar].cost * 3
+                aux_records[idx].focus = -1
                 done = true
         if not done:
             if heal_ok:
                 plan(idx, ACTION_HEAL, 0, 0)
+                aux_records[idx].focus = -1
             else if owned and site_unfinished(s, r.previous_target):
                 plan(idx, ACTION_INFLUENCE, r.previous_target, 0)
+                aux_records[idx].focus = s
             else if site != -1:
                 plan(idx, ACTION_INFLUENCE, site, 0)
+                aux_records[idx].focus = s
             else:
                 plan(idx, ACTION_MOVE, select_sector(player, mode, idx), 0)
+                aux_records[idx].focus = -1
     else if prev == ACTION_ATTACK or prev == ACTION_HIDE or prev == ACTION_MOVE:
         if w != 10:
             if site != -1:
                 plan(idx, ACTION_INFLUENCE, site, 0)
+                aux_records[idx].focus = s
             else if solo_control_ok(player, idx, s):
                 plan(idx, ACTION_CONTROL, 0, 0)
             else:
                 plan(idx, ACTION_MOVE, select_sector(player, mode, idx), 0)
+                aux_records[idx].focus = -1
         else:
             let kind_pool = 0
             if hostile_owner(player, s):
@@ -121,6 +133,7 @@ define site_builder(player, slot, kind):
             let t = draw_once(player, idx, kind_pool, s)
             if t != -1:
                 plan(idx, ACTION_ATTACK, t / 81, t % 81)
+                aux_records[idx].focus = s
             else:
                 plan(idx, ACTION_NONE, 0, 0)
                 aux_records[idx].focus = -1
@@ -145,7 +158,9 @@ No return value. Writes the gang's planned action and targets through `plan`:
 Influence targets the site slot, Attack the drawn gang's player and roster
 slot, Move the sector `select_sector` returns, Equip the item. An Equip sets
 the matching cooldown to three times the item's cost. May set the gang's
-auxiliary values to -1 and its family to 11 or 2. Draws one `roll` for the
+auxiliary values to -1 and its family to 11 or 2. Sets `focus` to the gang's
+sector after Influence and Attack and to -1 after Heal, Move, Equip and a
+failed draw; Control leaves it (FND-AI-074). Draws one `roll` for the
 single target draw, plus the draws inside `select_sector`.
 
 ## Edge cases
@@ -177,5 +192,3 @@ None known.
 - The kept-site test (selector `0x41`) reads the first target byte of the
   previous action as a site slot; the procedure assumes the ownership test is
   of the current sector.
-- Whether a successful Attack also sets the gang's `focus` is not recorded for
-  this family.

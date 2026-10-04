@@ -9,7 +9,7 @@ byte_order: little
 size: 10
 text: false
 definition: fmt_state_003.ksy
-evidence: [FND-AI-010, FND-COMBAT-004, FND-COMBAT-008, FND-COMBAT-010, FND-PLATFORM-003, FND-STATE-005]
+evidence: [FND-AI-010, FND-COMBAT-004, FND-COMBAT-008, FND-COMBAT-010, FND-PLATFORM-003, FND-STATE-005, EXP-TURN-051]
 conflicting: []
 split_with: []
 related: []
@@ -56,8 +56,10 @@ None known.
 
 ## Coverage
 
-A memory structure: nothing has been decoded against a dump of the running
-original. The 486 records match the 4,860-byte block the save reader and writer
+The records were read from the running original at the end of EXP-TURN-048
+to EXP-TURN-051: an attacker, its target and a gang the police killed in
+EXP-TURN-051, and two records in one run of EXP-TURN-049. The values agree
+with the layout. The 486 records match the 4,860-byte block the save reader and writer
 transfer from `0x004A11E8` [FND-PLATFORM-003], so the records of the last
 resolution are saved with the game.
 

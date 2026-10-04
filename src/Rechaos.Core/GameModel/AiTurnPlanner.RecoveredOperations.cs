@@ -163,7 +163,8 @@ public static partial class AiTurnPlanner
 
     /// <summary>
     /// Replaces the planned action with Terminate in the last turns of a Greed match, and flags the
-    /// record for a family at its next dispatch (FND-AI-042).
+    /// record for a family at its next dispatch (FND-AI-042). The targets the handler planned stay
+    /// in the record.
     /// </summary>
     private static void TerminateForGreed(MatchState state, PlayerId playerId, int gangSlot)
     {

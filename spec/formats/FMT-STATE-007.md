@@ -9,7 +9,7 @@ byte_order: little
 size: 16
 text: false
 definition: fmt_state_007.ksy
-evidence: [FND-AI-019, FND-AI-021, FND-SAVE-001, FND-STATE-006, FND-AI-042]
+evidence: [FND-AI-019, FND-AI-021, FND-SAVE-001, FND-STATE-006, FND-AI-042, FND-AI-074, EXP-TURN-048, EXP-TURN-049, EXP-TURN-050, EXP-TURN-051]
 conflicting: []
 split_with: []
 related: []
@@ -58,8 +58,12 @@ None known.
 
 ## Coverage
 
-A memory structure: nothing has been decoded against a dump of the running
-original or against the matching block of a save file.
+Every record of the 486 was read from the running original at the end of
+EXP-TURN-048 to EXP-TURN-051, runs of Greed, Kill 'Em All and the setup
+screen's defaults, and the values agree with the layout: families 0, 1, 2, 3,
+5, 7 and 99 (no run holds family 4 or 6), action numbers of FMT-STATE-001,
+target bytes as the AI rules give them and cooldowns as 16-bit values. The
+matching block of a save file was not decoded.
 
 ## Open questions
 
