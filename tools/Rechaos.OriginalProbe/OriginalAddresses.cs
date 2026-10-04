@@ -47,6 +47,16 @@ internal static class OriginalAddresses
     // FND-AWARDS-001: the endgame's row painter, which reads the awards the builder has given.
     public const uint AwardsRows = 0x0042CE61;
 
+    // FND-AWARDS-005: the renderer draws each listed player's name with fn_00413FD5, whose third
+    // argument is the name at 0x004A2589 + 12 * player: the splash's at 0x0042D1A4, the ranked rows'
+    // at 0x0042D2DA and the eliminated rows' at 0x0042DA64.
+    public const uint TextDraw = 0x00413FD5;
+    public const uint SplashNameDraw = 0x0042D1A4;
+    public const uint RankedNameDraw = 0x0042D2DA;
+    public const uint EliminatedNameDraw = 0x0042DA64;
+    public const uint PlayerNames = 0x004A2589;
+    public const int PlayerNameStride = 12;
+
     // match_over: set by the end-of-turn evaluation when the match is finished.
     public const uint MatchOver = 0x004ABBD4;
 
@@ -59,6 +69,14 @@ internal static class OriginalAddresses
     public const uint LastTurnEvents = 0x0044F2FC;
     public const int PanelExitX = 137 + 24;
     public const int PanelExitY = 293 + 11;
+
+    // FND-SEARCH-006: the city redraw fn_004123CC(viewer, ...) passes each site marker to
+    // fn_00412AC4(definition, sector, ordinal, controlled). search_filters: one byte per player
+    // and site definition, element player * 22 + definition, at 0x004A24E8 (FND-SEARCH-001).
+    public const uint CityRedraw = 0x004123CC;
+    public const uint SiteMarker = 0x00412AC4;
+    public const uint SearchFilters = 0x004A24E8;
+    public const int SiteDefinitionCount = 22;
 
     // FND-FINANCE-002: fn_0044D1BB(player, sector) builds and draws the Financial panel, -1 for the
     // City variant; the upper part of the console's Financial control, (552, 178, 48, 33), opens the
