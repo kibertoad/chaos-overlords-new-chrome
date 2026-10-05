@@ -524,8 +524,8 @@ call; with `--sound` the effects wrapper's calls are logged too. The fixture
 holds them as `sound_calls` (RULE-AUDIO-006, EXP-AUDIO-001).
 `--watch-intro` lets both intro movies play out before the button is held and
 logs each frame the frame helper shows, with the movie's name, its header's
-frame count, the slot's frame counter and the time from its first frame, and
-the counter when the movie is closed. The fixture holds them as
+frame count, the slot's frame counter and the time from the first movie's first
+frame, and the counter when the movie is closed. The fixture holds them as
 `intro_movies` (RULE-VIDEO-001, EXP-VIDEO-001).
 `--draw-values` writes 32-bit values into memory each time the planning-entry
 function `fn_0046FD80` starts to draw the console (FND-UI-040): the nth value

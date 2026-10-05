@@ -2416,7 +2416,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | evidence |
+| [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | body, evidence |
 
 ## FMT-AUDIO-001
 

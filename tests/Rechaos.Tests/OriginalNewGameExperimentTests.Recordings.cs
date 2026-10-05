@@ -100,8 +100,8 @@ public sealed partial class OriginalNewGameExperimentTests
     private sealed record RecordedSoundCall(int AfterRoll, int Done, int Slot, int Call);
 
     // A movie the intro played (FND-VIDEO-002): its name, its header's frame count, the movie
-    // slot's frame counter at each frame shown, the milliseconds from the first frame to each, and
-    // the counter when the slot was closed.
+    // slot's frame counter at each frame shown, the milliseconds from the first movie's first frame
+    // to each, and the counter when the slot was closed.
     private sealed record RecordedIntroMovie(
         string Name, int Frames, IReadOnlyList<int> Shown, IReadOnlyList<long> Milliseconds, int ClosedAt);
 

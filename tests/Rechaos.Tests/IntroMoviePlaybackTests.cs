@@ -42,18 +42,20 @@ public sealed class IntroMoviePlaybackTests
         Assert.Equal(2, timeline.FrameIndex);
     }
 
-    // RULE-VIDEO-001, EXP-VIDEO-001: the last frame stays up for a frame time before the movie ends.
+    // RULE-VIDEO-001, EXP-VIDEO-001: the original closes a movie within 10 ms of its last frame, so
+    // the movie ends at the update after the one that decoded the last frame, however short.
     [Fact]
-    public void TheLastFrameStaysUpForOneFrameTime()
+    public void TheMovieEndsAtTheUpdateAfterItsLastFrame()
     {
         var timeline = new SmackerPlaybackTimeline(3, TimeSpan.FromMilliseconds(100));
 
         Assert.Equal(new SmackerTimelineAdvance(1, false), timeline.Advance(TimeSpan.Zero));
         Assert.Equal(new SmackerTimelineAdvance(2, false), timeline.Advance(TimeSpan.FromMilliseconds(200)));
         Assert.Equal(2, timeline.FrameIndex);
-        Assert.Equal(new SmackerTimelineAdvance(0, false), timeline.Advance(TimeSpan.FromMilliseconds(99)));
-        Assert.Equal(new SmackerTimelineAdvance(0, true), timeline.Advance(TimeSpan.FromMilliseconds(1)));
-        Assert.Equal(2, timeline.FrameIndex);
+        Assert.False(timeline.IsComplete);
+        Assert.Equal(new SmackerTimelineAdvance(0, true), timeline.Advance(TimeSpan.FromMilliseconds(6)));
+        Assert.True(timeline.IsComplete);
+        Assert.Equal(new SmackerTimelineAdvance(0, true), timeline.Advance(TimeSpan.FromMilliseconds(100)));
     }
 
     [Fact]
