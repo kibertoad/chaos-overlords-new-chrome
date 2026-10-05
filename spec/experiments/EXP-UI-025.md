@@ -30,7 +30,7 @@ As EXP-TURN-001.
 exit,exit,strip:524:270:0,wait:600,strip:185:304:0,wait:400,open:12,wait:600,card:0:20:12:10,wait:600,strip:161:272:0,wait:400,back,wait:400`.
 
 From the dump on, the probe records each call of the panel-open helper
-`fn_0041953E` (FND-UI-011) with the startup benchmark count at `0x004981F8`,
+`fn_0041953E` (FND-UI-011, FND-UI-056) with the startup benchmark count at `0x004981F8`,
 and at each copy of its slide loop, the call at `0x0041965D`, the travel at
 `ebp - 4` and the width shown at `ebp - 8`; the last copy is the call at
 `0x004196DC`. The steps open the Hire panel from the console and close it, then

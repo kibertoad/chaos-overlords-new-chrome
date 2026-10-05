@@ -10,7 +10,7 @@ internal sealed partial class NewGameSession
 {
     private readonly List<SoundCallRecord> _soundCalls = [];
 
-    // RULE-AUDIO-006: with --sounds the probe records every call of the play helper
+    // RULE-AUDIO-006: with --sound-calls the probe records every call of the play helper
     // fn_0045851A(slot, priority), which the effects wrapper calls only while effects are enabled
     // and the turn-start cue calls directly (FND-AUDIO-006).
     private void ArmSounds() =>

@@ -15,6 +15,10 @@ public sealed class ComlinkUiTests
         // SCR-COMLINK-001, FND-COMLINK-007: the View fields at screen (104, 124) plus the panel offsets.
         Assert.Equal(new Rectangle(138, 137, 12, 7), ComlinkViewLayout.PageNumber);
         Assert.Equal(new Rectangle(174, 137, 12, 7), ComlinkViewLayout.PageCount);
+        // DEV-UI-005: the inbox tooltip answers over the whole frame that holds the two counters.
+        Assert.True(ComlinkViewLayout.Page.Contains(ComlinkViewLayout.PageNumber));
+        Assert.True(ComlinkViewLayout.Page.Contains(ComlinkViewLayout.PageCount));
+        Assert.Equal(new Rectangle(133, 133, 59, 13), ComlinkViewLayout.Page);
         Assert.Equal(new Rectangle(199, 144, 24, 7), ComlinkViewLayout.Year);
         Assert.Equal(new Rectangle(229, 144, 12, 7), ComlinkViewLayout.Week);
         Assert.Equal(new Rectangle(199, 162, 60, 7), ComlinkViewLayout.SenderName);

@@ -2,7 +2,8 @@ namespace Rechaos.OriginalProbe;
 
 /// <summary>
 /// One call of the presentation wait (FND-TIMER-002): its argument, the address of the call, and
-/// the milliseconds from the first recorded tick to its start and its return.
+/// the milliseconds of its start and its return, counted from when the probe armed the recording,
+/// as the ticks are.
 /// </summary>
 internal sealed record WaitRecord(int Ticks, uint Call, long Started)
 {

@@ -25,7 +25,7 @@ As EXP-TURN-001, with the sound left on (`--sound`).
 ## Procedure
 
 `Rechaos.OriginalProbe new-game --humans 0 --seed 7272 --end-turns 4 --sound
---sounds`.
+--sound-calls`.
 
 The probe sets a breakpoint on the play helper `fn_0045851A(slot, priority)`
 (FND-AUDIO-006) and records each call with the number of `roll` calls and Done

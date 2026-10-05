@@ -28,16 +28,22 @@ public sealed partial class DeviationBehaviourTests
         }
     }
 
-    [Fact]
-    public void AnOriginalSaveIsNotRead()
+    [Theory]
+    [InlineData("S40W", 45_305)]
+    [InlineData("N40W", 45_329)]
+    [InlineData("M10W", 16)]
+    public void AnOriginalSaveIsNotRead(string marker, int size)
     {
-        // DEV-SAVE-001: the rebuild never reads the original's save files. A file in their binary
-        // form is refused, here a buffer that opens with binary fields and zeros.
-        var original = new byte[4096];
-        original[0] = 0x01;
-        original[2] = 0x06;
+        // DEV-SAVE-001: the rebuild never reads the original's save files. A file with the marker
+        // and the size of each form of FMT-SAVE-001 and FMT-SAVE-002 is refused as data that is
+        // not the rebuild's document, before any of its fields is read.
+        var original = new byte[size];
+        Encoding.ASCII.GetBytes(marker).CopyTo(original, 0);
+        if (size > 16) Encoding.ASCII.GetBytes(marker).CopyTo(original, size - 4);
         var definitions = NativeSaveSerializerTests.CreateMatch().Definitions;
-        Assert.ThrowsAny<Exception>(() => NativeSaveSerializer.Load(new MemoryStream(original), definitions));
+        var refused = Assert.Throws<InvalidDataException>(
+            () => NativeSaveSerializer.Load(new MemoryStream(original), definitions));
+        Assert.Equal("Native save JSON is invalid.", refused.Message);
     }
 
     [Fact]
@@ -77,11 +83,11 @@ public sealed partial class DeviationBehaviourTests
     }
 
     [Fact]
-    public void AFileThatLacksAFieldGivesTheDefaultsAndANewerFieldItsDefault()
+    public void AFileThatLacksAFieldGivesTheDefaultsAndAnOptionalFieldItsDefault()
     {
-        // DEV-OPTIONS-001: a file that lacks one of the fields its version has is read as the
-        // defaults as a whole, so no option takes a value from another. A field a later version
-        // added, which an older file lacks, takes its own default.
+        // DEV-OPTIONS-001: a file that lacks one of the fields its version requires is read as the
+        // defaults as a whole, so no option takes a value from another. Intro only once, which a
+        // file of the current version may leave out, takes its own default and the rest is kept.
         var directory = Directory.CreateTempSubdirectory("rechaos-dev-options-");
         try
         {
@@ -95,9 +101,9 @@ public sealed partial class DeviationBehaviourTests
             File.WriteAllText(path, lacking.ToJsonString());
             Assert.Equal(GamePreferences.Default, GamePreferencesStore.LoadOrDefault(path));
 
-            var older = full.DeepClone().AsObject();
-            older.Remove(nameof(GamePreferences.IntroOnlyOnce));
-            File.WriteAllText(path, older.ToJsonString());
+            var optional = full.DeepClone().AsObject();
+            optional.Remove(nameof(GamePreferences.IntroOnlyOnce));
+            File.WriteAllText(path, optional.ToJsonString());
             var read = GamePreferencesStore.LoadOrDefault(path);
             Assert.Equal(2, read.MusicVolumeLevel);
             Assert.Equal(GamePreferences.Default.IntroOnlyOnce, read.IntroOnlyOnce);

@@ -241,7 +241,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _originalComputerHires = originalComputerHires;
         _referenceFrame = referenceFrame;
         _pointer = new(shape => Mouse.SetCursor(shape == PointerShape.Hourglass ? MouseCursor.Wait : MouseCursor.Arrow),
-            () => ComputerTurnsCanRun() ? PresentationPointer.Idle(_state!) : PointerShape.Arrow);
+            () => ComputerTurnsCanRun() ? PresentationPointer.Idle(_state) : PointerShape.Arrow);
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;
         _screens.Changed += (previous, current) => _diagnostics?.Write(
@@ -267,7 +267,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _heldSelectionFrame = HeldSelectionFrame(previous, current, _heldSelectionFrame, SelectionFrameShown());
             if (_slidePanels)
                 _panelSlideTransition.Begin(previous, current, _inputTime, _gangDetailsCompact);
-            foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
+            foreach (var slot in AudioRouting.PanelTransitionSounds(
+                previous, current, _slidePanels, _choosingCommandTarget))
                 PlayGeneralSound(slot);
             // RULE-AWARDS-002: the endgame opens on its Awards tab.
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
@@ -448,9 +449,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // The rebuild's window shortcuts are not game events, so a fade does not swallow them.
         if (Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
         // Alt+Enter goes no further, so the Enter does not also act on the screen.
-        var altEnter = Pressed(keyboard, Keys.Enter)
-            && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
-        if (ShellWindow.TogglesFullscreen(key => Pressed(keyboard, key), keyboard)) ToggleFullscreen();
+        var altEnter = ShellWindow.AltEnter(keyboard, _previousKeyboard);
+        if (ShellWindow.TogglesFullscreen(keyboard, _previousKeyboard)) ToggleFullscreen();
         // FND-AUDIO-016: the fade pumps window messages without game events.
         var soundtrackUpdated = _soundtrackFade is not null;
         if (soundtrackUpdated)
@@ -458,7 +458,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             UpdateSoundtrack(gameTime);
             if (_soundtrackFade is not null)
             {
-                CancelSwallowedPointerReleases(mouse);
+                UpdatePointerDuringFade(mouse);
                 EndUpdate(gameTime, keyboard, mouse);
                 return;
             }
@@ -473,7 +473,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (!soundtrackUpdated) UpdateSoundtrack(gameTime);
         if (_soundtrackFade is not null)
         {
-            CancelSwallowedPointerReleases(mouse);
+            UpdatePointerDuringFade(mouse);
             EndUpdate(gameTime, keyboard, mouse);
             return;
         }
@@ -567,7 +567,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             // TextInput event can deliver that character to the field.
             if (!_idleGangWarningOpen && !TextInputHasFocus())
             {
-                var shortcut = ShellWindow.ShortcutFor(key => Pressed(keyboard, key), keyboard);
+                var shortcut = ShellWindow.ShortcutFor(keyboard, _previousKeyboard);
                 if (shortcut == ShellShortcut.Credits) OpenCredits();
                 else if (shortcut == ShellShortcut.Help) OpenHelp();
                 else if (shortcut == ShellShortcut.Options) OpenOptions();

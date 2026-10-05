@@ -31,18 +31,19 @@ correct or approve the remote configuration instead of modifying it.
 
 ## Validation scope
 
-Do not run the full test suite by default. It contains deliberately separated
-long-running campaign coverage and takes too long for routine changes. Use the
-default fast gate in `tools/Invoke-Validation.ps1`, or pass `-TestFilter` for a
-smaller relevant scope. Run with `-IncludeLongRunningTests` or otherwise execute
-the full suite only when the user explicitly requests it or when a specific
-change to long-running coverage provides a documented exceptional reason.
+Never run the full validation gate (`tools/Invoke-Validation.ps1` without
+`-TestFilter`) or the full test suite locally. CI runs the whole set on every
+pull request. Locally, run only the tests directly relevant to the change: the
+test classes that cover the code and spec entries it touches, through
+`dotnet test --filter` or the gate's `-TestFilter`. The pre-commit hook runs the
+spec and documentation checks below on every commit. Run more only when the
+user asks for it.
 
 On Windows, the PowerShell execution policy may reject repository scripts and
-the `pnpm.ps1` command wrapper. Invoke the fast gate explicitly with:
+the `pnpm.ps1` command wrapper. Invoke the gate with a filter explicitly with:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Validation.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Validation.ps1 -TestFilter <filter>
 ```
 
 Pass validation arguments after the script path when needed. Run pnpm-based

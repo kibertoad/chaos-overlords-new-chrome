@@ -130,6 +130,8 @@ internal sealed partial class NewGameSession
                 // A wait presses nothing, so it is not a post-dump step of the marker log.
                 _process.Pump(TimeSpan.FromMilliseconds(step.Choice));
                 if (_process.Exited) return "The original exited during the order steps.";
+                if (_rolls.Count != rollsAtDump)
+                    return $"The original called roll {_rolls.Count - rollsAtDump} time(s) during the order step {step}.";
                 _orderSteps.Add(new OrderStepRecord(step, -1, null,
                     _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),
                     _process.ReadInt32(OriginalAddresses.SectorViewPlayer)));
@@ -218,9 +220,9 @@ internal sealed partial class NewGameSession
             // RULE-SETUP-008, FND-RNG-006: Ready on the hand-off card begins that human's planning,
             // whose entry draws the hire offers, as the rebuild's planning entry does. Any other
             // roll has gone past the dumped state.
-            var drawn = _rolls.Skip(rollsAtDump).ToArray();
-            if (drawn.Any(roll => roll.Call != $"0x{OriginalAddresses.HireOfferDraw:X8}"))
-                return $"The original called roll {drawn.Length} time(s) during the order step {step}.";
+            var past = _rolls.Skip(rollsAtDump).Count(roll => roll.Call != HireOfferDrawCall);
+            if (past > 0)
+                return $"The original called roll {past} time(s) other than a hire offer draw during the order step {step}.";
             rollsAtDump = _rolls.Count;
             _orderSteps.Add(new OrderStepRecord(step, menu, items,
                 _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),
@@ -228,6 +230,9 @@ internal sealed partial class NewGameSession
         }
         return null;
     }
+
+    // FND-RNG-006: a hire offer draw as the roll log records its call.
+    private static readonly string HireOfferDrawCall = $"0x{OriginalAddresses.HireOfferDraw:X8}";
 
     // FND-COMLINK-010: the Send panel draws the caret's cell inverse while the byte at 0x00498110
     // is 0 and plain while it is set, kept as 3 or 0 timer events since the last flip.
