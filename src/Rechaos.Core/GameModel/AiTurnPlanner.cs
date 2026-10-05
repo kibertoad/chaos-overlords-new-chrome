@@ -304,17 +304,19 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> targetPool)
     {
         RecoveredAttackDraw? draw = null;
-        for (var attempt = 0; attempt < OriginalAiObjectiveFamilyRules.AttackDraws; attempt++)
+        if (targetPool.Count == 0)
         {
-            if (targetPool.Count == 0)
+            state.Random.NextInclusive(0);
+        }
+        else
+        {
+            for (var attempt = 0; attempt < OriginalAiObjectiveFamilyRules.AttackDraws; attempt++)
             {
-                state.Random.NextInclusive(0);
-                break;
+                draw = DrawRecoveredAttackTarget(
+                    state, gang, visible, targetPool,
+                    OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry);
+                if (draw.Value.Accepted) break;
             }
-            draw = DrawRecoveredAttackTarget(
-                state, gang, visible, targetPool,
-                OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry);
-            if (draw.Value.Accepted) break;
         }
 
         switch (OriginalAiObjectiveFamilyRules.SelectContestedObjectiveResult(

@@ -71,8 +71,9 @@ public sealed class DeterministicRandom
     }
 
     /// <summary>
-    /// Sees every roll(n) made on this thread, as the bound and the result, so a test can line the
-    /// rebuild's rolls up with an experiment's recorded ones (RULE-RNG-002).
+    /// Sees every roll(n) made on this thread, as the bound the caller passed (0 or below included,
+    /// before it is rolled as 1) and the result, so a test can line the rebuild's rolls up with an
+    /// experiment's recorded ones (RULE-RNG-002).
     /// </summary>
     [ThreadStatic]
     internal static Action<int, int>? RollObserver;
