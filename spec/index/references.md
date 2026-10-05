@@ -2124,6 +2124,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
+| [RULE-UI-011](../rules/RULE-UI-011.md) | evidence |
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
@@ -2162,6 +2163,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-UI-005](../rules/RULE-UI-005.md) | evidence |
+| [RULE-UI-011](../rules/RULE-UI-011.md) | evidence |
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | evidence |
 | [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | evidence |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | evidence |
@@ -2170,6 +2173,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-UI-005](../rules/RULE-UI-005.md) | evidence |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 
 ## EXP-UI-012
