@@ -133,7 +133,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018", "EXP-COMBAT-001", "EXP-COMBAT-002", "EXP-COMBAT-003", "EXP-COMBAT-004", "EXP-COMBAT-005", "EXP-COMBAT-006", "EXP-COMBAT-007", "EXP-COMBAT-008", "EXP-COMBAT-009"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -630,7 +630,10 @@ public sealed partial class OriginalNewGameExperimentTests
             for (var run = 0; run < runs.Length; run++)
                 // The probe breaks on the handlers at every local human's planning entry, and the
                 // replay compares only the first human's, so a run with several humans is left out.
-                if (runs[run].Panels is not null && runs[run].Humans.Count == 1
+                // With Detailed Combat switched on the planning entry calls the presentation in place
+                // of the Combat Results handler (FND-COMBAT-010), so a run that recorded clips is
+                // left out too; DetailedCombatPlaysTheOriginalsClips compares those entries.
+                if (runs[run].Panels is not null && runs[run].Humans.Count == 1 && runs[run].CombatClips is null
                     && !KnownDivergences.ContainsKey((experiment, run)))
                     data.Add(experiment, run);
         return data;
@@ -799,7 +802,8 @@ public sealed partial class OriginalNewGameExperimentTests
 
     private static MatchState StartMatch(
         RecordedRun recorded, out int donePresses, Action<MatchState, PlayerId, int>? beforeDone = null,
-        bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false)
+        bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false,
+        Action<MatchState, PlayerId, int>? atPlanningEntry = null)
     {
         var scenario = OriginalScenario(recorded.Term("scenario", 0));
         var setup = new MatchSetup(
@@ -833,6 +837,7 @@ public sealed partial class OriginalNewGameExperimentTests
         donePresses = 0;
         for (var turn = 0; turn < recorded.DoneCount; turn++)
         {
+            atPlanningEntry?.Invoke(match, human, turn + 1);
             // DEV-EQUIP-001: the rebuild resolves Equip and Sell in the order they are submitted.
             // Every recording lists a turn's orders in roster order, the original's scan order.
             foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))

@@ -111,7 +111,7 @@ public sealed partial class ChaosGame
     /// <summary>The completed turn's fights the viewer can see, in event order.</summary>
     private IReadOnlyList<GameEvent> VisibleCombatEvents(MatchState state, PlayerId viewer) =>
         VisibleCombatResults(state, viewer)
-            .Where(gameEvent => IsVisibleCombatEvent(state, viewer, gameEvent))
+            .Where(gameEvent => CombatResultProjection.IsVisibleCombatEvent(state, viewer, gameEvent))
             .OrderBy(gameEvent => gameEvent.Sequence)
             .ToArray();
 
@@ -421,6 +421,39 @@ public static class CombatResultFocus
 
 public static class CombatResultProjection
 {
+    /// <summary>
+    /// Whether <paramref name="viewer"/>'s combat presentations show the event: a police attack on
+    /// one of the viewer's gangs, or an attack by or on one of them (RULE-COMBAT-004).
+    /// </summary>
+    public static bool IsVisibleCombatEvent(MatchState state, PlayerId viewer, GameEvent gameEvent)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(gameEvent);
+        if (gameEvent.Kind == GameEventKind.PoliceAttackResolved) return gameEvent.Player == viewer;
+        if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution is null) return false;
+        if (gameEvent.Player == viewer) return true;
+        return gameEvent.Target.Kind == CommandTargetKind.Gang
+            && state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id))?.Owner == viewer;
+    }
+
+    /// <summary>
+    /// The events of <paramref name="events"/> that <paramref name="viewer"/>'s automatic Detailed
+    /// Combat presentation plays: the last completed turn's fights the viewer can see, in the
+    /// order given (RULE-COMBAT-004).
+    /// </summary>
+    public static IReadOnlyList<GameEvent> AutomaticPresentationEvents(
+        MatchState state, PlayerId viewer, IEnumerable<GameEvent> events)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(events);
+        var presented = new List<GameEvent>();
+        foreach (var gameEvent in events)
+            if (IsFromLastCompletedTurn(gameEvent.Turn, state.Coordinator.Turn)
+                && IsVisibleCombatEvent(state, viewer, gameEvent))
+                presented.Add(gameEvent);
+        return presented;
+    }
+
     public static IReadOnlyList<CombatResultPage> Pages(MatchState state, PlayerId viewer)
     {
         ArgumentNullException.ThrowIfNull(state);

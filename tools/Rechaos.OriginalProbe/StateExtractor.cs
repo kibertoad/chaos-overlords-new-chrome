@@ -90,6 +90,31 @@ internal sealed class StateExtractor
                 ["opponent"] = list["Opponent"]!.GetValue<int>(),
                 ["targets"] = new JsonArray(list["Targets"]!.AsArray().Select(target => (JsonNode)target!.GetValue<int>()).ToArray()),
             }).ToArray());
+        // RULE-COMBAT-004, RULE-AUDIO-009: each clip Detailed Combat played, as the probe read it
+        // when the clip player was entered (FND-COMBAT-011, FND-AUDIO-013).
+        if (trace["CombatClips"] is JsonArray combatClips)
+            run["combat_clips"] = new JsonArray(combatClips.Select(clip => (JsonNode)new JsonObject
+            {
+                ["after_roll"] = clip!["AfterRoll"]!.GetValue<int>(),
+                ["focal"] = clip["Focal"]!.GetValue<int>(),
+                ["other"] = clip["Other"]!.GetValue<int>(),
+                ["hold"] = clip["Hold"]!.GetValue<int>(),
+                ["focal_bar"] = clip["FocalBar"]!.GetValue<int>(),
+                ["other_bar"] = clip["OtherBar"]!.GetValue<int>(),
+                ["sounds"] = new JsonArray(clip["Sounds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+                ["played"] = clip["Played"]!.GetValue<bool>(),
+            }).ToArray());
+        // RULE-COMBAT-004: each call of the presentation, with its flag, its clips and the effect
+        // slots it played itself (FND-COMBAT-010).
+        if (trace["CombatPresentations"] is JsonArray combatPresentations)
+            run["combat_presentations"] = new JsonArray(combatPresentations.Select(presentation => (JsonNode)new JsonObject
+            {
+                ["after_roll"] = presentation!["AfterRoll"]!.GetValue<int>(),
+                ["automatic"] = presentation["Automatic"]!.GetValue<int>(),
+                ["first_clip"] = presentation["FirstClip"]!.GetValue<int>(),
+                ["clips"] = presentation["Clips"]!.GetValue<int>(),
+                ["sounds"] = new JsonArray(presentation["Sounds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+            }).ToArray());
         // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
         if (trace["HireSteps"] is JsonArray hireSteps)
             run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject

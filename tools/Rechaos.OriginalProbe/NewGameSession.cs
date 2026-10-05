@@ -119,7 +119,8 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false,
     IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
     IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false,
-    bool CreditsCapture = false, bool SetupCapture = false, IReadOnlyList<ProbeOrderStep>? SetupSteps = null)
+    bool CreditsCapture = false, bool SetupCapture = false, IReadOnlyList<ProbeOrderStep>? SetupSteps = null,
+    bool DetailedCombat = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -219,7 +220,9 @@ internal sealed record ProbeTrace(
     List<SearchClickRecord>? SearchClicks = null,
     List<HireStepRecord>? HireSteps = null,
     List<OrderStepRecord>? OrderSteps = null,
-    List<GangMarkerDraw>? GangMarkers = null);
+    List<GangMarkerDraw>? GangMarkers = null,
+    List<CombatClipRecord>? CombatClips = null,
+    List<CombatPresentationRecord>? CombatPresentations = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -286,6 +289,7 @@ internal sealed partial class NewGameSession(
         if (settings.GangMarkers) ArmGangMarkers();
         if (settings.ExpireTurns is { Count: > 0 }) ArmTimer();
         if (settings.Comlink is not null) ArmComlink();
+        if (settings.DetailedCombat) ArmDetailedCombat();
         if (settings.DrawValues is { Count: > 0 } drawValues)
         {
             var call = 0;
@@ -547,6 +551,7 @@ internal sealed partial class NewGameSession(
     private bool PlanningWaits(DateTime since)
     {
         var quiet = DateTime.UtcNow - _process.LastBreakpointUtc;
+        if (_detailedCombatOpen) return false;
         if (_planningLoopReached) return quiet > TimeSpan.FromSeconds(0.5);
         return (settings.Humans is { Count: > 1 } || DateTime.UtcNow - since > TimeSpan.FromSeconds(30))
                && quiet > TimeSpan.FromSeconds(8);
@@ -800,7 +805,7 @@ internal sealed partial class NewGameSession(
         if (settings.Comlink is not null) _process.Write(OriginalAddresses.PrefSlidePanels, BitConverter.GetBytes(0));
         if (settings.EndTurns == 0 && settings.Comlink is null) return;
         _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(0));
-        _process.Write(OriginalAddresses.PrefDetailedCombat, BitConverter.GetBytes(0));
+        _process.Write(OriginalAddresses.PrefDetailedCombat, BitConverter.GetBytes(settings.DetailedCombat ? 1 : 0));
     }
 
     // Without --sound the run is silent, as if both volumes of the Options dialog were set to 0
@@ -876,7 +881,8 @@ internal sealed partial class NewGameSession(
             _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
             _equipLists.Count == 0 ? null : _equipLists, _attackLists.Count == 0 ? null : _attackLists,
             _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps,
-            _orderSteps.Count == 0 ? null : _orderSteps, settings.GangMarkers ? _gangMarkers : null);
+            _orderSteps.Count == 0 ? null : _orderSteps, settings.GangMarkers ? _gangMarkers : null,
+            settings.DetailedCombat ? _combatClips : null, settings.DetailedCombat ? _combatPresentations : null);
     }
 
     private static void Click(IntPtr window, int x, int y)
