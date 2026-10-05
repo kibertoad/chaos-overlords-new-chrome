@@ -88,14 +88,18 @@ public sealed partial class OriginalNewGameExperimentTests
         var recorded = Run(experiment, run);
         var match = StartMatch(recorded, out _);
         var human = recorded.Humans[0];
-        var rows = match.Definitions.Sites.OrderBy(site => site.Id)
-            .Take(SiteSearchLayout.MaximumSites).Select(site => site.Id).ToArray();
+        var rows = SiteSearchPanel.Rows(match.Definitions);
         Assert.Equal(Enumerable.Range(0, SiteSearchLayout.MaximumSites).Select(row => (short)row), rows);
         var selections = new SiteSearchSelectionState();
+        var doubleClicks = new IndexedDoubleClickTracker();
         var open = false;
+        var time = TimeSpan.Zero;
         foreach (var click in recorded.SearchClicks)
         {
             var point = new Microsoft.Xna.Framework.Point(click.X, click.Y);
+            // No recorded press is a double-click (RULE-SEARCH-001), so the presses are a second
+            // apart, outside the double-click window.
+            time += TimeSpan.FromSeconds(1);
             if (!open)
             {
                 Assert.Equal(CityConsoleAction.Search, CityConsoleLayout.ActionAt(point));
@@ -103,9 +107,9 @@ public sealed partial class OriginalNewGameExperimentTests
             }
             else
             {
-                var press = SiteSearchPanel.HitTest(point, rows.Length);
-                if (press.Control == SiteSearchControl.Done) open = false;
-                else SiteSearchPanel.Apply(selections, human, press, rows);
+                var handled = SiteSearchPanel.Press(selections, human, point, rows, doubleClicks, time);
+                Assert.False(handled.OpensDetails);
+                if (handled.Press.Control == SiteSearchControl.Done) open = false;
             }
             Assert.Equal(human.Value, click.ActivePlayer);
             Assert.Equal(click.PanelOpen, open);

@@ -84,6 +84,15 @@ internal sealed record ProbeDrawValue(uint Address, IReadOnlyList<int> Values)
 }
 
 /// <summary>
+/// A left-button press and release the probe posts at a client point once the dump is taken
+/// (<c>--search-clicks</c>, SearchClickRecord).
+/// </summary>
+internal sealed record ProbeClick(int X, int Y)
+{
+    public override string ToString() => $"({X}, {Y}) after the dump";
+}
+
+/// <summary>
 /// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
 /// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
 /// Combat Results function returns at once when no fight qualifies.
@@ -107,7 +116,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
-    IReadOnlyList<ProbeDrawValue>? DrawValues = null, IReadOnlyList<(int X, int Y)>? SearchClicks = null)
+    IReadOnlyList<ProbeDrawValue>? DrawValues = null, IReadOnlyList<ProbeClick>? SearchClicks = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -154,6 +163,7 @@ internal sealed record NewGameSettings(
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
+        foreach (var click in SearchClicks ?? []) yield return ("left_click", click.ToString());
     }
 }
 

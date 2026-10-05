@@ -176,7 +176,7 @@
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | established |
 | [RULE-RNG-001](../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start | established |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws | established |
-| [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | supported |
+| [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | established |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | established |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | established |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | established |

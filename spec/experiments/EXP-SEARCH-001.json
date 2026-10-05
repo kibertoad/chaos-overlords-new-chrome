@@ -7,7 +7,23 @@
   "inputs": [
     {"tick":0,"name":"command","value":"File, New Game (0x8101)"},
     {"tick":0,"name":"setup","value":"scenario 0"},
-    {"tick":0,"name":"left_click","value":"Begin (416, 397)"}
+    {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
+    {"tick":null,"name":"left_click","value":"(576, 266) after the dump"},
+    {"tick":null,"name":"left_click","value":"(161, 151) after the dump"},
+    {"tick":null,"name":"left_click","value":"(161, 183) after the dump"},
+    {"tick":null,"name":"left_click","value":"(263, 153) after the dump"},
+    {"tick":null,"name":"left_click","value":"(263, 228) after the dump"},
+    {"tick":null,"name":"left_click","value":"(379, 303) after the dump"},
+    {"tick":null,"name":"left_click","value":"(379, 228) after the dump"},
+    {"tick":null,"name":"left_click","value":"(263, 228) after the dump"},
+    {"tick":null,"name":"left_click","value":"(161, 151) after the dump"},
+    {"tick":null,"name":"left_click","value":"(263, 198) after the dump"},
+    {"tick":null,"name":"left_click","value":"(161, 183) after the dump"},
+    {"tick":null,"name":"left_click","value":"(304, 314) after the dump"},
+    {"tick":null,"name":"left_click","value":"(263, 228) after the dump"},
+    {"tick":null,"name":"left_click","value":"(161, 304) after the dump"},
+    {"tick":null,"name":"left_click","value":"(576, 266) after the dump"},
+    {"tick":null,"name":"left_click","value":"(161, 304) after the dump"}
   ],
   "seeds": [52421],
   "runs": [

@@ -97,11 +97,7 @@ public sealed partial class ChaosGame
         _siteSearchCursor = (_siteSearchCursor + delta + count) % count;
     }
 
-    // The site of each row of the Search panel, in row order.
-    private short[] SiteSearchRows() => _definitions is null
-        ? []
-        : _definitions.Sites.OrderBy(site => site.Id)
-            .Take(SiteSearchLayout.MaximumSites).Select(site => site.Id).ToArray();
+    private short[] SiteSearchRows() => _definitions is null ? [] : SiteSearchPanel.Rows(_definitions);
 
     private void ToggleSiteSearchSelection()
     {
@@ -123,7 +119,7 @@ public sealed partial class ChaosGame
     {
         AcceptInput();
         SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
-            new SiteSearchPress(SiteSearchControl.None), SiteSearchRows());
+            new SiteSearchPress(SiteSearchControl.None), []);
     }
 
     private void ApplySiteSearch()
@@ -138,24 +134,20 @@ public sealed partial class ChaosGame
     private void HandleSiteSearchClick(Point point)
     {
         var rows = SiteSearchRows();
-        var press = SiteSearchPanel.HitTest(point, rows.Length);
-        switch (press.Control)
+        var click = SiteSearchPanel.Press(_siteSearchSelections, SiteSearchPlayer(), point, rows,
+            _siteSearchClicks, _inputTime);
+        switch (click.Press.Control)
         {
             case SiteSearchControl.All:
-                SelectAllSiteSearch();
-                break;
             case SiteSearchControl.None:
-                ClearSiteSearch();
+                AcceptInput();
                 break;
             case SiteSearchControl.Done:
                 ApplySiteSearch();
                 break;
             case SiteSearchControl.Row:
-                _siteSearchCursor = press.Row;
-                if (_siteSearchClicks.Register(press.Row, _inputTime))
-                    OpenSiteDefinitionDetails(rows[press.Row], ClientScreen.Search);
-                else
-                    ToggleSiteSearchSelection();
+                _siteSearchCursor = click.Press.Row;
+                if (click.OpensDetails) OpenSiteDefinitionDetails(rows[click.Press.Row], ClientScreen.Search);
                 break;
         }
     }
