@@ -596,11 +596,13 @@ cannot be named yet. Each rectangle comes from the entry's Position column, and
 an element whose position the entry does not give is left out of the list.
 `ScreenElementListTests` checks every list: it names its screen entry, the
 screen has an entry in `ScreenCaptureMasks`, each rectangle lies inside the
-640-by-460 drawing area, and each element's name, up to its first comma, is the
-name of a row of the entry's Drawn elements table or that row name's part
-before its own first comma, so `Offer portrait, slot 0` cites the row
-`Offer portrait, one per offer slot`. The index or field after the comma is not
-checked.
+640-by-460 drawing area, and each element names a row of the entry's Drawn
+elements table. The name is the row's own, or the row's name (or that name's
+part before its own comma) followed by a comma and either an index such as
+`slot 0` or a field or variant that the row's Element or Shows cell names as a
+whole word: `Offer portrait, slot 0` cites the row
+`Offer portrait, one per offer slot`, and `Value fields, Gang Upkeep` cites
+`Value fields`, whose Shows cell lists Gang Upkeep.
 
 The bitmap holds the game's art, so it never goes into the repository. When
 `GAME_DIR` is set, `extract` copies it to `GAME_DIR/captures/<xxh3>`, the

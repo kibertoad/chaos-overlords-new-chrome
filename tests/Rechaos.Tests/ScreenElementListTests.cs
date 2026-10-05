@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -7,8 +8,9 @@ namespace Rechaos.Tests;
 /// The element lists in tools/Rechaos.OriginalProbe/Screens, which the probe digests a capture
 /// at (docs/VALIDATION.md, "Screens against captures of the original"). Each list names its screen
 /// entry, which has masks, every rectangle lies inside the 640-by-460 drawing area (RULE-GFX-002),
-/// and every element's name, up to its first comma, is the name of a row of the entry's Drawn
-/// elements table or that row name's part before its own first comma.
+/// and every element names a row of the entry's Drawn elements table: its name is the row's, or
+/// the row's name (or that name's part before its own comma) followed by a comma and either an
+/// index ("slot 0") or a field or variant the row's Element or Shows cell names as a whole word.
 /// </summary>
 public sealed class ScreenElementListTests
 {
@@ -47,34 +49,53 @@ public sealed class ScreenElementListTests
     }
 
     [Theory]
-    [InlineData("Offer portrait, slot 0", "Offer portrait, one per offer slot", true)]
-    [InlineData("Panel, City", "Panel, City", true)]
-    [InlineData("Value fields, Gang Upkeep", "Value fields", true)]
-    [InlineData("Value field, Gang Upkeep", "Value fields", false)]
-    [InlineData("Panel", "Panel, City", true)]
-    public void AnElementCitesTheRowItsNameBeginsWith(string element, string row, bool cites) =>
-        Assert.Equal(cites, Cites(element, [row]));
+    [InlineData("Offer portrait, slot 0", "Offer portrait, one per offer slot", "The portrait", true)]
+    [InlineData("Panel, City", "Panel, City", "None", true)]
+    [InlineData("Panel, Ctiy", "Panel, City", "None", false)]
+    [InlineData("Panel", "Panel, City", "None", true)]
+    [InlineData("Value fields, Gang Upkeep", "Value fields", "Gang Upkeep at y = 151", true)]
+    [InlineData("Value fields, Gang Upkep", "Value fields", "Gang Upkeep at y = 151", false)]
+    [InlineData("Value field, Gang Upkeep", "Value fields", "Gang Upkeep at y = 151", false)]
+    [InlineData("Player totals, score", "Player totals", "Score and cash", true)]
+    public void AnElementCitesTheRowItsNameBeginsWith(string element, string row, string shows, bool cites) =>
+        Assert.Equal(cites, Cites(element, [(row, shows)]));
 
-    // An element cites a row when its name before the first comma is the row's name, or when the
-    // row's name continues that stem after a comma. What follows the element's comma is not checked.
-    private static bool Cites(string element, IReadOnlyCollection<string> rows)
+    // An element cites a row when its name is the row's, or when its name before the first comma is
+    // the row's name or the row name's part before its own comma, and what follows the comma is an
+    // index or a whole word or phrase of the row's Element or Shows cell.
+    private static bool Cites(string element, IReadOnlyCollection<(string Name, string Shows)> rows)
     {
         var comma = element.IndexOf(", ", StringComparison.Ordinal);
         var stem = comma < 0 ? element : element[..comma];
-        return rows.Any(row => row == stem || row.StartsWith(stem + ",", StringComparison.Ordinal));
+        var part = comma < 0 ? null : element[(comma + 2)..];
+        return rows.Any(row => row.Name == element
+                               || ((row.Name == stem || row.Name.StartsWith(stem + ",", StringComparison.Ordinal))
+                                   && (part is null || IndexPart.IsMatch(part)
+                                       || NamesWhole(row.Name[stem.Length..], part) || NamesWhole(row.Shows, part))));
     }
 
-    private static IReadOnlyList<string> DrawnElementRows(string screen)
+    private static readonly Regex IndexPart = new(@"^[a-z]+ \d+$", RegexOptions.CultureInvariant);
+
+    private static bool NamesWhole(string text, string part) =>
+        Regex.IsMatch(text, $@"(?<!\w){Regex.Escape(part)}(?!\w)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    private static IReadOnlyList<(string Name, string Shows)> DrawnElementRows(string screen)
     {
         var lines = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "spec", "screens", $"{screen}.md"));
         var start = Array.FindIndex(lines, line => line.Trim() == "## Drawn elements");
         Assert.True(start >= 0, $"{screen} has no Drawn elements section.");
-        var rows = new List<string>();
+        var header = lines.Skip(start + 1).First(line => line.StartsWith("| ", StringComparison.Ordinal))
+            .Split('|').Select(cell => cell.Trim()).ToList();
+        var shows = header.IndexOf("Shows");
+        Assert.True(shows > 0, $"{screen}'s Drawn elements table has no Shows column.");
+        var rows = new List<(string Name, string Shows)>();
         foreach (var line in lines.Skip(start + 1).TakeWhile(line => !line.StartsWith("## ", StringComparison.Ordinal)))
         {
             if (!line.StartsWith("| ", StringComparison.Ordinal)) continue;
-            var cell = line.Split('|')[1].Trim();
-            if (cell != "Element" && !cell.StartsWith("---", StringComparison.Ordinal)) rows.Add(cell);
+            var cells = line.Split('|');
+            var cell = cells[1].Trim();
+            if (cell != "Element" && !cell.StartsWith("---", StringComparison.Ordinal))
+                rows.Add((cell, cells.Length > shows ? cells[shows].Trim() : ""));
         }
         return rows;
     }
