@@ -121,7 +121,7 @@ public sealed partial class ChaosGame
         SpriteBatch batch, Texture2D pixel, MatchState state, PlayerId? viewed, IReadOnlyList<bool>? seatsSeen)
     {
         if (_uiSprites is null) return;
-        var markerFrame = _overlordMarkerClock.Frame(_inputTime);
+        var markerFrame = _referenceFrame?.MarkerFrame ?? _overlordMarkerClock.Frame(_inputTime);
         for (var seat = 0; seat < MatchLimits.PlayerCount; seat++)
         {
             var player = state.Players.FirstOrDefault(candidate => candidate.Id.Value == seat);

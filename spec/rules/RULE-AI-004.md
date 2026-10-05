@@ -247,8 +247,11 @@ whose `visible_to` byte for the player was still set when they died
 (FMT-STATE-001), and a draw past its end compares with the zero record
 before `gangs[0]`. With an empty
 pool, `roll(0)` gives 1 and the draw reads the first element of an empty list;
-what the original reads there is not recorded. `previous_action_count` never
-counts an inactive gang, whose sector is 100.
+what the original reads there is not recorded. The family-13 and family-14
+draw of RULE-AI-031 makes the same `roll(0)` on an empty pool, and its lookup
+gives no gang (EXP-TURN-084); no run shows whether the lookups of `draw_once`
+and `draw_target` do the same. `previous_action_count` never counts an inactive
+gang, whose sector is 100.
 
 `hostile_owner` makes no test of the owner. For the player's own sector it
 reads the player's attitude toward itself. For a neutral sector or one under

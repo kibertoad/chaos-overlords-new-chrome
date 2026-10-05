@@ -895,13 +895,17 @@ original silent unless `--sound` is given.
   calls of EXP-TURN-010 now replay to the end of both runs. An Attack order
   needs the target's roster slot, which a state dump (`--dump-at-roll`) of a
   run with the same seed gives.
-- Screens have not been compared with captures. The plan: capture the window's
-  client area where the probe already stops, render the same state in the
-  rebuild, and compare each SCR element's rectangle, reporting an element that
-  the original drew as solid white as unverified instead of passing it. Try a
-  DirectDraw wrapper such as DDrawCompat beside the staged executable first,
-  since the white rectangles look like failed blits, and check that it leaves
-  a recorded run's rolls unchanged.
+- No screen row is `validated` yet. The harness exists: `new-game --capture`
+  takes the drawing area at the dump, `extract --screens` or `digest` records
+  each element's digest in the fixture, and `ScreenCaptureTests` renders the
+  replayed endpoint with `--reference-frame` and compares each element,
+  reporting one the original drew solid white as unverified
+  ([VALIDATION.md](VALIDATION.md#screens-against-captures-of-the-original)).
+  The reference frame shows only the city at a planning entry with no panel
+  open, and only SCR-UI-003 and SCR-HIRE-002 have element files. Try a
+  DirectDraw wrapper such as DDrawCompat beside the staged executable, since
+  the white rectangles look like failed blits, and check that it leaves a
+  recorded run's rolls unchanged.
 - A modal panel the probe does not know stalls a run until someone presses its
   Exit; the probe knows Combat Results and Last Turn Events. Run recordings
   from PowerShell with the compatibility layers in `__COMPAT_LAYER`, one at a
