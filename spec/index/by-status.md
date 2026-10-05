@@ -294,7 +294,7 @@
 
 ## recorded
 
-513 entries.
+514 entries.
 
 | ID | Title |
 |---|---|
@@ -438,6 +438,7 @@
 | [EXP-UI-018](../experiments/EXP-UI-018.md) | Does the elimination card look the same in the rebuild? |
 | [EXP-UI-019](../experiments/EXP-UI-019.md) | Does the Detailed Combat panel look the same in the rebuild through a clip of the viewer's gang attacking another gang? |
 | [EXP-UI-020](../experiments/EXP-UI-020.md) | Does the Detailed Combat panel look the same in the rebuild through a police clip? |
+| [EXP-UI-021](../experiments/EXP-UI-021.md) | Does the Comlink View panel look the same in the rebuild for a message one human sent another? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |

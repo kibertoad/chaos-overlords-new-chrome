@@ -289,11 +289,6 @@ public sealed partial class ChaosGame
         DrawPanelArtwork(batch, pixel, _comlinkViewBackground, ComlinkViewLayout.Panel);
         var playerId = ViewingPlayer(state);
         var messages = state.ComlinkFor(playerId).Messages;
-        batch.Draw(pixel, ComlinkViewLayout.Page, Color.Black);
-        batch.Draw(pixel, ComlinkViewLayout.Date, Color.Black);
-        batch.Draw(pixel, ComlinkViewLayout.SenderPortrait, Color.Black);
-        batch.Draw(pixel, ComlinkViewLayout.SenderName, Color.Black);
-        batch.Draw(pixel, ComlinkViewLayout.Message, Color.Black);
         if (messages.Count == 0)
         {
             font.Draw(batch, "NO INCOMING MESSAGES", ComlinkViewLayout.Message.Location.ToVector2(), Color.Lime, 1);
@@ -303,16 +298,32 @@ public sealed partial class ChaosGame
         _comlinkCursor = Math.Clamp(_comlinkCursor, 0, messages.Count - 1);
         var message = messages[_comlinkCursor];
         var sender = state.FindPlayer(message.Sender);
-        font.Draw(batch, $"{_comlinkCursor + 1:00} OF {messages.Count:00}",
-            ComlinkViewLayout.Page.Location.ToVector2(), Color.Lime, 1);
-        font.Draw(batch, MatchDate(message.Turn), ComlinkViewLayout.Date.Location.ToVector2(), Color.Lime, 1);
-        font.Draw(batch, sender?.Setup.Name ?? $"PLAYER {message.Sender.Value + 1}",
-            ComlinkViewLayout.SenderName.Location.ToVector2(), Color.White, 1);
+        // SCR-COMLINK-001, FND-COMLINK-007: the number and count over the panel art's frame and
+        // OF, the date over its point, the name's black backing, the sender's colour strip and
+        // portrait stretched to 64 by 64, and the four rows of the message.
+        DrawDigitCells(batch, pixel, font, $"{Math.Min(_comlinkCursor + 1, 99):00}", ComlinkViewLayout.PageNumber);
+        DrawDigitCells(batch, pixel, font, $"{Math.Min(messages.Count, 99):00}", ComlinkViewLayout.PageCount);
+        if (_uiSprites is not null)
+        {
+            batch.Draw(_uiSprites, ComlinkViewLayout.Previous,
+                LastTurnEventsLayout.PreviousSource(firstPage: _comlinkCursor == 0), Color.White);
+            batch.Draw(_uiSprites, ComlinkViewLayout.Next,
+                LastTurnEventsLayout.NextSource(lastPage: _comlinkCursor == messages.Count - 1), Color.White);
+        }
+        var (year, week) = MatchCalendar.Of(Math.Max(0, message.Turn - 1));
+        DrawDigitCells(batch, pixel, font, $"{year:0000}", ComlinkViewLayout.Year);
+        DrawDigitCells(batch, pixel, font, $"{week:00}", ComlinkViewLayout.Week);
+        batch.Draw(pixel, ComlinkViewLayout.SenderName, Color.Black);
+        var name = sender?.Setup.Name ?? $"PLAYER {message.Sender.Value + 1}";
+        font.Copy(batch, name.Length <= ComlinkViewLayout.SenderNameColumns ? name : name[..ComlinkViewLayout.SenderNameColumns],
+            ComlinkViewLayout.SenderName.Location, OriginalFontLayout.PlainStrip);
+        if (message.Sender.Value is >= 0 and < MatchLimits.PlayerCount)
+            batch.Draw(pixel, ComlinkViewLayout.SenderColour, SetupPlayerCardArtLayout.Colours[message.Sender.Value]);
         if (sender is not null && _uiSprites is not null)
             batch.Draw(_uiSprites, ComlinkViewLayout.SenderPortrait,
                 OriginalSpriteLayout.OverlordPortrait(sender.Setup.PortraitId), Color.White);
         DrawComlinkLines(batch, font, ComlinkTextEditor.DisplayLines(message.Text),
-            ComlinkViewLayout.Message.Location, Color.Lime);
+            ComlinkViewLayout.MessageOrigin, Color.Lime, ComlinkSendLayout.TextRowStride);
         if (_hoverPoint is { } hover && ComlinkViewLayout.Page.Contains(hover))
             DrawHoverTooltip(batch, pixel, font, hover, ComlinkInboxTooltip);
     }

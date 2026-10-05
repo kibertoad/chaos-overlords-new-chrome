@@ -57,7 +57,7 @@ public sealed record ReferenceFrameRequest(
     private const string Usage =
         "Usage: --reference-frame <save|title|credits|setup> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
         + " [--selected-sector <0-63>] [--lamps <0|1>,<0|1>] [--item-frame <0-14>] [--clip-tick <0-21>]"
-        + " [--reference-clicks <x:y[:2]|x:y>x:y>,...]";
+        + " [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]";
 
     // Keep captures independent of the player's preferences, recovery files and saves. The
     // directory sits beside the bitmap and is kept after exit, so a failed run can be diagnosed
@@ -200,9 +200,20 @@ public sealed record ReferenceLamps(bool Events, bool Comlink)
 /// </summary>
 public sealed record ReferenceClick(Point Point, bool Double = false, Point? Release = null)
 {
+    /// <summary>
+    /// Text typed in place of a click, a character at a time, as the Comlink Send panel takes keys:
+    /// upper-case letters, digits and spaces, written <c>'TEXT</c> in the list.
+    /// </summary>
+    public string? Text { get; init; }
+
     public static IReadOnlyList<ReferenceClick> ParseList(string value) =>
         value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
         {
+            if (entry.StartsWith('\''))
+                return entry.Length > 1
+                       && entry.Skip(1).All(character => character is ' ' or (>= '0' and <= '9') or (>= 'A' and <= 'Z'))
+                    ? new ReferenceClick(Point.Zero) { Text = entry[1..] }
+                    : throw new ArgumentException($"Typed text is 'TEXT of upper-case letters, digits and spaces: {entry}");
             var ends = entry.Split('>');
             var numbers = ends.SelectMany(end => end.Split(':')).Select(part => int.TryParse(part,
                 System.Globalization.NumberStyles.None,
@@ -221,7 +232,7 @@ public sealed record ReferenceClick(Point Point, bool Double = false, Point? Rel
             };
         }).ToArray();
 
-    public override string ToString() => Release is { } release
+    public override string ToString() => Text is not null ? "'" + Text : Release is { } release
         ? $"{Point.X}:{Point.Y}>{release.X}:{release.Y}"
         : $"{Point.X}:{Point.Y}" + (Double ? ":2" : "");
 }
@@ -240,13 +251,14 @@ public sealed partial class ChaosGame
 
     private readonly ReferenceFrameRequest? _referenceFrame;
     private int _referenceFrameDraws = -1;
-    private IReadOnlyList<(Point Point, ReferenceEdge Edge)> _referenceEdges = [];
+    private IReadOnlyList<(Point Point, ReferenceEdge Edge, char Character)> _referenceEdges = [];
 
     private enum ReferenceEdge
     {
         Press,
         Move,
         Release,
+        Type,
     }
     private int _referenceEdge;
     private int _referenceSettled;
@@ -283,14 +295,16 @@ public sealed partial class ChaosGame
                     break;
             }
             _referenceEdges = (_referenceFrame.Clicks ?? [])
-                .SelectMany(click => click.Release is { } release
+                .SelectMany(click => click.Text is { } text
+                    ? text.Select(character => (Point.Zero, ReferenceEdge.Type, character))
+                    : click.Release is { } release
                     ?
                     [
-                        (click.Point, ReferenceEdge.Press), (release, ReferenceEdge.Move),
-                        (release, ReferenceEdge.Release),
+                        (click.Point, ReferenceEdge.Press, '\0'), (release, ReferenceEdge.Move, '\0'),
+                        (release, ReferenceEdge.Release, '\0'),
                     ]
                     : Enumerable.Repeat(click.Point, click.Double ? 2 : 1)
-                        .SelectMany(point => new[] { (point, ReferenceEdge.Press), (point, ReferenceEdge.Release) }))
+                        .SelectMany(point => new[] { (point, ReferenceEdge.Press, '\0'), (point, ReferenceEdge.Release, '\0') }))
                 .ToArray();
             _referenceFrameDraws = 0;
             return true;
@@ -314,7 +328,7 @@ public sealed partial class ChaosGame
         if (UpdateTickedPresentation()) return;
         if (_referenceEdge < _referenceEdges.Count)
         {
-            var (point, edge) = _referenceEdges[_referenceEdge++];
+            var (point, edge, character) = _referenceEdges[_referenceEdge++];
             // The live loop puts the pointer in the hover point before it handles a press or a
             // move, and a held button draws its pressed face only under it. After the release the
             // reference frame shows no pointer, as before its clicks, so nothing is drawn as
@@ -325,6 +339,14 @@ public sealed partial class ChaosGame
                     UpdateHoverPoint(point);
                     _dragPoint = point;
                     HandleClick(point);
+                    break;
+                case ReferenceEdge.Type:
+                    // A key typed in the Comlink Send panel (RULE-COMLINK-006).
+                    if (_screens.Current == ClientScreen.ComlinkSend)
+                    {
+                        _comlinkEditor.TryAppend(character);
+                        _comlinkStatus = string.Empty;
+                    }
                     break;
                 case ReferenceEdge.Move:
                     UpdateHoverPoint(point);

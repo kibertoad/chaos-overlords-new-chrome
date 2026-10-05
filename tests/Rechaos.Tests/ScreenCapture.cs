@@ -302,6 +302,9 @@ public sealed record ScreenCaptureRecord(
                 case "back":
                     clicks.Add(new ReferenceClick(SectorDetailLayout.Back.Center));
                     break;
+                case "type":
+                    clicks.Add(new ReferenceClick(Point.Zero) { Text = step.GetProperty("text").GetString() });
+                    break;
                 case "shot" when step.TryGetProperty("capture", out var capture):
                     yield return Parse(experiment, run, capture, whiteKeyed) with
                     {
@@ -366,6 +369,7 @@ public static class ScreenCaptureMasks
             ["SCR-ATTACK-001"] = [],
             ["SCR-OPTIONS-001"] = [],
             ["SCR-SETUP-002"] = [],
+            ["SCR-COMLINK-001"] = [],
             ["SCR-COMLINK-002"] = [],
             ["SCR-AWARDS-001"] = [],
             ["SCR-OBJECTIVE-002"] = [],

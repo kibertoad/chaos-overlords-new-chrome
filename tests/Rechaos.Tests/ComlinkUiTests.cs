@@ -12,8 +12,15 @@ public sealed class ComlinkUiTests
     {
         Assert.Equal(new Rectangle(104, 124, 344, 209), ComlinkViewLayout.Panel);
         Assert.Equal(ComlinkViewLayout.Panel, ComlinkSendLayout.Panel);
-        Assert.Equal(new Rectangle(215, 170, 64, 64), ComlinkViewLayout.SenderPortrait);
-        Assert.Equal(new Rectangle(198, 247, 238, 34), ComlinkViewLayout.Message);
+        // SCR-COMLINK-001, FND-COMLINK-007: the View fields at screen (104, 124) plus the panel offsets.
+        Assert.Equal(new Rectangle(138, 137, 12, 7), ComlinkViewLayout.PageNumber);
+        Assert.Equal(new Rectangle(174, 137, 12, 7), ComlinkViewLayout.PageCount);
+        Assert.Equal(new Rectangle(199, 144, 24, 7), ComlinkViewLayout.Year);
+        Assert.Equal(new Rectangle(229, 144, 12, 7), ComlinkViewLayout.Week);
+        Assert.Equal(new Rectangle(199, 162, 60, 7), ComlinkViewLayout.SenderName);
+        Assert.Equal(new Rectangle(199, 170, 8, 64), ComlinkViewLayout.SenderColour);
+        Assert.Equal(new Rectangle(207, 170, 64, 64), ComlinkViewLayout.SenderPortrait);
+        Assert.Equal(new Point(199, 245), ComlinkViewLayout.MessageOrigin);
         Assert.Equal(new Rectangle(135, 157, 26, 23), ComlinkViewLayout.Previous);
         Assert.Equal(new Rectangle(163, 157, 26, 23), ComlinkViewLayout.Next);
         Assert.Equal(new Rectangle(137, 293, 49, 22), ComlinkViewLayout.Ok);

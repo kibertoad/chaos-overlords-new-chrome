@@ -662,16 +662,28 @@ public static class SiteInformationLayout
 public static class ComlinkViewLayout
 {
     public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle Page => SharedPanelLayout.At(29, 9, 59, 13);
+    // FND-COMLINK-007: the View fields of fn_0045E04D, panel-local.
+    public static Rectangle Page => new(PageNumber.X, PageNumber.Y, PageCount.Right - PageNumber.X, PageNumber.Height);
+    public static Rectangle PageNumber => DigitCells(34, 13, 2);
+    public static Rectangle PageCount => DigitCells(70, 13, 2);
     // Native view handler 0x0045D61A (FND-COMLINK-002) uses half-open panel-local rectangles
     // (31,33)-(57,56), (59,33)-(85,56), and (33,169)-(82,191).
     public static Rectangle Previous => SharedPanelLayout.At(31, 33, 26, 23);
     public static Rectangle Next => SharedPanelLayout.At(59, 33, 26, 23);
-    public static Rectangle Date => SharedPanelLayout.At(94, 20, 238, 7);
-    public static Rectangle SenderPortrait => SharedPanelLayout.At(111, 46, 64, 64);
-    public static Rectangle SenderName => SharedPanelLayout.At(181, 46, 151, 7);
-    public static Rectangle Message => SharedPanelLayout.At(94, 123, 238, 34);
+    public static Rectangle Year => DigitCells(95, 20, 4);
+    public static Rectangle Week => DigitCells(125, 20, 2);
+    public const int SenderNameColumns = 10;
+    public static Rectangle SenderName => SharedPanelLayout.At(95, 38, 60, 7);
+    public static Rectangle SenderColour => SharedPanelLayout.At(95, 46, 8, 64);
+    public static Rectangle SenderPortrait => SharedPanelLayout.At(103, 46, 64, 64);
+    public static Point MessageOrigin => new(SharedPanelLayout.X(95), SharedPanelLayout.Y(121));
+    public static Rectangle Message => new(MessageOrigin.X, MessageOrigin.Y,
+        ComlinkSendLayout.MessageColumns * OriginalFontLayout.CellWidth,
+        (ComlinkSendLayout.MessageRows - 1) * ComlinkSendLayout.TextRowStride + OriginalFontLayout.GlyphHeight);
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
+
+    private static Rectangle DigitCells(int x, int y, int count) =>
+        SharedPanelLayout.At(x, y, count * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
 }
 
 public static class ComlinkSendLayout

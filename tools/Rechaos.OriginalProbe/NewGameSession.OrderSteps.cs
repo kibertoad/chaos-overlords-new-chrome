@@ -7,9 +7,11 @@ namespace Rechaos.OriginalProbe;
 /// double-click at <c>(X, Y)</c> of the window (dbl), a
 /// press of the sector view's back control (back), or of a result panel's Exit (exit), or a capture
 /// of the drawing area compared at the elements of the screen entries <c>Screens</c> (shot), or a
-/// wait of <c>Choice</c> milliseconds with no input (wait).
+/// wait of <c>Choice</c> milliseconds with no input (wait), or a key press for each character of
+/// <c>Text</c> (type).
 /// </summary>
-internal sealed record ProbeOrderStep(string Kind, int Target, int X, int Y, int Choice, string? Screens = null)
+internal sealed record ProbeOrderStep(
+    string Kind, int Target, int X, int Y, int Choice, string? Screens = null, string? Text = null)
 {
     public override string ToString() => Kind switch
     {
@@ -19,6 +21,7 @@ internal sealed record ProbeOrderStep(string Kind, int Target, int X, int Y, int
         "strip" => $"({X}, {Y}), command {Choice}",
         "dbl" => $"double-click ({X}, {Y})",
         "wait" => $"wait {Choice} ms",
+        "type" => $"type {Text}",
         _ => Kind,
     };
 }
@@ -52,8 +55,9 @@ internal sealed partial class NewGameSession
     // opens a popup reaches the TrackPopupMenu call of the popup helper (FND-UI-021); the probe
     // keeps the menu and its items' states there and skips the call, handing the helper the step's
     // command as Windows would for the player's choice, so no menu is shown. An order takes effect
-    // only at resolution, which no step reaches, so a step that makes the original roll has gone
-    // past the dumped state and ends the run as not dumped. Returns why the steps stopped, or null.
+    // only at resolution, which no step reaches, so a step that makes the original roll, other than
+    // a planning entry's hire offer draws, has gone past the dumped state and ends the run as not
+    // dumped. Returns why the steps stopped, or null.
     private string? RecordOrderSteps(IntPtr window)
     {
         var rollsAtDump = _rolls.Count;
@@ -204,11 +208,20 @@ internal sealed partial class NewGameSession
                 case "exit":
                     PressExitAfterDump(window);
                     break;
+                case "type":
+                    // FND-UI-020: a key press for each character, as the Comlink script types.
+                    Type(window, step.Text!);
+                    break;
             }
             _process.Pump(TimeSpan.FromSeconds(0.8));
             if (_process.Exited) return "The original exited during the order steps.";
-            if (_rolls.Count != rollsAtDump)
-                return $"The original called roll {_rolls.Count - rollsAtDump} time(s) during the order step {step}.";
+            // RULE-SETUP-008, FND-RNG-006: Ready on the hand-off card begins that human's planning,
+            // whose entry draws the hire offers, as the rebuild's planning entry does. Any other
+            // roll has gone past the dumped state.
+            var drawn = _rolls.Skip(rollsAtDump).ToArray();
+            if (drawn.Any(roll => roll.Call != $"0x{OriginalAddresses.HireOfferDraw:X8}"))
+                return $"The original called roll {drawn.Length} time(s) during the order step {step}.";
+            rollsAtDump = _rolls.Count;
             _orderSteps.Add(new OrderStepRecord(step, menu, items,
                 _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),
                 _process.ReadInt32(OriginalAddresses.SectorViewPlayer)));
