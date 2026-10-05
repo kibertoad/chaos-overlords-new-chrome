@@ -33,6 +33,7 @@ static int Usage()
               [--search <turn:definition+definition...>,...]
               [--finance <turn:sector>,...]
               [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture]
+              [--draw-values <hex address>=<int32>[/<int32>...],...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe digest --fixture <fixture.json> --run <n> --screens <SCR-ID>,...
@@ -75,7 +76,8 @@ static int NewGame(string[] args)
         IntOption(args, "--time-limit"),
         Option(args, "--expire-turns")?.Split(',').Select(value =>
             int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray(),
-        args.Contains("--capture"));
+        args.Contains("--capture"),
+        Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null);
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
@@ -219,6 +221,19 @@ static IReadOnlyList<ProbeFinance> ParseFinance(string value) =>
         if (parts.Length != 2 || parts[1] is < -1 or > 63)
             throw new FormatException($"A Financial panel needs a turn and a sector -1 to 63: {panel}");
         return new ProbeFinance(parts[0], parts[1]);
+    }).ToArray();
+
+// --draw-values address=value/value...,... writes 32-bit values whenever the planning-entry function
+// starts drawing the console, the nth value at its nth call (ProbeDrawValue).
+static IReadOnlyList<ProbeDrawValue> ParseDrawValues(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split('=');
+        if (parts.Length != 2) throw new FormatException($"A drawn value needs an address and a value: {entry}");
+        var address = parts[0].StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? parts[0][2..] : parts[0];
+        return new ProbeDrawValue(
+            uint.Parse(address, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture),
+            parts[1].Split('/').Select(number => int.Parse(number, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
     }).ToArray();
 
 // --families turn:player:slot:family,... writes a planning record's family; --raiders

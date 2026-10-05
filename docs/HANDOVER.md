@@ -908,6 +908,11 @@ original silent unless `--sound` is given.
   the corners around the grid tabs) stay unverified: DDrawCompat did not
   remove them, since the windowed original draws with GDI only
   (docs/DECISIONS.md, 2026-10-05).
+- EXP-UI-002 uses `--draw-values` to make the console draw a score of 700000
+  and a cash of 690000 over an earlier `80000`: a number cell copied from
+  source column 516 leaves the screen unchanged, and one from column 510 takes
+  its two left pixel columns from the sheet and leaves the rest. RULE-UI-004
+  does not cite it yet.
 - A modal panel the probe does not know stalls a run until someone presses its
   Exit; the probe knows Combat Results and Last Turn Events. Run recordings
   from PowerShell with the compatibility layers in `__COMPAT_LAYER`, one at a

@@ -104,6 +104,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-071](../experiments/EXP-TURN-071.md) | builds |
 | [EXP-TURN-072](../experiments/EXP-TURN-072.md) | builds |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | builds |
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -1668,6 +1669,12 @@ None.
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | body, evidence |
 
 ## EXP-UI-001
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
+
+## EXP-UI-002
 
 None.
 
@@ -6568,6 +6575,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -8260,6 +8268,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
 | glossary: modifier_cells | glossary |
 | glossary: number_cells | glossary |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | body |

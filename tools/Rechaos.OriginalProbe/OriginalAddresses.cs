@@ -115,6 +115,10 @@ internal static class OriginalAddresses
     public const int FinanceCloseX = 161 + 24;
     public const int FinanceCloseY = 293 + 11;
 
+    // FND-UI-040: fn_0046FD80, the planning-entry function, draws the active player's score from
+    // 0x004A2790 and cash from 0x004A25E8, four bytes per player, as five number cells each.
+    public const uint PlanningEntryDraw = 0x0046FD80;
+
     public const int DoneX = 500 + 50;
     public const int DoneY = 282 + 24;
 

@@ -70,6 +70,19 @@ internal sealed record ProbeFinance(int Turn, int Sector)
 }
 
 /// <summary>
+/// 32-bit values the probe writes at <paramref name="Address"/> when the planning-entry function
+/// starts to draw the console (FND-UI-040): the first at its first call, the second at its second,
+/// and the last at every later call. The console then draws a number the match would not reach,
+/// such as a score whose first glyph cell lies outside the glyph sheet (RULE-UI-004), over what an
+/// earlier call drew. The write changes the match from then on, so a run that uses it is not
+/// replayed.
+/// </summary>
+internal sealed record ProbeDrawValue(uint Address, IReadOnlyList<int> Values)
+{
+    public override string ToString() => $"draw_value 0x{Address:X8} {string.Join("/", Values)}";
+}
+
+/// <summary>
 /// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
 /// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
 /// Combat Results function returns at once when no fight qualifies.
@@ -92,7 +105,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
-    bool Capture = false)
+    bool Capture = false, IReadOnlyList<ProbeDrawValue>? DrawValues = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -102,6 +115,7 @@ internal sealed record NewGameSettings(
         if (Mentality is { } mentality) yield return $"mentality {mentality}";
         if (TurnLimit is { } turns) yield return $"turn_limit {turns}";
         if (TimeLimit is { } limit) yield return $"planning_limit_choice {limit}";
+        foreach (var value in DrawValues ?? []) yield return value.ToString();
         if (Humans is null) yield break;
         foreach (var human in Humans)
             yield return human.Modifier is null
@@ -223,6 +237,17 @@ internal sealed class NewGameSession(
             _process.SetBreakpoint(OriginalAddresses.SiteMarker, OnSiteMarker, quiet: true);
         }
         if (settings.ExpireTurns is { Count: > 0 }) ArmTimer();
+        if (settings.DrawValues is { Count: > 0 } drawValues)
+        {
+            var call = 0;
+            _process.SetBreakpoint(OriginalAddresses.PlanningEntryDraw, _ =>
+            {
+                foreach (var value in drawValues)
+                    _process.Write(value.Address, BitConverter.GetBytes(value.Values[Math.Min(call, value.Values.Count - 1)]));
+                _notes.Add($"Planning-entry draw {call} after roll {_rolls.Count}.");
+                call++;
+            });
+        }
 
         var window = IntPtr.Zero;
         if (!_process.RunUntil(() => (window = _process.FindMainWindow()) != IntPtr.Zero, timeout))
