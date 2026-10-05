@@ -95,6 +95,10 @@ public sealed partial class OriginalNewGameExperimentTests
     // shape and force it was passed, and the address of the call.
     private sealed record RecordedPointerCall(int AfterRoll, int Done, int Shape, int Force, int Call);
 
+    // A call of the play helper (FND-AUDIO-006): the roll count and the Done presses before it, the
+    // effect slot and the address of the call.
+    private sealed record RecordedSoundCall(int AfterRoll, int Done, int Slot, int Call);
+
     // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
     // (FND-HIRE-001, FND-HIRE-008).
@@ -259,6 +263,10 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? pointerCalls.EnumerateArray().Select(call => new RecordedPointerCall(
                     call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32(), call[4].GetInt32())).ToArray()
                 : null;
+            SoundCalls = run.TryGetProperty("sound_calls", out var soundCalls)
+                ? soundCalls.EnumerateArray().Select(call => new RecordedSoundCall(
+                    call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
+                : null;
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.
             SearchFilter = inputs.EnumerateArray()
@@ -306,6 +314,8 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedCombatPresentation>? CombatPresentations { get; }
         // Null when the run did not record the pointer.
         public IReadOnlyList<RecordedPointerCall>? PointerCalls { get; }
+        // Null when the run did not record the play helper.
+        public IReadOnlyList<RecordedSoundCall>? SoundCalls { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedHireStep> HireSteps { get; }
         public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }

@@ -4,7 +4,7 @@ title: The turn-start sound
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-003, FND-AUDIO-006, FND-NET-004, FND-EXE-004]
+evidence: [FND-AUDIO-003, FND-AUDIO-006, FND-NET-004, FND-EXE-004, EXP-AUDIO-001]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005]

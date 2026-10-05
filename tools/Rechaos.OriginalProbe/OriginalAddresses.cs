@@ -88,6 +88,8 @@ internal static class OriginalAddresses
     public const uint PlaySound = 0x00464290;
     // RULE-UI-007, FND-UI-034: the cursor helper fn_00465BC8(shape, force).
     public const uint CursorHelper = 0x00465BC8;
+    // RULE-AUDIO-006, FND-AUDIO-006: the play helper fn_0045851A(slot, priority).
+    public const uint PlayHelper = 0x0045851A;
 
     // RULE-COMBAT-004, FND-COMBAT-011: the Detailed Combat presentation fn_0042E040 (to 0x0042EE45,
     // FND-COMBAT-010), its clip player
