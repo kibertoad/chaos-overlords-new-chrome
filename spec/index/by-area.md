@@ -872,6 +872,7 @@
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | Do the city, its console panels and the detailed sector screen look the same in the rebuild late in a match? | recorded |
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | Do the detailed sector screen, Site Information, Gangs in Sector and the Sector Financial panel look the same in the rebuild for a sector under police presence? | recorded |
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | Do the console's Events, Combat Results, Rankings, Search and Hire panels and the Gang Information panel of a hire offer look the same in the rebuild? | recorded |
+| [EXP-UI-009](../experiments/EXP-UI-009.md) | Do the Move, Equip and Research panels, and the Item Information and compact Gang Information panels Equip opens, look the same in the rebuild? | recorded |
 | [FND-UI-001](../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |
@@ -921,6 +922,7 @@
 | [FND-UI-049](../findings/FND-UI-049.md) | Site Information keys a frame over the site portrait and, for a site with a special effect, writes string 29 plus the effect under the Cash row | recorded |
 | [FND-UI-050](../findings/FND-UI-050.md) | The city compositor keys a police badge over every sector with police presence, after the site markers and before the gang-status marker | recorded |
 | [FND-UI-051](../findings/FND-UI-051.md) | While a slid-in panel is open the pump leaves the selection frame as it was when the panel came in | recorded |
+| [FND-UI-052](../findings/FND-UI-052.md) | Item Information keeps its frame in a local that starts at 0 and steps once each time the animation flag is taken | recorded |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |

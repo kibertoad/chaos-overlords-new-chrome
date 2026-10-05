@@ -44,6 +44,9 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--selected-sector", "1" },
         new[] { "--reference-frame", "save", "frame", "--selected-sector", "64" },
         new[] { "--reference-frame", "save", "frame", "--selected-sector", "-1" },
+        new[] { "--item-frame", "1" },
+        new[] { "--reference-frame", "save", "frame", "--item-frame", "15" },
+        new[] { "--reference-frame", "save", "frame", "--item-frame", "1", "--item-frame", "2" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter", "8" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter", "-1" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter" },
@@ -112,6 +115,15 @@ public sealed class ReferenceFrameRequestTests
             ["--reference-frame", "planning.rchsave", "frame.bmp", "--selected-sector", "12"])!;
         Assert.Equal(12, request.SelectedSector);
         Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.SelectedSector);
+    }
+
+    [Fact]
+    public void TheItemFrameIsReadAsGiven()
+    {
+        var request = ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--item-frame", "14"])!;
+        Assert.Equal(14, request.ItemFrame);
+        Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.ItemFrame);
     }
 
     [Theory]

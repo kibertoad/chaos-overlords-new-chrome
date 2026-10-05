@@ -294,7 +294,7 @@
 
 ## recorded
 
-483 entries.
+485 entries.
 
 | ID | Title |
 |---|---|
@@ -417,6 +417,7 @@
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | Do the city, its console panels and the detailed sector screen look the same in the rebuild late in a match? |
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | Do the detailed sector screen, Site Information, Gangs in Sector and the Sector Financial panel look the same in the rebuild for a sector under police presence? |
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | Do the console's Events, Combat Results, Rankings, Search and Hire panels and the Gang Information panel of a hire offer look the same in the rebuild? |
+| [EXP-UI-009](../experiments/EXP-UI-009.md) | Do the Move, Equip and Research panels, and the Item Information and compact Gang Information panels Equip opens, look the same in the rebuild? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -776,6 +777,7 @@
 | [FND-UI-049](../findings/FND-UI-049.md) | Site Information keys a frame over the site portrait and, for a site with a special effect, writes string 29 plus the effect under the Cash row |
 | [FND-UI-050](../findings/FND-UI-050.md) | The city compositor keys a police badge over every sector with police presence, after the site markers and before the gang-status marker |
 | [FND-UI-051](../findings/FND-UI-051.md) | While a slid-in panel is open the pump leaves the selection frame as it was when the panel came in |
+| [FND-UI-052](../findings/FND-UI-052.md) | Item Information keeps its frame in a local that starts at 0 and steps once each time the animation flag is taken |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file |

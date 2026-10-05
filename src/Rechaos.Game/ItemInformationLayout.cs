@@ -38,13 +38,6 @@ public static class ItemInformationLayout
         return lines;
     }
 
-    public static string TypeLabel(int itemType) => itemType switch
-    {
-        0 => "STRENGTH",
-        1 => "BLADE",
-        2 => "RANGE",
-        3 => "ARMOR",
-        4 => "MISC",
-        _ => throw new ArgumentOutOfRangeException(nameof(itemType))
-    };
+    /// <summary>FND-UI-013, EXP-UI-009: the type is string-table entry 25 plus the item's type.</summary>
+    public const int TypeStringBase = 25;
 }

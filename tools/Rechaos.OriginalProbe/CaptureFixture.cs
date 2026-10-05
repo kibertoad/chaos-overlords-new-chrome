@@ -84,6 +84,8 @@ internal static class CaptureFixture
         // field, and its record leaves frame_counter out so the comparison takes the pump's.
         if (record is not null && shot.AsObject().TryGetPropertyValue("FrameCounter", out var frame))
             record["frame_counter"] = frame is null ? null : frame.GetValue<int>();
+        // FND-UI-052: the frame of Item Information's rotating item, when the panel is open.
+        if (record is not null && shot["ItemFrame"] is JsonNode item) record["item_frame"] = item.GetValue<int>();
         return record;
     }
 

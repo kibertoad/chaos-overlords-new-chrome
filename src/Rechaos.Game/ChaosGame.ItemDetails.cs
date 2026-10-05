@@ -6,9 +6,13 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    // FND-UI-052: the rotating item starts from frame 0 when the panel opens.
+    private TimeSpan _itemDetailsOpenedAt;
+
     private void OpenItemDetails(short itemId, ClientScreen returnScreen = ClientScreen.Commands)
     {
         _itemDetailsId = itemId;
+        _itemDetailsOpenedAt = PresentationDrawTime;
         _itemDetailsReturnScreen = returnScreen;
         _screens.Show(ClientScreen.ItemInformation);
     }
@@ -48,14 +52,18 @@ public sealed partial class ChaosGame
         if (itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, ItemInformationLayout.Portrait,
-                // FND-UI-047: the rotation stops while the exit face is held.
-                ItemRotationPresentation.Frame(PresentationDrawTime), Color.White);
+                // FND-UI-047: the rotation stops while the exit face is held. FND-UI-052: it starts
+                // from frame 0 when the panel opens, or at the frame the reference frame's capture showed.
+                _referenceFrame?.ItemFrame is { } frame
+                    ? ItemRotationPresentation.Frame(frame)
+                    : ItemRotationPresentation.Frame(PresentationDrawTime < _itemDetailsOpenedAt
+                        ? TimeSpan.Zero : PresentationDrawTime - _itemDetailsOpenedAt), Color.White);
         else if (_itemPortraits is not null)
             batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,
                 OriginalSpriteLayout.ItemPortrait(item.Id), Color.White);
         font.Draw(batch, item.Name,
             new Vector2(ItemInformationLayout.NameLeft, ItemInformationLayout.HeaderY), Color.Lime, 1);
-        DrawPanelValue(font, batch, ItemInformationLayout.TypeLabel(item.Type),
+        DrawPanelValue(font, batch, ExecutableStrings.Get(ItemInformationLayout.TypeStringBase + item.Type),
             ItemInformationLayout.TypeRight, ItemInformationLayout.HeaderY);
         foreach (var entry in ItemInformationLayout.DescriptionLines(item.Description)
                      .Select((text, row) => (text, row)))

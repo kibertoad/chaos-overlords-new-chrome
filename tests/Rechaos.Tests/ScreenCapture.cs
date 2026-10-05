@@ -100,6 +100,9 @@ public sealed record ScreenCaptureRecord(
     /// </summary>
     public int? FrameCounter { get; init; } = PumpCounter;
 
+    /// <summary>FND-UI-052: the frame of Item Information's rotating item, when a shot shows it.</summary>
+    public int? ItemFrame { get; init; }
+
     public override string ToString() => Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
 
     // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
@@ -169,7 +172,12 @@ public sealed record ScreenCaptureRecord(
             Lamps: capture.TryGetProperty("lamps", out var lamps) && lamps.ValueKind == JsonValueKind.Array
                 && lamps.EnumerateArray().Select(value => value.GetInt32()).ToArray() is [_, var events, _, var comlink]
                 ? new ReferenceLamps(events != 0, comlink != 0)
-                : null);
+                : null)
+        {
+            ItemFrame = capture.TryGetProperty("item_frame", out var item) && item.ValueKind == JsonValueKind.Number
+                ? item.GetInt32()
+                : null,
+        };
         // Without frame_counter the record keeps the pump's counter as its frame counter.
         return capture.TryGetProperty("frame_counter", out var frame)
             ? record with { FrameCounter = frame.ValueKind == JsonValueKind.Number ? frame.GetInt32() : null }
@@ -181,8 +189,23 @@ public sealed record ScreenCaptureRecord(
     // sector's cell (FND-UI-015), a press at a card's or the window's point, a double-click at a
     // window's point, and the back control.
     // Its reference frame never opens the result panels the planning entry would open first, so
-    // the presses of their Exit are left out. A press that opened one of the original's popup
-    // menus has no counterpart, since the rebuild's orders are a panel (DEV-UI-021).
+    // the presses of their Exit are left out. The rebuild's orders are a panel (DEV-UI-021): a
+    // card's order menu (menu 1) whose choice opens a picker (FND-UI-021) is replayed as the card
+    // press and a press on that order's row of the panel, which opens the same picker. Any other
+    // popup menu has no counterpart.
+    // FND-UI-021: menu 1 lists the one-off orders, in the rows of the rebuild's panel.
+    private const int OrderMenu = 1;
+
+    // The row of the rebuild's order panel for a menu 1 command that runs a picker, or null.
+    private static int? PickerRow(int command)
+    {
+        var actions = OriginalNewGameExperimentTests.MenuActions(OrderMenu);
+        for (var row = 0; row < actions.Count; row++)
+            if (actions[row].Command == command)
+                return CommandOverlayLayout.OpensTargetPicker(actions[row].Action) ? row : null;
+        return null;
+    }
+
     private static IEnumerable<ScreenCaptureRecord> StepCaptures(
         string experiment, int run, JsonElement[] steps, bool whiteKeyed)
     {
@@ -192,7 +215,11 @@ public sealed record ScreenCaptureRecord(
         {
             var step = steps[index];
             int Number(string name) => step.GetProperty(name).GetInt32();
-            if (step.GetProperty("menu").GetInt32() > 0)
+            var menu = step.GetProperty("menu").GetInt32();
+            var pickerRow = menu == OrderMenu && step.GetProperty("kind").GetString() == "card"
+                ? PickerRow(Number("choice"))
+                : null;
+            if (menu > 0 && pickerRow is null)
                 unreplayable ??= $"step {index} opened popup menu {step.GetProperty("menu").GetInt32()}, which the rebuild draws as a panel (DEV-UI-021)";
             switch (step.GetProperty("kind").GetString())
             {
@@ -206,6 +233,8 @@ public sealed record ScreenCaptureRecord(
                     clicks.Add(new ReferenceClick(new Point(
                         SectorGangCardLayout.Left + card % 2 * SectorGangCardLayout.ColumnStride + Number("x"),
                         SectorGangCardLayout.Top + card / 2 * SectorGangCardLayout.RowStride + Number("y"))));
+                    if (pickerRow is { } row)
+                        clicks.Add(new ReferenceClick(CommandOverlayLayout.ActionRow(row).Center));
                     break;
                 case "strip":
                     clicks.Add(new ReferenceClick(new Point(Number("x"), Number("y"))));
@@ -266,6 +295,12 @@ public static class ScreenCaptureMasks
             ["SCR-OBJECTIVE-001"] = [],
             ["SCR-SEARCH-001"] = [],
             ["SCR-HIRE-001"] = [],
+            ["SCR-MOVE-001"] = [],
+            ["SCR-EQUIP-001"] = [],
+            // The progress beside each total, right-aligned to the list's edge, up to "100/100".
+            ["SCR-RESEARCH-001"] = [new CaptureMask("DEV-RESEARCH-001", new Rectangle(388, 149, 44, 144))],
+            ["SCR-UI-006"] = [],
+            ["SCR-GANG-001"] = [],
             ["SCR-GANG-002"] = [],
         };
 
@@ -386,7 +421,7 @@ public static class RebuildFrame
 
     public static ScreenFrame Render(
         MatchState state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
-        int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null)
+        int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -412,6 +447,11 @@ public static class RebuildFrame
             {
                 start.ArgumentList.Add("--selected-sector");
                 start.ArgumentList.Add(sector.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (itemFrame is { } item)
+            {
+                start.ArgumentList.Add("--item-frame");
+                start.ArgumentList.Add(item.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
             if (pumpCounter is { } counter)
             {
