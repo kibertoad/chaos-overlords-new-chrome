@@ -28,7 +28,8 @@ public sealed partial class ScreenCaptureTests
 
     // The captures cover SCR-UI-003 and SCR-HIRE-002 (EXP-UI-001, EXP-UI-006), SCR-UI-004 and
     // SCR-UI-005 (EXP-UI-006, EXP-UI-007), SCR-UI-007 (EXP-UI-007), SCR-UI-008 (EXP-UI-006) and
-    // both variants of SCR-FINANCE-001 (EXP-UI-006, EXP-UI-007).
+    // both variants of SCR-FINANCE-001 (EXP-UI-006, EXP-UI-007), and SCR-EVENT-001, SCR-COMBAT-001,
+    // SCR-OBJECTIVE-001, SCR-SEARCH-001, SCR-HIRE-001 and SCR-GANG-002 (EXP-UI-008).
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
@@ -48,7 +49,7 @@ public sealed partial class ScreenCaptureTests
         var original = path is null ? null : ScreenFrame.ReadBitmap(File.ReadAllBytes(path));
         var rebuild = RebuildFrame.Render(
             OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
-            $"{experiment}-{run}-{step}", capture.PumpCounter);
+            $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector);
 
         var results = capture.Elements.Select(element => ScreenComparison.Compare(element, original, rebuild, masks)).ToArray();
         var output = TestContext.Current.TestOutputHelper;

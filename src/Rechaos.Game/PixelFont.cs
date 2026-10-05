@@ -65,6 +65,24 @@ public sealed class PixelFont
                 source, Color.White);
     }
 
+    /// <summary>
+    /// Copies each character's cell of the PX00129 strip whose top-left corner is
+    /// <paramref name="strip"/>, as the original's text draw does, from <paramref name="position"/>.
+    /// Characters outside the strip leave their cell untouched.
+    /// </summary>
+    public void Copy(SpriteBatch batch, string text, Point position, Point strip)
+    {
+        foreach (var character in text)
+        {
+            if (char.ToUpperInvariant(character) is >= OriginalFontLayout.FirstCharacter and <= OriginalFontLayout.LastCharacter
+                && OriginalFontLayout.TryGlyph(character, out var glyph))
+                batch.Draw(_uiAtlas,
+                    new Rectangle(position.X, position.Y, glyph.Width, glyph.Height),
+                    new Rectangle(strip.X + glyph.X, strip.Y + glyph.Y, glyph.Width, glyph.Height), Color.White);
+            position.X += OriginalFontLayout.CellWidth;
+        }
+    }
+
     public void Draw(SpriteBatch batch, string text, Vector2 position, Color color, int scale)
     {
         var startX = position.X;

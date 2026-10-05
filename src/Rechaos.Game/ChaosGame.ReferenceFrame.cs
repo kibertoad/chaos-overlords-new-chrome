@@ -22,13 +22,17 @@ namespace Rechaos.Game;
 /// The pump's counter the capture recorded (FND-UI-017), which picks the selection frame drawn
 /// (FND-UI-048), in place of the clock's.
 /// </param>
+/// <param name="SelectedSector">
+/// The sector the capture had selected (FND-SAVE-003), in place of the one the planning entry
+/// restores, since the save does not keep it (DEV-SAVE-001).
+/// </param>
 public sealed record ReferenceFrameRequest(
     string SavePath, string OutputPath, int? MarkerFrame = null, IReadOnlyList<ReferenceClick>? Clicks = null,
-    int? PumpCounter = null)
+    int? PumpCounter = null, int? SelectedSector = null)
 {
     private const string Usage =
         "Usage: --reference-frame <save> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
-        + " [--reference-clicks <x:y[:2]>,...]";
+        + " [--selected-sector <0-63>] [--reference-clicks <x:y[:2]>,...]";
 
     // Keep captures independent of the player's preferences, recovery files and saves. The
     // directory sits beside the bitmap and is kept after exit, so a failed run can be diagnosed
@@ -43,8 +47,10 @@ public sealed record ReferenceFrameRequest(
         var marker = Array.IndexOf(args, "--marker-frame");
         var clicks = Array.IndexOf(args, "--reference-clicks");
         var pump = Array.IndexOf(args, "--pump-counter");
+        var selected = Array.IndexOf(args, "--selected-sector");
         if (reference < 0)
         {
+            if (selected >= 0) throw new ArgumentException("--selected-sector requires --reference-frame.");
             if (marker >= 0) throw new ArgumentException("--marker-frame requires --reference-frame.");
             if (clicks >= 0) throw new ArgumentException("--reference-clicks requires --reference-frame.");
             if (pump >= 0) throw new ArgumentException("--pump-counter requires --reference-frame.");
@@ -53,7 +59,8 @@ public sealed record ReferenceFrameRequest(
         if (Array.LastIndexOf(args, "--reference-frame") != reference
             || (marker >= 0 && Array.LastIndexOf(args, "--marker-frame") != marker)
             || (clicks >= 0 && Array.LastIndexOf(args, "--reference-clicks") != clicks)
-            || (pump >= 0 && Array.LastIndexOf(args, "--pump-counter") != pump))
+            || (pump >= 0 && Array.LastIndexOf(args, "--pump-counter") != pump)
+            || (selected >= 0 && Array.LastIndexOf(args, "--selected-sector") != selected))
             throw new ArgumentException("Capture options may only be supplied once.");
         static string Operand(string[] values, int index)
         {
@@ -89,8 +96,18 @@ public sealed record ReferenceFrameRequest(
                 throw new ArgumentException("--pump-counter must be between 0 and 7.");
             counter = value;
         }
+        int? sector = null;
+        if (selected >= 0)
+        {
+            if (!int.TryParse(Operand(args, selected + 1),
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value)
+                || value >= MatchLimits.SectorCount)
+                throw new ArgumentException("--selected-sector must be between 0 and 63.");
+            sector = value;
+        }
         return new ReferenceFrameRequest(save, output, frame,
-            clicks >= 0 ? ReferenceClick.ParseList(Operand(args, clicks + 1)) : null, counter);
+            clicks >= 0 ? ReferenceClick.ParseList(Operand(args, clicks + 1)) : null, counter, sector);
     }
 }
 
@@ -214,6 +231,11 @@ public sealed partial class ChaosGame
             && state.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human)
         {
             PrepareCurrentHireOffers();
+            if (_referenceFrame?.SelectedSector is { } selected)
+            {
+                _planningSelections.Store(playerId, selected);
+                _cursor = selected;
+            }
             _deferComlinkAlertUntilPlanningVisible = true;
             _managementReturnScreen = ClientScreen.City;
             if (LastTurnReports(state, playerId).Count > 0)

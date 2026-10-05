@@ -41,6 +41,9 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--reference-frame", "save", "save" },
         new[] { "--reference-clicks", "1:2" },
         new[] { "--pump-counter", "1" },
+        new[] { "--selected-sector", "1" },
+        new[] { "--reference-frame", "save", "frame", "--selected-sector", "64" },
+        new[] { "--reference-frame", "save", "frame", "--selected-sector", "-1" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter", "8" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter", "-1" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter" },
@@ -78,6 +81,16 @@ public sealed class ReferenceFrameRequestTests
             ["--reference-frame", "planning.rchsave", "frame.bmp", "--pump-counter", counter.ToString()])!;
         Assert.Equal(counter, request.PumpCounter);
         Assert.Equal(frame, CityMapLayout.SelectionFrameAfterPass(counter));
+    }
+
+    [Fact]
+    public void TheSelectedSectorIsReadAsGiven()
+    {
+        // FND-SAVE-003, DEV-SAVE-001: the save keeps no selection, so the capture supplies it.
+        var request = ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--selected-sector", "12"])!;
+        Assert.Equal(12, request.SelectedSector);
+        Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.SelectedSector);
     }
 
     [Theory]

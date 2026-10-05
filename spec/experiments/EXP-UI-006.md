@@ -33,7 +33,10 @@ The three Exit steps close the panels the planning entry opened. Each `shot`
 step copies the drawing area twice, as the endpoint capture does, and keeps
 the copy when both agree and neither the Overlord bar's marker counter
 `0x00487B90` (FND-UI-038) nor the pump's counter `0x00487804` (FND-UI-017)
-moved; it records both counters. The other steps press the console's Game
+moved; it records both counters. It also records the selected sector
+`0x004ABC80` and, as in EXP-UI-008, the frame counter: the pump's counter when
+the open panel finished sliding in (FND-UI-051), or the pump counter when no
+panel slid in. The other steps press the console's Game
 Information control and its OK, the Financial control and the panel's Exit,
 double-click sector 33, press the back control, press Gangs in Sector and its
 Exit.
@@ -44,14 +47,14 @@ The run made the same 14892 calls of `roll` with the same bounds and results
 as EXP-TURN-026. The first Exit step closed a panel and the other two found
 none open. All six shots were kept:
 
-| Step | Screens | Marker frame | Pump counter |
-|---|---|---|---|
-| 3 | SCR-UI-003, SCR-HIRE-002 | 3 | 6 |
-| 5 | SCR-UI-008 | 11 | 3 |
-| 8 | SCR-FINANCE-001 | 4 | 5 |
-| 11 | SCR-UI-004 | 8 | 7 |
-| 14 | SCR-UI-005 | 0 | 1 |
-| 16 | SCR-UI-003 | 8 | 6 |
+| Step | Screens | Marker frame | Pump counter | Frame counter |
+|---|---|---|---|---|
+| 3 | SCR-UI-003, SCR-HIRE-002 | 1 | 0 | 0 |
+| 5 | SCR-UI-008 | 9 | 5 | 0 |
+| 8 | SCR-FINANCE-001 | 1 | 7 | 2 |
+| 11 | SCR-UI-004 | 7 | 0 | 0 |
+| 14 | SCR-UI-005 | 11 | 3 | 6 |
+| 16 | SCR-UI-003 | 8 | 7 | 7 |
 
 The fixture keeps the xxh3 of each bitmap and a digest of each element of
 the screens named; the bitmaps are kept under `GAME_DIR/captures/`.
@@ -66,14 +69,16 @@ The captures show:
   cell;
 - the selection frame of the counter less one (FND-UI-048), on the city and
   on the detailed sector screen, where it is drawn over the display's centre
-  cell.
+  cell; behind the Financial and Gangs in Sector panels it is the frame of the
+  frame counter, not of the pump counter at the capture (FND-UI-051).
 
 ## Results
 
 `TheRebuildDrawsWhatTheOriginalDrew` in
 `tests/Rechaos.Tests/ScreenCaptureTests.cs` replays the run, saves the
 endpoint, and has the rebuild's reference frame repeat the presses from the
-endpoint before it draws, with the recorded marker frame and pump counter. It
+endpoint before it draws, with the recorded marker frame, frame counter and
+selected sector. It
 compares every element of every screen with the original, leaving out the
 cash row (DEV-UI-006) and the city's key line (DEV-UI-023). Every element of
 the six captures matches.
@@ -82,4 +87,4 @@ the six captures matches.
 
 The run supports SCR-UI-003, SCR-UI-004, SCR-UI-005, SCR-UI-008,
 SCR-FINANCE-001 (City variant) and SCR-HIRE-002 for one late state, and
-FND-UI-048 for the selection frame's phase.
+FND-UI-048 and FND-UI-051 for the selection frame's phase.

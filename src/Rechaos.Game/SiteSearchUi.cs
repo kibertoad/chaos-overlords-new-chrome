@@ -15,6 +15,23 @@ public static class SiteSearchLayout
     public static Rectangle None => SharedPanelLayout.At(33, 48, 49, 23);
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
 
+    /// <summary>FND-SEARCH-001: a row's name is cut to its first 15 characters.</summary>
+    public const int NameCharacters = 15;
+
+    /// <summary>FND-SEARCH-001: row <paramref name="index"/>'s 20-by-14 marker icon.</summary>
+    public static Rectangle Icon(int index)
+    {
+        if (index is < 0 or >= MaximumSites) throw new ArgumentOutOfRangeException(nameof(index));
+        return new Rectangle(206 + index / RowsPerColumn * 116, 146 + index % RowsPerColumn * 15, 20, 14);
+    }
+
+    /// <summary>FND-SEARCH-001: the icon of site definition <paramref name="definition"/> in PX00150.</summary>
+    public static Rectangle IconSource(int definition)
+    {
+        if (definition is < 0 or >= MaximumSites) throw new ArgumentOutOfRangeException(nameof(definition));
+        return new Rectangle(definition % RowsPerColumn * 20, definition / RowsPerColumn * 14, 20, 14);
+    }
+
     public static Rectangle Site(int index)
     {
         if (index is < 0 or >= MaximumSites) throw new ArgumentOutOfRangeException(nameof(index));

@@ -551,10 +551,10 @@ public sealed partial class ChaosGame
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: false);
         if (advanceToPlanning) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
         if (advanceToPlanning) PrepareCurrentHireOffers();
-        // A reference frame's save may stand where player 0 has lost every gang.
-        _cursor = _state.Players[0].Gangs.Count > 0
-            ? _state.Players[0].Gangs[0].SectorId
-            : Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
+        // FND-SAVE-003: every player starts on the sector of its roster slot 0. A reference frame's
+        // save may stand where player 0 has lost every gang.
+        _planningSelections.Reset(_state);
+        _cursor = _planningSelections.For(_state.Players[0].Id, Math.Clamp(_cursor, 0, _state.Sectors.Count - 1));
         _selectedGangIndex = 0;
         _message = string.Empty;
         _combatPresentationProgress.Clear();

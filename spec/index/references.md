@@ -144,6 +144,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | builds |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | builds |
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | builds |
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -536,6 +537,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-048](../findings/FND-UI-048.md) | builds, locations |
 | [FND-UI-049](../findings/FND-UI-049.md) | builds, locations |
 | [FND-UI-050](../findings/FND-UI-050.md) | builds, locations |
+| [FND-UI-051](../findings/FND-UI-051.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -1155,6 +1157,7 @@ None.
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | body |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | body |
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 
 ## EXP-TURN-002
 
@@ -1892,6 +1895,7 @@ None.
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | body |
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | body |
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | body |
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | body, evidence |
 
 ## EXP-TURN-072
@@ -2087,6 +2091,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | body |
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [FND-UI-048](../findings/FND-UI-048.md) | body |
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -2098,11 +2103,26 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
 | [SCR-UI-005](../screens/SCR-UI-005.md) | body, evidence |
 | [SCR-UI-007](../screens/SCR-UI-007.md) | body, evidence |
+
+## EXP-UI-008
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
+| [EXP-UI-007](../experiments/EXP-UI-007.md) | body |
+| [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | evidence |
+| [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | evidence |
+| [SCR-GANG-002](../screens/SCR-GANG-002.md) | evidence |
+| [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | evidence |
+| [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | evidence |
+| [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
@@ -5280,6 +5300,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [FMT-DATA-002](../formats/FMT-DATA-002.md) | body, evidence |
 | [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | body, evidence |
 
@@ -5992,8 +6013,10 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FND-UI-025](../findings/FND-UI-025.md) | body |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-SEARCH-001
 
@@ -6939,6 +6962,7 @@ None.
 | [FND-UI-026](../findings/FND-UI-026.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
 | [FND-UI-046](../findings/FND-UI-046.md) | body |
+| [FND-UI-051](../findings/FND-UI-051.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | glossary: blit_benchmark_count | glossary |
 | glossary: comlink_alert_repeat | glossary |
@@ -7190,6 +7214,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
+| [FND-UI-051](../findings/FND-UI-051.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
 
@@ -7207,6 +7232,15 @@ None.
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
+
+## FND-UI-051
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
+| [EXP-UI-007](../experiments/EXP-UI-007.md) | body |
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UPKEEP-001
 
@@ -9073,6 +9107,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | body, related |
 
@@ -9113,6 +9148,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | body, related |
 
 ## SCR-FINANCE-001
@@ -9136,6 +9172,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [FND-GANG-006](../findings/FND-GANG-006.md) | body |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | body, related |
 | [SCR-HIRE-002](../screens/SCR-HIRE-002.md) | body, related |
@@ -9152,6 +9189,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | related |
 
 ## SCR-HIRE-002
@@ -9202,7 +9240,9 @@ None.
 
 ## SCR-OBJECTIVE-001
 
-None.
+| Cited by | In |
+|---|---|
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 
 ## SCR-OBJECTIVE-002
 
@@ -9230,6 +9270,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | body |
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 
 ## SCR-SELL-001
 
@@ -9279,6 +9320,7 @@ None.
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
+| [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, related |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | related |

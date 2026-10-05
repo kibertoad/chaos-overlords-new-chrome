@@ -114,7 +114,9 @@ Made a setting that starts off on 2026-09-25, and switched to start on on 2026-0
 
 - Departs from: FMT-SAVE-001, FMT-SAVE-002
 - Reason: The rebuild neither reads nor writes the original's save files. It keeps its own save
-  format, with a version number and bounded readers.
+  format, with a version number and bounded readers. That format leaves out each player's selected
+  sector (`cursor_sectors`, FND-SAVE-003), so a loaded match starts every player's planning on the
+  sector of its roster slot 0, as a new match does.
 - Setting: None
 - Default: mandatory
 - Justification: What a player can do in a match is the same whichever format holds it, and the
@@ -628,7 +630,8 @@ it.
 
 - Departs from: SCR-SEARCH-001
 - Reason: The keyboard moves between Search rows and toggles them. The original's handler reacts
-  only to Enter and Execute.
+  only to Enter and Execute. A gold border marks the keyboard's row once an arrow key has moved
+  it; until then the panel draws what the original draws.
 - Setting: None
 - Default: mandatory
 - Justification: It adds keys, and Enter and Execute work as before.

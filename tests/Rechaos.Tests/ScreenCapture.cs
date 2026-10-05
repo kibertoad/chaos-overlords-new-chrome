@@ -85,8 +85,15 @@ public sealed record CapturedElement(string Screen, string Element, Rectangle Re
 public sealed record ScreenCaptureRecord(
     string Experiment, int Run, string Xxh3, int MarkerFrame, IReadOnlyList<string> Screens,
     IReadOnlyList<CapturedElement> Elements, int Step = -1, IReadOnlyList<ReferenceClick>? Clicks = null,
-    string? Unreplayable = null, int? PumpCounter = null)
+    string? Unreplayable = null, int? PumpCounter = null, int? SelectedSector = null)
 {
+    /// <summary>
+    /// FND-UI-048, FND-UI-051: the counter whose selection frame the capture shows. A shot records
+    /// it as <c>frame_counter</c>, null when a panel stopped the frame before the probe watched; an
+    /// older capture records only the pump's counter.
+    /// </summary>
+    public int? FrameCounter { get; init; } = PumpCounter;
+
     public override string ToString() => Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
 
     // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
@@ -139,7 +146,16 @@ public sealed record ScreenCaptureRecord(
             capture.GetProperty("marker_frame").GetInt32(), screens, elements,
             PumpCounter: capture.TryGetProperty("pump_counter", out var pump) && pump.ValueKind == JsonValueKind.Number
                 ? pump.GetInt32()
-                : null);
+                : null,
+            SelectedSector: capture.TryGetProperty("selected_sector", out var selected)
+                            && selected.ValueKind == JsonValueKind.Number
+                ? selected.GetInt32()
+                : null)
+        {
+            FrameCounter = capture.TryGetProperty("frame_counter", out var frame)
+                ? frame.ValueKind == JsonValueKind.Number ? frame.GetInt32() : null
+                : pump.ValueKind == JsonValueKind.Number ? pump.GetInt32() : null,
+        };
     }
 
     // The captures shot steps of --order-steps took after the dump. The rebuild reaches each one's
@@ -226,6 +242,12 @@ public static class ScreenCaptureMasks
             ["SCR-UI-005"] = [],
             ["SCR-UI-007"] = [],
             ["SCR-UI-008"] = [],
+            ["SCR-EVENT-001"] = [],
+            ["SCR-COMBAT-001"] = [],
+            ["SCR-OBJECTIVE-001"] = [],
+            ["SCR-SEARCH-001"] = [],
+            ["SCR-HIRE-001"] = [],
+            ["SCR-GANG-002"] = [],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
@@ -340,7 +362,7 @@ public static class RebuildFrame
 
     public static ScreenFrame Render(
         MatchState state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
-        int? pumpCounter = null)
+        int? pumpCounter = null, int? selectedSector = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -361,6 +383,11 @@ public static class RebuildFrame
             {
                 start.ArgumentList.Add("--marker-frame");
                 start.ArgumentList.Add(marker.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (selectedSector is { } sector)
+            {
+                start.ArgumentList.Add("--selected-sector");
+                start.ArgumentList.Add(sector.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
             if (pumpCounter is { } counter)
             {

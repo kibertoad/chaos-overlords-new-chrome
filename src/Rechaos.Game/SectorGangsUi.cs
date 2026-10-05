@@ -120,18 +120,6 @@ public sealed partial class ChaosGame
         DrawSectorGangsPanel(batch, pixel, font, state);
     }
 
-    /// <summary>
-    /// SCR-UI-005, EXP-UI-006: a picture drawn at half size keeps the pixel at the bottom right of
-    /// each two-by-two block, the one at <c>(2x + 1, 2y + 1)</c> of the source.
-    /// </summary>
-    private static void DrawHalfScale(SpriteBatch batch, Texture2D texture, Rectangle source, Point topLeft)
-    {
-        for (var y = 0; y < source.Height / 2; y++)
-        for (var x = 0; x < source.Width / 2; x++)
-            batch.Draw(texture, new Rectangle(topLeft.X + x, topLeft.Y + y, 1, 1),
-                new Rectangle(source.X + 2 * x + 1, source.Y + 2 * y + 1, 1, 1), Color.White);
-    }
-
     private void DrawSectorGangsPanel(
         SpriteBatch batch,
         Texture2D pixel,
@@ -155,8 +143,8 @@ public sealed partial class ChaosGame
             // SCR-UI-005, FND-UI-014: the panel never reads the Base Statistics option.
             var stats = EffectiveStatisticsCalculator.ForGang(state, gang);
             if (_gangPortraits is not null)
-                DrawHalfScale(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
-                    SectorGangsLayout.GangCard(entry.index).Location);
+                PictureScaling.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
+                    SectorGangsLayout.GangCard(entry.index));
             // SCR-UI-005: Upkeep is drawn negated, so it shows in red.
             int[] values =
             [

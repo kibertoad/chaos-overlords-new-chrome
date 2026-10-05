@@ -21632,7 +21632,7 @@
         {"format":"FMT-STATE-003","record":0,"field":"force_final","value":2},
         {"format":"FMT-STATE-003","record":0,"field":"force_shown","value":0},
         {"format":"FMT-STATE-003","record":0,"field":"damage_dealt","value":88},
-        {"format":"FMT-STATE-003","record":0,"field":"retaliation_taken","value":118},
+        {"format":"FMT-STATE-003","record":0,"field":"retaliation_taken","value":111},
         {"format":"FMT-STATE-003","record":0,"field":"weapon","value":-1},
         {"format":"FMT-STATE-003","record":0,"field":"armor","value":-1},
         {"format":"FMT-STATE-003","record":0,"field":"misc","value":-1},
@@ -21652,7 +21652,7 @@
         {"format":"FMT-STATE-003","record":84,"field":"force_final","value":10},
         {"format":"FMT-STATE-003","record":84,"field":"force_shown","value":0},
         {"format":"FMT-STATE-003","record":84,"field":"damage_dealt","value":1},
-        {"format":"FMT-STATE-003","record":84,"field":"retaliation_taken","value":-103},
+        {"format":"FMT-STATE-003","record":84,"field":"retaliation_taken","value":116},
         {"format":"FMT-STATE-003","record":84,"field":"weapon","value":10},
         {"format":"FMT-STATE-003","record":84,"field":"armor","value":37},
         {"format":"FMT-STATE-003","record":84,"field":"misc","value":-1},
@@ -21722,7 +21722,7 @@
         {"format":"FMT-STATE-003","record":244,"field":"force_final","value":5},
         {"format":"FMT-STATE-003","record":244,"field":"force_shown","value":0},
         {"format":"FMT-STATE-003","record":244,"field":"damage_dealt","value":0},
-        {"format":"FMT-STATE-003","record":244,"field":"retaliation_taken","value":3},
+        {"format":"FMT-STATE-003","record":244,"field":"retaliation_taken","value":-87},
         {"format":"FMT-STATE-003","record":244,"field":"weapon","value":-1},
         {"format":"FMT-STATE-003","record":244,"field":"armor","value":30},
         {"format":"FMT-STATE-003","record":244,"field":"misc","value":-1},
@@ -21751,7 +21751,7 @@
         {"format":"FMT-STATE-003","record":335,"field":"force_start","value":8},
         {"format":"FMT-STATE-003","record":335,"field":"force_final","value":-1},
         {"format":"FMT-STATE-003","record":335,"field":"force_shown","value":0},
-        {"format":"FMT-STATE-003","record":335,"field":"damage_dealt","value":107},
+        {"format":"FMT-STATE-003","record":335,"field":"damage_dealt","value":72},
         {"format":"FMT-STATE-003","record":335,"field":"retaliation_taken","value":25},
         {"format":"FMT-STATE-003","record":335,"field":"weapon","value":-1},
         {"format":"FMT-STATE-003","record":335,"field":"armor","value":30},
@@ -23484,11 +23484,12 @@
           ],
           "screens": "SCR-UI-003,SCR-HIRE-002",
           "capture": {
-            "xxh3": "761bf0fc9950f3f3f68cf48939202f86",
+            "xxh3": "afb6dedb1b1ad0ad8ad535b76b6deae2",
             "area": [0,0,640,460],
-            "marker_frame": 3,
-            "pump_counter": 6,
-            "lamps": null,
+            "marker_frame": 1,
+            "pump_counter": 0,
+            "lamps": [0,0,0,0],
+            "selected_sector": 33,
             "screens": [
               {
                 "screen": "SCR-UI-003",
@@ -23496,7 +23497,7 @@
                   {
                     "element": "City view and right control panel",
                     "rect": [0,0,640,460],
-                    "xxh3": "a1fe25c203529b20f24a87b42ca507cb",
+                    "xxh3": "b60739154cf934555af14963ab5aefc4",
                     "white": 42
                   },
                   {
@@ -23544,7 +23545,7 @@
                   {
                     "element": "Active-player marker, player 0",
                     "rect": [50,6,20,20],
-                    "xxh3": "10afb410345e6bfe50522dc66887b25c",
+                    "xxh3": "2eb1a5d63605cda19d7631a0a506a5fd",
                     "white": 0
                   },
                   {
@@ -23710,7 +23711,8 @@
                   }
                 ]
               }
-            ]
+            ],
+            "frame_counter": 0
           }
         },
         {
@@ -23744,11 +23746,12 @@
           ],
           "screens": "SCR-UI-008",
           "capture": {
-            "xxh3": "5ab67eb30855f2259d5f621804d73085",
+            "xxh3": "9dd44a10bb5a92c2e639b5890cfcfaf2",
             "area": [0,0,640,460],
-            "marker_frame": 11,
-            "pump_counter": 3,
-            "lamps": null,
+            "marker_frame": 9,
+            "pump_counter": 5,
+            "lamps": [0,0,0,0],
+            "selected_sector": 33,
             "screens": [
               {
                 "screen": "SCR-UI-008",
@@ -23791,7 +23794,8 @@
                   }
                 ]
               }
-            ]
+            ],
+            "frame_counter": 0
           }
         },
         {
@@ -23840,11 +23844,12 @@
           ],
           "screens": "SCR-FINANCE-001",
           "capture": {
-            "xxh3": "2e36f84ee107cd9b7ac1af3a27287462",
+            "xxh3": "4ebc77093bd9a2cf3d49fc74d26b3fb8",
             "area": [0,0,640,460],
-            "marker_frame": 4,
-            "pump_counter": 5,
-            "lamps": null,
+            "marker_frame": 1,
+            "pump_counter": 7,
+            "lamps": [0,0,0,0],
+            "selected_sector": 33,
             "screens": [
               {
                 "screen": "SCR-FINANCE-001",
@@ -23923,7 +23928,8 @@
                   }
                 ]
               }
-            ]
+            ],
+            "frame_counter": 2
           }
         },
         {
@@ -23972,11 +23978,12 @@
           ],
           "screens": "SCR-UI-004",
           "capture": {
-            "xxh3": "4b4671d17889445bb62d906e653205b2",
+            "xxh3": "c6cfa861ada757c4a6e96d0a73f27303",
             "area": [0,0,640,460],
-            "marker_frame": 8,
-            "pump_counter": 7,
-            "lamps": null,
+            "marker_frame": 7,
+            "pump_counter": 0,
+            "lamps": [0,0,0,0],
+            "selected_sector": 33,
             "screens": [
               {
                 "screen": "SCR-UI-004",
@@ -23984,7 +23991,7 @@
                   {
                     "element": "Detailed sector screen",
                     "rect": [0,0,640,460],
-                    "xxh3": "81ee7c1c68c55695bc3ef2deecf77f7c",
+                    "xxh3": "be3207262da5baf30243ad2154685926",
                     "white": 69
                   },
                   {
@@ -24044,7 +24051,7 @@
                   {
                     "element": "Console, Overlord bar",
                     "rect": [12,5,420,32],
-                    "xxh3": "348f659784222a515306b4c9d67a7cf9",
+                    "xxh3": "1a7abbdfad1687b706e8e73568e1ccd3",
                     "white": 1
                   },
                   {
@@ -24055,7 +24062,8 @@
                   }
                 ]
               }
-            ]
+            ],
+            "frame_counter": 0
           }
         },
         {
@@ -24104,11 +24112,12 @@
           ],
           "screens": "SCR-UI-005",
           "capture": {
-            "xxh3": "4d2e70ecebd2401e2cde60c7675a9c32",
+            "xxh3": "e699e03efb24d11f56be0bb286508822",
             "area": [0,0,640,460],
-            "marker_frame": 0,
-            "pump_counter": 1,
-            "lamps": null,
+            "marker_frame": 11,
+            "pump_counter": 3,
+            "lamps": [0,0,0,0],
+            "selected_sector": 33,
             "screens": [
               {
                 "screen": "SCR-UI-005",
@@ -24151,7 +24160,8 @@
                   }
                 ]
               }
-            ]
+            ],
+            "frame_counter": 6
           }
         },
         {
@@ -24188,8 +24198,9 @@
             "xxh3": "d86a6cd3f3a3fa36e5937a4c66878890",
             "area": [0,0,640,460],
             "marker_frame": 8,
-            "pump_counter": 6,
-            "lamps": null,
+            "pump_counter": 7,
+            "lamps": [0,0,0,0],
+            "selected_sector": 33,
             "screens": [
               {
                 "screen": "SCR-UI-003",
@@ -24370,7 +24381,8 @@
                   }
                 ]
               }
-            ]
+            ],
+            "frame_counter": 7
           }
         }
       ],

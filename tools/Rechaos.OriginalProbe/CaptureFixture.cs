@@ -56,12 +56,15 @@ internal static class CaptureFixture
             .FirstOrDefault(note => note.StartsWith("pump_counter ", StringComparison.Ordinal));
         var lamps = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>())
             .FirstOrDefault(note => note.StartsWith("lamps ", StringComparison.Ordinal));
+        var selected = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>())
+            .FirstOrDefault(note => note.StartsWith("selected_sector ", StringComparison.Ordinal));
         if (marker is null) return null;
         return Extract(Path.Combine(runDirectory, "capture-blt.bmp"),
             int.Parse(marker["marker_frame ".Length..], System.Globalization.CultureInfo.InvariantCulture),
             pump is null ? null : int.Parse(pump["pump_counter ".Length..], System.Globalization.CultureInfo.InvariantCulture),
             lamps?["lamps ".Length..].Split(' ')
                 .Select(value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray(),
+            selected is null ? null : int.Parse(selected["selected_sector ".Length..], System.Globalization.CultureInfo.InvariantCulture),
             screens);
     }
 
@@ -69,13 +72,22 @@ internal static class CaptureFixture
     /// The record of a capture <c>shot</c> step of <c>--order-steps</c> took after the dump, compared
     /// at the screens the step names.
     /// </summary>
-    public static JsonObject? ExtractShot(string runDirectory, JsonNode shot, string screens) =>
-        Extract(Path.Combine(runDirectory, shot["File"]!.GetValue<string>()), shot["MarkerFrame"]!.GetValue<int>(),
-            shot["PumpCounter"]!.GetValue<int>(),
-            shot["Lamps"]?.AsArray().Select(value => value!.GetValue<int>()).ToArray(), CaptureScreen.Load(screens));
+    public static JsonObject? ExtractShot(string runDirectory, JsonNode shot, string screens)
+    {
+        var record = Extract(Path.Combine(runDirectory, shot["File"]!.GetValue<string>()),
+            shot["MarkerFrame"]!.GetValue<int>(), shot["PumpCounter"]!.GetValue<int>(),
+            shot["Lamps"]?.AsArray().Select(value => value!.GetValue<int>()).ToArray(),
+            shot["SelectedSector"]?.GetValue<int>(), CaptureScreen.Load(screens));
+        // FND-UI-048, FND-UI-051: the counter whose selection frame the capture shows: the pump's,
+        // or the one at the slide-in of the panel open over the city. A panel the probe did not
+        // see slide in leaves it unknown.
+        if (record is not null)
+            record["frame_counter"] = shot["FrameCounter"] is JsonNode frame ? frame.GetValue<int>() : null;
+        return record;
+    }
 
     private static JsonObject? Extract(
-        string capture, int marker, int? pump, int[]? lamps, IReadOnlyList<CaptureScreen> screens)
+        string capture, int marker, int? pump, int[]? lamps, int? selected, IReadOnlyList<CaptureScreen> screens)
     {
         var repeat = Path.ChangeExtension(capture, null) + "-repeat.bmp";
         if (!File.Exists(capture) || !File.Exists(repeat)) return null;
@@ -107,6 +119,8 @@ internal static class CaptureFixture
             ["pump_counter"] = pump is null ? null : (JsonNode)pump.Value,
             // FND-EVENT-006: the Events and Comlink lights' flags and drawn bytes, in that order.
             ["lamps"] = lamps is null ? null : new JsonArray(lamps.Select(value => (JsonNode)value).ToArray()),
+            // FND-SAVE-003: the selected sector `0x004ABC80`.
+            ["selected_sector"] = selected is null ? null : (JsonNode)selected.Value,
             ["screens"] = screenArray,
         };
     }

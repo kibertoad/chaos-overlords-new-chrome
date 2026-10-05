@@ -1,0 +1,12 @@
+{
+  "screen": "SCR-COMBAT-001",
+  "state": "A planning entry of player 0 with Combat Results open on its first page",
+  "elements": [
+    {"element": "Combat Results panel, paged by sector", "rect": [0, 0, 640, 460]},
+    {"element": "Viewer's forces", "rect": [207, 153, 84, 144]},
+    {"element": "Enemy forces", "rect": [350, 153, 84, 144]},
+    {"element": "Page counter", "rect": [138, 137, 48, 7]},
+    {"element": "Sector tile", "rect": [135, 191, 54, 52]},
+    {"element": "Sector code", "rect": [156, 246, 12, 7]}
+  ]
+}

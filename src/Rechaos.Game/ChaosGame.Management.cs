@@ -83,20 +83,29 @@ public sealed partial class ChaosGame
         {
             var row = SiteSearchLayout.Site(index);
             var selected = selection.Contains(sites[index].Id);
-            if (index == _siteSearchCursor) DrawBorder(batch, pixel, row, Color.Gold, 1);
-            DrawBorder(batch, pixel, new Rectangle(row.X + 2, row.Y + 2, 8, 8),
-                selected ? Color.Lime : new Color(90, 100, 100), 1);
-            if (selected)
-                batch.Draw(pixel, new Rectangle(row.X + 4, row.Y + 4, 4, 4), Color.Lime);
-            font.Draw(batch, sites[index].Name,
-                new Vector2(row.X + 14, row.Y + 3), selected ? Color.Lime : Color.White, 1);
+            // DEV-SEARCH-001: the keyboard's row is outlined once a key has moved it.
+            if (_siteSearchCursorShown && index == _siteSearchCursor) DrawBorder(batch, pixel, row, Color.Gold, 1);
+            // FND-SEARCH-001, FND-SEARCH-004: the definition's marker icon, then the first 15
+            // characters of its name, from the plain font when selected and the row at (152,274)
+            // when not.
+            var icon = SiteSearchLayout.Icon(index);
+            if (_siteMarkerSprites is not null)
+                batch.Draw(_siteMarkerSprites, icon, SiteSearchLayout.IconSource(sites[index].Id), Color.White);
+            var name = sites[index].Name;
+            font.Copy(batch, name[..Math.Min(name.Length, SiteSearchLayout.NameCharacters)],
+                new Point(icon.X + 24, icon.Y + 3),
+                selected ? OriginalFontLayout.PlainStrip : OriginalFontLayout.DimStrip);
         }
     }
+
+    // DEV-SEARCH-001: whether a key has moved the Search panel's keyboard row since it opened.
+    private bool _siteSearchCursorShown;
 
     private void OpenSiteSearch(ClientScreen returnScreen)
     {
         _managementReturnScreen = returnScreen;
         _siteSearchCursor = 0;
+        _siteSearchCursorShown = false;
         _screens.Show(ClientScreen.Search);
     }
 
@@ -105,6 +114,7 @@ public sealed partial class ChaosGame
         if (_definitions is null || _definitions.Sites.Count == 0) return;
         var count = Math.Min(_definitions.Sites.Count, SiteSearchLayout.MaximumSites);
         _siteSearchCursor = (_siteSearchCursor + delta + count) % count;
+        _siteSearchCursorShown = true;
     }
 
     private short[] SiteSearchRows() => _definitions is null ? [] : SiteSearchPanel.Rows(_definitions);
