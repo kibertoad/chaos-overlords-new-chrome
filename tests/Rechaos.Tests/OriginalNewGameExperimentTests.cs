@@ -92,6 +92,14 @@ namespace Rechaos.Tests;
 /// (RULE-INFLUENCE-001). EXP-TURN-070 and EXP-TURN-071 drop a recurring Control in a sector
 /// under police presence (RULE-TURN-004), and EXP-TURN-072 prices an item at full Cost beside
 /// another player's completed Factory (RULE-EQUIP-003).
+/// EXP-TURN-073 to EXP-TURN-077 write a family into the computer gangs' planning records and reach
+/// branches no match had reached: family 7 out of research (RULE-AI-026), family-4 attack draws and
+/// Control (RULE-AI-023), the family-10 Heal (RULE-AI-028), an accepted family-3 attack
+/// (RULE-AI-022) and a family-6 guard target already covered (RULE-AI-025).
+/// EXP-TURN-078 to EXP-TURN-081 do the same in Siege, Big Man and Armageddon and reach the further family-6
+/// draws (RULE-AI-025), the family-3 Heal (RULE-AI-022), family-4 attacks after Chaos or Equip
+/// (RULE-AI-023), the family-12 Detect Equip and draw at weight 1 (RULE-AI-030) and the family-0
+/// Move after a Snitch (RULE-AI-019).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -99,7 +107,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));

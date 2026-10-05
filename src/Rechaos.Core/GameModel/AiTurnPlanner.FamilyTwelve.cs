@@ -9,12 +9,15 @@ public static partial class AiTurnPlanner
         int gangSlot,
         FamilyPlanningSnapshot snapshot)
     {
+        // RULE-AI-030: the handler branches on the player's cached weight of the sector.
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        if (visible.Count == 0)
+        var visibleWeight = state.AiPlanning.SectorWeight(playerId, gang.SectorId);
+        if (visibleWeight == 0)
             PrepareFamilyTwelveUncontestedCommand(
                 state, playerId, gang, gangSlot, snapshot);
         else
-            PrepareFamilyTwelveAttack(state, playerId, gang, gangSlot, visible);
+            PrepareFamilyTwelveAttack(
+                state, playerId, gang, gangSlot, visible, visibleWeight);
 
         TerminateForGreed(state, playerId, gangSlot);
     }
@@ -124,21 +127,22 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<ObjectiveTarget> visible)
+        IReadOnlyList<ObjectiveTarget> visible,
+        int visibleWeight)
     {
+        var owner = state.Sectors[gang.SectorId].Owner;
+        // RULE-AI-030: the human-only pool needs weight 10 and hostile_human_owner
+        // (RULE-AI-004): the owner byte, then hostile_owner's query.
+        var targetPool = visibleWeight == 10
+            && owner is { } sectorOwner
+            && IsHostileOwner(state, playerId, gang.SectorId)
+            && state.FindPlayer(sectorOwner)?.Setup.Controller == PlayerController.Human
+                ? HumanTargets(state, visible)
+                : visible;
         ObjectiveTarget? selected = null;
         for (var attempt = 0; attempt < OriginalAiFamilyTwelveRules.AttackAttempts;
              attempt++)
         {
-            var owner = state.Sectors[gang.SectorId].Owner;
-            // RULE-AI-004 hostile_human_owner: the owner byte, then hostile_owner's query.
-            var targetPool = owner is { } sectorOwner
-                && IsHostileOwner(state, playerId, gang.SectorId)
-                && state.FindPlayer(sectorOwner)?.Setup.Controller == PlayerController.Human
-                    ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
-                            .Setup.Controller == PlayerController.Human)
-                        .ToArray()
-                    : visible;
             var ordinal = state.Random.NextInclusive(Math.Max(1, targetPool.Count));
             selected = ordinal <= targetPool.Count ? targetPool[ordinal - 1] : null;
             if (selected is null) break;
