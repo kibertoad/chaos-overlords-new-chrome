@@ -75,6 +75,9 @@ public sealed partial class ChaosGame
     /// <summary>The sector the Gangs in Sector panel was opened for.</summary>
     private int _sectorGangSector;
 
+    /// <summary>The gang portrait sheet halved, made on the panel's first draw.</summary>
+    private Texture2D? _halfGangPortraits;
+
     private void OpenSectorGangs(ClientScreen returnScreen)
     {
         if (_state is null || PlanningViewer is not { } playerId) return;
@@ -122,14 +125,33 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// SCR-UI-005, EXP-UI-006: a picture drawn at half size keeps the pixel at the bottom right of
-    /// each two-by-two block, the one at <c>(2x + 1, 2y + 1)</c> of the source.
+    /// each two-by-two block, the one at <c>(2x + 1, 2y + 1)</c> of the source. The sheet is halved
+    /// once, so a picture on an even grid of the sheet is the same picture halved on the half grid.
     /// </summary>
-    private static void DrawHalfScale(SpriteBatch batch, Texture2D texture, Rectangle source, Point topLeft)
+    private static Texture2D HalfScale(GraphicsDevice device, Texture2D texture)
     {
-        for (var y = 0; y < source.Height / 2; y++)
-        for (var x = 0; x < source.Width / 2; x++)
-            batch.Draw(texture, new Rectangle(topLeft.X + x, topLeft.Y + y, 1, 1),
-                new Rectangle(source.X + 2 * x + 1, source.Y + 2 * y + 1, 1, 1), Color.White);
+        var source = new Color[texture.Width * texture.Height];
+        texture.GetData(source);
+        var width = texture.Width / 2;
+        var height = texture.Height / 2;
+        var half = new Color[width * height];
+        for (var y = 0; y < height; y++)
+        for (var x = 0; x < width; x++)
+            half[y * width + x] = source[(2 * y + 1) * texture.Width + 2 * x + 1];
+        var result = new Texture2D(device, width, height);
+        result.SetData(half);
+        return result;
+    }
+
+    /// <summary>
+    /// FND-UI-014, FND-UI-025: a sector's cell of the unmarked copy of the city map, framed in
+    /// black, so it shows the sector's terrain without its owner's colour or any marker.
+    /// </summary>
+    private void DrawUnmarkedSectorCell(SpriteBatch batch, Texture2D pixel, int sectorId, Rectangle destination)
+    {
+        if (_cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)] is { } neutral)
+            batch.Draw(neutral, destination, CityMapLayout.Source(sectorId), Color.White);
+        DrawBorder(batch, pixel, destination, Color.Black, 1);
     }
 
     private void DrawSectorGangsPanel(
@@ -139,11 +161,8 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawPanelArtwork(batch, pixel, _sectorGangsBackground, SectorGangsLayout.Panel);
-        // FND-UI-014, FND-UI-025: the cell comes from the unmarked copy of the city map, so it shows
-        // the sector's terrain without its owner's colour or any marker.
-        if (_cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)] is { } neutral)
-            batch.Draw(neutral, SectorGangsLayout.SectorTile, CityMapLayout.Source(_sectorGangSector), Color.White);
-        DrawBorder(batch, pixel, SectorGangsLayout.SectorTile, Color.Black, 1);
+        DrawUnmarkedSectorCell(batch, pixel, _sectorGangSector, SectorGangsLayout.SectorTile);
+        if (_gangPortraits is not null) _halfGangPortraits ??= HalfScale(GraphicsDevice, _gangPortraits);
         font.Draw(batch, SectorGangsLayout.SectorCodeText(_sectorGangSector),
             SectorGangsLayout.SectorCode.ToVector2(), Color.Lime, 1);
         foreach (var entry in _sectorGangRoster.Take(SectorGangsLayout.MaximumGangCount)
@@ -154,9 +173,13 @@ public sealed partial class ChaosGame
             var definition = state.Definitions.Gang(gang.DefinitionId);
             // SCR-UI-005, FND-UI-014: the panel never reads the Base Statistics option.
             var stats = EffectiveStatisticsCalculator.ForGang(state, gang);
-            if (_gangPortraits is not null)
-                DrawHalfScale(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
-                    SectorGangsLayout.GangCard(entry.index).Location);
+            if (_halfGangPortraits is not null)
+            {
+                var portrait = OriginalSpriteLayout.GangPortrait(definition.Id);
+                batch.Draw(_halfGangPortraits, SectorGangsLayout.GangCard(entry.index),
+                    new Rectangle(portrait.X / 2, portrait.Y / 2, portrait.Width / 2, portrait.Height / 2),
+                    Color.White);
+            }
             // SCR-UI-005: Upkeep is drawn negated, so it shows in red.
             int[] values =
             [

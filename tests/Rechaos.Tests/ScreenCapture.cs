@@ -85,7 +85,7 @@ public sealed record CapturedElement(string Screen, string Element, Rectangle Re
 public sealed record ScreenCaptureRecord(
     string Experiment, int Run, string Xxh3, int MarkerFrame, IReadOnlyList<string> Screens,
     IReadOnlyList<CapturedElement> Elements, int Step = -1, IReadOnlyList<ReferenceClick>? Clicks = null,
-    string? Unreplayable = null, int? PumpCounter = null)
+    string? Unreplayable = null, int? PumpCounter = null, ReferenceLamps? Lamps = null)
 {
     public override string ToString() => Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
 
@@ -139,6 +139,11 @@ public sealed record ScreenCaptureRecord(
             capture.GetProperty("marker_frame").GetInt32(), screens, elements,
             PumpCounter: capture.TryGetProperty("pump_counter", out var pump) && pump.ValueKind == JsonValueKind.Number
                 ? pump.GetInt32()
+                : null,
+            // FND-EVENT-006: each light's flag, then the byte that says its lamp is drawn lit.
+            Lamps: capture.TryGetProperty("lamps", out var lamps) && lamps.ValueKind == JsonValueKind.Array
+                && lamps.EnumerateArray().Select(value => value.GetInt32()).ToArray() is [_, var events, _, var comlink]
+                ? new ReferenceLamps(events != 0, comlink != 0)
                 : null);
     }
 
@@ -179,7 +184,7 @@ public sealed record ScreenCaptureRecord(
                     clicks.Add(new ReferenceClick(new Point(Number("x"), Number("y")), Double: true));
                     break;
                 case "back":
-                    clicks.Add(new ReferenceClick(new Point(4 + 16, 394 + 31)));
+                    clicks.Add(new ReferenceClick(SectorDetailLayout.Back.Center));
                     break;
                 case "shot" when step.TryGetProperty("capture", out var capture):
                     yield return Parse(experiment, run, capture) with
@@ -340,7 +345,7 @@ public static class RebuildFrame
 
     public static ScreenFrame Render(
         MatchState state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
-        int? pumpCounter = null)
+        int? pumpCounter = null, ReferenceLamps? lamps = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -366,6 +371,11 @@ public static class RebuildFrame
             {
                 start.ArgumentList.Add("--pump-counter");
                 start.ArgumentList.Add(counter.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (lamps is not null)
+            {
+                start.ArgumentList.Add("--lamps");
+                start.ArgumentList.Add(lamps.ToString());
             }
             if (clicks is { Count: > 0 })
             {

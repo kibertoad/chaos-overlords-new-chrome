@@ -48,7 +48,7 @@ public sealed partial class ScreenCaptureTests
         var original = path is null ? null : ScreenFrame.ReadBitmap(File.ReadAllBytes(path));
         var rebuild = RebuildFrame.Render(
             OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
-            $"{experiment}-{run}-{step}", capture.PumpCounter);
+            $"{experiment}-{run}-{step}", capture.PumpCounter, capture.Lamps);
 
         var results = capture.Elements.Select(element => ScreenComparison.Compare(element, original, rebuild, masks)).ToArray();
         var output = TestContext.Current.TestOutputHelper;

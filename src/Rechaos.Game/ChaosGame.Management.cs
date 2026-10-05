@@ -21,19 +21,13 @@ public sealed partial class ChaosGame
         int? sectorId = _financeScope == FinanceScope.Sector ? _cursor : null;
         var projection = FinanceProjection.Project(state, player, sectorId);
         ClearFinanceFields(batch, pixel);
+        // FND-FINANCE-002, FND-UI-025, EXP-UI-007: the Sector variant copies the sector's cell
+        // from the unmarked copy of the city map, as Gangs in Sector does, and frames it in black.
         if (sectorId is { } tileSector)
-        {
-            // FND-FINANCE-002, FND-UI-025, EXP-UI-007: the Sector variant copies the sector's cell
-            // from the unmarked copy of the city map, as Gangs in Sector does, and frames it in black.
-            if (_cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)] is { } neutral)
-                batch.Draw(neutral, FinanceLayout.SectorTile, CityMapLayout.Source(tileSector), Color.White);
-            DrawBorder(batch, pixel, FinanceLayout.SectorTile, Color.Black, 1);
-        }
+            DrawUnmarkedSectorCell(batch, pixel, tileSector, FinanceLayout.SectorTile);
         else if (_uiSprites is not null)
-        {
             batch.Draw(_uiSprites, FinanceLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
-        }
         int[] rows =
         [
             projection.GangUpkeep,

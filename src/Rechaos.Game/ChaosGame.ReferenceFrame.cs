@@ -22,13 +22,17 @@ namespace Rechaos.Game;
 /// The pump's counter the capture recorded (FND-UI-017), which picks the selection frame drawn
 /// (FND-UI-048), in place of the clock's.
 /// </param>
+/// <param name="Lamps">
+/// Whether the capture showed the Events and Comlink lamps drawn lit (FND-EVENT-006), which picks
+/// the blink phase of those lights in place of the clock's.
+/// </param>
 public sealed record ReferenceFrameRequest(
     string SavePath, string OutputPath, int? MarkerFrame = null, IReadOnlyList<ReferenceClick>? Clicks = null,
-    int? PumpCounter = null)
+    int? PumpCounter = null, ReferenceLamps? Lamps = null)
 {
     private const string Usage =
         "Usage: --reference-frame <save> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
-        + " [--reference-clicks <x:y[:2]>,...]";
+        + " [--lamps <0|1>,<0|1>] [--reference-clicks <x:y[:2]>,...]";
 
     // Keep captures independent of the player's preferences, recovery files and saves. The
     // directory sits beside the bitmap and is kept after exit, so a failed run can be diagnosed
@@ -43,17 +47,20 @@ public sealed record ReferenceFrameRequest(
         var marker = Array.IndexOf(args, "--marker-frame");
         var clicks = Array.IndexOf(args, "--reference-clicks");
         var pump = Array.IndexOf(args, "--pump-counter");
+        var lamps = Array.IndexOf(args, "--lamps");
         if (reference < 0)
         {
             if (marker >= 0) throw new ArgumentException("--marker-frame requires --reference-frame.");
             if (clicks >= 0) throw new ArgumentException("--reference-clicks requires --reference-frame.");
             if (pump >= 0) throw new ArgumentException("--pump-counter requires --reference-frame.");
+            if (lamps >= 0) throw new ArgumentException("--lamps requires --reference-frame.");
             return null;
         }
         if (Array.LastIndexOf(args, "--reference-frame") != reference
             || (marker >= 0 && Array.LastIndexOf(args, "--marker-frame") != marker)
             || (clicks >= 0 && Array.LastIndexOf(args, "--reference-clicks") != clicks)
-            || (pump >= 0 && Array.LastIndexOf(args, "--pump-counter") != pump))
+            || (pump >= 0 && Array.LastIndexOf(args, "--pump-counter") != pump)
+            || (lamps >= 0 && Array.LastIndexOf(args, "--lamps") != lamps))
             throw new ArgumentException("Capture options may only be supplied once.");
         static string Operand(string[] values, int index)
         {
@@ -90,8 +97,25 @@ public sealed record ReferenceFrameRequest(
             counter = value;
         }
         return new ReferenceFrameRequest(save, output, frame,
-            clicks >= 0 ? ReferenceClick.ParseList(Operand(args, clicks + 1)) : null, counter);
+            clicks >= 0 ? ReferenceClick.ParseList(Operand(args, clicks + 1)) : null, counter,
+            lamps >= 0 ? ReferenceLamps.Parse(Operand(args, lamps + 1)) : null);
     }
+}
+
+/// <summary>
+/// Whether the Events and the Comlink lamp were drawn lit when the capture was taken: the bytes
+/// <c>0x00487818</c> and <c>0x00487820</c> the pump sets when it draws a lamp lit and clears when
+/// it restores the control (FND-EVENT-006).
+/// </summary>
+public sealed record ReferenceLamps(bool Events, bool Comlink)
+{
+    public static ReferenceLamps Parse(string value) => value.Split(',') switch
+    {
+        ["0" or "1", "0" or "1"] parts => new ReferenceLamps(parts[0] == "1", parts[1] == "1"),
+        _ => throw new ArgumentException("--lamps is <events>,<comlink>, each 0 or 1."),
+    };
+
+    public override string ToString() => $"{(Events ? 1 : 0)},{(Comlink ? 1 : 0)}";
 }
 
 /// <summary>A left-button click at a point of the drawing area, made twice for a double-click.</summary>
@@ -165,7 +189,7 @@ public sealed partial class ChaosGame
     {
         _referenceClock += ReferenceClickStep;
         _inputTime = _referenceClock;
-        _eventPump.Update(_inputTime, holding: false);
+        _eventPump.Update(_inputTime, OutsideEventPump());
         // A pressed face or a flash takes the input of the frames it waits through.
         if (UpdateTickedPresentation()) return;
         if (_referenceEdge < _referenceEdges.Count)
@@ -190,6 +214,19 @@ public sealed partial class ChaosGame
     /// draws them as at time zero, whatever its clicks advanced the clock to.
     /// </summary>
     private TimeSpan PresentationDrawTime => _referenceFrame is null ? _eventPump.Time : TimeSpan.Zero;
+
+    /// <summary>
+    /// The time the free-running animations (the empty seats, the item rotation and the idle-gang
+    /// warning's line) are drawn at: the reference frame draws them as at time zero, so the frame
+    /// does not depend on how many clicks it made.
+    /// </summary>
+    private TimeSpan PresentationInputTime => _referenceFrame is null ? _inputTime : TimeSpan.Zero;
+
+    /// <summary>
+    /// Whether a light whose flag is set is in its lit phase (FND-EVENT-006): the phase the
+    /// reference frame's capture recorded for its lamp, otherwise the clock's.
+    /// </summary>
+    private bool LampInLitPhase(bool? recorded) => recorded ?? PresentationClock.BlinkLit(PresentationDrawTime);
 
     /// <summary>
     /// The selection frame the pump has drawn last (FND-UI-017): the one for the reference frame's

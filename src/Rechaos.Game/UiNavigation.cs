@@ -451,17 +451,18 @@ public static class ObjectiveSectorMarkerPresentation
     }
 }
 
-/// <summary>FND-UI-050: where the city map puts a sector's police badge.</summary>
+/// <summary>
+/// FND-UI-050: the city map puts a sector's police badge at map <c>(53c + 9, 51r + 14)</c>, 5
+/// pixels right of and 11 below the corner of its cell.
+/// </summary>
 public static class PoliceBadgeLayout
 {
+    public static Point CellOffset => new(9 - CityMapLayout.GridInsetX, 14 - CityMapLayout.GridInsetY);
+
     public static Rectangle Destination(int sectorId)
     {
-        _ = CityMapLayout.Source(sectorId);
-        return new Rectangle(
-            CityMapLayout.Left + sectorId % MatchLimits.BoardWidth * CityMapLayout.ColumnStride + 9,
-            CityMapLayout.Top + sectorId / MatchLimits.BoardWidth * CityMapLayout.RowStride + 14,
-            20,
-            28);
+        var sector = CityMapLayout.Destination(sectorId);
+        return new Rectangle(sector.X + CellOffset.X, sector.Y + CellOffset.Y, 20, 28);
     }
 }
 

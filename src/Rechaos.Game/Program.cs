@@ -19,9 +19,9 @@ GameCulture.Apply();
 
 string? assetRoot = null;
 var platformSmokeTest = args.Contains("--platform-smoke-test", StringComparer.OrdinalIgnoreCase);
-// --reference-frame <save> <bitmap> [--marker-frame <n>] [--reference-clicks <x:y[:2]>,...]: show the
-// save at the planning entry it stands at, make the clicks, write the drawing area and exit
-// (ReferenceFrameRequest).
+// --reference-frame <save> <bitmap> [--marker-frame <n>] [--pump-counter <n>] [--lamps <e>,<c>]
+// [--reference-clicks <x:y[:2]>,...]: show the save at the planning entry it stands at, make the
+// clicks, write the drawing area and exit (ReferenceFrameRequest).
 ReferenceFrameRequest? referenceFrame;
 try
 {

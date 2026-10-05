@@ -745,13 +745,18 @@ save, and starts the game with
 
 ```text
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
-    [--pump-counter <0-7>] [--reference-clicks <x:y[:2]>,...]
+    [--pump-counter <0-7>] [--lamps <0|1>,<0|1>] [--reference-clicks <x:y[:2]>,...]
 ```
 
 which shows the save at its planning entry in a 640-by-460 window, holds the
 presentation clock at zero, draws three frames and writes the third as a
 bitmap before it exits. `--pump-counter` passes the capture's `pump_counter`,
-which picks the selected-sector frame drawn (FND-UI-048).
+which picks the selected-sector frame drawn (FND-UI-048). `--lamps` passes the
+second and fourth of the capture's `lamps`, the bytes that say the Events and
+the Comlink lamp were drawn lit, which pick the blink phase of those lights in
+place of the clock's (FND-EVENT-006). The blinking and cycling parts of the
+screen stay at time zero however many clicks were made: the marker is drawn at
+`--marker-frame`, or at its first frame without it.
 `--reference-clicks` lists the presses that take the rebuild from the planning
 entry to a shot step's screen, `:2` marking a double-click. They run on a clock
 of their own, one button edge every 50 ms, wait while a pressed face or a flash
