@@ -13,9 +13,11 @@ related: [FMT-GFX-001, RULE-GFX-002]
 ## Summary
 
 The copy wrapper has a keyed mode in which every source pixel of maximum white
-is left out and every other pixel is copied unchanged. Only two images are
-drawn this way: the city renderer's site markers and one Last Turn
-illustration.
+is left out and every other pixel is copied unchanged. Its constant callers
+draw the city renderer's site markers and one Last Turn illustration. Runs of
+the original show that the selected-sector frame and the grid's edge tabs go
+through the same compositor [FND-PLATFORM-014]; the code that draws them this
+way has not been read.
 
 ## When it runs
 
@@ -75,3 +77,7 @@ None known.
 - How a display driver converts the 16-bit key at the boundary between 5-bit
   and 8-bit channels is decided at run time and has not been observed
   (FND-PLATFORM-008).
+- The 8-bit key `RGB(255,255,255)` comes from FND-PLATFORM-008's reading of a
+  single `SetBkColor` call, but a 16-bit run reached two, at `0x00427C84` and
+  `0x00427CB8`, and the second always passes `RGB(255,255,255)`
+  (FND-PLATFORM-014). Which of them sets the 8-bit key has not been read.

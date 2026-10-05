@@ -594,6 +594,9 @@ keyed mask compositor and, whenever that call passes the 16-bit key
 `RGB(255,252,255)`, writes `RGB(255,255,255)`, the white a 32-bit surface holds,
 over the argument. The fixture lists it as the setup input `key_colour
 RGB(255,255,255)`. The rolls and the state of a run do not depend on it.
+The breakpoint stops the original on every keyed copy, and the runs that
+checked the option had no planning time limit; whether it moves the timer
+records of a run with `--time-limit` has not been checked.
 
 `extract --screens SCR-UI-003,SCR-HIRE-002` adds a `capture` object to each
 run whose two copies agree:
@@ -648,7 +651,8 @@ The test then compares each element:
 - An element the original drew wholly in exact white is unverified: in a
   capture taken without `--white-key`, a keyed copy on Windows 11 draws solid
   white where its image should show through (FND-PLATFORM-014), and what
-  belongs there is unknown.
+  belongs there is unknown. The test does not read the `key_colour` setup
+  input, so it treats the white of a `--white-key` capture the same way.
 - With the capture under `GAME_DIR/captures/`, every pixel outside the masks is
   compared. A pixel the original drew exact white is counted as unverified
   unless the rebuild drew it white as well. The element matches when no

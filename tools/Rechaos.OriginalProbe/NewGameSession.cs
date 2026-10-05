@@ -782,7 +782,9 @@ internal sealed partial class NewGameSession(
                     var gameDepth = _process.ReadInt32(OriginalAddresses.DisplayDepth);
                     _notes.Add($"Capture depths: original records {gameDepth}; probe window DC reports {hostDepth}.");
                     if (gameDepth != hostDepth)
-                        _notes.Add("Capture depth mismatch: evaluate colour-key conversion before accepting presentation evidence.");
+                        _notes.Add(settings.WhiteKey
+                            ? "Capture depth mismatch: --white-key passed RGB(255,255,255) for the 16-bit key (FND-PLATFORM-014)."
+                            : "Capture depth mismatch: evaluate colour-key conversion before accepting presentation evidence.");
                 }
                 memory = Native.CreateCompatibleDC(screen);
                 if (memory == IntPtr.Zero) throw new InvalidOperationException("Cannot create the capture memory DC.");

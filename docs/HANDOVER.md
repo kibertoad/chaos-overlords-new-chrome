@@ -905,8 +905,10 @@ original silent unless `--sound` is given.
   open, and only SCR-UI-003 and SCR-HIRE-002 have element files. Take new
   captures with `--white-key`: the white rectangles are the keyed copies drawn
   opaque on a 32-bit desktop (FND-PLATFORM-014), and the option removes them
-  without changing a run's rolls or state. Captures already recorded keep
-  them until they are taken again.
+  without changing a run's rolls or state. At the first planning entry one
+  exact-white pixel, at `(250,16)`, stays, and what draws it is not known.
+  Captures already recorded keep their white areas until they are taken
+  again.
 - A modal panel the probe does not know stalls a run until someone presses its
   Exit; the probe knows Combat Results and Last Turn Events. Run recordings
   from PowerShell with the compatibility layers in `__COMPAT_LAYER`, one at a

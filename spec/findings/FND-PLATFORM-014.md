@@ -71,11 +71,15 @@ reaches the drawing.
 ## Alternatives
 
 The second call at `0x00427CB8` already passes `RGB(255,255,255)`; what it sets
-the colour for was not read. On a real 16-bit display the key names `0x7FFF`
-and the copies leave it out as RULE-GFX-003 describes; no run on such a display
-was made, and how a driver expands 5-bit channels there is still the open
-question of FND-PLATFORM-008. Other screens than the planning entry and the
-awards screen were not captured with the write.
+the colour for was not read. FND-PLATFORM-008 reads a single `SetBkColor` call
+in the drawing code and takes `RGB(255,255,255)` for the 8-bit key; this run,
+at 16-bit depth, reached two calls, so that `RGB(255,255,255)` may come from the
+second call and not be a key, and the 8-bit key needs a new static reading. On
+a real 16-bit display the key names `0x7FFF` and the copies leave it out as
+RULE-GFX-003 describes; no run on such a display was made, and how a driver
+expands 5-bit channels there is still the open question of FND-PLATFORM-008.
+What draws the exact-white pixel left at `(250,16)` with the write was not
+examined. The planning entry is the only capture with the write recorded here.
 
 ## How to reproduce
 

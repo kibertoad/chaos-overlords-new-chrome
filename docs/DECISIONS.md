@@ -59,7 +59,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   original draws with GDI only (FND-GFX-004), and no compatibility layer changed the result.
 - Boundary: the write changes one argument of one `SetBkColor` call and only when it is the
   16-bit key. A capture shows what the original draws on a 16-bit display only where the key is
-  the difference; FND-PLATFORM-014 compares the planning entry and the awards screen.
+  the difference; FND-PLATFORM-014 records the capture of the first planning entry only.
 
 ## 2026-10-05 — Switch DEV-AI-008 off from the command line only
 

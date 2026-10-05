@@ -33,7 +33,7 @@ static int Usage()
               [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...]
               [--search <turn:definition+definition...>,...]
               [--finance <turn:sector>,...]
-              [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture]
+              [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture] [--white-key]
               [--comlink <script file>]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
