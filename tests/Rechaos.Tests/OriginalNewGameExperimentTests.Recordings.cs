@@ -177,6 +177,14 @@ public sealed partial class OriginalNewGameExperimentTests
                 .Where(value => value.StartsWith("planning_limit_choice ", StringComparison.Ordinal))
                 .Select(value => int.Parse(value["planning_limit_choice ".Length..], System.Globalization.CultureInfo.InvariantCulture))
                 .FirstOrDefault();
+            // "no Done press, turn 2: the planning time runs out", as the probe writes a turn it
+            // left to the planning time limit.
+            ExpiredTurns = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "wait")
+                .Select(input => input.GetProperty("value").GetString()!)
+                .Where(value => value.StartsWith("no Done press, turn ", StringComparison.Ordinal))
+                .Select(value => int.Parse(value["no Done press, turn ".Length..value.IndexOf(':')], System.Globalization.CultureInfo.InvariantCulture))
+                .ToHashSet();
             Timers = run.TryGetProperty("timers", out var timers)
                 ? timers.EnumerateArray().Select(timer => new RecordedTimer(
                     timer.GetProperty("turn").GetInt32(), timer.GetProperty("limit_ms").GetInt32(),
@@ -306,6 +314,9 @@ public sealed partial class OriginalNewGameExperimentTests
         public int Seed { get; }
         public int DoneCount => DoneAtRoll.Count;
         public IReadOnlyList<int> DoneAtRoll { get; }
+        // The turns whose planning time ran out with no Done press; DoneAtRoll still has an entry
+        // for each.
+        public IReadOnlySet<int> ExpiredTurns { get; }
 
         /// <summary>
         /// The rolls the state dump follows; steps after the dump, such as a Ready press that refills
