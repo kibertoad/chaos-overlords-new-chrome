@@ -902,10 +902,11 @@ original silent unless `--sound` is given.
   reporting one the original drew solid white as unverified
   ([VALIDATION.md](VALIDATION.md#screens-against-captures-of-the-original)).
   The reference frame shows only the city at a planning entry with no panel
-  open, and only SCR-UI-003 and SCR-HIRE-002 have element files. Try a
-  DirectDraw wrapper such as DDrawCompat beside the staged executable, since
-  the white rectangles look like failed blits, and check that it leaves a
-  recorded run's rolls unchanged.
+  open, and only SCR-UI-003 and SCR-HIRE-002 have element files. Take new
+  captures with `--white-key`: the white rectangles are the keyed copies drawn
+  opaque on a 32-bit desktop (FND-PLATFORM-014), and the option removes them
+  without changing a run's rolls or state. Captures already recorded keep
+  them until they are taken again.
 - A modal panel the probe does not know stalls a run until someone presses its
   Exit; the probe knows Combat Results and Last Turn Events. Run recordings
   from PowerShell with the compatibility layers in `__COMPAT_LAYER`, one at a

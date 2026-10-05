@@ -223,7 +223,7 @@
 
 ## findings
 
-364 entries.
+365 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -476,6 +476,7 @@
 | [FND-PLATFORM-011](../findings/FND-PLATFORM-011.md) | At 8 bits the palette comes from data/CLT00002, read as red, green, blue, and PX08 pictures are mapped to it through their own colour tables | recorded |
 | [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | The startup disc check looks for a fixed drive from the string ".\" and always passes, and the CD track search has no callers | recorded |
 | [FND-PLATFORM-013](../findings/FND-PLATFORM-013.md) | The ordinal imports of WSOCK32 and smackw32 by name, and the functions that call the WinSock, Telephony and serial port imports | recorded |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | On a 32-bit desktop the keyed copies key nothing, and the white they should drop is drawn | recorded |
 | [FND-POLICE-001](../findings/FND-POLICE-001.md) | Each sector keeps its last two Crackdown turns; a third within five turns neutralizes the sector, and each Crackdown adds 3 to 5 police turns | recorded |
 | [FND-POLICE-002](../findings/FND-POLICE-002.md) | A Crackdown report goes to every player who had a gang in the sector when resolution began, and a control-loss report to the displaced owner | recorded |
 | [FND-POLICE-003](../findings/FND-POLICE-003.md) | The police detect a gang on a roll of 1 to 100 against 115 minus 5 Stealth, less 20 for Hide, and attack with 25 minus Defense dice at 5 or better | recorded |

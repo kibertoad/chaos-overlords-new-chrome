@@ -79,7 +79,8 @@ static int NewGame(string[] args)
         Option(args, "--expire-turns")?.Split(',').Select(value =>
             int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray(),
         Option(args, "--comlink") is { } script ? File.ReadAllLines(script) : null,
-        args.Contains("--capture"));
+        args.Contains("--capture"),
+        args.Contains("--white-key"));
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).

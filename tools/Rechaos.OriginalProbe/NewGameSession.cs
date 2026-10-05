@@ -92,7 +92,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
-    IReadOnlyList<string>? Comlink = null, bool Capture = false)
+    IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -103,6 +103,7 @@ internal sealed record NewGameSettings(
         if (TurnLimit is { } turns) yield return $"turn_limit {turns}";
         if (TimeLimit is { } limit) yield return $"planning_limit_choice {limit}";
         if (Comlink is not null) yield return "pref_slide_panels 0";
+        if (WhiteKey) yield return "key_colour RGB(255,255,255)";
         if (Humans is null) yield break;
         foreach (var human in Humans)
             yield return human.Modifier is null
@@ -212,6 +213,10 @@ internal sealed partial class NewGameSession(
         _process.SetBreakpoint(OriginalAddresses.LocalSetup, _ => _setupReached = true);
         if (settings.TraceHires) _process.SetBreakpoint(OriginalAddresses.HireOrderCheck, TraceHire);
         if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
+        // FND-PLATFORM-014: on a 32-bit desktop the keyed copies key nothing, so the white the
+        // key should drop is drawn. --white-key passes the white a 32-bit surface holds instead.
+        // Quiet, because the keyed copies run on every animation tick of a waiting planning phase.
+        if (settings.WhiteKey) _process.SetBreakpoint(OriginalAddresses.KeyColourCall, UseThirtyTwoBitKey, quiet: true);
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
         if (settings.Finance is { Count: > 0 })
@@ -571,6 +576,13 @@ internal sealed partial class NewGameSession(
                 + (uint)(write.Player * OriginalAddresses.PlanningPlayerStride
                     + write.Slot * OriginalAddresses.PlanningRecordSize), [(byte)write.Family]);
         _notes.Add($"planning after roll {_rolls.Count}: {write}");
+    }
+
+    private void UseThirtyTwoBitKey(BreakContext context)
+    {
+        // At the call instruction the device context is at [esp] and the colour at [esp + 4].
+        if (_process.ReadInt32(context.Esp + 4) == OriginalAddresses.SixteenBitWhiteKey)
+            _process.Write(context.Esp + 4, BitConverter.GetBytes(OriginalAddresses.ThirtyTwoBitWhite));
     }
 
     // --seed replaces the clock value the process start passes to srand, so a run can be repeated.
