@@ -303,7 +303,11 @@ public sealed record ScreenCaptureRecord(
                     clicks.Add(new ReferenceClick(SectorDetailLayout.Back.Center));
                     break;
                 case "type":
-                    clicks.Add(new ReferenceClick(Point.Zero) { Text = step.GetProperty("text").GetString() });
+                    clicks.Add(new ReferenceClick(Point.Zero)
+                    {
+                        Text = step.GetProperty("text").GetString()
+                               ?? throw new InvalidDataException($"{experiment} step {index} types no text."),
+                    });
                     break;
                 case "shot" when step.TryGetProperty("capture", out var capture):
                     yield return Parse(experiment, run, capture, whiteKeyed) with

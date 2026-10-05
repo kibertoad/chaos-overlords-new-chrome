@@ -341,12 +341,12 @@ public sealed partial class ChaosGame
                     HandleClick(point);
                     break;
                 case ReferenceEdge.Type:
-                    // A key typed in the Comlink Send panel (RULE-COMLINK-006).
-                    if (_screens.Current == ClientScreen.ComlinkSend)
-                    {
-                        _comlinkEditor.TryAppend(character);
-                        _comlinkStatus = string.Empty;
-                    }
+                    // A key typed in the Comlink Send panel (RULE-COMLINK-006). Text typed while
+                    // another screen shows would be lost and the frame drawn without it.
+                    if (_screens.Current != ClientScreen.ComlinkSend)
+                        throw new InvalidOperationException(
+                            $"Typed text reached the {_screens.Current} screen; it is typed into Comlink Send.");
+                    TypeComlinkCharacter(character);
                     break;
                 case ReferenceEdge.Move:
                     UpdateHoverPoint(point);

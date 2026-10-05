@@ -816,8 +816,8 @@ last one. Panels are drawn in place, without the slide. For a shot step the test
 works the presses out from the order steps before it: a double-click at the
 centre of the opened sector's cell for `open`, the step's point for `dbl` and
 `strip`, a card's point for `card`, `(20, 425)` for `back` and the step's text
-for `type`. It leaves out `exit`, since the reference frame does not draw the
-planning entry's panels, and `wait`.
+for `type`. It leaves out `wait`, which presses nothing, and `exit`, since the
+reference frame does not draw the planning entry's panels.
 For a `title_capture`, `credits_capture` or `setup_capture` the test passes
 `title`, `credits` or `setup` in place of the save; the game draws its title
 screen, the credits over it, or the local setup as New Game first opens it,

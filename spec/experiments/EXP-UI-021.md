@@ -6,7 +6,7 @@ builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
-environment: Windows 11 Pro 10.0.26200, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, run with the compatibility layers DWM8And16BitMitigation, WINXPSP2, DISABLEDWM, 640X480 and DISABLEDXMAXIMIZEDWINDOWEDMODE, windowed, Warn if Idle Gangs and Detailed Combat switched off and the sound levels set to 0 in memory until the steps after the dump, under the Windows debugging interface of tools/Rechaos.OriginalProbe
+environment: Windows 11 Pro 10.0.26200, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, run with the compatibility layers DWM8And16BitMitigation, WINXPSP2, DISABLEDWM, 640X480 and DISABLEDXMAXIMIZEDWINDOWEDMODE, windowed, Warn if Idle Gangs and Detailed Combat as the copy's preferences set them (the probe switches them off only for a run that ends turns or runs Comlink steps, and the warning after Done shows Warn if Idle Gangs on) and the sound levels set to 0 in memory, under the Windows debugging interface of tools/Rechaos.OriginalProbe
 starting_state: new-game
 recording: null
 repetitions: 1

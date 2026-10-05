@@ -2384,6 +2384,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | evidence |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | evidence |
 
 ## FMT-AUDIO-001
