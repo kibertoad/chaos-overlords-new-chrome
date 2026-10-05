@@ -267,7 +267,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _heldSelectionFrame = HeldSelectionFrame(previous, current, _heldSelectionFrame, SelectionFrameShown());
             if (_slidePanels)
                 _panelSlideTransition.Begin(previous, current, _inputTime, _gangDetailsCompact);
-            foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
+            foreach (var slot in AudioRouting.PanelTransitionSounds(
+                previous, current, _slidePanels, _choosingCommandTarget))
                 PlayGeneralSound(slot);
             // RULE-AWARDS-002: the endgame opens on its Awards tab.
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
