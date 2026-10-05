@@ -457,7 +457,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ResetTransientMatchUi()
     {
-        _idleGangWarningOpen = false;
+        CloseIdleGangWarning();
         CancelHireReject();
         ForgetGangDrag();
         _tickedPresentation.Clear();
@@ -537,7 +537,7 @@ public sealed partial class ChaosGame
         ForgetHireDrag();
         // The idle-gang warning belongs to the turn that is being replaced. Left open, OK on it
         // submits the new turn as ready with no orders, and there is no taking that back.
-        _idleGangWarningOpen = false;
+        CloseIdleGangWarning();
         CancelHireReject();
         _selectedGangIndex = 0;
         // FND-SAVE-003: the planning starts on the sector the player left selected, or on its roster

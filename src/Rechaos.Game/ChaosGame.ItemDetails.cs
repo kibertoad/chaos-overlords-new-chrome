@@ -18,6 +18,11 @@ public sealed partial class ChaosGame
         var returnScreen = _itemDetailsReturnScreen;
         _itemDetailsId = null;
         _itemDetailsReturnScreen = ClientScreen.Commands;
+        // FND-GANG-006: the gang information panel's rotation restarts at frame 0 when the item's
+        // panel returns to it. A release of the held exit face leaves the kept tick to the item
+        // panel's last pass (FND-UI-047), so the gang panel's counter does not take it.
+        if (returnScreen == ClientScreen.Gang)
+            _gangDetailsAnimationStart = _eventPump.TicksAfterHold(_inputTime);
         _screens.Show(returnScreen);
     }
 
@@ -43,7 +48,8 @@ public sealed partial class ChaosGame
         if (itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, ItemInformationLayout.Portrait,
-                ItemRotationPresentation.Frame(PresentationInputTime), Color.White);
+                // FND-UI-047: the rotation stops while the exit face is held.
+                ItemRotationPresentation.Frame(PresentationDrawTime), Color.White);
         else if (_itemPortraits is not null)
             batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,
                 OriginalSpriteLayout.ItemPortrait(item.Id), Color.White);

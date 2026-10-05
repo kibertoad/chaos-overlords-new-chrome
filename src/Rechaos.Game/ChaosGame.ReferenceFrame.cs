@@ -227,8 +227,9 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// The time the blinking and cycling parts of the screen are drawn at: the reference frame
-    /// draws them as at time zero, whatever its clicks advanced the clock to.
+    /// The time the blinking and cycling parts of the screen (the item rotation and the idle-gang
+    /// warning's line among them) are drawn at: the reference frame draws them as at time zero,
+    /// whatever its clicks advanced the clock to.
     /// </summary>
     private TimeSpan PresentationDrawTime => _referenceFrame is null ? _eventPump.Time : TimeSpan.Zero;
 
@@ -239,9 +240,8 @@ public sealed partial class ChaosGame
     private int? _heldSelectionFrame;
 
     /// <summary>
-    /// The time the free-running animations (the empty seats, the item rotation and the idle-gang
-    /// warning's line) are drawn at: the reference frame draws them as at time zero, so the frame
-    /// does not depend on how many clicks it made.
+    /// The time the empty seats' animation is drawn at: the reference frame draws it as at time
+    /// zero, so the frame does not depend on how many clicks it made.
     /// </summary>
     private TimeSpan PresentationInputTime => _referenceFrame is null ? _inputTime : TimeSpan.Zero;
 
