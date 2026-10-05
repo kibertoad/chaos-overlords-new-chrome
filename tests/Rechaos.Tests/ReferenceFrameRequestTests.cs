@@ -34,7 +34,12 @@ public sealed class ReferenceFrameRequestTests
             ["--reference-frame", ReferenceFrameRequest.TitleOperand, "frame.bmp"]));
         Assert.True(request.Title);
         Assert.Equal(ReferenceFrameRequest.TitleOperand, request.SavePath);
+        Assert.False(request.Credits);
         Assert.False(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.Title);
+        // SCR-UI-002: "credits" asks for the credits over the title screen.
+        var credits = ReferenceFrameRequest.ParseArguments(["--reference-frame", ReferenceFrameRequest.CreditsOperand, "frame.bmp"])!;
+        Assert.True(credits.Title);
+        Assert.True(credits.Credits);
     }
 
     public static TheoryData<string[]> InvalidRequests => new()

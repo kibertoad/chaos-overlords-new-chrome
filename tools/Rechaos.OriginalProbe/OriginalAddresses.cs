@@ -219,6 +219,10 @@ internal static class OriginalAddresses
     // FND-UI-055: the instruction after the title loop's first load of PX00130.
     public const uint TitleArtLoaded = 0x004615D0;
 
+    // FND-UI-007, FND-UI-055: About's command, and the instruction after its load of PX00100.
+    public const int AboutCommand = 0x8003;
+    public const uint CreditsArtLoaded = 0x00464DFB;
+
     // FND-UI-051: a panel's slide-in sets 0x004854C8 at 0x004196E4, and while it is set the pump
     // leaves the selection frame as it was.
     public const uint SelectionFrameHeld = 0x004854C8;

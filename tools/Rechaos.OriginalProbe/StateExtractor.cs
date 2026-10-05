@@ -183,6 +183,9 @@ internal sealed class StateExtractor
         // --title-capture: the title screen before New Game (FND-UI-055).
         if (CaptureFixture.ExtractTitle(runDirectory, trace) is { } title)
             run["title_capture"] = title;
+        // --credits-capture: the credits from Help, About (FND-UI-007).
+        if (CaptureFixture.ExtractCredits(runDirectory, trace) is { } credits)
+            run["credits_capture"] = credits;
         return run;
     }
 

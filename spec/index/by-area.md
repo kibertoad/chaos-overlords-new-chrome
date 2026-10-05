@@ -879,7 +879,7 @@
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | Does the idle gang warning look the same in the rebuild? | recorded |
 | [EXP-UI-013](../experiments/EXP-UI-013.md) | Does the rebuild mark the objective sectors of Siege on the city map as the original does? | recorded |
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | Does the rebuild mark the objective sectors of Big Man on the city map as the original does? | recorded |
-| [EXP-UI-015](../experiments/EXP-UI-015.md) | Does the title screen look the same in the rebuild? | recorded |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | Do the title screen and the credits look the same in the rebuild? | recorded |
 | [FND-UI-001](../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |
@@ -931,7 +931,7 @@
 | [FND-UI-052](../findings/FND-UI-052.md) | Item Information keeps its frame in a local that starts at 0 and steps once each time the animation flag is taken | recorded |
 | [FND-UI-053](../findings/FND-UI-053.md) | The Sell and Give panels turn their item pictures with a frame local that starts at 0, as Item Information does | recorded |
 | [FND-UI-054](../findings/FND-UI-054.md) | The idle gang warning starts its blinking line shown and counts its six and two ticks from the open | recorded |
-| [FND-UI-055](../findings/FND-UI-055.md) | The title loop's first load of the title art returns to 0x004615D0 | recorded |
+| [FND-UI-055](../findings/FND-UI-055.md) | The title loop's first load of the title art returns to 0x004615D0, and About's load of the credits to 0x00464DFB | recorded |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |

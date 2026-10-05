@@ -2211,6 +2211,7 @@ None.
 |---|---|
 | [FND-UI-055](../findings/FND-UI-055.md) | body |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | body, evidence |
+| [SCR-UI-002](../screens/SCR-UI-002.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
@@ -6844,8 +6845,10 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | body |
 | [FND-HIRE-007](../findings/FND-HIRE-007.md) | body |
+| [FND-UI-055](../findings/FND-UI-055.md) | body |
 | [SCR-UI-002](../screens/SCR-UI-002.md) | body, evidence |
 | [SCR-UI-009](../screens/SCR-UI-009.md) | body, evidence |
 
@@ -6853,6 +6856,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-COMBAT-010](../findings/FND-COMBAT-010.md) | body |
 | [FND-UI-007](../findings/FND-UI-007.md) | body |
 | [FND-UI-021](../findings/FND-UI-021.md) | body |
@@ -7397,6 +7401,7 @@ None.
 |---|---|
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | evidence |
+| [SCR-UI-002](../screens/SCR-UI-002.md) | evidence |
 
 ## FND-UPKEEP-001
 
@@ -9478,6 +9483,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | body, related |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | body, related |
 | [SCR-UI-009](../screens/SCR-UI-009.md) | body, related |

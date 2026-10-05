@@ -743,7 +743,10 @@ EXP-UI-006 to EXP-UI-014 are taken this way.
 Game: a breakpoint at the title loop's first load of its art (FND-UI-055)
 stops the presses, and the drawing area is copied two seconds later. `extract`
 gives the run a `title_capture` object, compared at SCR-UI-001, with marker
-frame 0. EXP-UI-015 is taken this way.
+frame 0. `--credits-capture` then posts Help, About, copies the credits once
+the breakpoint after their load (FND-UI-055) has been hit, and closes them with
+the space bar; `extract` gives the run a `credits_capture` object, compared at
+SCR-UI-002. EXP-UI-015 is taken this way.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
@@ -785,15 +788,16 @@ works the presses out from the order steps before it: a double-click at the
 centre of the opened sector's cell for `open`, the step's point for `dbl` and
 `strip`, a card's point for `card` and `(20, 425)` for `back`. It leaves out
 `exit`, since the reference frame does not draw the planning entry's panels.
-For a `title_capture` the test passes `title` in place of the save, and the
-game draws its title screen without a match.
+For a `title_capture` the test passes `title` in place of the save, and for a
+`credits_capture` `credits`; the game draws its title screen, or the credits
+over it, without a match.
 The rebuild's orders are a panel (DEV-UI-021): a `card` step whose menu 1
 choice runs a picker (Attack, Equip, Give, Influence, Move, Research or Sell,
 FND-UI-021) becomes the card press and a press on that order's row of the
 panel. Any other step that opened a popup menu makes the capture
 unreplayable, and the test skips it. With `RECHAOS_KEEP_FRAMES` set to a directory, the test copies
 each frame the rebuild drew there as `<experiment>-<run>-<step>.bmp`, step -1
-being the endpoint and `title` the title screen. Preferences, saves and logs of that run go to a
+being the endpoint, `title` the title screen and `credits` the credits. Preferences, saves and logs of that run go to a
 `rechaos-reference-frame-*` directory beside the bitmap, never to the player's.
 The test then compares each element:
 

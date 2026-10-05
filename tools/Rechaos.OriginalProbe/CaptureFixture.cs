@@ -78,6 +78,15 @@ internal static class CaptureFixture
             : null;
 
     /// <summary>
+    /// The record of the credits <c>new-game --credits-capture</c> copied from Help, About before
+    /// New Game, compared at SCR-UI-002 with marker frame 0.
+    /// </summary>
+    public static JsonObject? ExtractCredits(string runDirectory, JsonNode trace) =>
+        trace["Notes"]!.AsArray().Any(note => note!.GetValue<string>() == "credits_capture credits-capture")
+            ? Extract(Path.Combine(runDirectory, "credits-capture.bmp"), 0, null, null, null, CaptureScreen.Load("SCR-UI-002"))
+            : null;
+
+    /// <summary>
     /// The record of a capture <c>shot</c> step of <c>--order-steps</c> took after the dump, compared
     /// at the screens the step names.
     /// </summary>

@@ -8069,6 +8069,27 @@
             ]
           }
         ]
+      },
+      "credits_capture": {
+        "xxh3": "a7b1cda666038d383109b48dec44eb7c",
+        "area": [0,0,640,460],
+        "marker_frame": 0,
+        "pump_counter": null,
+        "lamps": null,
+        "selected_sector": null,
+        "screens": [
+          {
+            "screen": "SCR-UI-002",
+            "elements": [
+              {
+                "element": "Credits screen",
+                "rect": [0,0,640,460],
+                "xxh3": "74c98f50d843ff4545b8f1f4a634799b",
+                "white": 2656
+              }
+            ]
+          }
+        ]
       }
     }
   ]

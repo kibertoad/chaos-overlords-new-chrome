@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-007, FND-UI-008, FND-EXE-004]
+evidence: [FND-UI-007, FND-UI-008, FND-EXE-004, FND-UI-055, EXP-UI-015]
 conflicting: []
 split_with: []
 related: [SCR-UI-009]
@@ -15,7 +15,7 @@ related: [SCR-UI-009]
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| Publisher and developer credits | `DATA/PX16/Px00100` | None | `(0,0,640,460)`, copied opaquely | Always; redrawn on each paint message | FND-UI-007 |
+| Publisher and developer credits | `DATA/PX16/Px00100` | None | `(0,0,640,460)`, copied opaquely | Always; redrawn on each paint message | FND-UI-007, EXP-UI-015 |
 
 ## Mouse input
 

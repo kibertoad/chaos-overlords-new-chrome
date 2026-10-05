@@ -118,7 +118,8 @@ internal sealed record NewGameSettings(
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
     IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false,
     IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
-    IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false)
+    IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false,
+    bool CreditsCapture = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -293,11 +294,12 @@ internal sealed partial class NewGameSession(
         // RULE-VIDEO-001: a movie ends when left_button_down is set at one of its 10 Hz ticks, so a
         // posted press and release is missed. The probe holds the button in memory until the setup
         // screen opens; the title then takes File, New Game.
-        // --title-capture: New Game waits until the title has drawn its art (FND-UI-055) and the
-        // drawing area has been copied.
+        // --title-capture and --credits-capture: New Game waits until the title has drawn its art
+        // (FND-UI-055) and the drawing area has been copied, and for the credits until About has
+        // shown them (FND-UI-007) and they have been copied and closed.
         var titleShown = false;
-        var titleTaken = !settings.TitleCapture;
-        if (settings.TitleCapture)
+        var titleTaken = !settings.TitleCapture && !settings.CreditsCapture;
+        if (!titleTaken)
             _process.SetBreakpoint(OriginalAddresses.TitleArtLoaded, _ => titleShown = true, oneShot: true);
         var nextPoke = DateTime.MinValue;
         bool reached;
@@ -316,10 +318,14 @@ internal sealed partial class NewGameSession(
             if (!reached || _setupReached || titleTaken) break;
             _process.Write(OriginalAddresses.LeftButtonDown, [0]);
             _process.Pump(TimeSpan.FromSeconds(2));
-            if (!_setupReached && CaptureDrawingArea(window, "title-capture", CaptureFixture.Width, CaptureFixture.Height))
-                _notes.Add("title_capture title-capture");
-            else
-                _notes.Add("The title was not captured.");
+            if (settings.TitleCapture)
+            {
+                if (!_setupReached && CaptureDrawingArea(window, "title-capture", CaptureFixture.Width, CaptureFixture.Height))
+                    _notes.Add("title_capture title-capture");
+                else
+                    _notes.Add("The title was not captured.");
+            }
+            if (settings.CreditsCapture) CaptureCredits(window);
             titleTaken = true;
         }
         _process.Write(OriginalAddresses.LeftButtonDown, [0]);
@@ -858,6 +864,28 @@ internal sealed partial class NewGameSession(
         }
         _notes.Add($"Capture {file} rejected: a counter moved or the synchronized copies disagreed.");
         return null;
+    }
+
+    // --credits-capture: Help, About from the title (FND-UI-007). The breakpoint after the load of
+    // the credits art says they are being shown; a key press closes them.
+    private void CaptureCredits(IntPtr window)
+    {
+        var shown = false;
+        _process.SetBreakpoint(OriginalAddresses.CreditsArtLoaded, _ => shown = true, oneShot: true);
+        Native.PostMessageW(window, Native.WmCommand, OriginalAddresses.AboutCommand, IntPtr.Zero);
+        if (!_process.RunUntil(() => shown, TimeSpan.FromSeconds(10)))
+        {
+            _notes.Add("The credits never opened.");
+            return;
+        }
+        _process.Pump(TimeSpan.FromSeconds(2));
+        if (CaptureDrawingArea(window, "credits-capture", CaptureFixture.Width, CaptureFixture.Height))
+            _notes.Add("credits_capture credits-capture");
+        else
+            _notes.Add("The credits were not captured.");
+        Native.PostMessageW(window, Native.WmKeyDown, 0x20, IntPtr.Zero);
+        Native.PostMessageW(window, Native.WmKeyUp, 0x20, IntPtr.Zero);
+        _process.Pump(TimeSpan.FromSeconds(2));
     }
 
     private bool CaptureDrawingArea(IntPtr window, string file, int width, int height)

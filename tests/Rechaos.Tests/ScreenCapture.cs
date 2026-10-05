@@ -100,9 +100,13 @@ public sealed record ScreenCaptureRecord(
     /// <summary>The <see cref="Step"/> of the title screen a run copied before New Game (FND-UI-055).</summary>
     public const int TitleStep = -2;
 
+    /// <summary>The <see cref="Step"/> of the credits a run opened from the title (FND-UI-055).</summary>
+    public const int CreditsStep = -3;
+
     public override string ToString() => Step switch
     {
         TitleStep => $"{Experiment} run {Run} title",
+        CreditsStep => $"{Experiment} run {Run} credits",
         < 0 => $"{Experiment} run {Run}",
         _ => $"{Experiment} run {Run} step {Step}",
     };
@@ -128,6 +132,8 @@ public sealed record ScreenCaptureRecord(
                     records.Add(Parse(experiment, run, capture));
                 if (recorded.TryGetProperty("title_capture", out var title))
                     records.Add(Parse(experiment, run, title) with { Step = TitleStep });
+                if (recorded.TryGetProperty("credits_capture", out var credits))
+                    records.Add(Parse(experiment, run, credits) with { Step = CreditsStep });
                 if (recorded.TryGetProperty("order_steps", out var steps))
                     records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray()));
                 run++;
@@ -309,6 +315,7 @@ public static class ScreenCaptureMasks
                 // DEV-UI-012: the version, right-aligned 6 pixels from the edge.
                 new("DEV-UI-012", new Rectangle(434, 430, 200, 9)),
             ],
+            ["SCR-UI-002"] = [],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
@@ -421,12 +428,13 @@ public static class RebuildFrame
     /// </summary>
     public const string KeepFramesVariable = "RECHAOS_KEEP_FRAMES";
 
-    /// <summary>Draws the rebuild's title screen (SCR-UI-001).</summary>
-    public static ScreenFrame RenderTitle(string? name = null) => Render(null, null, name: name);
+    /// <summary>Draws the rebuild's title screen (SCR-UI-001), or the credits over it (SCR-UI-002).</summary>
+    public static ScreenFrame RenderTitle(string? name = null, bool credits = false) =>
+        Render(null, null, name: name, credits: credits);
 
     public static ScreenFrame Render(
         MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
-        int? pumpCounter = null, int? selectedSector = null, int? itemFrame = null)
+        int? pumpCounter = null, int? selectedSector = null, int? itemFrame = null, bool credits = false)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -439,7 +447,7 @@ public static class RebuildFrame
         {
             var save = Path.Combine(directory, "state.rchsave");
             var frame = Path.Combine(directory, "frame.bmp");
-            if (state is null) save = ReferenceFrameRequest.TitleOperand;
+            if (state is null) save = credits ? ReferenceFrameRequest.CreditsOperand : ReferenceFrameRequest.TitleOperand;
             else NativeSaveStore.SaveAtomic(save, state);
             var start = GameStartInfo();
             foreach (var argument in new[] { "--assets", assets, "--reference-frame", save, frame })
