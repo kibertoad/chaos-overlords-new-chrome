@@ -30,6 +30,27 @@ public sealed class OriginalOptionsDefaultsTests
         Assert.Equal(1, (int)OriginalOptionsPolicy.MentalityByDefault);
     }
 
+    // FND-OPTIONS-001: the globals the options are read into, with the values the executable
+    // initializes them to.
+    [Fact]
+    public void FreshOptionsTakeTheValuesTheExecutableInitializes()
+    {
+        // needs: GAME_DIR
+        var file = ExecutableResources.RequireExecutable();
+        int At(uint address) => ExecutableResources.ImageInt32(file, address);
+        var preferences = GamePreferences.Default;
+
+        Assert.Equal(At(0x00487860) != 0, preferences.WarnIfIdleGangs);
+        Assert.Equal(At(0x0048784C) != 0, preferences.ShowBaseStatistics);
+        Assert.Equal(At(0x0048785C) != 0, preferences.DetailedCombat);
+        Assert.Equal(At(0x00487864), preferences.SoundEffectVolumeLevel);
+        Assert.Equal(At(0x00487868), preferences.MusicVolumeLevel);
+        Assert.Equal(At(0x00487854), (int)preferences.PlanningTimeLimit);
+        Assert.Equal(At(0x00487858), ExecutableStrings.ScenarioNumber(preferences.PreferredScenario));
+        Assert.Equal((int)OriginalOptionsPolicy.MentalityByDefault, At(0x00487850));
+        // Slide Panels and Full screen start as DEV-OPTIONS-002 and DEV-OPTIONS-003 set them.
+    }
+
     [Fact]
     public void SlidePanelsAndFullScreenStartAsTheirDeviationsSetThem()
     {

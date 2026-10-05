@@ -49,6 +49,29 @@ internal static class ExecutableResources
         return resources;
     }
 
+    /// <summary>
+    /// The initialized dword at virtual address <paramref name="address"/> of the loaded image,
+    /// 0 where the section's file data ends before it.
+    /// </summary>
+    public static int ImageInt32(byte[] file, uint address)
+    {
+        var header = Int32(file, 0x3C);
+        var optional = header + 24;
+        var imageBase = (uint)Int32(file, optional + 28);
+        var rva = checked((int)(address - imageBase));
+        var sectionTable = optional + UInt16(file, header + 20);
+        for (var index = 0; index < UInt16(file, header + 6); index++)
+        {
+            var section = sectionTable + index * 40;
+            var start = Int32(file, section + 12);
+            if (rva < start || rva >= start + Math.Max(Int32(file, section + 8), Int32(file, section + 16))) continue;
+            return rva + 4 <= start + Int32(file, section + 16)
+                ? Int32(file, Int32(file, section + 20) + rva - start)
+                : 0;
+        }
+        throw new InvalidDataException($"0x{address:X8} is in no section.");
+    }
+
     private static IEnumerable<(int Id, int Target)> Entries(byte[] file, int root, int directory)
     {
         var count = UInt16(file, directory + 12) + UInt16(file, directory + 14);
