@@ -126,6 +126,8 @@ internal sealed partial class NewGameSession
                 // A wait presses nothing, so it is not a post-dump step of the marker log.
                 _process.Pump(TimeSpan.FromMilliseconds(step.Choice));
                 if (_process.Exited) return "The original exited during the order steps.";
+                if (_rolls.Count != rollsAtDump)
+                    return $"The original called roll {_rolls.Count - rollsAtDump} time(s) during the order step {step}.";
                 _orderSteps.Add(new OrderStepRecord(step, -1, null,
                     _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),
                     _process.ReadInt32(OriginalAddresses.SectorViewPlayer)));
