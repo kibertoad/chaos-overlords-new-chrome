@@ -102,7 +102,7 @@ public sealed partial class ChaosGame
             CloseComlink();
             return;
         }
-        // Original Send handler 0x0045EAB1 (FND-COMLINK-005) submits on Execute. Enter moves its
+        // Original Send handler 0x0045EAB1 (FND-COMLINK-010) submits on Execute. Enter moves its
         // four-row editor cursor, so it must never dispatch a message here.
         if (Pressed(keyboard, Keys.Execute))
         {

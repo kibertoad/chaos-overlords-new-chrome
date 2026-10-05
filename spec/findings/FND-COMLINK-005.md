@@ -1,9 +1,9 @@
 ---
 id: FND-COMLINK-005
 title: Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-COMLINK-010]
 recorded_by: kibertoad
 reproduced_by: []
 method: static
