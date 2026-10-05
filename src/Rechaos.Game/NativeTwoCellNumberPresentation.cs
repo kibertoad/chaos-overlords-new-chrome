@@ -25,6 +25,9 @@ public static class NativeTwoCellNumberPresentation
     /// </summary>
     public readonly record struct Value(string Digits, bool IsNegative, bool IsDim, int? OffStripGlyph = null);
 
+    /// <summary>RULE-UI-004: a modifier's 0 is the dim green 0 copied from this cell of <c>PX00129</c>.</summary>
+    public static Rectangle DimZeroCell => new(354, 8, OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
+
     /// <summary>
     /// RULE-UI-004: glyph <c>g</c> is copied from <c>(x, 0, 6, 7)</c> of <c>PX00129</c>, or from
     /// <c>(x, 8, 6, 7)</c> for a negative value, where <c>x</c> is <c>6g</c> cut to a signed 16-bit

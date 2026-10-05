@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-005, FND-UI-006, FND-UI-011, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-005, FND-UI-006, FND-UI-011, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-049, EXP-UI-007]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-004, SCR-UI-004]
@@ -17,8 +17,10 @@ related: [RULE-UI-003, RULE-UI-004, SCR-UI-004]
 |---|---|---|---|---|---|
 | Panel with its labels | `DATA/PX16/PX05002`, its left 320 pixels | None | `(128,124,320,209)` once slid in | Always | FND-UI-005, FND-UI-011 |
 | Site portrait | `DATA/PX16/PX02000`, the 120-by-64 row of the site's definition | None | `(156,139,120,64)` | Always | FND-UI-005 |
+| Portrait frame | `DATA/PX16/PX00129` `(242,299,120,64)`, keyed on exact white | None | Over the portrait, `(156,139,120,64)` | Always | FND-UI-049, EXP-UI-007 |
 | Site name | The font strip of `DATA/PX16/PX00129` | The name in the site's `DATA/SITES` record | From `(288,151)` | Always | FND-UI-005 |
 | Resistance, Tolerance, Support, Cash | The digits of `DATA/PX16/PX00129` | The site's values, by `modifier_cells` with width 2 (RULE-UI-004). Resistance is the definition's value less the site's progress when the site's sector belongs to the active player and the panel was opened from the console or Influence, and the definition's value otherwise, including from Search | Two cells from x 396 on rows 169, 187, 196 and 205 | Always | FND-UI-005, FND-UI-006 |
+| Special line | String resource `0x1D + special` of the executable, 20 characters, in the font strip of `DATA/PX16/PX00129` | The label and amount of the site's special effect | From `(288,214)` | When the definition's `special` is not 0 | FND-UI-049, EXP-UI-007 |
 | The fourteen statistics | The digits of `DATA/PX16/PX00129` | The site's fourteen statistic modifiers, by `modifier_cells` with width 2 | Two cells from x 300 and from x 396 on rows 244, 253, 271, 280, 289, 298 and 307 | Always | FND-UI-005, FND-UI-006 |
 
 ## Mouse input

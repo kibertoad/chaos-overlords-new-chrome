@@ -14,6 +14,8 @@ public static partial class SectorDetailLayout
     public const int Rows = 3;
     public static Rectangle Display => new(64, 60, 162, 156);
     public static Rectangle DisplayFrameSource => new(0, 15, 162, 156);
+    /// <summary>FND-UI-048: the display's centre cell, where the pump draws the selection frame.</summary>
+    public static Rectangle DisplayCentre => new(117, 111, CityMapLayout.TileWidth, CityMapLayout.TileHeight);
     public static Rectangle Back => new(4, 394, 32, 63);
     public static Rectangle OwnerStrip => new(4, 43, 32, 207);
     public static Rectangle BackStrip => new(4, 250, 32, 207);

@@ -50,13 +50,35 @@ internal static class CaptureFixture
     {
         // Only two agreeing, non-repainting window copies taken while the marker counter held
         // still become a reference (NewGameSession.CaptureDrawingArea).
-        var capture = Path.Combine(runDirectory, "capture-blt.bmp");
-        var repeat = Path.Combine(runDirectory, "capture-blt-repeat.bmp");
         var marker = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>())
             .FirstOrDefault(note => note.StartsWith("marker_frame ", StringComparison.Ordinal));
         var pump = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>())
             .FirstOrDefault(note => note.StartsWith("pump_counter ", StringComparison.Ordinal));
-        if (marker is null || !File.Exists(capture) || !File.Exists(repeat)) return null;
+        var lamps = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>())
+            .FirstOrDefault(note => note.StartsWith("lamps ", StringComparison.Ordinal));
+        if (marker is null) return null;
+        return Extract(Path.Combine(runDirectory, "capture-blt.bmp"),
+            int.Parse(marker["marker_frame ".Length..], System.Globalization.CultureInfo.InvariantCulture),
+            pump is null ? null : int.Parse(pump["pump_counter ".Length..], System.Globalization.CultureInfo.InvariantCulture),
+            lamps?["lamps ".Length..].Split(' ')
+                .Select(value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray(),
+            screens);
+    }
+
+    /// <summary>
+    /// The record of a capture <c>shot</c> step of <c>--order-steps</c> took after the dump, compared
+    /// at the screens the step names.
+    /// </summary>
+    public static JsonObject? ExtractShot(string runDirectory, JsonNode shot, string screens) =>
+        Extract(Path.Combine(runDirectory, shot["File"]!.GetValue<string>()), shot["MarkerFrame"]!.GetValue<int>(),
+            shot["PumpCounter"]!.GetValue<int>(),
+            shot["Lamps"]?.AsArray().Select(value => value!.GetValue<int>()).ToArray(), CaptureScreen.Load(screens));
+
+    private static JsonObject? Extract(
+        string capture, int marker, int? pump, int[]? lamps, IReadOnlyList<CaptureScreen> screens)
+    {
+        var repeat = Path.ChangeExtension(capture, null) + "-repeat.bmp";
+        if (!File.Exists(capture) || !File.Exists(repeat)) return null;
         var bytes = File.ReadAllBytes(capture);
         if (!bytes.AsSpan().SequenceEqual(File.ReadAllBytes(repeat))) return null;
 
@@ -81,9 +103,10 @@ internal static class CaptureFixture
         {
             ["xxh3"] = xxh3,
             ["area"] = new JsonArray(0, 0, Width, Height),
-            ["marker_frame"] = int.Parse(marker["marker_frame ".Length..], System.Globalization.CultureInfo.InvariantCulture),
-            ["pump_counter"] = pump is null ? null : (JsonNode)
-                int.Parse(pump["pump_counter ".Length..], System.Globalization.CultureInfo.InvariantCulture),
+            ["marker_frame"] = marker,
+            ["pump_counter"] = pump is null ? null : (JsonNode)pump.Value,
+            // FND-EVENT-006: the Events and Comlink lights' flags and drawn bytes, in that order.
+            ["lamps"] = lamps is null ? null : new JsonArray(lamps.Select(value => (JsonNode)value).ToArray()),
             ["screens"] = screenArray,
         };
     }

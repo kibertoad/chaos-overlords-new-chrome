@@ -702,7 +702,7 @@ it.
 
 ## DEV-UI-006
 
-- Departs from: SCR-UI-003, SCR-FINANCE-001
+- Departs from: SCR-UI-003, SCR-UI-004, SCR-FINANCE-001
 - Reason: The city console shows next turn's projected cash beside the current Cash, as
   `CASH 20 [18] (+1)`: cash, the cash left after queued Bribe and Equip prices, and the change
   over the whole cycle, with a breakdown on hover.

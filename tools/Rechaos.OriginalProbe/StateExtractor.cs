@@ -119,6 +119,14 @@ internal sealed class StateExtractor
                 if (step["Viewed"] is JsonNode viewed) record["viewed"] = viewed.GetValue<int>();
                 record["cards"] = Integers(step["Cards"]);
                 record["gangs"] = new JsonArray(step["Gangs"]!.AsArray().Select(Integers).ToArray());
+                // A shot keeps its capture with the screens it is compared at.
+                if (probeStep["Screens"] is JsonNode screens)
+                {
+                    record["screens"] = screens.GetValue<string>();
+                    if (step["Shot"] is JsonNode shot
+                        && CaptureFixture.ExtractShot(runDirectory, shot, screens.GetValue<string>()) is { } capture)
+                        record["capture"] = capture;
+                }
                 return (JsonNode)record;
             }).ToArray());
         // RULE-SEARCH-001, FND-SEARCH-002: each click posted after the dump, whether the Search panel

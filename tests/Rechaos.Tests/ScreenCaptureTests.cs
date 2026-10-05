@@ -15,20 +15,29 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class ScreenCaptureTests
 {
-    public static TheoryData<string, int> Captures()
+    public static TheoryData<string, int, int> Captures()
     {
-        var data = new TheoryData<string, int>();
-        foreach (var capture in ScreenCaptureRecord.LoadAll()) data.Add(capture.Experiment, capture.Run);
+        var data = new TheoryData<string, int, int>();
+        foreach (var capture in ScreenCaptureRecord.LoadAll()) data.Add(capture.Experiment, capture.Run, capture.Step);
         return data;
     }
 
+    private static ScreenCaptureRecord Capture(string experiment, int run, int step) =>
+        ScreenCaptureRecord.LoadAll().Single(record =>
+            record.Experiment == experiment && record.Run == run && record.Step == step);
+
+    // The captures cover SCR-UI-003 and SCR-HIRE-002 (EXP-UI-001, EXP-UI-006), SCR-UI-004 and
+    // SCR-UI-005 (EXP-UI-006, EXP-UI-007), SCR-UI-007 (EXP-UI-007), SCR-UI-008 (EXP-UI-006) and
+    // both variants of SCR-FINANCE-001 (EXP-UI-006, EXP-UI-007).
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
-    public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run)
+    public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
     {
-        var capture = ScreenCaptureRecord.LoadAll().Single(record => record.Experiment == experiment && record.Run == run);
+        var capture = Capture(experiment, run, step);
         if (!OriginalNewGameExperimentTests.IsReplayed(experiment))
             Assert.Skip($"{capture} comes from a run that is not replayed, so the rebuild has no endpoint to draw.");
+        if (capture.Unreplayable is { } reason)
+            Assert.Skip($"{capture} cannot be reached in the rebuild: {reason}.");
         if (capture.Elements.Count == 0)
             Assert.Skip($"{capture} records no screen elements; the probe's digest command adds them.");
         var masks = ScreenCaptureMasks.For(capture.Screens);
@@ -38,7 +47,8 @@ public sealed partial class ScreenCaptureTests
             Environment.GetEnvironmentVariable(OriginalGameFiles.EnvironmentVariable), capture.Xxh3);
         var original = path is null ? null : ScreenFrame.ReadBitmap(File.ReadAllBytes(path));
         var rebuild = RebuildFrame.Render(
-            OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame);
+            OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
+            $"{experiment}-{run}-{step}", capture.PumpCounter);
 
         var results = capture.Elements.Select(element => ScreenComparison.Compare(element, original, rebuild, masks)).ToArray();
         var output = TestContext.Current.TestOutputHelper;
@@ -67,9 +77,9 @@ public sealed partial class ScreenCaptureTests
     // Every capture names screens the masks know, and its elements lie inside the drawing area.
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
-    public void EveryCaptureIsWellFormed(string experiment, int run)
+    public void EveryCaptureIsWellFormed(string experiment, int run, int step)
     {
-        var capture = ScreenCaptureRecord.LoadAll().Single(record => record.Experiment == experiment && record.Run == run);
+        var capture = Capture(experiment, run, step);
         Assert.Matches("^[0-9a-f]{32}$", capture.Xxh3);
         Assert.InRange(capture.MarkerFrame, 0, 11);
         _ = ScreenCaptureMasks.For(capture.Screens);

@@ -4,15 +4,19 @@ namespace Rechaos.OriginalProbe;
 /// One step of <c>--order-steps</c>: a double-click on city sector <c>Target</c> (open), a press at
 /// <c>(X, Y)</c> inside card <c>Target</c> (card) or at <c>(X, Y)</c> of the window (strip), each
 /// answering the popup menu it opens with command <c>Choice</c> (0 closes it with no choice), a
-/// press of the sector view's back control (back), or of a result panel's Exit (exit).
+/// double-click at <c>(X, Y)</c> of the window (dbl), a
+/// press of the sector view's back control (back), or of a result panel's Exit (exit), or a capture
+/// of the drawing area compared at the elements of the screen entries <c>Screens</c> (shot).
 /// </summary>
-internal sealed record ProbeOrderStep(string Kind, int Target, int X, int Y, int Choice)
+internal sealed record ProbeOrderStep(string Kind, int Target, int X, int Y, int Choice, string? Screens = null)
 {
     public override string ToString() => Kind switch
     {
+        "shot" => $"capture for {Screens}",
         "open" => $"double-click sector {Target}",
         "card" => $"card {Target} at ({X}, {Y}), command {Choice}",
         "strip" => $"({X}, {Y}), command {Choice}",
+        "dbl" => $"double-click ({X}, {Y})",
         _ => Kind,
     };
 }
@@ -22,10 +26,17 @@ internal sealed record ProbeOrderStep(string Kind, int Target, int X, int Y, int
 /// each item's command and greyed state (FND-UI-021), whether the city view is shown, the player
 /// whose gangs the sector view lists and its card slots, and the order bytes of every gang of the active player in use, slot 80 with
 /// them (FMT-STATE-001): slot, sector, action, target, target_2, repeat_action and repeat_target.
+/// A shot keeps its capture, null when no two agreeing copies were taken.
 /// </summary>
 internal sealed record OrderStepRecord(
     ProbeOrderStep Step, int Menu, List<List<int>>? Items, bool CityView, List<int> Cards, List<List<int>> Gangs,
-    int Viewed);
+    int Viewed, CaptureShot? Shot = null);
+
+/// <summary>
+/// A capture taken after the dump: the bitmap <c>File</c> in the run directory with its repeat
+/// beside it, the Overlord bar's marker frame it shows (FND-UI-038) and the pump's counter.
+/// </summary>
+internal sealed record CaptureShot(string File, int MarkerFrame, int PumpCounter, int[] Lamps);
 
 internal sealed partial class NewGameSession
 {
@@ -52,6 +63,18 @@ internal sealed partial class NewGameSession
         });
         foreach (var step in settings.OrderSteps!)
         {
+            if (step.Kind == "shot")
+            {
+                // A capture moves nothing, so it is not a post-dump step of the marker log.
+                var file = $"capture-step-{_orderSteps.Count}";
+                var shot = CaptureDrawingArea(window, file) is var (marker, pump, lamps)
+                    ? new CaptureShot(file + ".bmp", marker, pump, lamps)
+                    : null;
+                _orderSteps.Add(new OrderStepRecord(step, -1, null,
+                    _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),
+                    _process.ReadInt32(OriginalAddresses.SectorViewPlayer), shot));
+                continue;
+            }
             _postDumpStep++;
             menu = -1;
             items = null;
@@ -66,6 +89,13 @@ internal sealed partial class NewGameSession
                     Post(window, Native.WmLButtonUp, 0, x, y);
                     Post(window, Native.WmLButtonDblClk, 1, x, y);
                     Post(window, Native.WmLButtonUp, 0, x, y);
+                    break;
+                case "dbl":
+                    // FND-UI-020: as for open, at any point of the window.
+                    Post(window, Native.WmLButtonDown, 1, step.X, step.Y);
+                    Post(window, Native.WmLButtonUp, 0, step.X, step.Y);
+                    Post(window, Native.WmLButtonDblClk, 1, step.X, step.Y);
+                    Post(window, Native.WmLButtonUp, 0, step.X, step.Y);
                     break;
                 case "card":
                     Click(window, 254 + 76 * (step.Target % 2) + step.X, 80 + 112 * (step.Target / 2) + step.Y);

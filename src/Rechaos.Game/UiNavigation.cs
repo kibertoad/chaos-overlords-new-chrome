@@ -399,6 +399,12 @@ public static class CityMapLayout
     public static int SelectionFrame(TimeSpan now) => (int)(PresentationClock.Ticks(now) % 8 / 4);
 
     /// <summary>
+    /// FND-UI-048: the frame on screen while the pump's counter stands at <paramref name="counter"/>,
+    /// since the pump draws the frame before it advances the counter.
+    /// </summary>
+    public static int SelectionFrameAfterPass(int counter) => (counter + 7) % 8 / 4;
+
+    /// <summary>
     /// FND-UI-017: the column letter tabs above and below the map and the row number tabs left and
     /// right of it, each with the glyph's offset inside the tab.
     /// </summary>
@@ -445,6 +451,20 @@ public static class ObjectiveSectorMarkerPresentation
     }
 }
 
+/// <summary>FND-UI-050: where the city map puts a sector's police badge.</summary>
+public static class PoliceBadgeLayout
+{
+    public static Rectangle Destination(int sectorId)
+    {
+        _ = CityMapLayout.Source(sectorId);
+        return new Rectangle(
+            CityMapLayout.Left + sectorId % MatchLimits.BoardWidth * CityMapLayout.ColumnStride + 9,
+            CityMapLayout.Top + sectorId / MatchLimits.BoardWidth * CityMapLayout.RowStride + 14,
+            20,
+            28);
+    }
+}
+
 public static partial class OriginalSpriteLayout
 {
     public const int ActivePlayerMarkerFrameCount = 12;
@@ -453,6 +473,8 @@ public static partial class OriginalSpriteLayout
     public static Rectangle SnubbedStamp => new(178, 299, 64, 64);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
+    /// <summary>FND-UI-050: the badge of a sector under police presence.</summary>
+    public static Rectangle PoliceBadge => new(317, 560, 20, 28);
 
     public static Rectangle ActivePlayerMarker(int frame)
     {
@@ -564,6 +586,11 @@ public static class SiteInformationLayout
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
     public static Rectangle Portrait => new(156, 139, 120, 64);
+    /// <summary>FND-UI-049: the frame keyed over the portrait, from <c>PX00129</c>.</summary>
+    public static Rectangle PortraitFrameSource => new(242, 299, 120, 64);
+    /// <summary>FND-UI-049: string <c>29 + special</c> for a site with a special effect.</summary>
+    public static Vector2 SpecialLine => new(288, 214);
+    public const int SpecialStringBase = 0x1D;
     public static Rectangle Ok => new(161, 293, 49, 22);
     public static int NameLeft => 288;
     public static int DataValueLeft => 396;

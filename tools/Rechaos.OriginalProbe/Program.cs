@@ -254,6 +254,9 @@ static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
     value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
     {
         var parts = entry.Split(':');
+        // shot:SCR-ID+SCR-ID names the screen entries the capture is compared at.
+        if (parts is ["shot", var screens] && screens.Length > 0)
+            return new ProbeOrderStep("shot", -1, 0, 0, 0, screens.Replace('+', ','));
         var numbers = parts.Skip(1).Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
         return parts[0] switch
         {
@@ -262,8 +265,10 @@ static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
                 new ProbeOrderStep("card", numbers[0], numbers[1], numbers[2], numbers[3]),
             "strip" when numbers is [>= 0 and < 640, >= 0 and < 480, >= 0] =>
                 new ProbeOrderStep("strip", -1, numbers[0], numbers[1], numbers[2]),
+            "dbl" when numbers is [>= 0 and < 640, >= 0 and < 480] =>
+                new ProbeOrderStep("dbl", -1, numbers[0], numbers[1], 0),
             "back" or "exit" when numbers is [] => new ProbeOrderStep(parts[0], -1, 0, 0, 0),
-            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, back or exit: {entry}"),
+            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit or shot:SCR-ID+...: {entry}"),
         };
     }).ToArray();
 

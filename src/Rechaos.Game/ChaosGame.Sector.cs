@@ -723,7 +723,13 @@ public sealed partial class ChaosGame
         // and edge labels are drawn over it unlit.
         DrawFlashLightening(batch, TickedPresentationKind.SectorDisplayCellFlash);
         if (_uiKeyedSprites is not null)
+        {
             batch.Draw(_uiKeyedSprites, display, SectorDetailLayout.DisplayFrameSource, Color.White);
+            // FND-UI-048: the pump keys the selection frame over the centre cell, covering the
+            // outline the display's frame draws there.
+            batch.Draw(_uiKeyedSprites, SectorDetailLayout.DisplayCentre,
+                CityMapLayout.SelectionFrameSource(SelectionFrameShown()), Color.White);
+        }
         foreach (var label in SectorDetailLayout.DisplayLabels(_cursor))
             DrawGridLabel(batch, font, label);
     }

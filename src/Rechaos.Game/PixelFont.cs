@@ -49,6 +49,15 @@ public sealed class PixelFont
     public void DrawNumber(SpriteBatch batch, NativeTwoCellNumberPresentation.Value display,
         Vector2 position, Color color)
     {
+        if (display.IsDim)
+        {
+            // The dim 0 is a cell of the art of its own, not the digit in another colour
+            // (EXP-UI-006).
+            var cell = NativeTwoCellNumberPresentation.DimZeroCell;
+            batch.Draw(_uiAtlas, new Rectangle((int)position.X, (int)position.Y, cell.Width, cell.Height),
+                cell, Color.White);
+            return;
+        }
         Draw(batch, display.Digits, position, color, 1);
         if (display.OffStripGlyph is { } glyph
             && NativeTwoCellNumberPresentation.AtlasCell(glyph, display.IsNegative, _uiAtlas.Width) is { } source)

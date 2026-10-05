@@ -294,7 +294,7 @@
 
 ## recorded
 
-474 entries.
+479 entries.
 
 | ID | Title |
 |---|---|
@@ -413,6 +413,8 @@
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? |
 | [EXP-UI-004](../experiments/EXP-UI-004.md) | Which gang-status markers does the map show while the Hire dock changes at the first planning entry? |
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | Does the incoming-only mark stay on the map until a redraw removes it? |
+| [EXP-UI-006](../experiments/EXP-UI-006.md) | Do the city, its console panels and the detailed sector screen look the same in the rebuild late in a match? |
+| [EXP-UI-007](../experiments/EXP-UI-007.md) | Do the detailed sector screen, Site Information, Gangs in Sector and the Sector Financial panel look the same in the rebuild for a sector under police presence? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -767,6 +769,9 @@
 | [FND-UI-044](../findings/FND-UI-044.md) | A left press on a gang card's portrait holds the individual command handler in its own loops until the button is released, so the planning loop does not run while a gang is held |
 | [FND-UI-045](../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits |
 | [FND-UI-046](../findings/FND-UI-046.md) | The pointer hold loops of the console tiles, the held-button helper and the event page arrows never reach the event pump, and no hold loop touches timer slot 0 |
+| [FND-UI-048](../findings/FND-UI-048.md) | The pump draws the selection frame from its counter before it advances the counter, so the frame on screen is the one for the counter less one |
+| [FND-UI-049](../findings/FND-UI-049.md) | Site Information keys a frame over the site portrait and, for a site with a special effect, writes string 29 plus the effect under the Cash row |
+| [FND-UI-050](../findings/FND-UI-050.md) | The city compositor keys a police badge over every sector with police presence, after the site markers and before the gang-status marker |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file |

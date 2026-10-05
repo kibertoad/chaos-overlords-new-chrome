@@ -1,0 +1,12 @@
+{
+  "screen": "SCR-UI-005",
+  "state": "A planning entry of player 0 with Gangs in Sector open for a sector holding the player's gangs",
+  "elements": [
+    {"element": "Panel with its labels", "rect": [104, 124, 344, 209]},
+    {"element": "Sector tile", "rect": [135, 135, 54, 52]},
+    {"element": "Sector code", "rect": [156, 190, 12, 7]},
+    {"element": "Gang portrait, column 0", "rect": [248, 138, 32, 32]},
+    {"element": "Gang portrait, column 1", "rect": [280, 138, 32, 32]},
+    {"element": "Gang portrait, column 2", "rect": [312, 138, 32, 32]}
+  ]
+}

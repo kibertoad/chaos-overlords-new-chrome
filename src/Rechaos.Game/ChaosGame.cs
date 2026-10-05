@@ -451,7 +451,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     protected override void Update(GameTime gameTime)
     {
         _autoSave.Pump();
-        _inputTime = _referenceFrame is null ? gameTime.TotalGameTime : TimeSpan.Zero;
+        _inputTime = _referenceFrame is null ? gameTime.TotalGameTime : _referenceClock;
         _eventPump.Update(_inputTime, OutsideEventPump());
         if (UpdateReferenceFrame())
         {

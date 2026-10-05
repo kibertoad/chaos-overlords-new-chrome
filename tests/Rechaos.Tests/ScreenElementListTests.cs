@@ -44,7 +44,9 @@ public sealed class ScreenElementListTests
             Assert.True(rect is [>= 0, >= 0, > 0, > 0]
                         && rect[0] + rect[2] <= ScreenFrame.Width && rect[1] + rect[3] <= ScreenFrame.Height,
                 $"{screen} {name} [{string.Join(", ", rect)}] lies outside the drawing area.");
-            Assert.True(Cites(name, rows), $"{screen} {name} names no row of the entry's Drawn elements table.");
+            // The entry's title names the whole drawing area, so the frame is compared as one as well.
+            var whole = name == EntryTitle(screen) && rect is [0, 0, ScreenFrame.Width, ScreenFrame.Height];
+            Assert.True(whole || Cites(name, rows), $"{screen} {name} names no row of the entry's Drawn elements table.");
         }
     }
 
@@ -78,6 +80,10 @@ public sealed class ScreenElementListTests
 
     private static bool NamesWhole(string text, string part) =>
         Regex.IsMatch(text, $@"(?<!\w){Regex.Escape(part)}(?!\w)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    private static string EntryTitle(string screen) =>
+        File.ReadLines(Path.Combine(AppContext.BaseDirectory, "spec", "screens", $"{screen}.md"))
+            .First(line => line.StartsWith("title: ", StringComparison.Ordinal))["title: ".Length..];
 
     private static IReadOnlyList<(string Name, string Shows)> DrawnElementRows(string screen)
     {

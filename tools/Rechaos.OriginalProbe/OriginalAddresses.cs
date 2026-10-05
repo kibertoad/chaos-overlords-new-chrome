@@ -210,6 +210,11 @@ internal static class OriginalAddresses
     // FND-UI-017, FND-EVENT-006: the pump's dword counter, 0 to 7; the selected-sector frame is
     // the counter divided by 4, and bit 0 paces the control lights' blink.
     public const uint PumpCounter = 0x00487804;
+
+    // FND-EVENT-006: the Events lamp's flag and the byte the pump sets when it draws the lamp.
+    public const uint EventsPending = 0x00487814;
+    public const uint EventsLampDrawn = 0x00487818;
+    public const uint ComlinkLampDrawn = 0x00487820;
     public const uint Cash = 0x004A25E8;
 
     // FND-OPTIONS-001: Slide Panels, read by the panel helpers that slide a panel in and out.

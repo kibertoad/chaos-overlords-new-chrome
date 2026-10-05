@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-002, FND-UI-006, FND-UI-011, FND-UI-014, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-002, FND-UI-006, FND-UI-011, FND-UI-014, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-025, EXP-UI-006, EXP-UI-007]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-004, RULE-UI-010, SCR-UI-003]
@@ -16,9 +16,9 @@ related: [RULE-UI-003, RULE-UI-004, RULE-UI-010, SCR-UI-003]
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Panel with its labels | `DATA/PX16/PX05009` | None | `(104,124,344,209)` once slid in | Always | FND-UI-002, FND-UI-011 |
-| Sector tile | 54-by-52 cell of the drawn city map, with an unfilled black frame | The sector | `(135,135,54,52)` | Always | FND-UI-014 |
+| Sector tile | The sector's 54-by-52 cell of the unmarked city map, `DATA/PX16/PX10000`, without ownership colour or markers, with an unfilled black frame | The sector | `(135,135,54,52)` | Always | FND-UI-014, FND-UI-025, EXP-UI-006, EXP-UI-007 |
 | Sector code | The font of `fn_00413FD5` | A column letter A to H and a row digit 1 to 8 | From `(156,190)` | Always | FND-UI-014 |
-| Gang portrait | `DATA/PX16/PX03000` cell of the gang's definition, scaled to 32 by 32 | None | `(248 + 32*n, 138, 32, 32)` for column `n` | For each gang RULE-UI-010's `sector_roster_slots` lists | FND-UI-002 |
+| Gang portrait | `DATA/PX16/PX03000` cell of the gang's definition, halved to 32 by 32: pixel `(x, y)` is the cell's `(2x + 1, 2y + 1)` | None | `(248 + 32*n, 138, 32, 32)` for column `n` | For each gang RULE-UI-010's `sector_roster_slots` lists | FND-UI-002, EXP-UI-006, EXP-UI-007 |
 | Tech Level, Upkeep, Combat, Defense, Stealth, Detect | The digits of `DATA/PX16/PX00129` | The Tech Level and the negated Upkeep of the gang's definition in `DATA/Gangs`, then the gang's record offsets `0x12` to `0x15`, by `number_cells` with width 2 (RULE-UI-004); Upkeep shows in red | Two cells from x `258 + 32*n`, on the baselines 172, 181, 191, 200, 209 and 218 | For each column | FND-UI-002, FND-UI-006, FND-UI-014, FND-UI-024 |
 | The ten Command Skills | The digits of `DATA/PX16/PX00129` | The gang's `chaos`, `control`, `heal`, `influence`, `research`, `strength`, `blade`, `ranged`, `fighting` and `martial_arts`, by `modifier_cells` with width 2 (RULE-UI-004) | Two cells from x `258 + 32*n`, on the baselines 228, 237, 246, 255, 264, 274, 283, 292, 301 and 310, read from record offsets `0x16` to `0x1F` in that order | For each column | FND-UI-002, FND-UI-006, FND-UI-014 |
 

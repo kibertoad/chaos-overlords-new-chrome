@@ -4,7 +4,7 @@ namespace Rechaos.Game;
 
 /// <summary>
 /// The texts of the executable's STRING resources that the rebuild draws, by resource number.
-/// RULE-UI-009, SCR-EVENT-001 and FND-UI-040 name them by number. ExecutableStringTableTests compares every
+/// RULE-UI-009, SCR-EVENT-001, FND-UI-040 and FND-UI-049 name them by number. ExecutableStringTableTests compares every
 /// one with the string table of BLD-GOG-EN-1.1.
 /// </summary>
 public static class ExecutableStrings
@@ -24,6 +24,10 @@ public static class ExecutableStrings
         [0x0A] = "ARMAGEDDON",
         // FND-UI-040: the calendar companion in the final planning view.
         [0x13] = "COMPLETE",
+        // SCR-UI-007, FND-UI-049: the special effects' lines of Site Information.
+        [0x1E] = "RESEARCH TECH     8",
+        [0x1F] = "RESEARCH TECH    10",
+        [0x20] = "EQUIP DISCOUNT   30%",
         // SCR-EVENT-001: the Last Turn Events captions.
         [0x21] = "NO EVENTS.",
         [0x22] = "POLICE CRACKDOWN.",

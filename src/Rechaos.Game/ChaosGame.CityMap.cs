@@ -49,6 +49,11 @@ public sealed partial class ChaosGame
         }
         // The markers have no drawn stand-in: without the sheet the map carries none, as before.
         if (_uiKeyedSprites is null) return;
+        // FND-UI-050: police presence puts a badge over the site markers, under the gang marker.
+        for (var sectorId = 0; sectorId < state.Sectors.Count; sectorId++)
+            if (state.Sectors[sectorId].CrackdownTurnsRemaining > 0)
+                map.Draw(_uiKeyedSprites, OriginalSpriteLayout.PoliceBadge,
+                    CityMapLayout.MapArea(PoliceBadgeLayout.Destination(sectorId)));
         // RULE-UI-006: the markers the map keeps through the planning phase, and outside it those of
         // a draw of every sector in number order.
         var markerFrames = state.Coordinator.Phase == TurnPhase.Command
@@ -131,7 +136,7 @@ public sealed partial class ChaosGame
             if (player is null || player.Status == PlayerStatus.Eliminated)
             {
                 batch.Draw(_uiSprites, OverlordBarLayout.EmptySeat(seat),
-                    OverlordBarLayout.EmptySeatSource(ActivePlayerMarkerPresentation.EmptySeatFrame(_inputTime)),
+                    OverlordBarLayout.EmptySeatSource(ActivePlayerMarkerPresentation.EmptySeatFrame(_referenceFrame is null ? _inputTime : TimeSpan.Zero)),
                     Color.White);
                 continue;
             }
