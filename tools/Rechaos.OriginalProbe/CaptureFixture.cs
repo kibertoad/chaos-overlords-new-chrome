@@ -69,6 +69,15 @@ internal static class CaptureFixture
     }
 
     /// <summary>
+    /// The record of the title screen <c>new-game --title-capture</c> copied before New Game,
+    /// compared at SCR-UI-001. The title has no marker, so its marker frame is 0.
+    /// </summary>
+    public static JsonObject? ExtractTitle(string runDirectory, JsonNode trace) =>
+        trace["Notes"]!.AsArray().Any(note => note!.GetValue<string>() == "title_capture title-capture")
+            ? Extract(Path.Combine(runDirectory, "title-capture.bmp"), 0, null, null, null, CaptureScreen.Load("SCR-UI-001"))
+            : null;
+
+    /// <summary>
     /// The record of a capture <c>shot</c> step of <c>--order-steps</c> took after the dump, compared
     /// at the screens the step names.
     /// </summary>

@@ -97,7 +97,15 @@ public sealed record ScreenCaptureRecord(
     /// <summary>FND-UI-052, FND-UI-053: the frame of the rotating item pictures a shot shows.</summary>
     public int? ItemFrame { get; init; }
 
-    public override string ToString() => Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
+    /// <summary>The <see cref="Step"/> of the title screen a run copied before New Game (FND-UI-055).</summary>
+    public const int TitleStep = -2;
+
+    public override string ToString() => Step switch
+    {
+        TitleStep => $"{Experiment} run {Run} title",
+        < 0 => $"{Experiment} run {Run}",
+        _ => $"{Experiment} run {Run} step {Step}",
+    };
 
     // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
     private static readonly Lazy<IReadOnlyList<ScreenCaptureRecord>> All = new(Load);
@@ -118,6 +126,8 @@ public sealed record ScreenCaptureRecord(
             {
                 if (recorded.TryGetProperty("capture", out var capture))
                     records.Add(Parse(experiment, run, capture));
+                if (recorded.TryGetProperty("title_capture", out var title))
+                    records.Add(Parse(experiment, run, title) with { Step = TitleStep });
                 if (recorded.TryGetProperty("order_steps", out var steps))
                     records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray()));
                 run++;
@@ -285,6 +295,20 @@ public static class ScreenCaptureMasks
             ["SCR-OPTIONS-001"] = [],
             ["SCR-INFLUENCE-001"] = [],
             ["SCR-GANG-002"] = [],
+            ["SCR-UI-001"] =
+            [
+                // DEV-UI-019: the rebuild's line under the logo, its buttons, which stand in for the
+                // menu bar, and its credit line. The notice box is drawn only with a message.
+                new("DEV-UI-019", new Rectangle(290, 282, 60, 9)),
+                new("DEV-UI-019", new Rectangle(220, 292, 200, 76)),
+                new("DEV-UI-019", new Rectangle(154, 376, 164, 34)),
+                new("DEV-UI-019", new Rectangle(406, 376, 80, 34)),
+                new("DEV-UI-019", new Rectangle(257, 430, 126, 9)),
+                // DEV-VIDEO-003: the Intro button.
+                new("DEV-VIDEO-003", new Rectangle(322, 376, 80, 34)),
+                // DEV-UI-012: the version, right-aligned 6 pixels from the edge.
+                new("DEV-UI-012", new Rectangle(434, 430, 200, 9)),
+            ],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
@@ -397,8 +421,11 @@ public static class RebuildFrame
     /// </summary>
     public const string KeepFramesVariable = "RECHAOS_KEEP_FRAMES";
 
+    /// <summary>Draws the rebuild's title screen (SCR-UI-001).</summary>
+    public static ScreenFrame RenderTitle(string? name = null) => Render(null, null, name: name);
+
     public static ScreenFrame Render(
-        MatchState state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
+        MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
         int? pumpCounter = null, int? selectedSector = null, int? itemFrame = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
@@ -412,7 +439,8 @@ public static class RebuildFrame
         {
             var save = Path.Combine(directory, "state.rchsave");
             var frame = Path.Combine(directory, "frame.bmp");
-            NativeSaveStore.SaveAtomic(save, state);
+            if (state is null) save = ReferenceFrameRequest.TitleOperand;
+            else NativeSaveStore.SaveAtomic(save, state);
             var start = GameStartInfo();
             foreach (var argument in new[] { "--assets", assets, "--reference-frame", save, frame })
                 start.ArgumentList.Add(argument);

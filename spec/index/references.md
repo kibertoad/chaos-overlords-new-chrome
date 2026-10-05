@@ -151,6 +151,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | builds |
 | [EXP-UI-013](../experiments/EXP-UI-013.md) | builds |
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | builds |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -549,6 +550,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-052](../findings/FND-UI-052.md) | builds, locations |
 | [FND-UI-053](../findings/FND-UI-053.md) | builds, locations |
 | [FND-UI-054](../findings/FND-UI-054.md) | builds, locations |
+| [FND-UI-055](../findings/FND-UI-055.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -1176,6 +1178,7 @@ None.
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | body |
 | [EXP-UI-013](../experiments/EXP-UI-013.md) | body |
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | body |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 
 ## EXP-TURN-002
 
@@ -2201,6 +2204,13 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
+
+## EXP-UI-015
+
+| Cited by | In |
+|---|---|
+| [FND-UI-055](../findings/FND-UI-055.md) | body |
+| [SCR-UI-001](../screens/SCR-UI-001.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
@@ -6854,7 +6864,9 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
+| [FND-UI-055](../findings/FND-UI-055.md) | body |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | body, evidence |
 
 ## FND-UI-010
@@ -7378,6 +7390,13 @@ None.
 |---|---|
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | body |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | body, evidence |
+
+## FND-UI-055
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
+| [SCR-UI-001](../screens/SCR-UI-001.md) | evidence |
 
 ## FND-UPKEEP-001
 
@@ -9452,6 +9471,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | body, related |
 
 ## SCR-UI-002

@@ -216,6 +216,9 @@ internal static class OriginalAddresses
     public const uint EventsLampDrawn = 0x00487818;
     public const uint ComlinkLampDrawn = 0x00487820;
 
+    // FND-UI-055: the instruction after the title loop's first load of PX00130.
+    public const uint TitleArtLoaded = 0x004615D0;
+
     // FND-UI-051: a panel's slide-in sets 0x004854C8 at 0x004196E4, and while it is set the pump
     // leaves the selection frame as it was.
     public const uint SelectionFrameHeld = 0x004854C8;

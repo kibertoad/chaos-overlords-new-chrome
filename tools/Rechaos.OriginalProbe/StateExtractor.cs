@@ -180,6 +180,9 @@ internal sealed class StateExtractor
         // (CaptureFixture).
         if (CaptureFixture.Extract(runDirectory, trace, screens) is { } capture)
             run["capture"] = capture;
+        // --title-capture: the title screen before New Game (FND-UI-055).
+        if (CaptureFixture.ExtractTitle(runDirectory, trace) is { } title)
+            run["title_capture"] = title;
         return run;
     }
 

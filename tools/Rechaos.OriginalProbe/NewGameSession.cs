@@ -118,7 +118,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
     IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false,
     IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
-    IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false)
+    IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -293,16 +293,35 @@ internal sealed partial class NewGameSession(
         // RULE-VIDEO-001: a movie ends when left_button_down is set at one of its 10 Hz ticks, so a
         // posted press and release is missed. The probe holds the button in memory until the setup
         // screen opens; the title then takes File, New Game.
+        // --title-capture: New Game waits until the title has drawn its art (FND-UI-055) and the
+        // drawing area has been copied.
+        var titleShown = false;
+        var titleTaken = !settings.TitleCapture;
+        if (settings.TitleCapture)
+            _process.SetBreakpoint(OriginalAddresses.TitleArtLoaded, _ => titleShown = true, oneShot: true);
         var nextPoke = DateTime.MinValue;
-        var reached = _process.RunUntil(() =>
+        bool reached;
+        while (true)
         {
-            if (_setupReached) return true;
-            if (DateTime.UtcNow < nextPoke) return false;
-            nextPoke = DateTime.UtcNow.AddSeconds(0.5);
-            _process.Write(OriginalAddresses.LeftButtonDown, [1]);
-            Native.PostMessageW(window, Native.WmCommand, OriginalAddresses.NewGameCommand, IntPtr.Zero);
-            return false;
-        }, timeout);
+            reached = _process.RunUntil(() =>
+            {
+                if (_setupReached || (!titleTaken && titleShown)) return true;
+                if (DateTime.UtcNow < nextPoke) return false;
+                nextPoke = DateTime.UtcNow.AddSeconds(0.5);
+                _process.Write(OriginalAddresses.LeftButtonDown, [1]);
+                if (titleTaken)
+                    Native.PostMessageW(window, Native.WmCommand, OriginalAddresses.NewGameCommand, IntPtr.Zero);
+                return false;
+            }, timeout);
+            if (!reached || _setupReached || titleTaken) break;
+            _process.Write(OriginalAddresses.LeftButtonDown, [0]);
+            _process.Pump(TimeSpan.FromSeconds(2));
+            if (!_setupReached && CaptureDrawingArea(window, "title-capture", CaptureFixture.Width, CaptureFixture.Height))
+                _notes.Add("title_capture title-capture");
+            else
+                _notes.Add("The title was not captured.");
+            titleTaken = true;
+        }
         _process.Write(OriginalAddresses.LeftButtonDown, [0]);
         if (!reached) return Finish(false, "The setup screen never opened.");
 

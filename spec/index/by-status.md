@@ -294,7 +294,7 @@
 
 ## recorded
 
-492 entries.
+494 entries.
 
 | ID | Title |
 |---|---|
@@ -422,6 +422,7 @@
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | Does the idle gang warning look the same in the rebuild? |
 | [EXP-UI-013](../experiments/EXP-UI-013.md) | Does the rebuild mark the objective sectors of Siege on the city map as the original does? |
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | Does the rebuild mark the objective sectors of Big Man on the city map as the original does? |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | Does the title screen look the same in the rebuild? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -785,6 +786,7 @@
 | [FND-UI-052](../findings/FND-UI-052.md) | Item Information keeps its frame in a local that starts at 0 and steps once each time the animation flag is taken |
 | [FND-UI-053](../findings/FND-UI-053.md) | The Sell and Give panels turn their item pictures with a frame local that starts at 0, as Item Information does |
 | [FND-UI-054](../findings/FND-UI-054.md) | The idle gang warning starts its blinking line shown and counts its six and two ticks from the open |
+| [FND-UI-055](../findings/FND-UI-055.md) | The title loop's first load of the title art returns to 0x004615D0 |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file |

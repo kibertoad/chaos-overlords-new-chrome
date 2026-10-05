@@ -26,6 +26,17 @@ public sealed class ReferenceFrameRequestTests
         Assert.Null(next.MarkerFrame);
     }
 
+    // SCR-UI-001: "title" in place of the save asks for the title screen.
+    [Fact]
+    public void TheTitleOperandNamesNoSave()
+    {
+        var request = Assert.IsType<ReferenceFrameRequest>(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", ReferenceFrameRequest.TitleOperand, "frame.bmp"]));
+        Assert.True(request.Title);
+        Assert.Equal(ReferenceFrameRequest.TitleOperand, request.SavePath);
+        Assert.False(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.Title);
+    }
+
     public static TheoryData<string[]> InvalidRequests => new()
     {
         new[] { "--reference-frame" },
