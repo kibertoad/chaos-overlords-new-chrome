@@ -211,7 +211,8 @@ internal sealed record ProbeTrace(
     List<HireStepRecord>? HireSteps = null,
     List<OrderStepRecord>? OrderSteps = null,
     List<GangMarkerDraw>? GangMarkers = null,
-    List<CombatClipRecord>? CombatClips = null);
+    List<CombatClipRecord>? CombatClips = null,
+    List<CombatPresentationRecord>? CombatPresentations = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -979,7 +980,7 @@ internal sealed partial class NewGameSession(
             _equipLists.Count == 0 ? null : _equipLists, _attackLists.Count == 0 ? null : _attackLists,
             _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps,
             _orderSteps.Count == 0 ? null : _orderSteps, settings.GangMarkers ? _gangMarkers : null,
-            settings.DetailedCombat ? _combatClips : null);
+            settings.DetailedCombat ? _combatClips : null, settings.DetailedCombat ? _combatPresentations : null);
     }
 
     private static void Click(IntPtr window, int x, int y)

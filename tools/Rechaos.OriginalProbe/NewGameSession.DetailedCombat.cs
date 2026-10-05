@@ -12,9 +12,20 @@ internal sealed record CombatClipRecord(
     public bool Played { get; set; }
 }
 
+/// <summary>
+/// One call of the presentation (FND-COMBAT-010): the roll count it came after, its second argument
+/// (1 when planning opened it, 0 when the console's control did), the index of its first clip in the
+/// clip list, the clips it played and the effect slots it played itself.
+/// </summary>
+internal sealed record CombatPresentationRecord(int AfterRoll, int Automatic, int FirstClip, List<int> Sounds)
+{
+    public int Clips { get; set; }
+}
+
 internal sealed partial class NewGameSession
 {
     private readonly List<CombatClipRecord> _combatClips = [];
+    private readonly List<CombatPresentationRecord> _combatPresentations = [];
     private readonly List<int> _clipSounds = [];
     private bool _detailedCombatOpen;
 
@@ -28,8 +39,14 @@ internal sealed partial class NewGameSession
         {
             _detailedCombatOpen = true;
             _clipSounds.Clear();
-            _notes.Add($"Detailed Combat opened after roll {_rolls.Count}");
-            _process.SetBreakpoint(context.ReturnAddress, _ => _detailedCombatOpen = false, oneShot: true);
+            var presentation = new CombatPresentationRecord(_rolls.Count, context.Argument(1), _combatClips.Count, []);
+            _combatPresentations.Add(presentation);
+            _notes.Add($"Detailed Combat opened after roll {_rolls.Count} with flag {presentation.Automatic}");
+            _process.SetBreakpoint(context.ReturnAddress, _ =>
+            {
+                _detailedCombatOpen = false;
+                presentation.Clips = _combatClips.Count - presentation.FirstClip;
+            }, oneShot: true);
         });
         _process.SetBreakpoint(OriginalAddresses.SoundLoader, context =>
         {
@@ -48,6 +65,9 @@ internal sealed partial class NewGameSession
             if (context.ReturnAddress is >= OriginalAddresses.CombatClip and <= OriginalAddresses.CombatClipEnd
                 && context.Argument(0) == 5 && _combatClips.Count > 0)
                 _combatClips[^1].Played = true;
+            else if (context.ReturnAddress is >= OriginalAddresses.DetailedCombat and <= OriginalAddresses.DetailedCombatEnd
+                && _combatPresentations.Count > 0)
+                _combatPresentations[^1].Sounds.Add(context.Argument(0));
         }, quiet: true);
     }
 

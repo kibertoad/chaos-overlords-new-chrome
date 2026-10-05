@@ -87,11 +87,13 @@ internal static class OriginalAddresses
     public const uint PlanningTimeExpired = 0x0041BE09;
     public const uint PlaySound = 0x00464290;
 
-    // RULE-COMBAT-004, FND-COMBAT-011: the Detailed Combat presentation fn_0042E040, its clip player
+    // RULE-COMBAT-004, FND-COMBAT-011: the Detailed Combat presentation fn_0042E040 (to 0x0042EE45,
+    // FND-COMBAT-010), its clip player
     // fn_00430C23 (to 0x00431C53, FND-EXE-004), the INT16 element numbers of the focal gang and the
     // other gang of the clip, and the right ends of the focal and other bars it sets before each
     // clip. FND-AUDIO-006, FND-AUDIO-013: the sound loader fn_0045867C(slot, number).
     public const uint DetailedCombat = 0x0042E040;
+    public const uint DetailedCombatEnd = 0x0042EE45;
     public const uint CombatClip = 0x00430C23;
     public const uint CombatClipEnd = 0x00431C53;
     public const uint CombatFocal = 0x004945A0;

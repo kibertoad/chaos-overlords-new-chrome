@@ -581,6 +581,10 @@
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | Does Detailed Combat present several armed and unarmed attackers on one gang as the original does? | recorded |
 | [EXP-COMBAT-004](../experiments/EXP-COMBAT-004.md) | Does Detailed Combat give a bare-handed Martial Arts attack the original's sound? | recorded |
 | [EXP-COMBAT-005](../experiments/EXP-COMBAT-005.md) | Does Detailed Combat present police attacks on the viewer's gangs as the original does? | recorded |
+| [EXP-COMBAT-006](../experiments/EXP-COMBAT-006.md) | Does Detailed Combat present two gangs that attack each other, and the console's replay ended by Exit, as the original does? | recorded |
+| [EXP-COMBAT-007](../experiments/EXP-COMBAT-007.md) | Does Detailed Combat present the viewer's fights in two sectors as the original does? | recorded |
+| [EXP-COMBAT-008](../experiments/EXP-COMBAT-008.md) | Does the console's Detailed Combat control with no fight to show do what the original does? | recorded |
+| [EXP-COMBAT-009](../experiments/EXP-COMBAT-009.md) | Does Detailed Combat present an attack of the viewer's that the target evades as the original does? | recorded |
 | [FND-COMBAT-001](../findings/FND-COMBAT-001.md) | The whole-turn resolver makes attack rolls, then police rolls, in player slot order and then roster slot order | recorded |
 | [FND-COMBAT-002](../findings/FND-COMBAT-002.md) | The Combat Results panel's page arrows, opponent portraits, force selector and exit face are fixed hit rectangles in handler 0x00451F80 | recorded |
 | [FND-COMBAT-003](../findings/FND-COMBAT-003.md) | Damage Inflicted is credited the full computed damage of every opening attack, and never retaliation | recorded |
@@ -599,7 +603,7 @@
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | established |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | established |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation | established |
-| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | established |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | Combat Results panel, paged by sector | supported |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | Detailed Combat panel | supported |
 

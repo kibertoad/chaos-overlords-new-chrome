@@ -4,7 +4,7 @@ title: The sound of an attack in Detailed Combat
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-013, FND-AUDIO-002, FND-AUDIO-006, FND-EXE-004, EXP-COMBAT-001, EXP-COMBAT-002, EXP-COMBAT-003, EXP-COMBAT-004, EXP-COMBAT-005]
+evidence: [FND-AUDIO-013, FND-AUDIO-002, FND-AUDIO-006, FND-EXE-004, EXP-COMBAT-001, EXP-COMBAT-002, EXP-COMBAT-003, EXP-COMBAT-004, EXP-COMBAT-005, EXP-COMBAT-009]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005, FMT-AUDIO-001]

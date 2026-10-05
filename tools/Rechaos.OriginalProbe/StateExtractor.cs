@@ -104,6 +104,17 @@ internal sealed class StateExtractor
                 ["sounds"] = new JsonArray(clip["Sounds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
                 ["played"] = clip["Played"]!.GetValue<bool>(),
             }).ToArray());
+        // RULE-COMBAT-004: each call of the presentation, with its flag, its clips and the effect
+        // slots it played itself (FND-COMBAT-010).
+        if (trace["CombatPresentations"] is JsonArray combatPresentations)
+            run["combat_presentations"] = new JsonArray(combatPresentations.Select(presentation => (JsonNode)new JsonObject
+            {
+                ["after_roll"] = presentation!["AfterRoll"]!.GetValue<int>(),
+                ["automatic"] = presentation["Automatic"]!.GetValue<int>(),
+                ["first_clip"] = presentation["FirstClip"]!.GetValue<int>(),
+                ["clips"] = presentation["Clips"]!.GetValue<int>(),
+                ["sounds"] = new JsonArray(presentation["Sounds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+            }).ToArray());
         // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
         if (trace["HireSteps"] is JsonArray hireSteps)
             run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject

@@ -115,7 +115,7 @@
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | established |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | established |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation | established |
-| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | established |
 | [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | supported |
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | supported |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | established |
@@ -611,7 +611,7 @@
 
 ## experiments
 
-133 entries.
+137 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -623,6 +623,10 @@
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | Does Detailed Combat present several armed and unarmed attackers on one gang as the original does? | recorded |
 | [EXP-COMBAT-004](../experiments/EXP-COMBAT-004.md) | Does Detailed Combat give a bare-handed Martial Arts attack the original's sound? | recorded |
 | [EXP-COMBAT-005](../experiments/EXP-COMBAT-005.md) | Does Detailed Combat present police attacks on the viewer's gangs as the original does? | recorded |
+| [EXP-COMBAT-006](../experiments/EXP-COMBAT-006.md) | Does Detailed Combat present two gangs that attack each other, and the console's replay ended by Exit, as the original does? | recorded |
+| [EXP-COMBAT-007](../experiments/EXP-COMBAT-007.md) | Does Detailed Combat present the viewer's fights in two sectors as the original does? | recorded |
+| [EXP-COMBAT-008](../experiments/EXP-COMBAT-008.md) | Does the console's Detailed Combat control with no fight to show do what the original does? | recorded |
+| [EXP-COMBAT-009](../experiments/EXP-COMBAT-009.md) | Does Detailed Combat present an attack of the viewer's that the target evades as the original does? | recorded |
 | [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | Do the Comlink panels of a local game with three humans store, cap, show, mark and drop messages as the spec gives? | recorded |
 | [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | Are Comlink Send and View both refused when the only human has no one to write to and no messages? | recorded |
 | [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | Which items does the Equip list offer gangs carrying items, with little research done? | recorded |

@@ -80,6 +80,12 @@ public sealed partial class OriginalNewGameExperimentTests
     private sealed record RecordedCombatClip(
         int AfterRoll, int Focal, int Other, int Hold, int FocalBar, int OtherBar, IReadOnlyList<int> Sounds, bool Played);
 
+    // A call of the Detailed Combat presentation (FND-COMBAT-010): the roll count before it, 1 when
+    // planning opened it and 0 when the console's control did, its first clip in the clip list, the
+    // clips it played and the effect slots it played itself.
+    private sealed record RecordedCombatPresentation(
+        int AfterRoll, bool Automatic, int FirstClip, int Clips, IReadOnlyList<int> Sounds);
+
     // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
     // (FND-HIRE-001, FND-HIRE-008).
@@ -233,6 +239,12 @@ public sealed partial class OriginalNewGameExperimentTests
                     clip.GetProperty("sounds").EnumerateArray().Select(sound => sound.GetInt32()).ToArray(),
                     clip.GetProperty("played").GetBoolean())).ToArray()
                 : null;
+            CombatPresentations = run.TryGetProperty("combat_presentations", out var combatPresentations)
+                ? combatPresentations.EnumerateArray().Select(presentation => new RecordedCombatPresentation(
+                    presentation.GetProperty("after_roll").GetInt32(), presentation.GetProperty("automatic").GetInt32() != 0,
+                    presentation.GetProperty("first_clip").GetInt32(), presentation.GetProperty("clips").GetInt32(),
+                    presentation.GetProperty("sounds").EnumerateArray().Select(sound => sound.GetInt32()).ToArray())).ToArray()
+                : null;
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.
             SearchFilter = inputs.EnumerateArray()
@@ -276,6 +288,8 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedAttackList> AttackLists { get; }
         // Null when the run left Detailed Combat switched off.
         public IReadOnlyList<RecordedCombatClip>? CombatClips { get; }
+        // Null for a run recorded before the probe kept the presentation calls.
+        public IReadOnlyList<RecordedCombatPresentation>? CombatPresentations { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedHireStep> HireSteps { get; }
         public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }
