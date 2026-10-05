@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.Xna.Framework;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Game;
@@ -22,7 +23,7 @@ public sealed class LeavePromptTests
     public void ClosingAnUnsavedMatchOpensThePromptAndCancelReturnsToTheMatch()
     {
         var game = GameWith(saved: false);
-        Assert.True(OriginalNewGameExperimentTests.ClosingIsCancelled(game));
+        Assert.True(ClosingIsCancelled(game));
         Assert.Equal(LeaveKind.Exit, Prompt(game));
         Assert.True((bool)DeviationBehaviourTests.Field("_gameMenuOpen").GetValue(game)!);
 
@@ -35,7 +36,7 @@ public sealed class LeavePromptTests
     public void ClosingASavedMatchIsNotHeldBack()
     {
         var game = GameWith(saved: true);
-        Assert.False(OriginalNewGameExperimentTests.ClosingIsCancelled(game));
+        Assert.False(ClosingIsCancelled(game));
         Assert.Equal(LeaveKind.None, Prompt(game));
     }
 
@@ -86,14 +87,30 @@ public sealed class LeavePromptTests
 
     private static ChaosGame GameWith(bool saved)
     {
-        var game = DeviationBehaviourTests.HeadlessGame();
         var match = NativeSaveSerializerTests.CreateMatch();
         var actions = new MatchActions(new MatchReplayRecorder(match));
         if (saved) actions.MarkSaved();
+        return GameWith(match, actions);
+    }
+
+    /// <summary>A headless game playing <paramref name="match"/> through <paramref name="actions"/>.</summary>
+    internal static ChaosGame GameWith(MatchState match, MatchActions actions)
+    {
+        var game = DeviationBehaviourTests.HeadlessGame();
         DeviationBehaviourTests.Field("_state").SetValue(game, match);
         DeviationBehaviourTests.Field("_actions").SetValue(game, actions);
         DeviationBehaviourTests.Field("_saveName").SetValue(game, new TextField("SAVE NAME", 48));
         return game;
+    }
+
+    /// <summary>Closes the window of a headless game and says whether the close was held back.</summary>
+    internal static bool ClosingIsCancelled(ChaosGame game)
+    {
+        var args = new ExitingEventArgs();
+        typeof(ChaosGame).GetMethod("OnExiting", BindingFlags.Instance | BindingFlags.NonPublic,
+                [typeof(object), typeof(ExitingEventArgs)])!
+            .Invoke(game, [game, args]);
+        return args.Cancel;
     }
 
     private static LeaveKind Prompt(ChaosGame game) =>

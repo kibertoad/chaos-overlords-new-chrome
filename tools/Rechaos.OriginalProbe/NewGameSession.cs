@@ -174,10 +174,10 @@ internal sealed record NewGameSettings(
             foreach (var write in planning) yield return ("planning", write.ToString());
             var search = (Search ?? []).Where(write => write.Turn == turn).ToArray();
             foreach (var write in search) yield return ("search", write.ToString());
-            foreach (var panel in (Finance ?? []).Where(panel => panel.Turn == turn))
-                yield return ("left_click", panel.ToString());
             foreach (var write in (SavedWrites ?? []).Where(write => write.Turn == turn))
                 yield return ("saved", write.ToString());
+            foreach (var panel in (Finance ?? []).Where(panel => panel.Turn == turn))
+                yield return ("left_click", panel.ToString());
             if (ExpireTurns?.Contains(turn) == true)
             {
                 yield return ("wait", $"no Done press, turn {turn}: the planning time runs out");
@@ -187,9 +187,9 @@ internal sealed record NewGameSettings(
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
+        foreach (var click in SearchClicks ?? []) yield return ("left_click", click.ToString());
         foreach (var write in (SavedWrites ?? []).Where(write => write.Turn == EndTurns + 1))
             yield return ("saved", $"{write} at the dump");
-        foreach (var click in SearchClicks ?? []) yield return ("left_click", click.ToString());
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
         foreach (var step in OrderSteps ?? [])
@@ -527,8 +527,7 @@ internal sealed partial class NewGameSession(
             return Finish(false, stopped, rollsBeforeBegin);
         if (settings.OrderSteps is { Count: > 0 } && RecordOrderSteps(window) is { } orderStepsStopped)
             return Finish(false, orderStepsStopped, rollsBeforeBegin);
-        if (settings.Closes is { Count: > 0 } && RecordCloses(window) is { } closesStopped)
-            return Finish(false, closesStopped, rollsBeforeBegin);
+        if (settings.Closes is { Count: > 0 }) RecordCloses(window);
         return Finish(true, null, rollsBeforeBegin);
     }
 

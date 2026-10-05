@@ -47,7 +47,7 @@ internal sealed partial class NewGameSession
     // opens through fn_00465CEC is answered without showing it: the probe returns the step's answer
     // from the call, as the dialog procedure would for that button. The save the first answer starts,
     // fn_00463CC5, opens the save dialog, so no step answers 1.
-    private string? RecordCloses(IntPtr window)
+    private void RecordCloses(IntPtr window)
     {
         CloseRecord? current = null;
         _process.SetBreakpoint(OriginalAddresses.DialogOpen, context =>
@@ -67,23 +67,23 @@ internal sealed partial class NewGameSession
             _closes.Add(current);
             Native.PostMessageW(window, Native.WmClose, IntPtr.Zero, IntPtr.Zero);
             var posted = DateTime.UtcNow;
+            // The byte is read while the process can still be read: a game that quits and exits
+            // within the wait keeps the last value seen instead of reading a process that is gone.
+            var quitRequested = false;
             _process.RunUntil(() =>
-                _process.Read(OriginalAddresses.QuitRequested, 1)[0] != 0
-                || DateTime.UtcNow - posted > TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(10));
-            current.QuitRequested = !_process.Exited && _process.Read(OriginalAddresses.QuitRequested, 1)[0] != 0;
+            {
+                if (_process.Exited) return true;
+                quitRequested = _process.Read(OriginalAddresses.QuitRequested, 1)[0] != 0;
+                return quitRequested || DateTime.UtcNow - posted > TimeSpan.FromSeconds(3);
+            }, TimeSpan.FromSeconds(10));
+            current.QuitRequested = quitRequested;
             _notes.Add($"{step}: dialogs [{string.Join(",", current.Dialogs)}], quit_requested {(current.QuitRequested ? 1 : 0)}");
-            if (current.QuitRequested)
+            if (current.QuitRequested) _process.RunUntil(() => _process.Exited, TimeSpan.FromSeconds(15));
+            if (current.QuitRequested || _process.Exited)
             {
-                _process.RunUntil(() => _process.Exited, TimeSpan.FromSeconds(15));
                 current.Exited = _process.Exited;
-                return null;
-            }
-            if (_process.Exited)
-            {
-                current.Exited = true;
-                return null;
+                return;
             }
         }
-        return null;
     }
 }

@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Game;
@@ -49,16 +48,16 @@ public sealed partial class OriginalNewGameExperimentTests
             if (HireDropPlacement.Rejection(match, human, step.Sector) is null)
                 Assert.True(actions!.QueueHire(human, player.HireOfferSlots[step.Slot].GangDefinitionId!.Value, step.Sector).Accepted);
 
-        var game = DeviationBehaviourTests.HeadlessGame();
-        DeviationBehaviourTests.Field("_state").SetValue(game, match);
-        DeviationBehaviourTests.Field("_actions").SetValue(game, actions);
-        DeviationBehaviourTests.Field("_saveName").SetValue(game, new TextField("SAVE NAME", 48));
+        var game = LeavePromptTests.GameWith(match, actions!);
         foreach (var close in recorded.Closes)
         {
             if (close.Saved == 1 && !actions!.IsSaved) actions.MarkSaved();
             Assert.Equal(close.Saved == 1, actions!.IsSaved);
+            // The original's no_match_in_play byte: the rebuild has a match in play while it has
+            // a match whose end evaluation has not run.
+            Assert.Equal(close.NoMatch != 0, match.Outcome is not null);
             var asked = close.Dialogs.Contains(129);
-            Assert.Equal(asked, ClosingIsCancelled(game));
+            Assert.Equal(asked, LeavePromptTests.ClosingIsCancelled(game));
             Assert.Equal(asked ? LeaveKind.Exit : LeaveKind.None,
                 (LeaveKind)DeviationBehaviourTests.Field("_leavePrompt").GetValue(game)!);
             if (!asked) Assert.True(close.QuitRequested);
@@ -70,16 +69,5 @@ public sealed partial class OriginalNewGameExperimentTests
                 Assert.False((bool)DeviationBehaviourTests.Field("_gameMenuOpen").GetValue(game)!);
             }
         }
-    }
-
-    /// <summary>Closes the window of a headless game and says whether the close was held back.</summary>
-    internal static bool ClosingIsCancelled(ChaosGame game)
-    {
-        var args = new ExitingEventArgs();
-        typeof(ChaosGame).GetMethod("OnExiting",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-                [typeof(object), typeof(ExitingEventArgs)])!
-            .Invoke(game, [game, args]);
-        return args.Cancel;
     }
 }
