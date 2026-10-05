@@ -58,6 +58,7 @@ public sealed partial class ChaosGame
         }
         if (_pressedCityConsoleControl is not null)
         {
+            KeepLeftHoldUntilRelease();
             CancelCityConsolePress();
             _message = string.Empty;
             return;
@@ -88,6 +89,7 @@ public sealed partial class ChaosGame
         }
         if (_pressedHireRejectSlot is not null)
         {
+            KeepLeftHoldUntilRelease();
             CancelHireReject();
             _message = string.Empty;
             return;
@@ -100,12 +102,14 @@ public sealed partial class ChaosGame
         }
         if (_draggedHireDefinitionId is not null)
         {
+            KeepLeftHoldUntilRelease();
             CancelHireDrag();
             _message = string.Empty;
             return;
         }
         if (_draggedGangId is not null)
         {
+            KeepLeftHoldUntilRelease();
             CancelGangDrag();
             _message = string.Empty;
             return;

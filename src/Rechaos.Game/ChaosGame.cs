@@ -207,6 +207,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Point _gangPressPoint;
     private bool _gangDragStarted;
     private SectorGangDragProjection? _gangDragProjection;
+    /// <summary>
+    /// Set when a cancel lets go of a hold the planning loop does not run through while the left
+    /// button is still down, and cleared when it comes up (FND-UI-044, FND-HIRE-008).
+    /// </summary>
+    private bool _leftHoldOutlivesCancel;
     private Point _dragPoint;
     private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
@@ -796,14 +801,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 _message = string.Empty;
             }
             else if (_draggedGangId is not null && !_gangDragStarted
-                     && DragMoved(_gangPressPoint, virtualPoint))
+                     && GangDragMoved(_gangPressPoint, virtualPoint))
             {
                 StartGangDrag();
                 _message = string.Empty;
             }
         }
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released)
+        {
+            _leftHoldOutlivesCancel = false;
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: false);
+        }
         if (_previousMouse.RightButton == ButtonState.Pressed && mouse.RightButton == ButtonState.Released)
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: true);
         CaptureNewCombatAnimations();
@@ -821,6 +829,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     private static bool DragMoved(Point press, Point current) =>
         Math.Abs(current.X - press.X) >= 4 || Math.Abs(current.Y - press.Y) >= 4;
+
+    /// <summary>
+    /// FND-UI-044: the individual command handler counts a press on a portrait as moved once the
+    /// point leaves the half-open rectangle (x-2,y-2)-(x+2,y+2) around it, that is two pixels
+    /// right or down or three pixels left or up.
+    /// </summary>
+    private static bool GangDragMoved(Point press, Point current) =>
+        current.X < press.X - 2 || current.X >= press.X + 2
+        || current.Y < press.Y - 2 || current.Y >= press.Y + 2;
 
     private void HandleClick(Point point)
     {

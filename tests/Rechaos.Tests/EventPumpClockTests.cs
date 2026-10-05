@@ -179,6 +179,11 @@ public sealed class EventPumpClockTests
         AssertHolds(game, "_pressedEventsButton", LastTurnEventsButton.Next);
         AssertHolds(game, "_pressedComlinkSendButton", FirstValueOf("_pressedComlinkSendButton"));
         AssertHolds(game, "_pressedAttackFace", FirstValueOf("_pressedAttackFace"));
+        // A hold the rebuild's Escape or right press let go of while the left button stays down.
+        Field("_leftHoldOutlivesCancel").SetValue(game, true);
+        Assert.True(Holds(game));
+        Field("_leftHoldOutlivesCancel").SetValue(game, false);
+        Assert.False(Holds(game));
 
         // The back control's helper loop follows the left button, so a right-button hold of it,
         // which only the rebuild keeps, lets the pump run.

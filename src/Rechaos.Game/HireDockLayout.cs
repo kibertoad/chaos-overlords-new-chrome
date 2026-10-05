@@ -56,23 +56,17 @@ public static class HireDockLayout
     }
 
     /// <summary>
-    /// SCR-HIRE-002, FND-HIRE-007, FND-UI-006, FND-UI-023: the number helper fills exactly two
-    /// cells, with leading zeros because the console passes the helper's leading-zero flag. The
-    /// first cell takes the whole quotient by ten, so a price above 99 shows the glyph that many
-    /// places after <c>0</c> in the strip, followed by its last digit. A negative amount gives
+    /// SCR-HIRE-002, FND-HIRE-007, FND-UI-006, FND-UI-023: the two price cells as
+    /// <see cref="PixelFont.DrawNumber"/> draws them. The number helper fills exactly two cells,
+    /// with leading zeros because the console passes the helper's leading-zero flag. The first
+    /// cell takes the whole quotient by ten, so a price above 99 shows the glyph that many places
+    /// after <c>0</c> in the strip, followed by its last digit, and a quotient off the font strip
+    /// is copied from <c>PX00129</c> as on every other panel (RULE-UI-004). A negative amount gives
     /// the digits of its magnitude, which the caller draws in red.
     /// </summary>
-    public static string PriceText(int amount) => PriceCells(amount).Digits;
-
-    /// <summary>
-    /// The two price cells as <see cref="PixelFont.DrawNumber"/> draws them, so a quotient off the
-    /// font strip is copied from <c>PX00129</c> as on every other panel (RULE-UI-004).
-    /// </summary>
-    public static NativeTwoCellNumberPresentation.Value PriceCells(int amount)
-    {
-        var display = NativeTwoCellNumberPresentation.Format(amount, NativeTwoCellNumberPresentation.Kind.Baseline);
-        return display with { Digits = display.Digits.PadLeft(2, '0') };
-    }
+    public static NativeTwoCellNumberPresentation.Value PriceCells(int amount) =>
+        NativeTwoCellNumberPresentation.Format(
+            amount, NativeTwoCellNumberPresentation.Kind.Baseline, leadingZeros: true);
 
     public static IReadOnlyList<HireDockEntry?> Project(
         IReadOnlyList<HireOfferSlotState> offers,

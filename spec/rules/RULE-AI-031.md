@@ -4,7 +4,7 @@ title: Family-13 and family-14 computer gangs move to the Big Man or Siege objec
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-039, FND-AI-069, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-062, FND-AI-063, FND-SETUP-018, EXP-TURN-058]
+evidence: [FND-AI-039, FND-AI-069, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-062, FND-AI-063, FND-SETUP-018, EXP-TURN-058, EXP-TURN-084]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-AI-022, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -53,12 +53,16 @@ define on_objective(s):
     return false
 
 # Up to five draws from the pool of kind, then Attack at Force 5 or more,
-# otherwise Heal when the Heal test passes, otherwise no write
+# otherwise Heal when the Heal test passes, otherwise no write. An empty pool
+# still draws once: roll(0) gives 1, the lookup in the empty list gives no
+# gang, and that ends the loop [FND-AI-062, EXP-TURN-084]
 define fight_or_heal(player, idx, kind):
     let g = gangs[idx]
     let t = -1
     if count(visible_opponents(player, g.sector, kind)) > 0:
         t = draw_target(player, idx, kind, 5)
+    else:
+        roll(0)
     if t != -1 and g.force >= 5:
         plan(idx, ACTION_ATTACK, t / 81, t % 81)
         aux_records[idx].focus = g.sector
@@ -151,7 +155,8 @@ nothing; they write the gang's planned action and targets through `plan`
 or Influence stores the current sector in the first auxiliary value, and the
 other writes store -1. A weapon or armor Equip sets the matching cooldown to 2.
 A family-14 gang may become family 13. Draws up to five `roll`s on an
-objective, plus the draws inside `select_sector`.
+objective, one `roll(0)` when the pool is empty, plus the draws inside
+`select_sector`.
 
 ## Edge cases
 
@@ -164,10 +169,10 @@ remaining is even, so it alternates between fighting and Control. A gang with
 Force below 5, or one whose draws found no gang, never attacks: it heals when
 Force is below 10 and effective Heal is at least -3, and otherwise the handler
 writes nothing, so the planned action stays None (FND-AI-062). A neutral
-objective has no owner's gangs to draw, so the gang heals or does nothing on
-even turns. After the draws the last drawn gang is attacked even when every
-strength test failed, and the strength test can be made on a different gang
-from the one attacked (BUG-AI-003). In a scenario other than 6 and 8 no sector
+objective has no owner's gangs to draw, so on even turns the gang makes its
+one `roll(0)` and then heals or does nothing. After the draws the last drawn
+gang is attacked even when every strength test failed, and the strength test
+can be made on a different gang from the one attacked (BUG-AI-003). In a scenario other than 6 and 8 no sector
 is an objective, and the gang writes Move with the planned target left from the
 start of the turn, sector 0.
 

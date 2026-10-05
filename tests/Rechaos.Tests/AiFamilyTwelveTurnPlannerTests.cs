@@ -189,7 +189,9 @@ public sealed class AiFamilyTwelveTurnPlannerTests
     }
 
     [Fact]
-    public void EmptyHumanOnlyPoolDegradesToNoActionWithoutThrowing()
+    // RULE-AI-030: in a hostile human's sector where the only visible gang is a computer
+    // player's, the cached weight is 1, so the draw takes every visible gang (EXP-TURN-080).
+    public void WeightOneInHostileHumanSectorDrawsFromEveryVisibleGang()
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -234,9 +236,77 @@ public sealed class AiFamilyTwelveTurnPlannerTests
 
         match.PrepareAiPlanning(player);
 
-        Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(player, 0));
-        Assert.Empty(AiTurnPlanner.Plan(match, player));
+        Assert.Equal(1, match.AiPlanning.SectorWeight(player, 0));
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+        Assert.Equal(GangAction.Attack, command.Action);
+        Assert.Equal(CommandTarget.Gang(new GangId(30)), command.Target);
         Assert.Equal(3, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
+    // RULE-AI-030: at weight 10 in a hostile human's sector the draws take only the human
+    // players' gangs, so a visible computer gang does not widen the bound.
+    public void WeightTenInHostileHumanSectorDrawsOnlyHumanGangs()
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "HUMAN OWNER", PlayerController.Human),
+            new(new PlayerId(2), "VISIBLE CPU", PlayerController.Computer)
+        ];
+        var attackerDefinition = data.Gangs
+            .OrderByDescending(gang => gang.Stats.Detect)
+            .First();
+        var visibleDefinition = data.Gangs
+            .OrderBy(gang => gang.Stats.Stealth)
+            .First();
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20,
+                [new MatchGangState(new GangId(10), setups[0].Id,
+                    attackerDefinition.Id, 0, 10)]),
+            new(setups[1], 20,
+                [new MatchGangState(new GangId(20), setups[1].Id,
+                    visibleDefinition.Id, 0, 10)]),
+            new(setups[2], 20,
+                [new MatchGangState(new GangId(30), setups[2].Id,
+                    visibleDefinition.Id, 0, 10)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(1, 3, 13),
+                new MatchSiteState(2, 5, 15)
+            ], owner: id == 0 ? setups[1].Id : null, income: 3))
+            .ToArray();
+        var match = new MatchState(data, new MatchSetup(
+            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups,
+            AiDifficulty.HomicidalManiac), players, sectors);
+        var player = new PlayerId(0);
+        BeginFamilyTwelveTurn(match, player);
+        match.FinishUpkeep();
+        Assert.True(match.CanPlayerDetectGang(player, new GangId(20)));
+        Assert.True(match.CanPlayerDetectGang(player, new GangId(30)));
+
+        var bounds = new List<int>();
+        DeterministicRandom.RollObserver = (bound, _) => bounds.Add(bound);
+        try
+        {
+            match.PrepareAiPlanning(player);
+        }
+        finally
+        {
+            DeterministicRandom.RollObserver = null;
+        }
+
+        Assert.Equal(10, match.AiPlanning.SectorWeight(player, 0));
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+        Assert.Equal(GangAction.Attack, command.Action);
+        Assert.Equal(CommandTarget.Gang(new GangId(20)), command.Target);
+        Assert.NotEmpty(bounds);
+        Assert.All(bounds, bound => Assert.Equal(1, bound));
     }
 
     [Fact]

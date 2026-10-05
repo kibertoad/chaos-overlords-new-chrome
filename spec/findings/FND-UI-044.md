@@ -81,8 +81,9 @@ them (FND-UI-020). Function extents are those of FND-EXE-004.
 
 The second input path of FND-TURN-009 is a drag of the gang's portrait on the
 detailed sector screen. It starts with a left press on the portrait of one of
-the player's own cards, takes effect only once the pointer has moved two
-pixels from the press point, and ends when the left button comes up. A right
+the player's own cards, takes effect only once the pointer has left the
+rectangle around the press point, two pixels right or down or three pixels left
+or up, and ends when the left button comes up. A right
 press reaches the same code, but the left-button byte is already clear, so
 the wait loop ends on its first pass and no drag starts.
 
