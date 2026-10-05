@@ -137,6 +137,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | builds |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | builds |
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | builds |
+| [EXP-TURN-096](../experiments/EXP-TURN-096.md) | builds |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | builds |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | builds |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | builds |
@@ -1144,6 +1145,7 @@ None.
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | body |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | body |
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | body |
+| [EXP-TURN-096](../experiments/EXP-TURN-096.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [EXP-UI-004](../experiments/EXP-UI-004.md) | body |
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | body |
@@ -1463,6 +1465,7 @@ None.
 |---|---|
 | [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | body |
 | [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | body |
+| [EXP-TURN-096](../experiments/EXP-TURN-096.md) | body |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
 
 ## EXP-TURN-027
@@ -2035,8 +2038,15 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-096](../experiments/EXP-TURN-096.md) | body |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | evidence |
+
+## EXP-TURN-096
+
+| Cited by | In |
+|---|---|
+| [RULE-UI-010](../rules/RULE-UI-010.md) | body, evidence |
 
 ## EXP-UI-001
 
@@ -6744,6 +6754,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | body |
+| [EXP-TURN-096](../experiments/EXP-TURN-096.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
 | [FND-MOVE-007](../findings/FND-MOVE-007.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
@@ -6822,6 +6833,7 @@ None.
 | [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | body |
 | [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | body |
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | body |
+| [EXP-TURN-096](../experiments/EXP-TURN-096.md) | body |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body, evidence |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
@@ -8909,6 +8921,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-096](../experiments/EXP-TURN-096.md) | body |
 | glossary: sector_card_slots | glossary |
 | glossary: sector_roster_slots | glossary |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, related |

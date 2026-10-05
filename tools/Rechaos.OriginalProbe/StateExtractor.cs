@@ -116,6 +116,7 @@ internal sealed class StateExtractor
                 if (step["Items"] is JsonArray items)
                     record["items"] = new JsonArray(items.Select(Integers).ToArray());
                 record["city_view"] = step["CityView"]!.GetValue<bool>();
+                if (step["Viewed"] is JsonNode viewed) record["viewed"] = viewed.GetValue<int>();
                 record["cards"] = Integers(step["Cards"]);
                 record["gangs"] = new JsonArray(step["Gangs"]!.AsArray().Select(Integers).ToArray());
                 return (JsonNode)record;

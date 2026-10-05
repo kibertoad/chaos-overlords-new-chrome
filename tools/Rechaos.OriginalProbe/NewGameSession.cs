@@ -518,6 +518,21 @@ internal sealed partial class NewGameSession(
         return _panelsOpen == 0;
     }
 
+    // An Exit press of a step after the dump. With no panel open the Exit point lies on the city
+    // map, where a press would select a sector and a second one open the sector view, so the
+    // press is skipped. A press that closes a panel counts as for ClosePanels, so the panel is
+    // recorded as shown.
+    private void PressExitAfterDump(IntPtr window)
+    {
+        if (_panelsOpen == 0)
+        {
+            _notes.Add("exit after the dump skipped: no panel was open");
+            return;
+        }
+        _exitPresses++;
+        Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
+    }
+
     // FND-AWARDS-005: the renderer's first call, kept until it returns.
     private void OnAwardsRows(BreakContext context)
     {

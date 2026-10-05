@@ -22,7 +22,9 @@ public sealed partial class OriginalNewGameExperimentTests
     // the popup, its items and the active player's orders after each press. The rebuild's hit tests
     // open the same menu for each press, its menus list the same commands and offer the orders the
     // original leaves enabled, and the order the rebuild gives through the chosen action leaves
-    // each gang with the original's action and repeat_action.
+    // each gang with the original's action and repeat_action. RULE-UI-010: a press on an overlord's
+    // portrait lists that overlord's gangs on the cards where the original does, and a card of
+    // another overlord's gang opens no menu.
     [Theory]
     [MemberData(nameof(OrderStepRuns))]
     public void TheOrderMenusGiveTheOriginalsOrders(string experiment, int run)
@@ -32,22 +34,39 @@ public sealed partial class OriginalNewGameExperimentTests
         var human = recorded.Humans[0];
         var player = match.FindPlayer(human)!;
         int? sector = null;
+        PlayerId? owner = null;
         foreach (var step in recorded.OrderSteps)
         {
             var label = $"{step.Kind} {step.Target} ({step.X}, {step.Y}) command {step.Choice}";
-            if (step.Kind == "open") sector = step.Target;
+            if (step.Kind == "open") (sector, owner) = (step.Target, null);
             if (step.Kind == "back") sector = null;
+            var portrait = step.Kind == "strip" && sector is not null
+                ? SectorOpponentGangs.PortraitAt(match, new Point(step.X, step.Y))
+                : null;
+            if (portrait is { } pressed)
+                owner = SectorOpponentGangs.PressPortrait(match, human, owner, pressed, sector!.Value);
             Assert.True(step.CityView == sector is null, $"after {label}");
+            Assert.True(portrait is null || step.Viewed >= 0,
+                $"after {label}: a portrait press is recorded with the player the cards list");
             IReadOnlyList<MatchGangState> cards = sector is { } shown
-                ? SectorOpponentGangs.InSector(match, human, human, shown)
+                ? SectorOpponentGangs.Cards(match, human, owner, shown)
                 : [];
+            var viewed = cards.Count > 0 ? cards[0].Owner : human;
+            if (sector is not null && step.Viewed >= 0)
+                Assert.True(step.Viewed == viewed.Value,
+                    $"after {label}: the original lists player {step.Viewed}'s gangs, the rebuild player {viewed.Value}'s");
             if (sector is not null)
+            {
+                var roster = match.FindPlayer(viewed)!.Gangs.ToList();
                 Assert.True(step.Cards.SequenceEqual(Enumerable.Range(0, SectorGangCardLayout.VisibleCards)
-                    .Select(card => card < cards.Count ? player.Gangs.ToList().IndexOf(cards[card]) : -1)), $"after {label}");
+                    .Select(card => card < cards.Count ? roster.IndexOf(cards[card]) : -1)),
+                    $"after {label}: the original's cards hold slots [{string.Join(",", step.Cards)}]");
+            }
 
             var (menu, gangs) = step.Kind switch
             {
-                "card" => CardMenu(cards, step),
+                _ when portrait is not null => (-1, (IReadOnlyList<MatchGangState>)[]),
+                "card" => CardMenu(cards, human, step),
                 "strip" => StripMenu(match, human, sector ?? -1, cards, step),
                 _ => (-1, (IReadOnlyList<MatchGangState>)[]),
             };
@@ -75,15 +94,16 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // SCR-UI-004, FND-UI-015, FND-UI-021: a press on an own card's strip opens menu 1 for its
-    // one-off part and menu 2 for its recurring part.
+    // one-off part and menu 2 for its recurring part. Another player's card takes no orders
+    // (RULE-UI-010), so it opens no menu.
     private static (int Menu, IReadOnlyList<MatchGangState> Gangs) CardMenu(
-        IReadOnlyList<MatchGangState> cards, RecordedOrderStep step)
+        IReadOnlyList<MatchGangState> cards, PlayerId human, RecordedOrderStep step)
     {
         var point = new Point(
             SectorGangCardLayout.Left + step.Target % 2 * SectorGangCardLayout.ColumnStride + step.X,
             SectorGangCardLayout.Top + step.Target / 2 * SectorGangCardLayout.RowStride + step.Y);
         var card = SectorGangCardLayout.CardAt(point);
-        if (card < 0 || card >= cards.Count) return (-1, []);
+        if (card < 0 || card >= cards.Count || cards[card].Owner != human) return (-1, []);
         return SectorGangCardLayout.ActionRepeatAt(card, point) switch
         {
             false => (1, [cards[card]]),
@@ -94,7 +114,7 @@ public sealed partial class OriginalNewGameExperimentTests
 
     // SCR-UI-004, FND-UI-015, FND-UI-021: the group order strip, drawn over two or more cards,
     // opens menu 3 on its left part and menu 5 on its right, for every gang of the player in the
-    // sector (FND-TURN-009).
+    // sector (FND-TURN-009). It is drawn only over the active player's own cards (FND-UI-018).
     private static (int Menu, IReadOnlyList<MatchGangState> Gangs) StripMenu(
         MatchState match, PlayerId human, int sector, IReadOnlyList<MatchGangState> cards, RecordedOrderStep step)
     {

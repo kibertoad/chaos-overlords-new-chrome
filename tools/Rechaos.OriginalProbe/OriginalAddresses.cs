@@ -190,8 +190,10 @@ internal static class OriginalAddresses
     public const int PopupMenuTrackArguments = 7;
 
     // FND-UI-015, FND-UI-018, FND-STATE-008: the view byte, 1 while the city is shown and 0 in the
-    // sector view, and the sector view's six card slots, a roster slot or -1 each.
+    // sector view, the player whose gangs the sector view lists, and its six card slots, a roster
+    // slot or -1 each.
     public const uint CityViewShown = 0x00487B88;
+    public const uint SectorViewPlayer = 0x00487B8C;
     public const uint SectorCardSlots = 0x004ABC68;
     public const int SectorCards = 6;
 

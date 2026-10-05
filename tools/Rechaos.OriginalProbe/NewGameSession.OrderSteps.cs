@@ -19,12 +19,13 @@ internal sealed record ProbeOrderStep(string Kind, int Target, int X, int Y, int
 
 /// <summary>
 /// A step of <c>--order-steps</c> and what followed it: the popup menu it opened (-1 for none) with
-/// each item's command and greyed state (FND-UI-021), whether the city view is shown, the sector
-/// view's card slots, and the order bytes of every gang of the active player in use, slot 80 with
+/// each item's command and greyed state (FND-UI-021), whether the city view is shown, the player
+/// whose gangs the sector view lists and its card slots, and the order bytes of every gang of the active player in use, slot 80 with
 /// them (FMT-STATE-001): slot, sector, action, target, target_2, repeat_action and repeat_target.
 /// </summary>
 internal sealed record OrderStepRecord(
-    ProbeOrderStep Step, int Menu, List<List<int>>? Items, bool CityView, List<int> Cards, List<List<int>> Gangs);
+    ProbeOrderStep Step, int Menu, List<List<int>>? Items, bool CityView, List<int> Cards, List<List<int>> Gangs,
+    int Viewed);
 
 internal sealed partial class NewGameSession
 {
@@ -79,7 +80,7 @@ internal sealed partial class NewGameSession
                     Click(window, OriginalAddresses.SectorBackX, OriginalAddresses.SectorBackY);
                     break;
                 case "exit":
-                    Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
+                    PressExitAfterDump(window);
                     break;
             }
             _process.Pump(TimeSpan.FromSeconds(0.8));
@@ -87,7 +88,8 @@ internal sealed partial class NewGameSession
             if (_rolls.Count != rollsAtDump)
                 return $"The original called roll {_rolls.Count - rollsAtDump} time(s) during the order step {step}.";
             _orderSteps.Add(new OrderStepRecord(step, menu, items,
-                _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders()));
+                _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),
+                _process.ReadInt32(OriginalAddresses.SectorViewPlayer)));
         }
         return null;
     }
