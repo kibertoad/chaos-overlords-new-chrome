@@ -4,7 +4,7 @@ title: Giving a gang an order replaces its whole previous order, one-off or recu
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-002, FND-TURN-009, FND-UI-044, FND-HIDE-001, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-TURN-002, FND-TURN-009, FND-UI-044, FND-HIDE-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-095]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -122,5 +122,12 @@ None known.
 
 ## Open questions
 
+- EXP-TURN-095 gives orders without pickers through every menu, in a sector
+  with no owner, under police presence and with no other player's gang seen.
+  No run of the original has yet made a choice that runs a picker (Attack,
+  Equip, Give, Influence, Move, Research, Sell, or a group Attack, Influence or
+  Move), a recurring Influence or Research from a gang's menu, a Control, a
+  group order that reaches a hiding gang, or the portrait drag, so those
+  branches rest on the static readings alone.
 - The computer players' orders are written by their own code, which this rule
   does not cover.

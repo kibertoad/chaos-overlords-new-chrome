@@ -72,6 +72,28 @@ internal sealed class StateExtractor
                 ["sector"] = step["Sector"]!.GetValue<int>(),
                 ["orders"] = new JsonArray(step["Orders"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
             }).ToArray());
+        // RULE-TURN-005, SCR-UI-004: each order step after the dump, the popup it opened with its
+        // items' commands and greyed states, the view, the card slots and the active player's orders.
+        if (trace["OrderSteps"] is JsonArray orderSteps)
+            run["order_steps"] = new JsonArray(orderSteps.Select(step =>
+            {
+                var probeStep = step!["Step"]!;
+                var record = new JsonObject
+                {
+                    ["kind"] = probeStep["Kind"]!.GetValue<string>(),
+                    ["target"] = probeStep["Target"]!.GetValue<int>(),
+                    ["x"] = probeStep["X"]!.GetValue<int>(),
+                    ["y"] = probeStep["Y"]!.GetValue<int>(),
+                    ["choice"] = probeStep["Choice"]!.GetValue<int>(),
+                    ["menu"] = step["Menu"]!.GetValue<int>(),
+                };
+                if (step["Items"] is JsonArray items)
+                    record["items"] = new JsonArray(items.Select(Integers).ToArray());
+                record["city_view"] = step["CityView"]!.GetValue<bool>();
+                record["cards"] = Integers(step["Cards"]);
+                record["gangs"] = new JsonArray(step["Gangs"]!.AsArray().Select(Integers).ToArray());
+                return (JsonNode)record;
+            }).ToArray());
         // RULE-SEARCH-001, FND-SEARCH-002: each click posted after the dump, whether the Search panel
         // was open after it, the active player and the whole filter table.
         if (trace["SearchClicks"] is JsonArray searchClicks)
@@ -430,4 +452,7 @@ internal sealed class StateExtractor
 
         return node?.ToJsonString() ?? "null";
     }
+
+    private static JsonNode Integers(JsonNode? values) =>
+        new JsonArray(values!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray());
 }

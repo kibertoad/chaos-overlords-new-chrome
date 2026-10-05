@@ -307,6 +307,14 @@ public sealed partial class ChaosGame
         }
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null) return;
+        // RULE-TURN-005, EXP-TURN-095: None is offered with no order to cancel too, and then
+        // leaves the gang as it was.
+        if (gang.QueuedCommand is null)
+        {
+            AcceptInput();
+            _screens.Show(_commandReturnScreen);
+            return;
+        }
         var result = _actions.Cancel(playerId, gang.Id);
         ReportInputResult(result.Accepted, result.Validation.Message);
         if (result.Accepted) _screens.Show(_commandReturnScreen);
@@ -322,13 +330,8 @@ public sealed partial class ChaosGame
             if (_state!.FindGang(gang)?.QueuedCommand is not null
                 && _actions!.Cancel(playerId, gang).Accepted)
                 cancelled++;
-        if (cancelled == 0)
-        {
-            RejectInput("NO ORDERS TO CANCEL");
-            return;
-        }
         AcceptInput();
-        _message = CityStatusMessage.RequireFit($"ORDERS CANCELLED FOR {cancelled}");
+        if (cancelled > 0) _message = CityStatusMessage.RequireFit($"ORDERS CANCELLED FOR {cancelled}");
         _screens.Show(_commandReturnScreen);
     }
 
@@ -355,9 +358,6 @@ public sealed partial class ChaosGame
         var gang = _groupCommand
             ? _bulkCommandGangs.Select(state.FindGang).FirstOrDefault(found => found is not null)
             : SelectedGang(state.FindPlayer(ViewingPlayer(state))!);
-        var canCancel = _groupCommand
-            ? _bulkCommandGangs.Any(id => state.FindGang(id)?.QueuedCommand is not null)
-            : gang?.QueuedCommand is not null;
 
         var panel = CommandOverlayLayout.Panel;
         batch.Draw(pixel, panel, new Color(12, 18, 18, 246));
@@ -370,9 +370,9 @@ public sealed partial class ChaosGame
         {
             var action = actions[index];
             var row = CommandOverlayLayout.ActionRow(index);
+            // RULE-TURN-005, EXP-TURN-095: the original's menus never grey None.
             var available = action == GangAction.None
-                ? canCancel
-                : _commandOptions.Any(command => command.Action == action);
+                || _commandOptions.Any(command => command.Action == action);
             if (index == _commandCursor)
                 batch.Draw(pixel, row, new Color(65, 35, 25));
             if (action is GangAction.None or GangAction.Terminate)

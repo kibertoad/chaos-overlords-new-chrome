@@ -32,6 +32,8 @@ internal static partial class Native
     public const uint WmMouseMove = 0x0200;
     public const uint WmLButtonDown = 0x0201;
     public const uint WmLButtonUp = 0x0202;
+    public const uint WmLButtonDblClk = 0x0203;
+    public const uint MfByCommand = 0x0000;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct StartupInfo
@@ -99,6 +101,15 @@ internal static partial class Native
 
     [DllImport("user32.dll")]
     public static extern bool IsWindowVisible(IntPtr window);
+
+    [DllImport("user32.dll")]
+    public static extern int GetMenuItemCount(IntPtr menu);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetMenuItemID(IntPtr menu, int position);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetMenuState(IntPtr menu, uint item, uint flags);
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool PostMessageW(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);

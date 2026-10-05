@@ -66,14 +66,25 @@ public sealed partial class OriginalNewGameExperimentTests
     // was passed (-1 for the City variant) and the nine numbers it drew (FND-FINANCE-003).
     private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
 
-    // A click the probe posted after the dump, whether the Search panel was open after it, the
-    // active player and the whole search_filters table (FND-SEARCH-001, FND-SEARCH-002).
     // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
     // (FND-HIRE-001, FND-HIRE-008).
     private sealed record RecordedHireStep(int Slot, int Sector, IReadOnlyList<int> Orders);
 
+    // A click the probe posted after the dump, whether the Search panel was open after it, the
+    // active player and the whole search_filters table (FND-SEARCH-001, FND-SEARCH-002).
     private sealed record RecordedSearchClick(int X, int Y, bool PanelOpen, int ActivePlayer, IReadOnlyList<int> Filters);
+
+    // An order step the probe took after the dump (RULE-TURN-005, SCR-UI-004): a double-click on
+    // city sector Target (open), a press at (X, Y) within card Target (card) or of the window
+    // (strip) answered with command Choice, or a press of the back control or of a result panel's
+    // Exit. After it: the popup menu it opened (-1 for none) with each item's command and greyed
+    // state, whether the city view is shown, the six card slots, and for every gang of the active
+    // player in use, slot 80 with them, its slot, sector, action, target, target_2, repeat_action
+    // and repeat_target (FMT-STATE-001, FND-UI-021).
+    private sealed record RecordedOrderStep(
+        string Kind, int Target, int X, int Y, int Choice, int Menu, IReadOnlyList<(int Command, int State)>? Items,
+        bool CityView, IReadOnlyList<int> Cards, IReadOnlyList<IReadOnlyList<int>> Gangs);
 
     // A call of a planning entry panel: its name, the roll count when it was called and whether it
     // stayed open until Exit was pressed (RULE-SETUP-008).
@@ -156,6 +167,20 @@ public sealed partial class OriginalNewGameExperimentTests
                     step.GetProperty("slot").GetInt32(), step.GetProperty("sector").GetInt32(),
                     step.GetProperty("orders").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
                 : [];
+            OrderSteps = run.TryGetProperty("order_steps", out var orderSteps)
+                ? orderSteps.EnumerateArray().Select(step => new RecordedOrderStep(
+                    step.GetProperty("kind").GetString()!, step.GetProperty("target").GetInt32(),
+                    step.GetProperty("x").GetInt32(), step.GetProperty("y").GetInt32(),
+                    step.GetProperty("choice").GetInt32(), step.GetProperty("menu").GetInt32(),
+                    step.TryGetProperty("items", out var items)
+                        ? items.EnumerateArray().Select(item => (item[0].GetInt32(), item[1].GetInt32())).ToArray()
+                        : null,
+                    step.GetProperty("city_view").GetBoolean(),
+                    step.GetProperty("cards").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+                    step.GetProperty("gangs").EnumerateArray()
+                        .Select(gang => (IReadOnlyList<int>)gang.EnumerateArray().Select(value => value.GetInt32()).ToArray())
+                        .ToArray())).ToArray()
+                : [];
             SearchClicks = run.TryGetProperty("search_clicks", out var searchClicks)
                 ? searchClicks.EnumerateArray().Select(click => new RecordedSearchClick(
                     click.GetProperty("x").GetInt32(), click.GetProperty("y").GetInt32(),
@@ -201,6 +226,7 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedFinance> Finance { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedHireStep> HireSteps { get; }
+        public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
         public IReadOnlyList<RecordedPlanning> Planning { get; }

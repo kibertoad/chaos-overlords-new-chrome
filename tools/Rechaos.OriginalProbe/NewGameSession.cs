@@ -117,7 +117,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
     IReadOnlyList<ProbeDrawValue>? DrawValues = null, IReadOnlyList<ProbeClick>? SearchClicks = null,
-    IReadOnlyList<ProbeHireStep>? HireSteps = null)
+    IReadOnlyList<ProbeHireStep>? HireSteps = null, IReadOnlyList<ProbeOrderStep>? OrderSteps = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -167,6 +167,8 @@ internal sealed record NewGameSettings(
         foreach (var click in SearchClicks ?? []) yield return ("left_click", click.ToString());
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
+        foreach (var step in OrderSteps ?? [])
+            yield return (step.Kind == "open" ? "double_click" : "left_click", $"{step} after the dump");
     }
 }
 
@@ -200,7 +202,8 @@ internal sealed record ProbeTrace(
     List<TimerRecord>? Timers = null,
     List<ComlinkStep>? Comlink = null,
     List<SearchClickRecord>? SearchClicks = null,
-    List<HireStepRecord>? HireSteps = null);
+    List<HireStepRecord>? HireSteps = null,
+    List<OrderStepRecord>? OrderSteps = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -413,6 +416,8 @@ internal sealed partial class NewGameSession(
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
         if (settings.HireSteps is { Count: > 0 } && !RecordHireSteps(window))
             return Finish(false, "The original exited during the hire steps.", rollsBeforeBegin);
+        if (settings.OrderSteps is { Count: > 0 } && !RecordOrderSteps(window))
+            return Finish(false, "The original exited during the order steps.", rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -886,7 +891,8 @@ internal sealed partial class NewGameSession(
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
             _endgame, _finance.Count == 0 ? null : _finance, (_panelsAtDump ?? _panels) is { Count: > 0 } panels ? panels : null, _lastRedraw,
             _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
-            _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps);
+            _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps,
+            _orderSteps.Count == 0 ? null : _orderSteps);
     }
 
     private static void Click(IntPtr window, int x, int y)
