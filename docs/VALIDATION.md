@@ -10,6 +10,7 @@ Status: maintained canonical procedure
 - [Static binary research](#static-binary-research)
 - [Spec checks](#spec-checks)
 - [Tests against the original](#tests-against-the-original)
+- [Screens against captures of the original](#screens-against-captures-of-the-original)
 - [Fixture classes](#fixture-classes)
 - [Native audio backend](#native-audio-backend)
 - [Native pattern fill reference](#native-pattern-fill-reference)
@@ -375,8 +376,8 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--sound]
-dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--sound] [--capture]
+dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 ```
 
 `new-game` switches full screen off in memory, silences the game unless
@@ -542,6 +543,121 @@ tests run with every deviation that has a setting switched off. A `mandatory`
 deviation cannot be switched off, so a listed test that reaches the behaviour it
 changes cites the deviation's ID and leaves that case out or compares with the
 original's result as the deviation changes it.
+
+## Screens against captures of the original
+
+A screen entry is compared with the original through a capture of the drawing
+area taken at the endpoint of an experiment run. The rebuild replays the same
+run, draws its endpoint, and has to draw every listed element of the screen as
+the original did.
+
+### Taking a capture
+
+Add `--capture` to the probe's `new-game` command. After the state dump the
+probe copies the 640-by-460 drawing area (RULE-GFX-002) from the window's
+device context twice with BitBlt, without asking the window to repaint, and
+reads the Overlord bar's marker counter `0x00487B90` before and after
+(FND-UI-038). It retries until the counter held still and the two copies agree
+byte for byte, together with the pump's counter `0x00487804`, then notes the
+marker frame the copies show, `(c + 11) mod 12` for a counter value `c`, and
+writes `capture-blt.bmp` and
+`capture-blt-repeat.bmp`, top-down 32-bit bitmaps, into the run directory. It
+also notes the original's display depth `0x0048787C` (FND-PLATFORM-009) and the
+depth of its own device context; a capture whose depths differ is recorded as
+such. PrintWindow is not used: the timer draws the marker straight to the
+window, and a repainting copy loses it.
+
+`extract --screens SCR-UI-003,SCR-HIRE-002` adds a `capture` object to each
+run whose two copies agree:
+
+- `xxh3`: the hash of `capture-blt.bmp`, the spec's xxh3 (`SpecHash`);
+- `area`: `[0, 0, 640, 460]`;
+- `marker_frame`: the marker frame the capture shows;
+- `pump_counter`: the value of the pump's counter `0x00487804`, which held
+  still across both copies as well; the selected-sector frame is the counter
+  divided by 4 and bit 0 paces the control lights' blink (FND-UI-017,
+  FND-EVENT-006);
+- `screens`: for each screen named, its elements, each with the element's name
+  as the entry's Drawn elements table gives it, its `rect` `[x, y, width,
+  height]`, the `xxh3` of the rectangle's pixels and `white`, the number of
+  those pixels that are exact white.
+
+The digest of a rectangle is the xxh3 of its pixels as red, green and blue
+bytes, row by row from the top and left to right. The elements of a screen and
+their rectangles, worked out for the state the capture shows, are in
+`tools/Rechaos.OriginalProbe/Screens/<SCR ID>.json`; a screen with no such file
+cannot be named yet. Each rectangle comes from the entry's Position column.
+
+The bitmap holds the game's art, so it never goes into the repository. When
+`GAME_DIR` is set, `extract` copies it to `GAME_DIR/captures/<xxh3>`, the
+directory `OriginalGameFiles` reads captures from; otherwise it prints where to
+copy it. A capture recorded before the element digests existed, such as those
+of EXP-TURN-041 and EXP-TURN-042, gets them from that copy without another run
+of the original:
+
+```powershell
+$env:GAME_DIR = 'D:\original-files'
+dotnet run --project tools/Rechaos.OriginalProbe -- digest --fixture spec/experiments/<EXP ID>.json --run <n> --screens <SCR ID>,...
+```
+
+### Comparing
+
+`ScreenCaptureTests.TheRebuildDrawsWhatTheOriginalDrew` runs once for each
+capture the experiment fixtures record. It replays the run with
+`OriginalNewGameExperimentTests.ReplayedMatch`, writes the endpoint as a native
+save, and starts the game with
+
+```text
+Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
+```
+
+which shows the save at its planning entry in a 640-by-460 window, holds the
+presentation clock at zero, draws three frames and writes the third as a
+bitmap before it exits. Preferences, saves and logs of that run go to a
+`rechaos-reference-frame-*` directory beside the bitmap, never to the player's.
+The test then compares each element:
+
+- An element the original drew wholly in exact white is unverified: on Windows
+  11 the original leaves solid white rectangles where a copy to the screen
+  failed (FND-UI-041), and what belongs there is unknown.
+- With the capture under `GAME_DIR/captures/`, every pixel outside the masks is
+  compared. A pixel the original drew exact white is counted as unverified
+  unless the rebuild drew it white as well. The element matches when no
+  compared pixel differs.
+- Without the capture, an element with no white pixel and no mask is compared
+  by its digest, and any other element is unverified.
+- `ScreenCaptureMasks` lists, for each screen, the rectangles a deviation draws
+  over, each under the ID of the deviation. All the masks of the screens a
+  capture names apply to the whole frame. `EveryMaskCitesADeviationFromItsScreen`
+  checks that each deviation's Departs from line names the screen.
+
+The test prints every element's verdict and fails on an element that differs.
+It skips a capture that records no screen elements, and skips the rendering
+when no asset pack is installed: the gate builds with
+`IncludeOriginalAssets=false`, so it finds the pack only in the player's
+application data (`ChaosOverlordsNewChrome/Assets`). A plain
+`dotnet test --project tests/Rechaos.Tests` in a checkout with
+`src/Rechaos.Game/Assets` finds it beside the test binary.
+`OnlyTheMarkerFrameChangesAReplayedEndpoint` checks the reference frame itself:
+two renders of the EXP-SETUP-001 endpoint at marker frames 6 and 0 differ only
+inside the marker.
+
+A screen row of `PARITY.md` lists `ScreenCaptureTests` once a capture of the
+original covers its elements and they match; the elements left unverified are
+named in its Notes.
+
+### What the reference frame shows
+
+The reference frame shows the city screen and its console (SCR-UI-003,
+SCR-HIRE-002) of the player whose planning entry the run ends at, with no panel
+open and no pointer. A capture taken with a panel open, at the final view or
+during a drag cannot be compared until the reference frame can open that panel
+or state. The selected-sector outline cycles through two frames on the pump's counter
+(FND-UI-017). The reference frame draws the first frame and dark control
+lights; a capture records the counter as `pump_counter`, but whether the frame
+on screen was drawn at that value or the one before is not recorded, so a
+capture showing the second outline frame differs in the outline's 200 border
+pixels until a capture settles it.
 
 ## Fixture classes
 

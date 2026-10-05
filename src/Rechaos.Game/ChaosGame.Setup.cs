@@ -534,10 +534,19 @@ public sealed partial class ChaosGame
             ["seed"] = setup.InitialSeed.ToString()
         });
         var created = OriginalMatchFactory.Create(_definitions, setup);
+        EnterNewMatch(created, advanceToPlanning: !_debugPhaseStepping);
+    }
+
+    /// <summary>
+    /// Puts a newly created match on screen at its first planning entry. A match that already
+    /// stands at that entry, as a reference frame's does, is shown without advancing it.
+    /// </summary>
+    private void EnterNewMatch(MatchState created, bool advanceToPlanning)
+    {
         ReplaceMatch(created, new MatchActions(new MatchReplayRecorder(created)));
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: false);
-        if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
-        if (!_debugPhaseStepping) PrepareCurrentHireOffers();
+        if (advanceToPlanning) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
+        if (advanceToPlanning) PrepareCurrentHireOffers();
         _cursor = _state.Players[0].Gangs[0].SectorId;
         _selectedGangIndex = 0;
         _message = string.Empty;
