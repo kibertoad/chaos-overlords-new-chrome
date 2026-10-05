@@ -121,7 +121,7 @@ public sealed partial class OriginalNewGameExperimentTests
 
     // FND-UI-021: menus 1, 2, 3 and 5 number their orders from 1 in the order the rebuild's menus
     // list them, then None and Terminate each two further on.
-    private static IReadOnlyList<(int Command, GangAction Action)> MenuActions(int menu)
+    internal static IReadOnlyList<(int Command, GangAction Action)> MenuActions(int menu)
     {
         var listed = menu switch
         {

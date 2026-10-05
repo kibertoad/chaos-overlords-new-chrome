@@ -86,11 +86,18 @@ internal sealed partial class NewGameSession
             {
                 // A capture moves nothing, so it is not a post-dump step of the marker log.
                 var file = $"capture-step-{_orderSteps.Count}";
-                var itemBefore = ItemFrame();
-                var area = CaptureDrawingArea(window, file);
-                var itemFrame = ItemFrame() == itemBefore ? itemBefore : null;
+                // The item steps every few ticks, so a capture it moved under is taken again.
+                int? itemBefore, itemFrame;
+                (int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector)? area;
+                var itemAttempts = 0;
+                do
+                {
+                    itemBefore = ItemFrame();
+                    area = CaptureDrawingArea(window, file);
+                    itemFrame = ItemFrame() == itemBefore ? itemBefore : null;
+                } while (itemBefore is not null && itemFrame is null && ++itemAttempts < 5);
                 if (itemBefore is not null && itemFrame is null)
-                    _notes.Add($"{file}: the Item Information frame moved during the capture.");
+                    _notes.Add($"{file}: the Item Information frame moved during each capture.");
                 var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
                         _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,

@@ -52,10 +52,10 @@ selected and every light byte 0:
 | Step | Screens | Marker frame | Pump counter | Frame counter | Item frame |
 |---|---|---|---|---|---|
 | 4 | SCR-MOVE-001, SCR-UI-004 | 3 | 2 | 5 | |
-| 7 | SCR-EQUIP-001, SCR-UI-004 | 8 | 3 | 7 | |
+| 7 | SCR-EQUIP-001, SCR-UI-004 | 8 | 4 | 7 | |
 | 9 | SCR-UI-006, SCR-UI-004 | 4 | 1 | 7 | 5 |
-| 12 | SCR-GANG-001, SCR-UI-004 | 8 | 2 | 7 | |
-| 16 | SCR-RESEARCH-001, SCR-UI-004 | 9 | 1 | 4 | |
+| 12 | SCR-GANG-001, SCR-UI-004 | 8 | 3 | 7 | |
+| 16 | SCR-RESEARCH-001, SCR-UI-004 | 9 | 2 | 5 | |
 
 The captures show:
 

@@ -727,8 +727,8 @@ the frame counter is that value while the flag is set, the pump counter when it
 is clear, and null when the probe could not tell. A panel that slides in over
 another finds the flag set and leaves the counter as it was. While Item
 Information is open the shot also keeps `item_frame`, the frame of its
-rotating item, read from the handler's local before and after the copy
-(FND-UI-052). `extract` gives that
+rotating item, read from the handler's local before and after the capture,
+which is taken again when the two reads differ (FND-UI-052). `extract` gives that
 order step a `capture` object as above and a `screens` string naming the
 screens it is compared at. The steps before it bring the screen up: `open:s`
 double-clicks sector `s` on the city map, `dbl:x:y` double-clicks the window

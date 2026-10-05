@@ -593,15 +593,10 @@ public sealed partial class ChaosGame
         if (category is < 0 or >= EquipmentCommandLayout.CategoryCount)
             throw new ArgumentOutOfRangeException(nameof(category));
         _equipmentCategory = category;
-        if (_commandTargetOptions.Count > 0 && _commandTargetOptions[0].Action == GangAction.Equip)
-        {
-            // SCR-EQUIP-001: a category clears the chosen item and draws the face disabled.
-            _commandTargetCursor = -1;
-            _commandPanelFace = CommandPanelFaceState.Disabled;
-            return;
-        }
-        // SCR-RESEARCH-001: choosing a category leaves no row selected.
+        // SCR-EQUIP-001, SCR-RESEARCH-001, FND-RESEARCH-004: a category clears the chosen item and
+        // draws the face disabled.
         _commandTargetCursor = -1;
+        _commandPanelFace = CommandPanelFaceState.Disabled;
     }
 
     private static string FormatCommandTargets(MatchState state, GameCommand command)

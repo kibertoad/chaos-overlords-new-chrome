@@ -154,38 +154,35 @@ public sealed partial class ChaosGame
                 CommandPanelFaces.HeldSource(pressed), Color.White);
     }
 
-    /// <summary>
-    /// SCR-EQUIP-001: the panel opens on category 0, or, when the gang already has an Equip
-    /// order, on the category of its item with that row chosen when it is listed and the
-    /// confirm face drawn enabled either way (FND-EQUIP-009, FND-EQUIP-010).
-    /// </summary>
+    /// <summary>SCR-EQUIP-001: opens the Equip list as <see cref="OpenItemListPanel"/> describes.</summary>
     private void OpenEquipmentPurchasePanel()
+    {
+        _commandPanelClicks.Cancel();
+        OpenItemListPanel(GangAction.Equip);
+    }
+
+    /// <summary>
+    /// SCR-RESEARCH-001, EXP-UI-009: opens the Research list as <see cref="OpenItemListPanel"/>
+    /// describes.
+    /// </summary>
+    private void OpenResearchPanel() => OpenItemListPanel(GangAction.Research);
+
+    /// <summary>
+    /// SCR-EQUIP-001, SCR-RESEARCH-001: the panel opens on category 0 with no row chosen, or, when
+    /// the gang's order is already the panel's, on the category of its item with that row chosen
+    /// when it is listed and the confirm face drawn enabled either way (FND-EQUIP-009,
+    /// FND-EQUIP-010, FND-RESEARCH-004).
+    /// </summary>
+    private void OpenItemListPanel(GangAction action)
     {
         _equipmentCategory = 0;
         _commandTargetCursor = -1;
         _commandPanelFace = CommandPanelFaceState.NotDrawn;
-        _commandPanelClicks.Cancel();
         if (_state?.FindGang(_commandTargetOptions[0].Gang)?.QueuedCommand?.Command is not
-            { Action: GangAction.Equip, Target.Kind: CommandTargetKind.Item } queued) return;
-        var item = _state.Definitions.Items[queued.Target.Id];
-        _equipmentCategory = EquipmentCommandLayout.CategoryForItemType(item.Type);
-        _commandPanelFace = CommandPanelFaces.OnOpening(true);
-        _commandTargetCursor = EquipmentCommandIndices(_state)
-            .FirstOrDefault(index => _commandTargetOptions[index].Target.Id == queued.Target.Id, -1);
-    }
-
-    /// <summary>
-    /// SCR-RESEARCH-001, EXP-UI-009: the panel opens on category 0 with no row selected, unless the
-    /// gang's order is already Research, when it opens on that item's category with its row
-    /// selected.
-    /// </summary>
-    private void OpenResearchPanel()
-    {
-        _equipmentCategory = 0;
-        _commandTargetCursor = -1;
-        if (_state?.FindGang(_commandTargetOptions[0].Gang)?.QueuedCommand?.Command is not
-            { Action: GangAction.Research, Target.Kind: CommandTargetKind.Item } queued) return;
+                { Target.Kind: CommandTargetKind.Item } queued
+            || queued.Action != action) return;
         _equipmentCategory = EquipmentCommandLayout.CategoryForItemType(_state.Definitions.Items[queued.Target.Id].Type);
+        _commandPanelFace = CommandPanelFaces.OnOpening(true);
         _commandTargetCursor = EquipmentCommandIndices(_state)
             .FirstOrDefault(index => _commandTargetOptions[index].Target.Id == queued.Target.Id, -1);
     }

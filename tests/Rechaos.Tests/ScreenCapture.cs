@@ -173,14 +173,17 @@ public sealed record ScreenCaptureRecord(
     // card's order menu (menu 1) whose choice opens a picker (FND-UI-021) is replayed as the card
     // press and a press on that order's row of the panel, which opens the same picker. Any other
     // popup menu has no counterpart.
-    // FND-UI-021: menu 1 lists the one-off orders by their codes.
+    // FND-UI-021: menu 1 lists the one-off orders, in the rows of the rebuild's panel.
     private const int OrderMenu = 1;
 
-    private static int IndexOf(IReadOnlyList<GangAction> actions, GangAction action)
+    // The row of the rebuild's order panel for a menu 1 command that runs a picker, or null.
+    private static int? PickerRow(int command)
     {
-        for (var index = 0; index < actions.Count; index++)
-            if (actions[index] == action) return index;
-        throw new ArgumentOutOfRangeException(nameof(action));
+        var actions = OriginalNewGameExperimentTests.MenuActions(OrderMenu);
+        for (var row = 0; row < actions.Count; row++)
+            if (actions[row].Command == command)
+                return CommandOverlayLayout.OpensTargetPicker(actions[row].Action) ? row : null;
+        return null;
     }
 
     private static IEnumerable<ScreenCaptureRecord> StepCaptures(string experiment, int run, JsonElement[] steps)
@@ -192,11 +195,10 @@ public sealed record ScreenCaptureRecord(
             var step = steps[index];
             int Number(string name) => step.GetProperty(name).GetInt32();
             var menu = step.GetProperty("menu").GetInt32();
-            var pickerOrder = menu == OrderMenu && step.GetProperty("kind").GetString() == "card"
-                && CommandOverlayLayout.OpensTargetPicker((GangAction)Number("choice"))
-                    ? (GangAction?)Number("choice")
-                    : null;
-            if (menu > 0 && pickerOrder is null)
+            var pickerRow = menu == OrderMenu && step.GetProperty("kind").GetString() == "card"
+                ? PickerRow(Number("choice"))
+                : null;
+            if (menu > 0 && pickerRow is null)
                 unreplayable ??= $"step {index} opened popup menu {step.GetProperty("menu").GetInt32()}, which the rebuild draws as a panel (DEV-UI-021)";
             switch (step.GetProperty("kind").GetString())
             {
@@ -210,9 +212,8 @@ public sealed record ScreenCaptureRecord(
                     clicks.Add(new ReferenceClick(new Point(
                         SectorGangCardLayout.Left + card % 2 * SectorGangCardLayout.ColumnStride + Number("x"),
                         SectorGangCardLayout.Top + card / 2 * SectorGangCardLayout.RowStride + Number("y"))));
-                    if (pickerOrder is { } order)
-                        clicks.Add(new ReferenceClick(CommandOverlayLayout.ActionRow(
-                            IndexOf(CommandOverlayLayout.ActionsFor(recurring: false), order)).Center));
+                    if (pickerRow is { } row)
+                        clicks.Add(new ReferenceClick(CommandOverlayLayout.ActionRow(row).Center));
                     break;
                 case "strip":
                     clicks.Add(new ReferenceClick(new Point(Number("x"), Number("y"))));
