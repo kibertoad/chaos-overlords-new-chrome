@@ -90,13 +90,13 @@ namespace Rechaos.Tests;
 /// Combat (RULE-TURN-004), and in EXP-TURN-068 a Heal with a pool below 1 rolls nothing
 /// (RULE-HEAL-001). In EXP-TURN-069 an Influence with a pool below 1 rolls nothing
 /// (RULE-INFLUENCE-001). EXP-TURN-070 and EXP-TURN-071 drop a recurring Control in a sector
-/// under police presence (RULE-TURN-004), and EXP-TURN-072 prices an item beside another
-/// player's completed Factory (RULE-EQUIP-003).
+/// under police presence (RULE-TURN-004), and EXP-TURN-072 prices an item at full Cost beside
+/// another player's completed Factory (RULE-EQUIP-003).
 /// EXP-TURN-073 to EXP-TURN-077 write a family into the computer gangs' planning records and reach
 /// branches no match had reached: family 7 out of research (RULE-AI-026), family-4 attack draws
 /// (RULE-AI-023), the family-10 Heal (RULE-AI-028), an accepted family-3 attack
 /// (RULE-AI-022) and a family-6 guard target already covered (RULE-AI-025).
-/// EXP-TURN-078 to EXP-TURN-081 do the same in the untimed scenarios and reach the further family-6
+/// EXP-TURN-078 to EXP-TURN-081 do the same in Siege, Big Man and Armageddon and reach the further family-6
 /// draws (RULE-AI-025), the family-3 Heal (RULE-AI-022), family-4 attacks after Chaos or Equip
 /// (RULE-AI-023), the family-12 Detect Equip and draw at weight 1 (RULE-AI-030) and the family-0
 /// Move after a Snitch (RULE-AI-019).
