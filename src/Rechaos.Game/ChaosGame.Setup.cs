@@ -14,6 +14,8 @@ public sealed partial class ChaosGame
     private AiPolicyMode _defaultAiPolicy = OriginalOptionsPolicy.AiPolicyByDefault;
     // DEV-AI-007: set by --original-computer-moves, for the local matches this session starts.
     private readonly bool _originalComputerMoves;
+    // DEV-AI-008: set by --original-computer-hires, for the local matches this session starts.
+    private readonly bool _originalComputerHires;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
     private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
@@ -521,7 +523,8 @@ public sealed partial class ChaosGame
             _selectedScenario, _selectedDuration, unchecked((int)_runRandomState), players,
             _selectedAiMentality, allowSparsePlayerIds: true,
             aiPolicy: _defaultAiPolicy,
-            computerMovesToNeighboursOnly: !_originalComputerMoves);
+            computerMovesToNeighboursOnly: !_originalComputerMoves,
+            computerHiresWhereHumansCan: !_originalComputerHires);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
         {
             ["scenario"] = _selectedScenario.ToString(),
@@ -531,6 +534,7 @@ public sealed partial class ChaosGame
             ["mentality"] = _selectedAiMentality.ToString(),
             ["aiPolicy"] = _defaultAiPolicy.ToString(),
             ["computerMovesToNeighboursOnly"] = setup.ComputerMovesToNeighboursOnly.ToString(),
+            ["computerHiresWhereHumansCan"] = setup.ComputerHiresWhereHumansCan.ToString(),
             ["seed"] = setup.InitialSeed.ToString()
         });
         var created = OriginalMatchFactory.Create(_definitions, setup);

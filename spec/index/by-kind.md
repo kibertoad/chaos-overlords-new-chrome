@@ -593,7 +593,7 @@
 
 ## experiments
 
-92 entries.
+99 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -689,6 +689,13 @@
 | [EXP-TURN-084](../experiments/EXP-TURN-084.md) | Does a family-14 computer gang on a contested objective draw even when the pool is empty, as the static reading gives? | recorded |
 | [EXP-TURN-085](../experiments/EXP-TURN-085.md) | Does a Greed computer player force a hunter hire when a hostile human gang is in sight, as the spec gives? | recorded |
 | [EXP-TURN-086](../experiments/EXP-TURN-086.md) | Does a Dominance computer player force a hunter hire when a hostile human gang is in sight, as the spec gives? | recorded |
+| [EXP-TURN-087](../experiments/EXP-TURN-087.md) | Does a family-4 computer gang whose attack draw fails its strength test give up the Attack, as the spec gives? | recorded |
+| [EXP-TURN-088](../experiments/EXP-TURN-088.md) | Does a family-7 computer gang that draws a target it cannot or will not attack go on with its research, as the spec gives? | recorded |
+| [EXP-TURN-089](../experiments/EXP-TURN-089.md) | Does a family-5 computer gang whose attack draw fails its strength test give up the Attack, as the spec gives? | recorded |
+| [EXP-TURN-090](../experiments/EXP-TURN-090.md) | Does the original carry out a computer player's hire into a sector it neither controls nor holds a gang in? | recorded |
+| [EXP-TURN-091](../experiments/EXP-TURN-091.md) | Does a family-0 computer gang whose weight-10 attack draw fails its strength test give up the Attack, as the spec gives? | recorded |
+| [EXP-TURN-093](../experiments/EXP-TURN-093.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs, as the spec gives? | recorded |
+| [EXP-TURN-094](../experiments/EXP-TURN-094.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs in Big Man, as the spec gives? | recorded |
 
 ## bugs
 
