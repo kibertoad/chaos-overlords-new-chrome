@@ -77,11 +77,11 @@ public sealed partial class DeviationBehaviourTests
     }
 
     [Fact]
-    public void AFileThatLacksAFieldGivesTheDefaultsAndANewerFieldItsDefault()
+    public void AFileThatLacksAFieldGivesTheDefaultsAndAnOptionalFieldItsDefault()
     {
-        // DEV-OPTIONS-001: a file that lacks one of the fields its version has is read as the
-        // defaults as a whole, so no option takes a value from another. A field a later version
-        // added, which an older file lacks, takes its own default.
+        // DEV-OPTIONS-001: a file that lacks one of the fields its version requires is read as the
+        // defaults as a whole, so no option takes a value from another. Intro only once, which a
+        // file of the current version may leave out, takes its own default and the rest is kept.
         var directory = Directory.CreateTempSubdirectory("rechaos-dev-options-");
         try
         {
@@ -95,9 +95,9 @@ public sealed partial class DeviationBehaviourTests
             File.WriteAllText(path, lacking.ToJsonString());
             Assert.Equal(GamePreferences.Default, GamePreferencesStore.LoadOrDefault(path));
 
-            var older = full.DeepClone().AsObject();
-            older.Remove(nameof(GamePreferences.IntroOnlyOnce));
-            File.WriteAllText(path, older.ToJsonString());
+            var optional = full.DeepClone().AsObject();
+            optional.Remove(nameof(GamePreferences.IntroOnlyOnce));
+            File.WriteAllText(path, optional.ToJsonString());
             var read = GamePreferencesStore.LoadOrDefault(path);
             Assert.Equal(2, read.MusicVolumeLevel);
             Assert.Equal(GamePreferences.Default.IntroOnlyOnce, read.IntroOnlyOnce);

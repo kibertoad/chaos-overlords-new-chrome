@@ -925,6 +925,15 @@ function findKaitai() {
 // ---------------------------------------------------------------------------------------------
 // Deviation log and parity matrix
 
+// Each test file a parity row or a deviation lists exists and mentions the ID that lists it.
+function checkTestFiles(path, id, files) {
+  for (const tf of files) {
+    const p = join(repoDir, tf);
+    if (!existsSync(p)) problem(path, `${id}: test file ${tf} does not exist`);
+    else if (!readFileSync(p, "utf8").includes(id)) problem(path, `${id}: test file ${tf} does not mention ${id}`);
+  }
+}
+
 const deviations = new Map();
 {
   const path = join(repoDir, "DEVIATIONS.md");
@@ -952,11 +961,7 @@ const deviations = new Map();
       // may wrap onto indented lines like any other item.
       const tests = "Tests" in item ? /^- Tests: (.*(?:\n  .*)*)/m.exec(s.text)[1].split(",").map((x) => x.replaceAll("`", "").trim()).filter(Boolean) : [];
       if ("Tests" in item && tests.length === 0) problem(path, `${s.title}: Tests lists at least one test file`);
-      for (const tf of tests) {
-        const p = join(repoDir, tf);
-        if (!existsSync(p)) problem(path, `${s.title}: test file ${tf} does not exist`);
-        else if (!readFileSync(p, "utf8").includes(s.title)) problem(path, `${s.title}: test file ${tf} does not mention ${s.title}`);
-      }
+      checkTestFiles(path, s.title, tests);
       deviations.set(s.title, { departs, dropped, mandatory: item.Default === "mandatory", tests });
     }
   }
@@ -1015,11 +1020,7 @@ const parityRows = new Map();
           if (code === "complete" && e.meta.status === "unknown") problem(path, `${specId}: an unknown entry cannot be complete`);
           if (code === "complete" && placeholders.has(specId)) problem(path, `${specId}: a PLACEHOLDER comment cites it, so it cannot be complete`);
           const testFiles = tests === "None" ? [] : tests.split(",").map((x) => x.trim()).filter(Boolean);
-          for (const tf of testFiles) {
-            const p = join(repoDir, tf);
-            if (!existsSync(p)) problem(path, `${specId}: test file ${tf} does not exist`);
-            else if (!readFileSync(p, "utf8").includes(specId)) problem(path, `${specId}: test file ${tf} does not mention ${specId}`);
-          }
+          checkTestFiles(path, specId, testFiles);
           const listedDevs = devs === "None" ? [] : devs.split(",").map((x) => x.trim()).filter(Boolean);
           const expectedDevs = [...deviations].filter(([, d]) => !d.dropped && d.departs.includes(specId)).map(([k]) => k).sort();
           if (listedDevs.slice().sort().join(",") !== expectedDevs.join(",")) problem(path, `${specId}: Deviations must be ${expectedDevs.join(", ") || "None"}`);
