@@ -78,12 +78,17 @@ public sealed record CapturedElement(string Screen, string Element, Rectangle Re
 /// <summary>
 /// A capture of the original recorded in an experiment fixture: the run whose endpoint it shows,
 /// the xxh3 of the bitmap kept under <c>GAME_DIR/captures/</c>, the Overlord bar's marker frame
-/// (FND-UI-038) and the elements it is compared at.
+/// (FND-UI-038) and the elements it is compared at. <see cref="WhiteKeyed"/> is set when the
+/// fixture lists the setup input <c>key_colour</c>: the probe's <c>--white-key</c> gave the
+/// original's keyed copies the white a 32-bit surface holds (FND-PLATFORM-014), so the capture's
+/// exact white is the white the original means to draw.
 /// </summary>
 public sealed record ScreenCaptureRecord(
     string Experiment, int Run, string Xxh3, int MarkerFrame, IReadOnlyList<string> Screens,
-    IReadOnlyList<CapturedElement> Elements)
+    IReadOnlyList<CapturedElement> Elements, bool WhiteKeyed = false)
 {
+    private const string KeyColourInput = "key_colour ";
+
     public override string ToString() => $"{Experiment} run {Run}";
 
     // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
@@ -100,18 +105,26 @@ public sealed record ScreenCaptureRecord(
         {
             using var fixture = JsonDocument.Parse(File.ReadAllText(file));
             var experiment = fixture.RootElement.GetProperty("experiment").GetString()!;
+            var whiteKeyed = IsWhiteKeyed(fixture.RootElement);
             var run = 0;
             foreach (var recorded in fixture.RootElement.GetProperty("runs").EnumerateArray())
             {
                 if (recorded.TryGetProperty("capture", out var capture))
-                    records.Add(Parse(experiment, run, capture));
+                    records.Add(Parse(experiment, run, capture, whiteKeyed));
                 run++;
             }
         }
         return records;
     }
 
-    public static ScreenCaptureRecord Parse(string experiment, int run, JsonElement capture)
+    /// <summary>Whether a fixture's inputs hold the <c>key_colour</c> setup input of <c>--white-key</c>.</summary>
+    public static bool IsWhiteKeyed(JsonElement fixture) =>
+        fixture.TryGetProperty("inputs", out var inputs)
+        && inputs.EnumerateArray().Any(input =>
+            input.GetProperty("name").GetString() == "setup"
+            && input.GetProperty("value").GetString()!.StartsWith(KeyColourInput, StringComparison.Ordinal));
+
+    public static ScreenCaptureRecord Parse(string experiment, int run, JsonElement capture, bool whiteKeyed = false)
     {
         var screens = new List<string>();
         var elements = new List<CapturedElement>();
@@ -131,7 +144,7 @@ public sealed record ScreenCaptureRecord(
             }
         }
         return new ScreenCaptureRecord(experiment, run, capture.GetProperty("xxh3").GetString()!,
-            capture.GetProperty("marker_frame").GetInt32(), screens, elements);
+            capture.GetProperty("marker_frame").GetInt32(), screens, elements, whiteKeyed);
     }
 }
 
@@ -202,9 +215,14 @@ public static class ScreenComparison
     /// original leaves solid white rectangles where a blit failed (FND-UI-041), and what belongs
     /// there is unknown. An element the original drew wholly white is unverified. Without the
     /// capture only the digest is compared, which needs a rectangle with no white and no mask.
+    /// In a <paramref name="whiteKeyed"/> capture the keyed copies left out their white
+    /// (FND-PLATFORM-014), so exact white is compared like any other colour: a pixel the original
+    /// drew white and the rebuild did not differs, and the digest alone suffices for an element
+    /// with white pixels and no mask.
     /// </summary>
     public static ElementComparison Compare(
-        CapturedElement element, ScreenFrame? original, ScreenFrame rebuild, IReadOnlyList<CaptureMask> masks)
+        CapturedElement element, ScreenFrame? original, ScreenFrame rebuild, IReadOnlyList<CaptureMask> masks,
+        bool whiteKeyed = false)
     {
         var rect = element.Rect;
         var covering = masks.Where(mask => mask.Rect.Intersects(rect)).ToArray();
@@ -214,13 +232,13 @@ public static class ScreenComparison
             if (covering.Any(mask => mask.Rect.Contains(x, y))) masked++;
         var maskNote = covering.Length == 0 ? "" : "masked by " + string.Join(", ", covering.Select(mask => mask.Deviation).Distinct());
 
-        if (element.White == element.Area)
+        if (element.White == element.Area && !whiteKeyed)
             return new(element, ElementVerdict.Unverified, 0, element.Area, masked,
                 Join("the original drew it solid white", maskNote));
 
         if (original is null)
         {
-            if (element.White > 0 || masked > 0)
+            if ((element.White > 0 && !whiteKeyed) || masked > 0)
                 return new(element, ElementVerdict.Unverified, 0, element.Area - masked, masked,
                     Join($"the capture is needed: {element.White} white pixels", maskNote));
             return rebuild.Digest(rect) == element.Xxh3
@@ -241,7 +259,7 @@ public static class ScreenComparison
             var theirs = original[x, y];
             var ours = rebuild[x, y];
             if (theirs == ours) continue;
-            if (theirs == ScreenFrame.White) unverified++;
+            if (theirs == ScreenFrame.White && !whiteKeyed) unverified++;
             else differing++;
         }
         var verdict = differing > 0 ? ElementVerdict.Differs

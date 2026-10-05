@@ -425,8 +425,8 @@ internal sealed partial class NewGameSession(
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
         if (settings.HireSteps is { Count: > 0 } && RecordHireSteps(window) is { } stopped)
             return Finish(false, stopped, rollsBeforeBegin);
-        if (settings.OrderSteps is { Count: > 0 } && !RecordOrderSteps(window))
-            return Finish(false, "The original exited during the order steps.", rollsBeforeBegin);
+        if (settings.OrderSteps is { Count: > 0 } && RecordOrderSteps(window) is { } orderStepsStopped)
+            return Finish(false, orderStepsStopped, rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 

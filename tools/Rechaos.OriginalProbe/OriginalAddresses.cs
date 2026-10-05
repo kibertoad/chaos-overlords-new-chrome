@@ -195,6 +195,13 @@ internal static class OriginalAddresses
     public const uint SectorCardSlots = 0x004ABC68;
     public const int SectorCards = 6;
 
+    // FND-UI-015, FND-UI-018: the sector view's card n at (254 + 76*(n % 2), 80 + 112*(n / 2)),
+    // and the middle of its back control (4,394,32,63).
+    public static int SectorCardX(int card) => 254 + 76 * (card % 2);
+    public static int SectorCardY(int card) => 80 + 112 * (card / 2);
+    public const int SectorBackX = 4 + 16;
+    public const int SectorBackY = 394 + 31;
+
     // FMT-STATE-007: the computer players' planning records, 81 of 16 bytes per player, with the
     // family at offset 0; FND-AI-043: raider_mode, one byte per player.
     public const uint PlanningRecords = 0x0048A250;
