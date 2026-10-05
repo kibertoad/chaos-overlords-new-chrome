@@ -62,4 +62,4 @@ the program started, drew the line black.
 ## Conclusion
 
 The run supports SCR-OPTIONS-001 and RULE-OPTIONS-003 for one state with an
-idle gang, and FND-UI-054 for the line shown five ticks after the open.
+idle gang, where the rebuild's Done press on the same state opens the warning, and FND-UI-054 for the line shown five ticks after the open.
