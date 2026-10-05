@@ -118,10 +118,11 @@ used by the shared template. What the original does now lives only in
   FND-OBJECTIVE-003 settles the scenario numbering: Greed is 0 and Kill 'Em
   All 4, and it explains why FND-SETUP-009 and FND-SETUP-012 read 0 as Kill
   'Em All.
-- Copy the setup capture
-  `artifacts/reference-captures/smoke/20260913-211908-368-checkpoint/frame-01.png`
-  to `GAME_DIR/captures/a83f82a2aab84d9a1e0e9de626409149.png` once `GAME_DIR`
-  exists; FND-SETUP-012 names it by that hash.
+- FND-SETUP-012's setup capture is kept as
+  `GAME_DIR/captures/a83f82a2aab84d9a1e0e9de626409149`. Every file under
+  `GAME_DIR/captures/` is named by its xxh3 alone, with no extension, as the
+  documentation standard names them; `OriginalGameFiles` refuses a copy kept
+  as `<xxh3>.png`.
 
 ### Working with the spec
 
@@ -895,20 +896,34 @@ original silent unless `--sound` is given.
   calls of EXP-TURN-010 now replay to the end of both runs. An Attack order
   needs the target's roster slot, which a state dump (`--dump-at-roll`) of a
   run with the same seed gives.
-- No screen row is `validated` yet. The harness exists: `new-game --capture`
-  takes the drawing area at the dump, `extract --screens` or `digest` records
-  each element's digest in the fixture, and `ScreenCaptureTests` renders the
-  replayed endpoint with `--reference-frame` and compares each element,
-  reporting one the original drew solid white as unverified
+- EXP-UI-001 captures the first planning entry of two seeds, and
+  `ScreenCaptureTests` finds no differing element of SCR-UI-003 or
+  SCR-HIRE-002 in either; SCR-HIRE-002 is `validated`, and SCR-UI-003 lists the
+  test but stays `supported` while its code is `partial`. The harness:
+  `new-game --capture` takes the drawing area at the dump, `extract --screens`
+  or `digest` records each element's digest in the fixture, and
+  `ScreenCaptureTests` renders the replayed endpoint with `--reference-frame`
+  and compares each element
   ([VALIDATION.md](VALIDATION.md#screens-against-captures-of-the-original)).
   The reference frame shows only the city at a planning entry with no panel
-  open, and only SCR-UI-003 and SCR-HIRE-002 have element files. Take new
-  captures with `--white-key`: the white rectangles are the keyed copies drawn
-  opaque on a 32-bit desktop (FND-PLATFORM-014), and the option removes them
-  without changing a run's rolls or state. At the first planning entry one
-  exact-white pixel, at `(250,16)`, stays, and what draws it is not known.
-  Captures already recorded keep their white areas until they are taken
-  again.
+  open, and only SCR-UI-003 and SCR-HIRE-002 have element files. EXP-TURN-041's
+  capture of the final view differs in the marker, the Done light and the
+  calendar companion because the reference frame draws a planning entry, and
+  EXP-TURN-042's shows the Events panel; both bitmaps are kept under
+  `GAME_DIR/captures/` for when the reference frame can draw those states.
+  Take new captures with `--white-key`: the white areas (the selected sector
+  and the corners around the grid tabs) are the keyed copies drawn opaque on a
+  32-bit desktop (FND-PLATFORM-014), and the option removes them without
+  changing a run's rolls or state. At the first planning entry one exact-white
+  pixel, at `(250,16)`, stays, and what draws it is not known. DDrawCompat did
+  not remove them, since the windowed original draws with GDI only
+  (docs/DECISIONS.md, 2026-10-05). Captures already recorded keep their white
+  areas until they are taken again.
+- EXP-UI-002 uses `--draw-values` to make the console draw a score of 700000
+  and a cash of 690000 over an earlier `80000`: a number cell copied from
+  source column 516 leaves the screen unchanged, and one from column 510 takes
+  its two left pixel columns from the sheet and leaves the rest. RULE-UI-004
+  does not cite it yet.
 - A modal panel the probe does not know stalls a run until someone presses its
   Exit; the probe knows Combat Results and Last Turn Events. Run recordings
   from PowerShell with the compatibility layers in `__COMPAT_LAYER`, one at a

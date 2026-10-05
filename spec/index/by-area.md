@@ -850,6 +850,8 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? | recorded |
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? | recorded |
 | [FND-UI-001](../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |

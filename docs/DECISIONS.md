@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | Date | Decision |
 |---|---|
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
+| 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
 | 2026-10-05 | [Switch DEV-AI-008 off from the command line only](#2026-10-05--switch-dev-ai-008-off-from-the-command-line-only) |
 | 2026-10-04 | [Switch DEV-AI-007 off from the command line only](#2026-10-04--switch-dev-ai-007-off-from-the-command-line-only) |
 | 2026-09-26 | [Keep a replay load's random state and inboxes](#2026-09-26--keep-a-replay-loads-random-state-and-inboxes) |
@@ -56,10 +57,33 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   edge tabs' labels in place of white. That run and EXP-TURN-041's configuration made the same
   310 and 10647 rolls as their fixtures and reached the same 2760 and 4331 end-state values: the
   key reaches the drawing and nothing else. A DirectDraw wrapper cannot help, since the windowed
-  original draws with GDI only (FND-GFX-004), and no compatibility layer changed the result.
+  original draws with GDI only (FND-GFX-004): DDrawCompat left the same 5089 white pixels (the
+  next decision, which still holds for the wrapper). No compatibility layer changed the result.
 - Boundary: the write changes one argument of one `SetBkColor` call and only when it is the
   16-bit key. A capture shows what the original draws on a 16-bit display only where the key is
   the difference; FND-PLATFORM-014 records the capture of the first planning entry only.
+
+## 2026-10-05 — Take captures of the original without a DirectDraw wrapper
+
+- Decision: the probe takes captures of the original without DDrawCompat or another DirectDraw
+  wrapper beside the staged executable. The solid white areas the original leaves on Windows 11
+  stay in the captures, and `ScreenCaptureTests` reports them as unverified.
+- Reason: DDrawCompat v0.7.1 (the release asset `DDrawCompat-v0.7.1.zip` of
+  narzoul/DDrawCompat, SHA-256
+  `0c33ecb1c01c1c779063b490a2e818f6d9227b3b4ee827c51790fb0fd59b17c5`, matching the digest
+  GitHub lists for it) changed no game result but did not remove the white areas. Beside a
+  staged copy, EXP-TURN-041's configuration (scenario 0, 26 turns, seed 52421) recorded again
+  made the same 10647 rolls with the same bounds and results, and every one of the 4331 values
+  of the fixture's end state was the same. EXP-UI-001's first configuration (seed 52421, first
+  planning entry) recorded with the wrapper, with and without the compatibility layers, made
+  the same 310 rolls and drew the same frame as without it, apart from the Overlord bar's
+  marker, which was at another frame: the same 5089 exact-white pixels, among them the solid
+  white selected sector. Windowed, the original draws everything with GDI and does not use
+  DirectDraw at all (FND-GFX-004), so a DirectDraw wrapper has nothing to change there. Full
+  screen under the wrapper, the window's device context gave an all-black copy.
+- Boundary: a capture records the white areas as the original drew them. Another way to take
+  captures, such as a different compatibility layer or an older Windows in a virtual machine,
+  needs its own comparison of a recorded run before it is used.
 
 ## 2026-10-05 — Switch DEV-AI-008 off from the command line only
 
