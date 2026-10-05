@@ -50,9 +50,10 @@ public sealed partial class ChaosGame
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, EndgameNoticeLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(portraitId), Color.White);
-        if (!victory)
-            DrawBorder(batch, pixel, EndgameNoticeLayout.Portrait, PlayerColors[player.Value], 1);
-        DrawEndgameNoticeName(batch, font, player, name);
+        // SCR-OBJECTIVE-002, EXP-UI-018: the elimination card's name is in the plain font, and the
+        // frame around the portrait is the splash's own. SCR-AWARDS-002: the victory splash draws
+        // its name with the same plain font helper (FND-AWARDS-005, FND-RESEARCH-003).
+        DrawEndgameNoticeName(batch, font, name);
     }
 
     // FND-AWARDS-004: resource 201 with its white keyed out, for the award icons.
@@ -60,10 +61,6 @@ public sealed partial class ChaosGame
 
     private void DrawEndgame(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        // SCR-AWARDS-001, EXP-UI-017: the screen around the frame is black, as captured after the
-        // last turn's resolution. It is drawn black after an elimination card as well, a case no
-        // capture shows (the entry's open question).
-        batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
         DrawEndgameBackground(batch, pixel);
         // RULE-AWARDS-002: with one player left, human or computer, the Awards tab shows that
         // player's victory splash in place of the table.
@@ -117,18 +114,22 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// The results frame, loaded opaque into <c>(106, 25, 428, 410)</c> (FND-AWARDS-004), under any
-    /// private victory or elimination card.
+    /// private victory or elimination card. The screen around it is black, as captured when the
+    /// endgame follows the last turn's resolution (SCR-AWARDS-001, EXP-UI-017) and when the
+    /// elimination card does (SCR-OBJECTIVE-002, EXP-UI-018). It is drawn black as well when the
+    /// endgame follows an elimination card and when the card follows an earlier human's planning,
+    /// cases no capture shows (the entries' open questions).
     /// </summary>
     private void DrawEndgameBackground(SpriteBatch batch, Texture2D pixel)
     {
+        batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
         DrawPanelArtwork(batch, pixel, _endgameBackground, EndgameLayout.Panel, 255);
     }
 
-    private static void DrawEndgameNoticeName(
-        SpriteBatch batch, PixelFont font, PlayerId playerId, string name)
+    private static void DrawEndgameNoticeName(SpriteBatch batch, PixelFont font, string name)
     {
         var x = EndgameNoticeLayout.NameCenterX - name.Length * OriginalFontLayout.CellWidth / 2;
-        font.Draw(batch, name, new Vector2(x, EndgameNoticeLayout.NameY), PlayerColors[playerId.Value], 1);
+        font.Copy(batch, name, new Point(x, EndgameNoticeLayout.NameY), OriginalFontLayout.PlainStrip);
     }
 
     private void DrawEndgameAwards(

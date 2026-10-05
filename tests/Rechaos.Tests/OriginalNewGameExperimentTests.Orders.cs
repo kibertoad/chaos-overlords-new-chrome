@@ -10,11 +10,13 @@ public sealed partial class OriginalNewGameExperimentTests
     public static TheoryData<string, int> OrderStepRuns()
     {
         var data = new TheoryData<string, int>();
-        // A run whose match ended takes its steps on the endgame (SCR-AWARDS-001), where no order
-        // menu opens and the order bytes are those the last resolution left.
+        // A run whose match ended takes its steps on the endgame (SCR-AWARDS-001), and one with a
+        // human eliminated on that human's elimination card (SCR-OBJECTIVE-002, controller -2): no order
+        // menu opens there, and the order bytes are those the last resolution left.
         foreach (var (experiment, runs) in Recorded.Value)
             for (var run = 0; run < runs.Length; run++)
                 if (runs[run].OrderSteps.Count > 0 && runs[run].EndgameRows is null
+                    && runs[run].Humans.All(human => runs[run].Term("controller", human.Value) != -2)
                     && !KnownDivergences.ContainsKey((experiment, run)))
                     data.Add(experiment, run);
         return data;

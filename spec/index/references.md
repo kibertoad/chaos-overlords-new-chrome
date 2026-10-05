@@ -155,6 +155,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | builds |
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | builds |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | builds |
+| [EXP-UI-018](../experiments/EXP-UI-018.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -1186,6 +1187,7 @@ None.
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | body |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
+| [EXP-UI-018](../experiments/EXP-UI-018.md) | body |
 
 ## EXP-TURN-002
 
@@ -1407,6 +1409,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
+| [EXP-UI-018](../experiments/EXP-UI-018.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | evidence |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
@@ -2255,6 +2258,13 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, evidence |
+
+## EXP-UI-018
+
+| Cited by | In |
+|---|---|
+| [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | evidence |
+| [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
@@ -3940,6 +3950,7 @@ None.
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
+| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 
 ## FND-BRIBE-001
 
@@ -5619,6 +5630,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-018](../experiments/EXP-UI-018.md) | body |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | body |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | evidence |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | evidence |
@@ -6030,6 +6042,7 @@ None.
 | [FND-RESEARCH-004](../findings/FND-RESEARCH-004.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | body, evidence |
+| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | body, evidence |
 
 ## FND-RESEARCH-004
@@ -8725,6 +8738,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-018](../experiments/EXP-UI-018.md) | body |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | body |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | body, related |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | body, related |
@@ -9509,6 +9523,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-018](../experiments/EXP-UI-018.md) | body |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body, related |
 
 ## SCR-OPTIONS-001

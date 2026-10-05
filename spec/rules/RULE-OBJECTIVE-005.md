@@ -4,7 +4,7 @@ title: An eliminated local human sees the elimination card at that player's plac
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-004, FND-OBJECTIVE-002, FND-SETUP-010, FND-AUDIO-001, SRC-MANUAL-GOG]
+evidence: [FND-OBJECTIVE-004, FND-OBJECTIVE-002, FND-SETUP-010, FND-AUDIO-001, SRC-MANUAL-GOG, EXP-UI-018]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-002, SCR-OBJECTIVE-002, RULE-AUDIO-001]

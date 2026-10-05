@@ -374,9 +374,33 @@ public sealed partial class ChaosGame
     /// Exit closes it: its first page counts as shown, so the Events light stays lit only while
     /// another report is unseen (RULE-EVENT-005). Hire offers, the Comlink alert and the planning
     /// timer are prepared as the planning entry prepares them when it goes straight to the city.
+    /// A save whose last resolution eliminated a local human opens that human's elimination card
+    /// (SCR-OBJECTIVE-002), and a save of a decided match the endgame (SCR-AWARDS-001).
     /// </summary>
     private void PresentReferenceFramePlanningEntry()
     {
+        // SCR-OBJECTIVE-002: a save where the last resolution eliminated a local human stands at
+        // its card, at the place that player's planning would have come (RULE-OBJECTIVE-005). A
+        // human eliminated in an earlier turn has had its card, as in play. A card whose slot comes
+        // after the human whose planning the save stands at is not reached yet: play shows it only
+        // when the planning advance crosses that slot.
+        if (_state is not null)
+        {
+            var viewer = PlanningViewer is { } active
+                && _state.FindPlayer(active) is { Status: PlayerStatus.Active } activePlayer
+                && activePlayer.Setup.Controller == PlayerController.Human
+                ? active
+                : (PlayerId?)null;
+            var eliminated = HotSeatHandoffPresentation
+                .PlayersEliminatedSince(_state, _state.Coordinator.Turn - 1)
+                .Where(id => _state.FindPlayer(id)?.Setup.Controller == PlayerController.Human
+                    && (viewer is null || id.Value < viewer.Value.Value))
+                .OrderBy(id => id.Value);
+            foreach (var id in HotSeatEliminationPresentation.QueueUnpresented(
+                         eliminated, _presentedHotSeatEliminations))
+                _pendingHotSeatEliminations.Enqueue(id);
+            if (ShowPendingHotSeatElimination()) return;
+        }
         // SCR-AWARDS-001: a save of a decided match stands where the original shows the endgame.
         if (_state?.Outcome is not null)
         {
