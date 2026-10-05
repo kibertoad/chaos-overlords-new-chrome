@@ -294,7 +294,7 @@
 
 ## recorded
 
-517 entries.
+518 entries.
 
 | ID | Title |
 |---|---|
@@ -442,6 +442,7 @@
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | Does the Comlink View panel look the same in the rebuild for a message one human sent another? |
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | When does the original show the hourglass during a local match with one human? |
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | Does the victory splash look the same in the rebuild when one player is left? |
+| [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | How many steps does the intro show of each movie when it plays out? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |

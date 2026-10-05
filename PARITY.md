@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 21 |
-| `validated` | 196 |
+| `implemented` | 20 |
+| `validated` | 197 |
 
 | Code | Rows |
 |---|---|
@@ -69,7 +69,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `FMT-VIDEO-001` | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported | complete | tests/Rechaos.Tests/OriginalMovieFileTests.cs | `DEV-VIDEO-001` | validated | The rebuild decodes only the subset the two shipped movies use. |
-| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | complete | None | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | implemented | Both movies play in order, centred, at 100 ms a frame, and a missing movie is skipped. Skipping on keys and either button is a mandatory deviation; with Intro only once off, its default, the movies play at every start; switching it on gives DEV-VIDEO-003. The movie sound plays at the Sound Effects level with the library's linear wave-device volume, level * 6400 / 65535 (FND-VIDEO-003). |
+| `RULE-VIDEO-001` | The intro plays the logos movie and then the intro movie, each ended by the left button | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.Intro.cs, tests/Rechaos.Tests/IntroMoviePlaybackTests.cs | `DEV-VIDEO-001`, `DEV-VIDEO-002`, `DEV-VIDEO-003` | validated | Both movies play in order, centred, at 100 ms a frame, each to the step after its last frame, and a missing movie is skipped. OriginalNewGameExperimentTests checks the order and the steps of EXP-VIDEO-001, both movies played out, against the rebuild's timeline, which ends each movie at the update after its last frame, as the original closes it within 10 ms. Skipping on keys and either button at once is a mandatory deviation (DEV-VIDEO-002), and no run presses the button during a movie. Intro only once is on by default and skips the intro after a showing (DEV-VIDEO-003); switched off, the movies play at every start. The movie sound plays at the Sound Effects level with the library's linear wave-device volume, level * 6400 / 65535 (FND-VIDEO-003). |
 
 ## HELP
 

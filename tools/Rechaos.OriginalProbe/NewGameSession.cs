@@ -125,7 +125,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
     IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false,
     bool CreditsCapture = false, bool SetupCapture = false, IReadOnlyList<ProbeOrderStep>? SetupSteps = null,
-    bool DetailedCombat = false, bool Pointer = false, bool Sounds = false)
+    bool DetailedCombat = false, bool Pointer = false, bool Sounds = false, bool WatchIntro = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -230,7 +230,8 @@ internal sealed record ProbeTrace(
     List<CombatClipRecord>? CombatClips = null,
     List<CombatPresentationRecord>? CombatPresentations = null,
     List<PointerCallRecord>? PointerCalls = null,
-    List<SoundCallRecord>? SoundCalls = null);
+    List<SoundCallRecord>? SoundCalls = null,
+    List<IntroMovieRecord>? IntroMovies = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -312,9 +313,13 @@ internal sealed partial class NewGameSession(
             });
         }
 
+        if (settings.WatchIntro) ArmIntro();
         var window = IntPtr.Zero;
         if (!_process.RunUntil(() => (window = _process.FindMainWindow()) != IntPtr.Zero, timeout))
             return Finish(false, "The game window never appeared.");
+        // --watch-intro: both movies play to their end before the button is held.
+        if (settings.WatchIntro && !_process.RunUntil(IntroPlayedOut, timeout))
+            return Finish(false, "The intro movies did not play out.");
 
         // RULE-VIDEO-001: a movie ends when left_button_down is set at one of its 10 Hz ticks, so a
         // posted press and release is missed. The probe holds the button in memory until the setup
@@ -895,7 +900,8 @@ internal sealed partial class NewGameSession(
             _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps,
             _orderSteps.Count == 0 ? null : _orderSteps, settings.GangMarkers ? _gangMarkers : null,
             settings.DetailedCombat ? _combatClips : null, settings.DetailedCombat ? _combatPresentations : null,
-            settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null);
+            settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
+            settings.WatchIntro ? _introMovies : null);
     }
 
     private static void Click(IntPtr window, int x, int y)

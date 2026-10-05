@@ -90,6 +90,14 @@ internal static class OriginalAddresses
     public const uint CursorHelper = 0x00465BC8;
     // RULE-AUDIO-006, FND-AUDIO-006: the play helper fn_0045851A(slot, priority).
     public const uint PlayHelper = 0x0045851A;
+    // RULE-VIDEO-001, FND-VIDEO-002, EXP-VIDEO-001: the frame helper's call of SmackDoFrame, the
+    // close helper fn_0040DD7B, movie slot 0's frame counter and Smack handle, and the movie name
+    // the intro copies.
+    public const uint IntroFrameCall = 0x0040DEF0;
+    public const uint IntroMovieClose = 0x0040DD7B;
+    public const uint IntroFrameCounter = 0x004905CC;
+    public const uint IntroSmackHandle = 0x004905D0;
+    public const uint IntroMovieName = 0x00498762;
 
     // RULE-COMBAT-004, FND-COMBAT-011: the Detailed Combat presentation fn_0042E040 (to 0x0042EE45,
     // FND-COMBAT-010), its clip player
