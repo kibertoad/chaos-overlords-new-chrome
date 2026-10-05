@@ -1374,6 +1374,7 @@ None.
 | [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body |
 | [EXP-TURN-050](../experiments/EXP-TURN-050.md) | body |
 | [EXP-TURN-052](../experiments/EXP-TURN-052.md) | body |
+| [EXP-TURN-072](../experiments/EXP-TURN-072.md) | body |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | evidence |
 | [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | evidence |
@@ -2110,6 +2111,8 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
+| [EXP-TURN-070](../experiments/EXP-TURN-070.md) | body |
+| [EXP-TURN-071](../experiments/EXP-TURN-071.md) | body |
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body |

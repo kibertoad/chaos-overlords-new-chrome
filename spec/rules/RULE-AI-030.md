@@ -115,7 +115,5 @@ None known.
 
 ## Open questions
 
-- What the original reads for the empty human-only pool is not recorded
-  (FND-AI-070).
 - That "no visible opponent" is a cached weight of 0 is taken from the
   handler's use of that weight (selector `0xAF`).

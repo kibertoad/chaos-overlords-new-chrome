@@ -17,7 +17,7 @@ fixture: EXP-TURN-078.json
 
 No other recorded run has a family-6 computer gang fail its first attack draw
 in a sector it weighs above 0 with no weapon or armor upgrade to buy. Does it
-then pass the Heal test, which needs weight 0, and attack the last of up to
+then fail the Heal test, which needs weight 0, and attack the last of up to
 five further draws, as RULE-AI-025 gives?
 
 ## Setup
