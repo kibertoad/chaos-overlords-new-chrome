@@ -74,17 +74,28 @@ public sealed partial class DeviationBehaviourTests
         Assert.True(ShellWindow.AllowsResizing);
         Assert.False(ShellWindow.SwitchesDisplayMode);
         Assert.Equal(TimeSpan.FromMilliseconds(20), ShellWindow.InactiveSleepTime);
-        Assert.Contains(typeof(ShellWindow).GetField(nameof(ShellWindow.InactiveSleepTime))!,
-            ReadFields(Constructor()));
+        var read = ReadFields(Constructor());
+        foreach (var name in new[]
+                 {
+                     nameof(ShellWindow.AllowsResizing), nameof(ShellWindow.SwitchesDisplayMode),
+                     nameof(ShellWindow.InactiveSleepTime)
+                 })
+            Assert.Contains(typeof(ShellWindow).GetField(name)!, read);
+        Assert.Contains(typeof(ShellWindow).GetMethod(nameof(ShellWindow.OpeningSize))!, Calls(Constructor()));
     }
 
     [Fact]
     public void FullScreenIsSwitchedWithF11OrAltEnter()
     {
         // DEV-GFX-001, DEV-UI-019: full screen is switched from the keyboard, not from a menu.
-        Assert.True(ShellWindow.TogglesFullscreen(Only(Keys.F11), new KeyboardState(Keys.F11)));
-        Assert.True(ShellWindow.TogglesFullscreen(Only(Keys.Enter), new KeyboardState(Keys.Enter, Keys.LeftAlt)));
-        Assert.False(ShellWindow.TogglesFullscreen(Only(Keys.Enter), new KeyboardState(Keys.Enter)));
+        Assert.True(ShellWindow.TogglesFullscreen(new KeyboardState(Keys.F11), new KeyboardState()));
+        Assert.True(ShellWindow.TogglesFullscreen(new KeyboardState(Keys.Enter, Keys.LeftAlt), new KeyboardState(Keys.LeftAlt)));
+        Assert.True(ShellWindow.AltEnter(new KeyboardState(Keys.Enter, Keys.RightAlt), new KeyboardState()));
+        Assert.False(ShellWindow.TogglesFullscreen(new KeyboardState(Keys.Enter), new KeyboardState()));
+        Assert.False(ShellWindow.TogglesFullscreen(new KeyboardState(Keys.F11), new KeyboardState(Keys.F11)));
+        var update = Calls(typeof(ChaosGame).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic)!);
+        Assert.Contains(typeof(ShellWindow).GetMethod(nameof(ShellWindow.TogglesFullscreen))!, update);
+        Assert.Contains(typeof(ShellWindow).GetMethod(nameof(ShellWindow.ShortcutFor))!, update);
     }
 
     [Fact]
@@ -138,11 +149,11 @@ public sealed partial class DeviationBehaviourTests
     public void F1OpensTheHelpAndShiftF1TheCredits()
     {
         // DEV-HELP-001, DEV-UI-019: F1 opens the rebuild's help viewer, Shift+F1 the credits.
-        Assert.Equal(ShellShortcut.Help, ShellWindow.ShortcutFor(Only(Keys.F1), new KeyboardState(Keys.F1)));
+        Assert.Equal(ShellShortcut.Help, ShellWindow.ShortcutFor(new KeyboardState(Keys.F1), new KeyboardState()));
         Assert.Equal(ShellShortcut.Credits,
-            ShellWindow.ShortcutFor(Only(Keys.F1), new KeyboardState(Keys.F1, Keys.LeftShift)));
+            ShellWindow.ShortcutFor(new KeyboardState(Keys.F1, Keys.LeftShift), new KeyboardState(Keys.LeftShift)));
         Assert.Equal(ShellShortcut.Credits,
-            ShellWindow.ShortcutFor(Only(Keys.F1), new KeyboardState(Keys.F1, Keys.RightShift)));
+            ShellWindow.ShortcutFor(new KeyboardState(Keys.F1, Keys.RightShift), new KeyboardState(Keys.RightShift)));
         Assert.Contains(typeof(ChaosGame).GetMethod("OpenHelp", BindingFlags.Instance | BindingFlags.NonPublic)!,
             Calls(typeof(ChaosGame).GetMethod("RunTitleAction", BindingFlags.Instance | BindingFlags.NonPublic)!));
     }
@@ -160,7 +171,7 @@ public sealed partial class DeviationBehaviourTests
         Assert.Equal(ChaosGame.TitleAction.Intro, ChaosGame.TitleActionAt(new Point(360, 390)));
         Assert.Equal(ChaosGame.TitleAction.Quit, ChaosGame.TitleActionAt(new Point(440, 390)));
         Assert.Null(ChaosGame.TitleActionAt(new Point(20, 20)));
-        Assert.Equal(ShellShortcut.Options, ShellWindow.ShortcutFor(Only(Keys.O), new KeyboardState(Keys.O)));
+        Assert.Equal(ShellShortcut.Options, ShellWindow.ShortcutFor(new KeyboardState(Keys.O), new KeyboardState()));
     }
 
     [Fact]
@@ -168,8 +179,10 @@ public sealed partial class DeviationBehaviourTests
     {
         // DEV-UI-011, DEV-UI-019: Escape is the shell's key for the pause menu, which holds saving,
         // loading and leaving the match.
-        Assert.Equal(ShellShortcut.Escape, ShellWindow.ShortcutFor(Only(Keys.Escape), new KeyboardState(Keys.Escape)));
-        Assert.Equal(ShellShortcut.None, ShellWindow.ShortcutFor(_ => false, new KeyboardState()));
+        Assert.Equal(ShellShortcut.Escape, ShellWindow.ShortcutFor(new KeyboardState(Keys.Escape), new KeyboardState()));
+        // A key held from the frame before is not pressed again.
+        Assert.Equal(ShellShortcut.None,
+            ShellWindow.ShortcutFor(new KeyboardState(Keys.Escape), new KeyboardState(Keys.Escape)));
         Assert.Contains(typeof(ChaosGame).GetMethod("OpenGameMenu", BindingFlags.Instance | BindingFlags.NonPublic)!,
             Calls(typeof(ChaosGame).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic)!));
         Assert.Equal(9, SaveSlotCatalog.SlotCount);
@@ -180,7 +193,8 @@ public sealed partial class DeviationBehaviourTests
     {
         // DEV-UI-018: the game ticks at a fixed 60 frames a second and reads the keyboard and the
         // mouse once each tick.
-        Assert.Equal(TimeSpan.FromTicks(TimeSpan.TicksPerSecond / 60), ShellWindow.FrameTime);
+        // A sixtieth of a second rounded to the nearest tick, MonoGame's default frame time.
+        Assert.Equal(TimeSpan.FromTicks(166_667), ShellWindow.FrameTime);
         Assert.Contains(typeof(ShellWindow).GetField(nameof(ShellWindow.FrameTime))!, ReadFields(Constructor()));
         var update = Calls(typeof(ChaosGame).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic)!);
         Assert.Contains(typeof(Keyboard).GetMethod(nameof(Keyboard.GetState), Type.EmptyTypes)!, update);
@@ -212,8 +226,6 @@ public sealed partial class DeviationBehaviourTests
             field.Type(character);
         Assert.Equal("Zoë Ä", field.Value);
     }
-
-    private static Func<Keys, bool> Only(Keys key) => pressed => pressed == key;
 
     private static ConstructorInfo Constructor() =>
         typeof(ChaosGame).GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)

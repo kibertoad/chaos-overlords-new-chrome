@@ -40,7 +40,7 @@ static int Usage()
               [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
               [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|wait:ms|type:TEXT|shot:SCR-ID+...>,...] [--gang-markers]
               [--title-capture] [--credits-capture] [--setup-capture] [--setup-steps <strip:x:y|drag:x:y:x2:y2|shot>,...]
-              [--detailed-combat] [--pointer] [--sounds] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
+              [--detailed-combat] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -100,7 +100,7 @@ static int NewGame(string[] args)
         Option(args, "--setup-steps") is { } setupSteps ? ParseSetupSteps(setupSteps) : null,
         args.Contains("--detailed-combat"),
         args.Contains("--pointer"),
-        args.Contains("--sounds"),
+        args.Contains("--sound-calls"),
         args.Contains("--watch-intro"),
         args.Contains("--waits"),
         args.Contains("--slides"),
@@ -389,7 +389,8 @@ static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnly
 }
 
 // --families turn:player:slot:family,... writes a planning record's family; --raiders
-// turn:player,... sets a player's raider_mode (ProbePlanning).
+// turn:player,... sets a player's raider_mode; --retire turn:player,... clears a player's
+// player_active (ProbePlanning).
 static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired)
 {
     static int[] Numbers(string entry) =>

@@ -43,6 +43,7 @@ public sealed partial class OriginalNewGameExperimentTests
         {
             Assert.Equal((int)PointerShape.Arrow, calls.Last(call => call.Done < done).Shape);
             var stretch = calls.Where(call => call.Done == done).ToArray();
+            Assert.NotEmpty(stretch);
             Assert.Equal((int)PointerShape.Hourglass, stretch[0].Shape);
             // Every arrow but the planning entry's is followed by an hourglass at the same roll.
             for (var index = 0; index < stretch.Length - 1; index++)
@@ -52,6 +53,8 @@ public sealed partial class OriginalNewGameExperimentTests
                     Assert.Equal(stretch[index].AfterRoll, stretch[index + 1].AfterRoll);
                 }
         }
+        // The stretch after the last press ends at the arrow too, which no later press checks.
+        Assert.Equal((int)PointerShape.Arrow, calls[^1].Shape);
 
         var atEntries = new List<PointerShape>();
         var afterPresses = new List<PointerShape>();

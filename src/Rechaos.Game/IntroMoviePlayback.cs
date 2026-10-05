@@ -25,17 +25,33 @@ public readonly record struct SmackerTimelineAdvance(
 public sealed class SmackerPlaybackTimeline
 {
     private readonly RefurbishedDinosaurs.Media.Playback.MoviePlayback playback;
+    private readonly int frameCount;
+    private int decoded;
 
-    public SmackerPlaybackTimeline(int frameCount, TimeSpan frameDuration) =>
+    public SmackerPlaybackTimeline(int frameCount, TimeSpan frameDuration)
+    {
         playback = new(frameCount, frameDuration);
+        this.frameCount = frameCount;
+    }
 
     public bool IsComplete => playback.IsComplete;
     public int FrameIndex => playback.FrameIndex;
 
     public SmackerTimelineAdvance Advance(TimeSpan elapsed)
     {
+        if (playback.IsComplete) return new SmackerTimelineAdvance(0, true);
+        // RULE-VIDEO-001, EXP-VIDEO-001: the original closes a movie that played out at the step
+        // after its last frame, which comes within 10 ms of that frame instead of a frame time
+        // later. The movie therefore ends at the first update after the one that decoded its last
+        // frame, so the last frame is drawn once and the movie does not hold it for a frame time.
+        if (frameCount > 0 && decoded == frameCount)
+        {
+            playback.Skip();
+            return new SmackerTimelineAdvance(0, true);
+        }
         var frames = 0;
         playback.Advance(elapsed, _ => frames++);
+        decoded += frames;
         return new SmackerTimelineAdvance(frames, playback.IsComplete);
     }
 

@@ -36,11 +36,11 @@ city cell through `fn_0041ACE6` (FND-UI-017).
 
 ## Observations
 
-The clock ticked 31 times, 165 ms apart on average; single periods ran from 154
-to 179 ms under the debugger. The wait was called six times, each with 1: three
+The clock ticked 31 times, 165.8 ms apart on average; single periods ran from
+160 to 175 ms under the debugger. The wait was called six times, each with 1: three
 times for each drop, from the calls at `0x0041B314`, `0x0041B3AE` and
 `0x0041B448` in turn, each starting as the one before returned. Every wait
-returned 6 to 15 ms after the first tick at or after its start, and no other
+returned 6 to 16 ms after the first tick at or after its start, and no other
 tick came between. The two flashes lasted 447 and 426 ms, their first waits
 having started 61 and 90 ms after a tick.
 

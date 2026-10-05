@@ -131,15 +131,25 @@ public static class AudioRouting
         return $"SND00{resource:000}.wav";
     }
 
+    /// <param name="orderPanelShown">
+    /// Whether the Commands screen being left shows an order panel rather than the order list.
+    /// The list stands in for the original's order popup (DEV-UI-021), which plays no sound
+    /// (FND-UI-057), so the Commands screen sounds only when an order panel on it closes. The
+    /// order panel's own slot 0 plays when it opens on the screen (RULE-UI-003).
+    /// </param>
     public static IReadOnlyList<int> PanelTransitionSounds(
         ClientScreen previous,
         ClientScreen current,
-        bool slidePanels)
+        bool slidePanels,
+        bool orderPanelShown = false)
     {
         if (!slidePanels) return [];
         var sounds = new List<int>(2);
-        if (PanelSlideTransition.IsPanel(previous)) sounds.Add(GeneralSoundSlot.PanelClose);
-        if (PanelSlideTransition.IsPanel(current)) sounds.Add(GeneralSoundSlot.PanelOpen);
+        if (PanelSlideTransition.IsPanel(previous)
+            && (previous != ClientScreen.Commands || orderPanelShown))
+            sounds.Add(GeneralSoundSlot.PanelClose);
+        if (PanelSlideTransition.IsPanel(current) && current != ClientScreen.Commands)
+            sounds.Add(GeneralSoundSlot.PanelOpen);
         return sounds;
     }
 }
