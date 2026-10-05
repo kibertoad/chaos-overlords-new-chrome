@@ -367,6 +367,7 @@ public sealed partial class OriginalNewGameExperimentTests
             // Before the first Done no resolution has written them, and the original holds 0 in
             // every byte (EXP-UI-001).
             if (donePresses > 0) AssertLastCombatMatches(recorded, match);
+            else Assert.All(recorded.Values("FMT-STATE-003"), value => Assert.Equal(0, value));
         }
 
         // RULE-EVENT-001, RULE-EVENT-002: each player's Last Turn reports of the last resolution, in
@@ -943,6 +944,12 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     private static RecordedRun Run(string experiment, int run) => Recorded.Value[experiment][run];
+
+    /// <summary>
+    /// Whether the runs of <paramref name="experiment"/> are replayed. A run that changes the
+    /// match from outside, such as EXP-UI-002's <c>--draw-values</c>, is not.
+    /// </summary>
+    internal static bool IsReplayed(string experiment) => Experiments.Contains(experiment);
 
     /// <summary>The rebuild's match after replaying a recorded run to its endpoint.</summary>
     internal static MatchState ReplayedMatch(string experiment, int run) => StartMatch(Run(experiment, run), out _);

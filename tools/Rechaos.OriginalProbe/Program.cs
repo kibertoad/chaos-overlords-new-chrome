@@ -88,6 +88,11 @@ static int NewGame(string[] args)
         Console.Error.WriteLine($"{executable} is not BLD-GOG-EN-1.1 (SHA-256 {hash}).");
         return 1;
     }
+    if (settings.DrawValues is { } drawn && DrawValuesProblem(drawn, settings.Humans, executable) is { } problem)
+    {
+        Console.Error.WriteLine(problem);
+        return 1;
+    }
 
     Directory.CreateDirectory(output);
     using var session = new NewGameSession(executable, game, output, TimeSpan.FromSeconds(timeout), settings);
@@ -235,6 +240,24 @@ static IReadOnlyList<ProbeDrawValue> ParseDrawValues(string value) =>
             uint.Parse(address, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture),
             parts[1].Split('/').Select(number => int.Parse(number, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
     }).ToArray();
+
+// The calls of the planning-entry function are counted over every human's entries, and each
+// human's console draws its own slot, so with a second human the nth value would not reach the nth
+// entry of the seat it was meant for. An address outside the writable sections would overwrite
+// code or a constant instead of a value the console draws.
+static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnlyList<HumanSlot>? humans, string executable)
+{
+    if (humans is { Count: > 1 })
+        return "--draw-values counts the planning entries of one human; give at most one --humans slot.";
+    var writable = PeSection.Read(executable, out _).Where(section => section.IsWritable).ToArray();
+    foreach (var value in values)
+    {
+        if (!writable.Any(section => value.Address >= section.VirtualAddress
+            && (ulong)value.Address + 4 <= (ulong)section.VirtualAddress + section.VirtualSize))
+            return $"--draw-values address 0x{value.Address:X8} does not lie in a writable section of the executable.";
+    }
+    return null;
+}
 
 // --families turn:player:slot:family,... writes a planning record's family; --raiders
 // turn:player,... sets a player's raider_mode (ProbePlanning).

@@ -43,7 +43,6 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
 
-<<<<<<< HEAD
 ## 2026-10-05 — Take captures of the original without a DirectDraw wrapper
 
 - Decision: the probe takes captures of the original without DDrawCompat or another DirectDraw
@@ -65,7 +64,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 - Boundary: a capture records the white areas as the original drew them. Another way to take
   captures, such as a different compatibility layer or an older Windows in a virtual machine,
   needs its own comparison of a recorded run before it is used.
-=======
+
 ## 2026-10-05 — Switch DEV-AI-008 off from the command line only
 
 - Decision: DEV-AI-008 (a computer player hires only where a human could) is a setting that starts
@@ -79,7 +78,6 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   an Options entry would add clutter for nothing.
 - Boundary: the flag reaches local matches started in the session it is given to. A loaded save
   or journal keeps the value it was started with.
->>>>>>> origin/main
 
 ## 2026-10-04 — Switch DEV-AI-007 off from the command line only
 

@@ -75,7 +75,8 @@ internal sealed record ProbeFinance(int Turn, int Sector)
 /// and the last at every later call. The console then draws a number the match would not reach,
 /// such as a score whose first glyph cell lies outside the glyph sheet (RULE-UI-004), over what an
 /// earlier call drew. The write changes the match from then on, so a run that uses it is not
-/// replayed.
+/// replayed. The calls are counted over every human's entries, so the probe takes it with one
+/// human only.
 /// </summary>
 internal sealed record ProbeDrawValue(uint Address, IReadOnlyList<int> Values)
 {

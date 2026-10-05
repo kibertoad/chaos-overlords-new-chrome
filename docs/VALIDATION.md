@@ -453,8 +453,12 @@ RULE-TIMER-003).
 function `fn_0046FD80` starts to draw the console (FND-UI-040): the nth value
 at its nth call and the last at every later one. It makes the console draw a
 number the match would not reach over what an earlier entry drew, as
-EXP-UI-002 does with the score and cash. The fixture lists each as a `setup`
-input; the values change the match, so such a run is not replayed.
+EXP-UI-002 does with the score and cash. The calls are counted over every
+human's planning entries and each human's console draws its own slot, so the
+probe refuses `--draw-values` with more than one `--humans` slot, and it
+refuses an address outside the executable's writable sections. The fixture
+lists each as a `setup` input; the values change the match, so such a run is
+not replayed.
 Each run records the roll count at every press as `done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
 a recorded run can be played again, and `--dump-at-roll` copies the writable
 sections and the top of the stack at the entry of that call of `roll`, counted
@@ -604,9 +608,11 @@ under another name such as `<xxh3>.png` instead of skipping the test.
 Captures are taken without a DirectDraw wrapper (docs/DECISIONS.md,
 2026-10-05). DDrawCompat beside the staged copy left the rolls and the state of
 a recorded run unchanged but did not remove the white areas: windowed, the
-original draws with GDI and never uses DirectDraw (FND-GFX-004). A capture recorded before the element digests existed, such as those
-of EXP-TURN-041 and EXP-TURN-042, gets them from that copy without another run
-of the original:
+original draws with GDI and never uses DirectDraw (FND-GFX-004).
+
+A capture recorded before the element digests existed, such as those of
+EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
+`GAME_DIR/captures/` without another run of the original:
 
 ```powershell
 $env:GAME_DIR = 'D:\original-files'
