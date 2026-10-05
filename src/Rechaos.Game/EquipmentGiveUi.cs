@@ -213,7 +213,8 @@ public sealed partial class ChaosGame
         _giveGang = gang.Id;
         _giveReturnScreen = returnScreen;
         _giveRepeats = repeat;
-        _equipmentRotationOpenedAt = _inputTime;
+        _equipmentRotationStart = _eventPump.Ticks;
+        _equipmentRotationHeld = null;
         _screens.Show(ClientScreen.Give);
     }
 
@@ -436,7 +437,7 @@ public sealed partial class ChaosGame
         }
         if (_gangPortraits is not null)
             // SCR-GIVE-001, EXP-UI-010: the 64-by-64 portrait halved as the original's stretch does.
-            PictureScaling.Draw(batch, _gangPortraits,
+            _scaledGangPortraits.Draw(batch, _gangPortraits,
                 OriginalSpriteLayout.GangPortrait(recipient.DefinitionId), EquipmentGiveLayout.RecipientPortrait(slot));
         if (_itemPortraits is not null)
         {

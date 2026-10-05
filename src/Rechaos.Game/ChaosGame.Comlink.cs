@@ -75,7 +75,7 @@ public sealed partial class ChaosGame
         _managementReturnScreen = returnScreen;
         Array.Fill(_comlinkRecipients, false);
         _comlinkEditor.Clear();
-        _comlinkCaretCadence.Reset(_inputTime);
+        _comlinkCaretCadence.Reset(_eventPump.Time);
         _comlinkStatus = string.Empty;
         _screens.Show(ClientScreen.ComlinkSend);
     }
