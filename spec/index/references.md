@@ -134,6 +134,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | builds |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | builds |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | builds |
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -1993,8 +1994,13 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 
 ## EXP-UI-002
+
+None.
+
+## EXP-UI-003
 
 None.
 
@@ -5638,6 +5644,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 | [RULE-GFX-003](../rules/RULE-GFX-003.md) | body, evidence |
 
 ## FND-POLICE-001
@@ -8984,6 +8991,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, related |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, related |
 
@@ -9099,6 +9107,7 @@ None.
 |---|---|
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 | [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, related |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | related |
