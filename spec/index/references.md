@@ -938,6 +938,7 @@ None.
 | [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | body |
 | [FMT-STATE-005](../formats/FMT-STATE-005.md) | body, evidence |
 | [FND-COMLINK-010](../findings/FND-COMLINK-010.md) | body |
+| [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | evidence |
 | [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | body, evidence |
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | body, evidence |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | evidence |

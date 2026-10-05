@@ -22,7 +22,8 @@ namespace Rechaos.Tests;
 /// has been read, refuses an empty inbox and stops at both ends (RULE-COMLINK-004); a shown message
 /// is marked read and dated from its turn (RULE-COMLINK-005); and the end of a player's planning
 /// drops the read messages at the front (RULE-COMLINK-007). In EXP-COMLINK-002 the only human's
-/// Send and View are both refused (RULE-COMLINK-002, RULE-COMLINK-004).
+/// Send and View are both refused (RULE-COMLINK-002, RULE-COMLINK-004). In both the Comlink alert
+/// of RULE-AUDIO-007 sounds where the rebuild's planning player has an unread message.
 /// </summary>
 public sealed class OriginalComlinkExperimentTests
 {
@@ -83,6 +84,8 @@ public sealed class OriginalComlinkExperimentTests
                 var sounds = step.GetProperty("sounds").EnumerateArray().Select(value => value.GetInt32())
                     .Where(slot => slot is not (ButtonPress or Alert)).ToArray();
                 var refused = sounds.Contains(GeneralSoundSlot.RejectedInput);
+                var alerted = step.GetProperty("sounds").EnumerateArray().Any(value => value.GetInt32() == Alert);
+                var unreadBefore = _match.ComlinkFor(_active).HasUnread;
                 switch (verb)
                 {
                     case "visit":
@@ -138,6 +141,16 @@ public sealed class OriginalComlinkExperimentTests
                     _lastDraft = draft.GetRawText();
                 }
                 if (step.TryGetProperty("comlink", out var comlink)) AssertComlink(line, verb, step, comlink);
+
+                // RULE-AUDIO-007: the alert sounds only while the planning player has an unread
+                // message, and the planning entry of a player with one sounds it; between those the
+                // repeat of RULE-AUDIO-008 depends on the time a step took.
+                var unreadAfter = _match.ComlinkFor(_active).HasUnread;
+                Assert.True(!alerted || unreadBefore || unreadAfter,
+                    $"{line}: the original sounded the Comlink alert with no unread message in the rebuild");
+                if (verb == "visit")
+                    Assert.True(alerted == (AudioRouting.IncomingMessageSound(unreadAfter) == Alert),
+                        $"{line}: the original {(alerted ? "sounded" : "did not sound")} the alert at the planning entry");
             }
         }
 

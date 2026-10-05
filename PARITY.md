@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 29 |
-| `validated` | 188 |
+| `implemented` | 28 |
+| `validated` | 189 |
 
 | Code | Rows |
 |---|---|
@@ -58,7 +58,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AUDIO-004` | Loading the general sound effects | supported | complete | tests/Rechaos.Tests/NativeSoundLoaderTests.cs, tests/Rechaos.Tests/AudioRoutingTests.cs | None | validated | Native loader tests accept all 28 hash-checked original PCM files with the recorded sample durations; a synthetic odd-length file and a missing-file case also run without original fixtures. Routing tests compare the nine general slot assignments with FND-AUDIO-006. Allocation failure now leaves the slot empty as recorded, but native allocation failure, startup caller timing and hardware output have not been exercised. |
 | `RULE-AUDIO-005` | Playing a sound effect, which cuts off the one playing | supported | complete | tests/Rechaos.Tests/NativeEffectVoiceTests.cs | None | validated | Native tests exercise the actual effect methods against FND-AUDIO-006: replacing a voice disposes the preceding one without changing the music transport; the disabled wrapper preserves it while the direct cue replaces it. Original auxiliary-device routing and audible hardware output are not compared. |
 | `RULE-AUDIO-006` | The turn-start sound | supported | complete | None | None | implemented | Only online matches, the rebuild's network games, play the cue, from the second turn on; local games are silent. The cue skips the effects-enabled test (BUG-AUDIO-001) and plays at the effects volume, which is 0 at level 0 (RULE-AUDIO-003). |
-| `RULE-AUDIO-007` | The Comlink alert plays slot 6 through the effects gate | supported | complete | None | None | implemented | None |
+| `RULE-AUDIO-007` | The Comlink alert plays slot 6 through the effects gate | supported | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | OriginalComlinkExperimentTests checks every step of EXP-COMLINK-001 and EXP-COMLINK-002: the original sounded slot 6 only where the rebuild's planning player had an unread message, and at each planning entry exactly when it had one; no run reaches a message arriving for the planning player, the city entry with comlink_pending set, or the effects switched off. |
 | `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | tests/Rechaos.Tests/ComlinkAlertCadenceTests.cs | None | validated | Tests compare all eight arrival phases and the arrival/planning-entry repeat-counter resets with FND-AUDIO-012: the first repeat takes 17 to 24 shared presentation ticks, then repeats every 24 ticks. |
 | `RULE-AUDIO-009` | The sound of an attack in Detailed Combat | supported | complete | None | None | implemented | None |
 | `RULE-AUDIO-010` | The startup drive check always passes and the game never looks for its disc | supported | complete | None | `DEV-AUDIO-001` | implemented | The rebuild plays the music files and never checks a drive or looks for the disc (DEV-AUDIO-001); nothing else in the rule reaches a game result. |
