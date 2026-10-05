@@ -7,6 +7,8 @@
   "inputs": [
     {"tick":0,"name":"command","value":"File, New Game (0x8101)"},
     {"tick":0,"name":"setup","value":"scenario 6"},
+    {"tick":0,"name":"setup","value":"mentality 1"},
+    {"tick":0,"name":"setup","value":"planning_limit_choice 0"},
     {"tick":0,"name":"setup","value":"key_colour RGB(255,255,255)"},
     {"tick":0,"name":"left_click","value":"Begin (416, 397)"}
   ],
@@ -8111,7 +8113,43 @@
             ]
           }
         ]
-      }
+      },
+      "setup_steps": [
+        {"kind":"strip","x":453,"y":120},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"549145a65a4d5de481d8a2978302ed4d","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"9fc8bfaf22d1ef3614b81727ee81a76a","white":0}]}]}},
+        {"kind":"strip","x":416,"y":340},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"c413ebe8e37da533216454880a7f6e64","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"3e2c5492a2747e07e98eddb21709eb70","white":0}]}]}},
+        {"kind":"strip","x":510,"y":120},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"c413ebe8e37da533216454880a7f6e64","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"3e2c5492a2747e07e98eddb21709eb70","white":0}]}]}},
+        {"kind":"strip","x":135,"y":125},
+        {"kind":"strip","x":249,"y":403},
+        {"kind":"strip","x":135,"y":430},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"7275019a682e18b8237a76fb17b2e944","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"5762451e80fdcb8f686ffe7d6261a3fb","white":0}]}]}},
+        {"kind":"strip","x":135,"y":230},
+        {"kind":"strip","x":220,"y":296},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"2af4d58da780c17da29f0ae75c921bb2","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"2c6a17ec9ef8df8cd3d0ffe71208ab93","white":0}]}]}},
+        {"kind":"strip","x":514,"y":340},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"392164a5f1a95ae8621cd867b470b6a0","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"5cacbb8d0ce057205a69365031fef144","white":0}]}]}},
+        {"kind":"strip","x":404,"y":120},
+        {"kind":"drag","x":416,"y":340,"to_x":300,"to_y":200},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"bee6ea8779beaa7b8e979c56e2dedcb4","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"b2487a7cde9f7fcdb146699ea5181f3e","white":0}]}]}},
+        {"kind":"strip","x":416,"y":340},
+        {"kind":"strip","x":416,"y":340},
+        {"kind":"strip","x":416,"y":340},
+        {"kind":"strip","x":416,"y":340},
+        {"kind":"strip","x":416,"y":340},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"9f773c37fa2f230a0ab24b34e21590bf","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"cd8ce2fa90219d431fcb8f8109e24501","white":5}]}]}},
+        {"kind":"strip","x":416,"y":340},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"9f773c37fa2f230a0ab24b34e21590bf","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"cd8ce2fa90219d431fcb8f8109e24501","white":5}]}]}},
+        {"kind":"strip","x":514,"y":340},
+        {"kind":"strip","x":514,"y":340},
+        {"kind":"strip","x":514,"y":340},
+        {"kind":"strip","x":514,"y":340},
+        {"kind":"strip","x":514,"y":340},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"bee6ea8779beaa7b8e979c56e2dedcb4","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"b2487a7cde9f7fcdb146699ea5181f3e","white":0}]}]}},
+        {"kind":"strip","x":514,"y":340},
+        {"kind":"shot","x":0,"y":0,"capture":{"xxh3":"bee6ea8779beaa7b8e979c56e2dedcb4","area":[0,0,640,460],"marker_frame":0,"pump_counter":null,"lamps":null,"selected_sector":null,"screens":[{"screen":"SCR-SETUP-001","elements":[{"element":"Full local game setup screen with scenario, settings and six player cards","rect":[0,0,640,460],"xxh3":"b2487a7cde9f7fcdb146699ea5181f3e","white":0}]}]}}
+      ]
     }
   ]
 }

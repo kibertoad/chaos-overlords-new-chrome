@@ -183,6 +183,9 @@ internal sealed class StateExtractor
         // --title-capture, --credits-capture, --setup-capture: the screens before the match.
         foreach (var (key, before) in CaptureFixture.ExtractBeforeMatch(runDirectory, trace))
             run[key] = before;
+        // --setup-steps: the presses on the setup screen and the copies taken after them.
+        if (CaptureFixture.ExtractSetupSteps(runDirectory, trace) is { } setupSteps)
+            run["setup_steps"] = setupSteps;
         return run;
     }
 

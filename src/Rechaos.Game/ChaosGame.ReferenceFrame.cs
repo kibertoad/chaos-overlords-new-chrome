@@ -47,7 +47,7 @@ public sealed record ReferenceFrameRequest(
 
     private const string Usage =
         "Usage: --reference-frame <save|title|credits|setup> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
-        + " [--selected-sector <0-63>] [--item-frame <0-14>] [--reference-clicks <x:y[:2]>,...]";
+        + " [--selected-sector <0-63>] [--item-frame <0-14>] [--reference-clicks <x:y[:2]|x:y>x:y>,...]";
 
     // Keep captures independent of the player's preferences, recovery files and saves. The
     // directory sits beside the bitmap and is kept after exit, so a failed run can be diagnosed
@@ -144,25 +144,36 @@ public sealed record ReferenceFrameRequest(
     }
 }
 
-/// <summary>A left-button click at a point of the drawing area, made twice for a double-click.</summary>
-public sealed record ReferenceClick(Point Point, bool Double = false)
+/// <summary>
+/// A left-button click at a point of the drawing area, made twice for a double-click, or a press
+/// there that moves to <see cref="Release"/> with the button held and is released there.
+/// </summary>
+public sealed record ReferenceClick(Point Point, bool Double = false, Point? Release = null)
 {
     public static IReadOnlyList<ReferenceClick> ParseList(string value) =>
         value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
         {
-            var numbers = entry.Split(':').Select(part => int.TryParse(part, System.Globalization.NumberStyles.None,
+            var ends = entry.Split('>');
+            var numbers = ends.SelectMany(end => end.Split(':')).Select(part => int.TryParse(part,
+                System.Globalization.NumberStyles.None,
                 System.Globalization.CultureInfo.InvariantCulture, out var number) ? number : -1).ToArray();
-            return numbers switch
+            return (ends.Length, numbers) switch
             {
-                [>= 0 and < VirtualInput.Width, >= 0 and < VirtualInput.Height] =>
+                (1, [>= 0 and < VirtualInput.Width, >= 0 and < VirtualInput.Height]) =>
                     new ReferenceClick(new Point(numbers[0], numbers[1])),
-                [>= 0 and < VirtualInput.Width, >= 0 and < VirtualInput.Height, 2] =>
+                (1, [>= 0 and < VirtualInput.Width, >= 0 and < VirtualInput.Height, 2]) =>
                     new ReferenceClick(new Point(numbers[0], numbers[1]), Double: true),
-                _ => throw new ArgumentException($"A reference click is x:y or x:y:2 inside the drawing area: {entry}"),
+                (2, [>= 0 and < VirtualInput.Width, >= 0 and < VirtualInput.Height,
+                    >= 0 and < VirtualInput.Width, >= 0 and < VirtualInput.Height]) =>
+                    new ReferenceClick(new Point(numbers[0], numbers[1]), Release: new Point(numbers[2], numbers[3])),
+                _ => throw new ArgumentException(
+                    $"A reference click is x:y, x:y:2 or x:y>x:y inside the drawing area: {entry}"),
             };
         }).ToArray();
 
-    public override string ToString() => $"{Point.X}:{Point.Y}" + (Double ? ":2" : "");
+    public override string ToString() => Release is { } release
+        ? $"{Point.X}:{Point.Y}>{release.X}:{release.Y}"
+        : $"{Point.X}:{Point.Y}" + (Double ? ":2" : "");
 }
 
 public sealed partial class ChaosGame
@@ -179,7 +190,14 @@ public sealed partial class ChaosGame
 
     private readonly ReferenceFrameRequest? _referenceFrame;
     private int _referenceFrameDraws = -1;
-    private IReadOnlyList<(Point Point, bool Press)> _referenceEdges = [];
+    private IReadOnlyList<(Point Point, ReferenceEdge Edge)> _referenceEdges = [];
+
+    private enum ReferenceEdge
+    {
+        Press,
+        Move,
+        Release,
+    }
     private int _referenceEdge;
     private int _referenceSettled;
     private TimeSpan _referenceClock;
@@ -210,12 +228,19 @@ public sealed partial class ChaosGame
                     OpenNewGameSetup();
                     break;
                 default:
-                    EnterNewMatch(NativeSaveStore.Load(_referenceFrame.SavePath, _definitions), advanceToPlanning: false);
+                    EnterNewMatch(NativeSaveStore.Load(_referenceFrame.SavePath, _definitions),
+                        advanceToPlanning: false);
                     break;
             }
             _referenceEdges = (_referenceFrame.Clicks ?? [])
-                .SelectMany(click => Enumerable.Repeat(click.Point, click.Double ? 2 : 1))
-                .SelectMany(point => new[] { (point, true), (point, false) })
+                .SelectMany(click => click.Release is { } release
+                    ?
+                    [
+                        (click.Point, ReferenceEdge.Press), (release, ReferenceEdge.Move),
+                        (release, ReferenceEdge.Release),
+                    ]
+                    : Enumerable.Repeat(click.Point, click.Double ? 2 : 1)
+                        .SelectMany(point => new[] { (point, ReferenceEdge.Press), (point, ReferenceEdge.Release) }))
                 .ToArray();
             _referenceFrameDraws = 0;
             return true;
@@ -236,15 +261,20 @@ public sealed partial class ChaosGame
         if (UpdateTickedPresentation()) return;
         if (_referenceEdge < _referenceEdges.Count)
         {
-            var (point, press) = _referenceEdges[_referenceEdge++];
-            if (press)
+            var (point, edge) = _referenceEdges[_referenceEdge++];
+            switch (edge)
             {
-                _dragPoint = point;
-                HandleClick(point);
-            }
-            else
-            {
-                CompletePointerRelease(pointerMapped: true, point, rightButton: false);
+                case ReferenceEdge.Press:
+                    _dragPoint = point;
+                    HandleClick(point);
+                    break;
+                case ReferenceEdge.Move:
+                    _dragPoint = point;
+                    HoldPointerAt(point);
+                    break;
+                default:
+                    CompletePointerRelease(pointerMapped: true, point, rightButton: false);
+                    break;
             }
             return;
         }

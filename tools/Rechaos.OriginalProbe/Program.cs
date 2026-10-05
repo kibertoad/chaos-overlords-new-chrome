@@ -39,7 +39,7 @@ static int Usage()
               [--equip-lists] [--attack-lists] [--search-clicks <x:y>,...]
               [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
               [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers]
-              [--title-capture] [--credits-capture] [--setup-capture]
+              [--title-capture] [--credits-capture] [--setup-capture] [--setup-steps <strip:x:y|drag:x:y:x2:y2|shot>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -95,7 +95,8 @@ static int NewGame(string[] args)
         args.Contains("--gang-markers"),
         args.Contains("--title-capture"),
         args.Contains("--credits-capture"),
-        args.Contains("--setup-capture"));
+        args.Contains("--setup-capture"),
+        Option(args, "--setup-steps") is { } setupSteps ? ParseSetupSteps(setupSteps) : null);
     // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
     // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
     // A first slot that is not the lowest would compare one player's lists with another player's
@@ -273,6 +274,25 @@ static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
                 new ProbeOrderStep("dbl", -1, numbers[0], numbers[1], 0),
             "back" or "exit" or "warn" when numbers is [] => new ProbeOrderStep(parts[0], -1, 0, 0, 0),
             _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn or shot:SCR-ID+...: {entry}"),
+        };
+    }).ToArray();
+
+// --setup-steps strip:x:y,drag:x:y:x2:y2,shot,... presses window points of the setup screen, or
+// drags from one to another, and copies it, each copy compared at SCR-SETUP-001.
+static IReadOnlyList<ProbeOrderStep> ParseSetupSteps(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        if (parts is ["shot"]) return new ProbeOrderStep("shot", -1, 0, 0, 0, "SCR-SETUP-001");
+        var numbers = parts.Skip(1).Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        return (parts[0], numbers) switch
+        {
+            ("strip", [>= 0 and < 640, >= 0 and < 460]) => new ProbeOrderStep("strip", -1, numbers[0], numbers[1], 0),
+            // drag:x:y:x2:y2 presses at (x, y), moves to (x2, y2) with the button down and releases
+            // there; Target and Choice carry the release point.
+            ("drag", [>= 0 and < 640, >= 0 and < 460, >= 0 and < 640, >= 0 and < 460]) =>
+                new ProbeOrderStep("drag", numbers[2], numbers[0], numbers[1], numbers[3]),
+            _ => throw new FormatException($"A setup step is strip:x:y, drag:x:y:x2:y2 or shot: {entry}"),
         };
     }).ToArray();
 

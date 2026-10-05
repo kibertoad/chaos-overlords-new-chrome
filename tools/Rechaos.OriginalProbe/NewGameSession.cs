@@ -119,7 +119,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false,
     IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
     IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false,
-    bool CreditsCapture = false, bool SetupCapture = false)
+    bool CreditsCapture = false, bool SetupCapture = false, IReadOnlyList<ProbeOrderStep>? SetupSteps = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -345,6 +345,7 @@ internal sealed partial class NewGameSession(
             _notes.Add(CaptureDrawingArea(window, "setup-capture", CaptureFixture.Width, CaptureFixture.Height)
                 ? CaptureFixture.BeforeMatchNote("setup")
                 : "The setup screen was not captured.");
+        RecordSetupSteps(window, settings.SetupSteps);
         var rollsBeforeBegin = _rolls.Count;
         ApplySettings();
         Click(window, OriginalAddresses.BeginX, OriginalAddresses.BeginY);
@@ -877,28 +878,6 @@ internal sealed partial class NewGameSession(
         }
         _notes.Add($"Capture {file} rejected: a counter moved or the synchronized copies disagreed.");
         return null;
-    }
-
-    // --credits-capture: Help, About from the title (FND-UI-007). The breakpoint after the load of
-    // the credits art says they are being shown; a key press closes them.
-    private void CaptureCredits(IntPtr window)
-    {
-        var shown = false;
-        _process.SetBreakpoint(OriginalAddresses.CreditsArtLoaded, _ => shown = true, oneShot: true);
-        Native.PostMessageW(window, Native.WmCommand, OriginalAddresses.AboutCommand, IntPtr.Zero);
-        if (!_process.RunUntil(() => shown, TimeSpan.FromSeconds(10)))
-        {
-            _notes.Add("The credits never opened.");
-            return;
-        }
-        _process.Pump(TimeSpan.FromSeconds(2));
-        if (CaptureDrawingArea(window, "credits-capture", CaptureFixture.Width, CaptureFixture.Height))
-            _notes.Add(CaptureFixture.BeforeMatchNote("credits"));
-        else
-            _notes.Add("The credits were not captured.");
-        Native.PostMessageW(window, Native.WmKeyDown, 0x20, IntPtr.Zero);
-        Native.PostMessageW(window, Native.WmKeyUp, 0x20, IntPtr.Zero);
-        _process.Pump(TimeSpan.FromSeconds(2));
     }
 
     private bool CaptureDrawingArea(IntPtr window, string file, int width, int height)

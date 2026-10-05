@@ -751,7 +751,11 @@ Mentality and planning limit options (FND-OPTIONS-001) before New Game, so the
 setup screen opens as it does when the registry key holds none, and copies the
 setup screen two seconds after it opens, before the run writes its own
 settings; `extract` gives the run a `setup_capture` object, compared at
-SCR-SETUP-001. EXP-UI-015 is taken this way.
+SCR-SETUP-001. `--setup-steps` then posts presses on the setup screen, as
+`strip:x:y`, drags as `drag:x:y:x2:y2` and copies as `shot`, each copy
+compared at SCR-SETUP-001; `extract` lists them as the run's `setup_steps`. A
+drag of a card face is not reliable this way, because the game does not always
+see the moves between the press and the release. EXP-UI-015 is taken this way.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
@@ -772,7 +776,7 @@ save, and starts the game with
 ```text
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
     [--pump-counter <0-7>] [--selected-sector <0-63>] [--item-frame <0-14>]
-    [--reference-clicks <x:y[:2]>,...]
+    [--reference-clicks <x:y[:2]|x:y>x:y>,...]
 ```
 
 which shows the save at its planning entry in a 640-by-460 window, holds the
@@ -796,7 +800,9 @@ centre of the opened sector's cell for `open`, the step's point for `dbl` and
 For a `title_capture`, `credits_capture` or `setup_capture` the test passes
 `title`, `credits` or `setup` in place of the save; the game draws its title
 screen, the credits over it, or the local setup as New Game first opens it,
-without a match.
+without a match. A setup step's copy passes the presses before it as
+`--reference-clicks`, a drag as `x:y>x2:y2`, which the rebuild makes as a
+press, a move with the button down and a release.
 The rebuild's orders are a panel (DEV-UI-021): a `card` step whose menu 1
 choice runs a picker (Attack, Equip, Give, Influence, Move, Research or Sell,
 FND-UI-021) becomes the card press and a press on that order's row of the
