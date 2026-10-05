@@ -25,6 +25,17 @@ public static class IdleGangWarningLayout
         if (ticks < 0) throw new ArgumentOutOfRangeException(nameof(ticks));
         return ticks % 8 < 6;
     }
+
+    /// <summary>
+    /// Whether the warning line shows at <paramref name="now"/> for a panel opened at
+    /// <paramref name="openedAt"/>, counting the ticks of the presentation clock that fall after
+    /// the open (FND-UI-054). The clock runs for the whole program, as slot 0 of the original's
+    /// timer does (FND-TIMER-002), so the first tick comes at most one period after the open
+    /// and the first shown part lasts more than five periods and at most six. A time before the
+    /// open counts as the open.
+    /// </summary>
+    public static bool LineShown(TimeSpan openedAt, TimeSpan now) =>
+        LineShown(now < openedAt ? 0 : PresentationClock.Ticks(now) - PresentationClock.Ticks(openedAt));
 }
 
 public static class IdleGangWarningPolicy
@@ -58,6 +69,9 @@ public sealed partial class ChaosGame
     private bool _idleGangWarningOpen;
     private TimeSpan _idleGangWarningOpenedAt;
 
+    /// <summary>The presses on the warning, by region, to tell the second press of a double click.</summary>
+    private readonly IndexedDoubleClickTracker _idleGangWarningClicks = new();
+
     private bool TryOpenIdleGangWarning()
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId
@@ -66,7 +80,8 @@ public sealed partial class ChaosGame
             return false;
 
         _idleGangWarningOpen = true;
-        _idleGangWarningOpenedAt = _inputTime;
+        _idleGangWarningOpenedAt = PresentationDrawTime;
+        _idleGangWarningClicks.Cancel();
         _message = string.Empty;
         if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelOpen);
         return true;
@@ -94,10 +109,37 @@ public sealed partial class ChaosGame
         }
     }
 
+    /// <summary>
+    /// A press on the warning (SCR-OPTIONS-001): Cancel and OK go through the held-button helper
+    /// and act on a release inside themselves (FND-UI-047), and a press outside the panel is
+    /// refused with slot 4. The second press of a double click does nothing (FND-UI-024).
+    /// </summary>
     private void HandleIdleGangWarningClick(Point point)
     {
-        if (IdleGangWarningLayout.Ok.Contains(point)) ConfirmIdleGangWarning();
-        else if (IdleGangWarningLayout.Cancel.Contains(point)) CancelIdleGangWarning();
+        var region = IdleGangWarningLayout.Ok.Contains(point) ? 1
+            : IdleGangWarningLayout.Cancel.Contains(point) ? 2
+            : IdleGangWarningLayout.Panel.Contains(point) ? 3
+            : 0;
+        if (_idleGangWarningClicks.Register(region, _inputTime)) return;
+        if (region == 1)
+            PressPanelFace(point, IdleGangWarningLayout.Panel, IdleGangWarningLayout.Ok,
+                ConfirmIdleGangWarning);
+        else
+            PressPanelFace(point, IdleGangWarningLayout.Panel, IdleGangWarningLayout.Cancel,
+                CancelIdleGangWarning);
+    }
+
+    /// <summary>
+    /// Closes the warning and lets go of its face held under the pointer. The warning is drawn over
+    /// the city or the sector view, so the held face's screen check cannot tell that it closed: a
+    /// release where the face was would otherwise play slot 3, or answer a warning opened since.
+    /// </summary>
+    private void CloseIdleGangWarning()
+    {
+        _idleGangWarningOpen = false;
+        if (_pressedPanelFace is { } held
+            && (held.Face == IdleGangWarningLayout.Ok || held.Face == IdleGangWarningLayout.Cancel))
+            _pressedPanelFace = null;
     }
 
     /// <summary>
@@ -110,7 +152,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ConfirmIdleGangWarning()
     {
-        _idleGangWarningOpen = false;
+        CloseIdleGangWarning();
         if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelClose);
         if (_session is not null) SubmitOnlineTurn();
         else FinishPlanningTurn();
@@ -118,7 +160,7 @@ public sealed partial class ChaosGame
 
     private void CancelIdleGangWarning()
     {
-        _idleGangWarningOpen = false;
+        CloseIdleGangWarning();
         if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelClose);
         _message = string.Empty;
     }
@@ -140,10 +182,11 @@ public sealed partial class ChaosGame
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Ok, "OK", true);
         }
         // FND-UI-054: a reference frame draws the recorded ticks since the open, kept modulo 8.
-        var ticks = _referenceFrame?.ItemFrame
-            ?? PresentationClock.Ticks(_inputTime < _idleGangWarningOpenedAt
-                ? TimeSpan.Zero : _inputTime - _idleGangWarningOpenedAt);
-        if (!IdleGangWarningLayout.LineShown(ticks))
+        // FND-UI-047: the presentation clock stops while a face is held, and the line with it.
+        var shown = _referenceFrame?.ItemFrame is { } ticks
+            ? IdleGangWarningLayout.LineShown(ticks)
+            : IdleGangWarningLayout.LineShown(_idleGangWarningOpenedAt, PresentationDrawTime);
+        if (!shown)
             batch.Draw(pixel, IdleGangWarningLayout.BlinkingLine, Color.Black);
     }
 }

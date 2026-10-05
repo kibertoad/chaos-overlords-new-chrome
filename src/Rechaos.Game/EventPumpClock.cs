@@ -22,6 +22,12 @@ namespace Rechaos.Game;
 /// A soundtrack fade stops <see cref="Time"/> in the same way: it runs inside the pump's music
 /// step and leaves timer slot 0 alone (FND-AUDIO-017).
 /// </para>
+/// <para>
+/// A panel that steps on slot 0 in its own loop takes the flag after the event its pass handled,
+/// so a hold of one of its faces stops its step and the release pass takes the kept tick, as the
+/// pump does (FND-UI-047). The item rotations, the researched item of Last Turn Events, the
+/// Comlink Send caret and the idle-gang warning's line read this clock for that reason.
+/// </para>
 /// </remarks>
 public sealed class EventPumpClock
 {
@@ -37,6 +43,14 @@ public sealed class EventPumpClock
 
     /// <summary>The presentation ticks the pump has taken.</summary>
     public long Ticks => PresentationClock.Ticks(Time);
+
+    /// <summary>
+    /// <see cref="Ticks"/> with the tick a hold in progress keeps for its release, when one fell
+    /// by <paramref name="now"/>. A counter that a panel starts after another panel's release
+    /// pass took that tick (FND-UI-047) starts from here, so it does not take the tick again.
+    /// </summary>
+    public long TicksAfterHold(TimeSpan now) =>
+        _holding && PresentationClock.Ticks(now) > _lastTakenTick ? Ticks + 1 : Ticks;
 
     /// <summary>
     /// One pass of the game loop. <paramref name="holding"/> says whether a hold or a fade that

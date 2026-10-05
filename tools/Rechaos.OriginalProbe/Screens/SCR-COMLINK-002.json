@@ -5,7 +5,7 @@
     {"element": "Comlink Send panel", "rect": [0, 0, 640, 460]},
     {"element": "Panel", "rect": [104, 124, 344, 209]},
     {"element": "Player card, one per player slot", "rect": [201, 143, 226, 102]},
-    {"element": "Message characters", "rect": [199, 264, 240, 24]},
-    {"element": "Caret", "rect": [199, 256, 240, 8]}
+    {"element": "Message characters", "rect": [199, 256, 240, 31]},
+    {"element": "Caret", "rect": [199, 256, 6, 7]}
   ]
 }

@@ -23525,6 +23525,12 @@
                     "rect": [104,124,344,209],
                     "xxh3": "23eb5cd0ba8cbbb2a5aba81317e452a7",
                     "white": 122
+                  },
+                  {
+                    "element": "Warning line",
+                    "rect": [269,169,97,9],
+                    "xxh3": "c1ac8a365c8ba72d80b626218e28557d",
+                    "white": 0
                   }
                 ]
               },

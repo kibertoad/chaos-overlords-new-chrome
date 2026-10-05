@@ -16,8 +16,9 @@ fixture: EXP-UI-014.json
 ## Question
 
 At the second planning entry of a Big Man match, scenario 8, does the city
-screen draw the pylons of RULE-UI-012 on the four centre sectors 27, 28, 35 and 36, and the rest of the
-city screen, with the same pixels in the rebuild as in the original?
+screen draw the pylons of RULE-UI-012 on the four centre sectors 27, 28, 35
+and 36, and the rest of the city screen, with the same pixels in the rebuild
+as in the original?
 
 ## Setup
 
@@ -34,7 +35,8 @@ The shot is taken and its counters read as in EXP-UI-009.
 
 The run made 347 calls of `roll`. The shot was kept at step 2, with marker
 frame 4, pump counter 1, frame counter 1, sector 54 selected and every light
-byte 0. The capture shows two grey pylons on the four centre sectors 27, 28, 35 and 36.
+byte 0. The capture shows two gray pylons on the four centre sectors 27, 28,
+35 and 36.
 
 ## Results
 

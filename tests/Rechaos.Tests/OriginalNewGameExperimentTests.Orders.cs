@@ -10,13 +10,13 @@ public sealed partial class OriginalNewGameExperimentTests
     public static TheoryData<string, int> OrderStepRuns()
     {
         var data = new TheoryData<string, int>();
-        // A run whose match ended takes its steps on the endgame (SCR-AWARDS-001), and one whose
-        // human was eliminated on its elimination card (SCR-OBJECTIVE-002, controller -2): no order
+        // A run whose match ended takes its steps on the endgame (SCR-AWARDS-001), and one with a
+        // human eliminated on that human's elimination card (SCR-OBJECTIVE-002, controller -2): no order
         // menu opens there, and the order bytes are those the last resolution left.
         foreach (var (experiment, runs) in Recorded.Value)
             for (var run = 0; run < runs.Length; run++)
                 if (runs[run].OrderSteps.Count > 0 && runs[run].EndgameRows is null
-                    && runs[run].Term("controller", runs[run].Humans[0].Value) != -2
+                    && runs[run].Humans.All(human => runs[run].Term("controller", human.Value) != -2)
                     && !KnownDivergences.ContainsKey((experiment, run)))
                     data.Add(experiment, run);
         return data;
@@ -51,13 +51,15 @@ public sealed partial class OriginalNewGameExperimentTests
             if (portrait is { } pressed)
                 owner = SectorOpponentGangs.PressPortrait(match, human, owner, pressed, sector!.Value);
             Assert.True(step.CityView == sector is null, $"after {label}");
-            var viewed = owner ?? human;
+            Assert.True(portrait is null || step.Viewed >= 0,
+                $"after {label}: a portrait press is recorded with the player the cards list");
+            IReadOnlyList<MatchGangState> cards = sector is { } shown
+                ? SectorOpponentGangs.Cards(match, human, owner, shown)
+                : [];
+            var viewed = cards.Count > 0 ? cards[0].Owner : human;
             if (sector is not null && step.Viewed >= 0)
                 Assert.True(step.Viewed == viewed.Value,
                     $"after {label}: the original lists player {step.Viewed}'s gangs, the rebuild player {viewed.Value}'s");
-            IReadOnlyList<MatchGangState> cards = sector is { } shown
-                ? SectorOpponentGangs.InSector(match, human, viewed, shown)
-                : [];
             if (sector is not null)
             {
                 var roster = match.FindPlayer(viewed)!.Gangs.ToList();
@@ -69,8 +71,8 @@ public sealed partial class OriginalNewGameExperimentTests
             var (menu, gangs) = step.Kind switch
             {
                 _ when portrait is not null => (-1, (IReadOnlyList<MatchGangState>)[]),
-                "card" => viewed == human ? CardMenu(cards, step) : (-1, []),
-                "strip" => viewed == human ? StripMenu(cards, step) : (-1, []),
+                "card" => CardMenu(cards, human, step),
+                "strip" => StripMenu(match, human, sector ?? -1, cards, step),
                 _ => (-1, (IReadOnlyList<MatchGangState>)[]),
             };
             Assert.True(menu == step.Menu, $"{label}: the original opened menu {step.Menu}, the rebuild {menu}");
@@ -97,15 +99,16 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // SCR-UI-004, FND-UI-015, FND-UI-021: a press on an own card's strip opens menu 1 for its
-    // one-off part and menu 2 for its recurring part.
+    // one-off part and menu 2 for its recurring part. Another player's card takes no orders
+    // (RULE-UI-010), so it opens no menu.
     private static (int Menu, IReadOnlyList<MatchGangState> Gangs) CardMenu(
-        IReadOnlyList<MatchGangState> cards, RecordedOrderStep step)
+        IReadOnlyList<MatchGangState> cards, PlayerId human, RecordedOrderStep step)
     {
         var point = new Point(
             SectorGangCardLayout.Left + step.Target % 2 * SectorGangCardLayout.ColumnStride + step.X,
             SectorGangCardLayout.Top + step.Target / 2 * SectorGangCardLayout.RowStride + step.Y);
         var card = SectorGangCardLayout.CardAt(point);
-        if (card < 0 || card >= cards.Count) return (-1, []);
+        if (card < 0 || card >= cards.Count || cards[card].Owner != human) return (-1, []);
         return SectorGangCardLayout.ActionRepeatAt(card, point) switch
         {
             false => (1, [cards[card]]),
@@ -115,18 +118,20 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // SCR-UI-004, FND-UI-015, FND-UI-021: the group order strip, drawn over two or more cards,
-    // opens menu 3 on its left part and menu 5 on its right.
+    // opens menu 3 on its left part and menu 5 on its right, for every gang of the player in the
+    // sector (FND-TURN-009). It is drawn only over the active player's own cards (FND-UI-018).
     private static (int Menu, IReadOnlyList<MatchGangState> Gangs) StripMenu(
-        IReadOnlyList<MatchGangState> cards, RecordedOrderStep step)
+        MatchState match, PlayerId human, int sector, IReadOnlyList<MatchGangState> cards, RecordedOrderStep step)
     {
         var point = new Point(step.X, step.Y);
-        if (cards.Count < 2 || !SectorDetailLayout.GroupOrderStrip.Contains(point)) return (-1, []);
-        return (SectorDetailLayout.GroupOrderIsRecurring(point) ? 5 : 3, cards);
+        if (!ChaosGame.ShowsGroupOrderStrip(match, match.Coordinator.ActivePlayer, human, cards)
+            || !SectorDetailLayout.GroupOrderStrip.Contains(point)) return (-1, []);
+        return (SectorDetailLayout.GroupOrderIsRecurring(point) ? 5 : 3, ChaosGame.GroupOrderGangs(match, human, sector));
     }
 
     // FND-UI-021: menus 1, 2, 3 and 5 number their orders from 1 in the order the rebuild's menus
     // list them, then None and Terminate each two further on.
-    private static IReadOnlyList<(int Command, GangAction Action)> MenuActions(int menu)
+    internal static IReadOnlyList<(int Command, GangAction Action)> MenuActions(int menu)
     {
         var listed = menu switch
         {
@@ -151,8 +156,8 @@ public sealed partial class OriginalNewGameExperimentTests
         var recurring = menu is 2 or 5;
         if (action == GangAction.None)
         {
-            foreach (var gang in gangs)
-                if (gang.QueuedCommand is not null) Assert.True(match.Cancel(human, gang.Id).Accepted);
+            var (_, refusal) = ChaosGame.CancelOrders(match, gangs.Select(gang => gang.Id), gang => match.Cancel(human, gang));
+            Assert.True(refusal is null, $"the rebuild refused None: {refusal}");
             return;
         }
         if (menu is 1 or 2)
@@ -171,7 +176,7 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // FND-UI-021, DEV-UI-021: the orders the rebuild's panel offers where the original's menu
-    // leaves an item enabled. None is always offered.
+    // leaves an item enabled.
     private static IReadOnlySet<GangAction> Offered(MatchState match, PlayerId human, int menu, IReadOnlyList<MatchGangState> gangs)
     {
         var recurring = menu is 2 or 5;
@@ -179,10 +184,8 @@ public sealed partial class OriginalNewGameExperimentTests
             ? CommandOptionCatalog.LegalCommands(match, human, gangs[0].Id)
                 .Where(command => !recurring || CommandRules.CanRepeat(command.Action)).ToArray()
             : BulkGangCommands.Options(match, human, gangs.Select(gang => gang.Id).ToArray(), recurring, group: true);
-        var offered = options.Select(command => command.Action).ToHashSet();
-        offered.Add(GangAction.None);
-        if (menu is 1 or 2)
-            offered.UnionWith(CommandOverlayLayout.ActionsFor(recurring).Where(CommandOverlayLayout.OpensWithoutTargets));
-        return offered;
+        return MenuActions(menu).Select(entry => entry.Action)
+            .Where(action => CommandOverlayLayout.Offers(action, options, singleGang: menu is 1 or 2))
+            .ToHashSet();
     }
 }

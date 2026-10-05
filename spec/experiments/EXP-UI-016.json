@@ -8406,14 +8406,14 @@
                   },
                   {
                     "element": "Message characters",
-                    "rect": [199,264,240,24],
-                    "xxh3": "96a86c72f483fd861b1c1ee19366447b",
+                    "rect": [199,256,240,31],
+                    "xxh3": "9c8f606ca9f5bc40b8e4248a0d53f725",
                     "white": 0
                   },
                   {
                     "element": "Caret",
-                    "rect": [199,256,240,8],
-                    "xxh3": "dc99e29742bbe5859531926e025db509",
+                    "rect": [199,256,6,7],
+                    "xxh3": "2505c56e7aafbc74564f9947bed2f0a5",
                     "white": 0
                   }
                 ]
@@ -8663,14 +8663,14 @@
                   },
                   {
                     "element": "Message characters",
-                    "rect": [199,264,240,24],
-                    "xxh3": "96a86c72f483fd861b1c1ee19366447b",
+                    "rect": [199,256,240,31],
+                    "xxh3": "9c8f606ca9f5bc40b8e4248a0d53f725",
                     "white": 0
                   },
                   {
                     "element": "Caret",
-                    "rect": [199,256,240,8],
-                    "xxh3": "dc99e29742bbe5859531926e025db509",
+                    "rect": [199,256,6,7],
+                    "xxh3": "2505c56e7aafbc74564f9947bed2f0a5",
                     "white": 0
                   }
                 ]

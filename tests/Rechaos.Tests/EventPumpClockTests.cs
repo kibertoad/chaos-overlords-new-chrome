@@ -157,6 +157,7 @@ public sealed class EventPumpClockTests
         // FND-AUDIO-017: the fade runs inside the pump's music step and leaves timer slot 0 alone.
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
         GC.SuppressFinalize(game);
+        Field("_combatExit").SetValue(game, new DetailedCombatExit());
         Assert.False(OutsideEventPump(game));
         Field("_soundtrackFade").SetValue(game, new SoundtrackFade(1f, TimeSpan.Zero));
         Assert.True(OutsideEventPump(game));
@@ -170,6 +171,13 @@ public sealed class EventPumpClockTests
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
         GC.SuppressFinalize(game);
+        var combatExit = new DetailedCombatExit();
+        Field("_combatExit").SetValue(game, combatExit);
+        Assert.False(Holds(game));
+        // FND-UI-047: Detailed Combat's Exit face goes through the held-button helper too.
+        combatExit.Update(CombatPanelLayout.Exit.Center, down: true, wasDown: false);
+        Assert.True(Holds(game));
+        combatExit.Reset();
         Assert.False(Holds(game));
         AssertHolds(game, "_draggedHireDefinitionId", (short)1);
         AssertHolds(game, "_pressedHireRejectSlot", 0);

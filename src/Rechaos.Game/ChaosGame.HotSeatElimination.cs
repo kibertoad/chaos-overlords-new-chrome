@@ -109,9 +109,6 @@ public sealed partial class ChaosGame
             return;
         }
 
-        // EXP-UI-018: the screen around the frame is black when the card follows the turn's
-        // resolution.
-        batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
         DrawEndgameBackground(batch, pixel);
         DrawEndgameNoticeCard(batch, pixel, font, _eliminationBackground, playerId,
             player.Setup.PortraitId, player.Setup.Name);
@@ -178,7 +175,7 @@ public static class HotSeatHandoffPresentation
     /// order, so the scan walks back from the newest and stops at the first older event instead
     /// of reading the whole match history on every handoff.
     /// </summary>
-    private static IEnumerable<PlayerId> PlayersEliminatedSince(MatchState state, int turn)
+    internal static IEnumerable<PlayerId> PlayersEliminatedSince(MatchState state, int turn)
     {
         var events = state.Events;
         for (var index = events.Count - 1; index >= 0 && events[index].Turn >= turn; index--)
