@@ -492,7 +492,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             return;
         }
         UpdateComlinkAlert(_eventPump.Time);
-        UpdateComlinkCaret(gameTime.TotalGameTime);
+        UpdateComlinkCaret(_eventPump.Time);
         PumpBugReportSend();
         // Before the planning timer, so a turn that resolved on the server is adopted even on the
         // frame the local clock would otherwise have taken over the loop.
@@ -513,7 +513,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         RunComputerTurns();
         CaptureNewCombatAnimations();
-        foreach (var clip in _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime))
+        foreach (var clip in _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime, _combatExit.Tracking))
             if (clip.Sound is { } soundIndex) PlayCombatSound(soundIndex);
         if (_combatAnimationPlayer.IsPlaying)
         {
@@ -930,8 +930,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     AcceptAndInvoke(CloseSiteDetails);
                 break;
             case ClientScreen.ItemInformation:
-                if (ItemInformationLayout.Ok.Contains(point))
-                    AcceptAndInvoke(CloseItemDetails);
+                // SCR-UI-006, FND-UI-047: the held exit face closes on a release inside it.
+                PressPanelFace(point, ItemInformationLayout.Panel, ItemInformationLayout.Ok, CloseItemDetails);
                 break;
             case ClientScreen.GameInfo:
                 // SCR-UI-008: the OK face closes the panel; a press outside it is refused.

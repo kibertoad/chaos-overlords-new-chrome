@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 6 |
+| `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
 | `implemented` | 68 |
-| `validated` | 149 |
+| `validated` | 150 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 6 |
-| `complete` | 217 |
+| `partial` | 5 |
+| `complete` | 218 |
 
 ## DATA
 
@@ -433,7 +433,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-005` | Lengths of the site progress and Force meters | supported | complete | None | None | implemented | Site meters truncate progress * 100 / Resistance (100 at Resistance 0) and Force meters are Force * 6 pixels, checked by SectorMeterLengthTests. |
 | `RULE-UI-006` | Choosing a sector's gang-status marker | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.Markers.cs | None | validated | The city map keeps the markers through each planning phase as the original's map surface does: all sectors are drawn when planning starts and when the Search panel closes, the Hire dock's redraw draws the sector it kept and each sector an offer is ordered into, and frame 8 stays on the sector that got it until a sector without the player's gangs is drawn. EXP-UI-004 and EXP-UI-005 log every marker the original draws through hire steps and a Search close, and the rebuild's map is the same after every step. No run draws a sector with an enemy seen or with every gang ordered, so the rule stays supported. Enemy sight and presence come from a snapshot kept for each planning entry. |
 | `RULE-UI-007` | The pointer shape | supported | complete | None | None | implemented | The stock arrow shows at all times, and the hourglass while a city is set up, a game is loaded or a turn is resolved. |
-| `RULE-UI-008` | The presentation timer | supported | partial | tests/Rechaos.Tests/EventPumpClockTests.cs | `DEV-TIMER-001` | supported | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). The steps the event pump drives (the planning bar and its warnings, the console lights, the selection frame, the Comlink alert repeat and the music poll) read an event pump clock that stops while a hold or a soundtrack fade keeps the original out of the pump and keeps one tick of it, as FND-UI-046 and FND-AUDIO-017 record; EventPumpClockTests checks it against those findings. Partial: a panel's own slot-0 animation (the Last Turn Events frames, the Item Information rotation, the Comlink Send caret, Sell, Give and Research) keeps running while one of its faces is held, where the original stops it (FND-UI-046). |
+| `RULE-UI-008` | The presentation timer | supported | complete | tests/Rechaos.Tests/EventPumpClockTests.cs, tests/Rechaos.Tests/PanelHoldAnimationTests.cs | `DEV-TIMER-001` | validated | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). The steps the event pump drives (the planning bar and its warnings, the console lights, the selection frame, the Comlink alert repeat and the music poll) read an event pump clock that stops while a hold or a soundtrack fade keeps the original out of the pump and keeps one tick of it, as FND-UI-046 and FND-AUDIO-017 record; EventPumpClockTests checks it against those findings. The panels' own steps (the item rotations of Item Information, Sell, Give and the gang information panel, the researched item of Last Turn Events, the Comlink Send caret and the idle-warning line) read the same clock, and the Detailed Combat clip stops while Exit is held and takes one tick after it, as FND-UI-047 records; PanelHoldAnimationTests checks them. The exit face of Item Information and the faces of the idle-gang warning act on a release inside them. |
 | `RULE-UI-009` | The texts of the Game Information panel | supported | complete | tests/Rechaos.Tests/ExecutableStringTableTests.cs | `DEV-AI-003` | validated | Every text is the executable's string the rule names, compared with BLD-GOG-EN-1.1's string table. With Advanced AI on, the Mentality field adds the AI policy (DEV-AI-003). |
 | `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.Orders.cs | None | validated | EXP-TURN-096 presses every Overlord portrait of a sector view in the original and keeps the listed player and the card slots after each press; the rebuild's portrait handling lists the same player's gangs in the same roster slots after every press, leaves the cards alone for the two players with no gang seen there, and opens no menu for another player's card. No run lists a gang hidden from the viewer or opens Gangs in Sector, so the rule stays supported; Gangs in Sector is checked by GangInformationRosterTests and the visibility filter by SectorOpponentGangsTests. |
 | `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | The sector code, the Income word of string resource `0x11 + income` and two-cell Tolerance, Support and Cash from x 568, unclamped, so a value past 99 shows RULE-UI-004's leading quotient; Support and Cash are 0 unless the active player owns the sector. |

@@ -252,12 +252,15 @@ public sealed partial class ChaosGame
         DrawCommandPanelFaces(batch);
     }
 
-    /// <summary>The current 48-by-48 frame of an item's 15-frame strip.</summary>
+    /// <summary>
+    /// The current 48-by-48 frame of an item's 15-frame strip. Sell and Give step it on the ticks
+    /// the event pump takes, so a held face stops it and the release takes one tick (FND-UI-047).
+    /// </summary>
     private void DrawItemRotation(SpriteBatch batch, short itemId, Rectangle destination)
     {
         if (itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
-            batch.Draw(rotation, destination, ItemRotationPresentation.Frame(_inputTime), Color.White);
+            batch.Draw(rotation, destination, ItemRotationPresentation.Frame(_eventPump.Time), Color.White);
     }
 
     private static short?[] EquippedItems(MatchGangState gang) =>

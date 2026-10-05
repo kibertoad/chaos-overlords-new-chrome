@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-004, FND-UI-006, FND-UI-011, FND-UI-013, FND-UI-024, FND-UI-023, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-004, FND-UI-006, FND-UI-011, FND-UI-013, FND-UI-024, FND-UI-023, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-047]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-004]
@@ -28,7 +28,7 @@ related: [RULE-UI-003, RULE-UI-004]
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Exit face | `(161,293,49,22)` | While open | Closes the panel (RULE-UI-003) | FND-UI-004 |
+| Exit face | `(161,293,49,22)` | While open | Held through the held-button helper; a release inside it closes the panel (RULE-UI-003) | FND-UI-004, FND-UI-047 |
 | Inside the panel, off the face | The rest of `(128,124,320,209)` | While open | None | FND-UI-013 |
 | Outside the panel | Outside `(128,124,320,209)` | While open | Refused; plays slot 4 | FND-UI-004, FND-AUDIO-011, FND-UI-013 |
 
@@ -63,6 +63,10 @@ related: [RULE-UI-003, RULE-UI-004]
 The item turns one frame per `presentation_tick` it takes, at most six frames a
 second, so a full turn of fifteen frames takes 2.5 seconds (RULE-UI-008). The
 slide takes about a quarter of a second (RULE-UI-003).
+
+While the exit face is held with the pointer, the rotation stops. The pass that
+ends with the release takes one tick if any fell during the hold and loses the
+others (FND-UI-047).
 
 ## Differences between builds
 

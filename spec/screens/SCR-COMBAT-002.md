@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-005, FND-COMBAT-009, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-COMBAT-014, FND-COMBAT-015, FND-DATA-003, FND-EXE-004, FND-GFX-005, FND-GFX-006, FND-UI-001, FND-UI-019, FND-UI-010]
+evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-005, FND-COMBAT-009, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-COMBAT-014, FND-COMBAT-015, FND-DATA-003, FND-EXE-004, FND-GFX-005, FND-GFX-006, FND-UI-001, FND-UI-019, FND-UI-010, FND-UI-047]
 conflicting: []
 split_with: []
 related: [RULE-COMBAT-004]
@@ -103,6 +103,10 @@ and 15 draw the lost Force in white and ticks 14 and 16 restore the bars, and
 ticks 17 to 21 hold the result before tick 22 ends the clip. A clip whose hold
 flag is cleared, the first of a pair of gangs attacking each other, ends at
 tick 16, and the next clip starts at once [FND-COMBAT-005, FND-UI-001].
+
+While the Exit face is held with the pointer, the clip stops. A release outside
+the face lets it go on: that pass takes one tick if any fell during the hold
+and loses the others [FND-UI-047].
 
 ## Differences between builds
 

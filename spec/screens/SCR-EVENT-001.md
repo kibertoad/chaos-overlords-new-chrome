@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EVENT-001, FND-EVENT-002, FND-EVENT-003, FND-EVENT-005, FND-UI-016, FND-UI-012, FND-UI-001, FND-AUDIO-002, FND-AUDIO-011, FND-COMLINK-002, FND-COMLINK-007, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-EVENT-001, FND-EVENT-002, FND-EVENT-003, FND-EVENT-005, FND-UI-016, FND-UI-012, FND-UI-001, FND-AUDIO-002, FND-AUDIO-011, FND-COMLINK-002, FND-COMLINK-007, SRC-MANUAL-GOG, FND-EXE-004, FND-UI-047]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-005]
@@ -103,6 +103,12 @@ panel consumes (six per second, FND-UI-001) advances a frame counter through
 0 to 14 and back to 0, and copies frame `n`, the rectangle
 (48 * n, 0, 48, 48) of the strip, to (296, 190). The counter restarts at 0
 when the panel opens and after each page change [FND-EVENT-005].
+
+While Previous, Next or Exit is held with the pointer, the counter stops. The
+pass that ends with the release takes one tick if any fell during the hold and
+loses the others. A page turned with a held arrow therefore shows frame 1 at
+once when a tick fell during the hold, while a page turned with Left or Right
+starts at frame 0 [FND-UI-047].
 
 ## Differences between builds
 
