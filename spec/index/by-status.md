@@ -294,12 +294,14 @@
 
 ## recorded
 
-461 entries.
+463 entries.
 
 | ID | Title |
 |---|---|
 | [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | Do the Comlink panels of a local game with three humans store, cap, show, mark and drop messages as the spec gives? |
 | [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | Are Comlink Send and View both refused when the only human has no one to write to and no messages? |
+| [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | How do drags and Reject presses on the Hire dock set the hire orders at the first planning entry? |
+| [EXP-HIRE-002](../experiments/EXP-HIRE-002.md) | Does a hire order move between sectors, and is it set when the player cannot pay? |
 | [EXP-SEARCH-001](../experiments/EXP-SEARCH-001.md) | How do the Search panel's ALL, NONE and rows change the filter table at the first planning entry? |
 | [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | Does the Search panel change the filter bytes of the active player when the human is in slot 2? |
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | What does a new local game draw from the generator, and what state does its first planning phase start from? |

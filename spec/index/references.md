@@ -29,6 +29,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | builds |
 | [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | builds |
 | [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | builds |
+| [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | builds |
+| [EXP-HIRE-002](../experiments/EXP-HIRE-002.md) | builds |
 | [EXP-SEARCH-001](../experiments/EXP-SEARCH-001.md) | builds |
 | [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | builds |
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | builds |
@@ -895,6 +897,19 @@ None.
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | body, evidence |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | evidence |
 
+## EXP-HIRE-001
+
+| Cited by | In |
+|---|---|
+| [EXP-HIRE-002](../experiments/EXP-HIRE-002.md) | body |
+| [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | body, evidence |
+
+## EXP-HIRE-002
+
+| Cited by | In |
+|---|---|
+| [RULE-HIRE-003](../rules/RULE-HIRE-003.md) | body, evidence |
+
 ## EXP-SEARCH-001
 
 | Cited by | In |
@@ -981,6 +996,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-HIRE-002](../experiments/EXP-HIRE-002.md) | body |
 | [EXP-TURN-002](../experiments/EXP-TURN-002.md) | body |
 | [EXP-TURN-003](../experiments/EXP-TURN-003.md) | body |
 | [EXP-TURN-004](../experiments/EXP-TURN-004.md) | body |
@@ -1794,6 +1810,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-HIRE-002](../experiments/EXP-HIRE-002.md) | body |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | body, evidence |
 
 ## EXP-TURN-072
@@ -1946,6 +1963,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | body |
 | [EXP-SEARCH-001](../experiments/EXP-SEARCH-001.md) | body |
 | [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | body |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
@@ -5005,6 +5023,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FND-AI-011](../findings/FND-AI-011.md) | body |
 | [FND-AI-042](../findings/FND-AI-042.md) | body |
@@ -5095,6 +5114,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
 | [FND-GANG-009](../findings/FND-GANG-009.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
@@ -6682,6 +6702,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
+| [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | body |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body, evidence |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
@@ -8114,6 +8135,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | body |
+| [EXP-HIRE-002](../experiments/EXP-HIRE-002.md) | body |
 | [EXP-TURN-027](../experiments/EXP-TURN-027.md) | body |
 | [EXP-TURN-035](../experiments/EXP-TURN-035.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
@@ -8919,6 +8942,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, related |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, related |

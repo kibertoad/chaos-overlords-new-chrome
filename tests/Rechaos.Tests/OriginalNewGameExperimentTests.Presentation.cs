@@ -66,6 +66,45 @@ public sealed partial class OriginalNewGameExperimentTests
             && e.Gang == sentBack.Gang && e.Target == CommandTarget.Sector(62));
     }
 
+    public static TheoryData<string, int> HireStepRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                if (runs[run].HireSteps.Count > 0 && !KnownDivergences.ContainsKey((experiment, run)))
+                    data.Add(experiment, run);
+        return data;
+    }
+
+    // RULE-HIRE-003, FND-HIRE-008: after the dump the probe dragged offers onto sectors and pressed
+    // their Reject crosses on the original's Hire dock, and kept hire_orders after each step. The
+    // rebuild takes each drop through the dock's placement check and QueueHire, and each Reject
+    // through SnubHireOffer, and its pending hire and snub give the same orders after every step.
+    // No step drops on a sector holding six of the player's gangs, which DEV-HIRE-001 refuses.
+    [Theory]
+    [MemberData(nameof(HireStepRuns))]
+    public void TheHireDockSetsTheOriginalsOrders(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var match = StartMatch(recorded, out _);
+        var human = recorded.Humans[0];
+        var player = match.FindPlayer(human)!;
+        short Offer(int slot) => player.HireOfferSlots[slot].GangDefinitionId!.Value;
+        foreach (var step in recorded.HireSteps)
+        {
+            if (step.Slot >= 0 && step.Sector == -2) match.SnubHireOffer(human, Offer(step.Slot));
+            else if (step.Slot >= 0 && HireDropPlacement.Rejection(match, human, step.Sector) is null)
+                match.QueueHire(human, Offer(step.Slot), step.Sector);
+            var orders = Enumerable.Range(0, HireDockLayout.SlotCount).Select(slot =>
+                player.PendingHires.FirstOrDefault(pending => pending.OfferSlot == slot) is { } pending
+                    ? pending.TargetSectorId
+                    : player.SnubbedHireOfferSlot == slot ? -2 : -1);
+            var label = step.Slot < 0 ? "exit" : step.Sector == -2 ? $"reject {step.Slot}" : $"drag {step.Slot} to {step.Sector}";
+            Assert.True(step.Orders.Skip(3 * human.Value).Take(3).SequenceEqual(orders), $"after {label}");
+            Assert.All(step.Orders.Where((_, index) => index / 3 != human.Value), order => Assert.Equal(-1, order));
+        }
+    }
+
     public static TheoryData<string, int> SearchClickRuns()
     {
         var data = new TheoryData<string, int>();

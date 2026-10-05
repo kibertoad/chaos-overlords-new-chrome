@@ -107,7 +107,8 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
-    IReadOnlyList<ProbeDrawValue>? DrawValues = null, IReadOnlyList<(int X, int Y)>? SearchClicks = null)
+    IReadOnlyList<ProbeDrawValue>? DrawValues = null, IReadOnlyList<(int X, int Y)>? SearchClicks = null,
+    IReadOnlyList<ProbeHireStep>? HireSteps = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -186,7 +187,8 @@ internal sealed record ProbeTrace(
     CityMarkers? Markers = null,
     List<TimerRecord>? Timers = null,
     List<ComlinkStep>? Comlink = null,
-    List<SearchClickRecord>? SearchClicks = null);
+    List<SearchClickRecord>? SearchClicks = null,
+    List<HireStepRecord>? HireSteps = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -206,6 +208,9 @@ internal sealed partial class NewGameSession(
     private int _panelsOpen;
     private int _exitPresses;
     private readonly List<PanelRecord> _panels = [];
+    // The panel calls as they stood at the dump: presses made after it, such as a hire step's
+    // Exit, close panels and open others that belong to no planning entry of the run.
+    private List<PanelRecord>? _panelsAtDump;
     private bool _planningLoopReached;
     private bool _awardsReached;
     private EndgameDrawing? _endgame;
@@ -390,9 +395,12 @@ internal sealed partial class NewGameSession(
         }
 
         DumpWritableSections();
+        _panelsAtDump = [.. _panels];
         if (settings.Capture) CaptureDrawingArea(window);
         if (settings.SearchClicks is { Count: > 0 } && !RecordSearchClicks(window))
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
+        if (settings.HireSteps is { Count: > 0 } && !RecordHireSteps(window))
+            return Finish(false, "The original exited during the hire steps.", rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -864,9 +872,9 @@ internal sealed partial class NewGameSession(
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
-            _endgame, _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels, _lastRedraw,
+            _endgame, _finance.Count == 0 ? null : _finance, (_panelsAtDump ?? _panels) is { Count: > 0 } panels ? panels : null, _lastRedraw,
             _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
-            _searchClicks.Count == 0 ? null : _searchClicks);
+            _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps);
     }
 
     private static void Click(IntPtr window, int x, int y)

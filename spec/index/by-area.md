@@ -349,6 +349,8 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | How do drags and Reject presses on the Hire dock set the hire orders at the first planning entry? | recorded |
+| [EXP-HIRE-002](../experiments/EXP-HIRE-002.md) | Does a hire order move between sectors, and is it set when the player cannot pay? | recorded |
 | [FND-HIRE-001](../findings/FND-HIRE-001.md) | Hire offers start at -100, are refilled only at planning entry, and are negated in place when hired or snubbed | recorded |
 | [FND-HIRE-002](../findings/FND-HIRE-002.md) | The six-gang limit on a hire counts only the hiring player's gangs in the target sector | recorded |
 | [FND-HIRE-003](../findings/FND-HIRE-003.md) | The Hire comparison panel draws each value two cells wide and signed, and never compares the three offers | recorded |
