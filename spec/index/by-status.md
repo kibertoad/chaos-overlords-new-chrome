@@ -16,7 +16,7 @@
 
 ## supported
 
-148 entries.
+147 entries.
 
 | ID | Title |
 |---|---|
@@ -104,7 +104,6 @@
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup |
 | [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | Saving the options to the registry, which always fails |
-| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events |
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players |
@@ -171,7 +170,7 @@
 
 ## established
 
-93 entries.
+94 entries.
 
 | ID | Title |
 |---|---|
@@ -240,6 +239,7 @@
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent |
@@ -871,6 +871,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent |

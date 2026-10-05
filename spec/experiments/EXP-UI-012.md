@@ -56,10 +56,11 @@ The capture shows the warning panel over the city, with its red line shown.
 EXP-UI-009, with the rebuild's Warn if Idle Gangs at its default, on, and the
 recorded item frame as the line's phase. The digest of the Warning line
 element was taken from the capture's bitmap after the run, as the probe's
-`digest` command does for a run's own capture. Leaving out the cash row (DEV-UI-006)
-and the city's key line (DEV-UI-023), every element matches. A first run of
-the comparison, which blinked the line on the presentation clock's ticks since
-the program started, drew the line black.
+`digest` command does for a run's own capture. The rebuild's Done press on the
+replayed state, where the human's gang has no order, opens the warning.
+Leaving out the cash row (DEV-UI-006) and the city's key line (DEV-UI-023),
+every element matches. A first run of the comparison, which blinked the line on
+the presentation clock's ticks since the program started, drew the line black.
 
 ## Conclusion
 

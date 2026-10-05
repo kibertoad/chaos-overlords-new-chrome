@@ -38,7 +38,8 @@ public sealed partial class ScreenCaptureTests
     // RULE-UI-012 on the city map of Siege (EXP-UI-013) and Big Man (EXP-UI-014). The setup steps
     // of EXP-UI-015 compare the first setup of RULE-SETUP-002 and RULE-SETUP-010, the card presses
     // of RULE-SETUP-009, Add and Remove of RULE-SETUP-010, and setup buttons released inside and
-    // outside (RULE-UI-001).
+    // outside (RULE-UI-001). The Done press of EXP-UI-012 opens the warning of RULE-OPTIONS-003
+    // from the original's gangs, one of them idle.
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)

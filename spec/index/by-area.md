@@ -970,7 +970,7 @@
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | The options loader stops when the key does not open, stores one byte of most values, builds the serial number from two draws, and the idle-gang scan reads only the active player's gangs | recorded |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup | supported |
 | [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | Saving the options to the registry, which always fails | supported |
-| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle | supported |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle | established |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | Idle gang warning panel | supported |
 
 ## NET
