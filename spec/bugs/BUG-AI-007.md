@@ -7,7 +7,7 @@ superseded_by: []
 impact: rules
 intent: unintended
 player_reliance: unknown
-evidence: [FND-AI-072, EXP-TURN-022]
+evidence: [FND-AI-072, EXP-TURN-022, EXP-TURN-087, EXP-TURN-089, EXP-TURN-091]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-019, RULE-AI-020, RULE-AI-022, RULE-AI-023, RULE-AI-024, FMT-STATE-001]

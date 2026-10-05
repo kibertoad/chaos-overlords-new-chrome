@@ -16,7 +16,7 @@
 
 ## supported
 
-156 entries.
+157 entries.
 
 | ID | Title |
 |---|---|
@@ -68,6 +68,7 @@
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle |
@@ -179,7 +180,7 @@
 
 ## established
 
-85 entries.
+84 entries.
 
 | ID | Title |
 |---|---|
@@ -199,7 +200,6 @@
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them |
 | [RULE-AI-027](../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three |
@@ -293,7 +293,7 @@
 
 ## recorded
 
-431 entries.
+452 entries.
 
 | ID | Title |
 |---|---|
@@ -373,6 +373,27 @@
 | [EXP-TURN-070](../experiments/EXP-TURN-070.md) | Does the turn start drop a recurring Control in a sector under police presence, as the spec gives? |
 | [EXP-TURN-071](../experiments/EXP-TURN-071.md) | Does the turn start drop a recurring Control under police presence in a Criminal game, as the spec gives? |
 | [EXP-TURN-072](../experiments/EXP-TURN-072.md) | Is an item bought beside another player's completed Factory sold at full Cost, as the spec gives? |
+| [EXP-TURN-073](../experiments/EXP-TURN-073.md) | Does a family-7 computer gang with no item left to research fall back to family 0 and move, as the spec gives? |
+| [EXP-TURN-074](../experiments/EXP-TURN-074.md) | Do family-4 computer gangs heal, raise Chaos and draw attacks at weight 10, as the spec gives? |
+| [EXP-TURN-075](../experiments/EXP-TURN-075.md) | Does a hurt family-10 computer gang with no opponent in sight heal, as the spec gives? |
+| [EXP-TURN-076](../experiments/EXP-TURN-076.md) | Does a family-3 computer gang keep an Attack whose drawn target passes the strength test, as the spec gives? |
+| [EXP-TURN-077](../experiments/EXP-TURN-077.md) | Does the family-6 guard target skip weight-10 sectors another family-6 gang already covers, as the spec gives? |
+| [EXP-TURN-078](../experiments/EXP-TURN-078.md) | Does a family-6 computer gang that fails its first draw with nothing to buy make the further draws, as the spec gives? |
+| [EXP-TURN-079](../experiments/EXP-TURN-079.md) | Does a family-4 computer gang whose previous action was Chaos or Equip draw attacks at weight 10, as the spec gives? |
+| [EXP-TURN-080](../experiments/EXP-TURN-080.md) | Does a family-12 computer gang in a hostile human's sector draw from every visible gang when its weight is 1, as the spec gives? |
+| [EXP-TURN-081](../experiments/EXP-TURN-081.md) | Does a family-0 computer gang whose previous action was Snitch move, as the spec gives? |
+| [EXP-TURN-082](../experiments/EXP-TURN-082.md) | Does a family-4 computer gang that has moved twice take the sector by Control, as the spec gives? |
+| [EXP-TURN-083](../experiments/EXP-TURN-083.md) | Does a family-7 computer gang in a hostile human's sector draw only human gangs, and does a computer's Influence outside its own sectors resolve? |
+| [EXP-TURN-084](../experiments/EXP-TURN-084.md) | Does a family-14 computer gang on a contested objective draw even when the pool is empty, as the static reading gives? |
+| [EXP-TURN-085](../experiments/EXP-TURN-085.md) | Does a Greed computer player force a hunter hire when a hostile human gang is in sight, as the spec gives? |
+| [EXP-TURN-086](../experiments/EXP-TURN-086.md) | Does a Dominance computer player force a hunter hire when a hostile human gang is in sight, as the spec gives? |
+| [EXP-TURN-087](../experiments/EXP-TURN-087.md) | Does a family-4 computer gang whose attack draw fails its strength test give up the Attack, as the spec gives? |
+| [EXP-TURN-088](../experiments/EXP-TURN-088.md) | Does a family-7 computer gang that draws a target it cannot or will not attack go on with its research, as the spec gives? |
+| [EXP-TURN-089](../experiments/EXP-TURN-089.md) | Does a family-5 computer gang whose attack draw fails its strength test give up the Attack, as the spec gives? |
+| [EXP-TURN-090](../experiments/EXP-TURN-090.md) | Does the original carry out a computer player's hire into a sector it neither controls nor holds a gang in? |
+| [EXP-TURN-091](../experiments/EXP-TURN-091.md) | Does a family-0 computer gang whose weight-10 attack draw fails its strength test give up the Attack, as the spec gives? |
+| [EXP-TURN-093](../experiments/EXP-TURN-093.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs, as the spec gives? |
+| [EXP-TURN-094](../experiments/EXP-TURN-094.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs in Big Man, as the spec gives? |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
@@ -755,7 +776,6 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them |
 | [RULE-AI-027](../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three |
@@ -885,6 +905,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported |

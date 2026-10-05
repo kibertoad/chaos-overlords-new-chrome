@@ -663,14 +663,16 @@ named in its Notes.
 
 The reference frame shows the city screen and its console (SCR-UI-003,
 SCR-HIRE-002) of the player whose planning entry the run ends at, with no panel
-open and no pointer. A capture taken with a panel open, at the final view or
-during a drag cannot be compared until the reference frame can open that panel
-or state. The selected-sector outline cycles through two frames on the pump's counter
-(FND-UI-017). The reference frame draws the first frame and dark control
-lights; a capture records the counter as `pump_counter`, but whether the frame
-on screen was drawn at that value or the one before is not recorded, so a
-capture showing the second outline frame differs in the outline's 200 border
-pixels until a capture settles it.
+open and no pointer. It skips the hand-off card, Combat Results and Last Turn
+Events that the planning entry would open first. A capture taken with a panel
+open, at the final view or during a drag cannot be compared until the reference
+frame can open that panel or state. The selected-sector outline cycles through
+two frames on the pump's counter (FND-UI-017). The reference frame draws the
+first frame, and draws the Events and Comlink lights in the lit half of their
+blink whenever they are on. A capture records the counter as `pump_counter`,
+but whether the frame on screen was drawn at that value or the one before is
+not recorded, so a capture showing the second outline frame differs in the
+outline's 200 border pixels until a capture settles it.
 
 ## Fixture classes
 

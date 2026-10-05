@@ -230,10 +230,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         RuntimeDiagnostics? diagnostics = null,
         string? screenshotFolder = null,
         bool originalComputerMoves = false,
+        bool originalComputerHires = false,
         ReferenceFrameRequest? referenceFrame = null)
     {
         _assetRoot = assetRoot;
         _originalComputerMoves = originalComputerMoves;
+        _originalComputerHires = originalComputerHires;
         _referenceFrame = referenceFrame;
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;

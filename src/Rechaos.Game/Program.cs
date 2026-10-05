@@ -56,12 +56,23 @@ try
         // DEV-AI-007: local matches started in this session let the computer planner's Moves go
         // to any sector, as the original's do.
         originalComputerMoves: args.Contains("--original-computer-moves", StringComparer.OrdinalIgnoreCase),
+        // DEV-AI-008: local matches started in this session let the computer planner's hires go
+        // to any sector, as the original's do.
+        originalComputerHires: args.Contains("--original-computer-hires", StringComparer.OrdinalIgnoreCase),
         referenceFrame: referenceFrame);
     if (platformSmokeTest)
         return 0;
     try
     {
         game.Run();
+    }
+    catch (Exception exception) when (referenceFrame is not null)
+    {
+        // A reference frame runs unattended under a test: a message box would hold the process
+        // open until the test's timeout kills it.
+        diagnostics.CaptureCrash(exception, "reference-frame");
+        Console.Error.WriteLine(exception);
+        return 1;
     }
     catch (Exception exception)
     {
@@ -76,7 +87,7 @@ try
 }
 catch (Exception exception)
 {
-    if (platformSmokeTest)
+    if (platformSmokeTest || referenceFrame is not null)
     {
         Console.Error.WriteLine(exception);
         return 1;
