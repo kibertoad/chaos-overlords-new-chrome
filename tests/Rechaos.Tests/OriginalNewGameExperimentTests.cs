@@ -866,8 +866,15 @@ public sealed partial class OriginalNewGameExperimentTests
                 else if (write.Raider) match.AiPlanning.SetRaiderMode(new PlayerId(write.Player));
                 else match.AiPlanning.SetFamily(new PlayerId(write.Player), write.Slot, write.Family);
             beforeDone?.Invoke(match, human, turn + 1);
-            recorder.FinishCommand(human);
-            afterDone?.Invoke(match);
+            if (afterDone is null) recorder.FinishCommand(human);
+            else
+            {
+                // The game ends the human's planning with FinishPlanningTurn, which runs on to the
+                // next planning entry before an update shows the idle pointer. Its steps are the
+                // ones AdvanceToRecordedEndpoint takes, so the replay is unchanged.
+                GameplayTurnFlow.FinishPlanningTurn(recorder, human);
+                afterDone(match);
+            }
             donePresses++;
             AdvanceToRecordedEndpoint(recorder, human, recorded.Term("controller", human.Value));
             if (!IsActive(match, human) || match.Outcome is not null) break;
