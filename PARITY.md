@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 35 |
-| `validated` | 182 |
+| `implemented` | 32 |
+| `validated` | 185 |
 
 | Code | Rows |
 |---|---|
@@ -133,7 +133,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-SETUP-009` | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | ScreenCaptureTests compares the EXP-UI-015 captures after a press on another card, which only selects it, and after presses on both portrait bands of the selected card; no capture shows the name editor or a drag. |
 | `RULE-SETUP-010` | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | The rebuild's online lobby keeps its own seats and does not edit the local roster; entering one still resets the local roster to one human, as the original's lobby reset does. ScreenCaptureTests compares the EXP-UI-015 captures of the first setup of a session, Add up to six humans and a refused seventh, and Remove down to one and a refused last; no capture shows a second setup after Begin or Cancel. |
 | `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-SETUP-002` | validated | The left panel follows FND-SETUP-013: its rectangles, the refusal area of the time limit, the pressed images and push cue, the commit on release inside, and the light sprite. The scenario's title and description follow FND-SETUP-019, and the cards' colour bars and names FND-SETUP-014. The stored scenario preference belongs to RULE-SETUP-002. ScreenCaptureTests compares the setup screen New Game first opens with the EXP-UI-015 capture, and no element differs. |
-| `SCR-SETUP-002` | Hot-seat handoff card that waits for the next local player to press Ready | supported | complete | None | `DEV-SETUP-002` | implemented | None |
+| `SCR-SETUP-002` | Hot-seat handoff card that waits for the next local player to press Ready | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-SETUP-002` | validated | ScreenCaptureTests compares the card the planning entry of player 0 opens in a match of two humans (EXP-UI-016) with the original, and no element differs; no capture shows the card held pressed, an eliminated player's card or a later turn. |
 
 ## CITY
 
@@ -382,7 +382,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMLINK-006` | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | None |
 | `RULE-COMLINK-007` | When a player finishes planning, the read messages at the front of the inbox are dropped | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | None |
 | `SCR-COMLINK-001` | Comlink View panel | supported | complete | None | `DEV-COMLINK-001` | implemented | None |
-| `SCR-COMLINK-002` | Comlink Send panel | supported | complete | None | None | implemented | None |
+| `SCR-COMLINK-002` | Comlink Send panel | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | ScreenCaptureTests compares the panel just opened, with the caret inverse, and after a press on the other human's card, which frames it and draws the Send face enabled, with the EXP-UI-016 captures and the caret phase they recorded, and no element differs; no capture shows typed text, the caret plain, a pressed button or an empty slot. |
 
 ## SEARCH
 
@@ -427,7 +427,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-UI-001` | A push-button control acts only when released inside | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | ScreenCaptureTests compares the EXP-UI-015 captures of setup buttons released inside, which act, and of Add pressed and released outside, which does not; no capture is taken while a button is held. |
-| `RULE-UI-002` | Routing a press on the main console | supported | complete | None | None | implemented | None |
+| `RULE-UI-002` | Routing a press on the main console | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | ScreenCaptureTests replays console presses with the original's captures after them: Events, Combat upper, Ranking and Search (EXP-UI-008), Gangs upper and lower (EXP-UI-006, EXP-UI-008), Finance upper and lower (EXP-UI-006, EXP-UI-007), Game Info (EXP-UI-006), Done (EXP-UI-012), Comlink upper with an empty inbox and Comlink lower (EXP-UI-016), and every screen matches; no capture follows Combat lower (Detailed Combat), a press released outside its control or one on a split row. |
 | `RULE-UI-003` | Panels slide in from the right and out to the right | supported | complete | None | `DEV-TIMER-001`, `DEV-UI-001` | implemented | The slide-in reveals only the panel's left columns up to x 448 over the screen it opened from, in the rule's step and copy sequence at a fixed benchmark of 84 copies a second (DEV-TIMER-001); the slide-out is not animated (DEV-UI-001). |
 | `RULE-UI-004` | Drawing numbers in fixed glyph cells | supported | partial | None | None | supported | A value wider than its cells puts its whole leading quotient in the first cell, so 123 in two cells draws `<3`. A quotient past the strip copies the raw `PX00129` cell from the source column `6 * (16 + q)` cut to a signed 16-bit number, on every panel including the Hire dock, so a quotient from 10907 to 10991 wraps back into the bitmap; -2147483648 keeps the original's 32-bit arithmetic (FND-UI-045). Partial: a source cell not wholly inside the 512-pixel bitmap, such as a quotient from 69 to 10906, is drawn blank as a placeholder, because what the GDI copy draws there depends on GDI and is not recorded. |
 | `RULE-UI-005` | Lengths of the site progress and Force meters | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | Site meters truncate progress * 100 / Resistance (100 at Resistance 0) and Force meters are Force * 6 pixels, checked by SectorMeterLengthTests. ScreenCaptureTests compares the site meters of an owned sector with a completed site and two sites not completed (EXP-UI-010), and the Force meters of the gang cards, the Attack picker's target cards (EXP-UI-011) and the Give panel's recipient card (EXP-UI-010), with the original, and no element differs; no capture shows a site of Resistance 0. |

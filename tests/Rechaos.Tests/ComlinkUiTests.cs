@@ -36,7 +36,9 @@ public sealed class ComlinkUiTests
         Assert.Equal(new Rectangle(323, 212, 100, 32), ComlinkSendLayout.RecipientHit(5));
         Assert.Equal(new Rectangle(203, 145, 7, 30), ComlinkSendLayout.RecipientAccent(0));
         Assert.Equal(new Rectangle(210, 144, 32, 32), ComlinkSendLayout.RecipientPortrait(0));
-        Assert.Equal(new Point(243, 145), ComlinkSendLayout.RecipientNameOrigin(0));
+        Assert.Equal(new Point(244, 146), ComlinkSendLayout.RecipientNameOrigin(0));
+        Assert.Equal(new Rectangle(96, 480, 32, 32), ComlinkSendLayout.RecipientPortraitSource(3, eligible: true));
+        Assert.Equal(new Rectangle(96, 594, 32, 32), ComlinkSendLayout.RecipientPortraitSource(3, eligible: false));
         Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.Recipient(6));
         Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.RecipientHit(6));
         Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.CaretDestination(40, 0));

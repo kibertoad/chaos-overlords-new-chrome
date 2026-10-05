@@ -296,25 +296,31 @@ public sealed partial class ChaosGame
         : CityMapLayout.SelectionFrame(PresentationDrawTime);
 
     /// <summary>
-    /// Shows the city of the player whose planning entry the save stands at. The hand-off card,
-    /// Combat Results and Last Turn Events that the planning entry would open first are not drawn,
-    /// because the comparison only covers the city screen and its console, but Last Turn Events is
-    /// closed as a press of its Exit closes it: its first page counts as shown, so the Events light
-    /// stays lit only while another report is unseen (RULE-EVENT-005). Hire offers, the Comlink
-    /// alert and the planning timer are prepared as the planning entry prepares them when it goes
-    /// straight to the city.
+    /// Shows the city of the player whose planning entry the save stands at. With several local
+    /// humans the planning entry opens the hand-off card first, as the original's does
+    /// (SCR-SETUP-002), and its Ready goes on as in play. Otherwise Combat Results and Last Turn
+    /// Events that the planning entry would open first are not drawn, because the comparison only
+    /// covers the city screen and its console, but Last Turn Events is closed as a press of its
+    /// Exit closes it: its first page counts as shown, so the Events light stays lit only while
+    /// another report is unseen (RULE-EVENT-005). Hire offers, the Comlink alert and the planning
+    /// timer are prepared as the planning entry prepares them when it goes straight to the city.
     /// </summary>
     private void PresentReferenceFramePlanningEntry()
     {
         if (PlanningViewer is { } playerId && _state is { } state
             && state.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human)
         {
-            PrepareCurrentHireOffers();
             if (_referenceFrame?.SelectedSector is { } selected)
             {
                 _planningSelections.Store(playerId, selected);
                 _cursor = selected;
             }
+            if (HotSeatHandoffPresentation.RequiresPrivateHandoff(state))
+            {
+                _screens.Show(ClientScreen.Handoff);
+                return;
+            }
+            PrepareCurrentHireOffers();
             _deferComlinkAlertUntilPlanningVisible = true;
             _managementReturnScreen = ClientScreen.City;
             if (LastTurnReports(state, playerId).Count > 0)

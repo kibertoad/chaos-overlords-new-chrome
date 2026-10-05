@@ -34,6 +34,12 @@ internal sealed class StateExtractor
             ["events"] = new JsonArray(),
             ["end_state"] = extractor.EndState(),
         };
+        // The rolls the state dump follows, when steps after it made more.
+        if (trace["Notes"]?.AsArray().Select(note => note!.GetValue<string>())
+                .FirstOrDefault(note => note.StartsWith("rolls_at_dump ", StringComparison.Ordinal)) is { } atDump
+            && int.Parse(atDump["rolls_at_dump ".Length..], System.Globalization.CultureInfo.InvariantCulture) is var dumpRolls
+            && dumpRolls < rolls.Count)
+            run["rolls_at_dump"] = dumpRolls;
         // FND-AWARDS-005: the players of the endgame's rows in drawing order, and each row's kind.
         if (trace["Endgame"] is JsonObject endgame)
             run["endgame_rows"] = new JsonObject

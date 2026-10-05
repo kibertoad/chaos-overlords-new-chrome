@@ -263,6 +263,8 @@ internal static class OriginalAddresses
     public const uint ComlinkPending = 0x0048781C;
     public const uint ComlinkDraft = 0x00498120;
     public const uint ComlinkSelected = 0x00498114;
+    // FND-COMLINK-010: set while the Send panel's caret cell is drawn plain.
+    public const uint ComlinkCaretPlain = 0x00498110;
     public const uint ActivePlayer = 0x004ABC84;
 
     // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler

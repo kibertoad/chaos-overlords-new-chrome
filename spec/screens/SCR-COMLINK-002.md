@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-010, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-010, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004, FND-UI-019, EXP-UI-016]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-002, RULE-COMLINK-003, RULE-COMLINK-006]
@@ -25,6 +25,7 @@ related: [RULE-COMLINK-002, RULE-COMLINK-003, RULE-COMLINK-006]
 | Caret | The same cell from the inverse character row of `DATA/PX16/PX00129` at y 441 | The character at the text cursor | The cell at (`comlink_draft_row`, `comlink_draft_column`) | During the inverse phase of the caret (Timing) | FND-COMLINK-010 |
 | Cancel pressed | `DATA/PX16/PX00129` rectangle (50, 409, 50, 23) | None | (137, 261, 50, 23) | While Cancel is held with the pointer inside it | FND-COMLINK-003 |
 | Send pressed | `DATA/PX16/PX00129` rectangle (50, 386, 50, 23) | None | (137, 293, 50, 23) | While Send is held with the pointer inside it | FND-COMLINK-003 |
+| Send face | `DATA/PX16/PX00129` rectangle (50, 386, 50, 23) while a recipient is selected, (100, 386, 50, 23) while none is | None | (137, 293, 50, 23) | After a press on the card of an eligible slot; until then the panel's own face shows | FND-COMLINK-007, FND-UI-019, EXP-UI-016 |
 
 ## Mouse input
 

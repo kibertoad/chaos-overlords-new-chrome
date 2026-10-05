@@ -519,7 +519,10 @@ probe refuses `--draw-values` with more than one `--humans` slot, and it
 refuses an address outside the executable's writable sections. The fixture
 lists each as a `setup` input; the values change the match, so such a run is
 not replayed.
-Each run records the roll count at every press as `done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
+Each run records the roll count at every press as `done_at_roll`, and as
+`rolls_at_dump` the count the state dump follows when steps after the dump made
+more, as a Ready press that refills the offers does (RULE-SETUP-008); the
+replay counts draws up to it. `--seed` writes the given value over the argument of `srand`, so
 a recorded run can be played again, and `--dump-at-roll` copies the writable
 sections and the top of the stack at the entry of that call of `roll`, counted
 from 0, into
@@ -729,7 +732,9 @@ another finds the flag set and leaves the counter as it was. While Item
 Information, Sell or Give is open the shot also keeps `item_frame`, the frame
 of its rotating items, read from the handler's local before and after the copy
 (FND-UI-052, FND-UI-053); while the idle gang warning is open, the ticks since
-its open modulo 8, read from its countdown and shown flag (FND-UI-054). A
+its open modulo 8, read from its countdown and shown flag (FND-UI-054); and
+for a shot of the Comlink Send panel, 3 while its caret is drawn inverse and 0
+while plain, read from the byte at `0x00498110` (FND-COMLINK-010). A
 `warn` step switches Warn if Idle Gangs back on for the steps after it. `extract` gives that
 order step a `capture` object as above and a `screens` string naming the
 screens it is compared at. The steps before it bring the screen up: `open:s`
@@ -787,7 +792,7 @@ drawn (FND-UI-048). `--selected-sector` passes `selected_sector`, which the
 planning entry selects in place of the sector the rebuild keeps for the player
 (FND-SAVE-003); a save holds no selection (DEV-SAVE-001). `--item-frame` passes
 `item_frame`, the frame the rotating items of Item Information, Sell and Give
-are drawn at, or the idle gang warning's phase.
+are drawn at, the idle gang warning's phase, or the Comlink caret's.
 `--reference-clicks` lists the presses that take the rebuild from the planning
 entry to a shot step's screen, `:2` marking a double-click. They run on a clock
 of their own, one button edge every 50 ms, wait while a pressed face or a flash

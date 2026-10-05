@@ -456,6 +456,8 @@ internal sealed partial class NewGameSession(
 
         DumpWritableSections();
         _panelsAtDump = [.. _panels];
+        // RULE-SETUP-008: steps after the dump can call roll, as a Ready press refills the offers.
+        _notes.Add($"rolls_at_dump {_rolls.Count}");
         if (settings.Capture && CaptureDrawingArea(window, "capture-blt") is var (marker, pump, lamps, selected))
         {
             _notes.Add($"marker_frame {marker}");

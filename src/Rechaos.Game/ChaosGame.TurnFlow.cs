@@ -277,11 +277,14 @@ public sealed partial class ChaosGame
         else batch.Draw(pixel, panel, new Color(24, 37, 39));
         var playerId = _eliminationHandoffPlayer ?? ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
+        // SCR-SETUP-002, FND-SETUP-016: the slot's colour bar, its name over a black backing and
+        // its portrait doubled to 64 by 64.
+        batch.Draw(pixel, HandoffLayout.ColourBar, SetupPlayerCardArtLayout.Colours[playerId.Value]);
+        batch.Draw(pixel, HandoffLayout.NameBacking, Color.Black);
+        font.Draw(batch, player.Setup.Name, HandoffLayout.Name.ToVector2(), Color.Lime, 1);
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, HandoffLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
-        DrawCentered(font, batch, player.Setup.Name, HandoffLayout.NameY,
-            PlayerColors[playerId.Value], 1);
         if (_session is null) return;
         // Online the card is the break between turns rather than a privacy gate, and the server's
         // clock keeps running behind it. It says how the last turn sealed in full, which the city's

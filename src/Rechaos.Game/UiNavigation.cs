@@ -247,12 +247,15 @@ public sealed class CitySectorClickTracker
 
 public static partial class CityConsoleLayout;
 
+/// <summary>SCR-SETUP-002, FND-SETUP-016: the hand-off card and what is drawn on it.</summary>
 public static class HandoffLayout
 {
-    public static Rectangle Panel => new(266, 148, 108, 164);
-    public static Rectangle Portrait => new(280, 170, 80, 77);
-    public static Rectangle Ready => new(266, 246, 108, 66);
-    public const int NameY = 194;
+    public static Rectangle Panel => new(266, 130, 108, 164);
+    public static Rectangle ColourBar => new(283, 155, 8, 72);
+    public static Rectangle NameBacking => new(293, 155, 60, 7);
+    public static Point Name => new(293, 155);
+    public static Rectangle Portrait => new(293, 163, 64, 64);
+    public static Rectangle Ready => new(270, 241, 100, 48);
 }
 
 public sealed class IndexedDoubleClickTracker
@@ -735,10 +738,21 @@ public static class ComlinkSendLayout
         return new Rectangle(cell.X + 2, cell.Y + 2, 7, 30);
     }
 
+    /// <summary>FND-COMLINK-007: the name at (+42, +2) from the card point, one inside the frame.</summary>
     public static Point RecipientNameOrigin(int slot)
     {
         var cell = Recipient(slot);
-        return new Point(cell.X + 42, cell.Y + 2);
+        return new Point(cell.X + 43, cell.Y + 3);
+    }
+
+    /// <summary>
+    /// FND-COMLINK-007: the portrait of a slot that cannot be sent to comes from the row at y 594
+    /// of PX00129, where the others come from y 480.
+    /// </summary>
+    public static Rectangle RecipientPortraitSource(int portraitId, bool eligible)
+    {
+        var source = OriginalSpriteLayout.OverlordPortrait(portraitId);
+        return eligible ? source : new Rectangle(source.X, 594, source.Width, source.Height);
     }
 
     private static void ValidateEditorCell(int column, int row)

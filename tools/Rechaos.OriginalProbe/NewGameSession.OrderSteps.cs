@@ -96,9 +96,9 @@ internal sealed partial class NewGameSession
             {
                 // A capture moves nothing, so it is not a post-dump step of the marker log.
                 var file = $"capture-step-{_orderSteps.Count}";
-                var itemBefore = ItemFrame();
+                var itemBefore = ItemFrame() ?? CaretFrame(step);
                 var area = CaptureDrawingArea(window, file);
-                var itemFrame = ItemFrame() == itemBefore ? itemBefore : null;
+                var itemFrame = (ItemFrame() ?? CaretFrame(step)) == itemBefore ? itemBefore : null;
                 if (itemBefore is not null && itemFrame is null)
                     _notes.Add($"{file}: the item pictures' frame moved during the capture.");
                 var shot = area is var (marker, pump, lamps, selected)
@@ -161,6 +161,13 @@ internal sealed partial class NewGameSession
         }
         return true;
     }
+
+    // FND-COMLINK-010: the Send panel draws the caret's cell inverse while the byte at 0x00498110
+    // is 0 and plain while it is set, kept as 3 or 0 timer events since the last flip.
+    private int? CaretFrame(ProbeOrderStep step) =>
+        step.Screens!.Split(',').Contains("SCR-COMLINK-002")
+            ? _process.Read(OriginalAddresses.ComlinkCaretPlain, 1)[0] == 0 ? 3 : 0
+            : null;
 
     // FND-UI-021: menus 1, 2, 3 and 5 each hold one popup of plain items, so every item has a
     // command; MF_GRAYED and MF_DISABLED are the low two bits of its state.
