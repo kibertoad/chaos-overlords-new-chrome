@@ -1044,8 +1044,8 @@ each supported OS.
 until Code is `complete`, then `implemented`, and `validated` once a test
 compares the rebuild with evidence from the original and the entry is
 `supported` or `established`. A complete row with no such test is `deviated`
-instead when a `mandatory` deviation replaces it and each `mandatory` deviation
-it lists names its own tests. A deliberate departure is a `DEV-` entry in
+instead when a `mandatory` deviation's Replaces item names it and each
+`mandatory` deviation it lists names its own tests. A deliberate departure is a `DEV-` entry in
 `DEVIATIONS.md`, listed in the rows it touches. A milestone is not complete
 while any of its rows is below `implemented`. Percent-complete estimates should
 be derived from parity rows, not lines of code or asset counts.

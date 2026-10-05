@@ -937,7 +937,7 @@ const deviations = new Map();
       if (!areas.includes(areaOf(s.title))) problem(path, `${s.title}: area is not in the area list`);
       const items = [...s.text.matchAll(/^- ([A-Za-z ]+): (.*)$/gm)].map((m) => [m[1], m[2]]);
       const item = Object.fromEntries(items);
-      const order = ["Departs from", "Reason", "Setting", "Default", ...("Justification" in item ? ["Justification"] : []), ...("Tests" in item ? ["Tests"] : []), "Dropped"];
+      const order = ["Departs from", ...("Replaces" in item ? ["Replaces"] : []), "Reason", "Setting", "Default", ...("Justification" in item ? ["Justification"] : []), ...("Tests" in item ? ["Tests"] : []), "Dropped"];
       if (items.slice(0, order.length).map((x) => x[0]).join("|") !== order.join("|")) problem(path, `${s.title}: items must be ${order.join(", ")} in that order`);
       const departs = idsIn(item["Departs from"]);
       const dropped = item.Dropped && item.Dropped !== "no";
@@ -948,16 +948,33 @@ const deviations = new Map();
         for (const x of departs) if (isSuperseded(x)) problem(path, `${s.title} departs from ${x}, which is superseded`);
         checkDeviationDefault(path, s.title, item, departs);
       }
-      // The Tests item lists the test files that check the rebuild does what the deviation says. It
-      // may wrap onto indented lines like any other item.
-      const tests = "Tests" in item ? /^- Tests: (.*(?:\n  .*)*)/m.exec(s.text)[1].split(",").map((x) => x.replaceAll("`", "").trim()).filter(Boolean) : [];
-      if ("Tests" in item && tests.length === 0) problem(path, `${s.title}: Tests lists at least one test file`);
-      for (const tf of tests) {
-        const p = join(repoDir, tf);
-        if (!existsSync(p)) problem(path, `${s.title}: test file ${tf} does not exist`);
-        else if (!readFileSync(p, "utf8").includes(s.title)) problem(path, `${s.title}: test file ${tf} does not mention ${s.title}`);
+      // Replaces names the entries of Departs from that a mandatory deviation replaces entirely, which
+      // leaves nothing of them to compare with the original. The Tests item lists the test files that
+      // check the rebuild does what the deviation says; nothing records a local run of them, so they
+      // run in CI and never need GAME_DIR. Either may wrap onto indented lines like any other item.
+      const multiline = (name) => (new RegExp(`^- ${name}: (.*(?:\n  .*)*)`, "m").exec(s.text)?.[1] ?? "");
+      const replaces = idsIn(multiline("Replaces"));
+      const tests = multiline("Tests").split(",").map((x) => x.replaceAll("`", "").trim()).filter(Boolean);
+      checkResolves(path, replaces, `${s.title} Replaces`);
+      if (!dropped) {
+        if ("Replaces" in item) {
+          if (item.Default !== "mandatory") problem(path, `${s.title}: only a mandatory deviation has a Replaces item`);
+          if (replaces.length === 0) problem(path, `${s.title}: Replaces names at least one entry`);
+          for (const x of replaces) {
+            if (!departs.includes(x)) problem(path, `${s.title}: Replaces names ${x}, which Departs from does not`);
+            if (!["RULE", "FMT", "SCR"].includes(kindOf(x))) problem(path, `${s.title}: Replaces names ${x}, which is not a rule, format or screen`);
+          }
+        }
+        if ("Tests" in item && tests.length === 0) problem(path, `${s.title}: Tests lists at least one test file; leave the item out when there is none`);
+        for (const tf of tests) {
+          const p = join(repoDir, tf);
+          if (!existsSync(p)) { problem(path, `${s.title}: test file ${tf} does not exist`); continue; }
+          const text = readFileSync(p, "utf8");
+          if (!text.includes(s.title)) problem(path, `${s.title}: test file ${tf} does not mention ${s.title}`);
+          if (text.includes("GAME_DIR")) problem(path, `${s.title}: test file ${tf} mentions GAME_DIR; a deviation's tests run in CI without the original's files`);
+        }
       }
-      deviations.set(s.title, { departs, dropped, mandatory: item.Default === "mandatory", tests });
+      deviations.set(s.title, { departs, dropped, mandatory: item.Default === "mandatory", replaces, tests });
     }
   }
 }
@@ -1023,13 +1040,17 @@ const parityRows = new Map();
           const listedDevs = devs === "None" ? [] : devs.split(",").map((x) => x.trim()).filter(Boolean);
           const expectedDevs = [...deviations].filter(([, d]) => !d.dropped && d.departs.includes(specId)).map(([k]) => k).sort();
           if (listedDevs.slice().sort().join(",") !== expectedDevs.join(",")) problem(path, `${specId}: Deviations must be ${expectedDevs.join(", ") || "None"}`);
-          // A row whose entry a mandatory deviation replaces cannot be compared with the original. It
-          // is deviated once every mandatory deviation it lists has tests of its own.
+          // A row whose entry a mandatory deviation replaces entirely cannot be compared with the
+          // original, so it has no tests of its own: they belong in the deviation's Tests item. It is
+          // deviated once every mandatory deviation it lists has tests.
           const mandatory = listedDevs.map((x) => deviations.get(x)).filter((d) => d?.mandatory && !d.dropped);
-          const deviated = mandatory.length > 0 && mandatory.every((d) => d.tests.length > 0);
+          const replacing = listedDevs.find((x) => { const d = deviations.get(x); return d?.mandatory && !d.dropped && d.replaces.includes(specId); });
+          const replaced = replacing !== undefined;
+          if (replaced && testFiles.length > 0) problem(path, `${specId}: ${replacing} replaces it, so Tests must be None; list the tests in the deviation's Tests item`);
+          const deviated = replaced && mandatory.every((d) => d.tests.length > 0);
           let expectedStatus;
           if (code !== "complete" || e.meta.status === "disputed") expectedStatus = e.meta.status;
-          else if (testFiles.length === 0) expectedStatus = deviated ? "deviated" : "implemented";
+          else if (testFiles.length === 0 || replaced) expectedStatus = deviated ? "deviated" : "implemented";
           else if (["supported", "established"].includes(e.meta.status)) expectedStatus = "validated";
           else { problem(path, `${specId}: complete with tests while the spec status is ${e.meta.status}; the evidence belongs in the spec entry first`); expectedStatus = status; }
           if (status !== expectedStatus) problem(path, `${specId}: Status must be ${expectedStatus}`);

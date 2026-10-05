@@ -57,6 +57,7 @@ are. Git history provides change dates.
 | [HANDOVER.md](HANDOVER.md) | Repository state, current format versions, the latest playable work by area, open conformance work, and where the next agent starts | Living checkpoint |
 | [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) | Definition of complete, baseline, engineering principles, documentation and evidence rules, workstreams A–N, milestones M0–M8, test matrix, completion conventions, source hierarchy | Roadmap |
 | [DECISIONS.md](DECISIONS.md) | Dated product, compatibility, and scope decisions, newest first, with an index | Decision log |
+| [upstream/](upstream/documentation-standard.md) | The documentation standard, methodology and work protocol as published at refurbished-dinosaurs `11dbbc5`, copied unchanged and without a `Status:` line | Reference copy |
 | [VALIDATION.md](VALIDATION.md) | Validation layers, `Invoke-Validation.ps1` modes, canonical identities, experiments on the original, static research, spec checks, tests against the original, fixture classes, failure triage | Procedure |
 | [RELEASING.md](RELEASING.md) | `version.txt`, local package builds, the release workflow, signing, continuous integration | Procedure |
 | [SPEC-ENTRY-TEMPLATES.md](SPEC-ENTRY-TEMPLATES.md) | A blank entry of each spec kind | Template |
