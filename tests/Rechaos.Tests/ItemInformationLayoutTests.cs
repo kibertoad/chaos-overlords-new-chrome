@@ -100,12 +100,42 @@ public sealed class ItemInformationLayoutTests
         Assert.Equal(new NativeTwoCellNumberPresentation.Value(" 0000", true, false, 59),
             NativeTwoCellNumberPresentation.Format(-430000, NativeTwoCellNumberPresentation.Kind.Baseline,
                 StatusConsoleLayout.ScoreCells));
-        Assert.Equal(new NativeTwoCellNumberPresentation.Value(" 8", true, false, 214748380),
-            NativeTwoCellNumberPresentation.Format(int.MinValue));
         Assert.Equal(new Rectangle(354, 0, 6, 7), NativeTwoCellNumberPresentation.AtlasCell(59, false, 512));
         Assert.Equal(new Rectangle(354, 8, 6, 7), NativeTwoCellNumberPresentation.AtlasCell(59, true, 512));
         Assert.Equal(new Rectangle(504, 0, 6, 7), NativeTwoCellNumberPresentation.AtlasCell(84, false, 512));
+        // RULE-UI-004: a source cell not wholly inside the 512-pixel bitmap is drawn blank until a
+        // run of the original records what the GDI copy leaves there (FND-UI-045).
         Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(85, false, 512));
+        Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(86, false, 512));
+    }
+
+    [Fact]
+    public void CutsTheSourceColumnOfAnOffStripCellToSixteenBits()
+    {
+        // FND-UI-045: the helper computes 6 * (16 + q) in 32 bits and the rectangle packer keeps
+        // its low 16 bits, which the copy reads as a signed number. From 6 * 5462 = 32772 the
+        // column is negative, and from 6 * 10923 = 65538 it lands inside the bitmap again.
+        Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(5462, false, 512));
+        Assert.Equal(new Rectangle(2, 0, 6, 7), NativeTwoCellNumberPresentation.AtlasCell(10923, false, 512));
+        Assert.Equal(new Rectangle(506, 8, 6, 7), NativeTwoCellNumberPresentation.AtlasCell(11007, true, 512));
+        Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(11008, false, 512));
         Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(int.MaxValue, false, 512));
+        // A five-cell score of 109070000 has the leading quotient 10907, glyph 10923.
+        var score = NativeTwoCellNumberPresentation.Format(109070000, NativeTwoCellNumberPresentation.Kind.Baseline,
+            StatusConsoleLayout.ScoreCells);
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value(" 0000", false, false, 10923), score);
+        Assert.Equal(new Rectangle(2, 0, 6, 7),
+            NativeTwoCellNumberPresentation.AtlasCell(score.OffStripGlyph!.Value, false, 512));
+    }
+
+    [Fact]
+    public void KeepsTheOriginalsThirtyTwoBitArithmeticForTheMostNegativeValue()
+    {
+        // FND-UI-045: negating int.MinValue leaves it negative, so the signed divide gives the
+        // quotient -214748364 (glyph -214748348, off the strip) and the remainder -8, which
+        // selects glyph 8, the character '(' of the strip, from the red row.
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value(" (", true, false, -214748348),
+            NativeTwoCellNumberPresentation.Format(int.MinValue));
+        Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(-214748348, true, 512));
     }
 }

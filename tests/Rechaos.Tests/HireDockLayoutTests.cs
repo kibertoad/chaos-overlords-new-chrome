@@ -16,15 +16,17 @@ public sealed class HireDockLayoutTests
         Assert.Equal(new Point(516, 440), HireDockLayout.Price(1));
         Assert.Equal(new Point(582, 440), HireDockLayout.Price(2));
         // FND-UI-006: the console passes the helper's leading-zero flag.
-        Assert.Equal("06", HireDockLayout.PriceText(6));
-        Assert.Equal("12", HireDockLayout.PriceText(12));
+        Assert.Equal("06", HireDockLayout.PriceCells(6).Digits);
+        Assert.Equal("12", HireDockLayout.PriceCells(12).Digits);
         // FND-UI-023: two cells only; the first takes the whole quotient, 12 places after '0'.
-        Assert.Equal("<3", HireDockLayout.PriceText(123));
+        Assert.Equal("<3", HireDockLayout.PriceCells(123).Digits);
         // FND-UI-006: a negative value shows its magnitude; the colour carries the sign.
-        Assert.Equal("07", HireDockLayout.PriceText(-7));
-        // A quotient past the last glyph of the strip has nothing to draw.
-        // RULE-UI-004: an off-strip leading glyph leaves a blank text placeholder.
-        Assert.Equal(" 0", HireDockLayout.PriceText(430));
+        Assert.Equal("07", HireDockLayout.PriceCells(-7).Digits);
+        // RULE-UI-004: a quotient past the strip's last character leaves a blank in the text and
+        // is drawn from the raw PX00129 cell of glyph 16 + 43.
+        Assert.Equal(" 0", HireDockLayout.PriceCells(430).Digits);
+        Assert.Equal(59, HireDockLayout.PriceCells(430).OffStripGlyph);
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value("06", false, false), HireDockLayout.PriceCells(6));
     }
 
     [Fact]

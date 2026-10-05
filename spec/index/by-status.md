@@ -16,7 +16,7 @@
 
 ## supported
 
-151 entries.
+153 entries.
 
 | ID | Title |
 |---|---|
@@ -112,6 +112,8 @@
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events |
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six |
+| [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes |
+| [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | A turn is turn start, planning by each active player in slot order, then resolution |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order |
@@ -174,7 +176,7 @@
 
 ## established
 
-90 entries.
+88 entries.
 
 | ID | Title |
 |---|---|
@@ -261,8 +263,6 @@
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash |
 | [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | Planning time limit chosen for a match |
-| [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes |
-| [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
@@ -294,7 +294,7 @@
 
 ## recorded
 
-454 entries.
+458 entries.
 
 | ID | Title |
 |---|---|
@@ -486,6 +486,7 @@
 | [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | The shipped GOG CD wrapper rejects MCI_PAUSE and treats MCI_PLAY without MCI_FROM as a successful no-op |
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | Title music is requested after successful game entry and return, not after cancelled preparation or loading |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | The CD fade uses zero-based wait deadlines and dispatches window messages without handling game events |
+| [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | The CD fade runs inside the event pump's music poll and mute command, and never touches timer slot 0 |
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | The award builder takes five categories in a fixed order with fixed starting thresholds and keeps every tied player, but only three awards per row are drawn |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions |
@@ -747,6 +748,9 @@
 | [FND-UI-041](../findings/FND-UI-041.md) | The running original draws the completed-match calendar companion in its final city view |
 | [FND-UI-042](../findings/FND-UI-042.md) | The seeded completed match enters its final city without an open report panel |
 | [FND-UI-043](../findings/FND-UI-043.md) | Local human planning completion clears the seat's waiting light |
+| [FND-UI-044](../findings/FND-UI-044.md) | A left press on a gang card's portrait holds the individual command handler in its own loops until the button is released, so the planning loop does not run while a gang is held |
+| [FND-UI-045](../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits |
+| [FND-UI-046](../findings/FND-UI-046.md) | The pointer hold loops of the console tiles, the held-button helper and the event page arrows never reach the event pump, and no hold loop touches timer slot 0 |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file |
@@ -846,8 +850,6 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash |
 | [RULE-TERMINATE-001](../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | Planning time limit chosen for a match |
-| [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes |
-| [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds |
 | [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
@@ -999,6 +1001,8 @@ Entries whose Open questions section says more than None known.
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | established |
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | Snitch lowers the gang's sector base Tolerance by 3, free and whatever the player's cash | established |
+| [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes | supported |
+| [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds | supported |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | A turn is turn start, planning by each active player in slot order, then resolution | supported |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported |
@@ -1012,6 +1016,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | supported |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker | supported |
 | [RULE-UI-007](../rules/RULE-UI-007.md) | The pointer shape | supported |
+| [RULE-UI-008](../rules/RULE-UI-008.md) | The presentation timer | supported |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | established |
