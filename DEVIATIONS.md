@@ -573,7 +573,13 @@ started with.
   online match keeps the deviation on.
 - Default: on
 - Justification: The same rules apply to every player, and the difference costs no measurable
-  balance. In 500 pairs of four-year matches, 50 seeds of every scenario played from the same
+  balance. The original tests the owner where each hire is placed instead of in the resolver:
+  the hire panel accepts a drop only on a sector the player owns or holds a living gang in
+  (SCR-HIRE-002), and the two random modes of the computer's own destination helper choose only
+  among such sectors (RULE-AI-012). The planner's encoded sector passes neither place, so the
+  hire EXP-TURN-090 reaches falls through a gap between them. No recorded or simulated match
+  reaches it without the probe's written families, so no player meets it or can build a strategy
+  on it. In 500 pairs of four-year matches, 50 seeds of every scenario played from the same
   seeds with a planner-played human seat that keeps the human hire rule, no computer hire went to
   such a sector, and every pair ended the same way with the deviation on and off: computer players
   won 164 of the 438 matches that ended, and the human seat survived in 173. The other 62 pairs,

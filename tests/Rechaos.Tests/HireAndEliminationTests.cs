@@ -126,15 +126,18 @@ public sealed class HireAndEliminationTests
     }
 
     [Theory]
-    [InlineData(PlayerController.Computer, false, true)]
-    [InlineData(PlayerController.Computer, true, false)]
-    [InlineData(PlayerController.Human, false, false)]
+    [InlineData(PlayerController.Computer, false, false, true)]
+    [InlineData(PlayerController.Computer, true, false, false)]
+    [InlineData(PlayerController.Human, false, false, false)]
+    [InlineData(PlayerController.Human, false, true, false)]
     public void OnlyAComputerWithDevAi008OffHiresOutsideItsSectors(
-        PlayerController controller, bool computerHiresWhereHumansCan, bool accepted)
+        PlayerController controller, bool computerHiresWhereHumansCan, bool simulated, bool accepted)
     {
-        // DEV-AI-008: sector 1 is neither controlled by player 0 nor holds one of its gangs.
+        // DEV-AI-008: sector 1 is neither controlled by player 0 nor holds one of its gangs. A
+        // human seat the planner plays for a simulation keeps the human test.
         var match = CreateMatch(controller: controller,
             computerHiresWhereHumansCan: computerHiresWhereHumansCan);
+        if (simulated) match.SimulateHuman(new PlayerId(0));
         AdvanceToHire(match);
 
         var result = match.QueueHire(new PlayerId(0), 2, 1);

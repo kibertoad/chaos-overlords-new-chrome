@@ -76,8 +76,9 @@ public sealed class MatchSetup
 
     /// <summary>
     /// DEV-AI-008: whether a computer player's hire must go to a sector it controls or holds a gang
-    /// in, as a human's does. Off, the planner's hire goes to the sector it chose, as in the
-    /// original (RULE-AI-012, RULE-HIRE-001).
+    /// in, as a human's does. Off, a computer seat's hire goes to the sector the planner chose, as
+    /// in the original (RULE-AI-012, RULE-HIRE-001); a human seat the planner plays for a
+    /// simulation keeps the human test either way.
     /// </summary>
     public bool ComputerHiresWhereHumansCan { get; }
     public bool AllowsSparsePlayerIds { get; }

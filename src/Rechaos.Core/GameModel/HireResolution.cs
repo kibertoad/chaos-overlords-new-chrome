@@ -368,4 +368,3 @@ internal static class HireResolver
         return selected;
     }
 }
-

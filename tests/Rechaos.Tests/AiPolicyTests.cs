@@ -137,12 +137,17 @@ public sealed class AiPolicyTests
         Assert.Equal(AiPolicyMode.Advanced, replayed.Setup.AiPolicy);
     }
 
-    // DEV-AI-007: the setting belongs to the match, so the fingerprint, a save and a replay
-    // journal carry it.
-    [Fact]
-    public void ComputerMoveSettingRoundTripsThroughSaveAndReplay()
+    // DEV-AI-007 and DEV-AI-008: each setting belongs to the match, so the fingerprint, a save and
+    // a replay journal carry it, and switching one off leaves the other on.
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void ComputerSettingsRoundTripThroughSaveAndReplay(
+        bool computerMovesToNeighboursOnly, bool computerHiresWhereHumansCan)
     {
-        var match = IdleMatch(AiPolicyMode.Original, computerMovesToNeighboursOnly: false);
+        var match = IdleMatch(AiPolicyMode.Original,
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
         var data = match.Definitions;
         Assert.NotEqual(MatchStateHasher.ComputeFingerprint(IdleMatch(AiPolicyMode.Original)),
             MatchStateHasher.ComputeFingerprint(match));
@@ -150,35 +155,19 @@ public sealed class AiPolicyTests
         NativeSaveSerializer.Save(save, match);
         save.Position = 0;
 
-        Assert.False(NativeSaveSerializer.Load(save, data).Setup.ComputerMovesToNeighboursOnly);
+        AssertSettings(NativeSaveSerializer.Load(save, data).Setup);
 
         var recorder = new MatchReplayRecorder(match);
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
         replay.Position = 0;
-        Assert.False(MatchReplaySerializer.LoadAndReplay(replay, data).Setup.ComputerMovesToNeighboursOnly);
-    }
+        AssertSettings(MatchReplaySerializer.LoadAndReplay(replay, data).Setup);
 
-    [Fact]
-    public void ComputerHireSettingRoundTripsThroughSaveAndReplay()
-    {
-        // DEV-AI-008: the setting is part of the setup, so the fingerprint, a save and a journal
-        // all carry it.
-        var match = IdleMatch(AiPolicyMode.Original, computerHiresWhereHumansCan: false);
-        var data = match.Definitions;
-        Assert.NotEqual(MatchStateHasher.ComputeFingerprint(IdleMatch(AiPolicyMode.Original)),
-            MatchStateHasher.ComputeFingerprint(match));
-        using var save = new MemoryStream();
-        NativeSaveSerializer.Save(save, match);
-        save.Position = 0;
-
-        Assert.False(NativeSaveSerializer.Load(save, data).Setup.ComputerHiresWhereHumansCan);
-
-        var recorder = new MatchReplayRecorder(match);
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        replay.Position = 0;
-        Assert.False(MatchReplaySerializer.LoadAndReplay(replay, data).Setup.ComputerHiresWhereHumansCan);
+        void AssertSettings(MatchSetup setup)
+        {
+            Assert.Equal(computerMovesToNeighboursOnly, setup.ComputerMovesToNeighboursOnly);
+            Assert.Equal(computerHiresWhereHumansCan, setup.ComputerHiresWhereHumansCan);
+        }
     }
 
     [Fact]
