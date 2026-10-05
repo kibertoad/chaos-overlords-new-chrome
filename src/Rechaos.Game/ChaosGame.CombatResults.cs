@@ -436,6 +436,24 @@ public static class CombatResultProjection
             && state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id))?.Owner == viewer;
     }
 
+    /// <summary>
+    /// The events of <paramref name="events"/> that <paramref name="viewer"/>'s automatic Detailed
+    /// Combat presentation plays: the last completed turn's fights the viewer can see, in the
+    /// order given (RULE-COMBAT-004).
+    /// </summary>
+    public static IReadOnlyList<GameEvent> AutomaticPresentationEvents(
+        MatchState state, PlayerId viewer, IEnumerable<GameEvent> events)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(events);
+        var presented = new List<GameEvent>();
+        foreach (var gameEvent in events)
+            if (IsFromLastCompletedTurn(gameEvent.Turn, state.Coordinator.Turn)
+                && IsVisibleCombatEvent(state, viewer, gameEvent))
+                presented.Add(gameEvent);
+        return presented;
+    }
+
     public static IReadOnlyList<CombatResultPage> Pages(MatchState state, PlayerId viewer)
     {
         ArgumentNullException.ThrowIfNull(state);

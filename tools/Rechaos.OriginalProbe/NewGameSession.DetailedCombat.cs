@@ -38,9 +38,9 @@ internal sealed partial class NewGameSession
         _process.SetBreakpoint(OriginalAddresses.CombatClip, context =>
         {
             _combatClips.Add(new CombatClipRecord(_rolls.Count,
-                ReadInt16(OriginalAddresses.CombatFocal), ReadInt16(OriginalAddresses.CombatOther),
-                context.Argument(0), ReadInt16(OriginalAddresses.CombatFocalBarRight),
-                ReadInt16(OriginalAddresses.CombatOtherBarRight), [.. _clipSounds]));
+                _process.ReadInt16(OriginalAddresses.CombatFocal), _process.ReadInt16(OriginalAddresses.CombatOther),
+                context.Argument(0), _process.ReadInt16(OriginalAddresses.CombatFocalBarRight),
+                _process.ReadInt16(OriginalAddresses.CombatOtherBarRight), [.. _clipSounds]));
             _clipSounds.Clear();
         });
         _process.SetBreakpoint(OriginalAddresses.PlaySound, context =>
@@ -50,6 +50,4 @@ internal sealed partial class NewGameSession
                 _combatClips[^1].Played = true;
         }, quiet: true);
     }
-
-    private short ReadInt16(uint address) => BitConverter.ToInt16(_process.Read(address, 2));
 }

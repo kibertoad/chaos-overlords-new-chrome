@@ -86,6 +86,8 @@ internal sealed class OriginalProcess : IDisposable
         return buffer;
     }
 
+    public short ReadInt16(uint address) => BitConverter.ToInt16(Read(address, 2));
+
     public int ReadInt32(uint address) => BitConverter.ToInt32(Read(address, 4));
 
     public void Write(uint address, byte[] bytes)
