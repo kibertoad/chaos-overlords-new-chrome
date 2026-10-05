@@ -6,9 +6,13 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    // FND-UI-052: the rotating item starts from frame 0 when the panel opens.
+    private TimeSpan _itemDetailsOpenedAt;
+
     private void OpenItemDetails(short itemId, ClientScreen returnScreen = ClientScreen.Commands)
     {
         _itemDetailsId = itemId;
+        _itemDetailsOpenedAt = _inputTime;
         _itemDetailsReturnScreen = returnScreen;
         _screens.Show(ClientScreen.ItemInformation);
     }
@@ -43,13 +47,16 @@ public sealed partial class ChaosGame
         if (itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, ItemInformationLayout.Portrait,
-                ItemRotationPresentation.Frame(_inputTime), Color.White);
+                _referenceFrame?.ItemFrame is { } frame
+                    ? ItemRotationPresentation.Frame(frame)
+                    : ItemRotationPresentation.Frame(_inputTime < _itemDetailsOpenedAt
+                        ? TimeSpan.Zero : _inputTime - _itemDetailsOpenedAt), Color.White);
         else if (_itemPortraits is not null)
             batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,
                 OriginalSpriteLayout.ItemPortrait(item.Id), Color.White);
         font.Draw(batch, item.Name,
             new Vector2(ItemInformationLayout.NameLeft, ItemInformationLayout.HeaderY), Color.Lime, 1);
-        DrawPanelValue(font, batch, ItemInformationLayout.TypeLabel(item.Type),
+        DrawPanelValue(font, batch, ExecutableStrings.Get(ItemInformationLayout.TypeStringBase + item.Type),
             ItemInformationLayout.TypeRight, ItemInformationLayout.HeaderY);
         foreach (var entry in ItemInformationLayout.DescriptionLines(item.Description)
                      .Select((text, row) => (text, row)))

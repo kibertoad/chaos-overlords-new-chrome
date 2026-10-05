@@ -152,6 +152,10 @@ public sealed partial class OriginalNewGameExperimentTests
         }
         if (menu is 1 or 2)
         {
+            // FND-UI-021: these orders first run their picker panel and are dropped when it is
+            // cancelled, so the order is the picker's; the gangs compared after the picker's own
+            // steps show whether it gave one (EXP-UI-009 cancels each).
+            if (menu == 1 && CommandOverlayLayout.OpensTargetPicker(action)) return;
             var result = match.Submit(new GameCommand(human, gangs[0].Id, action, CommandTarget.None, recurring));
             Assert.True(result.Accepted, $"the rebuild refused {action}: {result}");
             return;

@@ -82,7 +82,11 @@ internal static class CaptureFixture
         // or the one at the slide-in of the panel open over the city. A panel the probe did not
         // see slide in leaves it unknown.
         if (record is not null)
+        {
             record["frame_counter"] = shot["FrameCounter"] is JsonNode frame ? frame.GetValue<int>() : null;
+            // FND-UI-052: the frame of Item Information's rotating item, when the panel is open.
+            if (shot["ItemFrame"] is JsonNode item) record["item_frame"] = item.GetValue<int>();
+        }
         return record;
     }
 

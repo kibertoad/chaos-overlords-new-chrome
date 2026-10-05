@@ -42,8 +42,7 @@ public sealed partial class UiNavigationTests
         Assert.Equal(307, SiteInformationLayout.StatisticY(6));
         Assert.Equal(new Rectangle(162, 141, 48, 48), ItemInformationLayout.Portrait);
         Assert.Equal(new Rectangle(176, 155, 20, 20), ItemInformationLayout.CompactPortrait);
-        Assert.Equal("RANGE", ItemInformationLayout.TypeLabel(2));
-        Assert.Equal("ARMOR", ItemInformationLayout.TypeLabel(3));
+        Assert.Equal(25, ItemInformationLayout.TypeStringBase);
         Assert.Equal(243, ItemInformationLayout.StatisticY(0));
         Assert.Equal(270, ItemInformationLayout.StatisticY(2));
         Assert.Equal(EquipmentCommandLayout.Panel, CombatPanelLayout.Panel);

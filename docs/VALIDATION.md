@@ -724,14 +724,18 @@ sector `0x004ABC80` (`selected_sector`) and the frame counter
 selection frame (FND-UI-051), so the probe breaks at `0x004196E4`, where the
 slide-in sets the flag that stops it, and keeps the pump's counter read there;
 the frame counter is that value while the flag is set, the pump counter when it
-is clear, and null when the probe could not tell. `extract` gives that
+is clear, and null when the probe could not tell. A panel that slides in over
+another finds the flag set and leaves the counter as it was. While Item
+Information is open the shot also keeps `item_frame`, the frame of its
+rotating item, read from the handler's local before and after the copy
+(FND-UI-052). `extract` gives that
 order step a `capture` object as above and a `screens` string naming the
 screens it is compared at. The steps before it bring the screen up: `open:s`
 double-clicks sector `s` on the city map, `dbl:x:y` double-clicks the window
 point `(x, y)` as `open` does (FND-UI-020), `strip:x:y:0` presses a point,
 `card` a sector card's point, `back` the detailed sector screen's back
 control and `exit` the Exit of the panel the planning entry left open.
-EXP-UI-006 to EXP-UI-008 are taken this way.
+EXP-UI-006 to EXP-UI-009 are taken this way.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
@@ -751,7 +755,8 @@ save, and starts the game with
 
 ```text
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
-    [--pump-counter <0-7>] [--selected-sector <0-63>] [--reference-clicks <x:y[:2]>,...]
+    [--pump-counter <0-7>] [--selected-sector <0-63>] [--item-frame <0-14>]
+    [--reference-clicks <x:y[:2]>,...]
 ```
 
 which shows the save at its planning entry in a 640-by-460 window, holds the
@@ -760,7 +765,8 @@ bitmap before it exits. `--pump-counter` passes the capture's `frame_counter`, o
 `pump_counter` when the fixture has none, which picks the selected-sector frame
 drawn (FND-UI-048). `--selected-sector` passes `selected_sector`, which the
 planning entry selects in place of the sector the rebuild keeps for the player
-(FND-SAVE-003); a save holds no selection (DEV-SAVE-001).
+(FND-SAVE-003); a save holds no selection (DEV-SAVE-001). `--item-frame` passes
+`item_frame`, the frame Item Information's rotating item is drawn at.
 `--reference-clicks` lists the presses that take the rebuild from the planning
 entry to a shot step's screen, `:2` marking a double-click. They run on a clock
 of their own, one button edge every 50 ms, wait while a pressed face or a flash
@@ -769,10 +775,12 @@ last one. Panels are drawn in place, without the slide. For a shot step the test
 works the presses out from the order steps before it: a double-click at the
 centre of the opened sector's cell for `open`, the step's point for `dbl` and
 `strip`, a card's point for `card` and `(20, 425)` for `back`. It leaves out
-`exit`, since the reference frame does not draw the planning entry's panels. A
-step that opened one of the original's popup menus makes the capture
-unreplayable, and the test skips it, because the rebuild's orders are a panel
-(DEV-UI-021). With `RECHAOS_KEEP_FRAMES` set to a directory, the test copies
+`exit`, since the reference frame does not draw the planning entry's panels.
+The rebuild's orders are a panel (DEV-UI-021): a `card` step whose menu 1
+choice runs a picker (Attack, Equip, Give, Influence, Move, Research or Sell,
+FND-UI-021) becomes the card press and a press on that order's row of the
+panel. Any other step that opened a popup menu makes the capture
+unreplayable, and the test skips it. With `RECHAOS_KEEP_FRAMES` set to a directory, the test copies
 each frame the rebuild drew there as `<experiment>-<run>-<step>.bmp`, step -1
 being the endpoint. Preferences, saves and logs of that run go to a
 `rechaos-reference-frame-*` directory beside the bitmap, never to the player's.

@@ -174,6 +174,22 @@ public sealed partial class ChaosGame
             .FirstOrDefault(index => _commandTargetOptions[index].Target.Id == queued.Target.Id, -1);
     }
 
+    /// <summary>
+    /// SCR-RESEARCH-001, EXP-UI-009: the panel opens on category 0 with no row selected, unless the
+    /// gang's order is already Research, when it opens on that item's category with its row
+    /// selected.
+    /// </summary>
+    private void OpenResearchPanel()
+    {
+        _equipmentCategory = 0;
+        _commandTargetCursor = -1;
+        if (_state?.FindGang(_commandTargetOptions[0].Gang)?.QueuedCommand?.Command is not
+            { Action: GangAction.Research, Target.Kind: CommandTargetKind.Item } queued) return;
+        _equipmentCategory = EquipmentCommandLayout.CategoryForItemType(_state.Definitions.Items[queued.Target.Id].Type);
+        _commandTargetCursor = EquipmentCommandIndices(_state)
+            .FirstOrDefault(index => _commandTargetOptions[index].Target.Id == queued.Target.Id, -1);
+    }
+
     private void HandleEquipmentCommandClick(Point point)
     {
         if (CommandPanelFaces.ButtonAt(point) is { } button)

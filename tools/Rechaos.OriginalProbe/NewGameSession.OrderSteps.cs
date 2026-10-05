@@ -37,7 +37,8 @@ internal sealed record OrderStepRecord(
 /// beside it, the Overlord bar's marker frame it shows (FND-UI-038) and the pump's counter.
 /// </summary>
 internal sealed record CaptureShot(
-    string File, int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector, int? FrameCounter);
+    string File, int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector, int? FrameCounter,
+    int? ItemFrame = null);
 
 internal sealed partial class NewGameSession
 {
@@ -62,19 +63,38 @@ internal sealed partial class NewGameSession
             context.Esp += 4 * OriginalAddresses.PopupMenuTrackArguments;
             context.Eip = OriginalAddresses.PopupMenuTracked;
         });
-        // FND-UI-051: the pump's counter when a panel last stopped the selection frame.
+        // FND-UI-051: the pump's counter when a panel stopped the selection frame. A panel that
+        // slides in over another finds the byte already set and leaves the frame as it was.
         int? heldCounter = null;
-        _process.SetBreakpoint(OriginalAddresses.PanelHoldsSelectionFrame,
-            _ => heldCounter = _process.ReadInt32(OriginalAddresses.PumpCounter), quiet: true);
+        _process.SetBreakpoint(OriginalAddresses.PanelHoldsSelectionFrame, _ =>
+        {
+            if (_process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0)
+                heldCounter = _process.ReadInt32(OriginalAddresses.PumpCounter);
+        }, quiet: true);
+        // FND-UI-052: the frame pointer of Item Information's handler while it runs. Its frame
+        // local is read from memory around the capture, since a breakpoint's report reaches the
+        // probe only after the game has gone on drawing.
+        uint? itemHandler = null;
+        _process.SetBreakpoint(OriginalAddresses.ItemFrameStarts, context => itemHandler = context.Ebp, quiet: true);
+        _process.SetBreakpoint(OriginalAddresses.ItemInformationReturns, _ => itemHandler = null, quiet: true);
+        int? ItemFrame() => itemHandler is { } frame
+            ? _process.ReadInt32(frame - OriginalAddresses.ItemFrameLocal)
+            : null;
         foreach (var step in settings.OrderSteps!)
         {
             if (step.Kind == "shot")
             {
                 // A capture moves nothing, so it is not a post-dump step of the marker log.
                 var file = $"capture-step-{_orderSteps.Count}";
-                var shot = CaptureDrawingArea(window, file) is var (marker, pump, lamps, selected)
+                var itemBefore = ItemFrame();
+                var area = CaptureDrawingArea(window, file);
+                var itemFrame = ItemFrame() == itemBefore ? itemBefore : null;
+                if (itemBefore is not null && itemFrame is null)
+                    _notes.Add($"{file}: the Item Information frame moved during the capture.");
+                var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
-                        _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter)
+                        _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,
+                        itemFrame)
                     : null;
                 _orderSteps.Add(new OrderStepRecord(step, -1, null,
                     _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),

@@ -266,7 +266,7 @@ public sealed partial class ChaosGame
             _commandPanelFace = CommandPanelFaceState.NotDrawn;
             _pressedCommandPanelButton = null;
             if (action == GangAction.Equip) OpenEquipmentPurchasePanel();
-            else if (action == GangAction.Research) SelectEquipmentCategory(0);
+            else if (action == GangAction.Research) OpenResearchPanel();
             else if (action == GangAction.Move) OpenMovementPanel();
             else if (action == GangAction.Influence) OpenInfluencePanel();
             if (action == GangAction.Attack) OpenAttackPicker();
@@ -510,6 +510,8 @@ public sealed partial class ChaosGame
             batch.Draw(background, EquipmentCommandLayout.Panel, Color.White);
         else
             batch.Draw(pixel, EquipmentCommandLayout.Panel, new Color(0, 0, 0, 248));
+        // SCR-RESEARCH-001, EXP-UI-009: the item list is written on a black area.
+        if (action == GangAction.Research) batch.Draw(pixel, EquipmentCommandLayout.ResearchListArea, Color.Black);
         var actor = state.FindGang(_commandTargetOptions[0].Gang)!;
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, EquipmentCommandLayout.Portrait,
@@ -598,9 +600,8 @@ public sealed partial class ChaosGame
             _commandPanelFace = CommandPanelFaceState.Disabled;
             return;
         }
-        if (_state is null) return;
-        var indices = EquipmentCommandIndices(_state);
-        if (indices.Count > 0) _commandTargetCursor = indices[0];
+        // SCR-RESEARCH-001: choosing a category leaves no row selected.
+        _commandTargetCursor = -1;
     }
 
     private static string FormatCommandTargets(MatchState state, GameCommand command)

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-004, FND-UI-006, FND-UI-011, FND-UI-013, FND-UI-024, FND-UI-023, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-004, FND-UI-006, FND-UI-011, FND-UI-013, FND-UI-024, FND-UI-023, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-052, EXP-UI-009]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-004]
@@ -16,7 +16,7 @@ related: [RULE-UI-003, RULE-UI-004]
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Panel with its labels | `DATA/PX16/PX05001`, its left 320 pixels | None | `(128,124,320,209)` once slid in | Always | FND-UI-004, FND-UI-011 |
-| Rotating item | The item's `DATA/PX16/PX04xxx` strip of fifteen 48-by-48 frames | The item's picture, frame 0 to 14 in turn, wrapping | `(162,141,48,48)` | Always | FND-UI-004 |
+| Rotating item | The item's `DATA/PX16/PX04xxx` strip of fifteen 48-by-48 frames | The item's picture, frame 0 when the panel opens and the next frame each time the timer flag is taken, frame 0 after frame 14 | `(162,141,48,48)` | Always | FND-UI-004, FND-UI-052 |
 | Item name | The font strip of `DATA/PX16/PX00129` | The name in the item's `DATA/ITEMS` record | From `(228,151)` | Always | FND-UI-004 |
 | Item type | The font strip of `DATA/PX16/PX00129` | The item's type, string-table entry 25 plus the record's `type` [FND-UI-013] | Right-aligned to x 408 on the name's row | Always | FND-UI-004 |
 | Description | The font strip of `DATA/PX16/PX00129` | The three 30-character description rows of the item's record, as stored | From x 228 on rows 169, 178 and 187 | Always | FND-UI-004 |

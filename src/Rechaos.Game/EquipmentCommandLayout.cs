@@ -20,6 +20,9 @@ public static class EquipmentCommandLayout
         return visibleCategoryIndices.Contains(selectedIndex);
     }
 
+    /// <summary>SCR-RESEARCH-001: the black area the item list is written on.</summary>
+    public static Rectangle ResearchListArea => SharedPanelLayout.At(147, 25, 181, 144);
+
     public static string ResearchProgress(int difficulty, int remaining)
     {
         if (difficulty <= 0) throw new ArgumentOutOfRangeException(nameof(difficulty));

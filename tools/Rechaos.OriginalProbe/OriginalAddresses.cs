@@ -220,6 +220,12 @@ internal static class OriginalAddresses
     // leaves the selection frame as it was.
     public const uint SelectionFrameHeld = 0x004854C8;
     public const uint PanelHoldsSelectionFrame = 0x004196E4;
+
+    // FND-UI-052: Item Information sets its frame local [ebp-0x134] to 0 at 0x0044B6AC and
+    // returns at 0x0044C475.
+    public const uint ItemFrameStarts = 0x0044B6AC;
+    public const uint ItemFrameLocal = 0x134;
+    public const uint ItemInformationReturns = 0x0044C475;
     public const uint Cash = 0x004A25E8;
 
     // FND-OPTIONS-001: Slide Panels, read by the panel helpers that slide a panel in and out.

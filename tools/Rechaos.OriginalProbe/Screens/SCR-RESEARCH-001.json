@@ -1,0 +1,9 @@
+{
+  "screen": "SCR-RESEARCH-001",
+  "state": "The detailed sector screen of player 0 with the Research panel open on category 0 and no row selected",
+  "elements": [
+    {"element": "Research panel with item categories and a fixed sixteen-row item list", "rect": [0, 0, 640, 460]},
+    {"element": "Gang portrait", "rect": [130, 141, 64, 64]},
+    {"element": "Item list, sixteen fixed rows", "rect": [251, 149, 181, 144]}
+  ]
+}

@@ -94,6 +94,9 @@ public sealed record ScreenCaptureRecord(
     /// </summary>
     public int? FrameCounter { get; init; } = PumpCounter;
 
+    /// <summary>FND-UI-052: the frame of Item Information's rotating item, when a shot shows it.</summary>
+    public int? ItemFrame { get; init; }
+
     public override string ToString() => Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
 
     // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
@@ -155,6 +158,9 @@ public sealed record ScreenCaptureRecord(
             FrameCounter = capture.TryGetProperty("frame_counter", out var frame)
                 ? frame.ValueKind == JsonValueKind.Number ? frame.GetInt32() : null
                 : pump.ValueKind == JsonValueKind.Number ? pump.GetInt32() : null,
+            ItemFrame = capture.TryGetProperty("item_frame", out var item) && item.ValueKind == JsonValueKind.Number
+                ? item.GetInt32()
+                : null,
         };
     }
 
@@ -163,8 +169,20 @@ public sealed record ScreenCaptureRecord(
     // sector's cell (FND-UI-015), a press at a card's or the window's point, a double-click at a
     // window's point, and the back control.
     // Its reference frame never opens the result panels the planning entry would open first, so
-    // the presses of their Exit are left out. A press that opened one of the original's popup
-    // menus has no counterpart, since the rebuild's orders are a panel (DEV-UI-021).
+    // the presses of their Exit are left out. The rebuild's orders are a panel (DEV-UI-021): a
+    // card's order menu (menu 1) whose choice opens a picker (FND-UI-021) is replayed as the card
+    // press and a press on that order's row of the panel, which opens the same picker. Any other
+    // popup menu has no counterpart.
+    // FND-UI-021: menu 1 lists the one-off orders by their codes.
+    private const int OrderMenu = 1;
+
+    private static int IndexOf(IReadOnlyList<GangAction> actions, GangAction action)
+    {
+        for (var index = 0; index < actions.Count; index++)
+            if (actions[index] == action) return index;
+        throw new ArgumentOutOfRangeException(nameof(action));
+    }
+
     private static IEnumerable<ScreenCaptureRecord> StepCaptures(string experiment, int run, JsonElement[] steps)
     {
         var clicks = new List<ReferenceClick>();
@@ -173,7 +191,12 @@ public sealed record ScreenCaptureRecord(
         {
             var step = steps[index];
             int Number(string name) => step.GetProperty(name).GetInt32();
-            if (step.GetProperty("menu").GetInt32() > 0)
+            var menu = step.GetProperty("menu").GetInt32();
+            var pickerOrder = menu == OrderMenu && step.GetProperty("kind").GetString() == "card"
+                && CommandOverlayLayout.OpensTargetPicker((GangAction)Number("choice"))
+                    ? (GangAction?)Number("choice")
+                    : null;
+            if (menu > 0 && pickerOrder is null)
                 unreplayable ??= $"step {index} opened popup menu {step.GetProperty("menu").GetInt32()}, which the rebuild draws as a panel (DEV-UI-021)";
             switch (step.GetProperty("kind").GetString())
             {
@@ -187,6 +210,9 @@ public sealed record ScreenCaptureRecord(
                     clicks.Add(new ReferenceClick(new Point(
                         SectorGangCardLayout.Left + card % 2 * SectorGangCardLayout.ColumnStride + Number("x"),
                         SectorGangCardLayout.Top + card / 2 * SectorGangCardLayout.RowStride + Number("y"))));
+                    if (pickerOrder is { } order)
+                        clicks.Add(new ReferenceClick(CommandOverlayLayout.ActionRow(
+                            IndexOf(CommandOverlayLayout.ActionsFor(recurring: false), order)).Center));
                     break;
                 case "strip":
                     clicks.Add(new ReferenceClick(new Point(Number("x"), Number("y"))));
@@ -247,6 +273,12 @@ public static class ScreenCaptureMasks
             ["SCR-OBJECTIVE-001"] = [],
             ["SCR-SEARCH-001"] = [],
             ["SCR-HIRE-001"] = [],
+            ["SCR-MOVE-001"] = [],
+            ["SCR-EQUIP-001"] = [],
+            // The progress beside each total, right-aligned to the list's edge, up to "100/100".
+            ["SCR-RESEARCH-001"] = [new CaptureMask("DEV-RESEARCH-001", new Rectangle(388, 149, 44, 144))],
+            ["SCR-UI-006"] = [],
+            ["SCR-GANG-001"] = [],
             ["SCR-GANG-002"] = [],
         };
 
@@ -362,7 +394,7 @@ public static class RebuildFrame
 
     public static ScreenFrame Render(
         MatchState state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
-        int? pumpCounter = null, int? selectedSector = null)
+        int? pumpCounter = null, int? selectedSector = null, int? itemFrame = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -388,6 +420,11 @@ public static class RebuildFrame
             {
                 start.ArgumentList.Add("--selected-sector");
                 start.ArgumentList.Add(sector.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (itemFrame is { } item)
+            {
+                start.ArgumentList.Add("--item-frame");
+                start.ArgumentList.Add(item.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
             if (pumpCounter is { } counter)
             {
