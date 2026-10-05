@@ -21,12 +21,16 @@ public sealed partial class OriginalNewGameExperimentTests
         }
     }
 
-    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider)
+    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider, bool Retired = false)
     {
-        // "turn 2: player 1 gang slot 0 family 4" or "turn 1: player 3 raider_mode 1", as the
-        // probe writes them.
+        // "turn 2: player 1 gang slot 0 family 4", "turn 1: player 3 raider_mode 1" or "turn 1:
+        // player 3 player_active 0", as the probe writes them.
         public static RecordedPlanning Parse(string value)
         {
+            var retired = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) player_active 0$");
+            if (retired.Success)
+                return new(int.Parse(retired.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(retired.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), 0, 0, false, true);
             var raider = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([1-5]) raider_mode 1$");
             if (raider.Success)
                 return new(int.Parse(raider.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),

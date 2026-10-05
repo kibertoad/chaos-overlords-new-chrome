@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 23 |
-| `validated` | 194 |
+| `implemented` | 22 |
+| `validated` | 195 |
 
 | Code | Rows |
 |---|---|
@@ -411,7 +411,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AWARDS-001` | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-037, EXP-TURN-038, EXP-TURN-039 and EXP-TURN-058 end a match and compare each player's awards: the Safe, the Dollar Sign and, to a human that hid every turn, the Big Fat Chicken. No run gives a Fist or a Skull, or ties an award. |
 | `RULE-AWARDS-002` | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.Presentation.cs | None | validated | EXP-TURN-038 and EXP-TURN-039 compare the order and places of the endgame's rows with the original's, each with two players tied and a standing skipped, and EXP-TURN-058 with two players tied in last place. No recorded endgame has an eliminated player or a single survivor, so the eliminated rows and the victory splash are not compared. |
 | `SCR-AWARDS-001` | Endgame screen listing the players by place with their awards or their statistics | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-SETUP-002` | validated | ScreenCaptureTests compares the endgame of a Big Man match that ended at its last turn, on the Awards tab, the Stats tab and the Awards tab again (EXP-UI-017), with the original, and no element differs; no capture shows an eliminated row or the endgame after an elimination card. |
-| `SCR-AWARDS-002` | Victory splash shown on the endgame's Awards tab when one player is left | supported | complete | None | None | implemented | None |
+| `SCR-AWARDS-002` | Victory splash shown on the endgame's Awards tab when one player is left | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | ScreenCaptureTests compares the frame, tab mark, splash, colour fills, name and portrait of the EXP-UI-023 capture, a match the probe ended by clearing the computers' `player_active`, with the rebuild's endgame, and no element differs. No capture shows a computer survivor or a tab pressed. |
 
 ## TIMER
 

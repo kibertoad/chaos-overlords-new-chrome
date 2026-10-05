@@ -169,6 +169,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-020](../experiments/EXP-UI-020.md) | builds |
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | builds |
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | builds |
+| [EXP-UI-023](../experiments/EXP-UI-023.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -1280,6 +1281,7 @@ None.
 | [EXP-UI-020](../experiments/EXP-UI-020.md) | body |
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | body |
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | body |
+| [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
 
 ## EXP-TURN-002
 
@@ -2393,6 +2395,12 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-UI-007](../rules/RULE-UI-007.md) | body, evidence |
+
+## EXP-UI-023
+
+| Cited by | In |
+|---|---|
+| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
@@ -4095,6 +4103,7 @@ None.
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
+| [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 
@@ -6750,6 +6759,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
 | [FND-AI-056](../findings/FND-AI-056.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: player_active | glossary |
@@ -8342,6 +8352,7 @@ None.
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
+| [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, related |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, related |
 
@@ -9374,6 +9385,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | body, related |
 
 ## RULE-UI-001
@@ -9573,6 +9585,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body, related |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, related |
 

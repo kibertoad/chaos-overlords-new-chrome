@@ -299,6 +299,8 @@ internal static class OriginalAddresses
     // FND-COMLINK-010: set while the Send panel's caret cell is drawn plain.
     public const uint ComlinkCaretPlain = 0x00498110;
     public const uint ActivePlayer = 0x004ABC84;
+    // FND-STATE-004: player_active, one byte per player slot.
+    public const uint PlayerActive = 0x004ABBE0;
 
     // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler
     // fn_0045EAB1; FND-COMLINK-004: the helper fn_0045E04D(player, count) that marks and draws one

@@ -30,7 +30,7 @@ static int Usage()
               [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
               [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer_slot:sector>,...] [--sound]
-              [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...]
+              [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...]
               [--search <turn:definition+definition...>,...]
               [--finance <turn:sector>,...]
               [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture] [--white-key]
@@ -78,7 +78,7 @@ static int NewGame(string[] args)
         Option(args, "--orders") is { } orders ? ParseOrders(orders) : null,
         args.Contains("--sound"),
         Option(args, "--hires") is { } hires ? ParseHires(hires) : null,
-        ParsePlanning(Option(args, "--families"), Option(args, "--raiders")),
+        ParsePlanning(Option(args, "--families"), Option(args, "--raiders"), Option(args, "--retire")),
         Option(args, "--finance") is { } finance ? ParseFinance(finance) : null,
         Option(args, "--search") is { } search ? ParseSearch(search) : null,
         IntOption(args, "--time-limit"),
@@ -350,7 +350,7 @@ static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnly
 
 // --families turn:player:slot:family,... writes a planning record's family; --raiders
 // turn:player,... sets a player's raider_mode (ProbePlanning).
-static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders)
+static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired)
 {
     static int[] Numbers(string entry) =>
         entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
@@ -368,6 +368,13 @@ static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? rai
         if (parts.Length != 2 || parts[1] is < 1 or > 5)
             throw new FormatException($"A raider needs a turn and a player 1 to 5: {entry}");
         writes.Add(new ProbePlanning(parts[0], parts[1], 0, ProbePlanning.Raider));
+    }
+    foreach (var entry in (retired ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var parts = Numbers(entry);
+        if (parts.Length != 2 || parts[1] is < 0 or > 5)
+            throw new FormatException($"A retired player needs a turn and a player 0 to 5: {entry}");
+        writes.Add(new ProbePlanning(parts[0], parts[1], 0, ProbePlanning.Retired));
     }
     return writes.Count == 0 ? null : writes;
 }
