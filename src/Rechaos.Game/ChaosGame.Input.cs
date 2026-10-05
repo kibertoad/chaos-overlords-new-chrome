@@ -179,7 +179,7 @@ public sealed partial class ChaosGame
                 CloseSellEquipment();
                 break;
             case ClientScreen.Search:
-                CancelSiteSearch();
+                CloseSiteSearch();
                 break;
         }
     }

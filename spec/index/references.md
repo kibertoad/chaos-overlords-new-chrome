@@ -140,6 +140,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-096](../experiments/EXP-TURN-096.md) | builds |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | builds |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | builds |
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | builds |
 | [EXP-UI-004](../experiments/EXP-UI-004.md) | builds |
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | builds |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | builds |
@@ -2064,8 +2065,13 @@ None.
 | [EXP-SEARCH-001](../experiments/EXP-SEARCH-001.md) | body |
 | [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | body |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 
 ## EXP-UI-002
+
+None.
+
+## EXP-UI-003
 
 None.
 
@@ -5754,6 +5760,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 | [RULE-GFX-003](../rules/RULE-GFX-003.md) | body, evidence |
 
 ## FND-POLICE-001
@@ -6796,7 +6803,7 @@ None.
 | [FND-UI-019](../findings/FND-UI-019.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
 | glossary: viewed_player | glossary |
-| [RULE-UI-006](../rules/RULE-UI-006.md) | body |
+| [RULE-UI-006](../rules/RULE-UI-006.md) | body, evidence |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
@@ -9160,6 +9167,7 @@ None.
 |---|---|
 | [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, related |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, related |
@@ -9278,6 +9286,7 @@ None.
 |---|---|
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
 | [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, related |

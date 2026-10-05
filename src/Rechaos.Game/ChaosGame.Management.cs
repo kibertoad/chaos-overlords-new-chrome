@@ -133,8 +133,6 @@ public sealed partial class ChaosGame
         CloseSiteSearch();
     }
 
-    private void CancelSiteSearch() => CloseSiteSearch();
-
     // FND-SEARCH-004: closing the panel draws the whole city again, gang-status markers included
     // (RULE-UI-006).
     private void CloseSiteSearch()

@@ -4,7 +4,7 @@ title: Choosing a sector's gang-status marker
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-031, FND-UI-024, FND-UI-026, FND-DETECT-001, FND-HIRE-001, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-017, FND-HIRE-008, FND-SEARCH-004, EXP-UI-004, EXP-UI-005]
+evidence: [FND-UI-031, FND-UI-024, FND-UI-026, FND-DETECT-001, FND-HIRE-001, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-015, FND-UI-017, FND-HIRE-008, FND-SEARCH-004, EXP-UI-004, EXP-UI-005]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -27,8 +27,9 @@ sector in number order when a human's planning starts, after `0x004906A4` is
 set to -1 (FND-UI-024), and when the Search panel closes (FND-SEARCH-004).
 Between those, the Hire dock's redraw `fn_00417CBA` runs after every change of
 the player's hire orders and draws the marker of the sector it last kept,
-which is -1 when no offer was ordered into a sector, then of each sector an
-offer is now ordered into, keeping it (FND-UI-017, FND-HIRE-008); and an
+which is -1 when no offer was ordered into a sector, then keeps the sector an
+offer is now ordered into, or -1 when none is, and draws that one's marker
+(FND-UI-017, FND-HIRE-008, EXP-UI-004); and an
 order given on the detailed sector screen draws the marker of the selected
 sector (FND-UI-015).
 
@@ -86,7 +87,7 @@ presence.
   last sector given frame 8, and since an offer without an order holds -1 in
   `hire_orders`, it then draws frame 8 off the map and remembers -1. The dock
   makes this call whenever no offer was ordered into a sector before the
-  change.
+  change, and again after it, so a Reject press ends with it.
 - Between full draws, frame 8 stays on a sector from the dock's redraw that
   gave it until the next drawing of a sector without the player's gangs, -1
   included. A change of the hire order that moves the hire elsewhere draws the
