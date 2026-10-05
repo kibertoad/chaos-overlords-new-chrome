@@ -256,6 +256,7 @@ public static class HandoffLayout
     public static Point Name => new(293, 155);
     public static Rectangle Portrait => new(293, 163, 64, 64);
     public static Rectangle Ready => new(270, 241, 100, 48);
+    public static Rectangle ReadyPressedSource => new(388, 512, 100, 48);
 }
 
 public sealed class IndexedDoubleClickTracker

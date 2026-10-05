@@ -379,6 +379,7 @@ public sealed partial class UiNavigationTests
         Assert.Equal(new Point(293, 155), HandoffLayout.Name);
         Assert.Equal(new Rectangle(293, 163, 64, 64), HandoffLayout.Portrait);
         Assert.Equal(new Rectangle(270, 241, 100, 48), HandoffLayout.Ready);
+        Assert.Equal(new Rectangle(388, 512, 100, 48), HandoffLayout.ReadyPressedSource);
         Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Portrait));
         Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Ready));
     }

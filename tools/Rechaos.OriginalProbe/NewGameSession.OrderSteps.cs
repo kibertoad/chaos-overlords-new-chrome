@@ -100,7 +100,7 @@ internal sealed partial class NewGameSession
                 var area = CaptureDrawingArea(window, file);
                 var itemFrame = (ItemFrame() ?? CaretFrame(step)) == itemBefore ? itemBefore : null;
                 if (itemBefore is not null && itemFrame is null)
-                    _notes.Add($"{file}: the item pictures' frame moved during the capture.");
+                    _notes.Add($"{file}: the item frame (item pictures, idle warning or caret phase) moved during the capture.");
                 var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
                         _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,
