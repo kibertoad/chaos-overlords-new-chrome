@@ -56,8 +56,11 @@ public sealed partial class OriginalNewGameExperimentTests
                 }
                 label = $"after the press at ({press.X}, {press.Y})";
             }
-            Assert.True(OriginalMarkers(recorded, step).SequenceEqual(map.Frames(match, human, sight)),
-                $"{label}: the original shows {Describe(OriginalMarkers(recorded, step))}, the rebuild {Describe(map.Frames(match, human, sight))}");
+            // Frames takes the dock's redraws, so it is called once for each step.
+            var original = OriginalMarkers(recorded, step);
+            var rebuilt = map.Frames(match, human, sight);
+            Assert.True(original.SequenceEqual(rebuilt),
+                $"{label}: the original shows {Describe(original)}, the rebuild {Describe(rebuilt)}");
         }
     }
 

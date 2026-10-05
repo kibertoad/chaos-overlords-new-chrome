@@ -416,6 +416,7 @@ internal sealed partial class NewGameSession(
         }
 
         DumpWritableSections();
+        _gangMarkersDumped = true;
         _panelsAtDump = [.. _panels];
         if (settings.Capture) CaptureDrawingArea(window);
         if (settings.EquipLists && !RecordEquipLists()) return Finish(false, "The Equip lists were not built.", rollsBeforeBegin);

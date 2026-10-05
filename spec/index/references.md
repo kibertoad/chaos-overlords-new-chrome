@@ -6745,7 +6745,7 @@ None.
 | [FND-UI-019](../findings/FND-UI-019.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
 | glossary: viewed_player | glossary |
-| [RULE-UI-006](../rules/RULE-UI-006.md) | body |
+| [RULE-UI-006](../rules/RULE-UI-006.md) | body, evidence |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
