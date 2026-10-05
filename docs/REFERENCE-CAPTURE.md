@@ -6,6 +6,10 @@ Windows as a pixel-parity oracle. It records short bursts of the visible client
 area so stable gameplay values can be distinguished from transient graphical
 corruption.
 
+A capture that a test compares with the rebuild pixel for pixel is taken by
+the original probe instead, at a known experiment state; see
+[Screens against captures of the original](VALIDATION.md#screens-against-captures-of-the-original).
+
 For the original game's exclusive compatibility mode, start the helper before
 launching the game. Open PowerShell as Administrator and run:
 
