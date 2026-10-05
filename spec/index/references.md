@@ -2400,6 +2400,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 
 ## FMT-AUDIO-001

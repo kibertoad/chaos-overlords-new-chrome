@@ -281,6 +281,12 @@ public sealed partial class OriginalNewGameExperimentTests
             Assert.Equal(recorded.Term("reaction", slot), match.AiStrategy.Reaction(player.Id));
             Assert.Equal(recorded.Term("difficulty_band", slot), (int)OriginalResolutionRules.Band(match, player.Id));
             Assert.Equal(recorded.Term("hire_force_modifier", slot) != 0, player.UsesMaximumHireForce);
+            // FND-STATE-004, RULE-TURN-006: a player is out of the match once its player_active
+            // byte is 0, whether the elimination check or a --retire write cleared it.
+            if (recorded.HasTerm("player_active", slot))
+                Assert.True(
+                    (recorded.Term("player_active", slot) != 0) == (player.Status == PlayerStatus.Active),
+                    $"player_active of player {slot}: the original holds {recorded.Term("player_active", slot)}, the rebuild {player.Status}");
             foreach (var other in match.Players)
                 Assert.Equal(
                     recorded.Term("attitude", slot * 6 + other.Id.Value),

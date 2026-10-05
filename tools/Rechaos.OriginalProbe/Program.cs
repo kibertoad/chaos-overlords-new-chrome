@@ -349,7 +349,8 @@ static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnly
 }
 
 // --families turn:player:slot:family,... writes a planning record's family; --raiders
-// turn:player,... sets a player's raider_mode (ProbePlanning).
+// turn:player,... sets a player's raider_mode; --retire turn:player,... clears a player's
+// player_active (ProbePlanning).
 static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired)
 {
     static int[] Numbers(string entry) =>
