@@ -293,7 +293,7 @@
 
 ## recorded
 
-447 entries.
+454 entries.
 
 | ID | Title |
 |---|---|
@@ -387,6 +387,13 @@
 | [EXP-TURN-084](../experiments/EXP-TURN-084.md) | Does a family-14 computer gang on a contested objective draw even when the pool is empty, as the static reading gives? |
 | [EXP-TURN-085](../experiments/EXP-TURN-085.md) | Does a Greed computer player force a hunter hire when a hostile human gang is in sight, as the spec gives? |
 | [EXP-TURN-086](../experiments/EXP-TURN-086.md) | Does a Dominance computer player force a hunter hire when a hostile human gang is in sight, as the spec gives? |
+| [EXP-TURN-087](../experiments/EXP-TURN-087.md) | Does a family-4 computer gang whose attack draw fails its strength test give up the Attack, as the spec gives? |
+| [EXP-TURN-088](../experiments/EXP-TURN-088.md) | Does a family-7 computer gang that draws a target it cannot or will not attack go on with its research, as the spec gives? |
+| [EXP-TURN-089](../experiments/EXP-TURN-089.md) | Does a family-5 computer gang whose attack draw fails its strength test give up the Attack, as the spec gives? |
+| [EXP-TURN-090](../experiments/EXP-TURN-090.md) | Does the original carry out a computer player's hire into a sector it neither controls nor holds a gang in? |
+| [EXP-TURN-091](../experiments/EXP-TURN-091.md) | Does a family-0 computer gang whose weight-10 attack draw fails its strength test give up the Attack, as the spec gives? |
+| [EXP-TURN-093](../experiments/EXP-TURN-093.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs, as the spec gives? |
+| [EXP-TURN-094](../experiments/EXP-TURN-094.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs in Big Man, as the spec gives? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |

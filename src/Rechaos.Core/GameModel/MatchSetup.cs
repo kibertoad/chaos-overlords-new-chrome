@@ -23,7 +23,8 @@ public sealed class MatchSetup
         AiDifficulty aiMentality = AiDifficulty.Criminal,
         bool allowSparsePlayerIds = false,
         AiPolicyMode aiPolicy = AiPolicyMode.Original,
-        bool computerMovesToNeighboursOnly = true)
+        bool computerMovesToNeighboursOnly = true,
+        bool computerHiresWhereHumansCan = true)
     {
         ArgumentNullException.ThrowIfNull(players);
         if (players.Count is < 1 or > MatchLimits.PlayerCount)
@@ -55,6 +56,7 @@ public sealed class MatchSetup
         AiMentality = aiMentality;
         AiPolicy = aiPolicy;
         ComputerMovesToNeighboursOnly = computerMovesToNeighboursOnly;
+        ComputerHiresWhereHumansCan = computerHiresWhereHumansCan;
         AllowsSparsePlayerIds = allowSparsePlayerIds;
     }
 
@@ -71,6 +73,14 @@ public sealed class MatchSetup
     /// No screen offers it; the game's command line and the tests switch it off.
     /// </summary>
     public bool ComputerMovesToNeighboursOnly { get; }
+
+    /// <summary>
+    /// DEV-AI-008: whether a computer player's hire must go to a sector it controls or holds a gang
+    /// in, as a human's does. Off, a computer seat's hire goes to the sector the planner chose, as
+    /// in the original (RULE-AI-012, RULE-HIRE-001); a human seat the planner plays for a
+    /// simulation keeps the human test either way.
+    /// </summary>
+    public bool ComputerHiresWhereHumansCan { get; }
     public bool AllowsSparsePlayerIds { get; }
 
     internal MatchSetup WithController(PlayerId playerId, PlayerController controller)
@@ -88,6 +98,7 @@ public sealed class MatchSetup
             AiMentality,
             AllowsSparsePlayerIds,
             AiPolicy,
-            ComputerMovesToNeighboursOnly);
+            ComputerMovesToNeighboursOnly,
+            ComputerHiresWhereHumansCan);
     }
 }

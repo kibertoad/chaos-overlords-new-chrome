@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-05 | [Switch DEV-AI-008 off from the command line only](#2026-10-05--switch-dev-ai-008-off-from-the-command-line-only) |
 | 2026-10-04 | [Switch DEV-AI-007 off from the command line only](#2026-10-04--switch-dev-ai-007-off-from-the-command-line-only) |
 | 2026-09-26 | [Keep a replay load's random state and inboxes](#2026-09-26--keep-a-replay-loads-random-state-and-inboxes) |
 | 2026-09-26 | [Keep the original hunter guard and drop DEV-AI-001](#2026-09-26--keep-the-original-hunter-guard-and-drop-dev-ai-001) |
@@ -40,6 +41,20 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-05 — Switch DEV-AI-008 off from the command line only
+
+- Decision: DEV-AI-008 (a computer player hires only where a human could) is a setting that starts
+  on, switched off by `--original-computer-hires` on the game's command line. No screen offers
+  it. The match setup carries it, so saves, replay journals and state fingerprints record it;
+  online matches keep it on.
+- Reason: the default follows a simulation of the computer players' win rates against a
+  planner-played human seat that keeps the human rule, run with the setting on and off. The
+  original's behaviour would have stayed the default had the win rates differed; they did not,
+  and no computer hire in the simulation used the freedom, so the fair rule is the default and
+  an Options entry would add clutter for nothing.
+- Boundary: the flag reaches local matches started in the session it is given to. A loaded save
+  or journal keeps the value it was started with.
 
 ## 2026-10-04 — Switch DEV-AI-007 off from the command line only
 
