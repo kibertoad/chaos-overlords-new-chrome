@@ -47,9 +47,12 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 
 ## 2026-10-06 — Count a row its mandatory deviations replace as deviated
 
-- A parity row whose Code is complete and whose Tests is None is `deviated`
-  when it lists a `mandatory` deviation and every `mandatory` deviation it
-  lists has a Tests item. Otherwise it stays `implemented`.
+- A `mandatory` deviation may name, in a Replaces item, the entries of its
+  Departs from that it replaces entirely. A complete parity row such an item
+  names has no tests of its own, and it is `deviated` once every `mandatory`
+  deviation it lists has a Tests item. Until then it stays `implemented`. A row
+  a deviation changes only in part keeps the rest to compare with the
+  original, so it needs parity tests as before.
 - A deviation's Tests item lists the test files that check the rebuild does
   what the deviation's Reason says. Each file cites the deviation's ID. These
   tests compare the rebuild with the deviation, so they are not parity tests
@@ -59,10 +62,10 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   compare with, so under version 1 of the documentation standard it stays
   `implemented` however finished it is. `deviated` marks it as done, and the
   Tests item makes sure the replacement does what the deviation log claims.
-- The change is proposed upstream as a minor version of the standard
+- The rule is the documentation standard's, a minor version of version 1
   (kibertoad/refurbished-dinosaurs#58, with the checker in
   kibertoad/refurbished-dinosaurs-toolkit#291). `tools/check-spec.mjs` applies
-  it here ahead of that release.
+  it the same way, and `docs/upstream/` holds the standard's text.
 
 ## 2026-10-05 — Capture the original with the 32-bit white key
 
