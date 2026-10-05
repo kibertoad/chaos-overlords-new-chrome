@@ -293,7 +293,7 @@ public sealed partial class OriginalNewGameExperimentTests
     // drawing lists, in drawing order, and whether the row is ranked, eliminated or the victory
     // splash. The rebuild's endgame lists the same players in the same order and places.
     // EXP-TURN-038 has two players tied at standing 0 and EXP-TURN-039 two tied at standing 1,
-    // listed in slot order.
+    // listed in slot order. EXP-UI-023 ends with one player active and draws only its splash.
     [Theory]
     [MemberData(nameof(EndgameRuns))]
     public void TheEndgameListsThePlayersInTheOriginalsOrder(string experiment, int run)

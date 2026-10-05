@@ -376,6 +376,7 @@ public static class ScreenCaptureMasks
             ["SCR-COMLINK-001"] = [],
             ["SCR-COMLINK-002"] = [],
             ["SCR-AWARDS-001"] = [],
+            ["SCR-AWARDS-002"] = [],
             ["SCR-OBJECTIVE-002"] = [],
             ["SCR-INFLUENCE-001"] = [],
             ["SCR-GANG-002"] = [],

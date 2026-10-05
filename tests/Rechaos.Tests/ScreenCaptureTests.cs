@@ -47,7 +47,8 @@ public sealed partial class ScreenCaptureTests
     // EXP-UI-020 compare the Detailed Combat panel SCR-COMBAT-002 at the ticks of a gang's clip and
     // a police clip the console's control started, the rebuild's clip drawn at the captured tick
     // (FND-COMBAT-016). EXP-UI-021 compares Comlink View SCR-COMLINK-001 on a message one human
-    // typed and sent the other, the text typed into the rebuild's Send panel.
+    // typed and sent the other, the text typed into the rebuild's Send panel. EXP-UI-023 compares
+    // the victory splash SCR-AWARDS-002 of a match left with one active player.
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
