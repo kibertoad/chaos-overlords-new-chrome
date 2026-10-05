@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
@@ -14,16 +15,7 @@ public sealed class PlanningTimerLoopTests
     [Fact]
     public void AnOpenPanelOrAHeldOfferDefersTheExpiry()
     {
-        var state = OriginalNewGameExperimentTests.ReplayedMatch("EXP-SETUP-001", 0);
-        Assert.Equal(TurnPhase.Command, state.Coordinator.Phase);
-        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
-        Field("_screens").SetValue(game, new ScreenRouter());
-        Field("_planningTimer").SetValue(game, new PlanningTimer());
-        Field("_state").SetValue(game, state);
-        var router = (ScreenRouter)Field("_screens").GetValue(game)!;
-        var timer = (PlanningTimer)Field("_planningTimer").GetValue(game)!;
-        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        var (game, router, timer) = TimedGame();
         var pastLimit = TimeSpan.FromSeconds(31);
 
         router.Show(ClientScreen.Commands);
@@ -58,18 +50,11 @@ public sealed class PlanningTimerLoopTests
     public void AGangHeldOnTheSectorViewDefersTheExpiryUntilItIsLetGo()
     {
         // FND-UI-044: a left press on the portrait of one of the player's cards waits in the
-        // individual command handler for the pointer to move two pixels or the button to come up,
-        // then follows the dragged gang until the button comes up, pumping window messages only.
+        // individual command handler for the pointer to leave the rectangle around the press or the
+        // button to come up, then follows the dragged gang until the button comes up, pumping
+        // window messages only.
         // The planning loop's expiry test runs again after the handler returns.
-        var state = OriginalNewGameExperimentTests.ReplayedMatch("EXP-SETUP-001", 0);
-        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
-        Field("_screens").SetValue(game, new ScreenRouter());
-        Field("_planningTimer").SetValue(game, new PlanningTimer());
-        Field("_state").SetValue(game, state);
-        var router = (ScreenRouter)Field("_screens").GetValue(game)!;
-        var timer = (PlanningTimer)Field("_planningTimer").GetValue(game)!;
-        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        var (game, router, timer) = TimedGame();
         var pastLimit = TimeSpan.FromSeconds(31);
         router.Show(ClientScreen.Sector);
 
@@ -86,6 +71,45 @@ public sealed class PlanningTimerLoopTests
         Field("_gangDragStarted").SetValue(game, false);
         Field("_draggedGangId").SetValue(game, null);
         Assert.True(AtPlanningLoopPass(game));
+    }
+
+    [Fact]
+    public void AGangHoldLetGoByACancelDefersTheExpiryUntilTheButtonComesUp()
+    {
+        // FND-UI-044: the original's hold loops end only when the left button comes up, so the
+        // rebuild's Escape or right press, which drops the drag, leaves the expiry test waiting.
+        var (game, router, timer) = TimedGame();
+        var pastLimit = TimeSpan.FromSeconds(31);
+        router.Show(ClientScreen.Sector);
+        Field("_draggedGangId").SetValue(game, new GangId(0));
+        Field("_previousMouse").SetValue(game, new MouseState(
+            0, 0, 0, ButtonState.Pressed, ButtonState.Released, ButtonState.Released,
+            ButtonState.Released, ButtonState.Released));
+
+        Method("CancelCurrentInteraction").Invoke(game, [null]);
+        Assert.Null(Field("_draggedGangId").GetValue(game));
+        Assert.False(UpdatePlanningTimer(game, pastLimit));
+        Assert.True(timer.IsActive);
+
+        // The button comes up.
+        Field("_leftHoldOutlivesCancel").SetValue(game, false);
+        Assert.True(AtPlanningLoopPass(game));
+    }
+
+    /// <summary>A game on a human player's planning turn with a 30-second limit started at zero.</summary>
+    private static (ChaosGame Game, ScreenRouter Router, PlanningTimer Timer) TimedGame()
+    {
+        var state = OriginalNewGameExperimentTests.ReplayedMatch("EXP-SETUP-001", 0);
+        Assert.Equal(TurnPhase.Command, state.Coordinator.Phase);
+        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
+        GC.SuppressFinalize(game);
+        var router = new ScreenRouter();
+        var timer = new PlanningTimer();
+        Field("_screens").SetValue(game, router);
+        Field("_planningTimer").SetValue(game, timer);
+        Field("_state").SetValue(game, state);
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        return (game, router, timer);
     }
 
     private static bool UpdatePlanningTimer(ChaosGame game, TimeSpan now) =>

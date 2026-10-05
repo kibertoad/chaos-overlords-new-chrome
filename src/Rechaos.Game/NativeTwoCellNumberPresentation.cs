@@ -49,9 +49,11 @@ public static class NativeTwoCellNumberPresentation
     /// reads <c>&lt;3</c>. A quotient off the strip is returned in <see cref="Value.OffStripGlyph"/>
     /// instead of as a character. The arithmetic is the original's 32-bit arithmetic, so
     /// <see cref="int.MinValue"/> stays negative when negated and its quotients select glyphs below
-    /// the digits (FND-UI-045).
+    /// the digits (FND-UI-045). <paramref name="leadingZeros"/> is the helper's leading-zero flag,
+    /// which draws the cells before the first nonzero quotient as <c>0</c> instead of leaving them
+    /// out.
     /// </summary>
-    public static Value Format(int value, Kind kind = Kind.Modifier, int width = 2)
+    public static Value Format(int value, Kind kind = Kind.Modifier, int width = 2, bool leadingZeros = false)
     {
         if (width is < 1 or > 5)
             throw new ArgumentOutOfRangeException(nameof(width), "The recovered helpers support one to five glyph cells.");
@@ -60,7 +62,7 @@ public static class NativeTwoCellNumberPresentation
         for (var cell = 1; cell < width; cell++) divisor *= 10;
         var digits = new StringBuilder(width);
         int? offStrip = null;
-        var started = false;
+        var started = leadingZeros;
         for (var cell = 0; cell < width; cell++)
         {
             var quotient = remainder / divisor;

@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
@@ -369,7 +370,9 @@ public sealed partial class ChaosGame
     /// the console tile helper (FND-UI-032) and the sector view's back control (FND-UI-015); the
     /// idle-gang warning is answered before the test. A left press on the portrait of one of the
     /// player's gang cards runs the individual command handler's own loop until the button is
-    /// released, whether or not the gang is dragged (FND-UI-044).
+    /// released, whether or not the gang is dragged (FND-UI-044). The original's hold loops end only
+    /// when the button comes up, so a hold the rebuild's Escape or right press lets go of keeps the
+    /// test from running until then.
     /// </summary>
     private bool AtPlanningLoopPass() =>
         _screens.Current is ClientScreen.City or ClientScreen.Sector
@@ -378,7 +381,17 @@ public sealed partial class ChaosGame
         && _pressedHireRejectSlot is null
         && _pressedCityConsoleControl is null
         && _pressedPanelFace is null
-        && _draggedGangId is null;
+        && _draggedGangId is null
+        && !_leftHoldOutlivesCancel;
+
+    /// <summary>
+    /// Called by a cancel that lets go of one of the holds <see cref="AtPlanningLoopPass"/> counts,
+    /// so the planning loop stays out until the left button comes up (FND-UI-044, FND-HIRE-008).
+    /// </summary>
+    private void KeepLeftHoldUntilRelease()
+    {
+        if (_previousMouse.LeftButton == ButtonState.Pressed) _leftHoldOutlivesCancel = true;
+    }
 
     /// <summary>The screens that are not the match, where no planning clock is drawn or run.</summary>
     private bool LeftMatchScreen() =>

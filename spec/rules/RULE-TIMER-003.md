@@ -1,7 +1,7 @@
 ---
 id: RULE-TIMER-003
 title: The planning clock bar and its warning sounds
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-TIMER-001, FND-TIMER-003, FND-UI-023, FND-UI-044, FND-EXE-004, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052]
@@ -92,4 +92,6 @@ None known.
 
 ## Open questions
 
-None.
+- No recorded run holds an offer, a control taken by the held-button helper or
+  a gang card's portrait while the bar would be redrawn. The stopped bar and
+  silent warnings during a hold rest on the static reading of FND-UI-044 alone.

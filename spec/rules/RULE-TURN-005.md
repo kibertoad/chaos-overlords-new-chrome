@@ -100,8 +100,9 @@ an unfinished site of a sector the player owns, through the gang command's
 second input path, writes Influence into `action` and `repeat_action` and the
 site slot into `target` and `repeat_target` (FND-TURN-009). That path is a
 drag of the gang's portrait on the detailed sector screen with the left
-button, which starts once the pointer has moved two pixels from the press and
-gives its order where the button comes up (FND-UI-044).
+button, which starts once the pointer has moved two pixels right or down or
+three pixels left or up from the press and gives its order where the button
+comes up (FND-UI-044).
 
 Bribe and Snitch are never offered as recurring. If a recurring value of 2 or
 13 were stored some other way, the turn-start cleanup would keep it forever
