@@ -547,7 +547,10 @@ public sealed partial class ChaosGame
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: false);
         if (advanceToPlanning) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
         if (advanceToPlanning) PrepareCurrentHireOffers();
-        _cursor = _state.Players[0].Gangs[0].SectorId;
+        // A reference frame's save may stand where player 0 has lost every gang.
+        _cursor = _state.Players[0].Gangs.Count > 0
+            ? _state.Players[0].Gangs[0].SectorId
+            : Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
         _selectedGangIndex = 0;
         _message = string.Empty;
         _combatPresentationProgress.Clear();
@@ -559,7 +562,8 @@ public sealed partial class ChaosGame
         _resumedMatchTurn = null;
         _continuePlanningEntryAfterGameInfo = false;
         _deferComlinkAlertUntilPlanningVisible = false;
-        PresentHotSeatPlanningEntry();
+        if (_referenceFrame is not null) PresentReferenceFramePlanningEntry();
+        else PresentHotSeatPlanningEntry();
     }
 
     private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)

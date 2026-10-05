@@ -86,8 +86,13 @@ public sealed record ScreenCaptureRecord(
 {
     public override string ToString() => $"{Experiment} run {Run}";
 
+    // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
+    private static readonly Lazy<IReadOnlyList<ScreenCaptureRecord>> All = new(Load);
+
     /// <summary>Every capture the experiment fixtures beside the test binary record.</summary>
-    public static IReadOnlyList<ScreenCaptureRecord> LoadAll()
+    public static IReadOnlyList<ScreenCaptureRecord> LoadAll() => All.Value;
+
+    private static IReadOnlyList<ScreenCaptureRecord> Load()
     {
         var directory = Path.Combine(AppContext.BaseDirectory, "spec", "experiments");
         var records = new List<ScreenCaptureRecord>();

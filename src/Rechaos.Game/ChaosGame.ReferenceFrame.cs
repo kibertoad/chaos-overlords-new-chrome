@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 
 namespace Rechaos.Game;
@@ -85,17 +86,42 @@ public sealed partial class ChaosGame
         return true;
     }
 
+    /// <summary>
+    /// Shows the city of the player whose planning entry the save stands at. The hand-off card,
+    /// Combat Results and Last Turn Events that the planning entry would open first are skipped,
+    /// because the comparison only covers the city screen and its console. Hire offers, the
+    /// Comlink alert and the planning timer are prepared as the planning entry prepares them when
+    /// it goes straight to the city.
+    /// </summary>
+    private void PresentReferenceFramePlanningEntry()
+    {
+        if (PlanningViewer is { } playerId
+            && _state?.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human)
+        {
+            PrepareCurrentHireOffers();
+            _deferComlinkAlertUntilPlanningVisible = true;
+            _screens.Show(ClientScreen.City);
+            CompletePlanningEntryPresentation();
+            return;
+        }
+        _screens.Show(ClientScreen.City);
+    }
+
     private void CaptureReferenceFrame()
     {
         if (_referenceFrame is null || _referenceFrameDraws < 0) return;
         if (++_referenceFrameDraws < ReferenceFrameWarmUpDraws) return;
         var width = GraphicsDevice.PresentationParameters.BackBufferWidth;
         var height = GraphicsDevice.PresentationParameters.BackBufferHeight;
+        // Any other size letterboxes or scales the drawing area, so a crop of it is not the frame.
+        if (width != VirtualInput.Width || height != VirtualInput.Height)
+            throw new InvalidOperationException(
+                $"The back buffer is {width} by {height}, not {VirtualInput.Width} by {VirtualInput.Height}.");
         var pixels = new Color[checked(width * height)];
         GraphicsDevice.GetBackBufferData(pixels);
         var bgra = new byte[VirtualInput.Width * VirtualInput.Height * 4];
-        for (var y = 0; y < VirtualInput.Height && y < height; y++)
-        for (var x = 0; x < VirtualInput.Width && x < width; x++)
+        for (var y = 0; y < VirtualInput.Height; y++)
+        for (var x = 0; x < VirtualInput.Width; x++)
         {
             var colour = pixels[y * width + x];
             var at = (y * VirtualInput.Width + x) * 4;

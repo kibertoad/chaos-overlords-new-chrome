@@ -702,6 +702,16 @@ internal sealed class NewGameSession(
     private void CaptureDrawingArea(IntPtr window)
     {
         const int width = 640, height = 460;
+        // A smaller client area leaves part of the copy outside the window, and that part is not
+        // the original's drawing.
+        if (!Native.GetClientRect(window, out var client)
+            || client.Right - client.Left < width || client.Bottom - client.Top < height)
+        {
+            _notes.Add($"Capture rejected: the client area is {client.Right - client.Left} by "
+                + $"{client.Bottom - client.Top}, smaller than the {width}-by-{height} drawing area.");
+            return;
+        }
+        _notes.Add($"Client area {client.Right - client.Left} by {client.Bottom - client.Top}.");
         // FND-UI-038: the counter increments after drawing. Require two agreeing window copies
         // and a stable counter; a repainting capture cannot use this frame relationship. The
         // pump's counter, which picks the selected-sector frame and the lights' blink phase
@@ -724,8 +734,6 @@ internal sealed class NewGameSession(
 
     private bool CaptureDrawingArea(IntPtr window, int width, int height)
     {
-        Native.GetClientRect(window, out var client);
-        _notes.Add($"Client area {client.Right - client.Left} by {client.Bottom - client.Top}.");
         byte[]? firstCopy = null;
         var copiesAgree = false;
         foreach (var name in new[] { "capture-blt.bmp", "capture-blt-repeat.bmp" })

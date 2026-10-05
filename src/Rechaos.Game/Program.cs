@@ -63,6 +63,14 @@ try
     {
         game.Run();
     }
+    catch (Exception exception) when (referenceFrame is not null)
+    {
+        // A reference frame runs unattended under a test: a message box would hold the process
+        // open until the test's timeout kills it.
+        diagnostics.CaptureCrash(exception, "reference-frame");
+        Console.Error.WriteLine(exception);
+        return 1;
+    }
     catch (Exception exception)
     {
         // A crash during play is a different event from a crash before the window opened, and
@@ -76,7 +84,7 @@ try
 }
 catch (Exception exception)
 {
-    if (platformSmokeTest)
+    if (platformSmokeTest || referenceFrame is not null)
     {
         Console.Error.WriteLine(exception);
         return 1;
