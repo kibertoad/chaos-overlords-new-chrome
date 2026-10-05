@@ -868,6 +868,7 @@
 |---|---|---|
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? | recorded |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? | recorded |
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? | recorded |
 | [EXP-UI-004](../experiments/EXP-UI-004.md) | Which gang-status markers does the map show while the Hire dock changes at the first planning entry? | recorded |
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | Does the incoming-only mark stay on the map until a redraw removes it? | recorded |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | Do the city, its console panels and the detailed sector screen look the same in the rebuild late in a match? | recorded |
@@ -923,6 +924,7 @@
 | [FND-UI-044](../findings/FND-UI-044.md) | A left press on a gang card's portrait holds the individual command handler in its own loops until the button is released, so the planning loop does not run while a gang is held | recorded |
 | [FND-UI-045](../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits | recorded |
 | [FND-UI-046](../findings/FND-UI-046.md) | The pointer hold loops of the console tiles, the held-button helper and the event page arrows never reach the event pump, and no hold loop touches timer slot 0 | recorded |
+| [FND-UI-047](../findings/FND-UI-047.md) | The panels that animate on timer slot 0 take the flag after their event switch, so a held face stops the animation and the release pass takes one tick | recorded |
 | [FND-UI-048](../findings/FND-UI-048.md) | The pump draws the selection frame from its counter before it advances the counter, so the frame on screen is the one for the counter less one | recorded |
 | [FND-UI-049](../findings/FND-UI-049.md) | Site Information keys a frame over the site portrait and, for a site with a special effect, writes string 29 plus the effect under the Cash row | recorded |
 | [FND-UI-050](../findings/FND-UI-050.md) | The city compositor keys a police badge over every sector with police presence, after the site markers and before the gang-status marker | recorded |
