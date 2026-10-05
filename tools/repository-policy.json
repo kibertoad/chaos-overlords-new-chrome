@@ -74,6 +74,7 @@
     "spec/experiments/EXP-TURN-093.json",
     "spec/experiments/EXP-TURN-096.json",
     "spec/experiments/EXP-UI-001.json",
-    "spec/experiments/EXP-UI-006.json"
+    "spec/experiments/EXP-UI-006.json",
+    "spec/experiments/EXP-UI-011.json"
   ]
 }

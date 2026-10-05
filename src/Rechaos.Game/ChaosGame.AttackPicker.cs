@@ -25,7 +25,7 @@ public sealed partial class ChaosGame
         _pressedAttackFace = null;
         _attackTargetClicks.Cancel();
         _attackSelection = _state is not null && _commandTargetOptions.Count > 0
-            && _state.FindGang(_commandTargetOptions[0].Gang) is { } actor
+            && _state.FindGang(_commandTargetGang) is { } actor
             ? AttackPicker.Initial(_state, _commandTargetOptions, actor)
             : AttackPickerSelection.None;
         _commandTargetCursor = _attackSelection.Target ?? 0;
@@ -59,7 +59,7 @@ public sealed partial class ChaosGame
             return;
         }
 
-        var actor = _state.FindGang(_commandTargetOptions[0].Gang);
+        var actor = _state.FindGang(_commandTargetGang);
         if (actor is null) return;
         var opponents = AttackPicker.Opponents(actor.Owner);
         for (var slot = 0; slot < opponents.Count; slot++)
@@ -190,7 +190,7 @@ public sealed partial class ChaosGame
     {
         DrawPanelArtwork(batch, pixel, _targetAcquisitionBackground, AttackCommandLayout.Panel, 248);
 
-        var actor = state.FindGang(_commandTargetOptions[0].Gang)!;
+        var actor = state.FindGang(_commandTargetGang)!;
         DrawAttackGang(batch, actor, AttackCommandLayout.ActorPortrait, AttackCommandLayout.ActorItem);
 
         var opponents = AttackPicker.Opponents(actor.Owner);
@@ -262,8 +262,13 @@ public sealed partial class ChaosGame
         if (_itemPortraits is null) return;
         for (var slot = 0; slot < AttackCommandLayout.EquippedItemCount; slot++)
             if (EquippedItem(gang, slot) is { } itemId)
-                batch.Draw(_itemPortraits, itemDestination(slot),
-                    OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
+            {
+                // FND-ATTACK-007: a narrower box shows the icon's leftmost columns.
+                var destination = itemDestination(slot);
+                var source = OriginalSpriteLayout.ItemPortrait(itemId);
+                batch.Draw(_itemPortraits, destination,
+                    source with { Width = Math.Min(source.Width, destination.Width) }, Color.White);
+            }
     }
 
     /// <summary>

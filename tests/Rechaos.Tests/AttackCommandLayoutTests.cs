@@ -83,8 +83,8 @@ public sealed class AttackCommandLayoutTests
         Assert.Equal(new Rectangle(240, 231, 64, 64), AttackCommandLayout.TargetPortrait(3));
         Assert.Equal(new Rectangle(376, 231, 64, 64), AttackCommandLayout.TargetPortrait(5));
         Assert.Equal(new Rectangle(240, 206, 20, 20), AttackCommandLayout.TargetItem(0, 0));
-        Assert.Equal(new Rectangle(398, 296, 20, 20), AttackCommandLayout.TargetItem(5, 1));
-        Assert.Equal(new Rectangle(420, 296, 20, 20), AttackCommandLayout.TargetItem(5, 2));
+        Assert.Equal(new Rectangle(398, 296, 19, 20), AttackCommandLayout.TargetItem(5, 1));
+        Assert.Equal(new Rectangle(420, 296, 19, 20), AttackCommandLayout.TargetItem(5, 2));
     }
 
     [Fact]

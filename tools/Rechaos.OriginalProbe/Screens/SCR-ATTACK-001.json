@@ -1,0 +1,12 @@
+{
+  "screen": "SCR-ATTACK-001",
+  "state": "The detailed sector screen of player 0 with the Attack picker open over a sector holding opponents' gangs the player sees",
+  "elements": [
+    {"element": "Attack picker (Target Acquisition)", "rect": [0, 0, 640, 460]},
+    {"element": "Acting gang", "rect": [130, 141, 64, 64]},
+    {"element": "Acting gang's equipment", "rect": [130, 206, 64, 20]},
+    {"element": "Opponent portraits", "rect": [201, 139, 34, 178]},
+    {"element": "Target card frame", "rect": [239, 140, 202, 177]},
+    {"element": "Panel", "rect": [137, 261, 49, 55]}
+  ]
+}

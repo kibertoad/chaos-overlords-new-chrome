@@ -281,6 +281,7 @@ public static class ScreenCaptureMasks
             ["SCR-GANG-001"] = [],
             ["SCR-GIVE-001"] = [],
             ["SCR-SELL-001"] = [],
+            ["SCR-ATTACK-001"] = [],
             ["SCR-INFLUENCE-001"] = [],
             ["SCR-GANG-002"] = [],
         };

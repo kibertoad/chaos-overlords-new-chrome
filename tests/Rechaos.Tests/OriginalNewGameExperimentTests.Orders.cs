@@ -176,6 +176,8 @@ public sealed partial class OriginalNewGameExperimentTests
             : BulkGangCommands.Options(match, human, gangs.Select(gang => gang.Id).ToArray(), recurring, group: true);
         var offered = options.Select(command => command.Action).ToHashSet();
         offered.Add(GangAction.None);
+        if (menu is 1 or 2)
+            offered.UnionWith(CommandOverlayLayout.ActionsFor(recurring).Where(CommandOverlayLayout.OpensWithoutTargets));
         return offered;
     }
 }

@@ -21,6 +21,9 @@ public sealed partial class UiNavigationTests
         Assert.True(CommandOverlayLayout.OpensTargetPicker(GangAction.Equip));
         Assert.True(CommandOverlayLayout.OpensTargetPicker(GangAction.Move));
         Assert.False(CommandOverlayLayout.OpensTargetPicker(GangAction.Chaos));
+        // FND-UI-021, EXP-UI-011: only Research opens its panel with nothing to choose.
+        Assert.Equal([GangAction.Research],
+            CommandOverlayLayout.Actions.Where(CommandOverlayLayout.OpensWithoutTargets));
         Assert.Equal(new Rectangle(256, 70, 158, 22), CommandOverlayLayout.ActionRow(0));
         Assert.Equal(new Rectangle(104, 124, 344, 209), EquipmentCommandLayout.Panel);
         Assert.Equal(new Rectangle(251, 149, 181, 9), EquipmentCommandLayout.ItemRow(0));

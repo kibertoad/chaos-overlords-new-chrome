@@ -583,6 +583,12 @@ public static class CommandOverlayLayout
         GangAction.Attack or GangAction.Equip or GangAction.Give or GangAction.Influence
         or GangAction.Move or GangAction.Research or GangAction.Sell;
 
+    /// <summary>
+    /// FND-UI-021, EXP-UI-011: menu 1 never greys Research, and its panel opens with an empty list
+    /// when the gang has nothing to research.
+    /// </summary>
+    public static bool OpensWithoutTargets(GangAction action) => action == GangAction.Research;
+
     public static IReadOnlyList<GangAction> ActionsFor(bool recurring) => recurring
         ? Actions.Where(action => action == GangAction.None || CommandRules.CanRepeat(action)).ToArray()
         : Actions;
