@@ -14,8 +14,9 @@ public sealed partial class DeviationBehaviourTests
     [Fact]
     public void TheRebuildsSaveIsItsOwnVersionedFormatWithNoSelectedSector()
     {
-        // DEV-SAVE-001: the rebuild's save is a document of its own with a version number, and it
-        // keeps no player's selected sector.
+        // DEV-SAVE-001: the rebuild's save is a document of its own with a version number. The
+        // selected sectors are kept beside it, in the save browser's file, so the match document
+        // and its fingerprint hold none.
         var match = NativeSaveSerializerTests.CreateMatch();
         using var stream = new MemoryStream();
         NativeSaveSerializer.Save(stream, match);
@@ -41,17 +42,48 @@ public sealed partial class DeviationBehaviourTests
     }
 
     [Fact]
-    public void ALoadedMatchStartsEveryPlayerOnItsSlotZeroSector()
+    public void ASlotSaveKeepsEverySelectedSectorAndALoadRestoresThem()
     {
-        // DEV-SAVE-001: a loaded match, or an online match taken up, forgets every selection and starts
-        // each player's planning on the sector of its roster slot 0, as a new match does.
+        // DEV-SAVE-001, FND-SAVE-003: the selected sectors go into the save browser's file beside
+        // the save, and a load restores them. A save whose file no longer matches loads with every
+        // player on the sector of its roster slot 0.
+        var match = NativeSaveSerializerTests.CreateMatch();
+        var memory = new PlanningSelectionMemory();
+        memory.Reset(match);
+        memory.Store(match.Players[0].Id, 40);
+        memory.Store(match.Players[1].Id, 41);
+        var directory = Directory.CreateTempSubdirectory("rechaos-dev-save-");
+        try
+        {
+            SaveSlotCatalog.Save(directory.FullName, 0, "SELECTION", match, online: false,
+                selectedSectors: memory.Snapshot());
+            var path = SaveSlotCatalog.SavePath(directory.FullName, 0);
+            var restored = new PlanningSelectionMemory();
+            restored.Restore(match, SaveSlotCatalog.ReadSelectedSectors(path));
+            Assert.Equal(40, restored.For(match.Players[0].Id, -1));
+            Assert.Equal(41, restored.For(match.Players[1].Id, -1));
+
+            File.SetLastWriteTimeUtc(path, File.GetLastWriteTimeUtc(path).AddMinutes(1));
+            Assert.Null(SaveSlotCatalog.ReadSelectedSectors(path));
+            restored.Restore(match, null);
+            Assert.Equal(match.Players[0].Gangs[0].SectorId, restored.For(match.Players[0].Id, -1));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AnOnlineMatchTakenUpStartsEveryPlayerOnItsSlotZeroSector()
+    {
+        // DEV-SAVE-001: an online match the client takes up starts each player's planning on the
+        // sector of its roster slot 0, since the server keeps no selection.
         var match = NativeSaveSerializerTests.CreateMatch();
         var memory = new PlanningSelectionMemory();
         memory.Store(match.Players[0].Id, 40);
-        memory.Store(match.Players[1].Id, 41);
         memory.Reset(match);
         Assert.Equal(match.Players[0].Gangs[0].SectorId, memory.For(match.Players[0].Id, -1));
-        Assert.Equal(match.Players[1].Gangs[0].SectorId, memory.For(match.Players[1].Id, -1));
         var reset = typeof(PlanningSelectionMemory).GetMethod(nameof(PlanningSelectionMemory.Reset))!;
         Assert.Contains(reset, Calls(typeof(ChaosGame).GetMethod("ResetMatchPresentation", BindingFlags.Instance | BindingFlags.NonPublic)!));
     }
@@ -109,17 +141,16 @@ public sealed partial class DeviationBehaviourTests
     }
 
     [Fact]
-    public void ASecondCopyRunsAndACommandLineFileIsNotOpened()
+    public void ASecondCopyRuns()
     {
         // DEV-UI-015: nothing stops a second copy from starting, since the rebuild takes no named
-        // mutex or window search, and a save named on the command line is not taken as one.
+        // mutex or window search. A save named on the command line is still opened (RULE-UI-013).
         foreach (var assembly in RebuildAssemblies())
         {
             var references = References(assembly);
             Assert.DoesNotContain("System.Threading.Mutex", references);
             Assert.DoesNotContain("System.Diagnostics.Process::GetProcessesByName", references);
         }
-        Assert.Null(ReferenceFrameRequest.ParseArguments([@"C:\Games\SAVE1.GAM"]));
     }
 
     [Fact]

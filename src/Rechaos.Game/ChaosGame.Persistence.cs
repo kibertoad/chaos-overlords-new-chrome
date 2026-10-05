@@ -14,8 +14,12 @@ public sealed partial class ChaosGame
         if (_state is null) return null;
         try
         {
+            // FND-SAVE-003: the save keeps every player's selected sector, the planning player's
+            // as it stands.
+            if (_state.Coordinator.ActivePlayer is { } active) _planningSelections.Store(active, _cursor);
             var summary = SaveSlotCatalog.Save(
-                _saveDirectory, slot, name, _state, _session is not null, HotSeatJournal);
+                _saveDirectory, slot, name, _state, _session is not null, HotSeatJournal,
+                _planningSelections.Snapshot());
             // RULE-UI-015: a written save marks the match saved; the autosave does not.
             _actions?.MarkSaved();
             _message = "GAME SAVED";
@@ -34,10 +38,29 @@ public sealed partial class ChaosGame
         }
     }
 
+    /// <summary>The save named on the command line, opened at start (StartupSave).</summary>
+    private readonly string? _startupSavePath;
+
+    /// <summary>
+    /// RULE-UI-013, FND-PLATFORM-009: opens the save named on the command line and goes straight
+    /// to its match. A file that cannot be loaded leaves the title with the load's message.
+    /// </summary>
+    private void OpenStartupSave()
+    {
+        if (_startupSavePath is not { } path || _referenceFrame is not null) return;
+        var loaded = AdoptLoadedMatch(
+            () => NativeSaveStore.LoadRecoveringBackup(path, _definitions!).State,
+            match => MatchJournalStore.TryResumeOnto(MatchJournalStore.PathFor(path), match),
+            null,
+            () => SaveSlotCatalog.ReadSelectedSectors(path));
+        if (loaded) CloseSaveBrowserAfterLoad();
+    }
+
     private bool LoadGameFromSlot(int slot) => AdoptLoadedMatch(
         () => SaveSlotCatalog.Load(_saveDirectory, slot, _definitions!),
         loaded => SaveSlotCatalog.LoadJournal(_saveDirectory, slot, loaded),
-        _saveSlots[slot]);
+        _saveSlots[slot],
+        () => SaveSlotCatalog.ReadSelectedSectors(SaveSlotCatalog.SavePath(_saveDirectory, slot)));
 
     /// <summary>
     /// Loads the browser's automatic row: the rolling autosave, or the crash-recovery save when
@@ -62,13 +85,15 @@ public sealed partial class ChaosGame
             () => _autoSave.Load(
                 () => NativeSaveStore.LoadRecoveringBackup(path, _definitions!).State),
             _ => null,
-            _saveSlots[SaveSlotCatalog.AutoSaveRow]);
+            _saveSlots[SaveSlotCatalog.AutoSaveRow],
+            () => SaveSlotCatalog.ReadSelectedSectors(path));
     }
 
     private bool AdoptLoadedMatch(
         Func<MatchState> load,
         Func<MatchState, MatchReplayRecorder?> journal,
-        SaveSlotSummary? summary)
+        SaveSlotSummary? summary,
+        Func<IReadOnlyList<int>?>? selectedSectors = null)
     {
         if (_session is not null) return false;
         if (_definitions is null) return false;
@@ -87,7 +112,8 @@ public sealed partial class ChaosGame
                 summary?.RecoveredFromBackup == true
                     ? summary.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
                     : string.Empty,
-                enteredFromSave: true);
+                enteredFromSave: true,
+                selectedSectors?.Invoke());
             return true;
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -116,7 +142,7 @@ public sealed partial class ChaosGame
     /// </param>
     private void AdoptMatch(
         MatchState loaded, MatchReplayRecorder recorder, string message,
-        bool enteredFromSave = false)
+        bool enteredFromSave = false, IReadOnlyList<int>? selectedSectors = null)
     {
         // RULE-AUDIO-001, FND-AUDIO-001: re-entering the outer game starts its
         // program from the first track even when another match was already playing.
@@ -133,14 +159,14 @@ public sealed partial class ChaosGame
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();
         // RULE-UI-015, FND-UI-058: a loaded match starts saved.
         _actions.MarkSaved();
-        // DEV-SAVE-001: the rebuild's save keeps no selected sector, so a loaded match starts every
-        // player on the sector of its roster slot 0, as a new game does (FND-SAVE-003).
-        _planningSelections.Reset(_state);
-        _cursor = _planningSelections.For(
-            _state.Coordinator.ActivePlayer ?? _state.Players[0].Id, Math.Clamp(_cursor, 0, _state.Sectors.Count - 1));
         _selectedGangIndex = 0;
         _message = message;
         ResetMatchPresentation(_state);
+        // FND-SAVE-003: a loaded match restores each player's selected sector from the save; one
+        // the save does not keep starts on the sector of its roster slot 0, as a new game does.
+        _planningSelections.Restore(_state, selectedSectors);
+        _cursor = _planningSelections.For(
+            _state.Coordinator.ActivePlayer ?? _state.Players[0].Id, Math.Clamp(_cursor, 0, _state.Sectors.Count - 1));
         _resumedMatchTurn = _state.Coordinator.Turn;
         _resumedGameInfoShown.Clear();
         _continuePlanningEntryAfterGameInfo = false;

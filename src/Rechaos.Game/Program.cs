@@ -61,7 +61,9 @@ try
         // DEV-AI-008: local matches started in this session let the computer planner's hires go
         // to any sector, as the original's do.
         originalComputerHires: args.Contains("--original-computer-hires", StringComparer.OrdinalIgnoreCase),
-        referenceFrame: referenceFrame);
+        referenceFrame: referenceFrame,
+        // RULE-UI-013: a save named on the command line is opened at start.
+        startupSavePath: StartupSave.PathFrom(args));
     if (platformSmokeTest)
         return 0;
     try

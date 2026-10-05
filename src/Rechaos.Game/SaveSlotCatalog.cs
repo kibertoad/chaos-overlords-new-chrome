@@ -30,7 +30,8 @@ public sealed record SaveSlotSummary(
     AiPolicyMode AiPolicy,
     bool RecoveredFromBackup = false,
     bool PrimaryRepaired = false,
-    SaveSlotStatus Status = SaveSlotStatus.Playable)
+    SaveSlotStatus Status = SaveSlotStatus.Playable,
+    IReadOnlyList<int>? SelectedSectors = null)
 {
     public bool IsPlayable => Status == SaveSlotStatus.Playable;
 
@@ -197,13 +198,17 @@ public static class SaveSlotCatalog
         string name,
         MatchState state,
         bool online,
-        MatchReplayRecorder? journal = null)
+        MatchReplayRecorder? journal = null,
+        IReadOnlyList<int>? selectedSectors = null)
     {
         var path = SavePath(directory, slot);
         NativeSaveStore.SaveAtomic(path, state);
         var timestamp = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
         var finalName = string.IsNullOrWhiteSpace(name) ? SuggestedName(state) : name.Trim();
-        var summary = Summarize(slot, finalName, timestamp, state, online);
+        var summary = Summarize(slot, finalName, timestamp, state, online) with
+        {
+            SelectedSectors = selectedSectors
+        };
         WriteMetadata(path, summary, state.Definitions);
         WriteJournal(path, journal);
         return summary;
@@ -217,11 +222,34 @@ public static class SaveSlotCatalog
     /// result along with the bytes. The timestamp here is a placeholder the sidecar never keeps:
     /// what it records, and what the browser draws, is the write time of the file itself.
     /// </remarks>
-    public static SaveSlotSummary DescribeAutoSave(MatchState state)
+    public static SaveSlotSummary DescribeAutoSave(
+        MatchState state, IReadOnlyList<int>? selectedSectors = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         return Summarize(
-            AutoSaveRow, "AUTOSAVE", DateTimeOffset.UnixEpoch, state, online: false);
+            AutoSaveRow, "AUTOSAVE", DateTimeOffset.UnixEpoch, state, online: false) with
+        {
+            SelectedSectors = selectedSectors
+        };
+    }
+
+    /// <summary>
+    /// FMT-SAVE-001 <c>cursor_sectors</c>: each player slot's selected sector as the save at
+    /// <paramref name="savePath"/> recorded them, or null when its sidecar is missing, keeps
+    /// none, or was written for another file, such as a backup generation the load fell back to.
+    /// </summary>
+    /// <remarks>
+    /// The selection lives in the sidecar because it is the interface's, outside the match the
+    /// save format and its fingerprint describe; a save without it loads with every player on the
+    /// sector of its roster slot 0.
+    /// </remarks>
+    public static IReadOnlyList<int>? ReadSelectedSectors(string savePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(savePath);
+        var file = new FileInfo(savePath);
+        return file.Exists && ReadMetadata(savePath) is { } metadata && metadata.Matches(file)
+            ? metadata.SelectedSectors
+            : null;
     }
 
     /// <summary>Writes the rolling autosave's browser sidecar after its primary is durable.</summary>
@@ -391,7 +419,8 @@ public static class SaveSlotCatalog
         string? MatchType,
         AiPolicyMode? AiPolicy,
         int? FormatVersion = null,
-        string? DefinitionsSha256 = null)
+        string? DefinitionsSha256 = null,
+        IReadOnlyList<int>? SelectedSectors = null)
     {
         /// <summary>The sidecar for a save, or null when the save is no longer there to describe.</summary>
         public static SaveSlotMetadata? From(
@@ -404,7 +433,8 @@ public static class SaveSlotCatalog
                     file.LastWriteTimeUtc.Ticks, summary.Scenario, summary.HumanPlayers,
                     summary.AiPlayers, summary.MatchType, summary.AiPolicy,
                     NativeSaveSerializer.CurrentFormatVersion,
-                    NativeSaveSerializer.DefinitionsFingerprint(definitions))
+                    NativeSaveSerializer.DefinitionsFingerprint(definitions),
+                    summary.SelectedSectors)
                 : null;
         }
 

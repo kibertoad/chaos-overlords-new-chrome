@@ -234,9 +234,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         string? screenshotFolder = null,
         bool originalComputerMoves = false,
         bool originalComputerHires = false,
-        ReferenceFrameRequest? referenceFrame = null)
+        ReferenceFrameRequest? referenceFrame = null,
+        string? startupSavePath = null)
     {
         _assetRoot = assetRoot;
+        _startupSavePath = startupSavePath;
         _originalComputerMoves = originalComputerMoves;
         _originalComputerHires = originalComputerHires;
         _referenceFrame = referenceFrame;
@@ -424,6 +426,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         InitializeIntroMovies();
         LoadSoundtrack();
+        OpenStartupSave();
         _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
         {
             ["helpAvailable"] = (_helpDocument is not null).ToString(),
