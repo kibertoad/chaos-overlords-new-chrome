@@ -92,6 +92,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly DetailedCombatExit _combatExit = new();
     private readonly PanelSlideTransition _panelSlideTransition = new();
     private readonly GangSightSnapshotCache _gangSight = new();
+    private readonly GangStatusMarkerMap _gangMarkers = new();
     private MatchState? _state;
     /// <summary>
     /// Where a player's mutations go, and the only handle on the match's recorder.
@@ -207,6 +208,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Point _gangPressPoint;
     private bool _gangDragStarted;
     private SectorGangDragProjection? _gangDragProjection;
+    /// <summary>
+    /// Set when a cancel lets go of a hold the planning loop does not run through while the left
+    /// button is still down, and cleared when it comes up (FND-UI-044, FND-HIRE-008).
+    /// </summary>
+    private bool _leftHoldOutlivesCancel;
     private Point _dragPoint;
     private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
@@ -230,10 +236,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         bool debugPhaseStepping = false,
         RuntimeDiagnostics? diagnostics = null,
         string? screenshotFolder = null,
-        bool originalComputerMoves = false)
+        bool originalComputerMoves = false,
+        bool originalComputerHires = false,
+        ReferenceFrameRequest? referenceFrame = null)
     {
         _assetRoot = assetRoot;
         _originalComputerMoves = originalComputerMoves;
+        _originalComputerHires = originalComputerHires;
+        _referenceFrame = referenceFrame;
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;
         _screens.Changed += (previous, current) => _diagnostics?.Write(
@@ -264,7 +274,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
                 _showEndgameStats = false;
         };
-        var userDataRoot = Path.Combine(
+        var userDataRoot = _referenceFrame?.UserDataDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords");
         _saveDirectory = userDataRoot;
@@ -307,14 +317,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // 1366x768 laptop or a 1080p panel at 150% scaling cannot show a 920-pixel-tall window, and
         // the DONE button ends up below the screen edge. Draw and input already letterbox from the
         // viewport, so any size works; the window just has to fit on the display it opens on.
-        var (backBufferWidth, backBufferHeight) = PreferredBackBufferSize();
+        var (backBufferWidth, backBufferHeight) = _referenceFrame is null
+            ? PreferredBackBufferSize()
+            : (VirtualInput.Width, VirtualInput.Height);
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = backBufferWidth,
             PreferredBackBufferHeight = backBufferHeight,
             SynchronizeWithVerticalRetrace = true,
             HardwareModeSwitch = false,
-            IsFullScreen = _fullscreen
+            IsFullScreen = _fullscreen && _referenceFrame is null
         };
         // Ticking on without focus is what keeps background online notices, the planning timer and
         // the autosave serviced; the redraw is the expensive part, and BeginDraw spaces that out
@@ -439,8 +451,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     protected override void Update(GameTime gameTime)
     {
         _autoSave.Pump();
-        _inputTime = gameTime.TotalGameTime;
-        _eventPump.Update(_inputTime, HoldsPointerOutsideEventPump());
+        _inputTime = _referenceFrame is null ? gameTime.TotalGameTime : TimeSpan.Zero;
+        _eventPump.Update(_inputTime, OutsideEventPump());
+        if (UpdateReferenceFrame())
+        {
+            base.Update(gameTime);
+            return;
+        }
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
         // The rebuild's window shortcuts are not game events, so a fade does not swallow them.
@@ -766,7 +783,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.A)) SelectAllSiteSearch();
                     if (Pressed(keyboard, Keys.N)) ClearSiteSearch();
                     if (Pressed(keyboard, Keys.Enter)) ApplySiteSearch();
-                    if (Pressed(keyboard, Keys.Back)) CancelSiteSearch();
+                    if (Pressed(keyboard, Keys.Back)) CloseSiteSearch();
                     break;
             }
         }
@@ -796,14 +813,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 _message = string.Empty;
             }
             else if (_draggedGangId is not null && !_gangDragStarted
-                     && DragMoved(_gangPressPoint, virtualPoint))
+                     && GangDragMoved(_gangPressPoint, virtualPoint))
             {
                 StartGangDrag();
                 _message = string.Empty;
             }
         }
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released)
+        {
+            _leftHoldOutlivesCancel = false;
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: false);
+        }
         if (_previousMouse.RightButton == ButtonState.Pressed && mouse.RightButton == ButtonState.Released)
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: true);
         CaptureNewCombatAnimations();
@@ -818,9 +838,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _previousMouse = mouse;
         base.Update(gameTime);
     }
-
-    private static bool DragMoved(Point press, Point current) =>
-        Math.Abs(current.X - press.X) >= 4 || Math.Abs(current.Y - press.Y) >= 4;
 
     private void HandleClick(Point point)
     {
@@ -913,10 +930,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     AcceptAndInvoke(CloseSiteDetails);
                 break;
             case ClientScreen.ItemInformation:
-                // SCR-UI-006, FND-UI-047: the exit face goes through the held-button helper and
-                // closes on a release inside it; a press outside the panel is refused.
-                PressPanelFace(point, ItemInformationLayout.Panel, ItemInformationLayout.Ok,
-                    CloseItemDetails);
+                // SCR-UI-006, FND-UI-047: the held exit face closes on a release inside it.
+                PressPanelFace(point, ItemInformationLayout.Panel, ItemInformationLayout.Ok, CloseItemDetails);
                 break;
             case ClientScreen.GameInfo:
                 // SCR-UI-008: the OK face closes the panel; a press outside it is refused.

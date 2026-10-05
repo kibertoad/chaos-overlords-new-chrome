@@ -9,7 +9,8 @@ namespace Rechaos.Tests;
 // RULE-TIMER-003, RULE-UI-008, FND-UI-044, FND-UI-046: while an offer, a console tile, a gang
 // card's portrait or a held-button face is held, the original dispatches window messages without
 // calling the event pump, so the steps the pump drives stop. Timer slot 0's flag keeps one tick of
-// the hold for the pump's first call after the release; the others are lost.
+// the hold for the pump's first call after the release; the others are lost. A soundtrack fade
+// stops the pump in the same way (FND-AUDIO-017).
 public sealed class EventPumpClockTests
 {
     private static TimeSpan Tick(long count) => TimeSpan.FromTicks(PresentationClock.Period.Ticks * count);
@@ -151,6 +152,21 @@ public sealed class EventPumpClockTests
     }
 
     [Fact]
+    public void ASoundtrackFadeKeepsThePumpFromRunning()
+    {
+        // FND-AUDIO-017: the fade runs inside the pump's music step and leaves timer slot 0 alone.
+        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
+        GC.SuppressFinalize(game);
+        Field("_combatExit").SetValue(game, new DetailedCombatExit());
+        Assert.False(OutsideEventPump(game));
+        Field("_soundtrackFade").SetValue(game, new SoundtrackFade(1f, TimeSpan.Zero));
+        Assert.True(OutsideEventPump(game));
+        Assert.False(Holds(game));
+        Field("_soundtrackFade").SetValue(game, null);
+        Assert.False(OutsideEventPump(game));
+    }
+
+    [Fact]
     public void TheHoldsThatKeepThePumpFromRunning()
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
@@ -169,6 +185,13 @@ public sealed class EventPumpClockTests
         AssertHolds(game, "_pressedCityConsoleControl", CityConsoleControl.Done);
         AssertHolds(game, "_pressedCommandPanelButton", CommandPanelButton.Confirm);
         AssertHolds(game, "_pressedEventsButton", LastTurnEventsButton.Next);
+        AssertHolds(game, "_pressedComlinkSendButton", FirstValueOf("_pressedComlinkSendButton"));
+        AssertHolds(game, "_pressedAttackFace", FirstValueOf("_pressedAttackFace"));
+        // A hold the rebuild's Escape or right press let go of while the left button stays down.
+        Field("_leftHoldOutlivesCancel").SetValue(game, true);
+        Assert.True(Holds(game));
+        Field("_leftHoldOutlivesCancel").SetValue(game, false);
+        Assert.False(Holds(game));
 
         // The back control's helper loop follows the left button, so a right-button hold of it,
         // which only the rebuild keeps, lets the pump run.
@@ -190,9 +213,18 @@ public sealed class EventPumpClockTests
         Assert.False(Holds(game));
     }
 
-    private static bool Holds(ChaosGame game) => (bool)(typeof(ChaosGame)
-        .GetMethod("HoldsPointerOutsideEventPump", BindingFlags.Instance | BindingFlags.NonPublic)
-        ?? throw new MissingMethodException(nameof(ChaosGame), "HoldsPointerOutsideEventPump"))
+    /// <summary>A value of the private enum a nullable field holds.</summary>
+    private static object FirstValueOf(string field) =>
+        Enum.GetValues(Nullable.GetUnderlyingType(Field(field).FieldType)
+            ?? throw new InvalidOperationException(field)).GetValue(0)!;
+
+    private static bool Holds(ChaosGame game) => Invoke(game, "HoldsPointerOutsideEventPump");
+
+    private static bool OutsideEventPump(ChaosGame game) => Invoke(game, "OutsideEventPump");
+
+    private static bool Invoke(ChaosGame game, string method) => (bool)(typeof(ChaosGame)
+        .GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(nameof(ChaosGame), method))
         .Invoke(game, null)!;
 
     private static FieldInfo Field(string name) => typeof(ChaosGame)

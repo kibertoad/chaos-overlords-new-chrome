@@ -17,6 +17,9 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
+| 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
+| 2026-10-05 | [Switch DEV-AI-008 off from the command line only](#2026-10-05--switch-dev-ai-008-off-from-the-command-line-only) |
 | 2026-10-04 | [Switch DEV-AI-007 off from the command line only](#2026-10-04--switch-dev-ai-007-off-from-the-command-line-only) |
 | 2026-09-26 | [Keep a replay load's random state and inboxes](#2026-09-26--keep-a-replay-loads-random-state-and-inboxes) |
 | 2026-09-26 | [Keep the original hunter guard and drop DEV-AI-001](#2026-09-26--keep-the-original-hunter-guard-and-drop-dev-ai-001) |
@@ -40,6 +43,61 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-05 — Capture the original with the 32-bit white key
+
+- Decision: the probe takes captures of the original for screen comparisons with `--white-key`,
+  which hands the keyed mask compositor the white a 32-bit surface holds in place of the 16-bit
+  key. A capture taken without it keeps its white areas, and `ScreenCaptureTests` goes on
+  reporting them as unverified.
+- Reason: the solid white areas the original leaves on Windows 11 are its keyed copies drawn
+  opaque. Its surfaces follow the 32-bit desktop, where the 16-bit key `RGB(255,252,255)`
+  matches no pixel (FND-PLATFORM-014). With the key replaced, EXP-SETUP-001's setup (seed 52421)
+  drew 1 exact-white pixel where it drew 5089, and showed the selected sector's interior and the
+  edge tabs' labels in place of white. That run and EXP-TURN-041's configuration made the same
+  310 and 10647 rolls as their fixtures and reached the same 2760 and 4331 end-state values: the
+  key reaches the drawing and nothing else. A DirectDraw wrapper cannot help, since the windowed
+  original draws with GDI only (FND-GFX-004): DDrawCompat left the same 5089 white pixels (the
+  next decision, which still holds for the wrapper). No compatibility layer changed the result.
+- Boundary: the write changes one argument of one `SetBkColor` call and only when it is the
+  16-bit key. A capture shows what the original draws on a 16-bit display only where the key is
+  the difference; FND-PLATFORM-014 records the capture of the first planning entry only.
+
+## 2026-10-05 — Take captures of the original without a DirectDraw wrapper
+
+- Decision: the probe takes captures of the original without DDrawCompat or another DirectDraw
+  wrapper beside the staged executable. The solid white areas the original leaves on Windows 11
+  stay in the captures, and `ScreenCaptureTests` reports them as unverified.
+- Reason: DDrawCompat v0.7.1 (the release asset `DDrawCompat-v0.7.1.zip` of
+  narzoul/DDrawCompat, SHA-256
+  `0c33ecb1c01c1c779063b490a2e818f6d9227b3b4ee827c51790fb0fd59b17c5`, matching the digest
+  GitHub lists for it) changed no game result but did not remove the white areas. Beside a
+  staged copy, EXP-TURN-041's configuration (scenario 0, 26 turns, seed 52421) recorded again
+  made the same 10647 rolls with the same bounds and results, and every one of the 4331 values
+  of the fixture's end state was the same. EXP-UI-001's first configuration (seed 52421, first
+  planning entry) recorded with the wrapper, with and without the compatibility layers, made
+  the same 310 rolls and drew the same frame as without it, apart from the Overlord bar's
+  marker, which was at another frame: the same 5089 exact-white pixels, among them the solid
+  white selected sector. Windowed, the original draws everything with GDI and does not use
+  DirectDraw at all (FND-GFX-004), so a DirectDraw wrapper has nothing to change there. Full
+  screen under the wrapper, the window's device context gave an all-black copy.
+- Boundary: a capture records the white areas as the original drew them. Another way to take
+  captures, such as a different compatibility layer or an older Windows in a virtual machine,
+  needs its own comparison of a recorded run before it is used.
+
+## 2026-10-05 — Switch DEV-AI-008 off from the command line only
+
+- Decision: DEV-AI-008 (a computer player hires only where a human could) is a setting that starts
+  on, switched off by `--original-computer-hires` on the game's command line. No screen offers
+  it. The match setup carries it, so saves, replay journals and state fingerprints record it;
+  online matches keep it on.
+- Reason: the default follows a simulation of the computer players' win rates against a
+  planner-played human seat that keeps the human rule, run with the setting on and off. The
+  original's behaviour would have stayed the default had the win rates differed; they did not,
+  and no computer hire in the simulation used the freedom, so the fair rule is the default and
+  an Options entry would add clutter for nothing.
+- Boundary: the flag reaches local matches started in the session it is given to. A loaded save
+  or journal keeps the value it was started with.
 
 ## 2026-10-04 — Switch DEV-AI-007 off from the command line only
 

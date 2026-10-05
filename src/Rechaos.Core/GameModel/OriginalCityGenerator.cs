@@ -270,6 +270,7 @@ public static class OriginalMatchFactory
             playersById.OrderBy(entry => entry.Key).Select(entry => entry.Value).ToArray(),
             setup.AiMentality,
             aiPolicy: setup.AiPolicy,
-            computerMovesToNeighboursOnly: setup.ComputerMovesToNeighboursOnly);
+            computerMovesToNeighboursOnly: setup.ComputerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan: setup.ComputerHiresWhereHumansCan);
     }
 }

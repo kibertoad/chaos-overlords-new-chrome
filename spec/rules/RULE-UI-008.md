@@ -4,7 +4,7 @@ title: The presentation timer
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-001, FND-PLATFORM-006, FND-TIMER-002, FND-UI-023, FND-UI-044, FND-UI-046, FND-UI-047, FND-EXE-004]
+evidence: [FND-UI-001, FND-PLATFORM-006, FND-TIMER-002, FND-UI-023, FND-UI-044, FND-UI-046, FND-UI-047, FND-AUDIO-017, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -67,6 +67,10 @@ clock read and clear `presentation_tick_pending`.
   the kept tick: the item rotations, the researched item of Last Turn Events,
   the Comlink Send caret, the Detailed Combat clip and the idle-gang warning's
   line each step once and lose the other ticks of the hold (FND-UI-047).
+- A CD fade runs inside the pump's music poll or mute command and leaves
+  `presentation_tick_pending` alone, so the pump's steps stop for it in the
+  same way: the pump takes one tick of the fade when it returns, and the other
+  two or more are lost (FND-AUDIO-016, FND-AUDIO-017).
 
 ## What the sources say
 
@@ -78,4 +82,6 @@ None known.
 
 ## Open questions
 
-None.
+- What a panel that animates on the clock in its own loop does with the tick
+  the flag kept when a hold of one of its faces ends is not recorded
+  (FND-UI-046).

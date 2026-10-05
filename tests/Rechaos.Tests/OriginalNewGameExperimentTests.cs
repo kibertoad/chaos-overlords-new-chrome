@@ -92,6 +92,40 @@ namespace Rechaos.Tests;
 /// (RULE-INFLUENCE-001). EXP-TURN-070 and EXP-TURN-071 drop a recurring Control in a sector
 /// under police presence (RULE-TURN-004), and EXP-TURN-072 prices an item at full Cost beside
 /// another player's completed Factory (RULE-EQUIP-003).
+/// EXP-TURN-073 to EXP-TURN-077 write a family into the computer gangs' planning records and reach
+/// branches no match had reached: family 7 out of research (RULE-AI-026), family-4 attack draws
+/// (RULE-AI-023), the family-10 Heal (RULE-AI-028), an accepted family-3 attack
+/// (RULE-AI-022) and a family-6 guard target already covered (RULE-AI-025).
+/// EXP-TURN-078 to EXP-TURN-081 do the same in Siege, Big Man and Armageddon and reach the further family-6
+/// draws (RULE-AI-025), the family-3 Heal (RULE-AI-022), family-4 attacks after Chaos or Equip
+/// (RULE-AI-023), the family-12 Detect Equip and draw at weight 1 (RULE-AI-030) and the family-0
+/// Move after a Snitch (RULE-AI-019).
+/// EXP-TURN-082 reaches the family-4 Control after two Moves (RULE-AI-023), EXP-TURN-083 the
+/// family-7 draw from human gangs only (RULE-AI-026), EXP-TURN-084 a family-14 draw from an empty
+/// pool (RULE-AI-031), and EXP-TURN-085 and EXP-TURN-086 the forced hunter hire roles
+/// (RULE-AI-010). EXP-TURN-083 is a known divergence under DEV-AI-002.
+/// EXP-TURN-087, EXP-TURN-089 and EXP-TURN-091 reach refused family-4, family-5 and family-0
+/// draws at weight 10 (RULE-AI-023, RULE-AI-024, RULE-AI-019, BUG-AI-007), and EXP-TURN-088 a
+/// family-7 draw that gives no Attack (RULE-AI-026).
+/// EXP-TURN-090 records a computer hire into a sector the player neither controls nor holds a
+/// gang in (RULE-HIRE-001, DEV-AI-008), and EXP-TURN-093 and EXP-TURN-094 the family-5 draw from
+/// human gangs only (RULE-AI-024). EXP-UI-001 stops at the first planning entry of a Greed match,
+/// as EXP-SETUP-001 does, and holds a capture of the screen there (ScreenCaptureTests). EXP-UI-003
+/// takes the same captures with the probe's 32-bit white key.
+/// EXP-EQUIP-001 to EXP-EQUIP-003 replay EXP-TURN-030, EXP-TURN-071 and EXP-TURN-026 and record the
+/// item lists the Equip screen offers each of the human's gangs at the end (RULE-EQUIP-004).
+/// EXP-ATTACK-001 to EXP-ATTACK-003 replay EXP-TURN-072, EXP-TURN-093 and EXP-TURN-026 and record
+/// the targets the Attack picker offers each of them among each opponent's gangs (RULE-ATTACK-002).
+/// EXP-SEARCH-001 and EXP-SEARCH-002 press the Search panel's controls at that entry, with the human
+/// in slot 0 and in slot 2, and record the filter table after each press (RULE-SEARCH-001).
+/// EXP-HIRE-001 and EXP-HIRE-002 drag offers and press Reject on the Hire dock at the endpoints of
+/// EXP-UI-001 and EXP-TURN-071 and record hire_orders after each step (RULE-HIRE-003).
+/// EXP-TURN-095 gives orders through the gang cards' and the group order strip's popup menus at
+/// the endpoint of EXP-TURN-071 and records the menus and the orders after each step
+/// (RULE-TURN-005). EXP-UI-004 and EXP-UI-005 repeat EXP-HIRE-001 and EXP-TURN-071 with hire steps
+/// and a Search close and log every gang-status marker the original draws (RULE-UI-006).
+/// EXP-TURN-096 presses each Overlord portrait of a sector view at the endpoint of EXP-TURN-026
+/// and records whose gangs the cards list after each press (RULE-UI-010).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -99,13 +133,19 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
 
     // Runs the rebuild does not replay, with the first roll that differs.
-    private static readonly Dictionary<(string Experiment, int Run), int> KnownDivergences = new();
+    // DEV-AI-002: in EXP-TURN-083 a family-7 gang of player 2 plans Influence in neutral sector 10,
+    // which the original resolves and the rebuild gives no command, so the rebuild rolls ten dice
+    // fewer in that turn's Instant phase and reaches the combat dice early.
+    private static readonly Dictionary<(string Experiment, int Run), int> KnownDivergences = new()
+    {
+        [("EXP-TURN-083", 0)] = 1420,
+    };
 
     // Runs that stop at the final city view, before the awards controller builds the award table
     // (FND-OBJECTIVE-004, FND-UI-041). Their fixtures hold no award rows; every other run that
@@ -140,13 +180,21 @@ public sealed partial class OriginalNewGameExperimentTests
     public void WithDevAi007OnExpTurn015PartsAtTheRefusedMove() =>
         Assert.Equal(950, FirstDifferingRoll(Run("EXP-TURN-015", 0), computerMovesToNeighboursOnly: true));
 
-    private static int FirstDifferingRoll(RecordedRun recorded, bool computerMovesToNeighboursOnly = false)
+    // DEV-AI-008 on: in turn 20 player 3 hires into sector 36, which it neither controls nor holds
+    // a gang in; the original rolls the new gang's Force and the rebuild drops the hire (EXP-TURN-090).
+    [Fact]
+    public void WithDevAi008OnExpTurn090PartsAtTheDroppedHire() =>
+        Assert.Equal(3335, FirstDifferingRoll(Run("EXP-TURN-090", 0), computerHiresWhereHumansCan: true));
+
+    private static int FirstDifferingRoll(
+        RecordedRun recorded, bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false)
     {
         var rolls = new List<(int Bound, int Result)>();
         DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
         try
         {
-            StartMatch(recorded, out _, computerMovesToNeighboursOnly: computerMovesToNeighboursOnly);
+            StartMatch(recorded, out _, computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+                computerHiresWhereHumansCan: computerHiresWhereHumansCan);
         }
         finally
         {
@@ -331,7 +379,10 @@ public sealed partial class OriginalNewGameExperimentTests
         {
             AssertPlanningStateMatches(recorded, match);
             // The fixtures that hold the planning state also hold the combat records and result rows.
-            AssertLastCombatMatches(recorded, match);
+            // Before the first Done no resolution has written them, and the original holds 0 in
+            // every byte (EXP-UI-001).
+            if (donePresses > 0) AssertLastCombatMatches(recorded, match);
+            else Assert.All(recorded.Values("FMT-STATE-003"), value => Assert.Equal(0, value));
         }
 
         // RULE-EVENT-001, RULE-EVENT-002: each player's Last Turn reports of the last resolution, in
@@ -391,13 +442,15 @@ public sealed partial class OriginalNewGameExperimentTests
                     ("hire_role", match.AiPlanning.CurrentHireRole(player.Id)),
                     ("previous_hire_role", match.AiPlanning.PreviousHireRole(player.Id)),
                 ];
-                // The original holds -1 in a human player's hire_role and the rebuild 0. A player's
-                // first planning pass writes 0 there before anything reads it (FND-AI-042), so the
-                // difference is one of representation; any other value is still compared.
+                // The original holds -1 in a human player's hire_role, and in a computer player's
+                // until its first planning pass, and the rebuild 0. That pass writes 0 there before
+                // anything reads it (FND-AI-042), so the difference is one of representation; any
+                // other value is still compared.
                 foreach (var (term, value) in totals)
                 {
                     var original = recorded.Term(term, slot);
-                    var expected = term == "hire_role" && original == -1 && player.Setup.Controller == PlayerController.Human
+                    var expected = term == "hire_role" && original == -1
+                        && (player.Setup.Controller == PlayerController.Human || !match.AiPlanning.HasPlanned(player.Id))
                         ? 0
                         : original;
                     Assert.True(expected == value,
@@ -746,7 +799,7 @@ public sealed partial class OriginalNewGameExperimentTests
 
     private static MatchState StartMatch(
         RecordedRun recorded, out int donePresses, Action<MatchState, PlayerId, int>? beforeDone = null,
-        bool computerMovesToNeighboursOnly = false)
+        bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false)
     {
         var scenario = OriginalScenario(recorded.Term("scenario", 0));
         var setup = new MatchSetup(
@@ -757,9 +810,10 @@ public sealed partial class OriginalNewGameExperimentTests
                 slot, Name(recorded, slot.Value), PlayerController.Human, (short)recorded.Term("portrait", slot.Value))).ToArray(),
             (AiDifficulty)recorded.Term("mentality", 0),
             allowSparsePlayerIds: true,
-            // DEV-AI-007 switched off unless a test asks for it, so the computer's Moves go where
-            // the original's do.
-            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly);
+            // DEV-AI-007 and DEV-AI-008 switched off unless a test asks for them, so the computer's
+            // Moves and hires go where the original's do.
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);
         match.FinishUpkeep();
         // RULE-SETUP-008: with several local humans the planning phase waits on the Ready card
@@ -905,6 +959,12 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     private static RecordedRun Run(string experiment, int run) => Recorded.Value[experiment][run];
+
+    /// <summary>
+    /// Whether the runs of <paramref name="experiment"/> are replayed. A run that changes the
+    /// match from outside, such as EXP-UI-002's <c>--draw-values</c>, is not.
+    /// </summary>
+    internal static bool IsReplayed(string experiment) => Experiments.Contains(experiment);
 
     /// <summary>The rebuild's match after replaying a recorded run to its endpoint.</summary>
     internal static MatchState ReplayedMatch(string experiment, int run) => StartMatch(Run(experiment, run), out _);

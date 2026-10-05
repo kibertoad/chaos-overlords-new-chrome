@@ -125,6 +125,28 @@ public sealed class HireAndEliminationTests
             legacy.QueueHireLegacyImmediatePayment(new PlayerId(0), 2, 1).Validation.Code);
     }
 
+    [Theory]
+    [InlineData(PlayerController.Computer, false, false, true)]
+    [InlineData(PlayerController.Computer, true, false, false)]
+    [InlineData(PlayerController.Human, false, false, false)]
+    [InlineData(PlayerController.Human, false, true, false)]
+    public void OnlyAComputerWithDevAi008OffHiresOutsideItsSectors(
+        PlayerController controller, bool computerHiresWhereHumansCan, bool simulated, bool accepted)
+    {
+        // DEV-AI-008: sector 1 is neither controlled by player 0 nor holds one of its gangs. A
+        // human seat the planner plays for a simulation keeps the human test.
+        var match = CreateMatch(controller: controller,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
+        if (simulated) match.SimulateHuman(new PlayerId(0));
+        AdvanceToHire(match);
+
+        var result = match.QueueHire(new PlayerId(0), 2, 1);
+
+        Assert.Equal(accepted, result.Accepted);
+        if (!accepted)
+            Assert.Equal(HireValidationCode.SectorNotControlled, result.Validation.Code);
+    }
+
     [Fact]
     public void HireCanBeChosenDuringCommandPlanningAndPlacedLater()
     {
@@ -633,15 +655,18 @@ public sealed class HireAndEliminationTests
         int initialCash = 10,
         IReadOnlyList<MatchGangState>? gangs = null,
         string playerName = "ONE",
-        bool keepOpponentActive = false)
+        bool keepOpponentActive = false,
+        PlayerController controller = PlayerController.Human,
+        bool computerHiresWhereHumansCan = true)
     {
         var definitions = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
         [
-            new(new PlayerId(0), playerName, PlayerController.Human),
+            new(new PlayerId(0), playerName, controller),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
         MatchPlayerState[] players =
         [
             new(setups[0], initialCash,

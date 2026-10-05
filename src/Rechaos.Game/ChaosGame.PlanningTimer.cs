@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
@@ -224,7 +225,7 @@ public sealed class PlanningTimer
     /// themselves to replay a recorded run of the original, whose ticks do not fall on exact
     /// multiples of the period.
     /// </summary>
-    public PlanningTimerSignal Advance(TimeSpan now, long tick)
+    internal PlanningTimerSignal Advance(TimeSpan now, long tick)
     {
         if (_pausedElapsed is not null) return PlanningTimerSignal.None;
         var signal = PlanningTimerSignal.None;
@@ -377,16 +378,30 @@ public sealed partial class ChaosGame
     /// the console tile helper (FND-UI-032) and the sector view's back control (FND-UI-015); the
     /// idle-gang warning is answered before the test. A left press on the portrait of one of the
     /// player's gang cards runs the individual command handler's own loop until the button is
-    /// released, whether or not the gang is dragged (FND-UI-044).
+    /// released, whether or not the gang is dragged (FND-UI-044). The original's hold loops end only
+    /// when the button comes up, so a hold the rebuild's Escape or right press lets go of keeps the
+    /// test from running until then.
     /// </summary>
     private bool AtPlanningLoopPass() =>
         _screens.Current is ClientScreen.City or ClientScreen.Sector
         && !_idleGangWarningOpen
-        && _draggedHireDefinitionId is null
-        && _pressedHireRejectSlot is null
-        && _pressedCityConsoleControl is null
-        && _pressedPanelFace is null
-        && _draggedGangId is null;
+        && !HoldsCityPointer()
+        && _pressedPanelFace is null;
+
+    /// <summary>
+    /// The presses on the city and the sector view that hold the original in a loop of its own
+    /// until the left button comes up, so that neither the planning loop
+    /// (<see cref="AtPlanningLoopPass"/>) nor the event pump (<see cref="HoldsPointerOutsideEventPump"/>)
+    /// runs: an offer and its reject cross (FND-HIRE-008), a console tile (FND-UI-032) and a gang
+    /// card's portrait (FND-UI-044). A hold the rebuild's Escape or right press lets go of still
+    /// counts until the button comes up, since the original's loop ends only then.
+    /// </summary>
+    private bool HoldsCityPointer() =>
+        _draggedHireDefinitionId is not null
+        || _pressedHireRejectSlot is not null
+        || _pressedCityConsoleControl is not null
+        || _draggedGangId is not null
+        || _leftHoldOutlivesCancel;
 
     /// <summary>
     /// Whether a press holds the game in a loop of the original that dispatches window messages
@@ -400,16 +415,31 @@ public sealed partial class ChaosGame
     /// right-button hold of the back control does not count.
     /// </summary>
     private bool HoldsPointerOutsideEventPump() =>
-        _draggedHireDefinitionId is not null
-        || _pressedHireRejectSlot is not null
-        || _draggedGangId is not null
-        || _pressedCityConsoleControl is not null
+        HoldsCityPointer()
         || _pressedEventsButton is not null
         || _pressedCommandPanelButton is not null
         || _pressedComlinkSendButton is not null
         || _pressedAttackFace is not null
         || _combatExit.Tracking
         || _pressedPanelFace is not null && !_pressedPanelFaceByRightButton;
+
+    /// <summary>
+    /// Whether the original would be in a loop that does not call the event pump: a pointer hold
+    /// (<see cref="HoldsPointerOutsideEventPump"/>) or a soundtrack fade. The fade runs inside the
+    /// pump's music step and leaves timer slot 0 alone, so the pump takes no tick until it ends
+    /// and then takes the one the flag kept (FND-AUDIO-017).
+    /// </summary>
+    private bool OutsideEventPump() => HoldsPointerOutsideEventPump() || _soundtrackFade is not null;
+
+    /// <summary>
+    /// Called by a cancel that lets go of one of the holds <see cref="HoldsCityPointer"/> lists,
+    /// so the planning loop and the event pump stay out until the left button comes up (FND-UI-044,
+    /// FND-HIRE-008).
+    /// </summary>
+    private void KeepLeftHoldUntilRelease()
+    {
+        if (_previousMouse.LeftButton == ButtonState.Pressed) _leftHoldOutlivesCancel = true;
+    }
 
     /// <summary>The screens that are not the match, where no planning clock is drawn or run.</summary>
     private bool LeftMatchScreen() =>

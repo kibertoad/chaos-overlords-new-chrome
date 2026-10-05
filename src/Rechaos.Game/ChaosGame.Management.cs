@@ -97,61 +97,68 @@ public sealed partial class ChaosGame
         _siteSearchCursor = (_siteSearchCursor + delta + count) % count;
     }
 
+    private short[] SiteSearchRows() => _definitions is null ? [] : SiteSearchPanel.Rows(_definitions);
+
     private void ToggleSiteSearchSelection()
     {
-        if (_definitions is null) return;
-        var sites = _definitions.Sites.OrderBy(site => site.Id)
-            .Take(SiteSearchLayout.MaximumSites).ToArray();
-        if (_siteSearchCursor >= sites.Length) return;
-        var id = sites[_siteSearchCursor].Id;
-        _siteSearchSelections.Toggle(SiteSearchPlayer(), id);
+        var rows = SiteSearchRows();
+        if (_siteSearchCursor >= rows.Length) return;
+        SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
+            new SiteSearchPress(SiteSearchControl.Row, _siteSearchCursor), rows);
     }
 
     private void SelectAllSiteSearch()
     {
         if (_definitions is null) return;
         AcceptInput();
-        _siteSearchSelections.SelectAll(
-            SiteSearchPlayer(),
-            _definitions.Sites.OrderBy(site => site.Id)
-                .Take(SiteSearchLayout.MaximumSites).Select(site => site.Id));
+        SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
+            new SiteSearchPress(SiteSearchControl.All), SiteSearchRows());
     }
 
     private void ClearSiteSearch()
     {
         AcceptInput();
-        _siteSearchSelections.Clear(SiteSearchPlayer());
+        SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
+            new SiteSearchPress(SiteSearchControl.None), []);
     }
 
     private void ApplySiteSearch()
     {
         AcceptInput();
         _message = string.Empty;
+        CloseSiteSearch();
+    }
+
+    // FND-SEARCH-004: closing the panel draws the whole city again, gang-status markers included
+    // (RULE-UI-006).
+    private void CloseSiteSearch()
+    {
+        if (_state is { Coordinator.Phase: TurnPhase.Command } state)
+        {
+            var viewer = ViewingPlayer(state);
+            _gangMarkers.RedrawAll(state, viewer, _gangSight.For(state, viewer));
+        }
         _screens.Show(_managementReturnScreen);
     }
 
-    private void CancelSiteSearch() => _screens.Show(_managementReturnScreen);
-
     private void HandleSiteSearchClick(Point point)
     {
-        if (SiteSearchLayout.All.Contains(point)) SelectAllSiteSearch();
-        else if (SiteSearchLayout.None.Contains(point)) ClearSiteSearch();
-        else if (SiteSearchLayout.Ok.Contains(point)) ApplySiteSearch();
-        else if (_definitions is not null)
+        var rows = SiteSearchRows();
+        var click = SiteSearchPanel.Press(_siteSearchSelections, SiteSearchPlayer(), point, rows,
+            _siteSearchClicks, _inputTime);
+        switch (click.Press.Control)
         {
-            var count = Math.Min(_definitions.Sites.Count, SiteSearchLayout.MaximumSites);
-            for (var index = 0; index < count; index++)
-            {
-                if (!SiteSearchLayout.Site(index).Contains(point)) continue;
-                _siteSearchCursor = index;
-                var siteId = _definitions.Sites.OrderBy(site => site.Id)
-                    .Take(SiteSearchLayout.MaximumSites).ElementAt(index).Id;
-                if (_siteSearchClicks.Register(index, _inputTime))
-                    OpenSiteDefinitionDetails(siteId, ClientScreen.Search);
-                else
-                    ToggleSiteSearchSelection();
+            case SiteSearchControl.All:
+            case SiteSearchControl.None:
+                AcceptInput();
                 break;
-            }
+            case SiteSearchControl.Done:
+                ApplySiteSearch();
+                break;
+            case SiteSearchControl.Row:
+                _siteSearchCursor = click.Press.Row;
+                if (click.OpensDetails) OpenSiteDefinitionDetails(rows[click.Press.Row], ClientScreen.Search);
+                break;
         }
     }
 

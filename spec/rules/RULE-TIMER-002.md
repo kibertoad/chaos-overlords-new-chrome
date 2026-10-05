@@ -1,7 +1,7 @@
 ---
 id: RULE-TIMER-002
 title: A human planning turn ends when its time limit passes
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-STATE-010, FND-EXE-004, FND-UI-044, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052]
@@ -93,4 +93,5 @@ None known.
 
 ## Open questions
 
-None.
+- No recorded run lets the time pass while a gang card's portrait is held. The
+  expiry after the release rests on the static reading of FND-UI-044 alone.

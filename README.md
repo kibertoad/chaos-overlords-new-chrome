@@ -49,11 +49,12 @@ part of the original is known to be left out. The rebuild keeps the original's
 rounding, ordering and quirks, including bugs that players may rely on. It fixes
 only crashes, freezes, corrupted saves and logic that plainly does not do what it
 was written to do; when a bug cannot be told from a design decision, the original
-behaviour stays. Its 62 deliberate departures
+behaviour stays. Its 63 deliberate departures
 are listed in [DEVIATIONS.md](DEVIATIONS.md); many are interface changes, and
-six have a setting that restores the original behaviour. One of them, the
-computer players' Moves to distant sectors (DEV-AI-007), is switched by
-`--original-computer-moves` on the game's command line instead of a screen.
+seven have a setting that restores the original behaviour. Two of them, the
+computer players' Moves to distant sectors (DEV-AI-007) and their hires outside
+their own sectors (DEV-AI-008), are switched by `--original-computer-moves` and
+`--original-computer-hires` on the game's command line instead of a screen.
 
 Recorded runs of the original now check it in play. A debugger records every
 random draw of new games from launch and up to twenty-five turns of play, some

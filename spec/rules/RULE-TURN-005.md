@@ -4,7 +4,7 @@ title: Giving a gang an order replaces its whole previous order, one-off or recu
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-002, FND-TURN-009, FND-UI-044, FND-HIDE-001, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-TURN-002, FND-TURN-009, FND-UI-044, FND-HIDE-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-095]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -100,8 +100,9 @@ an unfinished site of a sector the player owns, through the gang command's
 second input path, writes Influence into `action` and `repeat_action` and the
 site slot into `target` and `repeat_target` (FND-TURN-009). That path is a
 drag of the gang's portrait on the detailed sector screen with the left
-button, which starts once the pointer has moved two pixels from the press and
-gives its order where the button comes up (FND-UI-044).
+button, which starts once the pointer has moved two pixels right or down or
+three pixels left or up from the press and gives its order where the button
+comes up (FND-UI-044).
 
 Bribe and Snitch are never offered as recurring. If a recurring value of 2 or
 13 were stored some other way, the turn-start cleanup would keep it forever
@@ -121,5 +122,12 @@ None known.
 
 ## Open questions
 
+- EXP-TURN-095 gives orders without pickers through every menu, in a sector
+  with no owner, under police presence and with no other player's gang seen.
+  No run of the original has yet made a choice that runs a picker (Attack,
+  Equip, Give, Influence, Move, Research, Sell, or a group Attack, Influence or
+  Move), a recurring Influence or Research from a gang's menu, a Control, a
+  group order that reaches a hiding gang, or the portrait drag, so those
+  branches rest on the static readings alone.
 - The computer players' orders are written by their own code, which this rule
   does not cover.

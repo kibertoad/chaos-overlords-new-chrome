@@ -66,6 +66,35 @@ public sealed partial class OriginalNewGameExperimentTests
     // was passed (-1 for the City variant) and the nine numbers it drew (FND-FINANCE-003).
     private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
 
+    // The list the original's Equip list builder filled for one category of one of the human's
+    // gangs at the recording's endpoint, with the Tech Level it was passed (FND-EQUIP-008).
+    private sealed record RecordedEquipList(int Slot, int Category, int TechLevel, IReadOnlyList<int> Items);
+
+    // The opponent's roster slots the original's Attack picker roster builder listed for one of the
+    // human's gangs at the recording's endpoint, with the sector it was passed (FND-ATTACK-006).
+    private sealed record RecordedAttackList(int Slot, int Sector, int Opponent, IReadOnlyList<int> Targets);
+
+    // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
+    // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
+    // (FND-HIRE-001, FND-HIRE-008).
+    private sealed record RecordedHireStep(int Slot, int Sector, IReadOnlyList<int> Orders);
+
+    // A click the probe posted after the dump, whether the Search panel was open after it, the
+    // active player and the whole search_filters table (FND-SEARCH-001, FND-SEARCH-002).
+    private sealed record RecordedSearchClick(int X, int Y, bool PanelOpen, int ActivePlayer, IReadOnlyList<int> Filters);
+
+    // An order step the probe took after the dump (RULE-TURN-005, SCR-UI-004): a double-click on
+    // city sector Target (open), a press at (X, Y) within card Target (card) or of the window
+    // (strip) answered with command Choice, or a press of the back control or of a result panel's
+    // Exit. After it: the popup menu it opened (-1 for none) with each item's command and greyed
+    // state, whether the city view is shown, the six card slots, and for every gang of the active
+    // player in use, slot 80 with them, its slot, sector, action, target, target_2, repeat_action
+    // and repeat_target (FMT-STATE-001, FND-UI-021), and the player whose gangs the cards list
+    // (FND-UI-015), -1 where the run did not keep it.
+    private sealed record RecordedOrderStep(
+        string Kind, int Target, int X, int Y, int Choice, int Menu, IReadOnlyList<(int Command, int State)>? Items,
+        bool CityView, IReadOnlyList<int> Cards, IReadOnlyList<IReadOnlyList<int>> Gangs, int Viewed);
+
     // A call of a planning entry panel: its name, the roll count when it was called and whether it
     // stayed open until Exit was pressed (RULE-SETUP-008).
     private sealed record RecordedPanel(string Panel, int AfterRoll, bool Shown);
@@ -142,10 +171,53 @@ public sealed partial class OriginalNewGameExperimentTests
                     markers.GetProperty("markers").EnumerateArray()
                         .Select(marker => marker.EnumerateArray().Select(value => value.GetInt32()).ToArray()).ToArray())
                 : null;
+            HireSteps = run.TryGetProperty("hire_steps", out var hireSteps)
+                ? hireSteps.EnumerateArray().Select(step => new RecordedHireStep(
+                    step.GetProperty("slot").GetInt32(), step.GetProperty("sector").GetInt32(),
+                    step.GetProperty("orders").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : [];
+            GangMarkers = run.TryGetProperty("gang_markers", out var gangMarkers)
+                ? gangMarkers.EnumerateArray()
+                    .Select(draw => (IReadOnlyList<int>)draw.EnumerateArray().Select(value => value.GetInt32()).ToArray())
+                    .ToArray()
+                : [];
+            OrderSteps = run.TryGetProperty("order_steps", out var orderSteps)
+                ? orderSteps.EnumerateArray().Select(step => new RecordedOrderStep(
+                    step.GetProperty("kind").GetString()!, step.GetProperty("target").GetInt32(),
+                    step.GetProperty("x").GetInt32(), step.GetProperty("y").GetInt32(),
+                    step.GetProperty("choice").GetInt32(), step.GetProperty("menu").GetInt32(),
+                    step.TryGetProperty("items", out var items)
+                        ? items.EnumerateArray().Select(item => (item[0].GetInt32(), item[1].GetInt32())).ToArray()
+                        : null,
+                    step.GetProperty("city_view").GetBoolean(),
+                    step.GetProperty("cards").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+                    step.GetProperty("gangs").EnumerateArray()
+                        .Select(gang => (IReadOnlyList<int>)gang.EnumerateArray().Select(value => value.GetInt32()).ToArray())
+                        .ToArray(),
+                    step.TryGetProperty("viewed", out var viewed) ? viewed.GetInt32() : -1)).ToArray()
+                : [];
+            SearchClicks = run.TryGetProperty("search_clicks", out var searchClicks)
+                ? searchClicks.EnumerateArray().Select(click => new RecordedSearchClick(
+                    click.GetProperty("x").GetInt32(), click.GetProperty("y").GetInt32(),
+                    click.GetProperty("panel_open").GetBoolean(), click.GetProperty("active_player").GetInt32(),
+                    click.GetProperty("filters").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : [];
             Finance = run.TryGetProperty("finance", out var finance)
                 ? finance.EnumerateArray().Select(panel => new RecordedFinance(
                     panel.GetProperty("turn").GetInt32(), panel.GetProperty("sector").GetInt32(),
                     panel.GetProperty("values").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : [];
+            EquipLists = run.TryGetProperty("equip_lists", out var equipLists)
+                ? equipLists.EnumerateArray().Select(list => new RecordedEquipList(
+                    list.GetProperty("slot").GetInt32(), list.GetProperty("category").GetInt32(),
+                    list.GetProperty("tech_level").GetInt32(),
+                    list.GetProperty("items").EnumerateArray().Select(item => item.GetInt32()).ToArray())).ToArray()
+                : [];
+            AttackLists = run.TryGetProperty("attack_lists", out var attackLists)
+                ? attackLists.EnumerateArray().Select(list => new RecordedAttackList(
+                    list.GetProperty("slot").GetInt32(), list.GetProperty("sector").GetInt32(),
+                    list.GetProperty("opponent").GetInt32(),
+                    list.GetProperty("targets").EnumerateArray().Select(target => target.GetInt32()).ToArray())).ToArray()
                 : [];
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.
@@ -179,6 +251,18 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<int> SearchFilter { get; }
         public RecordedMarkers? CityMarkers { get; }
         public IReadOnlyList<RecordedFinance> Finance { get; }
+        public IReadOnlyList<RecordedEquipList> EquipLists { get; }
+        public IReadOnlyList<RecordedAttackList> AttackLists { get; }
+        public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
+        public IReadOnlyList<RecordedHireStep> HireSteps { get; }
+        public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }
+
+        // Each gang-status marker drawing from the last full city redraw before the dump on, as
+        // the post-dump step it came in (0 before the first), kind, player, sector and frame:
+        // kind 0 a full redraw, 1 a frame drawn for a sector holding the player's gang, 2 the
+        // cell under the incoming-only mark copied back over the sector, 3 that mark drawn
+        // (FND-UI-024).
+        public IReadOnlyList<IReadOnlyList<int>> GangMarkers { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
         public IReadOnlyList<RecordedPlanning> Planning { get; }
@@ -201,6 +285,10 @@ public sealed partial class OriginalNewGameExperimentTests
         public int Field(string format, int record, string field) => _fields[(format, record, field)];
 
         public bool HasField(string format, int record, string field) => _fields.ContainsKey((format, record, field));
+
+        /// <summary>Every value the fixture records for <paramref name="format"/>.</summary>
+        public IEnumerable<int> Values(string format) =>
+            _fields.Where(entry => entry.Key.Item1 == format).Select(entry => entry.Value);
 
         /// <summary>A field or term of a sparse table, which the fixture leaves out when it holds 0.</summary>
         public int FieldOrZero(string format, int record, string field) => _fields.GetValueOrDefault((format, record, field));

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-005, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004, FND-UI-047]
+evidence: [FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-010, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004, FND-UI-047]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-002, RULE-COMLINK-003, RULE-COMLINK-006]
@@ -21,8 +21,8 @@ related: [RULE-COMLINK-002, RULE-COMLINK-003, RULE-COMLINK-006]
 | Card portrait | `DATA/PX16/PX00129` rectangle (`portrait * 32`, 480, 32, 32), or (`portrait * 32`, 594, 32, 32) when `comlink_eligible` is clear | None | (card x + 8, card y, 32, 32) | Always | FND-COMLINK-007 |
 | Card name | Character cells of `DATA/PX16/PX00129` from the row at y 0, or from the row at y 274 when `comlink_eligible` is clear | The name in `player_names` | (card x + 42, card y + 2) | Always | FND-COMLINK-007 |
 | Card frame | A one-pixel outline | Black, or green while `comlink_selected` is set for the slot | (card x - 1, card y - 1, 105, 34) | Always | FND-COMLINK-003, FND-COMLINK-007 |
-| Message characters | 6-by-7 cells from the plain character row of `DATA/PX16/PX00129` at y 0, character `c` at x `(c - 0x20) * 6` | `comlink_draft.text` | (199 + 6 * column, 256 + 8 * row, 6, 7) for rows 0 to 3 and columns 0 to 39 | Always | FND-COMLINK-005 |
-| Caret | The same cell from the inverse character row of `DATA/PX16/PX00129` at y 441 | The character at the text cursor | The cell at (`comlink_draft_row`, `comlink_draft_column`) | During the inverse phase of the caret (Timing) | FND-COMLINK-005 |
+| Message characters | 6-by-7 cells from the plain character row of `DATA/PX16/PX00129` at y 0, character `c` at x `(c - 0x20) * 6` | `comlink_draft.text` | (199 + 6 * column, 256 + 8 * row, 6, 7) for rows 0 to 3 and columns 0 to 39 | Always | FND-COMLINK-010 |
+| Caret | The same cell from the inverse character row of `DATA/PX16/PX00129` at y 441 | The character at the text cursor | The cell at (`comlink_draft_row`, `comlink_draft_column`) | During the inverse phase of the caret (Timing) | FND-COMLINK-010 |
 | Cancel pressed | `DATA/PX16/PX00129` rectangle (50, 409, 50, 23) | None | (137, 261, 50, 23) | While Cancel is held with the pointer inside it | FND-COMLINK-003 |
 | Send pressed | `DATA/PX16/PX00129` rectangle (50, 386, 50, 23) | None | (137, 293, 50, 23) | While Send is held with the pointer inside it | FND-COMLINK-003 |
 
@@ -45,10 +45,10 @@ related: [RULE-COMLINK-002, RULE-COMLINK-003, RULE-COMLINK-006]
 | Key | Enabled when | Effect | Evidence |
 |---|---|---|---|
 | Execute (virtual key `0x2B`) | Always | Sends through RULE-COMLINK-003; rejected with no recipient selected | FND-COMLINK-003 |
-| Enter | Always | Moves the text cursor to column 0 of the next row (RULE-COMLINK-006) | FND-COMLINK-005 |
-| Backspace | Always | Moves the text cursor back one cell, wrapping to the row above, and blanks that cell (RULE-COMLINK-006) | FND-COMLINK-005, FND-COMLINK-007 |
-| Left, Up, Right, Down | Always | Moves the text cursor; Left and Right wrap between rows, and the rows are held between 0 and 3 (RULE-COMLINK-006) | FND-COMLINK-005, FND-COMLINK-007 |
-| Any key typing a character | Always | Writes the character, with `a` to `z` turned to capitals, at the text cursor when it lies from space to `Z`, and moves the cursor on (RULE-COMLINK-006) | FND-COMLINK-005, FND-COMLINK-007 |
+| Enter | Always | Moves the text cursor to column 0 of the next row (RULE-COMLINK-006) | FND-COMLINK-010 |
+| Backspace | Always | Moves the text cursor back one cell, wrapping to the row above, and blanks that cell (RULE-COMLINK-006) | FND-COMLINK-010, FND-COMLINK-007 |
+| Left, Up, Right, Down | Always | Moves the text cursor; Left and Right wrap between rows, and the rows are held between 0 and 3 (RULE-COMLINK-006) | FND-COMLINK-010, FND-COMLINK-007 |
+| Any key typing a character | Always | Writes the character, with `a` to `z` turned to capitals, at the text cursor when it lies from space to `Z`, and moves the cursor on (RULE-COMLINK-006) | FND-COMLINK-010, FND-COMLINK-007 |
 
 ## Other input
 
@@ -67,16 +67,21 @@ None.
 |---|---|---|---|
 | Composing | RULE-COMLINK-002 opens the panel, with no recipient selected, a blank draft and the cursor at row 0, column 0 | Cancel or Send is released inside itself, or Execute is pressed with a recipient selected | FND-COMLINK-003, FND-COMLINK-007 |
 | Button held | Cancel or Send is pressed | The button is released; leaving the button while holding it puts its plain face back, and releasing outside does nothing | FND-COMLINK-003 |
-| Caret plain, caret inverse | The panel opens (plain), then every third timer event switches between them | The panel closes | FND-COMLINK-005 |
+| Caret plain, caret inverse | The panel opens (plain), then every third timer event switches between them | The panel closes | FND-COMLINK-010 |
 
 ## Timing
 
 The caret uses timer 0, which the game registers with `timeSetEvent` at a
-period of `1000 / 6` = 166 milliseconds. The Send loop raises the timer flag
-itself when it starts, then counts the timer events it consumes, and every
-third one switches the caret between the plain and the inverse character row.
-Each phase therefore lasts three events, 498 milliseconds, and the caret starts
-plain [FND-COMLINK-005].
+period of `1000 / 6` = 166 milliseconds. The Send loop counts the timer events
+it consumes from the panel's opening, and every third one switches the caret
+between the plain and the inverse character row. The caret starts plain. Each
+phase after the first lasts three events, 498 milliseconds. The timer runs
+from start-up and is not restarted when the panel opens, so the first phase
+ends on the third tick after the opening, more than two periods and at most
+three after it. When the timer flag is already raised as the panel opens, the
+first pass counts it, since the Send loop does not raise or clear the flag
+before that pass, and the first phase lasts more than one period and at most
+two [FND-COMLINK-010].
 
 While Cancel or Send is held with the pointer, the count stops. The pass that
 ends with the release counts one event if any fell during the hold and loses

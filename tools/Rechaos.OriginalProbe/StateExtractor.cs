@@ -17,7 +17,7 @@ internal sealed class StateExtractor
 
     private StateExtractor(byte[] data) => _data = data;
 
-    public static JsonObject ExtractRun(string runDirectory)
+    public static JsonObject ExtractRun(string runDirectory, IReadOnlyList<CaptureScreen> screens)
     {
         var trace = JsonNode.Parse(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
         var extractor = new StateExtractor(File.ReadAllBytes(Path.Combine(runDirectory, $"data-{DataStart:X8}.bin")));
@@ -64,6 +64,74 @@ internal sealed class StateExtractor
                 });
             run["finance"] = panels;
         }
+        // RULE-EQUIP-004, FND-EQUIP-008: the list the Equip panel's builder filled for each category
+        // of each of the first human's living gangs, with the Tech Level it was passed.
+        if (trace["EquipLists"] is JsonArray equipLists)
+            run["equip_lists"] = new JsonArray(equipLists.Select(list => (JsonNode)new JsonObject
+            {
+                ["slot"] = list!["Slot"]!.GetValue<int>(),
+                ["category"] = list["Category"]!.GetValue<int>(),
+                ["tech_level"] = list["TechLevel"]!.GetValue<int>(),
+                ["items"] = new JsonArray(list["Items"]!.AsArray().Select(item => (JsonNode)item!.GetValue<int>()).ToArray()),
+            }).ToArray());
+        // RULE-ATTACK-002, FND-ATTACK-006: the targets the Attack picker's roster builder filled for
+        // each opponent and each of the first human's living gangs, with the sector it was passed.
+        if (trace["AttackLists"] is JsonArray attackLists)
+            run["attack_lists"] = new JsonArray(attackLists.Select(list => (JsonNode)new JsonObject
+            {
+                ["slot"] = list!["Slot"]!.GetValue<int>(),
+                ["sector"] = list["Sector"]!.GetValue<int>(),
+                ["opponent"] = list["Opponent"]!.GetValue<int>(),
+                ["targets"] = new JsonArray(list["Targets"]!.AsArray().Select(target => (JsonNode)target!.GetValue<int>()).ToArray()),
+            }).ToArray());
+        // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
+        if (trace["HireSteps"] is JsonArray hireSteps)
+            run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject
+            {
+                ["slot"] = step!["Slot"]!.GetValue<int>(),
+                ["sector"] = step["Sector"]!.GetValue<int>(),
+                ["orders"] = new JsonArray(step["Orders"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+            }).ToArray());
+        // RULE-UI-006, FND-UI-024: each gang-status marker drawing from the last full city redraw
+        // before the dump on, as step, kind, player, sector and frame.
+        if (trace["GangMarkers"] is JsonArray gangMarkers)
+            run["gang_markers"] = new JsonArray(gangMarkers.Select(draw => (JsonNode)new JsonArray(
+                draw!["Step"]!.GetValue<int>(), draw["Kind"]!.GetValue<int>(), draw["Player"]!.GetValue<int>(),
+                draw["Sector"]!.GetValue<int>(), draw["Frame"]!.GetValue<int>())).ToArray());
+        // RULE-TURN-005, SCR-UI-004: each order step after the dump, the popup it opened with its
+        // items' commands and greyed states, the view, the card slots and the active player's orders.
+        if (trace["OrderSteps"] is JsonArray orderSteps)
+            run["order_steps"] = new JsonArray(orderSteps.Select(step =>
+            {
+                var probeStep = step!["Step"]!;
+                var record = new JsonObject
+                {
+                    ["kind"] = probeStep["Kind"]!.GetValue<string>(),
+                    ["target"] = probeStep["Target"]!.GetValue<int>(),
+                    ["x"] = probeStep["X"]!.GetValue<int>(),
+                    ["y"] = probeStep["Y"]!.GetValue<int>(),
+                    ["choice"] = probeStep["Choice"]!.GetValue<int>(),
+                    ["menu"] = step["Menu"]!.GetValue<int>(),
+                };
+                if (step["Items"] is JsonArray items)
+                    record["items"] = new JsonArray(items.Select(Integers).ToArray());
+                record["city_view"] = step["CityView"]!.GetValue<bool>();
+                if (step["Viewed"] is JsonNode viewed) record["viewed"] = viewed.GetValue<int>();
+                record["cards"] = Integers(step["Cards"]);
+                record["gangs"] = new JsonArray(step["Gangs"]!.AsArray().Select(Integers).ToArray());
+                return (JsonNode)record;
+            }).ToArray());
+        // RULE-SEARCH-001, FND-SEARCH-002: each click posted after the dump, whether the Search panel
+        // was open after it, the active player and the whole filter table.
+        if (trace["SearchClicks"] is JsonArray searchClicks)
+            run["search_clicks"] = new JsonArray(searchClicks.Select(click => (JsonNode)new JsonObject
+            {
+                ["x"] = click!["X"]!.GetValue<int>(),
+                ["y"] = click["Y"]!.GetValue<int>(),
+                ["panel_open"] = click["PanelOpen"]!.GetValue<bool>(),
+                ["active_player"] = click["ActivePlayer"]!.GetValue<int>(),
+                ["filters"] = new JsonArray(click["Filters"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+            }).ToArray());
         // RULE-SETUP-008: each call of a planning entry panel, with the roll count and whether it
         // was shown, in the order of the calls.
         if (trace["Panels"] is JsonArray panelCalls)
@@ -100,7 +168,59 @@ internal sealed class StateExtractor
             }
             run["timers"] = timers;
         }
+        // --capture: the drawing area at the dump, with a digest of each screen element's rectangle
+        // (CaptureFixture).
+        if (CaptureFixture.Extract(runDirectory, trace, screens) is { } capture)
+            run["capture"] = capture;
         return run;
+    }
+
+    /// <summary>
+    /// The arguments every extract command takes, <c>--experiment &lt;EXP-ID&gt; --out
+    /// &lt;fixture.json&gt; &lt;run directory&gt;...</c> in that order, or null when they are missing.
+    /// </summary>
+    public static (string Experiment, string Output, string[] Runs)? ExtractArguments(string[] args)
+    {
+        var experiment = Option(args, "--experiment");
+        var output = Option(args, "--out");
+        var runs = args.Skip(5).ToArray();
+        if (experiment is null || output is null || runs.Length == 0 || args[1] != "--experiment" || args[3] != "--out")
+            return null;
+        return (experiment, output, runs);
+    }
+
+    /// <summary>The value after <paramref name="name"/>, or null when it is absent.</summary>
+    public static string? Option(string[] args, string name)
+    {
+        var at = Array.IndexOf(args, name);
+        return at >= 0 && at + 1 < args.Length ? args[at + 1] : null;
+    }
+
+    /// <summary>
+    /// Writes a fixture: the header, the inputs that start a new game with the runs' setup choices,
+    /// the experiment's own <paramref name="scriptInputs"/> after them, the seeds and the runs.
+    /// </summary>
+    public static void WriteFixture(string output, string experiment, string clock, string[] settings,
+        IEnumerable<JsonObject> scriptInputs, JsonArray seeds, JsonArray runs)
+    {
+        var fixture = new JsonObject
+        {
+            ["experiment"] = experiment,
+            ["build"] = "BLD-GOG-EN-1.1",
+            ["starting_state"] = null,
+            ["recording_xxh3"] = null,
+            ["clock"] = clock,
+            ["inputs"] = new JsonArray(
+            [
+                new JsonObject { ["tick"] = 0, ["name"] = "command", ["value"] = "File, New Game (0x8101)" },
+                .. settings.Select(setting => new JsonObject { ["tick"] = 0, ["name"] = "setup", ["value"] = setting }),
+                new JsonObject { ["tick"] = 0, ["name"] = "left_click", ["value"] = "Begin (416, 397)" },
+                .. scriptInputs,
+            ]),
+            ["seeds"] = seeds,
+            ["runs"] = runs,
+        };
+        File.WriteAllText(output, Serialize(fixture) + "\n");
     }
 
     /// <summary>The setup choices a run was recorded with, one line each; none for the defaults.</summary>
@@ -359,4 +479,7 @@ internal sealed class StateExtractor
 
         return node?.ToJsonString() ?? "null";
     }
+
+    private static JsonNode Integers(JsonNode? values) =>
+        new JsonArray(values!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray());
 }

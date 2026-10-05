@@ -22,7 +22,7 @@ identical byte for byte. The capture is a PNG file with xxh3
 `a83f82a2aab84d9a1e0e9de626409149` (SHA-256
 `ab81528fa770e991140d5133c5dbb092751c7c3f723195cb33dcb41740410275`), kept
 with the maintainer's copy of the game as
-`GAME_DIR/captures/a83f82a2aab84d9a1e0e9de626409149.png`.
+`GAME_DIR/captures/a83f82a2aab84d9a1e0e9de626409149`.
 
 Before the run, searches of the current user's and the machine's registry
 hives found no `prefsObjective` value, so no stored preference chose the

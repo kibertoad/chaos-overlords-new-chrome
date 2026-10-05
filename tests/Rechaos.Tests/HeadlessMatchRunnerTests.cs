@@ -54,6 +54,28 @@ public sealed class HeadlessMatchRunnerTests
             gameEvent => gameEvent.Kind == GameEventKind.HireResolved);
     }
 
+    /// <summary>
+    /// DEV-AI-008: the headless runner passes the hire setting into the match it builds, and a
+    /// match with the deviation switched off still replays from its journal.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ComputerHireSettingReachesTheMatchAndReplays(bool computerHiresWhereHumansCan)
+    {
+        var options = new HeadlessMatchOptions(
+            ScenarioId.Power, GameDuration.FourYears, 4093,
+            ThroughTurn: 4, VerifyReplay: true,
+            ComputerHiresWhereHumansCan: computerHiresWhereHumansCan);
+
+        var result = HeadlessMatchRunner.Run(
+            BundledOriginalData.Load(), options,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(computerHiresWhereHumansCan, result.State.Setup.ComputerHiresWhereHumansCan);
+        Assert.True(result.ReplayVerified);
+    }
+
     [Fact]
     public void TurnWindowEmitsBoundedProgressWithoutPresentationRuntime()
     {
