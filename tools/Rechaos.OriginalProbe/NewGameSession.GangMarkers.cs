@@ -13,6 +13,7 @@ internal sealed partial class NewGameSession
 {
     private readonly List<GangMarkerDraw> _gangMarkers = [];
     private int _postDumpStep;
+    private bool _gangMarkersDumped;
 
     // RULE-UI-006, FND-UI-024, EXP-UI-004: the marker function fn_00412BF7(player, sector) reaches
     // one of three copies for each sector it draws: the frame of a sector holding the player's gang
@@ -24,7 +25,9 @@ internal sealed partial class NewGameSession
     {
         _process.SetBreakpoint(OriginalAddresses.CityRedraw, context =>
         {
-            if (_postDumpStep == 0) _gangMarkers.Clear();
+            // Only a redraw before the dump starts the log again: the Search clicks, which also
+            // redraw the city, come after it and before the first step.
+            if (!_gangMarkersDumped) _gangMarkers.Clear();
             _gangMarkers.Add(new GangMarkerDraw(_postDumpStep, 0, context.Argument(0), -1, -1));
         }, quiet: true);
         _process.SetBreakpoint(OriginalAddresses.GangMarkerFrame, context => _gangMarkers.Add(new GangMarkerDraw(

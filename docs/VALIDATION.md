@@ -730,12 +730,13 @@ the frame counter is that value while the flag is set, the pump counter when it
 is clear, and null when the probe could not tell. A panel that slides in over
 another finds the flag set and leaves the counter as it was. While Item
 Information, Sell or Give is open the shot also keeps `item_frame`, the frame
-of its rotating items, read from the handler's local before and after the copy
-(FND-UI-052, FND-UI-053); while the idle gang warning is open, the ticks since
-its open modulo 8, read from its countdown and shown flag (FND-UI-054); and
-for a shot of the Comlink Send panel, 3 while its caret is drawn inverse and 0
-while plain, read from the byte at `0x00498110` (FND-COMLINK-010). A
-`warn` step switches Warn if Idle Gangs back on for the steps after it. `extract` gives that
+of its rotating items, read from the handler's local before and after the
+capture, which is taken again when the two reads differ (FND-UI-052,
+FND-UI-053); while the idle gang warning is open, the ticks since its open
+modulo 8, read from its countdown and shown flag (FND-UI-054); and for a shot
+of the Comlink Send panel, 3 while its caret is drawn inverse and 0 while
+plain, read from the byte at `0x00498110` (FND-COMLINK-010). A `warn` step
+switches Warn if Idle Gangs back on for the steps after it. `extract` gives that
 order step a `capture` object as above and a `screens` string naming the
 screens it is compared at. The steps before it bring the screen up: `open:s`
 double-clicks sector `s` on the city map, `dbl:x:y` double-clicks the window
@@ -758,9 +759,13 @@ setup screen two seconds after it opens, before the run writes its own
 settings; `extract` gives the run a `setup_capture` object, compared at
 SCR-SETUP-001. `--setup-steps` then posts presses on the setup screen, as
 `strip:x:y`, drags as `drag:x:y:x2:y2` and copies as `shot`, each copy
-compared at SCR-SETUP-001; `extract` lists them as the run's `setup_steps`. A
-drag of a card face is not reliable this way, because the game does not always
-see the moves between the press and the release. EXP-UI-015 is taken this way.
+compared at SCR-SETUP-001; `extract` lists them as the run's `setup_steps` and
+as `setup` inputs. A drag writes the two pointer points of FND-UI-020 at the
+press, at each of eight steps to the release point and before the release, as
+the hire steps do, and posts only the button messages. The run's own settings
+then replace only what they set: any other choice keeps what the presses left,
+and the trace notes which choices the presses changed. EXP-UI-015 is taken this
+way, with an earlier drag that posted the moves as `WM_MOUSEMOVE` instead.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
@@ -780,7 +785,8 @@ save, and starts the game with
 
 ```text
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
-    [--pump-counter <0-7>] [--selected-sector <0-63>] [--item-frame <0-14>]
+    [--pump-counter <0-7>] [--selected-sector <0-63>] [--lamps <0|1>,<0|1>]
+    [--item-frame <0-14>]
     [--reference-clicks <x:y[:2]|x:y>x:y>,...]
 ```
 
@@ -790,9 +796,15 @@ bitmap before it exits. `--pump-counter` passes the capture's `frame_counter`, o
 `pump_counter` when the fixture has none, which picks the selected-sector frame
 drawn (FND-UI-048). `--selected-sector` passes `selected_sector`, which the
 planning entry selects in place of the sector the rebuild keeps for the player
-(FND-SAVE-003); a save holds no selection (DEV-SAVE-001). `--item-frame` passes
-`item_frame`, the frame the rotating items of Item Information, Sell and Give
-are drawn at, the idle gang warning's phase, or the Comlink caret's.
+(FND-SAVE-003); a save holds no selection (DEV-SAVE-001). `--lamps` passes the
+second and fourth of the capture's `lamps`, the bytes that say the Events and
+the Comlink lamp were drawn lit, which pick the blink phase of those lights in
+place of the clock's (FND-EVENT-006). `--item-frame` passes `item_frame`, the
+frame the rotating items of Item Information, Sell and Give are drawn at
+(FND-UI-052, FND-UI-053), the idle gang warning's ticks since its open
+modulo 8 (FND-UI-054), or the Comlink caret's phase (FND-COMLINK-010). The blinking
+and cycling parts of the screen stay at time zero however many clicks were
+made: the marker is drawn at `--marker-frame`, or at its first frame without it.
 `--reference-clicks` lists the presses that take the rebuild from the planning
 entry to a shot step's screen, `:2` marking a double-click. They run on a clock
 of their own, one button edge every 50 ms, wait while a pressed face or a flash
@@ -821,14 +833,19 @@ The test then compares each element:
 - An element the original drew wholly in exact white is unverified: in a
   capture taken without `--white-key`, a keyed copy on Windows 11 draws solid
   white where its image should show through (FND-PLATFORM-014), and what
-  belongs there is unknown. The test does not read the `key_colour` setup
-  input, so it treats the white of a `--white-key` capture the same way.
+  belongs there is unknown.
 - With the capture under `GAME_DIR/captures/`, every pixel outside the masks is
   compared. A pixel the original drew exact white is counted as unverified
   unless the rebuild drew it white as well. The element matches when no
   compared pixel differs.
 - Without the capture, an element with no white pixel and no mask is compared
   by its digest, and any other element is unverified.
+- A fixture whose inputs hold the setup input `key_colour`, written by
+  `--white-key`, has no white left by a keyed copy, so its exact white is
+  compared like any other colour: a pixel the original drew white and the
+  rebuild did not differs, and without the capture an element with white
+  pixels and no mask is compared by its digest. EXP-UI-003 is compared this
+  way.
 - `ScreenCaptureMasks` lists, for each screen, the rectangles a deviation draws
   over, each under the ID of the deviation. All the masks of the screens a
   capture names apply to the whole frame. `EveryMaskCitesADeviationFromItsScreen`

@@ -62,14 +62,15 @@ public sealed partial class ScreenCaptureTests
         var original = path is null ? null : ScreenFrame.ReadBitmap(File.ReadAllBytes(path));
         var rebuild = capture.BeforeMatch is { } screen
             ? RebuildFrame.RenderBeforeMatch(screen,
-                $"{experiment}-{run}-{screen}" + (step <= ScreenCaptureRecord.SetupStepBase ? $"-{ScreenCaptureRecord.SetupStepBase - step}" : ""),
+                $"{experiment}-{run}-{screen}" + (capture.SetupStep is { } setupStep ? $"-{setupStep}" : ""),
                 capture.Clicks)
             : RebuildFrame.Render(
                 OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
-                $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector,
+                $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
                 capture.ItemFrame);
 
-        var results = capture.Elements.Select(element => ScreenComparison.Compare(element, original, rebuild, masks)).ToArray();
+        var results = capture.Elements
+            .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
         var output = TestContext.Current.TestOutputHelper;
         foreach (var result in results) output?.WriteLine(result.ToString());
         Assert.Empty(results.Where(result => result.Verdict == ElementVerdict.Differs).Select(result => result.ToString()));
@@ -170,6 +171,43 @@ public sealed partial class ScreenCaptureTests
         var differs = ScreenComparison.Compare(element, original, wrong, []);
         Assert.Equal(ElementVerdict.Differs, differs.Verdict);
         Assert.Equal(1, differs.Differing);
+    }
+
+    [Fact]
+    public void WhiteInAWhiteKeyedCaptureIsCompared()
+    {
+        // With --white-key the keyed copies leave their white out (FND-PLATFORM-014), so the white
+        // left in the capture is drawn on purpose and the rebuild has to draw it too.
+        var original = Frame((x, y) => x < 110 && y < 60 ? ScreenFrame.White : 0x445566u);
+        var element = Element(new Rectangle(100, 50, 40, 20), original, out _);
+        var matching = ScreenComparison.Compare(element, original, original, [], whiteKeyed: true);
+        Assert.Equal(ElementVerdict.Matches, matching.Verdict);
+        Assert.Equal(0, matching.Unverified);
+        Assert.Equal(ElementVerdict.Matches, ScreenComparison.Compare(element, null, original, [], whiteKeyed: true).Verdict);
+
+        var rebuild = Frame((_, _) => 0x445566u);
+        var differs = ScreenComparison.Compare(element, original, rebuild, [], whiteKeyed: true);
+        Assert.Equal(ElementVerdict.Differs, differs.Verdict);
+        Assert.Equal(100, differs.Differing);
+        Assert.Equal(ElementVerdict.Differs, ScreenComparison.Compare(element, null, rebuild, [], whiteKeyed: true).Verdict);
+
+        var solid = Element(new Rectangle(100, 50, 10, 10), original, out var white);
+        Assert.Equal(100, white);
+        Assert.Equal(ElementVerdict.Differs, ScreenComparison.Compare(solid, original, rebuild, [], whiteKeyed: true).Verdict);
+    }
+
+    [Fact]
+    public void AFixtureWithTheKeyColourInputIsWhiteKeyed()
+    {
+        using var keyed = JsonDocument.Parse("""
+            {"inputs":[{"tick":0,"name":"setup","value":"scenario 0"},
+                       {"tick":0,"name":"setup","value":"key_colour RGB(255,255,255)"}]}
+            """);
+        using var plain = JsonDocument.Parse("""{"inputs":[{"tick":0,"name":"setup","value":"scenario 0"}]}""");
+        Assert.True(ScreenCaptureRecord.IsWhiteKeyed(keyed.RootElement));
+        Assert.False(ScreenCaptureRecord.IsWhiteKeyed(plain.RootElement));
+        Assert.Contains(ScreenCaptureRecord.LoadAll(), capture => capture.Experiment == "EXP-UI-003" && capture.WhiteKeyed);
+        Assert.Contains(ScreenCaptureRecord.LoadAll(), capture => capture.Experiment == "EXP-UI-001" && !capture.WhiteKeyed);
     }
 
     [Fact]

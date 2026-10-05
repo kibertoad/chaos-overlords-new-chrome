@@ -49,9 +49,11 @@ internal sealed partial class NewGameSession
     // opens a popup reaches the TrackPopupMenu call of the popup helper (FND-UI-021); the probe
     // keeps the menu and its items' states there and skips the call, handing the helper the step's
     // command as Windows would for the player's choice, so no menu is shown. An order takes effect
-    // only at resolution, which no step reaches.
-    private bool RecordOrderSteps(IntPtr window)
+    // only at resolution, which no step reaches, so a step that makes the original roll has gone
+    // past the dumped state and ends the run as not dumped. Returns why the steps stopped, or null.
+    private string? RecordOrderSteps(IntPtr window)
     {
+        var rollsAtDump = _rolls.Count;
         var menu = -1;
         List<List<int>>? items = null;
         int? choice = null;
@@ -74,21 +76,37 @@ internal sealed partial class NewGameSession
         // FND-UI-052, FND-UI-053: the frame local of the last of Item Information, Sell and Give
         // to open, while it runs. It is read from memory around the capture, since a breakpoint's
         // report reaches the probe only after the game has gone on drawing.
-        var itemHandlers = new Stack<(uint Ebp, uint Local, uint ShownLocal)>();
+        // A return pops the entries down to its own handler's, so a handler whose return went
+        // unseen cannot leave its frame to be read by a later shot.
+        var itemHandlers = new Stack<(uint Starts, uint Ebp, uint Local, uint ShownLocal)>();
         foreach (var (starts, local, returns, shownLocal) in OriginalAddresses.ItemFrameHandlers)
         {
-            _process.SetBreakpoint(starts, context => itemHandlers.Push((context.Ebp, local, shownLocal)), quiet: true);
-            _process.SetBreakpoint(returns, _ => itemHandlers.TryPop(out var _), quiet: true);
+            _process.SetBreakpoint(starts, context => itemHandlers.Push((starts, context.Ebp, local, shownLocal)), quiet: true);
+            _process.SetBreakpoint(returns, _ =>
+            {
+                if (itemHandlers.Any(entry => entry.Starts == starts))
+                    while (itemHandlers.Pop().Starts != starts) { }
+            }, quiet: true);
         }
         // FND-UI-054: the warning's line is shown for six ticks from the open and hidden for two,
         // and the countdown holds the ticks left of the current part, so the ticks since the
-        // open, modulo 8, are 6 less the countdown while shown and 8 less it while hidden.
+        // open, modulo 8, are 6 less the countdown while shown and 8 less it while hidden. A read
+        // between the handler's stores can find the countdown at 0 while hidden, so the result is
+        // reduced modulo 8. The game keeps running between the reads, so the flag is read before
+        // and after the countdown, and a pair whose flag changed between them is read again.
         int? ItemFrame()
         {
             if (!itemHandlers.TryPeek(out var handler)) return null;
-            var value = _process.ReadInt32(handler.Ebp - handler.Local);
-            if (handler.ShownLocal == 0) return value;
-            return _process.Read(handler.Ebp - handler.ShownLocal, 1)[0] != 0 ? 6 - value : 8 - value;
+            if (handler.ShownLocal == 0) return _process.ReadInt32(handler.Ebp - handler.Local);
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                var shown = _process.Read(handler.Ebp - handler.ShownLocal, 1)[0];
+                var value = _process.ReadInt32(handler.Ebp - handler.Local);
+                if (_process.Read(handler.Ebp - handler.ShownLocal, 1)[0] != shown) continue;
+                var phase = shown != 0 ? 6 - value : 8 - value;
+                return (phase % 8 + 8) % 8;
+            }
+            return null;
         }
         foreach (var step in settings.OrderSteps!)
         {
@@ -96,11 +114,19 @@ internal sealed partial class NewGameSession
             {
                 // A capture moves nothing, so it is not a post-dump step of the marker log.
                 var file = $"capture-step-{_orderSteps.Count}";
-                var itemBefore = ItemFrame() ?? CaretFrame(step);
-                var area = CaptureDrawingArea(window, file);
-                var itemFrame = (ItemFrame() ?? CaretFrame(step)) == itemBefore ? itemBefore : null;
+                // The item, the warning line or the Send caret steps every few ticks, so a capture it
+                // moved under is taken again.
+                int? itemBefore, itemFrame;
+                (int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector)? area;
+                var itemAttempts = 0;
+                do
+                {
+                    itemBefore = ItemFrame() ?? CaretFrame(step);
+                    area = CaptureDrawingArea(window, file);
+                    itemFrame = (ItemFrame() ?? CaretFrame(step)) == itemBefore ? itemBefore : null;
+                } while (itemBefore is not null && itemFrame is null && ++itemAttempts < 5);
                 if (itemBefore is not null && itemFrame is null)
-                    _notes.Add($"{file}: the item pictures' frame moved during the capture.");
+                    _notes.Add($"{file}: the item pictures' frame, the warning line's phase or the caret's phase moved during each capture.");
                 var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
                         _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,
@@ -134,13 +160,14 @@ internal sealed partial class NewGameSession
                     Post(window, Native.WmLButtonUp, 0, step.X, step.Y);
                     break;
                 case "card":
-                    Click(window, 254 + 76 * (step.Target % 2) + step.X, 80 + 112 * (step.Target / 2) + step.Y);
+                    Click(window, OriginalAddresses.SectorCardX(step.Target) + step.X,
+                        OriginalAddresses.SectorCardY(step.Target) + step.Y);
                     break;
                 case "strip":
                     Click(window, step.X, step.Y);
                     break;
                 case "back":
-                    Click(window, 4 + 16, 394 + 31);
+                    Click(window, OriginalAddresses.SectorBackX, OriginalAddresses.SectorBackY);
                     break;
                 case "warn":
                     // RULE-OPTIONS-003: the run switches Warn if Idle Gangs off before the Done
@@ -148,18 +175,18 @@ internal sealed partial class NewGameSession
                     _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(1));
                     break;
                 case "exit":
-                    // As for the hire steps: with no panel open the Exit point lies on the city map.
-                    if (_panelsOpen > 0) Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
-                    else _notes.Add("exit after the dump skipped: no panel was open");
+                    PressExitAfterDump(window);
                     break;
             }
             _process.Pump(TimeSpan.FromSeconds(0.8));
-            if (_process.Exited) return false;
+            if (_process.Exited) return "The original exited during the order steps.";
+            if (_rolls.Count != rollsAtDump)
+                return $"The original called roll {_rolls.Count - rollsAtDump} time(s) during the order step {step}.";
             _orderSteps.Add(new OrderStepRecord(step, menu, items,
                 _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),
                 _process.ReadInt32(OriginalAddresses.SectorViewPlayer)));
         }
-        return true;
+        return null;
     }
 
     // FND-COMLINK-010: the Send panel draws the caret's cell inverse while the byte at 0x00498110
@@ -192,11 +219,12 @@ internal sealed partial class NewGameSession
     private List<List<int>> ActiveGangOrders()
     {
         var player = _process.ReadInt32(OriginalAddresses.ActivePlayer);
+        var records = _process.Read(
+            OriginalAddresses.GangRecords + (uint)(player * OriginalAddresses.PlayerGangStride), OriginalAddresses.PlayerGangStride);
         var gangs = new List<List<int>>();
         for (var slot = 0; slot <= 80; slot++)
         {
-            var record = _process.Read(OriginalAddresses.GangRecords
-                + (uint)(player * OriginalAddresses.PlayerGangStride + slot * OriginalAddresses.GangRecordSize), 12);
+            var record = records.AsSpan(slot * OriginalAddresses.GangRecordSize, 12);
             var sector = (sbyte)record[2];
             if (sector == 100 && slot < 80) continue;
             gangs.Add([slot, sector, record[7], (sbyte)record[8], (sbyte)record[9], record[10], (sbyte)record[11]]);
