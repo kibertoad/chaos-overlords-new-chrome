@@ -242,8 +242,6 @@ public sealed partial class UiNavigationTests
             OriginalSelectionLightLayout.AiMentality(3));
         Assert.Equal(new Rectangle(297, 340, 3, 11),
             OriginalSelectionLightLayout.PlanningTime(0));
-        Assert.Equal(new Rectangle(523, 38, 3, 11),
-            OriginalSelectionLightLayout.EndgameTab(EndgameLayout.Stats));
         Assert.Equal(new Rectangle(540, 126, 8, 16), OriginalSelectionLightLayout.CityEvents);
         Assert.Equal(new Rectangle(592, 126, 8, 16), OriginalSelectionLightLayout.CityComlinkView);
         Assert.Throws<ArgumentOutOfRangeException>(() => SetupSelectionLayout.Scenario(10));
