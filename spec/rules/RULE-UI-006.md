@@ -4,7 +4,7 @@ title: Choosing a sector's gang-status marker
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-031, FND-UI-024, FND-UI-026, FND-DETECT-001, FND-HIRE-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-031, FND-UI-024, FND-UI-026, FND-DETECT-001, FND-HIRE-001, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-017, FND-HIRE-008, FND-SEARCH-004, EXP-UI-004, EXP-UI-005]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -20,7 +20,17 @@ one such sector keeps it at a time.
 
 ## When it runs
 
-When the city map or the detailed sector screen draws a sector.
+When the city map draws a sector's marker. The markers are drawn into the map
+surface and stay there until the sector is drawn again, and the detailed
+sector screen's nine-sector display copies them from it. The map draws every
+sector in number order when a human's planning starts, after `0x004906A4` is
+set to -1 (FND-UI-024), and when the Search panel closes (FND-SEARCH-004).
+Between those, the Hire dock's redraw `fn_00417CBA` runs after every change of
+the player's hire orders and draws the marker of the sector it last kept,
+which is -1 when no offer was ordered into a sector, then of each sector an
+offer is now ordered into, keeping it (FND-UI-017, FND-HIRE-008); and an
+order given on the detailed sector screen draws the marker of the selected
+sector (FND-UI-015).
 
 ## Parameters
 
@@ -71,6 +81,17 @@ presence.
 
 ## Edge cases
 
+- The procedure also runs for sector -1, which lies off the map. Its
+  `gangs_seen` byte is never set, so it copies the saved cell back over the
+  last sector given frame 8, and since an offer without an order holds -1 in
+  `hire_orders`, it then draws frame 8 off the map and remembers -1. The dock
+  makes this call whenever no offer was ordered into a sector before the
+  change.
+- Between full draws, frame 8 stays on a sector from the dock's redraw that
+  gave it until the next drawing of a sector without the player's gangs, -1
+  included. A change of the hire order that moves the hire elsewhere draws the
+  old sector again, which copies the saved cell back (EXP-UI-005).
+
 - An enemy gang the player cannot see does not turn the circle red: the test
   reads the `gangs_seen` bytes the map drawer rebuilds.
 - A gang whose slot is empty has `sector` 100 and never matches.
@@ -90,6 +111,9 @@ None known.
 
 ## Open questions
 
-- The removal of frame 8 follows from the copy order and has not been checked
-  against a capture of a map with two or more sectors holding only incoming
-  hires.
+- EXP-UI-004 and EXP-UI-005 reach frames 2, 6 and 8, the copy back, sector -1
+  and a full redraw that removes frame 8. No run has yet drawn a sector where
+  the player sees an enemy gang, one whose gangs all have orders, or an
+  incoming mark on a sector after which no sector lacks the player's gangs,
+  and no run gave an order on the detailed sector screen with the markers
+  logged.

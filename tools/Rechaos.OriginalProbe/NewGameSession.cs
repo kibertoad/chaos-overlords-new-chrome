@@ -117,7 +117,8 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
     IReadOnlyList<ProbeDrawValue>? DrawValues = null, IReadOnlyList<ProbeClick>? SearchClicks = null,
-    IReadOnlyList<ProbeHireStep>? HireSteps = null, IReadOnlyList<ProbeOrderStep>? OrderSteps = null)
+    IReadOnlyList<ProbeHireStep>? HireSteps = null, IReadOnlyList<ProbeOrderStep>? OrderSteps = null,
+    bool GangMarkers = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -203,7 +204,8 @@ internal sealed record ProbeTrace(
     List<ComlinkStep>? Comlink = null,
     List<SearchClickRecord>? SearchClicks = null,
     List<HireStepRecord>? HireSteps = null,
-    List<OrderStepRecord>? OrderSteps = null);
+    List<OrderStepRecord>? OrderSteps = null,
+    List<GangMarkerDraw>? GangMarkers = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -266,6 +268,7 @@ internal sealed partial class NewGameSession(
             _process.SetBreakpoint(OriginalAddresses.CityRedraw, OnCityRedraw, quiet: true);
             _process.SetBreakpoint(OriginalAddresses.SiteMarker, OnSiteMarker, quiet: true);
         }
+        if (settings.GangMarkers) ArmGangMarkers();
         if (settings.ExpireTurns is { Count: > 0 }) ArmTimer();
         if (settings.Comlink is not null) ArmComlink();
         if (settings.DrawValues is { Count: > 0 } drawValues)
@@ -892,7 +895,7 @@ internal sealed partial class NewGameSession(
             _endgame, _finance.Count == 0 ? null : _finance, (_panelsAtDump ?? _panels) is { Count: > 0 } panels ? panels : null, _lastRedraw,
             _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
             _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps,
-            _orderSteps.Count == 0 ? null : _orderSteps);
+            _orderSteps.Count == 0 ? null : _orderSteps, settings.GangMarkers ? _gangMarkers : null);
     }
 
     private static void Click(IntPtr window, int x, int y)

@@ -92,6 +92,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly DetailedCombatExit _combatExit = new();
     private readonly PanelSlideTransition _panelSlideTransition = new();
     private readonly GangSightSnapshotCache _gangSight = new();
+    private readonly GangStatusMarkerMap _gangMarkers = new();
     private MatchState? _state;
     /// <summary>
     /// Where a player's mutations go, and the only handle on the match's recorder.

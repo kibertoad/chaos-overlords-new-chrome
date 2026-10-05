@@ -49,8 +49,11 @@ public sealed partial class ChaosGame
         }
         // The markers have no drawn stand-in: without the sheet the map carries none, as before.
         if (_uiKeyedSprites is null) return;
-        // RULE-UI-006: the markers the map keeps after drawing every sector in number order.
-        var markerFrames = GangStatusMarkerPresentation.MapFrames(state, viewer, _gangSight.For(state, viewer));
+        // RULE-UI-006: the markers the map keeps through the planning phase, and outside it those of
+        // a draw of every sector in number order.
+        var markerFrames = state.Coordinator.Phase == TurnPhase.Command
+            ? _gangMarkers.Frames(state, viewer, _gangSight.For(state, viewer))
+            : GangStatusMarkerPresentation.MapFrames(state, viewer, _gangSight.For(state, viewer));
         for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
             if (markerFrames[sectorId] >= 0)
                 map.Draw(_uiKeyedSprites, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]),

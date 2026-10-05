@@ -89,12 +89,9 @@ public sealed partial class OriginalNewGameExperimentTests
         var match = StartMatch(recorded, out _);
         var human = recorded.Humans[0];
         var player = match.FindPlayer(human)!;
-        short Offer(int slot) => player.HireOfferSlots[slot].GangDefinitionId!.Value;
         foreach (var step in recorded.HireSteps)
         {
-            if (step.Slot >= 0 && step.Sector == -2) match.SnubHireOffer(human, Offer(step.Slot));
-            else if (step.Slot >= 0 && HireDropPlacement.Rejection(match, human, step.Sector) is null)
-                match.QueueHire(human, Offer(step.Slot), step.Sector);
+            TakeHireStep(match, human, step);
             var orders = Enumerable.Range(0, HireDockLayout.SlotCount).Select(slot =>
                 player.PendingHires.FirstOrDefault(pending => pending.OfferSlot == slot) is { } pending
                     ? pending.TargetSectorId
@@ -103,6 +100,16 @@ public sealed partial class OriginalNewGameExperimentTests
             Assert.True(step.Orders.Skip(3 * human.Value).Take(3).SequenceEqual(orders), $"after {label}");
             Assert.All(step.Orders.Where((_, index) => index / 3 != human.Value), order => Assert.Equal(-1, order));
         }
+    }
+
+    // RULE-HIRE-003: a Reject press is SnubHireOffer, a drop the dock accepts is QueueHire.
+    private static void TakeHireStep(MatchState match, PlayerId human, RecordedHireStep step)
+    {
+        var player = match.FindPlayer(human)!;
+        short Offer(int slot) => player.HireOfferSlots[slot].GangDefinitionId!.Value;
+        if (step.Slot >= 0 && step.Sector == -2) match.SnubHireOffer(human, Offer(step.Slot));
+        else if (step.Slot >= 0 && HireDropPlacement.Rejection(match, human, step.Sector) is null)
+            match.QueueHire(human, Offer(step.Slot), step.Sector);
     }
 
     public static TheoryData<string, int> SearchClickRuns()

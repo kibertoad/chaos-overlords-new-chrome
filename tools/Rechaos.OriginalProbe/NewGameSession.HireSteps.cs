@@ -24,6 +24,7 @@ internal sealed partial class NewGameSession
     {
         foreach (var step in settings.HireSteps!)
         {
+            _postDumpStep++;
             if (step.Slot == -1)
                 Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
             else if (step.Sector == -2)

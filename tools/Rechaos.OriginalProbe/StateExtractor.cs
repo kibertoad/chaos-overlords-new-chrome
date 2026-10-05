@@ -72,6 +72,12 @@ internal sealed class StateExtractor
                 ["sector"] = step["Sector"]!.GetValue<int>(),
                 ["orders"] = new JsonArray(step["Orders"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
             }).ToArray());
+        // RULE-UI-006, FND-UI-024: each gang-status marker drawing from the last full city redraw
+        // before the dump on, as step, kind, player, sector and frame.
+        if (trace["GangMarkers"] is JsonArray gangMarkers)
+            run["gang_markers"] = new JsonArray(gangMarkers.Select(draw => (JsonNode)new JsonArray(
+                draw!["Step"]!.GetValue<int>(), draw["Kind"]!.GetValue<int>(), draw["Player"]!.GetValue<int>(),
+                draw["Sector"]!.GetValue<int>(), draw["Frame"]!.GetValue<int>())).ToArray());
         // RULE-TURN-005, SCR-UI-004: each order step after the dump, the popup it opened with its
         // items' commands and greyed states, the view, the card slots and the active player's orders.
         if (trace["OrderSteps"] is JsonArray orderSteps)

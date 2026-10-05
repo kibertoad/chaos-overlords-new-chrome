@@ -100,6 +100,13 @@ internal static class OriginalAddresses
     // and site definition, element player * 22 + definition, at 0x004A24E8 (FND-SEARCH-001).
     public const uint CityRedraw = 0x004123CC;
     public const uint SiteMarker = 0x00412AC4;
+
+    // FND-UI-024, EXP-UI-004: the three copies of the gang-status marker function fn_00412BF7, and
+    // the sector whose cell it saved under the last incoming mark.
+    public const uint GangMarkerFrame = 0x00412DFB;
+    public const uint GangMarkerRestore = 0x00412EB5;
+    public const uint GangMarkerIncoming = 0x00412FF8;
+    public const uint GangMarkerSavedSector = 0x004906A4;
     public const uint SearchFilters = 0x004A24E8;
     public const int SiteDefinitionCount = 22;
 

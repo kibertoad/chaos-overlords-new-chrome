@@ -59,7 +59,11 @@ public static class GangStatusMarkerPresentation
     /// incoming hires are read from the match as it is now, as the original reads the gang
     /// records and <c>hire_orders</c> on every draw.
     /// </summary>
-    public static int[] MapFrames(MatchState state, PlayerId player, GangSightSnapshot sight)
+    public static int[] MapFrames(MatchState state, PlayerId player, GangSightSnapshot sight) =>
+        MapFrames(Inputs(state, player, sight));
+
+    /// <summary>What RULE-UI-006 reads for every sector, as <see cref="MapFrames(MatchState, PlayerId, GangSightSnapshot)"/> reads it.</summary>
+    public static SectorMarkerInputs[] Inputs(MatchState state, PlayerId player, GangSightSnapshot sight)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sight);
@@ -72,7 +76,7 @@ public static class GangStatusMarkerPresentation
             inputs[gang.SectorId] = inputs[gang.SectorId] with { IdleGang = true };
         foreach (var pending in owner.PendingHires)
             inputs[pending.TargetSectorId] = inputs[pending.TargetSectorId] with { IncomingHire = true };
-        return MapFrames(inputs);
+        return inputs;
     }
 
     public static Rectangle Source(
@@ -84,6 +88,106 @@ public static class GangStatusMarkerPresentation
             + (hasIdleGang ? 2 : 0)
             + (hasPendingHire ? 4 : 0);
         return OriginalSpriteLayout.GangStatus(state);
+    }
+}
+
+/// <summary>
+/// RULE-UI-006, FND-UI-024, FND-UI-017: the gang-status markers the city map keeps through one
+/// player's planning phase. The original draws them into its map surface and redraws only what
+/// changes: every sector when planning starts and when the Search panel closes, and the sectors
+/// the Hire dock touches when a hire or snub order changes. Every other change of a sector holding
+/// the player's gang redraws that sector's marker, so those frames follow the match. The
+/// incoming-only mark, frame 8, is kept: the map shows it on the last sector without the player's
+/// gangs that a redraw gave it, until any redraw of a sector without the player's gangs, the
+/// dock's redraw of no sector included, copies the cell under it back.
+/// </summary>
+public sealed class GangStatusMarkerMap
+{
+    private MatchState? _state;
+    private int _turn;
+    private PlayerId _player;
+    private int[]? _hireOrders;
+
+    /// <summary>The sector showing the incoming-only mark, or -1.</summary>
+    public int IncomingMark { get; private set; } = -1;
+
+    /// <summary>The sector the Hire dock last redrew for a hire order, or -1 (FND-HIRE-008).</summary>
+    public int DockSector { get; private set; } = -1;
+
+    /// <summary>
+    /// The frames the map shows now, -1 for none. A new planning phase, player or match draws the
+    /// whole map and then the dock; a change of the player's hire orders since the last call
+    /// redraws the dock.
+    /// </summary>
+    public int[] Frames(MatchState state, PlayerId player, GangSightSnapshot sight)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var inputs = GangStatusMarkerPresentation.Inputs(state, player, sight);
+        var orders = HireOrders(state.FindPlayer(player)!);
+        if (_hireOrders is null || !ReferenceEquals(_state, state) || _turn != state.Coordinator.Turn
+            || _player != player)
+        {
+            _state = state;
+            _turn = state.Coordinator.Turn;
+            _player = player;
+            // FND-UI-024: fn_0046FD80 forgets the saved cell, then planning draws the map and the dock.
+            IncomingMark = -1;
+            DrawAll(inputs);
+            RedrawDock(inputs, orders);
+        }
+        else if (!orders.SequenceEqual(_hireOrders))
+            RedrawDock(inputs, orders);
+        _hireOrders = orders;
+        var frames = new int[inputs.Length];
+        for (var sector = 0; sector < frames.Length; sector++)
+            frames[sector] = inputs[sector].PlayerPresent
+                ? GangStatusMarkerPresentation.Frame(true, inputs[sector].EnemySeen, inputs[sector].IdleGang,
+                    inputs[sector].IncomingHire)
+                : sector == IncomingMark ? GangStatusMarkerPresentation.IncomingOnlyFrame : -1;
+        return frames;
+    }
+
+    /// <summary>The whole map drawn again, as closing the Search panel does (FND-SEARCH-004).</summary>
+    public void RedrawAll(MatchState state, PlayerId player, GangSightSnapshot sight) =>
+        DrawAll(GangStatusMarkerPresentation.Inputs(state, player, sight));
+
+    /// <summary>Forgets the planning phase, so the next call draws the whole map.</summary>
+    public void Clear() => _hireOrders = null;
+
+    private void DrawAll(SectorMarkerInputs[] inputs)
+    {
+        for (var sector = 0; sector < inputs.Length; sector++) Draw(inputs, sector);
+    }
+
+    // FND-UI-017: fn_00417CBA draws the previous destination's marker, then that of each offer
+    // ordered into a sector, which becomes the destination.
+    private void RedrawDock(SectorMarkerInputs[] inputs, int[] orders)
+    {
+        Draw(inputs, DockSector);
+        DockSector = -1;
+        foreach (var order in orders.Where(order => order >= 0))
+        {
+            DockSector = order;
+            Draw(inputs, order);
+        }
+    }
+
+    // FND-UI-024: fn_00412BF7 for one sector, or for -1, which lies off the map: a sector without the player's
+    // gangs first gets the cell under the incoming-only mark copied back, then takes the mark when a
+    // hire is on its way to it.
+    private void Draw(SectorMarkerInputs[] inputs, int sector)
+    {
+        if (sector >= 0 && inputs[sector].PlayerPresent) return;
+        IncomingMark = sector >= 0 && inputs[sector].IncomingHire ? sector : -1;
+    }
+
+    // FND-HIRE-001: hire_orders of the three offer slots, a sector, -2 for the snub or -1.
+    private static int[] HireOrders(MatchPlayerState player)
+    {
+        var orders = new[] { -1, -1, -1 };
+        foreach (var pending in player.PendingHires) orders[pending.OfferSlot] = pending.TargetSectorId;
+        if (player.SnubbedHireOfferSlot is { } snubbed) orders[snubbed] = -2;
+        return orders;
     }
 }
 

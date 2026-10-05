@@ -37,7 +37,7 @@ static int Usage()
               [--comlink <script file>]
               [--draw-values <hex address>=<int32>[/<int32>...],...]
               [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
-              [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...]
+              [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -87,7 +87,8 @@ static int NewGame(string[] args)
         Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null,
         Option(args, "--search-clicks") is { } searchClicks ? ParseClicks(searchClicks) : null,
         Option(args, "--hire-steps") is { } hireSteps ? ParseHireSteps(hireSteps) : null,
-        Option(args, "--order-steps") is { } orderSteps ? ParseOrderSteps(orderSteps) : null);
+        Option(args, "--order-steps") is { } orderSteps ? ParseOrderSteps(orderSteps) : null,
+        args.Contains("--gang-markers"));
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
