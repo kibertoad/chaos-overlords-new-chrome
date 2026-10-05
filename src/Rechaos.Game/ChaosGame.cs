@@ -969,15 +969,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     private static int Mod(int value, int divisor) => (value % divisor + divisor) % divisor;
 
-    private static bool IsVisibleCombatEvent(MatchState state, PlayerId viewer, GameEvent gameEvent)
-    {
-        if (gameEvent.Kind == GameEventKind.PoliceAttackResolved) return gameEvent.Player == viewer;
-        if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution is null) return false;
-        if (gameEvent.Player == viewer) return true;
-        return gameEvent.Target.Kind == CommandTargetKind.Gang
-            && state.FindCombatant(gameEvent, new GangId(gameEvent.Target.Id))?.Owner == viewer;
-    }
-
     private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
 
 }

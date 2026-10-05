@@ -192,7 +192,7 @@ public sealed partial class ChaosGame
             {
                 var gameEvent = events[index];
                 if (CombatResultProjection.IsFromLastCompletedTurn(gameEvent.Turn, _state.Coordinator.Turn)
-                    && IsVisibleCombatEvent(_state, viewer, gameEvent))
+                    && CombatResultProjection.IsVisibleCombatEvent(_state, viewer, gameEvent))
                     presented.Add(gameEvent);
             }
             foreach (var clip in CombatAnimationRouting.ForPresentation(_state, presented, viewer))

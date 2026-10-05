@@ -4,7 +4,7 @@ title: Detailed Combat plays the viewer's fights sector by sector, one clip per 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-004, FND-COMBAT-005, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-EXE-004, FND-UI-001]
+evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-004, FND-COMBAT-005, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-EXE-004, FND-UI-001, EXP-COMBAT-001, EXP-COMBAT-002, EXP-COMBAT-003, EXP-COMBAT-005]
 conflicting: []
 split_with: []
 related: [SCR-COMBAT-002, RULE-COMBAT-002, RULE-AUDIO-005, FMT-STATE-001, FMT-STATE-003, FMT-STATE-008]
@@ -167,3 +167,8 @@ None known.
 
 - Whether a computer player can order an Attack on one of its own gangs,
   which could make a list longer than 36, was not checked [FND-COMBAT-013].
+- No run of the original has shown a focal gang and its target attacking each
+  other, the two clips with hold argument 0 and 1, a presentation over more
+  than one sector, a presentation ended by Escape or the exit face, or one
+  opened from the console with nothing to show (EXP-COMBAT-001 to
+  EXP-COMBAT-005 reach only the other branches).

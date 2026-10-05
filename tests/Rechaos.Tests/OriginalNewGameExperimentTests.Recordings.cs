@@ -74,6 +74,12 @@ public sealed partial class OriginalNewGameExperimentTests
     // human's gangs at the recording's endpoint, with the sector it was passed (FND-ATTACK-006).
     private sealed record RecordedAttackList(int Slot, int Sector, int Opponent, IReadOnlyList<int> Targets);
 
+    // A clip Detailed Combat played (FND-COMBAT-011): the roll count before it, the focal and other
+    // element numbers (-2 the police), the clip player's argument, the two bars' right ends, the
+    // sound numbers loaded into slot 5 since the clip before, and whether it played slot 5.
+    private sealed record RecordedCombatClip(
+        int AfterRoll, int Focal, int Other, int Hold, int FocalBar, int OtherBar, IReadOnlyList<int> Sounds, bool Played);
+
     // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
     // (FND-HIRE-001, FND-HIRE-008).
@@ -219,6 +225,14 @@ public sealed partial class OriginalNewGameExperimentTests
                     list.GetProperty("opponent").GetInt32(),
                     list.GetProperty("targets").EnumerateArray().Select(target => target.GetInt32()).ToArray())).ToArray()
                 : [];
+            CombatClips = run.TryGetProperty("combat_clips", out var combatClips)
+                ? combatClips.EnumerateArray().Select(clip => new RecordedCombatClip(
+                    clip.GetProperty("after_roll").GetInt32(), clip.GetProperty("focal").GetInt32(),
+                    clip.GetProperty("other").GetInt32(), clip.GetProperty("hold").GetInt32(),
+                    clip.GetProperty("focal_bar").GetInt32(), clip.GetProperty("other_bar").GetInt32(),
+                    clip.GetProperty("sounds").EnumerateArray().Select(sound => sound.GetInt32()).ToArray(),
+                    clip.GetProperty("played").GetBoolean())).ToArray()
+                : null;
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.
             SearchFilter = inputs.EnumerateArray()
@@ -260,6 +274,8 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedFinance> Finance { get; }
         public IReadOnlyList<RecordedEquipList> EquipLists { get; }
         public IReadOnlyList<RecordedAttackList> AttackLists { get; }
+        // Null when the run left Detailed Combat switched off.
+        public IReadOnlyList<RecordedCombatClip>? CombatClips { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedHireStep> HireSteps { get; }
         public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }
