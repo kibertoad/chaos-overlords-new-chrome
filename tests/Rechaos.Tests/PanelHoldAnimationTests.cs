@@ -66,6 +66,25 @@ public sealed class PanelHoldAnimationTests
     }
 
     [Fact]
+    public void ACounterStartedByAHeldFacesReleaseLeavesTheKeptTickToThatPanel()
+    {
+        // SCR-GANG-002: the Item Information panel's last pass takes the kept tick, so the gang
+        // information panel it returns to starts again at frame 0.
+        var pump = new EventPumpClock();
+        pump.Update(Tick(10), holding: false);
+        Assert.Equal(pump.Ticks, pump.TicksAfterHold(Tick(10)));
+        pump.Update(Tick(10) + TimeSpan.FromMilliseconds(100), holding: true);
+        Assert.Equal(pump.Ticks, pump.TicksAfterHold(Tick(10) + TimeSpan.FromMilliseconds(100)));
+        for (var tick = 11; tick <= 20; tick++) pump.Update(Tick(tick), holding: true);
+        var start = pump.TicksAfterHold(Tick(20));
+
+        pump.Update(Tick(20) + TimeSpan.FromMilliseconds(1), holding: false);
+        Assert.Equal(ItemRotationPresentation.Frame(0), ItemRotationPresentation.FrameAfter(pump.Ticks - start));
+        pump.Update(Tick(21), holding: false);
+        Assert.Equal(ItemRotationPresentation.Frame(1), ItemRotationPresentation.FrameAfter(pump.Ticks - start));
+    }
+
+    [Fact]
     public void TheComlinkCaretStopsWhileCancelOrSendIsHeld()
     {
         // SCR-COMLINK-002: every third tick the Send loop consumes switches the caret.

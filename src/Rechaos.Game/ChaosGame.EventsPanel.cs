@@ -878,14 +878,10 @@ public static class ItemRotationPresentation
 
     // One frame per tick of the presentation clock (RULE-UI-008, SCR-UI-006, SCR-EVENT-001), so a
     // full turn of fifteen frames takes 2.5 seconds.
-    private static readonly TimeSpan FrameDuration = PresentationClock.Period;
-
     public static Rectangle Frame(TimeSpan elapsed)
     {
         if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
-        var frame = (int)(elapsed.TotalMilliseconds / FrameDuration.TotalMilliseconds)
-            % FrameCount;
-        return Frame(frame);
+        return FrameAfter(PresentationClock.Ticks(elapsed));
     }
 
     /// <summary>

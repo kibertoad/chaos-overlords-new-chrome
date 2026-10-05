@@ -19,8 +19,10 @@ public sealed partial class ChaosGame
         _itemDetailsId = null;
         _itemDetailsReturnScreen = ClientScreen.Commands;
         // FND-GANG-006: the gang information panel's rotation restarts at frame 0 when the item's
-        // panel returns to it.
-        if (returnScreen == ClientScreen.Gang) _gangDetailsAnimationStart = _eventPump.Ticks;
+        // panel returns to it. A release of the held exit face leaves the kept tick to the item
+        // panel's last pass (FND-UI-047), so the gang panel's counter does not take it.
+        if (returnScreen == ClientScreen.Gang)
+            _gangDetailsAnimationStart = _eventPump.TicksAfterHold(_inputTime);
         _screens.Show(returnScreen);
     }
 

@@ -174,10 +174,14 @@ public sealed partial class ChaosGame
         PressSectorCard(_state, playerId, SectorCardGangs(_state, playerId), point, rightButton: true);
     }
 
-    /// <summary>FND-UI-015: the back control returns to the city when the press is released inside it.</summary>
+    /// <summary>
+    /// FND-UI-015: the back control returns to the city when the press is released inside it. The
+    /// held-button helper plays slot 3 when the press starts (FND-AUDIO-011).
+    /// </summary>
     private bool PressSectorBack(Point point, bool rightButton)
     {
         if (!SectorDetailLayout.Back.Contains(point)) return false;
+        AcceptInput();
         _pressedPanelFace = (SectorDetailLayout.Back, ClientScreen.Sector,
             () => _screens.Show(ClientScreen.City));
         _pressedPanelFaceByRightButton = rightButton;

@@ -41,6 +41,14 @@ public sealed class EventPumpClock
     public long Ticks => PresentationClock.Ticks(Time);
 
     /// <summary>
+    /// <see cref="Ticks"/> with the tick a hold in progress keeps for its release, when one fell
+    /// by <paramref name="now"/>. A counter that a panel starts after another panel's release
+    /// pass took that tick (FND-UI-047) starts from here, so it does not take the tick again.
+    /// </summary>
+    public long TicksAfterHold(TimeSpan now) =>
+        _holding && PresentationClock.Ticks(now) > _lastTakenTick ? Ticks + 1 : Ticks;
+
+    /// <summary>
     /// One pass of the game loop. <paramref name="holding"/> says whether a hold that keeps the
     /// pump from running is in progress.
     /// </summary>
