@@ -66,6 +66,14 @@ public sealed partial class OriginalNewGameExperimentTests
     // was passed (-1 for the City variant) and the nine numbers it drew (FND-FINANCE-003).
     private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
 
+    // The list the original's Equip list builder filled for one category of one of the human's
+    // gangs at the recording's endpoint, with the Tech Level it was passed (FND-EQUIP-008).
+    private sealed record RecordedEquipList(int Slot, int Category, int TechLevel, IReadOnlyList<int> Items);
+
+    // The opponent's roster slots the original's Attack picker roster builder listed for one of the
+    // human's gangs at the recording's endpoint, with the sector it was passed (FND-ATTACK-006).
+    private sealed record RecordedAttackList(int Slot, int Sector, int Opponent, IReadOnlyList<int> Targets);
+
     // A call of a planning entry panel: its name, the roll count when it was called and whether it
     // stayed open until Exit was pressed (RULE-SETUP-008).
     private sealed record RecordedPanel(string Panel, int AfterRoll, bool Shown);
@@ -147,6 +155,18 @@ public sealed partial class OriginalNewGameExperimentTests
                     panel.GetProperty("turn").GetInt32(), panel.GetProperty("sector").GetInt32(),
                     panel.GetProperty("values").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
                 : [];
+            EquipLists = run.TryGetProperty("equip_lists", out var equipLists)
+                ? equipLists.EnumerateArray().Select(list => new RecordedEquipList(
+                    list.GetProperty("slot").GetInt32(), list.GetProperty("category").GetInt32(),
+                    list.GetProperty("tech_level").GetInt32(),
+                    list.GetProperty("items").EnumerateArray().Select(item => item.GetInt32()).ToArray())).ToArray()
+                : [];
+            AttackLists = run.TryGetProperty("attack_lists", out var attackLists)
+                ? attackLists.EnumerateArray().Select(list => new RecordedAttackList(
+                    list.GetProperty("slot").GetInt32(), list.GetProperty("sector").GetInt32(),
+                    list.GetProperty("opponent").GetInt32(),
+                    list.GetProperty("targets").EnumerateArray().Select(target => target.GetInt32()).ToArray())).ToArray()
+                : [];
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.
             SearchFilter = inputs.EnumerateArray()
@@ -179,6 +199,8 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<int> SearchFilter { get; }
         public RecordedMarkers? CityMarkers { get; }
         public IReadOnlyList<RecordedFinance> Finance { get; }
+        public IReadOnlyList<RecordedEquipList> EquipLists { get; }
+        public IReadOnlyList<RecordedAttackList> AttackLists { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
         public IReadOnlyList<RecordedPlanning> Planning { get; }

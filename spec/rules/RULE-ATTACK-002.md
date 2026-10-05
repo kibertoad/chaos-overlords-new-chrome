@@ -1,10 +1,10 @@
 ---
 id: RULE-ATTACK-002
 title: An Attack can target only an enemy gang the attacker's player sees in the attacker's sector
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-ATTACK-001, FND-COMBAT-006, FND-DETECT-001, SRC-MANUAL-GOG]
+evidence: [FND-ATTACK-001, FND-ATTACK-006, FND-COMBAT-006, FND-DETECT-001, EXP-ATTACK-001, EXP-ATTACK-002, EXP-ATTACK-003, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-DETECT-001, SCR-ATTACK-001, FMT-STATE-001]
@@ -56,6 +56,9 @@ attacker's own order bytes [FND-COMBAT-006].
 
 - An inactive gang (sector 100) never matches a sector, so it is never
   listed.
+- The visibility tested is the active player's [FND-ATTACK-006]; the picker
+  is only opened for the active player's own gangs, so it is the attacker's
+  player.
 - A gang that is hiding but that the player still sees can be targeted; the
   attack may then miss it (RULE-ATTACK-001).
 
@@ -77,5 +80,7 @@ None known.
   slot, and where the picker writes `action`, are not recorded.
 - Whether the picker enables an opponent's portrait only when the list is not
   empty (FND-ATTACK-001 says only that disabled entries do not react).
-- The picker shows at most six targets (SCR-ATTACK-001); what it does with a
-  longer list is not recorded.
+- The picker shows at most six targets (SCR-ATTACK-001). The roster builder
+  does not bound its count, so a seventh target is stored past the six entries
+  [FND-ATTACK-006]; what that does is not recorded. Hires keep a player to six
+  gangs in a sector, but some moves are not checked against that limit.
