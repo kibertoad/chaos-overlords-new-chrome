@@ -89,9 +89,16 @@ public sealed record ScreenCaptureRecord(
     string Experiment, int Run, string Xxh3, int MarkerFrame, IReadOnlyList<string> Screens,
     IReadOnlyList<CapturedElement> Elements, bool WhiteKeyed = false, int Step = -1,
     IReadOnlyList<ReferenceClick>? Clicks = null, string? Unreplayable = null, int? PumpCounter = null,
-    ReferenceLamps? Lamps = null)
+    int? SelectedSector = null, ReferenceLamps? Lamps = null)
 {
     private const string KeyColourInput = "key_colour ";
+
+    /// <summary>
+    /// FND-UI-048, FND-UI-051: the counter whose selection frame the capture shows. A shot records
+    /// it as <c>frame_counter</c>, null when a panel stopped the frame before the probe watched; an
+    /// older capture records only the pump's counter.
+    /// </summary>
+    public int? FrameCounter { get; init; } = PumpCounter;
 
     public override string ToString() => Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
 
@@ -149,16 +156,24 @@ public sealed record ScreenCaptureRecord(
                     element.GetProperty("xxh3").GetString()!, element.GetProperty("white").GetInt32()));
             }
         }
-        return new ScreenCaptureRecord(experiment, run, capture.GetProperty("xxh3").GetString()!,
+        var record = new ScreenCaptureRecord(experiment, run, capture.GetProperty("xxh3").GetString()!,
             capture.GetProperty("marker_frame").GetInt32(), screens, elements, whiteKeyed,
             PumpCounter: capture.TryGetProperty("pump_counter", out var pump) && pump.ValueKind == JsonValueKind.Number
                 ? pump.GetInt32()
+                : null,
+            SelectedSector: capture.TryGetProperty("selected_sector", out var selected)
+                            && selected.ValueKind == JsonValueKind.Number
+                ? selected.GetInt32()
                 : null,
             // FND-EVENT-006: each light's flag, then the byte that says its lamp is drawn lit.
             Lamps: capture.TryGetProperty("lamps", out var lamps) && lamps.ValueKind == JsonValueKind.Array
                 && lamps.EnumerateArray().Select(value => value.GetInt32()).ToArray() is [_, var events, _, var comlink]
                 ? new ReferenceLamps(events != 0, comlink != 0)
                 : null);
+        // Without frame_counter the record keeps the pump's counter as its frame counter.
+        return capture.TryGetProperty("frame_counter", out var frame)
+            ? record with { FrameCounter = frame.ValueKind == JsonValueKind.Number ? frame.GetInt32() : null }
+            : record;
     }
 
     // The captures shot steps of --order-steps took after the dump. The rebuild reaches each one's
@@ -246,6 +261,12 @@ public static class ScreenCaptureMasks
             ["SCR-UI-005"] = [],
             ["SCR-UI-007"] = [],
             ["SCR-UI-008"] = [],
+            ["SCR-EVENT-001"] = [],
+            ["SCR-COMBAT-001"] = [],
+            ["SCR-OBJECTIVE-001"] = [],
+            ["SCR-SEARCH-001"] = [],
+            ["SCR-HIRE-001"] = [],
+            ["SCR-GANG-002"] = [],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
@@ -365,7 +386,7 @@ public static class RebuildFrame
 
     public static ScreenFrame Render(
         MatchState state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
-        int? pumpCounter = null, ReferenceLamps? lamps = null)
+        int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -386,6 +407,11 @@ public static class RebuildFrame
             {
                 start.ArgumentList.Add("--marker-frame");
                 start.ArgumentList.Add(marker.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (selectedSector is { } sector)
+            {
+                start.ArgumentList.Add("--selected-sector");
+                start.ArgumentList.Add(sector.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
             if (pumpCounter is { } counter)
             {

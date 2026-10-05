@@ -22,17 +22,21 @@ namespace Rechaos.Game;
 /// The pump's counter the capture recorded (FND-UI-017), which picks the selection frame drawn
 /// (FND-UI-048), in place of the clock's.
 /// </param>
+/// <param name="SelectedSector">
+/// The sector the capture had selected (FND-SAVE-003), in place of the one the planning entry
+/// restores, since the save does not keep it (DEV-SAVE-001).
+/// </param>
 /// <param name="Lamps">
 /// Whether the capture showed the Events and Comlink lamps drawn lit (FND-EVENT-006), which picks
 /// the blink phase of those lights in place of the clock's.
 /// </param>
 public sealed record ReferenceFrameRequest(
     string SavePath, string OutputPath, int? MarkerFrame = null, IReadOnlyList<ReferenceClick>? Clicks = null,
-    int? PumpCounter = null, ReferenceLamps? Lamps = null)
+    int? PumpCounter = null, int? SelectedSector = null, ReferenceLamps? Lamps = null)
 {
     private const string Usage =
         "Usage: --reference-frame <save> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
-        + " [--lamps <0|1>,<0|1>] [--reference-clicks <x:y[:2]>,...]";
+        + " [--selected-sector <0-63>] [--lamps <0|1>,<0|1>] [--reference-clicks <x:y[:2]>,...]";
 
     // Keep captures independent of the player's preferences, recovery files and saves. The
     // directory sits beside the bitmap and is kept after exit, so a failed run can be diagnosed
@@ -47,9 +51,11 @@ public sealed record ReferenceFrameRequest(
         var marker = Array.IndexOf(args, "--marker-frame");
         var clicks = Array.IndexOf(args, "--reference-clicks");
         var pump = Array.IndexOf(args, "--pump-counter");
+        var selected = Array.IndexOf(args, "--selected-sector");
         var lamps = Array.IndexOf(args, "--lamps");
         if (reference < 0)
         {
+            if (selected >= 0) throw new ArgumentException("--selected-sector requires --reference-frame.");
             if (marker >= 0) throw new ArgumentException("--marker-frame requires --reference-frame.");
             if (clicks >= 0) throw new ArgumentException("--reference-clicks requires --reference-frame.");
             if (pump >= 0) throw new ArgumentException("--pump-counter requires --reference-frame.");
@@ -60,6 +66,7 @@ public sealed record ReferenceFrameRequest(
             || (marker >= 0 && Array.LastIndexOf(args, "--marker-frame") != marker)
             || (clicks >= 0 && Array.LastIndexOf(args, "--reference-clicks") != clicks)
             || (pump >= 0 && Array.LastIndexOf(args, "--pump-counter") != pump)
+            || (selected >= 0 && Array.LastIndexOf(args, "--selected-sector") != selected)
             || (lamps >= 0 && Array.LastIndexOf(args, "--lamps") != lamps))
             throw new ArgumentException("Capture options may only be supplied once.");
         static string Operand(string[] values, int index)
@@ -96,8 +103,18 @@ public sealed record ReferenceFrameRequest(
                 throw new ArgumentException("--pump-counter must be between 0 and 7.");
             counter = value;
         }
+        int? sector = null;
+        if (selected >= 0)
+        {
+            if (!int.TryParse(Operand(args, selected + 1),
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value)
+                || value >= MatchLimits.SectorCount)
+                throw new ArgumentException("--selected-sector must be between 0 and 63.");
+            sector = value;
+        }
         return new ReferenceFrameRequest(save, output, frame,
-            clicks >= 0 ? ReferenceClick.ParseList(Operand(args, clicks + 1)) : null, counter,
+            clicks >= 0 ? ReferenceClick.ParseList(Operand(args, clicks + 1)) : null, counter, sector,
             lamps >= 0 ? ReferenceLamps.Parse(Operand(args, lamps + 1)) : null);
     }
 }
@@ -216,6 +233,12 @@ public sealed partial class ChaosGame
     private TimeSpan PresentationDrawTime => _referenceFrame is null ? _eventPump.Time : TimeSpan.Zero;
 
     /// <summary>
+    /// FND-UI-051: the selection frame a slid-in panel holds, the one shown when it came in, or
+    /// null while no panel is open.
+    /// </summary>
+    private int? _heldSelectionFrame;
+
+    /// <summary>
     /// The time the free-running animations (the empty seats, the item rotation and the idle-gang
     /// warning's line) are drawn at: the reference frame draws them as at time zero, so the frame
     /// does not depend on how many clicks it made.
@@ -230,11 +253,23 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// The selection frame the pump has drawn last (FND-UI-017): the one for the reference frame's
-    /// recorded counter (FND-UI-048), otherwise the one for the clock.
+    /// recorded counter (FND-UI-048), otherwise the one a slid-in panel holds (FND-UI-051), otherwise
+    /// the one for the clock.
     /// </summary>
     private int SelectionFrameShown() => _referenceFrame?.PumpCounter is { } counter
         ? CityMapLayout.SelectionFrameAfterPass(counter)
-        : CityMapLayout.SelectionFrame(PresentationDrawTime);
+        : _heldSelectionFrame ?? CityMapLayout.SelectionFrame(PresentationDrawTime);
+
+    /// <summary>
+    /// FND-UI-051: the frame held after the screen moves from <paramref name="previous"/> to
+    /// <paramref name="current"/>. A panel coming in holds the frame <paramref name="shown"/>; a
+    /// panel replacing another keeps the held one, as no pass of the pump runs between the
+    /// slide-out and the slide-in; any other screen releases it.
+    /// </summary>
+    public static int? HeldSelectionFrame(ClientScreen previous, ClientScreen current, int? held, int shown) =>
+        !PanelSlideTransition.IsPanel(current) ? null
+        : PanelSlideTransition.IsPanel(previous) ? held ?? shown
+        : shown;
 
     /// <summary>
     /// Shows the city of the player whose planning entry the save stands at. The hand-off card,
@@ -251,6 +286,10 @@ public sealed partial class ChaosGame
             && state.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human)
         {
             PrepareCurrentHireOffers();
+            if (_referenceFrame?.SelectedSector is { } selected)
+                _planningSelections.Store(playerId, selected);
+            // FND-SAVE-003: the planning player's own sector, as PresentHotSeatPlanningEntry picks it.
+            _cursor = _planningSelections.For(playerId, _cursor);
             _deferComlinkAlertUntilPlanningVisible = true;
             _managementReturnScreen = ClientScreen.City;
             if (LastTurnReports(state, playerId).Count > 0)

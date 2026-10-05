@@ -1,0 +1,7 @@
+{
+  "screen": "SCR-OBJECTIVE-001",
+  "state": "A planning entry of player 0 with the Player Rankings panel open",
+  "elements": [
+    {"element": "Player Rankings panel with one vertical rail per player and portraits placed by score", "rect": [0, 0, 640, 460]}
+  ]
+}

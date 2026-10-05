@@ -36,7 +36,8 @@ internal sealed record OrderStepRecord(
 /// A capture taken after the dump: the bitmap <c>File</c> in the run directory with its repeat
 /// beside it, the Overlord bar's marker frame it shows (FND-UI-038) and the pump's counter.
 /// </summary>
-internal sealed record CaptureShot(string File, int MarkerFrame, int PumpCounter, int[] Lamps);
+internal sealed record CaptureShot(
+    string File, int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector, int? FrameCounter);
 
 internal sealed partial class NewGameSession
 {
@@ -63,14 +64,19 @@ internal sealed partial class NewGameSession
             context.Esp += 4 * OriginalAddresses.PopupMenuTrackArguments;
             context.Eip = OriginalAddresses.PopupMenuTracked;
         });
+        // FND-UI-051: the pump's counter when a panel last stopped the selection frame.
+        int? heldCounter = null;
+        _process.SetBreakpoint(OriginalAddresses.PanelHoldsSelectionFrame,
+            _ => heldCounter = _process.ReadInt32(OriginalAddresses.PumpCounter), quiet: true);
         foreach (var step in settings.OrderSteps!)
         {
             if (step.Kind == "shot")
             {
                 // A capture moves nothing, so it is not a post-dump step of the marker log.
                 var file = $"capture-step-{_orderSteps.Count}";
-                var shot = CaptureDrawingArea(window, file) is var (marker, pump, lamps)
-                    ? new CaptureShot(file + ".bmp", marker, pump, lamps)
+                var shot = CaptureDrawingArea(window, file) is var (marker, pump, lamps, selected)
+                    ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
+                        _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter)
                     : null;
                 _orderSteps.Add(new OrderStepRecord(step, -1, null,
                     _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),

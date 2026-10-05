@@ -37,7 +37,8 @@ Information's Exit, the back control, Gangs in Sector and its Exit, the
 console's Sector Financial control and the panel's Exit. With each shot the
 probe also reads the Events light's flag `0x00487814` and the byte
 `0x00487818` the pump sets when it draws that lamp, and the Comlink light's
-`0x0048781C` and `0x00487820` (FND-EVENT-006).
+`0x0048781C` and `0x00487820` (FND-EVENT-006), and the selected sector and
+frame counter as in EXP-UI-008.
 
 ## Observations
 
@@ -46,12 +47,16 @@ as EXP-TURN-071. Both Exit steps closed a panel: Combat Results, then the Last
 Turn Events panel the planning entry opens after it (RULE-EVENT-005). All
 four shots were kept:
 
-| Step | Screens | Marker frame | Pump counter | Light bytes |
-|---|---|---|---|---|
-| 3 | SCR-UI-004 | 7 | 5 | 0, 0, 0, 0 |
-| 5 | SCR-UI-007 | 5 | 3 | 0, 0, 0, 0 |
-| 9 | SCR-UI-005 | 6 | 2 | 0, 0, 0, 0 |
-| 12 | SCR-FINANCE-001 | 11 | 4 | 0, 0, 0, 0 |
+| Step | Screens | Marker frame | Pump counter | Frame counter | Light bytes |
+|---|---|---|---|---|---|
+| 3 | SCR-UI-004 | 8 | 6 | 6 | 0, 0, 0, 0 |
+| 5 | SCR-UI-007 | 4 | 3 | 6 | 0, 0, 0, 0 |
+| 9 | SCR-UI-005 | 4 | 2 | 5 | 0, 0, 0, 0 |
+| 12 | SCR-FINANCE-001 | 9 | 4 | 7 | 0, 0, 0, 0 |
+
+Sector 19 was selected in every shot. The frame counter is the one EXP-UI-008
+describes; the three panels hold the frame of the counter at their slide-in
+(FND-UI-051).
 
 The captures show:
 

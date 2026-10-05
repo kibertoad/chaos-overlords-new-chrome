@@ -418,11 +418,12 @@ internal sealed partial class NewGameSession(
         DumpWritableSections();
         _gangMarkersDumped = true;
         _panelsAtDump = [.. _panels];
-        if (settings.Capture && CaptureDrawingArea(window, "capture-blt") is var (marker, pump, lamps))
+        if (settings.Capture && CaptureDrawingArea(window, "capture-blt") is var (marker, pump, lamps, selected))
         {
             _notes.Add($"marker_frame {marker}");
             _notes.Add($"pump_counter {pump}");
             _notes.Add($"lamps {string.Join(' ', lamps)}");
+            _notes.Add($"selected_sector {selected}");
         }
         if (settings.EquipLists && !RecordEquipLists()) return Finish(false, "The Equip lists were not built.", rollsBeforeBegin);
         if (settings.AttackLists && !RecordAttackLists()) return Finish(false, "The Attack lists were not built.", rollsBeforeBegin);
@@ -812,9 +813,10 @@ internal sealed partial class NewGameSession(
     // capture is written twice from the window's device context. PrintWindow is unsuitable here:
     // it can repaint over animation drawn directly to the window rather than its backing surface.
     // The copies are <file>.bmp and <file>-repeat.bmp; the result is the marker frame and the
-    // pump's counter they show, with the control lights' bytes, null when no two agreeing copies
-    // were taken.
-    private (int MarkerFrame, int PumpCounter, int[] Lamps)? CaptureDrawingArea(IntPtr window, string file)
+    // pump's counter they show, with the control lights' bytes and the selected sector, null when
+    // no two agreeing copies were taken.
+    private (int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector)? CaptureDrawingArea(
+        IntPtr window, string file)
     {
         const int width = 640, height = 460;
         // A smaller client area leaves part of the copy outside the window, and that part is not
@@ -848,7 +850,8 @@ internal sealed partial class NewGameSession(
                 _process.Read(OriginalAddresses.ComlinkPending, 1)[0],
                 _process.Read(OriginalAddresses.ComlinkLampDrawn, 1)[0],
             ];
-            return ((before + 11) % 12, pumpBefore, lamps);
+            // FND-SAVE-003: the sector the city frames and the console's sector values show.
+            return ((before + 11) % 12, pumpBefore, lamps, _process.ReadInt32(OriginalAddresses.SelectedSector));
         }
         _notes.Add($"Capture {file} rejected: a counter moved or the synchronized copies disagreed.");
         return null;

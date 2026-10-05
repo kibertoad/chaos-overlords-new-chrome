@@ -34,6 +34,14 @@ public static class OriginalFontLayout
     public static Rectangle AtlasBounds => new(0, 0,
         (LastCharacter - FirstCharacter + 1) * CellWidth, GlyphHeight);
 
+    /// <summary>The plain font strip of PX00129, at its top-left corner.</summary>
+    public static Point PlainStrip => new(0, 0);
+
+    /// <summary>
+    /// FND-UI-019, FND-SEARCH-004: the darker strip at (152,274), laid out as the plain one.
+    /// </summary>
+    public static Point DimStrip => new(152, 274);
+
     /// <summary>
     /// Width of the glyph mask <see cref="PixelFont"/> builds: the original strip followed by one
     /// cell per <see cref="SupplementalFontGlyphs"/> character.

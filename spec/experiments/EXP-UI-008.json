@@ -1,5 +1,5 @@
 {
-  "experiment": "EXP-UI-007",
+  "experiment": "EXP-UI-008",
   "build": "BLD-GOG-EN-1.1",
   "starting_state": null,
   "recording_xxh3": null,
@@ -26,18 +26,24 @@
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 6"},
     {"tick":null,"name":"left_click","value":"exit after the dump"},
     {"tick":null,"name":"left_click","value":"exit after the dump"},
-    {"tick":null,"name":"double_click","value":"double-click sector 19 after the dump"},
-    {"tick":null,"name":"left_click","value":"capture for SCR-UI-004 after the dump"},
-    {"tick":null,"name":"left_click","value":"double-click (146, 260) after the dump"},
-    {"tick":null,"name":"left_click","value":"capture for SCR-UI-007 after the dump"},
-    {"tick":null,"name":"left_click","value":"(185, 304), command 0 after the dump"},
-    {"tick":null,"name":"left_click","value":"back after the dump"},
-    {"tick":null,"name":"left_click","value":"(524, 246), command 0 after the dump"},
-    {"tick":null,"name":"left_click","value":"capture for SCR-UI-005 after the dump"},
+    {"tick":null,"name":"left_click","value":"(524, 150), command 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"capture for SCR-EVENT-001,SCR-UI-003 after the dump"},
     {"tick":null,"name":"left_click","value":"(161, 304), command 0 after the dump"},
-    {"tick":null,"name":"left_click","value":"(576, 218), command 0 after the dump"},
-    {"tick":null,"name":"left_click","value":"capture for SCR-FINANCE-001 after the dump"},
-    {"tick":null,"name":"left_click","value":"(185, 304), command 0 after the dump"}
+    {"tick":null,"name":"left_click","value":"(524, 190), command 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"capture for SCR-COMBAT-001,SCR-UI-003 after the dump"},
+    {"tick":null,"name":"left_click","value":"(161, 304), command 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"(576, 240), command 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"capture for SCR-OBJECTIVE-001,SCR-UI-003 after the dump"},
+    {"tick":null,"name":"left_click","value":"(161, 304), command 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"(576, 266), command 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"capture for SCR-SEARCH-001,SCR-UI-003 after the dump"},
+    {"tick":null,"name":"left_click","value":"(161, 304), command 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"(524, 270), command 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"capture for SCR-HIRE-001,SCR-UI-003 after the dump"},
+    {"tick":null,"name":"left_click","value":"(185, 304), command 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"double-click (472, 405) after the dump"},
+    {"tick":null,"name":"left_click","value":"capture for SCR-GANG-002,SCR-UI-003 after the dump"},
+    {"tick":null,"name":"left_click","value":"(161, 304), command 0 after the dump"}
   ],
   "seeds": [16],
   "runs": [
@@ -4580,7 +4586,7 @@
         {"format":"FMT-STATE-003","record":2,"field":"force_start","value":8},
         {"format":"FMT-STATE-003","record":2,"field":"force_final","value":3},
         {"format":"FMT-STATE-003","record":2,"field":"force_shown","value":0},
-        {"format":"FMT-STATE-003","record":2,"field":"damage_dealt","value":72},
+        {"format":"FMT-STATE-003","record":2,"field":"damage_dealt","value":118},
         {"format":"FMT-STATE-003","record":2,"field":"retaliation_taken","value":41},
         {"format":"FMT-STATE-003","record":2,"field":"weapon","value":-1},
         {"format":"FMT-STATE-003","record":2,"field":"armor","value":-1},
@@ -5499,15 +5505,15 @@
           ]
         },
         {
-          "kind": "open",
-          "target": 19,
-          "x": 0,
-          "y": 0,
+          "kind": "strip",
+          "target": -1,
+          "x": 524,
+          "y": 150,
           "choice": 0,
           "menu": -1,
-          "city_view": false,
+          "city_view": true,
           "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
+          "cards": [0,0,0,0,0,0],
           "gangs": [
             [0,19,3,0,0,3,0],
             [1,19,0,0,0,0,0],
@@ -5522,311 +5528,240 @@
           "y": 0,
           "choice": 0,
           "menu": -1,
-          "city_view": false,
+          "city_view": true,
           "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
+          "cards": [0,0,0,0,0,0],
           "gangs": [
             [0,19,3,0,0,3,0],
             [1,19,0,0,0,0,0],
             [2,19,3,0,0,3,0],
             [80,100,0,0,0,0,0]
           ],
-          "screens": "SCR-UI-004",
+          "screens": "SCR-EVENT-001,SCR-UI-003",
           "capture": {
-            "xxh3": "f3468bab50aa33adf9c77e1e0a17cd63",
+            "xxh3": "3dc491be73dc91e014703cdda05ca367",
             "area": [0,0,640,460],
-            "marker_frame": 8,
-            "pump_counter": 6,
+            "marker_frame": 1,
+            "pump_counter": 5,
             "lamps": [0,0,0,0],
-            "selected_sector": 19,
+            "selected_sector": 12,
             "screens": [
               {
-                "screen": "SCR-UI-004",
+                "screen": "SCR-EVENT-001",
                 "elements": [
                   {
-                    "element": "Detailed sector screen",
+                    "element": "Last Turn Events panel",
                     "rect": [0,0,640,460],
-                    "xxh3": "833ab2bdf20502cc2e879f072243df96",
-                    "white": 612
+                    "xxh3": "ac32dd125445cfd1a6f1ada422fcc261",
+                    "white": 721
                   },
                   {
-                    "element": "Background",
+                    "element": "Page number",
+                    "rect": [138,137,12,7],
+                    "xxh3": "648759af6a188ff4c27192cd2de41fad",
+                    "white": 0
+                  },
+                  {
+                    "element": "Page count",
+                    "rect": [174,137,12,7],
+                    "xxh3": "648759af6a188ff4c27192cd2de41fad",
+                    "white": 0
+                  },
+                  {
+                    "element": "Illustration",
+                    "rect": [198,135,242,158],
+                    "xxh3": "d5af1001bc82bcffe893de967639650c",
+                    "white": 5
+                  },
+                  {
+                    "element": "Footer backing",
+                    "rect": [226,298,210,16],
+                    "xxh3": "2cea5a4f1682de4ae5841de165a49a42",
+                    "white": 0
+                  }
+                ]
+              },
+              {
+                "screen": "SCR-UI-003",
+                "elements": [
+                  {
+                    "element": "City view and right control panel",
+                    "rect": [0,0,640,460],
+                    "xxh3": "ac32dd125445cfd1a6f1ada422fcc261",
+                    "white": 721
+                  },
+                  {
+                    "element": "Neutral city map",
                     "rect": [2,42,432,416],
-                    "xxh3": "9f29ca1cb0fcab8e71544678809f26b0",
-                    "white": 6
+                    "xxh3": "50ed9689a1f5130417e2f3f6a8bf1a95",
+                    "white": 115
                   },
                   {
-                    "element": "Owner strip and back control",
-                    "rect": [4,43,32,414],
-                    "xxh3": "de9f84b46372a8e6731197685c9a0ea2",
+                    "element": "Overlord bar portraits, player 0",
+                    "rect": [18,5,32,32],
+                    "xxh3": "200a6fdd7496091078d42b2f86db5856",
                     "white": 0
                   },
                   {
-                    "element": "9 Sector Display",
-                    "rect": [64,60,162,156],
-                    "xxh3": "11c6c4f5a38cc687a3fff87d7606a80d",
+                    "element": "Overlord bar portraits, player 1",
+                    "rect": [88,5,32,32],
+                    "xxh3": "d07c551898e84930810b16f9002d1030",
                     "white": 0
                   },
                   {
-                    "element": "Selected-sector frame",
-                    "rect": [117,111,54,52],
-                    "xxh3": "e270051c45b5269f8305ff1d73d52422",
+                    "element": "Overlord bar portraits, player 2",
+                    "rect": [158,5,32,32],
+                    "xxh3": "f4b68a3f06b64bcb6c498780f8a1bc69",
                     "white": 0
                   },
                   {
-                    "element": "Site portraits, slot 0",
-                    "rect": [86,228,120,64],
-                    "xxh3": "f38c932ac17b3e65dc34865197c26219",
-                    "white": 2
-                  },
-                  {
-                    "element": "Site portraits, slot 1",
-                    "rect": [86,294,120,64],
-                    "xxh3": "fe5c1a7c46fa836d6dac5782e8c92595",
-                    "white": 4
-                  },
-                  {
-                    "element": "Site portraits, slot 2",
-                    "rect": [86,360,120,64],
-                    "xxh3": "bcdcd1314ea9e0461116b38b34735c66",
+                    "element": "Overlord bar portraits, player 3",
+                    "rect": [228,5,32,32],
+                    "xxh3": "3ae2a0639142770e681ed9e98cd7eee9",
                     "white": 0
                   },
                   {
-                    "element": "Gang card frame",
-                    "rect": [254,80,150,336],
-                    "xxh3": "34e95244c4522b8448c33fdc3dfb1500",
+                    "element": "Overlord bar portraits, player 4",
+                    "rect": [298,5,32,32],
+                    "xxh3": "2daab0908218e96ae7a255c21987357d",
                     "white": 0
                   },
                   {
-                    "element": "Group order strip",
-                    "rect": [253,61,152,16],
-                    "xxh3": "27a491096e82e7c4c6f2f4bd45a21bb2",
+                    "element": "Overlord bar portraits, player 5",
+                    "rect": [368,5,32,32],
+                    "xxh3": "87a9c9163b5ef5aebaddb90e9fafe124",
                     "white": 0
                   },
                   {
-                    "element": "Console, Overlord bar",
-                    "rect": [12,5,420,32],
-                    "xxh3": "a083bc81c8109399a4622ac8292ee8a2",
+                    "element": "Active-player marker, player 0",
+                    "rect": [50,6,20,20],
+                    "xxh3": "2eb1a5d63605cda19d7631a0a506a5fd",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 0",
+                    "rect": [51,30,20,6],
+                    "xxh3": "06def484e70cda9f2730efdd289dedbf",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 1",
+                    "rect": [121,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 2",
+                    "rect": [191,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 3",
+                    "rect": [261,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 4",
+                    "rect": [331,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 5",
+                    "rect": [401,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Events",
+                    "rect": [540,126,8,16],
+                    "xxh3": "2e7b280e45f5b31f966e539489969fd0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Comlink",
+                    "rect": [592,126,8,16],
+                    "xxh3": "a3533203b9c9f69d95b29516c03a141b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Done",
+                    "rect": [592,282,8,16],
+                    "xxh3": "b3d09ad137e416ac40dfb1352ef07a6c",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, scenario",
+                    "rect": [481,6,99,7],
+                    "xxh3": "380555b0a5fa3cf90fce3ece5d9723ac",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, year",
+                    "rect": [481,15,24,7],
+                    "xxh3": "4d318d370bb34b520c493eb944c2cb0f",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, week",
+                    "rect": [511,15,12,7],
+                    "xxh3": "5156b38887a1d5d55dd2dd372fe9e9fa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Calendar companion field",
+                    "rect": [562,15,18,7],
+                    "xxh3": "b6e33d2c2fe5462f112a91cc3bb4570a",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, score",
+                    "rect": [550,24,30,7],
+                    "xxh3": "4919c5c37c88c7eb8190747d48db07c0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, cash",
+                    "rect": [550,42,30,7],
+                    "xxh3": "663e5810845d309318f9c860950563ed",
                     "white": 0
                   },
                   {
                     "element": "Sector values",
                     "rect": [568,60,36,43],
-                    "xxh3": "db6c97c0134795c2d68f6dcb81fb70cf",
+                    "xxh3": "65d37d76a6df8bcd5dfe51b61b20077b",
                     "white": 0
+                  },
+                  {
+                    "element": "Planning clock bar",
+                    "rect": [520,336,60,3],
+                    "xxh3": "ae5c0fa38505544f411a44b671136eaa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 0",
+                    "rect": [440,373,64,64],
+                    "xxh3": "f8fafa53ad959bbcd4a458c29bbb5819",
+                    "white": 6
+                  },
+                  {
+                    "element": "Hire dock, offer 1",
+                    "rect": [506,373,64,64],
+                    "xxh3": "3d43b769061b7467890844e105dec4e5",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 2",
+                    "rect": [572,373,64,64],
+                    "xxh3": "45a9d87489e327e899df1f024d166e56",
+                    "white": 600
                   }
                 ]
               }
             ],
-            "frame_counter": 6
-          }
-        },
-        {
-          "kind": "dbl",
-          "target": -1,
-          "x": 146,
-          "y": 260,
-          "choice": 0,
-          "menu": -1,
-          "city_view": false,
-          "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
-          "gangs": [
-            [0,19,3,0,0,3,0],
-            [1,19,0,0,0,0,0],
-            [2,19,3,0,0,3,0],
-            [80,100,0,0,0,0,0]
-          ]
-        },
-        {
-          "kind": "shot",
-          "target": -1,
-          "x": 0,
-          "y": 0,
-          "choice": 0,
-          "menu": -1,
-          "city_view": false,
-          "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
-          "gangs": [
-            [0,19,3,0,0,3,0],
-            [1,19,0,0,0,0,0],
-            [2,19,3,0,0,3,0],
-            [80,100,0,0,0,0,0]
-          ],
-          "screens": "SCR-UI-007",
-          "capture": {
-            "xxh3": "4638e00ce6922455bc718bf0ff0ae0c7",
-            "area": [0,0,640,460],
-            "marker_frame": 4,
-            "pump_counter": 3,
-            "lamps": [0,0,0,0],
-            "selected_sector": 19,
-            "screens": [
-              {
-                "screen": "SCR-UI-007",
-                "elements": [
-                  {
-                    "element": "Panel with its labels",
-                    "rect": [128,124,320,209],
-                    "xxh3": "1bde286010b42c3ada5cd04b57c7390f",
-                    "white": 128
-                  },
-                  {
-                    "element": "Site portrait",
-                    "rect": [156,139,120,64],
-                    "xxh3": "60fa3c6bcfda73315365d26d1599f024",
-                    "white": 2
-                  },
-                  {
-                    "element": "Site name",
-                    "rect": [288,151,150,7],
-                    "xxh3": "1b4f0bfa423c2b9f2edff9cd62eafa7d",
-                    "white": 0
-                  },
-                  {
-                    "element": "Resistance, Tolerance, Support, Cash",
-                    "rect": [396,169,12,43],
-                    "xxh3": "dc6f29452858e3f983dae9bdcf081a18",
-                    "white": 0
-                  },
-                  {
-                    "element": "Special line",
-                    "rect": [288,214,120,7],
-                    "xxh3": "959285e86f157b12585052ccd862bef5",
-                    "white": 0
-                  },
-                  {
-                    "element": "The fourteen statistics",
-                    "rect": [300,244,108,70],
-                    "xxh3": "c072c9d578acea11c1f19ab7522505b4",
-                    "white": 0
-                  }
-                ]
-              }
-            ],
-            "frame_counter": 6
-          }
-        },
-        {
-          "kind": "strip",
-          "target": -1,
-          "x": 185,
-          "y": 304,
-          "choice": 0,
-          "menu": -1,
-          "city_view": false,
-          "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
-          "gangs": [
-            [0,19,3,0,0,3,0],
-            [1,19,0,0,0,0,0],
-            [2,19,3,0,0,3,0],
-            [80,100,0,0,0,0,0]
-          ]
-        },
-        {
-          "kind": "back",
-          "target": -1,
-          "x": 0,
-          "y": 0,
-          "choice": 0,
-          "menu": -1,
-          "city_view": true,
-          "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
-          "gangs": [
-            [0,19,3,0,0,3,0],
-            [1,19,0,0,0,0,0],
-            [2,19,3,0,0,3,0],
-            [80,100,0,0,0,0,0]
-          ]
-        },
-        {
-          "kind": "strip",
-          "target": -1,
-          "x": 524,
-          "y": 246,
-          "choice": 0,
-          "menu": -1,
-          "city_view": true,
-          "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
-          "gangs": [
-            [0,19,3,0,0,3,0],
-            [1,19,0,0,0,0,0],
-            [2,19,3,0,0,3,0],
-            [80,100,0,0,0,0,0]
-          ]
-        },
-        {
-          "kind": "shot",
-          "target": -1,
-          "x": 0,
-          "y": 0,
-          "choice": 0,
-          "menu": -1,
-          "city_view": true,
-          "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
-          "gangs": [
-            [0,19,3,0,0,3,0],
-            [1,19,0,0,0,0,0],
-            [2,19,3,0,0,3,0],
-            [80,100,0,0,0,0,0]
-          ],
-          "screens": "SCR-UI-005",
-          "capture": {
-            "xxh3": "d621b7de5ef7c956ae9af7a20b76b30b",
-            "area": [0,0,640,460],
-            "marker_frame": 4,
-            "pump_counter": 2,
-            "lamps": [0,0,0,0],
-            "selected_sector": 19,
-            "screens": [
-              {
-                "screen": "SCR-UI-005",
-                "elements": [
-                  {
-                    "element": "Panel with its labels",
-                    "rect": [104,124,344,209],
-                    "xxh3": "b6ed44087e54769bbcecac726d417089",
-                    "white": 115
-                  },
-                  {
-                    "element": "Sector tile",
-                    "rect": [135,135,54,52],
-                    "xxh3": "95040446edec09c8966a80050aa4db40",
-                    "white": 0
-                  },
-                  {
-                    "element": "Sector code",
-                    "rect": [156,190,12,7],
-                    "xxh3": "fbf4adcc926c660a650f33cefe0e5dc1",
-                    "white": 0
-                  },
-                  {
-                    "element": "Gang portrait, column 0",
-                    "rect": [248,138,32,32],
-                    "xxh3": "b9b071dc2b56b932b1d8be3a3a2036bb",
-                    "white": 0
-                  },
-                  {
-                    "element": "Gang portrait, column 1",
-                    "rect": [280,138,32,32],
-                    "xxh3": "65988f3c4afd4a731637c2ca23ec625e",
-                    "white": 0
-                  },
-                  {
-                    "element": "Gang portrait, column 2",
-                    "rect": [312,138,32,32],
-                    "xxh3": "bc9a54c808f89228e835193b42acad66",
-                    "white": 0
-                  }
-                ]
-              }
-            ],
-            "frame_counter": 5
+            "frame_counter": 0
           }
         },
         {
@@ -5838,7 +5773,7 @@
           "menu": -1,
           "city_view": true,
           "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
+          "cards": [0,0,0,0,0,0],
           "gangs": [
             [0,19,3,0,0,3,0],
             [1,19,0,0,0,0,0],
@@ -5849,13 +5784,13 @@
         {
           "kind": "strip",
           "target": -1,
-          "x": 576,
-          "y": 218,
+          "x": 524,
+          "y": 190,
           "choice": 0,
           "menu": -1,
           "city_view": true,
           "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
+          "cards": [0,0,0,0,0,0],
           "gangs": [
             [0,19,3,0,0,3,0],
             [1,19,0,0,0,0,0],
@@ -5872,101 +5807,1021 @@
           "menu": -1,
           "city_view": true,
           "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
+          "cards": [0,0,0,0,0,0],
           "gangs": [
             [0,19,3,0,0,3,0],
             [1,19,0,0,0,0,0],
             [2,19,3,0,0,3,0],
             [80,100,0,0,0,0,0]
           ],
-          "screens": "SCR-FINANCE-001",
+          "screens": "SCR-COMBAT-001,SCR-UI-003",
           "capture": {
-            "xxh3": "6e3e33c6482459362344fc11af712910",
+            "xxh3": "91b9973636d30f9b528e1c7128da076a",
             "area": [0,0,640,460],
-            "marker_frame": 9,
-            "pump_counter": 4,
+            "marker_frame": 6,
+            "pump_counter": 7,
             "lamps": [0,0,0,0],
-            "selected_sector": 19,
+            "selected_sector": 12,
             "screens": [
               {
-                "screen": "SCR-FINANCE-001",
+                "screen": "SCR-COMBAT-001",
                 "elements": [
                   {
-                    "element": "Panel",
-                    "rect": [128,124,320,209],
-                    "xxh3": "90cc4033559d2b5d4a9e4aa14908d3aa",
-                    "white": 112
+                    "element": "Combat Results panel, paged by sector",
+                    "rect": [0,0,640,460],
+                    "xxh3": "5a2e6b715b13ec7763925673f4c91664",
+                    "white": 717
                   },
                   {
-                    "element": "Overlord portrait",
-                    "rect": [154,141,64,64],
-                    "xxh3": "d315f06ff6386663934a927e56b78991",
+                    "element": "Viewer\u0027s forces",
+                    "rect": [207,153,84,144],
+                    "xxh3": "feff839cbe1dc74b2327ca66c0f1bf30",
                     "white": 0
                   },
                   {
-                    "element": "Value fields, Gang Upkeep",
-                    "rect": [394,151,24,7],
-                    "xxh3": "e58b737e38c09cd97b1f4d730de35202",
+                    "element": "Enemy forces",
+                    "rect": [350,153,84,144],
+                    "xxh3": "215c4bd79640763c2570abd168ed9baf",
                     "white": 0
                   },
                   {
-                    "element": "Value fields, New Recruits",
-                    "rect": [394,160,24,7],
-                    "xxh3": "fd538ef0833f2f79ff61a5ae26207a9e",
+                    "element": "Page counter",
+                    "rect": [138,137,48,7],
+                    "xxh3": "fa9d2df7b48413dd2f2ebfd6900ec382",
                     "white": 0
                   },
                   {
-                    "element": "Value fields, Equipment",
-                    "rect": [394,178,24,7],
-                    "xxh3": "fd538ef0833f2f79ff61a5ae26207a9e",
+                    "element": "Sector tile",
+                    "rect": [135,191,54,52],
+                    "xxh3": "e49de91ec41d8aaac9e7dbd048d805d3",
                     "white": 0
                   },
                   {
-                    "element": "Value fields, City Officials",
-                    "rect": [394,196,24,7],
-                    "xxh3": "fd538ef0833f2f79ff61a5ae26207a9e",
-                    "white": 0
-                  },
-                  {
-                    "element": "Value fields, Sector Tax",
-                    "rect": [394,214,24,7],
-                    "xxh3": "fd538ef0833f2f79ff61a5ae26207a9e",
-                    "white": 0
-                  },
-                  {
-                    "element": "Value fields, Site Protection",
-                    "rect": [394,223,24,7],
-                    "xxh3": "fd538ef0833f2f79ff61a5ae26207a9e",
-                    "white": 0
-                  },
-                  {
-                    "element": "Value fields, Chaos (Estimate)",
-                    "rect": [394,241,24,7],
-                    "xxh3": "175b608a515bb9c1ad0330b6de722c5b",
-                    "white": 0
-                  },
-                  {
-                    "element": "Value fields, Cash Adjustment",
-                    "rect": [394,268,24,7],
-                    "xxh3": "d67b9e5884f0b50654a96dc4c75a3bc9",
-                    "white": 0
-                  },
-                  {
-                    "element": "Gang count",
-                    "rect": [304,151,30,7],
-                    "xxh3": "4b99f9763cf4cedca9240b825524926a",
-                    "white": 0
-                  },
-                  {
-                    "element": "Sector name",
-                    "rect": [180,196,12,7],
+                    "element": "Sector code",
+                    "rect": [156,246,12,7],
                     "xxh3": "fbf4adcc926c660a650f33cefe0e5dc1",
                     "white": 0
                   }
                 ]
+              },
+              {
+                "screen": "SCR-UI-003",
+                "elements": [
+                  {
+                    "element": "City view and right control panel",
+                    "rect": [0,0,640,460],
+                    "xxh3": "5a2e6b715b13ec7763925673f4c91664",
+                    "white": 717
+                  },
+                  {
+                    "element": "Neutral city map",
+                    "rect": [2,42,432,416],
+                    "xxh3": "d00fda9ca3bb892e505863570218ea0b",
+                    "white": 111
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 0",
+                    "rect": [18,5,32,32],
+                    "xxh3": "200a6fdd7496091078d42b2f86db5856",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 1",
+                    "rect": [88,5,32,32],
+                    "xxh3": "d07c551898e84930810b16f9002d1030",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 2",
+                    "rect": [158,5,32,32],
+                    "xxh3": "f4b68a3f06b64bcb6c498780f8a1bc69",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 3",
+                    "rect": [228,5,32,32],
+                    "xxh3": "3ae2a0639142770e681ed9e98cd7eee9",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 4",
+                    "rect": [298,5,32,32],
+                    "xxh3": "2daab0908218e96ae7a255c21987357d",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 5",
+                    "rect": [368,5,32,32],
+                    "xxh3": "87a9c9163b5ef5aebaddb90e9fafe124",
+                    "white": 0
+                  },
+                  {
+                    "element": "Active-player marker, player 0",
+                    "rect": [50,6,20,20],
+                    "xxh3": "36b6ca86f1ba05765d7f6e2eeae2accd",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 0",
+                    "rect": [51,30,20,6],
+                    "xxh3": "06def484e70cda9f2730efdd289dedbf",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 1",
+                    "rect": [121,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 2",
+                    "rect": [191,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 3",
+                    "rect": [261,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 4",
+                    "rect": [331,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 5",
+                    "rect": [401,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Events",
+                    "rect": [540,126,8,16],
+                    "xxh3": "2e7b280e45f5b31f966e539489969fd0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Comlink",
+                    "rect": [592,126,8,16],
+                    "xxh3": "a3533203b9c9f69d95b29516c03a141b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Done",
+                    "rect": [592,282,8,16],
+                    "xxh3": "b3d09ad137e416ac40dfb1352ef07a6c",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, scenario",
+                    "rect": [481,6,99,7],
+                    "xxh3": "380555b0a5fa3cf90fce3ece5d9723ac",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, year",
+                    "rect": [481,15,24,7],
+                    "xxh3": "4d318d370bb34b520c493eb944c2cb0f",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, week",
+                    "rect": [511,15,12,7],
+                    "xxh3": "5156b38887a1d5d55dd2dd372fe9e9fa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Calendar companion field",
+                    "rect": [562,15,18,7],
+                    "xxh3": "b6e33d2c2fe5462f112a91cc3bb4570a",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, score",
+                    "rect": [550,24,30,7],
+                    "xxh3": "4919c5c37c88c7eb8190747d48db07c0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, cash",
+                    "rect": [550,42,30,7],
+                    "xxh3": "663e5810845d309318f9c860950563ed",
+                    "white": 0
+                  },
+                  {
+                    "element": "Sector values",
+                    "rect": [568,60,36,43],
+                    "xxh3": "65d37d76a6df8bcd5dfe51b61b20077b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning clock bar",
+                    "rect": [520,336,60,3],
+                    "xxh3": "ae5c0fa38505544f411a44b671136eaa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 0",
+                    "rect": [440,373,64,64],
+                    "xxh3": "f8fafa53ad959bbcd4a458c29bbb5819",
+                    "white": 6
+                  },
+                  {
+                    "element": "Hire dock, offer 1",
+                    "rect": [506,373,64,64],
+                    "xxh3": "3d43b769061b7467890844e105dec4e5",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 2",
+                    "rect": [572,373,64,64],
+                    "xxh3": "45a9d87489e327e899df1f024d166e56",
+                    "white": 600
+                  }
+                ]
               }
             ],
-            "frame_counter": 7
+            "frame_counter": 2
+          }
+        },
+        {
+          "kind": "strip",
+          "target": -1,
+          "x": 161,
+          "y": 304,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ]
+        },
+        {
+          "kind": "strip",
+          "target": -1,
+          "x": 576,
+          "y": 240,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ]
+        },
+        {
+          "kind": "shot",
+          "target": -1,
+          "x": 0,
+          "y": 0,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ],
+          "screens": "SCR-OBJECTIVE-001,SCR-UI-003",
+          "capture": {
+            "xxh3": "a6a75c5143b5c2c92e6a9d38446f7292",
+            "area": [0,0,640,460],
+            "marker_frame": 10,
+            "pump_counter": 1,
+            "lamps": [0,0,0,0],
+            "selected_sector": 12,
+            "screens": [
+              {
+                "screen": "SCR-OBJECTIVE-001",
+                "elements": [
+                  {
+                    "element": "Player Rankings panel with one vertical rail per player and portraits placed by score",
+                    "rect": [0,0,640,460],
+                    "xxh3": "2d1c595f9b0a204664d49a6cbe8fb276",
+                    "white": 740
+                  }
+                ]
+              },
+              {
+                "screen": "SCR-UI-003",
+                "elements": [
+                  {
+                    "element": "City view and right control panel",
+                    "rect": [0,0,640,460],
+                    "xxh3": "2d1c595f9b0a204664d49a6cbe8fb276",
+                    "white": 740
+                  },
+                  {
+                    "element": "Neutral city map",
+                    "rect": [2,42,432,416],
+                    "xxh3": "3b20ec1063eee89a39db192700f397a3",
+                    "white": 134
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 0",
+                    "rect": [18,5,32,32],
+                    "xxh3": "200a6fdd7496091078d42b2f86db5856",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 1",
+                    "rect": [88,5,32,32],
+                    "xxh3": "d07c551898e84930810b16f9002d1030",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 2",
+                    "rect": [158,5,32,32],
+                    "xxh3": "f4b68a3f06b64bcb6c498780f8a1bc69",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 3",
+                    "rect": [228,5,32,32],
+                    "xxh3": "3ae2a0639142770e681ed9e98cd7eee9",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 4",
+                    "rect": [298,5,32,32],
+                    "xxh3": "2daab0908218e96ae7a255c21987357d",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 5",
+                    "rect": [368,5,32,32],
+                    "xxh3": "87a9c9163b5ef5aebaddb90e9fafe124",
+                    "white": 0
+                  },
+                  {
+                    "element": "Active-player marker, player 0",
+                    "rect": [50,6,20,20],
+                    "xxh3": "08ada0834e4fd900d6f4fd896162a187",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 0",
+                    "rect": [51,30,20,6],
+                    "xxh3": "06def484e70cda9f2730efdd289dedbf",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 1",
+                    "rect": [121,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 2",
+                    "rect": [191,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 3",
+                    "rect": [261,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 4",
+                    "rect": [331,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 5",
+                    "rect": [401,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Events",
+                    "rect": [540,126,8,16],
+                    "xxh3": "2e7b280e45f5b31f966e539489969fd0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Comlink",
+                    "rect": [592,126,8,16],
+                    "xxh3": "a3533203b9c9f69d95b29516c03a141b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Done",
+                    "rect": [592,282,8,16],
+                    "xxh3": "b3d09ad137e416ac40dfb1352ef07a6c",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, scenario",
+                    "rect": [481,6,99,7],
+                    "xxh3": "380555b0a5fa3cf90fce3ece5d9723ac",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, year",
+                    "rect": [481,15,24,7],
+                    "xxh3": "4d318d370bb34b520c493eb944c2cb0f",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, week",
+                    "rect": [511,15,12,7],
+                    "xxh3": "5156b38887a1d5d55dd2dd372fe9e9fa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Calendar companion field",
+                    "rect": [562,15,18,7],
+                    "xxh3": "b6e33d2c2fe5462f112a91cc3bb4570a",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, score",
+                    "rect": [550,24,30,7],
+                    "xxh3": "4919c5c37c88c7eb8190747d48db07c0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, cash",
+                    "rect": [550,42,30,7],
+                    "xxh3": "663e5810845d309318f9c860950563ed",
+                    "white": 0
+                  },
+                  {
+                    "element": "Sector values",
+                    "rect": [568,60,36,43],
+                    "xxh3": "65d37d76a6df8bcd5dfe51b61b20077b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning clock bar",
+                    "rect": [520,336,60,3],
+                    "xxh3": "ae5c0fa38505544f411a44b671136eaa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 0",
+                    "rect": [440,373,64,64],
+                    "xxh3": "f8fafa53ad959bbcd4a458c29bbb5819",
+                    "white": 6
+                  },
+                  {
+                    "element": "Hire dock, offer 1",
+                    "rect": [506,373,64,64],
+                    "xxh3": "3d43b769061b7467890844e105dec4e5",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 2",
+                    "rect": [572,373,64,64],
+                    "xxh3": "45a9d87489e327e899df1f024d166e56",
+                    "white": 600
+                  }
+                ]
+              }
+            ],
+            "frame_counter": 4
+          }
+        },
+        {
+          "kind": "strip",
+          "target": -1,
+          "x": 161,
+          "y": 304,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ]
+        },
+        {
+          "kind": "strip",
+          "target": -1,
+          "x": 576,
+          "y": 266,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ]
+        },
+        {
+          "kind": "shot",
+          "target": -1,
+          "x": 0,
+          "y": 0,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ],
+          "screens": "SCR-SEARCH-001,SCR-UI-003",
+          "capture": {
+            "xxh3": "10ca45f60f108bf97ff5dbb3133ec080",
+            "area": [0,0,640,460],
+            "marker_frame": 3,
+            "pump_counter": 3,
+            "lamps": [0,0,0,0],
+            "selected_sector": 12,
+            "screens": [
+              {
+                "screen": "SCR-SEARCH-001",
+                "elements": [
+                  {
+                    "element": "Search panel",
+                    "rect": [0,0,640,460],
+                    "xxh3": "43ba1e6f893ab160b3998c8214911f49",
+                    "white": 672
+                  },
+                  {
+                    "element": "Row \u0060n\u0060, column 0",
+                    "rect": [206,146,114,165],
+                    "xxh3": "fbdc2facb116366336ebd82560ff7fd0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Row \u0060n\u0060, column 1",
+                    "rect": [322,146,114,165],
+                    "xxh3": "063768d43b23022847a27673126f221a",
+                    "white": 0
+                  }
+                ]
+              },
+              {
+                "screen": "SCR-UI-003",
+                "elements": [
+                  {
+                    "element": "City view and right control panel",
+                    "rect": [0,0,640,460],
+                    "xxh3": "43ba1e6f893ab160b3998c8214911f49",
+                    "white": 672
+                  },
+                  {
+                    "element": "Neutral city map",
+                    "rect": [2,42,432,416],
+                    "xxh3": "069b0eaee554ad32f33794f7fd30adf5",
+                    "white": 66
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 0",
+                    "rect": [18,5,32,32],
+                    "xxh3": "200a6fdd7496091078d42b2f86db5856",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 1",
+                    "rect": [88,5,32,32],
+                    "xxh3": "d07c551898e84930810b16f9002d1030",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 2",
+                    "rect": [158,5,32,32],
+                    "xxh3": "f4b68a3f06b64bcb6c498780f8a1bc69",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 3",
+                    "rect": [228,5,32,32],
+                    "xxh3": "3ae2a0639142770e681ed9e98cd7eee9",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 4",
+                    "rect": [298,5,32,32],
+                    "xxh3": "2daab0908218e96ae7a255c21987357d",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 5",
+                    "rect": [368,5,32,32],
+                    "xxh3": "87a9c9163b5ef5aebaddb90e9fafe124",
+                    "white": 0
+                  },
+                  {
+                    "element": "Active-player marker, player 0",
+                    "rect": [50,6,20,20],
+                    "xxh3": "10afb410345e6bfe50522dc66887b25c",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 0",
+                    "rect": [51,30,20,6],
+                    "xxh3": "06def484e70cda9f2730efdd289dedbf",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 1",
+                    "rect": [121,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 2",
+                    "rect": [191,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 3",
+                    "rect": [261,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 4",
+                    "rect": [331,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 5",
+                    "rect": [401,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Events",
+                    "rect": [540,126,8,16],
+                    "xxh3": "2e7b280e45f5b31f966e539489969fd0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Comlink",
+                    "rect": [592,126,8,16],
+                    "xxh3": "a3533203b9c9f69d95b29516c03a141b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Done",
+                    "rect": [592,282,8,16],
+                    "xxh3": "b3d09ad137e416ac40dfb1352ef07a6c",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, scenario",
+                    "rect": [481,6,99,7],
+                    "xxh3": "380555b0a5fa3cf90fce3ece5d9723ac",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, year",
+                    "rect": [481,15,24,7],
+                    "xxh3": "4d318d370bb34b520c493eb944c2cb0f",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, week",
+                    "rect": [511,15,12,7],
+                    "xxh3": "5156b38887a1d5d55dd2dd372fe9e9fa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Calendar companion field",
+                    "rect": [562,15,18,7],
+                    "xxh3": "b6e33d2c2fe5462f112a91cc3bb4570a",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, score",
+                    "rect": [550,24,30,7],
+                    "xxh3": "4919c5c37c88c7eb8190747d48db07c0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, cash",
+                    "rect": [550,42,30,7],
+                    "xxh3": "663e5810845d309318f9c860950563ed",
+                    "white": 0
+                  },
+                  {
+                    "element": "Sector values",
+                    "rect": [568,60,36,43],
+                    "xxh3": "65d37d76a6df8bcd5dfe51b61b20077b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning clock bar",
+                    "rect": [520,336,60,3],
+                    "xxh3": "ae5c0fa38505544f411a44b671136eaa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 0",
+                    "rect": [440,373,64,64],
+                    "xxh3": "f8fafa53ad959bbcd4a458c29bbb5819",
+                    "white": 6
+                  },
+                  {
+                    "element": "Hire dock, offer 1",
+                    "rect": [506,373,64,64],
+                    "xxh3": "3d43b769061b7467890844e105dec4e5",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 2",
+                    "rect": [572,373,64,64],
+                    "xxh3": "45a9d87489e327e899df1f024d166e56",
+                    "white": 600
+                  }
+                ]
+              }
+            ],
+            "frame_counter": 6
+          }
+        },
+        {
+          "kind": "strip",
+          "target": -1,
+          "x": 161,
+          "y": 304,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ]
+        },
+        {
+          "kind": "strip",
+          "target": -1,
+          "x": 524,
+          "y": 270,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ]
+        },
+        {
+          "kind": "shot",
+          "target": -1,
+          "x": 0,
+          "y": 0,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ],
+          "screens": "SCR-HIRE-001,SCR-UI-003",
+          "capture": {
+            "xxh3": "b1532d20c85f3daa37fe57ba15efdade",
+            "area": [0,0,640,460],
+            "marker_frame": 8,
+            "pump_counter": 5,
+            "lamps": [0,0,0,0],
+            "selected_sector": 12,
+            "screens": [
+              {
+                "screen": "SCR-HIRE-001",
+                "elements": [
+                  {
+                    "element": "Hire comparison panel showing the three offers side by side",
+                    "rect": [0,0,640,460],
+                    "xxh3": "a5f05e9fae7e88a75e7fe7e92a1861d4",
+                    "white": 869
+                  },
+                  {
+                    "element": "Offer portraits",
+                    "rect": [292,138,112,32],
+                    "xxh3": "295687ac59c683869949a645e86e8d58",
+                    "white": 145
+                  }
+                ]
+              },
+              {
+                "screen": "SCR-UI-003",
+                "elements": [
+                  {
+                    "element": "City view and right control panel",
+                    "rect": [0,0,640,460],
+                    "xxh3": "a5f05e9fae7e88a75e7fe7e92a1861d4",
+                    "white": 869
+                  },
+                  {
+                    "element": "Neutral city map",
+                    "rect": [2,42,432,416],
+                    "xxh3": "6f7e5d7f6eadc5b9d86749f01cfa7027",
+                    "white": 263
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 0",
+                    "rect": [18,5,32,32],
+                    "xxh3": "200a6fdd7496091078d42b2f86db5856",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 1",
+                    "rect": [88,5,32,32],
+                    "xxh3": "d07c551898e84930810b16f9002d1030",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 2",
+                    "rect": [158,5,32,32],
+                    "xxh3": "f4b68a3f06b64bcb6c498780f8a1bc69",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 3",
+                    "rect": [228,5,32,32],
+                    "xxh3": "3ae2a0639142770e681ed9e98cd7eee9",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 4",
+                    "rect": [298,5,32,32],
+                    "xxh3": "2daab0908218e96ae7a255c21987357d",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 5",
+                    "rect": [368,5,32,32],
+                    "xxh3": "87a9c9163b5ef5aebaddb90e9fafe124",
+                    "white": 0
+                  },
+                  {
+                    "element": "Active-player marker, player 0",
+                    "rect": [50,6,20,20],
+                    "xxh3": "38a9a0119d941d16b4c206af1e7986c1",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 0",
+                    "rect": [51,30,20,6],
+                    "xxh3": "06def484e70cda9f2730efdd289dedbf",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 1",
+                    "rect": [121,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 2",
+                    "rect": [191,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 3",
+                    "rect": [261,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 4",
+                    "rect": [331,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 5",
+                    "rect": [401,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Events",
+                    "rect": [540,126,8,16],
+                    "xxh3": "2e7b280e45f5b31f966e539489969fd0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Comlink",
+                    "rect": [592,126,8,16],
+                    "xxh3": "a3533203b9c9f69d95b29516c03a141b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Done",
+                    "rect": [592,282,8,16],
+                    "xxh3": "b3d09ad137e416ac40dfb1352ef07a6c",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, scenario",
+                    "rect": [481,6,99,7],
+                    "xxh3": "380555b0a5fa3cf90fce3ece5d9723ac",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, year",
+                    "rect": [481,15,24,7],
+                    "xxh3": "4d318d370bb34b520c493eb944c2cb0f",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, week",
+                    "rect": [511,15,12,7],
+                    "xxh3": "5156b38887a1d5d55dd2dd372fe9e9fa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Calendar companion field",
+                    "rect": [562,15,18,7],
+                    "xxh3": "b6e33d2c2fe5462f112a91cc3bb4570a",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, score",
+                    "rect": [550,24,30,7],
+                    "xxh3": "4919c5c37c88c7eb8190747d48db07c0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, cash",
+                    "rect": [550,42,30,7],
+                    "xxh3": "663e5810845d309318f9c860950563ed",
+                    "white": 0
+                  },
+                  {
+                    "element": "Sector values",
+                    "rect": [568,60,36,43],
+                    "xxh3": "65d37d76a6df8bcd5dfe51b61b20077b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning clock bar",
+                    "rect": [520,336,60,3],
+                    "xxh3": "ae5c0fa38505544f411a44b671136eaa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 0",
+                    "rect": [440,373,64,64],
+                    "xxh3": "f8fafa53ad959bbcd4a458c29bbb5819",
+                    "white": 6
+                  },
+                  {
+                    "element": "Hire dock, offer 1",
+                    "rect": [506,373,64,64],
+                    "xxh3": "3d43b769061b7467890844e105dec4e5",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 2",
+                    "rect": [572,373,64,64],
+                    "xxh3": "45a9d87489e327e899df1f024d166e56",
+                    "white": 600
+                  }
+                ]
+              }
+            ],
+            "frame_counter": 0
           }
         },
         {
@@ -5978,7 +6833,272 @@
           "menu": -1,
           "city_view": true,
           "viewed": 0,
-          "cards": [0,1,2,-1,-1,-1],
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ]
+        },
+        {
+          "kind": "dbl",
+          "target": -1,
+          "x": 472,
+          "y": 405,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ]
+        },
+        {
+          "kind": "shot",
+          "target": -1,
+          "x": 0,
+          "y": 0,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
+          "gangs": [
+            [0,19,3,0,0,3,0],
+            [1,19,0,0,0,0,0],
+            [2,19,3,0,0,3,0],
+            [80,100,0,0,0,0,0]
+          ],
+          "screens": "SCR-GANG-002,SCR-UI-003",
+          "capture": {
+            "xxh3": "26ae62d1d5ac7e92f2e12d2ad4c990f0",
+            "area": [0,0,640,460],
+            "marker_frame": 0,
+            "pump_counter": 7,
+            "lamps": [0,0,0,0],
+            "selected_sector": 12,
+            "screens": [
+              {
+                "screen": "SCR-GANG-002",
+                "elements": [
+                  {
+                    "element": "Gang information panel for a hired gang",
+                    "rect": [0,0,640,460],
+                    "xxh3": "72931dd2e94e307bf4ac1f560c726b3e",
+                    "white": 763
+                  },
+                  {
+                    "element": "Portrait",
+                    "rect": [130,141,64,64],
+                    "xxh3": "f8fafa53ad959bbcd4a458c29bbb5819",
+                    "white": 6
+                  },
+                  {
+                    "element": "Equipment",
+                    "rect": [392,141,48,176],
+                    "xxh3": "2ea3e437c58567f675e897d22327b1de",
+                    "white": 0
+                  }
+                ]
+              },
+              {
+                "screen": "SCR-UI-003",
+                "elements": [
+                  {
+                    "element": "City view and right control panel",
+                    "rect": [0,0,640,460],
+                    "xxh3": "72931dd2e94e307bf4ac1f560c726b3e",
+                    "white": 763
+                  },
+                  {
+                    "element": "Neutral city map",
+                    "rect": [2,42,432,416],
+                    "xxh3": "f995ff816e185766ce49ede2df30ef7b",
+                    "white": 157
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 0",
+                    "rect": [18,5,32,32],
+                    "xxh3": "200a6fdd7496091078d42b2f86db5856",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 1",
+                    "rect": [88,5,32,32],
+                    "xxh3": "d07c551898e84930810b16f9002d1030",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 2",
+                    "rect": [158,5,32,32],
+                    "xxh3": "f4b68a3f06b64bcb6c498780f8a1bc69",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 3",
+                    "rect": [228,5,32,32],
+                    "xxh3": "3ae2a0639142770e681ed9e98cd7eee9",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 4",
+                    "rect": [298,5,32,32],
+                    "xxh3": "2daab0908218e96ae7a255c21987357d",
+                    "white": 0
+                  },
+                  {
+                    "element": "Overlord bar portraits, player 5",
+                    "rect": [368,5,32,32],
+                    "xxh3": "87a9c9163b5ef5aebaddb90e9fafe124",
+                    "white": 0
+                  },
+                  {
+                    "element": "Active-player marker, player 0",
+                    "rect": [50,6,20,20],
+                    "xxh3": "7e43389c21e7e35d856ccdf2b271cbf3",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 0",
+                    "rect": [51,30,20,6],
+                    "xxh3": "06def484e70cda9f2730efdd289dedbf",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 1",
+                    "rect": [121,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 2",
+                    "rect": [191,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 3",
+                    "rect": [261,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 4",
+                    "rect": [331,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning lights, player 5",
+                    "rect": [401,30,20,6],
+                    "xxh3": "2999adda6ece27aa2138aad4c9e06b41",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Events",
+                    "rect": [540,126,8,16],
+                    "xxh3": "2e7b280e45f5b31f966e539489969fd0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Comlink",
+                    "rect": [592,126,8,16],
+                    "xxh3": "a3533203b9c9f69d95b29516c03a141b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Control lights, Done",
+                    "rect": [592,282,8,16],
+                    "xxh3": "b3d09ad137e416ac40dfb1352ef07a6c",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, scenario",
+                    "rect": [481,6,99,7],
+                    "xxh3": "380555b0a5fa3cf90fce3ece5d9723ac",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, year",
+                    "rect": [481,15,24,7],
+                    "xxh3": "4d318d370bb34b520c493eb944c2cb0f",
+                    "white": 0
+                  },
+                  {
+                    "element": "Scenario and calendar, week",
+                    "rect": [511,15,12,7],
+                    "xxh3": "5156b38887a1d5d55dd2dd372fe9e9fa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Calendar companion field",
+                    "rect": [562,15,18,7],
+                    "xxh3": "b6e33d2c2fe5462f112a91cc3bb4570a",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, score",
+                    "rect": [550,24,30,7],
+                    "xxh3": "4919c5c37c88c7eb8190747d48db07c0",
+                    "white": 0
+                  },
+                  {
+                    "element": "Player totals, cash",
+                    "rect": [550,42,30,7],
+                    "xxh3": "663e5810845d309318f9c860950563ed",
+                    "white": 0
+                  },
+                  {
+                    "element": "Sector values",
+                    "rect": [568,60,36,43],
+                    "xxh3": "65d37d76a6df8bcd5dfe51b61b20077b",
+                    "white": 0
+                  },
+                  {
+                    "element": "Planning clock bar",
+                    "rect": [520,336,60,3],
+                    "xxh3": "ae5c0fa38505544f411a44b671136eaa",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 0",
+                    "rect": [440,373,64,64],
+                    "xxh3": "f8fafa53ad959bbcd4a458c29bbb5819",
+                    "white": 6
+                  },
+                  {
+                    "element": "Hire dock, offer 1",
+                    "rect": [506,373,64,64],
+                    "xxh3": "3d43b769061b7467890844e105dec4e5",
+                    "white": 0
+                  },
+                  {
+                    "element": "Hire dock, offer 2",
+                    "rect": [572,373,64,64],
+                    "xxh3": "45a9d87489e327e899df1f024d166e56",
+                    "white": 600
+                  }
+                ]
+              }
+            ],
+            "frame_counter": 2
+          }
+        },
+        {
+          "kind": "strip",
+          "target": -1,
+          "x": 161,
+          "y": 304,
+          "choice": 0,
+          "menu": -1,
+          "city_view": true,
+          "viewed": 0,
+          "cards": [0,0,0,0,0,0],
           "gangs": [
             [0,19,3,0,0,3,0],
             [1,19,0,0,0,0,0],

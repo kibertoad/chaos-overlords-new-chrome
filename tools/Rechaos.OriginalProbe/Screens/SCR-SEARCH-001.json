@@ -1,0 +1,9 @@
+{
+  "screen": "SCR-SEARCH-001",
+  "state": "A planning entry of player 0 with the Search panel open",
+  "elements": [
+    {"element": "Search panel", "rect": [0, 0, 640, 460]},
+    {"element": "Row `n`, column 0", "rect": [206, 146, 114, 165]},
+    {"element": "Row `n`, column 1", "rect": [322, 146, 114, 165]}
+  ]
+}

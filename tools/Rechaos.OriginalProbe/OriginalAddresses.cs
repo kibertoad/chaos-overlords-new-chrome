@@ -222,6 +222,11 @@ internal static class OriginalAddresses
     public const uint EventsPending = 0x00487814;
     public const uint EventsLampDrawn = 0x00487818;
     public const uint ComlinkLampDrawn = 0x00487820;
+
+    // FND-UI-051: a panel's slide-in sets 0x004854C8 at 0x004196E4, and while it is set the pump
+    // leaves the selection frame as it was.
+    public const uint SelectionFrameHeld = 0x004854C8;
+    public const uint PanelHoldsSelectionFrame = 0x004196E4;
     public const uint Cash = 0x004A25E8;
 
     // FND-OPTIONS-001: Slide Panels, read by the panel helpers that slide a panel in and out.
