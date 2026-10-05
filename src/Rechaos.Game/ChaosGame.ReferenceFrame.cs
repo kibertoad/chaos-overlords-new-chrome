@@ -262,18 +262,25 @@ public sealed partial class ChaosGame
         if (_referenceEdge < _referenceEdges.Count)
         {
             var (point, edge) = _referenceEdges[_referenceEdge++];
+            // The live loop puts the pointer in the hover point before it handles a press or a
+            // move, and a held button draws its pressed face only under it. After the release the
+            // reference frame shows no pointer, as before its clicks, so nothing is drawn as
+            // hovered.
             switch (edge)
             {
                 case ReferenceEdge.Press:
+                    UpdateHoverPoint(point);
                     _dragPoint = point;
                     HandleClick(point);
                     break;
                 case ReferenceEdge.Move:
+                    UpdateHoverPoint(point);
                     _dragPoint = point;
                     HoldPointerAt(point);
                     break;
                 default:
                     CompletePointerRelease(pointerMapped: true, point, rightButton: false);
+                    UpdateHoverPoint(null);
                     break;
             }
             return;

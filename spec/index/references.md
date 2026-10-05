@@ -7039,6 +7039,7 @@ None.
 | [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | body |
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | body |
 | [EXP-TURN-096](../experiments/EXP-TURN-096.md) | body |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body, evidence |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |

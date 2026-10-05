@@ -108,8 +108,11 @@ public sealed record ScreenCaptureRecord(
     /// <summary>The screen shown before a match the capture shows, or null.</summary>
     public string? BeforeMatch { get; init; }
 
+    /// <summary>The setup step after which <c>--setup-steps</c> took the copy, or null.</summary>
+    public int? SetupStep => BeforeMatch is not null && Step <= SetupStepBase ? SetupStepBase - Step : null;
+
     public override string ToString() => BeforeMatch is { } screen
-        ? Step <= SetupStepBase ? $"{Experiment} run {Run} {screen} step {SetupStepBase - Step}" : $"{Experiment} run {Run} {screen}"
+        ? $"{Experiment} run {Run} {screen}" + (SetupStep is { } setupStep ? $" step {setupStep}" : "")
         : Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
 
     // The fixtures run to tens of megabytes, and every theory case looks its capture up here.

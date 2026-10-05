@@ -58,7 +58,7 @@ public sealed partial class ScreenCaptureTests
         var original = path is null ? null : ScreenFrame.ReadBitmap(File.ReadAllBytes(path));
         var rebuild = capture.BeforeMatch is { } screen
             ? RebuildFrame.RenderBeforeMatch(screen,
-                $"{experiment}-{run}-{screen}" + (step <= ScreenCaptureRecord.SetupStepBase ? $"-{ScreenCaptureRecord.SetupStepBase - step}" : ""),
+                $"{experiment}-{run}-{screen}" + (capture.SetupStep is { } setupStep ? $"-{setupStep}" : ""),
                 capture.Clicks)
             : RebuildFrame.Render(
                 OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,

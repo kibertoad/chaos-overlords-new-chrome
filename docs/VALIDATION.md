@@ -753,9 +753,13 @@ setup screen two seconds after it opens, before the run writes its own
 settings; `extract` gives the run a `setup_capture` object, compared at
 SCR-SETUP-001. `--setup-steps` then posts presses on the setup screen, as
 `strip:x:y`, drags as `drag:x:y:x2:y2` and copies as `shot`, each copy
-compared at SCR-SETUP-001; `extract` lists them as the run's `setup_steps`. A
-drag of a card face is not reliable this way, because the game does not always
-see the moves between the press and the release. EXP-UI-015 is taken this way.
+compared at SCR-SETUP-001; `extract` lists them as the run's `setup_steps` and
+as `setup` inputs. A drag writes the two pointer points of FND-UI-020 at the
+press, at each of eight steps to the release point and before the release, as
+the hire steps do, and posts only the button messages. The run's own settings
+then replace only what they set: any other choice keeps what the presses left,
+and the trace notes which choices the presses changed. EXP-UI-015 is taken this
+way, with an earlier drag that posted the moves as `WM_MOUSEMOVE` instead.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under

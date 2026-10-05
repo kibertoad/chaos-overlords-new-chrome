@@ -285,12 +285,14 @@ static IReadOnlyList<ProbeOrderStep> ParseSetupSteps(string value) =>
         var parts = entry.Split(':');
         if (parts is ["shot"]) return new ProbeOrderStep("shot", -1, 0, 0, 0, "SCR-SETUP-001");
         var numbers = parts.Skip(1).Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        const int width = CaptureFixture.Width, height = CaptureFixture.Height;
         return (parts[0], numbers) switch
         {
-            ("strip", [>= 0 and < 640, >= 0 and < 460]) => new ProbeOrderStep("strip", -1, numbers[0], numbers[1], 0),
+            ("strip", [>= 0 and < width, >= 0 and < height]) =>
+                new ProbeOrderStep("strip", -1, numbers[0], numbers[1], 0),
             // drag:x:y:x2:y2 presses at (x, y), moves to (x2, y2) with the button down and releases
             // there; Target and Choice carry the release point.
-            ("drag", [>= 0 and < 640, >= 0 and < 460, >= 0 and < 640, >= 0 and < 460]) =>
+            ("drag", [>= 0 and < width, >= 0 and < height, >= 0 and < width, >= 0 and < height]) =>
                 new ProbeOrderStep("drag", numbers[2], numbers[0], numbers[1], numbers[3]),
             _ => throw new FormatException($"A setup step is strip:x:y, drag:x:y:x2:y2 or shot: {entry}"),
         };

@@ -87,6 +87,7 @@ internal static class CaptureFixture
     {
         if (trace["Settings"]?["SetupSteps"] is not JsonArray steps) return null;
         var notes = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>()).ToHashSet();
+        var screen = CaptureScreen.Load("SCR-SETUP-001");
         return new JsonArray(steps.Select((step, index) =>
         {
             var record = new JsonObject
@@ -101,8 +102,8 @@ internal static class CaptureFixture
                 record["to_y"] = step["Choice"]!.GetValue<int>();
             }
             if (notes.Contains(SetupStepNote(index))
-                && Extract(Path.Combine(runDirectory, $"setup-step-{index}.bmp"), 0, null, null, null,
-                    CaptureScreen.Load("SCR-SETUP-001")) is { } capture)
+                && Extract(Path.Combine(runDirectory, $"setup-step-{index}.bmp"), 0, null, null, null, screen)
+                    is { } capture)
                 record["capture"] = capture;
             return (JsonNode)record;
         }).ToArray());

@@ -132,12 +132,22 @@ internal sealed record NewGameSettings(
         if (Comlink is not null) yield return "pref_slide_panels 0";
         if (WhiteKey) yield return "key_colour RGB(255,255,255)";
         foreach (var value in DrawValues ?? []) yield return value.ToString();
-        if (Humans is null) yield break;
-        foreach (var human in Humans)
+        foreach (var human in Humans ?? [])
             yield return human.Modifier is null
                 ? $"slot {human.Slot}: human"
                 : $"slot {human.Slot}: human named modifier_name_{human.Modifier}";
+        // The presses on the setup screen come before the settings are written, but they are kept
+        // with them so that runs with other presses are told apart and the fixture lists them.
+        for (var index = 0; index < (SetupSteps?.Count ?? 0); index++)
+            yield return $"setup step {index}: {DescribeSetupStep(SetupSteps![index])}";
     }
+
+    private static string DescribeSetupStep(ProbeOrderStep step) => step.Kind switch
+    {
+        "strip" => $"press ({step.X}, {step.Y})",
+        "drag" => $"drag ({step.X}, {step.Y}) to ({step.Target}, {step.Choice})",
+        _ => $"capture for {step.Screens}",
+    };
 
     /// <summary>
     /// The orders and Done presses after the first planning phase, then the presses after the dump,
@@ -345,7 +355,9 @@ internal sealed partial class NewGameSession(
             _notes.Add(CaptureDrawingArea(window, "setup-capture", CaptureFixture.Width, CaptureFixture.Height)
                 ? CaptureFixture.BeforeMatchNote("setup")
                 : "The setup screen was not captured.");
+        var choicesBeforeSteps = SetupChoicesLeftToPresses();
         RecordSetupSteps(window, settings.SetupSteps);
+        if (SetupStepsNote(choicesBeforeSteps) is { } setupStepsNote) _notes.Add(setupStepsNote);
         var rollsBeforeBegin = _rolls.Count;
         ApplySettings();
         Click(window, OriginalAddresses.BeginX, OriginalAddresses.BeginY);
