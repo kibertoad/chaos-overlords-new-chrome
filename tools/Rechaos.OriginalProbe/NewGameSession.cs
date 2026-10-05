@@ -510,9 +510,13 @@ internal sealed partial class NewGameSession(
         endgame.Kinds.Add(kind);
     }
 
+    // The player whose orders, hires, Search filter, Equip lists and Attack lists the probe writes and reads:
+    // the first --humans entry, or slot 0 when the option is left out.
+    private int FirstHuman => settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+
     private void WriteSearch(ProbeSearch write)
     {
-        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var human = FirstHuman;
         foreach (var definition in write.Definitions)
             _process.Write(OriginalAddresses.SearchFilters
                 + (uint)(human * OriginalAddresses.SiteDefinitionCount + definition), [1]);
@@ -582,7 +586,7 @@ internal sealed partial class NewGameSession(
 
     private void WriteOrder(ProbeOrder order)
     {
-        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var human = FirstHuman;
         var record = OriginalAddresses.GangRecords
             + (uint)(human * OriginalAddresses.PlayerGangStride + order.Slot * OriginalAddresses.GangRecordSize);
         _process.Write(record + 7, [
@@ -593,7 +597,7 @@ internal sealed partial class NewGameSession(
 
     private void WriteHire(ProbeHire hire)
     {
-        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var human = FirstHuman;
         _process.Write(OriginalAddresses.HireOrders + (uint)(human * 3 + hire.OfferSlot), [(byte)hire.Sector]);
         _notes.Add($"hire after roll {_rolls.Count}: {hire}");
     }

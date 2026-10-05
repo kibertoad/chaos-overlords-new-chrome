@@ -87,17 +87,27 @@ public sealed partial class OriginalNewGameExperimentTests
         var recorded = Run(experiment, run);
         var match = StartMatch(recorded, out _);
         var human = recorded.Humans[0];
-        foreach (var list in recorded.EquipLists)
+        var gangs = match.Players[human.Value].Gangs;
+        // The probe builds lists for every living gang, so the recorded slots are the living ones.
+        Assert.Equal(
+            Enumerable.Range(0, gangs.Count).Where(slot => gangs[slot].IsActive),
+            recorded.EquipLists.Select(list => list.Slot).Distinct());
+        foreach (var lists in recorded.EquipLists.GroupBy(list => list.Slot))
         {
-            var gang = match.Players[human.Value].Gangs[list.Slot];
-            Assert.Equal(list.TechLevel, match.Definitions.Gangs[gang.DefinitionId].TechLevel);
-            var offered = CommandOptionCatalog.LegalCommands(match, human, gang.Id)
-                .Where(command => command.Action == GangAction.Equip
-                    && EquipmentCommandLayout.CategoryForItemType(match.Definitions.Items[command.Target.Id].Type) == list.Category)
-                .Select(command => command.Target.Id)
+            var gang = gangs[lists.Key];
+            var equips = CommandOptionCatalog.LegalCommands(match, human, gang.Id)
+                .Where(command => command.Action == GangAction.Equip)
                 .ToArray();
-            Assert.True(list.Items.SequenceEqual(offered),
-                $"slot {list.Slot} category {list.Category}: the original lists [{string.Join(" ", list.Items)}], the rebuild [{string.Join(" ", offered)}]");
+            foreach (var list in lists)
+            {
+                Assert.Equal(list.TechLevel, match.Definitions.Gangs[gang.DefinitionId].TechLevel);
+                var offered = equips
+                    .Where(command => EquipmentCommandLayout.CategoryForItemType(match.Definitions.Items[command.Target.Id].Type) == list.Category)
+                    .Select(command => command.Target.Id)
+                    .ToArray();
+                Assert.True(list.Items.SequenceEqual(offered),
+                    $"slot {list.Slot} category {list.Category}: the original lists [{string.Join(" ", list.Items)}], the rebuild [{string.Join(" ", offered)}]");
+            }
         }
     }
 
@@ -123,18 +133,28 @@ public sealed partial class OriginalNewGameExperimentTests
         var recorded = Run(experiment, run);
         var match = StartMatch(recorded, out _);
         var human = recorded.Humans[0];
-        foreach (var list in recorded.AttackLists)
+        var gangs = match.Players[human.Value].Gangs;
+        // The probe builds a list for every other player and every living gang, so the recorded
+        // slots are the living ones and each has one list per opponent.
+        Assert.Equal(
+            Enumerable.Range(0, gangs.Count).Where(slot => gangs[slot].IsActive),
+            recorded.AttackLists.Select(list => list.Slot).Distinct());
+        foreach (var lists in recorded.AttackLists.GroupBy(list => list.Slot))
         {
-            var gang = match.Players[human.Value].Gangs[list.Slot];
-            Assert.Equal(list.Sector, gang.SectorId);
+            var gang = gangs[lists.Key];
+            Assert.Equal(Enumerable.Range(0, 6).Where(player => player != human.Value), lists.Select(list => list.Opponent));
             var options = AttackTargetRoster.Order(match, CommandOptionCatalog.LegalCommands(match, human, gang.Id)
                 .Where(command => command.Action == GangAction.Attack));
-            var roster = match.Players[list.Opponent].Gangs.ToList();
-            var offered = AttackPicker.TargetCells(match, options, new PlayerId(list.Opponent))
-                .Select(cell => roster.FindIndex(target => target.Id.Value == options[cell].Target.Id))
-                .ToArray();
-            Assert.True(list.Targets.SequenceEqual(offered),
-                $"slot {list.Slot} opponent {list.Opponent}: the original lists [{string.Join(" ", list.Targets)}], the rebuild [{string.Join(" ", offered)}]");
+            foreach (var list in lists)
+            {
+                Assert.Equal(list.Sector, gang.SectorId);
+                var roster = match.Players[list.Opponent].Gangs.ToList();
+                var offered = AttackPicker.TargetCells(match, options, new PlayerId(list.Opponent))
+                    .Select(cell => roster.FindIndex(target => target.Id.Value == options[cell].Target.Id))
+                    .ToArray();
+                Assert.True(list.Targets.SequenceEqual(offered),
+                    $"slot {list.Slot} opponent {list.Opponent}: the original lists [{string.Join(" ", list.Targets)}], the rebuild [{string.Join(" ", offered)}]");
+            }
         }
     }
 

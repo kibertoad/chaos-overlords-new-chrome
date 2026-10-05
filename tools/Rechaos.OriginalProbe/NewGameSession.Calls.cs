@@ -72,6 +72,4 @@ internal sealed partial class NewGameSession
             if (record[2] != 100) yield return (slot, record[1], record[2]);
         }
     }
-
-    private int FirstHuman => settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
 }

@@ -13,9 +13,10 @@ internal sealed partial class NewGameSession
 
     // RULE-ATTACK-002: the probe calls the Attack picker's roster builder for every other player and
     // every living gang of the first human, with the gang's sector, as the picker calls it, and
-    // reads the entries it fills. The calls draw the target cards and change nothing the fixture
-    // holds, which is why they come after the dump. The builder tests the visible_to entry of
-    // active_player (FND-ATTACK-006), so the calls run with the first human active.
+    // reads the entries it fills. The calls overwrite the target entries and draw the target cards
+    // over memory the dump holds, which is why they come after it. The builder tests the
+    // visible_to entry of active_player (FND-ATTACK-006), so the calls run with the first human
+    // active.
     private bool RecordAttackLists()
     {
         var human = FirstHuman;
@@ -30,9 +31,18 @@ internal sealed partial class NewGameSession
                     var entries = _process.Read(OriginalAddresses.AttackTargetEntries, 4 * OriginalAddresses.AttackTargetLength);
                     record.Targets.AddRange(Enumerable.Range(0, OriginalAddresses.AttackTargetLength)
                         .Select(index => BitConverter.ToInt32(entries, 4 * index)).Where(target => target != -1));
+                    // FND-ATTACK-006: nothing compares the builder's count with 6, so a full list may
+                    // have run past the six entries read here.
+                    if (record.Targets.Count == OriginalAddresses.AttackTargetLength)
+                        _notes.Add($"Attack list of slot {record.Slot} opponent {record.Opponent} fills all {record.Targets.Count} entries and may be longer.");
                     _attackLists.Add(record);
                 }));
             }
+        if (calls.Count == 0)
+        {
+            _notes.Add($"Attack lists: player {human} has no living gang, so no list was built.");
+            return true;
+        }
         return RunInjectedCalls(calls, human);
     }
 }

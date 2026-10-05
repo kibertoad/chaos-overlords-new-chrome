@@ -86,6 +86,13 @@ static int NewGame(string[] args)
         Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null,
         args.Contains("--equip-lists"),
         args.Contains("--attack-lists"));
+    // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
+    // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
+    // A first slot that is not the lowest would compare one player's lists with another player's
+    // gangs.
+    if ((settings.EquipLists || settings.AttackLists) && settings.Humans is { Count: > 1 } listed
+        && listed[0].Slot != listed.Min(human => human.Slot))
+        throw new ArgumentException("--equip-lists and --attack-lists record the first --humans slot; list the lowest slot first.");
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).

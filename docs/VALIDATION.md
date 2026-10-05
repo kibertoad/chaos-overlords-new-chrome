@@ -454,15 +454,21 @@ RULE-TIMER-003).
 the next `PeekMessageA` call of the message pump (FND-UI-020) the probe saves
 the thread context and calls the list builder `fn_0043F136` (FND-EQUIP-008)
 for each category of each living gang of the first human, with the Tech Level
-of the gang's definition, as the panel does, then restores the context. The
+of the gang's definition, as the panel does. The builder's research test reads
+`active_player`, so the probe sets it to that human for the calls and puts it
+back with the context afterwards. The
 fixture holds the items of each list, in entry order, as `equip_lists`; the
 replay compares them with the rebuild's legal Equip orders of the gang in that
 category (RULE-EQUIP-004).
 `--attack-lists` does the same with the Attack picker's roster builder
 `fn_0043D132` (FND-ATTACK-006), for each other player and each living gang of
-the first human, with the gang's sector. The fixture holds the roster slots of
-each list as `attack_lists`; the replay compares them with the gangs the
-rebuild's Attack picker shows for that opponent (RULE-ATTACK-002).
+the first human, with the gang's sector. The builder tests what `active_player`
+sees, so the probe sets it in the same way. The fixture holds the roster slots
+of each list as `attack_lists`; the replay compares them with the gangs the
+rebuild's Attack picker shows for that opponent (RULE-ATTACK-002). Neither
+fixture names the player, and the replay takes the lowest human slot, so the
+probe refuses `--equip-lists` and `--attack-lists` when the first `--humans`
+slot is not the lowest.
 `--draw-values` writes 32-bit values into memory each time the planning-entry
 function `fn_0046FD80` starts to draw the console (FND-UI-040): the nth value
 at its nth call and the last at every later one. It makes the console draw a

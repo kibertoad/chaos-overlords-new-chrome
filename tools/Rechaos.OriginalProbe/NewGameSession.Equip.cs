@@ -12,8 +12,8 @@ internal sealed partial class NewGameSession
 
     // RULE-EQUIP-004: the probe calls the original's list builder for every category of every
     // living gang of the first human, as the Equip panel calls it, and reads the entries it fills.
-    // The calls draw the list's rows and change nothing the fixture holds, which is why they come
-    // after the dump.
+    // The calls overwrite the list entries and text rows the dump holds, which is why they come
+    // after it.
     private bool RecordEquipLists()
     {
         var human = FirstHuman;
@@ -30,9 +30,18 @@ internal sealed partial class NewGameSession
                     var entries = _process.Read(OriginalAddresses.EquipListEntries, 4 * OriginalAddresses.EquipListLength);
                     record.Items.AddRange(Enumerable.Range(0, OriginalAddresses.EquipListLength)
                         .Select(index => BitConverter.ToInt32(entries, 4 * index)).Where(item => item != -1));
+                    // FND-EQUIP-008: the builder's count has no upper bound, so a full list may have
+                    // run past the sixteen entries read here.
+                    if (record.Items.Count == OriginalAddresses.EquipListLength)
+                        _notes.Add($"Equip list of slot {record.Slot} category {record.Category} fills all {record.Items.Count} entries and may be longer.");
                     _equipLists.Add(record);
                 }));
             }
+        }
+        if (calls.Count == 0)
+        {
+            _notes.Add($"Equip lists: player {human} has no living gang, so no list was built.");
+            return true;
         }
         return RunInjectedCalls(calls, human);
     }
