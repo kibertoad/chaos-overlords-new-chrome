@@ -33,7 +33,8 @@ public sealed partial class ScreenCaptureTests
     // SCR-EQUIP-001, SCR-RESEARCH-001, SCR-UI-006 and SCR-GANG-001 (EXP-UI-009), and SCR-GIVE-001,
     // SCR-SELL-001 and SCR-INFLUENCE-001 (EXP-UI-010), SCR-ATTACK-001 (EXP-UI-011), and
     // SCR-OPTIONS-001 (EXP-UI-012). The site and Force meters of RULE-UI-005 and the sector values of
-    // RULE-UI-011 are compared as elements of those screens.
+    // RULE-UI-011 are compared as elements of those screens, and the pylons of RULE-UI-012 on the
+    // city map of Siege (EXP-UI-013) and Big Man (EXP-UI-014).
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)

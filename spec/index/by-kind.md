@@ -215,7 +215,7 @@
 | [RULE-UI-009](../rules/RULE-UI-009.md) | The texts of the Game Information panel | supported |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | Which gangs the detailed sector cards and Gangs in Sector list | supported |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | The sector values on the main console | supported |
-| [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map | supported |
+| [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map | established |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | established |
@@ -609,7 +609,7 @@
 
 ## experiments
 
-122 entries.
+124 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -735,6 +735,8 @@
 | [EXP-UI-010](../experiments/EXP-UI-010.md) | Do the Give, Sell and Influence panels look the same in the rebuild? | recorded |
 | [EXP-UI-011](../experiments/EXP-UI-011.md) | Does the Attack picker look the same in the rebuild for a sector holding several opponents' gangs? | recorded |
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | Does the idle gang warning look the same in the rebuild? | recorded |
+| [EXP-UI-013](../experiments/EXP-UI-013.md) | Does the rebuild mark the objective sectors of Siege on the city map as the original does? | recorded |
+| [EXP-UI-014](../experiments/EXP-UI-014.md) | Does the rebuild mark the objective sectors of Big Man on the city map as the original does? | recorded |
 
 ## bugs
 
