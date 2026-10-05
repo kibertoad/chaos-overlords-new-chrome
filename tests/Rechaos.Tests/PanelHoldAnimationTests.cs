@@ -120,17 +120,18 @@ public sealed class PanelHoldAnimationTests
     [Fact]
     public void TheIdleWarningLineStopsWhileAFaceIsHeld()
     {
-        // SCR-OPTIONS-001: the line shows for six ticks and is dark for two.
+        // SCR-OPTIONS-001: the line shows for six ticks and is dark for two, counted from an open
+        // at time zero (FND-UI-054).
         var pump = new EventPumpClock();
         pump.Update(Tick(5), holding: false);
-        Assert.True(IdleGangWarningLayout.LineShown(pump.Time));
+        Assert.True(IdleGangWarningLayout.LineShown(TimeSpan.Zero, pump.Time));
         for (var tick = 6; tick <= 16; tick++)
         {
             pump.Update(Tick(tick), holding: true);
-            Assert.True(IdleGangWarningLayout.LineShown(pump.Time));
+            Assert.True(IdleGangWarningLayout.LineShown(TimeSpan.Zero, pump.Time));
         }
         pump.Update(Tick(16) + TimeSpan.FromMilliseconds(1), holding: false);
-        Assert.False(IdleGangWarningLayout.LineShown(pump.Time));
+        Assert.False(IdleGangWarningLayout.LineShown(TimeSpan.Zero, pump.Time));
     }
 
     [Fact]

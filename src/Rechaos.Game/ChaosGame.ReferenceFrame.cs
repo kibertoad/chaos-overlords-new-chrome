@@ -24,7 +24,8 @@ namespace Rechaos.Game;
 /// </param>
 /// <param name="ItemFrame">
 /// The frame of the rotating item pictures of Item Information, Sell or Give the capture showed
-/// (FND-UI-052, FND-UI-053), in place of the one the clock gives.
+/// (FND-UI-052, FND-UI-053), or the idle gang warning's ticks since its open modulo 8, which
+/// pick whether its line blinks on (FND-UI-054), in place of the one the clock gives.
 /// </param>
 /// <param name="SelectedSector">
 /// The sector the capture had selected (FND-SAVE-003), in place of the one the planning entry

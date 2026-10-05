@@ -38,7 +38,7 @@ static int Usage()
               [--draw-values <hex address>=<int32>[/<int32>...],...]
               [--equip-lists] [--attack-lists] [--search-clicks <x:y>,...]
               [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
-              [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers]
+              [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|shot:SCR-ID+...>,...] [--gang-markers]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -267,8 +267,8 @@ static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
                 new ProbeOrderStep("strip", -1, numbers[0], numbers[1], numbers[2]),
             "dbl" when numbers is [>= 0 and < 640, >= 0 and < 480] =>
                 new ProbeOrderStep("dbl", -1, numbers[0], numbers[1], 0),
-            "back" or "exit" when numbers is [] => new ProbeOrderStep(parts[0], -1, 0, 0, 0),
-            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit or shot:SCR-ID+...: {entry}"),
+            "back" or "exit" or "warn" when numbers is [] => new ProbeOrderStep(parts[0], -1, 0, 0, 0),
+            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn or shot:SCR-ID+...: {entry}"),
         };
     }).ToArray();
 

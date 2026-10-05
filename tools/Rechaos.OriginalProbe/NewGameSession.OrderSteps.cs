@@ -78,24 +78,44 @@ internal sealed partial class NewGameSession
         // report reaches the probe only after the game has gone on drawing.
         // A return pops the entries down to its own handler's, so a handler whose return went
         // unseen cannot leave its frame to be read by a later shot.
-        var itemHandlers = new Stack<(uint Starts, uint Address)>();
-        foreach (var (starts, local, returns) in OriginalAddresses.ItemFrameHandlers)
+        var itemHandlers = new Stack<(uint Starts, uint Ebp, uint Local, uint ShownLocal)>();
+        foreach (var (starts, local, returns, shownLocal) in OriginalAddresses.ItemFrameHandlers)
         {
-            _process.SetBreakpoint(starts, context => itemHandlers.Push((starts, context.Ebp - local)), quiet: true);
+            _process.SetBreakpoint(starts, context => itemHandlers.Push((starts, context.Ebp, local, shownLocal)), quiet: true);
             _process.SetBreakpoint(returns, _ =>
             {
                 if (itemHandlers.Any(entry => entry.Starts == starts))
                     while (itemHandlers.Pop().Starts != starts) { }
             }, quiet: true);
         }
-        int? ItemFrame() => itemHandlers.TryPeek(out var top) ? _process.ReadInt32(top.Address) : null;
+        // FND-UI-054: the warning's line is shown for six ticks from the open and hidden for two,
+        // and the countdown holds the ticks left of the current part, so the ticks since the
+        // open, modulo 8, are 6 less the countdown while shown and 8 less it while hidden. A read
+        // between the handler's stores can find the countdown at 0 while hidden, so the result is
+        // reduced modulo 8. The game keeps running between the reads, so the flag is read before
+        // and after the countdown, and a pair whose flag changed between them is read again.
+        int? ItemFrame()
+        {
+            if (!itemHandlers.TryPeek(out var handler)) return null;
+            if (handler.ShownLocal == 0) return _process.ReadInt32(handler.Ebp - handler.Local);
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                var shown = _process.Read(handler.Ebp - handler.ShownLocal, 1)[0];
+                var value = _process.ReadInt32(handler.Ebp - handler.Local);
+                if (_process.Read(handler.Ebp - handler.ShownLocal, 1)[0] != shown) continue;
+                var phase = shown != 0 ? 6 - value : 8 - value;
+                return (phase % 8 + 8) % 8;
+            }
+            return null;
+        }
         foreach (var step in settings.OrderSteps!)
         {
             if (step.Kind == "shot")
             {
                 // A capture moves nothing, so it is not a post-dump step of the marker log.
                 var file = $"capture-step-{_orderSteps.Count}";
-                // The item steps every few ticks, so a capture it moved under is taken again.
+                // The item or the warning line steps every few ticks, so a capture it moved under is
+                // taken again.
                 int? itemBefore, itemFrame;
                 (int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector)? area;
                 var itemAttempts = 0;
@@ -106,7 +126,7 @@ internal sealed partial class NewGameSession
                     itemFrame = ItemFrame() == itemBefore ? itemBefore : null;
                 } while (itemBefore is not null && itemFrame is null && ++itemAttempts < 5);
                 if (itemBefore is not null && itemFrame is null)
-                    _notes.Add($"{file}: the item pictures' frame moved during each capture.");
+                    _notes.Add($"{file}: the item pictures' frame or the warning line's phase moved during each capture.");
                 var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
                         _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,
@@ -148,6 +168,11 @@ internal sealed partial class NewGameSession
                     break;
                 case "back":
                     Click(window, OriginalAddresses.SectorBackX, OriginalAddresses.SectorBackY);
+                    break;
+                case "warn":
+                    // RULE-OPTIONS-003: the run switches Warn if Idle Gangs off before the Done
+                    // presses; this step switches it back on for the presses after the dump.
+                    _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(1));
                     break;
                 case "exit":
                     PressExitAfterDump(window);
