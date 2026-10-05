@@ -22,15 +22,8 @@ internal static class ExecutableResources
     /// </summary>
     public static IReadOnlyList<(int Id, byte[] Data)> Read(byte[] file, int type)
     {
-        var header = Int32(file, 0x3C);
-        if (!Span(file, 0, 2).SequenceEqual("MZ"u8) || !Span(file, header, 4).SequenceEqual("PE\0\0"u8))
-            throw new InvalidDataException("Not a PE file.");
-        var sections = UInt16(file, header + 6);
-        var optional = header + 24;
-        var optionalSize = UInt16(file, header + 20);
-        if (UInt16(file, optional) != 0x10B) throw new InvalidDataException("Not a 32-bit PE file.");
+        var (optional, sectionTable, sections) = Headers(file);
         var resourceRva = Int32(file, optional + 96 + 2 * 8);
-        var sectionTable = optional + optionalSize;
         var root = Offset(file, sectionTable, sections, resourceRva);
 
         var resources = new List<(int, byte[])>();
@@ -51,25 +44,38 @@ internal static class ExecutableResources
 
     /// <summary>
     /// The initialized dword at virtual address <paramref name="address"/> of the loaded image,
-    /// 0 where the section's file data ends before it.
+    /// with 0 for every byte past the end of the section's file data.
     /// </summary>
     public static int ImageInt32(byte[] file, uint address)
     {
-        var header = Int32(file, 0x3C);
-        var optional = header + 24;
+        var (optional, sectionTable, sections) = Headers(file);
         var imageBase = (uint)Int32(file, optional + 28);
-        var rva = checked((int)(address - imageBase));
-        var sectionTable = optional + UInt16(file, header + 20);
-        for (var index = 0; index < UInt16(file, header + 6); index++)
+        if (address < imageBase || address - imageBase > int.MaxValue)
+            throw new InvalidDataException($"0x{address:X8} lies outside the image.");
+        var rva = (int)(address - imageBase);
+        for (var index = 0; index < sections; index++)
         {
             var section = sectionTable + index * 40;
             var start = Int32(file, section + 12);
-            if (rva < start || rva >= start + Math.Max(Int32(file, section + 8), Int32(file, section + 16))) continue;
-            return rva + 4 <= start + Int32(file, section + 16)
-                ? Int32(file, Int32(file, section + 20) + rva - start)
-                : 0;
+            var rawSize = Int32(file, section + 16);
+            if (rva < start || rva >= start + Math.Max(Int32(file, section + 8), rawSize)) continue;
+            var initialized = Math.Clamp(start + rawSize - rva, 0, 4);
+            Span<byte> value = stackalloc byte[4];
+            if (initialized > 0)
+                Span(file, Int32(file, section + 20) + rva - start, initialized).CopyTo(value);
+            return BinaryPrimitives.ReadInt32LittleEndian(value);
         }
         throw new InvalidDataException($"0x{address:X8} is in no section.");
+    }
+
+    private static (int Optional, int SectionTable, int Sections) Headers(byte[] file)
+    {
+        var header = Int32(file, 0x3C);
+        if (!Span(file, 0, 2).SequenceEqual("MZ"u8) || !Span(file, header, 4).SequenceEqual("PE\0\0"u8))
+            throw new InvalidDataException("Not a PE file.");
+        var optional = header + 24;
+        if (UInt16(file, optional) != 0x10B) throw new InvalidDataException("Not a 32-bit PE file.");
+        return (optional, optional + UInt16(file, header + 20), UInt16(file, header + 6));
     }
 
     private static IEnumerable<(int Id, int Target)> Entries(byte[] file, int root, int directory)

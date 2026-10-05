@@ -254,11 +254,8 @@ public sealed partial class ChaosGame
         // FND-UI-019: string cells are copied opaquely, like the numeric cells.
         if (_finalViewPlayer is not null)
         {
-            var complete = ExecutableStrings.Get(StatusConsoleLayout.CompleteString);
-            batch.Draw(pixel, new Rectangle(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY,
-                complete.Length * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
-            font.Draw(batch, complete,
-                new Vector2(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
+            DrawOpaqueText(batch, pixel, font, ExecutableStrings.Get(StatusConsoleLayout.CompleteString),
+                StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY);
         }
         else if (StatusConsolePresentation.RemainingTurns(state.Setup.Scenario, state.Setup.Duration,
                      state.Coordinator.Turn) is { } remainingTurns)
@@ -287,11 +284,11 @@ public sealed partial class ChaosGame
             new Vector2(438, 354), Color.Gold, 1);
         if (_state is not null && PlanningViewer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
-            && PresentationClock.BlinkLit(PresentationDrawTime))
+            && LampInLitPhase(_referenceFrame?.Lamps?.Events))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
         if (_state is not null && PlanningViewer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
-            && PresentationClock.BlinkLit(PresentationDrawTime))
+            && LampInLitPhase(_referenceFrame?.Lamps?.Comlink))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
         if (_finalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))
