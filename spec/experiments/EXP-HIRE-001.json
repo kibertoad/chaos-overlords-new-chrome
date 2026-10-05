@@ -7,7 +7,16 @@
   "inputs": [
     {"tick":0,"name":"command","value":"File, New Game (0x8101)"},
     {"tick":0,"name":"setup","value":"scenario 0"},
-    {"tick":0,"name":"left_click","value":"Begin (416, 397)"}
+    {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
+    {"tick":null,"name":"drag","value":"drag 0 to sector 12 after the dump"},
+    {"tick":null,"name":"drag","value":"drag 1 to sector 12 after the dump"},
+    {"tick":null,"name":"drag","value":"drag 1 to sector 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"reject 1 after the dump"},
+    {"tick":null,"name":"left_click","value":"reject 1 after the dump"},
+    {"tick":null,"name":"left_click","value":"reject 2 after the dump"},
+    {"tick":null,"name":"drag","value":"drag 2 to sector 12 after the dump"},
+    {"tick":null,"name":"left_click","value":"reject 0 after the dump"},
+    {"tick":null,"name":"left_click","value":"reject 0 after the dump"}
   ],
   "seeds": [52421],
   "runs": [

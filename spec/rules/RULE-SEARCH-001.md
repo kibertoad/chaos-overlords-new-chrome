@@ -1,7 +1,7 @@
 ---
 id: RULE-SEARCH-001
 title: Each player's Search filter starts empty and is changed by ALL, NONE and its rows
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-SEARCH-005, FND-COMLINK-006, EXP-SEARCH-001, EXP-SEARCH-002]
@@ -83,7 +83,7 @@ NONE, row presses in both directions and a press on no control, for the human
 in slot 0 and in slot 2. No run has reached these cases, which rest on static
 readings:
 
-- a double-click on a row [FND-SEARCH-001, FND-SEARCH-002];
+- a double-click on a row [FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004];
 - a loaded match, whose filters the match function empties [FND-SEARCH-005];
 - two humans in a hot-seat game, each with their own filter
   [FND-SEARCH-001].

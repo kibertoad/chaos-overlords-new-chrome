@@ -209,12 +209,12 @@ static IReadOnlyList<ProbeSearch> ParseSearch(string value) =>
     }).ToArray();
 
 // --search-clicks x:y,... posts a click at each client point after the dump (SearchClickRecord).
-static IReadOnlyList<(int X, int Y)> ParseClicks(string value) =>
+static IReadOnlyList<ProbeClick> ParseClicks(string value) =>
     value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
     {
         var parts = entry.Split(':');
         if (parts.Length != 2) throw new FormatException($"A click needs x and y: {entry}");
-        return (int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture),
+        return new ProbeClick(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture),
             int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture));
     }).ToArray();
 

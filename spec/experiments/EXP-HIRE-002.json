@@ -22,7 +22,14 @@
     {"tick":null,"name":"order","value":"turn 4: gang slot 2 action 3 target 0 target_2 0 repeat 1"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 4"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 5"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 6"}
+    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 6"},
+    {"tick":null,"name":"left_click","value":"exit after the dump"},
+    {"tick":null,"name":"left_click","value":"exit after the dump"},
+    {"tick":null,"name":"drag","value":"drag 0 to sector 19 after the dump"},
+    {"tick":null,"name":"drag","value":"drag 0 to sector 12 after the dump"},
+    {"tick":null,"name":"drag","value":"drag 1 to sector 20 after the dump"},
+    {"tick":null,"name":"left_click","value":"reject 0 after the dump"},
+    {"tick":null,"name":"drag","value":"drag 2 to sector 19 after the dump"}
   ],
   "seeds": [16],
   "runs": [
