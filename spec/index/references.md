@@ -402,6 +402,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-PLATFORM-011](../findings/FND-PLATFORM-011.md) | builds, locations |
 | [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | builds, locations |
 | [FND-PLATFORM-013](../findings/FND-PLATFORM-013.md) | builds, locations |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body, builds, locations |
 | [FND-POLICE-001](../findings/FND-POLICE-001.md) | builds, locations |
 | [FND-POLICE-002](../findings/FND-POLICE-002.md) | builds, locations |
 | [FND-POLICE-003](../findings/FND-POLICE-003.md) | builds, locations |
@@ -905,6 +906,7 @@ None.
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body, evidence |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | evidence |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | evidence |
@@ -1520,6 +1522,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-042](../experiments/EXP-TURN-042.md) | body |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [FND-UI-042](../findings/FND-UI-042.md) | body |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | evidence |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
@@ -4834,6 +4837,7 @@ None.
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | body |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
@@ -4870,6 +4874,7 @@ None.
 | [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | body |
 | [FND-GANG-011](../findings/FND-GANG-011.md) | body |
 | [FND-GIVE-003](../findings/FND-GIVE-003.md) | body |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [FND-UI-037](../findings/FND-UI-037.md) | body |
 | [FND-UI-038](../findings/FND-UI-038.md) | body |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | body, evidence |
@@ -5484,6 +5489,7 @@ None.
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | body |
 | [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | body |
 | [FND-MOVE-005](../findings/FND-MOVE-005.md) | body |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | body |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | body, evidence |
 | [RULE-GFX-003](../rules/RULE-GFX-003.md) | body, evidence |
@@ -5498,6 +5504,7 @@ None.
 | [FND-GFX-004](../findings/FND-GFX-004.md) | body |
 | [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | body |
 | [FND-PLATFORM-011](../findings/FND-PLATFORM-011.md) | body |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [FND-SAVE-002](../findings/FND-SAVE-002.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
@@ -5553,6 +5560,12 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-DATA-008](../findings/FND-DATA-008.md) | body |
+
+## FND-PLATFORM-014
+
+| Cited by | In |
+|---|---|
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | body, evidence |
 
 ## FND-POLICE-001
 
@@ -6824,6 +6837,7 @@ None.
 |---|---|
 | [FND-AI-002](../findings/FND-AI-002.md) | body |
 | [FND-CITY-003](../findings/FND-CITY-003.md) | body |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [FND-UI-015](../findings/FND-UI-015.md) | body |
 | glossary: hq_sectors | glossary |
 | glossary: scenario | glossary |
@@ -6915,6 +6929,7 @@ None.
 |---|---|
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [FND-UI-042](../findings/FND-UI-042.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
@@ -8007,7 +8022,9 @@ None.
 
 ## RULE-GFX-003
 
-None.
+| Cited by | In |
+|---|---|
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 
 ## RULE-GIVE-001
 
@@ -8997,6 +9014,7 @@ None.
 |---|---|
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
+| [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, related |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | related |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, related |

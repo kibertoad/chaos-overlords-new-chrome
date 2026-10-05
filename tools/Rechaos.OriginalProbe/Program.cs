@@ -33,7 +33,7 @@ static int Usage()
               [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...]
               [--search <turn:definition+definition...>,...]
               [--finance <turn:sector>,...]
-              [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture]
+              [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture] [--white-key]
               [--comlink <script file>]
               [--draw-values <hex address>=<int32>[/<int32>...],...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
@@ -81,6 +81,7 @@ static int NewGame(string[] args)
             int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray(),
         Option(args, "--comlink") is { } script ? File.ReadAllLines(script) : null,
         args.Contains("--capture"),
+        args.Contains("--white-key"),
         Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null);
 
     // --executable runs a copy from another path in the game directory, which escapes the

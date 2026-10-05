@@ -4,7 +4,7 @@ title: A keyed image copy leaves out the pixels of maximum white
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-PLATFORM-008, FND-GFX-001]
+evidence: [FND-PLATFORM-008, FND-GFX-001, FND-PLATFORM-014]
 conflicting: []
 split_with: []
 related: [FMT-GFX-001, RULE-GFX-002]
@@ -13,9 +13,11 @@ related: [FMT-GFX-001, RULE-GFX-002]
 ## Summary
 
 The copy wrapper has a keyed mode in which every source pixel of maximum white
-is left out and every other pixel is copied unchanged. Only two images are
-drawn this way: the city renderer's site markers and one Last Turn
-illustration.
+is left out and every other pixel is copied unchanged. Its constant callers
+draw the city renderer's site markers and one Last Turn illustration. Runs of
+the original show that the selected-sector frame and the grid's edge tabs go
+through the same compositor [FND-PLATFORM-014]; the code that draws them this
+way has not been read.
 
 ## When it runs
 
@@ -58,6 +60,9 @@ game state.
   is the key.
 - No shipped `PX16` pixel has bit 15 set (FND-GFX-001), so every pixel the
   copy compares is a plain RGB555 colour.
+- The 16-bit key names `0x7FFF` only on a 16-bit surface. On a 32-bit desktop
+  the surfaces hold that white as `RGB(255,255,255)`, the key matches nothing,
+  and the copy is opaque, so the white is drawn [FND-PLATFORM-014].
 
 ## What the sources say
 
@@ -72,3 +77,7 @@ None known.
 - How a display driver converts the 16-bit key at the boundary between 5-bit
   and 8-bit channels is decided at run time and has not been observed
   (FND-PLATFORM-008).
+- The 8-bit key `RGB(255,255,255)` comes from FND-PLATFORM-008's reading of a
+  single `SetBkColor` call, but a 16-bit run reached two, at `0x00427C84` and
+  `0x00427CB8`, and the second always passes `RGB(255,255,255)`
+  (FND-PLATFORM-014). Which of them sets the 8-bit key has not been read.
