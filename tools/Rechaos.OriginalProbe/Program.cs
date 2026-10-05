@@ -40,7 +40,7 @@ static int Usage()
               [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
               [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|wait:ms|type:TEXT|shot:SCR-ID+...>,...] [--gang-markers]
               [--title-capture] [--credits-capture] [--setup-capture] [--setup-steps <strip:x:y|drag:x:y:x2:y2|shot>,...]
-              [--detailed-combat] [--pointer] [--sounds] [--watch-intro] [--waits] [--slides]
+              [--detailed-combat] [--pointer] [--sounds] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -103,7 +103,9 @@ static int NewGame(string[] args)
         args.Contains("--sounds"),
         args.Contains("--watch-intro"),
         args.Contains("--waits"),
-        args.Contains("--slides"));
+        args.Contains("--slides"),
+        Option(args, "--saved") is { } saved ? ParseSavedWrites(saved) : null,
+        Option(args, "--closes") is { } closes ? ParseCloses(closes) : null);
     // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
     // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
     // A first slot that is not the lowest would compare one player's lists with another player's
@@ -241,6 +243,30 @@ static IReadOnlyList<ProbeClick> ParseClicks(string value) =>
         if (parts.Length != 2) throw new FormatException($"A click needs x and y: {entry}");
         return new ProbeClick(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture),
             int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture));
+    }).ToArray();
+
+// --saved turn:value,... writes match_saved before the Done press of the turn, or at the dump for
+// the turn after the last (ProbeSavedWrite).
+static IReadOnlyList<ProbeSavedWrite> ParseSavedWrites(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        return parts is [>= 1, 0 or 1]
+            ? new ProbeSavedWrite(parts[0], parts[1])
+            : throw new FormatException($"A saved write needs a turn from 1 and a value 0 or 1: {entry}");
+    }).ToArray();
+
+// --closes saved:answer,... closes the window after the dump and answers the dialog the close
+// opens: saved is -, 0 or 1 (written to match_saved first), answer 2 cancels and 3 goes on without
+// saving (ProbeClose).
+static IReadOnlyList<ProbeClose> ParseCloses(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        int? saved = parts.Length == 2 && parts[0] is "0" or "1" ? int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture) : null;
+        return parts.Length == 2 && (saved is not null || parts[0] == "-") && parts[1] is "2" or "3"
+            ? new ProbeClose(saved, int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture))
+            : throw new FormatException($"A close is saved:answer, saved -, 0 or 1 and answer 2 or 3: {entry}");
     }).ToArray();
 
 // --hire-steps drag:slot:sector,reject:slot,exit,... drags offers onto map sectors, presses their

@@ -16,6 +16,8 @@ public sealed partial class ChaosGame
         {
             var summary = SaveSlotCatalog.Save(
                 _saveDirectory, slot, name, _state, _session is not null, HotSeatJournal);
+            // RULE-UI-015: a written save marks the match saved; the autosave does not.
+            _actions?.MarkSaved();
             _message = "GAME SAVED";
             return summary;
         }
@@ -129,6 +131,8 @@ public sealed partial class ChaosGame
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
         if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();
+        // RULE-UI-015, FND-UI-058: a loaded match starts saved.
+        _actions.MarkSaved();
         // DEV-SAVE-001: the rebuild's save keeps no selected sector, so a loaded match starts every
         // player on the sector of its roster slot 0, as a new game does (FND-SAVE-003).
         _planningSelections.Reset(_state);

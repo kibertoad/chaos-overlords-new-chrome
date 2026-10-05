@@ -47,6 +47,11 @@ public static class GameMenuLayout
 
     public static Rectangle ConfirmQuit => new(206, 284, 108, 34);
     public static Rectangle CancelQuit => new(326, 284, 108, 34);
+
+    /// <summary>RULE-UI-015: the save-first prompt's three answers, left to right.</summary>
+    public static Rectangle SaveFirst => new(186, 284, 84, 34);
+    public static Rectangle CancelLeave => new(278, 284, 84, 34);
+    public static Rectangle LeaveWithoutSaving => new(370, 284, 84, 34);
     public static Rectangle BrowserPanel => new(36, 15, 568, 430);
     public static Rectangle UseSlot => new(374, 397, 92, 30);
     public static Rectangle CancelBrowser => new(478, 397, 92, 30);
@@ -109,6 +114,8 @@ public sealed partial class ChaosGame
         _gameMenuOpen = true;
         _bugReportOpen = false;
         _quitToMainMenuConfirmationOpen = false;
+        _leavePrompt = LeaveKind.None;
+        _leaveAfterSave = LeaveKind.None;
         _saveBrowserMode = SaveBrowserMode.None;
         _gameMenuCursor = 0;
         _planningTimer.Pause(_inputTime);
@@ -120,6 +127,8 @@ public sealed partial class ChaosGame
         _gameMenuOpen = false;
         _bugReportOpen = false;
         _quitToMainMenuConfirmationOpen = false;
+        _leavePrompt = LeaveKind.None;
+        _leaveAfterSave = LeaveKind.None;
         _saveBrowserMode = SaveBrowserMode.None;
         _editingSaveName = false;
         _saveName.IsFocused = false;
@@ -138,6 +147,7 @@ public sealed partial class ChaosGame
         _saveBrowserFromTitle = fromTitle;
         _saveBrowserMode = saving ? SaveBrowserMode.Save : SaveBrowserMode.Load;
         _quitToMainMenuConfirmationOpen = false;
+        _leavePrompt = LeaveKind.None;
         _editingSaveName = false;
         _saveName.IsFocused = false;
         _planningTimer.Pause(_inputTime);
@@ -170,6 +180,11 @@ public sealed partial class ChaosGame
         if (_saveBrowserMode != SaveBrowserMode.None)
         {
             UpdateSaveBrowser(keyboard);
+            return;
+        }
+        if (_leavePrompt != LeaveKind.None)
+        {
+            UpdateLeavePrompt(keyboard);
             return;
         }
         if (_quitToMainMenuConfirmationOpen)
@@ -226,7 +241,13 @@ public sealed partial class ChaosGame
             case GameMenuAction.Load: OpenSaveBrowser(saving: false); break;
             case GameMenuAction.Options: OpenOptionsFromGameMenu(); break;
             case GameMenuAction.ReportBug: OpenBugReport(); break;
-            case GameMenuAction.QuitToMainMenu: OpenQuitToMainMenuConfirmation(); break;
+            // RULE-UI-015: a local match asks to save first only while it is unsaved. An online
+            // match, which the original never asks about, keeps the confirmation that says the
+            // server holds it (DEV-NET-001).
+            case GameMenuAction.QuitToMainMenu:
+                if (_session is null) RequestLeave(LeaveKind.End);
+                else OpenQuitToMainMenuConfirmation();
+                break;
             default: throw new ArgumentOutOfRangeException(nameof(action));
         }
     }
@@ -277,6 +298,7 @@ public sealed partial class ChaosGame
         _saveSlots[_saveSlotCursor] = summary;
         _editingSaveName = false;
         _saveName.IsFocused = false;
+        LeaveAfterSave();
     }
 
     private void CancelSaveName()
@@ -288,6 +310,7 @@ public sealed partial class ChaosGame
 
     private void CloseSaveBrowser()
     {
+        if (CancelLeaveAfterSave()) return;
         _saveBrowserMode = SaveBrowserMode.None;
         _editingSaveName = false;
         _saveName.IsFocused = false;
@@ -316,6 +339,11 @@ public sealed partial class ChaosGame
         if (_saveBrowserMode != SaveBrowserMode.None)
         {
             HandleSaveBrowserClick(point);
+            return;
+        }
+        if (_leavePrompt != LeaveKind.None)
+        {
+            HandleLeavePromptClick(point);
             return;
         }
         if (_quitToMainMenuConfirmationOpen)
@@ -391,6 +419,11 @@ public sealed partial class ChaosGame
         if (_saveBrowserMode != SaveBrowserMode.None)
         {
             DrawSaveBrowser(batch, pixel, font);
+            return;
+        }
+        if (_leavePrompt != LeaveKind.None)
+        {
+            DrawLeavePrompt(batch, pixel, font);
             return;
         }
         IReadOnlyList<string> session =

@@ -109,18 +109,6 @@ public sealed partial class DeviationBehaviourTests
     }
 
     [Fact]
-    public void ClosingTheWindowWritesTheAutosaveAndAsksNothing()
-    {
-        // DEV-UI-017: closing the window ends the program. Shutdown writes the rolling autosave
-        // first, and nothing intercepts the close to offer a save.
-        var unload = typeof(ChaosGame).GetMethod("UnloadContent", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        Assert.Contains(typeof(ChaosGame).GetMethod("FlushAutoSaves", BindingFlags.Instance | BindingFlags.NonPublic)!, Calls(unload));
-        foreach (var name in new[] { "OnExiting", "EndRun" })
-            Assert.Null(typeof(ChaosGame).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
-        Assert.DoesNotContain("Microsoft.Xna.Framework.Game::add_Exiting", References(typeof(ChaosGame).Assembly));
-    }
-
-    [Fact]
     public void ASecondCopyRunsAndACommandLineFileIsNotOpened()
     {
         // DEV-UI-015: nothing stops a second copy from starting, since the rebuild takes no named
