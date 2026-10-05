@@ -611,7 +611,7 @@
 
 ## experiments
 
-127 entries.
+128 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -742,6 +742,7 @@
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | Do the title screen, the credits and the setup screen, before and after presses on it, look the same in the rebuild? | recorded |
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | Do the hand-off card and the Comlink Send panel look the same in the rebuild? | recorded |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | Does the endgame look the same in the rebuild? | recorded |
+| [EXP-UI-018](../experiments/EXP-UI-018.md) | Does the elimination card look the same in the rebuild? | recorded |
 
 ## bugs
 

@@ -49,9 +49,9 @@ public sealed partial class ChaosGame
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, EndgameNoticeLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(portraitId), Color.White);
-        if (!victory)
-            DrawBorder(batch, pixel, EndgameNoticeLayout.Portrait, PlayerColors[player.Value], 1);
-        DrawEndgameNoticeName(batch, font, player, name);
+        // SCR-OBJECTIVE-002, EXP-UI-018: the elimination card's name is in the plain font, and the
+        // frame around the portrait is the splash's own.
+        DrawEndgameNoticeName(batch, font, victory ? PlayerColors[player.Value] : Color.Lime, name);
     }
 
     // FND-AWARDS-004: resource 201 with its white keyed out, for the award icons.
@@ -121,11 +121,10 @@ public sealed partial class ChaosGame
         DrawPanelArtwork(batch, pixel, _endgameBackground, EndgameLayout.Panel, 255);
     }
 
-    private static void DrawEndgameNoticeName(
-        SpriteBatch batch, PixelFont font, PlayerId playerId, string name)
+    private static void DrawEndgameNoticeName(SpriteBatch batch, PixelFont font, Color color, string name)
     {
         var x = EndgameNoticeLayout.NameCenterX - name.Length * OriginalFontLayout.CellWidth / 2;
-        font.Draw(batch, name, new Vector2(x, EndgameNoticeLayout.NameY), PlayerColors[playerId.Value], 1);
+        font.Draw(batch, name, new Vector2(x, EndgameNoticeLayout.NameY), color, 1);
     }
 
     private void DrawEndgameAwards(

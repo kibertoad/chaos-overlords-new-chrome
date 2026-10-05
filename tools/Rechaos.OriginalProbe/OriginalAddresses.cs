@@ -93,6 +93,9 @@ internal static class OriginalAddresses
     // FND-AWARDS-001: the endgame's row painter, which reads the awards the builder has given.
     public const uint AwardsRows = 0x0042CE61;
 
+    // FND-OBJECTIVE-002: the elimination card of a local human, which blocks until its Done.
+    public const uint EliminationCard = 0x0042C3F5;
+
     // FND-AWARDS-005: the renderer draws each listed player's name with fn_00413FD5, whose third
     // argument is the name at 0x004A2589 + 12 * player: the splash's at 0x0042D1A4, the ranked rows'
     // at 0x0042D2DA and the eliminated rows' at 0x0042DA64.

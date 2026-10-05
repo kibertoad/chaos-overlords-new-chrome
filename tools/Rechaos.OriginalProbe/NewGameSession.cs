@@ -234,6 +234,7 @@ internal sealed partial class NewGameSession(
     private List<PanelRecord>? _panelsAtDump;
     private bool _planningLoopReached;
     private bool _awardsReached;
+    private bool _eliminationCardReached;
     private EndgameDrawing? _endgame;
     private bool _endgameDrawn;
     private CityMarkers? _redraw;
@@ -356,6 +357,8 @@ internal sealed partial class NewGameSession(
         // A match that ends reaches the endgame instead of another planning phase; the run stops
         // there, once the awards are given (RULE-AWARDS-001).
         _process.SetBreakpoint(OriginalAddresses.AwardsRows, OnAwardsRows, oneShot: true);
+        // RULE-OBJECTIVE-005: the human's elimination reaches its card instead; the run stops there.
+        _process.SetBreakpoint(OriginalAddresses.EliminationCard, _ => _eliminationCardReached = true, oneShot: true);
         var begun = DateTime.UtcNow;
         var settled = _process.RunUntil(
             () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
@@ -405,7 +408,7 @@ internal sealed partial class NewGameSession(
             // again after a quiet while.
             var next = _process.RunUntil(() =>
             {
-                if (_awardsReached) return true;
+                if (_awardsReached || _eliminationCardReached) return true;
                 // FND-OBJECTIVE-004: a match that ends gives each active human one last look at the
                 // city, with the turn's Combat Results open, before the awards controller runs and
                 // before elapsed_turns moves on. Close the panels and press Done there.
@@ -450,6 +453,13 @@ internal sealed partial class NewGameSession(
                     _notes.Add("The endgame renderer did not return within 10 seconds; its rows are not kept.");
                 }
                 _notes.Add($"The match ended with turn {turn}; the endgame drew the awards after roll {_rolls.Count}.");
+                break;
+            }
+            if (_eliminationCardReached)
+            {
+                // The card draws once and then waits for its Done.
+                _process.Pump(TimeSpan.FromSeconds(1.5));
+                _notes.Add($"The human was eliminated with turn {turn}; its card opened after roll {_rolls.Count}.");
                 break;
             }
         }

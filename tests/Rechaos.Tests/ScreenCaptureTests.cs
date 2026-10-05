@@ -42,7 +42,8 @@ public sealed partial class ScreenCaptureTests
     // from the original's gangs, one of them idle. EXP-UI-016 compares the hand-off card SCR-SETUP-002
     // and the Comlink Send panel SCR-COMLINK-002 of a match of two humans. The console presses
     // before these captures route as RULE-UI-002 reads them. EXP-UI-017 compares the endgame
-    // SCR-AWARDS-001 on both tabs.
+    // SCR-AWARDS-001 on both tabs, and EXP-UI-018 the elimination card SCR-OBJECTIVE-002 the only
+    // local human sees where its planning would have come (RULE-OBJECTIVE-005).
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)

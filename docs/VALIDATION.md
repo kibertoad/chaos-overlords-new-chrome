@@ -855,7 +855,10 @@ The reference frame starts at the city screen and its console (SCR-UI-003,
 SCR-HIRE-002) of the player whose planning entry the run ends at, with no
 pointer, and then makes the scripted presses. With several local humans it
 starts at the hand-off card (SCR-SETUP-002) and a press of its Ready goes on as
-in play; for a run whose match ended it starts at the endgame (SCR-AWARDS-001).
+in play; for a run whose match ended it starts at the endgame (SCR-AWARDS-001),
+and for one whose local human was eliminated at that player's elimination card
+(SCR-OBJECTIVE-002). A run stops at the elimination card as it stops at the
+endgame.
 It does not draw Combat Results or Last Turn Events that the planning entry
 would open first, but it closes Last Turn Events as a press of its Exit after
 the first page would: the Events light stays on only while the player has another report

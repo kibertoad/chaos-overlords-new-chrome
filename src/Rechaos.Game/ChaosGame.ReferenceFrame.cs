@@ -307,6 +307,17 @@ public sealed partial class ChaosGame
     /// </summary>
     private void PresentReferenceFramePlanningEntry()
     {
+        // SCR-OBJECTIVE-002: a save where a local human has been eliminated stands at its card, at
+        // the place that player's planning would have come (RULE-OBJECTIVE-005).
+        if (_state?.Players.FirstOrDefault(player => player.Setup.Controller == PlayerController.Human
+                && player.Status == PlayerStatus.Eliminated) is { } eliminated)
+        {
+            _eliminationHandoffPlayer = eliminated.Id;
+            _screens.Show(HotSeatHandoffPresentation.RequiresPrivateHandoff(_state)
+                ? ClientScreen.Handoff
+                : ClientScreen.Elimination);
+            return;
+        }
         // SCR-AWARDS-001: a save of a decided match stands where the original shows the endgame.
         if (_state?.Outcome is not null)
         {

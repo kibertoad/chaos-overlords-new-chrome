@@ -883,6 +883,7 @@
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | Do the title screen, the credits and the setup screen, before and after presses on it, look the same in the rebuild? | recorded |
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | Do the hand-off card and the Comlink Send panel look the same in the rebuild? | recorded |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | Does the endgame look the same in the rebuild? | recorded |
+| [EXP-UI-018](../experiments/EXP-UI-018.md) | Does the elimination card look the same in the rebuild? | recorded |
 | [FND-UI-001](../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |

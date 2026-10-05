@@ -109,8 +109,9 @@ public sealed partial class ChaosGame
             return;
         }
 
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        // EXP-UI-018: the screen around the frame is black when the card follows the turn's
+        // resolution.
+        batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
         DrawEndgameBackground(batch, pixel);
         DrawEndgameNoticeCard(batch, pixel, font, _eliminationBackground, playerId,
             player.Setup.PortraitId, player.Setup.Name);
