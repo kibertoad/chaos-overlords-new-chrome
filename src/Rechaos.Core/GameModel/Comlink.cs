@@ -19,7 +19,8 @@ public enum ComlinkValidationCode : byte
     SenderIsRecipient,
     DuplicateRecipient,
     EmptyMessage,
-    MessageTooLong
+    MessageTooLong,
+    RecipientNotActive
 }
 
 internal static class ComlinkValidationMessages
@@ -38,7 +39,8 @@ internal static class ComlinkValidationMessages
             [ComlinkValidationCode.SenderIsRecipient] = "Cannot send Comlink to yourself.",
             [ComlinkValidationCode.DuplicateRecipient] = "Recipients must be unique.",
             [ComlinkValidationCode.EmptyMessage] = "Enter a message.",
-            [ComlinkValidationCode.MessageTooLong] = "Message exceeds 160 characters."
+            [ComlinkValidationCode.MessageTooLong] = "Message exceeds 160 characters.",
+            [ComlinkValidationCode.RecipientNotActive] = "Recipient is no longer in the match."
         };
 
     public static string For(ComlinkValidationCode code) => Messages[code];

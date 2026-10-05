@@ -1,10 +1,10 @@
 ---
 id: RULE-COMLINK-002
 title: Comlink Send opens only when another human player can receive a message
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-003, FND-COMLINK-007, SRC-MANUAL-GOG]
+evidence: [FND-COMLINK-003, FND-COMLINK-007, SRC-MANUAL-GOG, EXP-COMLINK-001, EXP-COMLINK-002]
 conflicting: []
 split_with: []
 related: [SCR-COMLINK-002]

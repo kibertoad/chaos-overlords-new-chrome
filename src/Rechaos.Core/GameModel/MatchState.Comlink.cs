@@ -21,6 +21,26 @@ public sealed partial class MatchState
         GetComlinkInbox(player).MarkRead(sequence);
 
     /// <summary>
+    /// RULE-COMLINK-002: a player can take a message from <paramref name="sender"/> when it is
+    /// another human player still in the match, the original's <c>player_active</c> and
+    /// <c>players_human</c> both set. A computer player, an eliminated player and the sender never
+    /// can (EXP-COMLINK-001).
+    /// </summary>
+    public bool IsComlinkRecipient(PlayerId sender, PlayerId recipient)
+    {
+        if (recipient == sender) return false;
+        var player = FindPlayer(recipient);
+        return player is { Status: PlayerStatus.Active, Setup.Controller: PlayerController.Human };
+    }
+
+    /// <summary>
+    /// RULE-COMLINK-002: the Send panel opens only when some other player can take a message;
+    /// otherwise the original refuses it with the rejected-input sound (EXP-COMLINK-002).
+    /// </summary>
+    public bool HasComlinkRecipient(PlayerId sender) =>
+        Players.Any(player => IsComlinkRecipient(sender, player.Id));
+
+    /// <summary>
     /// RULE-COMLINK-004, FMT-STATE-005: the original keeps no messages in its save and empties
     /// every inbox when a match is entered, so a loaded match starts with none (FND-COMLINK-006,
     /// FND-SEARCH-005). A local load calls this. An online match never does: its clients rebuild
@@ -67,6 +87,9 @@ public sealed partial class MatchState
                 return Rejected(ComlinkValidationCode.RecipientNotFound);
             if (setup.Controller != PlayerController.Human)
                 return Rejected(ComlinkValidationCode.RecipientNotHuman);
+            // RULE-COMLINK-002: an eliminated player's card cannot be selected.
+            if (!IsComlinkRecipient(sender, recipient))
+                return Rejected(ComlinkValidationCode.RecipientNotActive);
         }
         // RULE-COMLINK-003: once a recipient is chosen, a blank draft is stored for no one and the
         // send still counts as made, with nothing to report.
