@@ -6,15 +6,31 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    /// <summary>Whether Ready on the hand-off card is held down (SCR-SETUP-002).</summary>
+    private bool _handoffReadyHeld;
+
+    /// <summary>
+    /// FND-SETUP-016: Ready is a held button. The press plays the push cue and draws the pressed
+    /// image while the pointer stays inside, and only a release inside ends the card.
+    /// </summary>
     private void HandleHandoffClick(Point point)
     {
         if (!HandoffReady.Contains(point)) return;
         PlayGeneralSound(AudioRouting.PointerPushSound());
-        FinishHandoff();
+        _handoffReadyHeld = true;
+    }
+
+    private void CompleteHandoffReady(Point point)
+    {
+        _handoffReadyHeld = false;
+        if (_screens.Current == ClientScreen.Handoff && HandoffReady.Contains(point)) FinishHandoff();
     }
 
     private void FinishHandoff()
     {
+        // The card can also end from the keyboard (DEV-SETUP-002) or the menu while Ready is held.
+        // The hold ends with it, so its release cannot close the next player's card.
+        _handoffReadyHeld = false;
         // An eliminated local player first receives the same private next-player card. Its Ready
         // control then leads to the original terminal notice instead of opening the succeeding
         // player's planning turn beneath the departed player's name.

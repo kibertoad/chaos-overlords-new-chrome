@@ -69,6 +69,13 @@ public sealed partial class ChaosGame
 
         if (rightButton) return;
 
+        if (_handoffReadyHeld)
+        {
+            if (pointerMapped) CompleteHandoffReady(point);
+            else _handoffReadyHeld = false;
+            return;
+        }
+
         if (_pressedSetupButton is not null)
         {
             if (pointerMapped) CompleteSetupButton(point);

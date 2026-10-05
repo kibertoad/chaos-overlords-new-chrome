@@ -612,7 +612,7 @@
 
 ## experiments
 
-126 entries.
+127 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -742,6 +742,7 @@
 | [EXP-UI-013](../experiments/EXP-UI-013.md) | Does the rebuild mark the objective sectors of Siege on the city map as the original does? | recorded |
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | Does the rebuild mark the objective sectors of Big Man on the city map as the original does? | recorded |
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | Do the title screen, the credits and the setup screen, before and after presses on it, look the same in the rebuild? | recorded |
+| [EXP-UI-016](../experiments/EXP-UI-016.md) | Do the hand-off card and the Comlink Send panel look the same in the rebuild? | recorded |
 
 ## bugs
 

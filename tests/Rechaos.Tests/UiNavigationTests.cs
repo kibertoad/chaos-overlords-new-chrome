@@ -370,12 +370,18 @@ public sealed partial class UiNavigationTests
     }
 
     [Fact]
-    public void NextPlayerPortraitFillsTheNativeHandoffAperture()
+    public void TheHandoffCardTakesTheOriginalsRectangles()
     {
-        Assert.Equal(new Rectangle(266, 148, 108, 164), HandoffLayout.Panel);
-        Assert.Equal(new Rectangle(280, 170, 80, 77), HandoffLayout.Portrait);
-        Assert.Equal(new Rectangle(266, 246, 108, 66), HandoffLayout.Ready);
+        // SCR-SETUP-002, FND-SETUP-016.
+        Assert.Equal(new Rectangle(266, 130, 108, 164), HandoffLayout.Panel);
+        Assert.Equal(new Rectangle(283, 155, 8, 72), HandoffLayout.ColourBar);
+        Assert.Equal(new Rectangle(293, 155, 60, 7), HandoffLayout.NameBacking);
+        Assert.Equal(new Point(293, 155), HandoffLayout.Name);
+        Assert.Equal(new Rectangle(293, 163, 64, 64), HandoffLayout.Portrait);
+        Assert.Equal(new Rectangle(270, 241, 100, 48), HandoffLayout.Ready);
+        Assert.Equal(new Rectangle(388, 512, 100, 48), HandoffLayout.ReadyPressedSource);
         Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Portrait));
+        Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Ready));
     }
 
     [Fact]

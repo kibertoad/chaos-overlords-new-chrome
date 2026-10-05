@@ -230,6 +230,7 @@ public sealed partial class OriginalNewGameExperimentTests
             Rolls = run.GetProperty("rolls").EnumerateArray()
                 .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
                 .ToArray();
+            RollsAtDump = run.TryGetProperty("rolls_at_dump", out var atDump) ? atDump.GetInt32() : Rolls.Count;
             foreach (var row in run.GetProperty("end_state").EnumerateArray())
             {
                 var value = row.GetProperty("value").GetInt32();
@@ -244,6 +245,12 @@ public sealed partial class OriginalNewGameExperimentTests
         public int Seed { get; }
         public int DoneCount => DoneAtRoll.Count;
         public IReadOnlyList<int> DoneAtRoll { get; }
+
+        /// <summary>
+        /// The rolls the state dump follows; steps after the dump, such as a Ready press that refills
+        /// the offers (RULE-SETUP-008), can make more.
+        /// </summary>
+        public int RollsAtDump { get; }
         public int PlanningLimitChoice { get; }
         public IReadOnlyList<RecordedTimer> Timers { get; }
         public IReadOnlyList<RecordedPanel>? Panels { get; }

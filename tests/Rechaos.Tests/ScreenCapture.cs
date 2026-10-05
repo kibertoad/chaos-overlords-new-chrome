@@ -358,6 +358,8 @@ public static class ScreenCaptureMasks
             ["SCR-SELL-001"] = [],
             ["SCR-ATTACK-001"] = [],
             ["SCR-OPTIONS-001"] = [],
+            ["SCR-SETUP-002"] = [],
+            ["SCR-COMLINK-002"] = [],
             ["SCR-INFLUENCE-001"] = [],
             ["SCR-GANG-002"] = [],
             ["SCR-UI-001"] =
