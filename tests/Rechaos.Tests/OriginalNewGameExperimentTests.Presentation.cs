@@ -129,9 +129,9 @@ public sealed partial class OriginalNewGameExperimentTests
             Assert.Equal(list.Sector, gang.SectorId);
             var options = AttackTargetRoster.Order(match, CommandOptionCatalog.LegalCommands(match, human, gang.Id)
                 .Where(command => command.Action == GangAction.Attack));
-            var roster = match.Players[list.Opponent].Gangs;
+            var roster = match.Players[list.Opponent].Gangs.ToList();
             var offered = AttackPicker.TargetCells(match, options, new PlayerId(list.Opponent))
-                .Select(cell => roster.ToList().FindIndex(target => target.Id.Value == options[cell].Target.Id))
+                .Select(cell => roster.FindIndex(target => target.Id.Value == options[cell].Target.Id))
                 .ToArray();
             Assert.True(list.Targets.SequenceEqual(offered),
                 $"slot {list.Slot} opponent {list.Opponent}: the original lists [{string.Join(" ", list.Targets)}], the rebuild [{string.Join(" ", offered)}]");

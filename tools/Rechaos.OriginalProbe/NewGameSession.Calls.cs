@@ -10,18 +10,23 @@ internal sealed partial class NewGameSession
     // result panel still open at the endpoint does not stop it, saves every register there, and
     // runs the calls one after another below the saved stack pointer. Each call returns to
     // InjectedCallReturn, where a one-shot breakpoint reads what the call left and starts the
-    // next one; after the last, every register is put back.
-    private bool RunInjectedCalls(Queue<InjectedCall> calls)
+    // next one; after the last, every register is put back. The Equip list builder and the Attack
+    // picker's roster builder read active_player rather than a player they are passed
+    // (FND-EQUIP-008, FND-ATTACK-006), and their panels open only for the active player's gangs,
+    // so active_player holds the given player during the calls and is put back after the last.
+    private bool RunInjectedCalls(Queue<InjectedCall> calls, int player)
     {
         if (calls.Count == 0) return true;
         byte[]? saved = null;
+        uint stack = 0;
+        var active = 0;
         var finished = false;
-        InjectedCall current = calls.Peek();
+        InjectedCall? current = null;
 
         void Call(BreakContext context)
         {
             current = calls.Dequeue();
-            var esp = BitConverter.ToUInt32(saved!, 0xC4) - 0x40;
+            var esp = stack - 0x40;
             _process.Write(esp, [
                 .. BitConverter.GetBytes(OriginalAddresses.InjectedCallReturn),
                 .. current.Arguments.SelectMany(BitConverter.GetBytes)]);
@@ -32,12 +37,13 @@ internal sealed partial class NewGameSession
 
         void Returned(BreakContext context)
         {
-            current.Returned();
+            current!.Returned();
             if (calls.Count > 0)
             {
                 Call(context);
                 return;
             }
+            _process.Write(OriginalAddresses.ActivePlayer, BitConverter.GetBytes(active));
             context.Restore(saved!);
             finished = true;
         }
@@ -47,6 +53,9 @@ internal sealed partial class NewGameSession
             {
                 if (saved is not null) return;
                 saved = context.Save();
+                stack = context.Esp;
+                active = _process.ReadInt32(OriginalAddresses.ActivePlayer);
+                _process.Write(OriginalAddresses.ActivePlayer, BitConverter.GetBytes(player));
                 Call(context);
             }, oneShot: true, quiet: true);
         return _process.RunUntil(() => finished, TimeSpan.FromSeconds(30));

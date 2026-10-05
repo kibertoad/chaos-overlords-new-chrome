@@ -34,6 +34,6 @@ internal sealed partial class NewGameSession
                 }));
             }
         }
-        return RunInjectedCalls(calls);
+        return RunInjectedCalls(calls, human);
     }
 }

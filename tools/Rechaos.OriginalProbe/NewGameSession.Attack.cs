@@ -14,7 +14,8 @@ internal sealed partial class NewGameSession
     // RULE-ATTACK-002: the probe calls the Attack picker's roster builder for every other player and
     // every living gang of the first human, with the gang's sector, as the picker calls it, and
     // reads the entries it fills. The calls draw the target cards and change nothing the fixture
-    // holds, which is why they come after the dump.
+    // holds, which is why they come after the dump. The builder tests the visible_to entry of
+    // active_player (FND-ATTACK-006), so the calls run with the first human active.
     private bool RecordAttackLists()
     {
         var human = FirstHuman;
@@ -32,6 +33,6 @@ internal sealed partial class NewGameSession
                     _attackLists.Add(record);
                 }));
             }
-        return RunInjectedCalls(calls);
+        return RunInjectedCalls(calls, human);
     }
 }
