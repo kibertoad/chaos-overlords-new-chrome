@@ -140,7 +140,7 @@ list of entries; the rows of the parity matrix are grouped by the same areas.
 | `KIND-AREA-NNN` | A spec entry: `FND` finding, `EXP` experiment, `FMT` format, `RULE` rule, `BUG` bug, `SCR` screen. Builds and sources use an alias (`BLD-GOG-EN-1.1`, `SRC-MANUAL-GOG`). IDs are never reused or renumbered. | [AGENTS.md](../AGENTS.md#the-spec) and the standard |
 | `DEV-AREA-NNN` | A deliberate departure of the rebuild from the spec. | [DEVIATIONS.md](../DEVIATIONS.md) |
 | `unknown` … `superseded` | The status of a spec claim; `recorded`, `reproduced` and `superseded` for findings and experiments. There is no other confidence scale. | [AGENTS.md](../AGENTS.md#the-spec) |
-| `implemented`, `validated` | Parity statuses beyond a spec status. | [PARITY.md](../PARITY.md) |
+| `implemented`, `deviated`, `validated` | Parity statuses beyond a spec status. | [PARITY.md](../PARITY.md) |
 | `PLACEHOLDER: <spec ID>` | A code comment marking a guessed value; its parity row cannot be `complete`. | [AGENTS.md](../AGENTS.md#the-rebuilds-ledgers) |
 | `YYYY-MM-DD — <title>` | A dated decision. New entries go at the top of the decision log. | [DECISIONS.md](DECISIONS.md) |
 | `Status:` | Header line describing how settled a document in this directory is. | This directory |

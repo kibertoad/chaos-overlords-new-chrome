@@ -118,6 +118,10 @@ the repository. Tool procedure is in `docs/GHIDRA.md`.
   superseded, with how much of it the rebuild does and which tests compare the
   rebuild with evidence from the original. Behaviour without a spec entry gets
   an `unknown` entry before any code. Manual play never counts as a test.
+  A complete row that a `mandatory` deviation replaces, and that no test can
+  compare with the original, is `deviated` once each `mandatory` deviation it
+  lists has a Tests item naming the tests that check the rebuild does what the
+  deviation's Reason says.
 - `docs/DECISIONS.md` keeps dated product and scope decisions that are not
   departures from the original (network play, saves, bug reports).
 

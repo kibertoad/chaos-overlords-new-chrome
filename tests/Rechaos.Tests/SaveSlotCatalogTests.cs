@@ -11,6 +11,7 @@ public sealed class SaveSlotCatalogTests
     [Fact]
     public void NineSlotsPersistEditableNamesAndMatchDetails()
     {
+        // DEV-UI-011: saving and loading use nine named slots.
         var directory = Path.Combine(Path.GetTempPath(), $"rechaos-slots-{Guid.NewGuid():N}");
         try
         {

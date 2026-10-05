@@ -317,14 +317,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // the DONE button ends up below the screen edge. Draw and input already letterbox from the
         // viewport, so any size works; the window just has to fit on the display it opens on.
         var (backBufferWidth, backBufferHeight) = _referenceFrame is null
-            ? PreferredBackBufferSize()
+            ? ShellWindow.OpeningSize(
+                GraphicsAdapter.DefaultAdapter?.CurrentDisplayMode?.Width,
+                GraphicsAdapter.DefaultAdapter?.CurrentDisplayMode?.Height)
             : (VirtualInput.Width, VirtualInput.Height);
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = backBufferWidth,
             PreferredBackBufferHeight = backBufferHeight,
             SynchronizeWithVerticalRetrace = true,
-            HardwareModeSwitch = false,
+            HardwareModeSwitch = ShellWindow.SwitchesDisplayMode,
             IsFullScreen = _fullscreen && _referenceFrame is null
         };
         // Ticking on without focus is what keeps background online notices, the planning timer and
@@ -333,32 +335,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // edge comes from comparing consecutive polled snapshots, so it stays far shorter than a
         // click: a press and release that both landed inside one sleep would never be seen, and
         // the click that raises the window would be swallowed.
-        InactiveSleepTime = TimeSpan.FromMilliseconds(20);
+        InactiveSleepTime = ShellWindow.InactiveSleepTime;
+        IsFixedTimeStep = true;
+        TargetElapsedTime = ShellWindow.FrameTime;
         IsMouseVisible = true;
-        Window.AllowUserResizing = true;
+        Window.AllowUserResizing = ShellWindow.AllowsResizing;
         Window.Title = "Chaos Overlords: New Chrome";
         // The only text the game takes: a server address, a name and a join code. The platform has
         // already decoded the keystroke, so a non-US layout types what it should.
         Window.TextInput += (_, args) => HandleTextInput(args.Character);
-    }
-
-    /// <summary>
-    /// The largest whole multiple of the 640x460 interface that fits the display, at least 1x.
-    /// </summary>
-    /// <remarks>
-    /// Whole multiples keep the pixel art on exact pixel boundaries. The usable area is taken as
-    /// nine tenths of the display so the window is not flush against the taskbar and the title bar.
-    /// </remarks>
-    private static (int Width, int Height) PreferredBackBufferSize()
-    {
-        const int preferredScale = 2;
-        var display = GraphicsAdapter.DefaultAdapter?.CurrentDisplayMode;
-        if (display is null) return (VirtualInput.Width * preferredScale, VirtualInput.Height * preferredScale);
-        var scale = Math.Min(
-            display.Width * 9 / 10 / VirtualInput.Width,
-            display.Height * 9 / 10 / VirtualInput.Height);
-        scale = Math.Clamp(scale, 1, preferredScale);
-        return (VirtualInput.Width * scale, VirtualInput.Height * scale);
     }
 
     protected override void LoadContent()
@@ -462,9 +447,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var mouse = Mouse.GetState();
         // The rebuild's window shortcuts are not game events, so a fade does not swallow them.
         if (Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
+        // Alt+Enter goes no further, so the Enter does not also act on the screen.
         var altEnter = Pressed(keyboard, Keys.Enter)
             && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
-        if (Pressed(keyboard, Keys.F11) || altEnter) ToggleFullscreen();
+        if (ShellWindow.TogglesFullscreen(key => Pressed(keyboard, key), keyboard)) ToggleFullscreen();
         // FND-AUDIO-016: the fade pumps window messages without game events.
         var soundtrackUpdated = _soundtrackFade is not null;
         if (soundtrackUpdated)
@@ -581,14 +567,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             // TextInput event can deliver that character to the field.
             if (!_idleGangWarningOpen && !TextInputHasFocus())
             {
-                if (Pressed(keyboard, Keys.F1)
-                    && (keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift)))
-                    OpenCredits();
-                else if (Pressed(keyboard, Keys.F1)) OpenHelp();
-                else if (Pressed(keyboard, Keys.O)) OpenOptions();
-                else if (Pressed(keyboard, Keys.Escape) && CommandPanelOpen)
+                var shortcut = ShellWindow.ShortcutFor(key => Pressed(keyboard, key), keyboard);
+                if (shortcut == ShellShortcut.Credits) OpenCredits();
+                else if (shortcut == ShellShortcut.Help) OpenHelp();
+                else if (shortcut == ShellShortcut.Options) OpenOptions();
+                else if (shortcut == ShellShortcut.Escape && CommandPanelOpen)
                     CancelCommandPanelWithEscape();
-                else if (Pressed(keyboard, Keys.Escape))
+                else if (shortcut == ShellShortcut.Escape)
                 {
                     // SCR-ATTACK-001, FND-ATTACK-003: Escape is the Attack picker's Cancel.
                     if (IsAttackPickerOpen()) CancelAttackPickerByKey();

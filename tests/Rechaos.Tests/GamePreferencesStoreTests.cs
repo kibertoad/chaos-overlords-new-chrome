@@ -39,6 +39,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
     [Fact]
     public void CurrentPreferencesRoundTrip()
     {
+        // DEV-OPTIONS-001: the options are written to the player's own file and read back.
         var expected = new GamePreferences(
             GamePreferences.CurrentFormatVersion, 8, 3, false,
             PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true,
