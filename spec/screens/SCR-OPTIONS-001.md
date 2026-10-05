@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-OPTIONS-002, FND-UI-011, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-OPTIONS-002, FND-UI-011, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-054, EXP-UI-012]
 conflicting: []
 split_with: []
 related: [RULE-OPTIONS-003, RULE-UI-003, SCR-UI-003]
@@ -16,6 +16,7 @@ related: [RULE-OPTIONS-003, RULE-UI-003, SCR-UI-003]
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Warning panel with its wording, Cancel above OK | `DATA/PX16/PX05020` | None | `(104,124,344,209)` once slid in | Always | FND-OPTIONS-002 |
+| Warning line | The strip `(165,189)-(262,198)` of the panel, or a black fill | None | `(269,169)-(366,178)` | Shown from the open for six ticks of slot 0, then black for two, and so on | FND-UI-024, FND-UI-054 |
 
 ## Mouse input
 

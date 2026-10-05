@@ -74,13 +74,22 @@ internal sealed partial class NewGameSession
         // FND-UI-052, FND-UI-053: the frame local of the last of Item Information, Sell and Give
         // to open, while it runs. It is read from memory around the capture, since a breakpoint's
         // report reaches the probe only after the game has gone on drawing.
-        var itemHandlers = new Stack<uint>();
-        foreach (var (starts, local, returns) in OriginalAddresses.ItemFrameHandlers)
+        var itemHandlers = new Stack<(uint Ebp, uint Local, uint ShownLocal)>();
+        foreach (var (starts, local, returns, shownLocal) in OriginalAddresses.ItemFrameHandlers)
         {
-            _process.SetBreakpoint(starts, context => itemHandlers.Push(context.Ebp - local), quiet: true);
+            _process.SetBreakpoint(starts, context => itemHandlers.Push((context.Ebp, local, shownLocal)), quiet: true);
             _process.SetBreakpoint(returns, _ => itemHandlers.TryPop(out var _), quiet: true);
         }
-        int? ItemFrame() => itemHandlers.TryPeek(out var address) ? _process.ReadInt32(address) : null;
+        // FND-UI-054: the warning's line is shown for six ticks from the open and hidden for two,
+        // and the countdown holds the ticks left of the current part, so the ticks since the
+        // open, modulo 8, are 6 less the countdown while shown and 8 less it while hidden.
+        int? ItemFrame()
+        {
+            if (!itemHandlers.TryPeek(out var handler)) return null;
+            var value = _process.ReadInt32(handler.Ebp - handler.Local);
+            if (handler.ShownLocal == 0) return value;
+            return _process.Read(handler.Ebp - handler.ShownLocal, 1)[0] != 0 ? 6 - value : 8 - value;
+        }
         foreach (var step in settings.OrderSteps!)
         {
             if (step.Kind == "shot")
@@ -132,6 +141,11 @@ internal sealed partial class NewGameSession
                     break;
                 case "back":
                     Click(window, 4 + 16, 394 + 31);
+                    break;
+                case "warn":
+                    // RULE-OPTIONS-003: the run switches Warn if Idle Gangs off before the Done
+                    // presses; this step switches it back on for the presses after the dump.
+                    _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(1));
                     break;
                 case "exit":
                     // As for the hire steps: with no panel open the Exit point lies on the city map.

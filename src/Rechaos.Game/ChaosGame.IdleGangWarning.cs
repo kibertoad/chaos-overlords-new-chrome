@@ -16,10 +16,15 @@ public static class IdleGangWarningLayout
     public static Rectangle BlinkingLine => new(269, 169, 97, 9);
 
     /// <summary>
-    /// Whether the warning line shows: six ticks of the presentation clock shown, then two filled
-    /// black (RULE-UI-008, FND-UI-024). Which part of the cycle the panel opens on is not recorded.
+    /// Whether the warning line shows <paramref name="ticks"/> ticks of the presentation clock
+    /// after the panel opened: six ticks shown, then two filled black (RULE-UI-008, FND-UI-024),
+    /// counted from the open (FND-UI-054).
     /// </summary>
-    public static bool LineShown(TimeSpan now) => PresentationClock.Ticks(now) % 8 < 6;
+    public static bool LineShown(long ticks)
+    {
+        if (ticks < 0) throw new ArgumentOutOfRangeException(nameof(ticks));
+        return ticks % 8 < 6;
+    }
 }
 
 public static class IdleGangWarningPolicy
@@ -51,6 +56,7 @@ public enum IdleGangWarningChoice
 public sealed partial class ChaosGame
 {
     private bool _idleGangWarningOpen;
+    private TimeSpan _idleGangWarningOpenedAt;
 
     private bool TryOpenIdleGangWarning()
     {
@@ -60,6 +66,7 @@ public sealed partial class ChaosGame
             return false;
 
         _idleGangWarningOpen = true;
+        _idleGangWarningOpenedAt = _inputTime;
         _message = string.Empty;
         if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelOpen);
         return true;
@@ -132,7 +139,11 @@ public sealed partial class ChaosGame
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Cancel, "CANCEL", false);
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Ok, "OK", true);
         }
-        if (!IdleGangWarningLayout.LineShown(_inputTime))
+        // FND-UI-054: a reference frame draws the recorded ticks since the open, kept modulo 8.
+        var ticks = _referenceFrame?.ItemFrame
+            ?? PresentationClock.Ticks(_inputTime < _idleGangWarningOpenedAt
+                ? TimeSpan.Zero : _inputTime - _idleGangWarningOpenedAt);
+        if (!IdleGangWarningLayout.LineShown(ticks))
             batch.Draw(pixel, IdleGangWarningLayout.BlinkingLine, Color.Black);
     }
 }

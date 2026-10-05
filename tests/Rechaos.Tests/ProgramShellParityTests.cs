@@ -58,11 +58,12 @@ public sealed class ProgramShellParityTests
     [Fact]
     public void IdleGangWarningLineShowsForSixTicksAndGoesBlackForTwo()
     {
-        // RULE-UI-008, FND-UI-024: the strip is copied for six ticks and filled black for two.
+        // RULE-UI-008, FND-UI-024, FND-UI-054: from the open, the strip is copied for six ticks
+        // and filled black for two.
         Assert.Equal(new Rectangle(269, 169, 97, 9), IdleGangWarningLayout.BlinkingLine);
         for (var tick = 0; tick < 16; tick++)
-            Assert.Equal(tick % 8 < 6,
-                IdleGangWarningLayout.LineShown(TimeSpan.FromMilliseconds(tick * 166 + 80)));
+            Assert.Equal(tick % 8 < 6, IdleGangWarningLayout.LineShown(tick));
+        Assert.Throws<ArgumentOutOfRangeException>(() => IdleGangWarningLayout.LineShown(-1));
     }
 
     [Fact]

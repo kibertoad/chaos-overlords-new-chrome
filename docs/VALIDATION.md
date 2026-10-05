@@ -728,14 +728,16 @@ is clear, and null when the probe could not tell. A panel that slides in over
 another finds the flag set and leaves the counter as it was. While Item
 Information, Sell or Give is open the shot also keeps `item_frame`, the frame
 of its rotating items, read from the handler's local before and after the copy
-(FND-UI-052, FND-UI-053). `extract` gives that
+(FND-UI-052, FND-UI-053); while the idle gang warning is open, the ticks since
+its open modulo 8, read from its countdown and shown flag (FND-UI-054). A
+`warn` step switches Warn if Idle Gangs back on for the steps after it. `extract` gives that
 order step a `capture` object as above and a `screens` string naming the
 screens it is compared at. The steps before it bring the screen up: `open:s`
 double-clicks sector `s` on the city map, `dbl:x:y` double-clicks the window
 point `(x, y)` as `open` does (FND-UI-020), `strip:x:y:0` presses a point,
 `card` a sector card's point, `back` the detailed sector screen's back
 control and `exit` the Exit of the panel the planning entry left open.
-EXP-UI-006 to EXP-UI-011 are taken this way.
+EXP-UI-006 to EXP-UI-012 are taken this way.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
@@ -767,7 +769,7 @@ drawn (FND-UI-048). `--selected-sector` passes `selected_sector`, which the
 planning entry selects in place of the sector the rebuild keeps for the player
 (FND-SAVE-003); a save holds no selection (DEV-SAVE-001). `--item-frame` passes
 `item_frame`, the frame the rotating items of Item Information, Sell and Give
-are drawn at.
+are drawn at, or the idle gang warning's phase.
 `--reference-clicks` lists the presses that take the rebuild from the planning
 entry to a shot step's screen, `:2` marking a double-click. They run on a clock
 of their own, one button edge every 50 ms, wait while a pressed face or a flash
