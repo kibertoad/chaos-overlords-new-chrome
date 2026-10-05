@@ -202,6 +202,10 @@ public sealed partial class OriginalNewGameExperimentTests
 
         public bool HasField(string format, int record, string field) => _fields.ContainsKey((format, record, field));
 
+        /// <summary>Every value the fixture records for <paramref name="format"/>.</summary>
+        public IEnumerable<int> Values(string format) =>
+            _fields.Where(entry => entry.Key.Item1 == format).Select(entry => entry.Value);
+
         /// <summary>A field or term of a sparse table, which the fixture leaves out when it holds 0.</summary>
         public int FieldOrZero(string format, int record, string field) => _fields.GetValueOrDefault((format, record, field));
 

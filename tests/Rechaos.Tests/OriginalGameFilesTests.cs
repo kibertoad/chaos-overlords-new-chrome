@@ -42,6 +42,18 @@ public sealed class OriginalGameFilesTests : IDisposable
         Assert.Equal(Path.Combine(root, "captures", hash), OriginalGameFiles.ResolveCapture(root, hash));
     }
 
+    // The standard names a capture by its hash alone, so a copy kept with an extension is
+    // refused instead of being skipped as absent.
+    [Fact]
+    public void RefusesACaptureKeptWithAnExtension()
+    {
+        var hash = Hash([7, 8]);
+        Write(Path.Combine("captures", hash + ".png"), [7, 8]);
+
+        var refused = Assert.Throws<InvalidDataException>(() => OriginalGameFiles.ResolveCapture(root, hash));
+        Assert.Contains(hash + ".png", refused.Message);
+    }
+
     [Fact]
     public void ReportsAbsentFilesAsMissing()
     {

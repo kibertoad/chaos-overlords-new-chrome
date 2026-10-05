@@ -27,6 +27,8 @@ public sealed partial class ScreenCaptureTests
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run)
     {
         var capture = ScreenCaptureRecord.LoadAll().Single(record => record.Experiment == experiment && record.Run == run);
+        if (!OriginalNewGameExperimentTests.IsReplayed(experiment))
+            Assert.Skip($"{capture} comes from a run that is not replayed, so the rebuild has no endpoint to draw.");
         if (capture.Elements.Count == 0)
             Assert.Skip($"{capture} records no screen elements; the probe's digest command adds them.");
         var masks = ScreenCaptureMasks.For(capture.Screens);

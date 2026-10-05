@@ -594,7 +594,7 @@
 
 ## experiments
 
-99 entries.
+101 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -697,6 +697,8 @@
 | [EXP-TURN-091](../experiments/EXP-TURN-091.md) | Does a family-0 computer gang whose weight-10 attack draw fails its strength test give up the Attack, as the spec gives? | recorded |
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs, as the spec gives? | recorded |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs in Big Man, as the spec gives? | recorded |
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? | recorded |
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? | recorded |
 
 ## bugs
 
