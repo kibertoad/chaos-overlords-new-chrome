@@ -845,8 +845,8 @@ None.
 |---|---|
 | [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | body |
 | [FMT-STATE-005](../formats/FMT-STATE-005.md) | body, evidence |
-| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | evidence |
-| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | evidence |
+| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | body, evidence |
+| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | body, evidence |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | evidence |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | evidence |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | evidence |
@@ -857,7 +857,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | evidence |
+| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | body, evidence |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | evidence |
 
 ## EXP-SETUP-001

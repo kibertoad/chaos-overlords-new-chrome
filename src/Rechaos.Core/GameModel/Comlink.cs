@@ -40,7 +40,7 @@ internal static class ComlinkValidationMessages
             [ComlinkValidationCode.DuplicateRecipient] = "Recipients must be unique.",
             [ComlinkValidationCode.EmptyMessage] = "Enter a message.",
             [ComlinkValidationCode.MessageTooLong] = "Message exceeds 160 characters.",
-            [ComlinkValidationCode.RecipientNotActive] = "Recipient is no longer in the match."
+            [ComlinkValidationCode.RecipientNotActive] = "Recipient was eliminated."
         };
 
     public static string For(ComlinkValidationCode code) => Messages[code];

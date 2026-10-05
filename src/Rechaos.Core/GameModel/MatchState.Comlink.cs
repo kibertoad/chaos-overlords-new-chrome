@@ -23,8 +23,8 @@ public sealed partial class MatchState
     /// <summary>
     /// RULE-COMLINK-002: a player can take a message from <paramref name="sender"/> when it is
     /// another human player still in the match, the original's <c>player_active</c> and
-    /// <c>players_human</c> both set. A computer player, an eliminated player and the sender never
-    /// can (EXP-COMLINK-001).
+    /// <c>players_human</c> both set (FND-COMLINK-007). A computer player and the sender never can
+    /// (EXP-COMLINK-001), and neither can an eliminated player.
     /// </summary>
     public bool IsComlinkRecipient(PlayerId sender, PlayerId recipient)
     {

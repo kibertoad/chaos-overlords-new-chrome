@@ -753,8 +753,8 @@
 | [FND-COMLINK-007](../findings/FND-COMLINK-007.md) | Comlink Send tests player_active and players_human, starts from a blank draft, wraps the cursor between rows, and View draws a 64-by-64 portrait; the positions of both panels' fields | recorded |
 | [FND-COMLINK-008](../findings/FND-COMLINK-008.md) | The Send panel builds a message in a 166-byte buffer, with 160 characters from space to Z filled with spaces and no terminator, a signed turn, and a last byte nothing writes | recorded |
 | [FND-COMLINK-009](../findings/FND-COMLINK-009.md) | A message recorded for the active player while the View panel is open makes the panel redraw the shown message with the new count | recorded |
-| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | established |
-| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | established |
+| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | supported |
+| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | supported |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | established |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox | established |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn | established |

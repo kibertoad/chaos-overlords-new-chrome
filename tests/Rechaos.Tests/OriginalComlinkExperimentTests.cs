@@ -266,6 +266,10 @@ public sealed class OriginalComlinkExperimentTests
                         case "EXEC": PressSend(line, refused: false); break;
                         default: throw new InvalidOperationException($"No key {name}.");
                     }
+                    // An accepted send closes the panel, and the original hands any later key to
+                    // the city screen, which this replay does not model.
+                    if (!_sendOpen && index + 1 < text.Length)
+                        throw new InvalidOperationException($"{line}: keys follow a send that closed the panel.");
                     continue;
                 }
                 if (OriginalTextInput.TryCharacter(Key(text[index]), shift: false, out var character))

@@ -16,7 +16,7 @@
 
 ## supported
 
-148 entries.
+150 entries.
 
 | ID | Title |
 |---|---|
@@ -86,6 +86,8 @@
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack |
+| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages |
+| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution |
@@ -171,7 +173,7 @@
 
 ## established
 
-93 entries.
+91 entries.
 
 | ID | Title |
 |---|---|
@@ -207,8 +209,6 @@
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation |
-| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages |
-| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn |
@@ -771,8 +771,6 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation |
-| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages |
-| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn |
@@ -922,7 +920,8 @@ Entries whose Open questions section says more than None known.
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | established |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation | established |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported |
-| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | established |
+| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | supported |
+| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | supported |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | established |
 | [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | established |
 | [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | established |

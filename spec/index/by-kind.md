@@ -116,8 +116,8 @@
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | established |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation | established |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported |
-| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | established |
-| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | established |
+| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | supported |
+| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | supported |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | established |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox | established |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn | established |
