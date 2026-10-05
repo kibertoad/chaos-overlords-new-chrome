@@ -307,6 +307,12 @@ public sealed partial class ChaosGame
     /// </summary>
     private void PresentReferenceFramePlanningEntry()
     {
+        // SCR-AWARDS-001: a save of a decided match stands where the original shows the endgame.
+        if (_state?.Outcome is not null)
+        {
+            ShowMatchEnd(justEnded: false);
+            return;
+        }
         if (PlanningViewer is { } playerId && _state is { } state
             && state.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human)
         {

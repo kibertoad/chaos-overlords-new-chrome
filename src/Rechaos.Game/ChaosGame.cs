@@ -384,6 +384,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
         _endgameBackground = LoadTexture("PX00200.bmp");
         _endgameSprites = LoadTexture("PX00201.bmp");
+        _endgameKeyedSprites = LoadTexture("PX00201.bmp", transparentWhite: true);
         _victoryBackground = LoadTexture("PX00202.bmp");
         _eliminationBackground = LoadTexture("PX00203.bmp");
         _gameInfoBackground = LoadTexture("PX05021.bmp");

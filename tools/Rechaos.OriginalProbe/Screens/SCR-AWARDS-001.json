@@ -1,0 +1,13 @@
+{
+  "screen": "SCR-AWARDS-001",
+  "state": "The endgame a match that ended draws over the city, on the Awards or the Stats tab",
+  "elements": [
+    {"element": "Endgame screen listing the players by place with their awards or their statistics", "rect": [0, 0, 640, 460]},
+    {"element": "Endgame frame with the Awards, Stats and Done controls", "rect": [106, 25, 428, 410]},
+    {"element": "Tab mark", "rect": [468, 33, 60, 16]},
+    {"element": "Colour fill, per row", "rect": [111, 31, 20, 392]},
+    {"element": "Portrait, per row", "rect": [132, 30, 64, 394]},
+    {"element": "Player name, per row", "rect": [197, 30, 64, 394]},
+    {"element": "Awards strip, per row", "rect": [262, 30, 160, 394]}
+  ]
+}

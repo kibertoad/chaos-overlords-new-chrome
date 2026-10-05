@@ -9,6 +9,12 @@ namespace Rechaos.Game;
 /// </summary>
 public static class ExecutableStrings
 {
+    /// <summary>
+    /// FND-AWARDS-004: the endgame's score caption, the zero-terminated string at 0x00487704.
+    /// ExecutableStringTableTests reads it there.
+    /// </summary>
+    public const string ScoreCaption = "SCORE";
+
     public static IReadOnlyDictionary<int, string> Drawn { get; } = new Dictionary<int, string>
     {
         // RULE-UI-009: the scenario names, at the original's scenario number plus 1.

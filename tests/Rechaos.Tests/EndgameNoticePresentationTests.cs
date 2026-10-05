@@ -81,8 +81,14 @@ public sealed class EndgameNoticePresentationTests
         Assert.Equal(new Rectangle(262, 360, 160, 64), EndgameLayout.StatisticsDestination(5));
         Assert.Equal(new Rectangle(371, 367, 48, 7), EndgameLayout.StatisticValueField(5, 0));
         Assert.Equal(new Rectangle(383, 409, 36, 7), EndgameLayout.StatisticValueField(5, 4));
-        Assert.Equal(new Rectangle(200, 0, 50, 48),
+        Assert.Equal(new Rectangle(192, 0, 48, 48),
             EndgameLayout.AwardSource(EndgameAward.Safe));
+        Assert.Equal(new Rectangle(96, 48, 160, 64), EndgameLayout.AwardsSource);
+        Assert.Equal(new Rectangle(111, 361, 20, 62), EndgameLayout.ColourFill(5));
+        Assert.Equal(new Point(227, 392), EndgameLayout.ScoreCaption(5));
+        Assert.Equal(new Point(227, 400), EndgameLayout.Score(5));
+        Assert.Equal(new Rectangle(468, 33, 8, 16), EndgameLayout.TabMark(stats: false));
+        Assert.Equal(new Rectangle(520, 33, 8, 16), EndgameLayout.TabMark(stats: true));
         Assert.Throws<ArgumentOutOfRangeException>(() => EndgameLayout.Portrait(6));
     }
 

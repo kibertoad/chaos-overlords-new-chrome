@@ -853,10 +853,12 @@ named in its Notes.
 
 The reference frame starts at the city screen and its console (SCR-UI-003,
 SCR-HIRE-002) of the player whose planning entry the run ends at, with no
-pointer, and then makes the scripted presses. It does not draw the hand-off
-card, Combat Results or Last Turn Events that the planning entry would open
-first, but it closes Last Turn Events as a press of its Exit after the first
-page would: the Events light stays on only while the player has another report
+pointer, and then makes the scripted presses. With several local humans it
+starts at the hand-off card (SCR-SETUP-002) and a press of its Ready goes on as
+in play; for a run whose match ended it starts at the endgame (SCR-AWARDS-001).
+It does not draw Combat Results or Last Turn Events that the planning entry
+would open first, but it closes Last Turn Events as a press of its Exit after
+the first page would: the Events light stays on only while the player has another report
 to see (RULE-EVENT-005). EXP-UI-007's capture, after the original's planning
 entry showed its one report and the Exit closed the panel, has the light's
 flag clear. A capture taken with Combat Results or Last Turn Events open, at

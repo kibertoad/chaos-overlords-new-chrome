@@ -153,6 +153,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | builds |
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | builds |
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | builds |
+| [EXP-UI-017](../experiments/EXP-UI-017.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -1182,6 +1183,7 @@ None.
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | body |
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | body |
+| [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
 
 ## EXP-TURN-002
 
@@ -1810,6 +1812,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
 | [RULE-AI-031](../rules/RULE-AI-031.md) | evidence |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
@@ -2233,6 +2236,12 @@ None.
 | [RULE-UI-002](../rules/RULE-UI-002.md) | evidence |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | evidence |
+
+## EXP-UI-017
+
+| Cited by | In |
+|---|---|
+| [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
@@ -3902,6 +3911,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | glossary: player_awards | glossary |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
@@ -3915,6 +3925,7 @@ None.
 |---|---|
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
+| [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 
 ## FND-BRIBE-001
@@ -9300,6 +9311,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AWARDS-001](../bugs/BUG-AWARDS-001.md) | related |
+| [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body, related |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, related |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | body |

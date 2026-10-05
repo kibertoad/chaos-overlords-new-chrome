@@ -41,7 +41,8 @@ public sealed partial class ScreenCaptureTests
     // outside (RULE-UI-001). The Done press of EXP-UI-012 opens the warning of RULE-OPTIONS-003
     // from the original's gangs, one of them idle. EXP-UI-016 compares the hand-off card SCR-SETUP-002
     // and the Comlink Send panel SCR-COMLINK-002 of a match of two humans. The console presses
-    // before these captures route as RULE-UI-002 reads them.
+    // before these captures route as RULE-UI-002 reads them. EXP-UI-017 compares the endgame
+    // SCR-AWARDS-001 on both tabs.
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
