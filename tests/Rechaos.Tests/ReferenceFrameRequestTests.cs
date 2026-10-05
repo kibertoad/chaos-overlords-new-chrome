@@ -62,6 +62,8 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--item-frame", "1" },
         new[] { "--reference-frame", "save", "frame", "--item-frame", "15" },
         new[] { "--reference-frame", "save", "frame", "--item-frame", "1", "--item-frame", "2" },
+        new[] { "--reference-frame", "title", "frame", "--marker-frame", "0" },
+        new[] { "--reference-frame", "setup", "frame", "--selected-sector", "1" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter", "8" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter", "-1" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter" },

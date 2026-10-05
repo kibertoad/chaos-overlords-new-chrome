@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
+using Rechaos.Core;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Game;
@@ -312,8 +313,11 @@ public static class ScreenCaptureMasks
                 new("DEV-UI-019", new Rectangle(257, 430, 126, 9)),
                 // DEV-VIDEO-003: the Intro button.
                 new("DEV-VIDEO-003", new Rectangle(322, 376, 80, 34)),
-                // DEV-UI-012: the version, right-aligned 6 pixels from the edge.
-                new("DEV-UI-012", new Rectangle(434, 430, 200, 9)),
+                // DEV-UI-012: the version, right-aligned 6 pixels from the edge, as wide as the
+                // build's version string.
+                new("DEV-UI-012", new Rectangle(
+                    VirtualInput.Width - 6 - GameVersion.Display.Length * OriginalFontLayout.CellWidth, 430,
+                    GameVersion.Display.Length * OriginalFontLayout.CellWidth, 9)),
             ],
             ["SCR-UI-002"] = [],
             ["SCR-SETUP-001"] = [],

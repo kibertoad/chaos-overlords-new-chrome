@@ -833,7 +833,6 @@ public static partial class PlayerPortraitLayout
     public static Rectangle SetupLarge(int player) => Player(player, 397, 89, 83, 64, 64, rowStride: 74);
     public static Rectangle Previous(int player) => Player(player, 399, 109, 83, 12, 18, rowStride: 74);
     public static Rectangle Next(int player) => Player(player, 447, 109, 83, 12, 18, rowStride: 74);
-    public static Rectangle Name(int player) => Player(player, 397, 153, 83, 64, 8, rowStride: 74);
 
     private static Rectangle Player(
         int player,

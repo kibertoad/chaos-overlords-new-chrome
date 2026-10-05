@@ -693,7 +693,6 @@ public sealed partial class UiNavigationTests
             SetupPlayerCardArtLayout.PortraitDestination(3));
         Assert.Equal(new Rectangle(399, 257, 12, 18), PlayerPortraitLayout.Previous(4));
         Assert.Equal(new Rectangle(530, 257, 12, 18), PlayerPortraitLayout.Next(5));
-        Assert.Equal(new Rectangle(480, 301, 64, 8), PlayerPortraitLayout.Name(5));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.SetupTop(6));
     }
 

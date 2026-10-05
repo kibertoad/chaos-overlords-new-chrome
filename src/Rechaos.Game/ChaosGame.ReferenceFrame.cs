@@ -91,7 +91,13 @@ public sealed record ReferenceFrameRequest(
             return values[index];
         }
         var source = Operand(args, reference + 1);
-        var save = ScreenOperands.Contains(source) ? source : Path.GetFullPath(source);
+        var beforeMatch = ScreenOperands.Contains(source);
+        var save = beforeMatch ? source : Path.GetFullPath(source);
+        // The marker, pump, selected sector and item frame belong to a match's screens, which a
+        // screen shown before a match does not draw.
+        if (beforeMatch && (marker >= 0 || pump >= 0 || selected >= 0 || item >= 0))
+            throw new ArgumentException(
+                "--marker-frame, --pump-counter, --selected-sector and --item-frame require a save.");
         var output = Path.GetFullPath(Operand(args, reference + 2));
         int? frame = null;
         if (marker >= 0)
