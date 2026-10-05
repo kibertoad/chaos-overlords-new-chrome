@@ -72,7 +72,7 @@ public sealed partial class ChaosGame
             var definition = state.Definitions.Gang(entry.GangDefinitionId);
             // EXP-UI-008: halved from the cell's odd rows and columns, as Gangs in Sector halves them.
             if (_gangPortraits is not null)
-                PictureScaling.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
+                _scaledGangPortraits.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
                     HireComparisonLayout.Portrait(slot));
             var values = HireComparisonValues(definition);
             for (var row = 0; row < values.Length; row++)

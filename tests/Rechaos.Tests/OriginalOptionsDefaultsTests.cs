@@ -37,7 +37,8 @@ public sealed class OriginalOptionsDefaultsTests
     {
         // needs: GAME_DIR
         var file = ExecutableResources.RequireExecutable();
-        int At(uint address) => ExecutableResources.ImageInt32(file, address);
+        // RULE-OPTIONS-001: every option compared here keeps only the low byte of its global.
+        int At(uint address) => ExecutableResources.ImageInt32(file, address) & 0xFF;
         var preferences = GamePreferences.Default;
 
         Assert.Equal(At(0x00487860) != 0, preferences.WarnIfIdleGangs);
@@ -48,7 +49,9 @@ public sealed class OriginalOptionsDefaultsTests
         Assert.Equal(At(0x00487854), (int)preferences.PlanningTimeLimit);
         Assert.Equal(At(0x00487858), ExecutableStrings.ScenarioNumber(preferences.PreferredScenario));
         Assert.Equal((int)OriginalOptionsPolicy.MentalityByDefault, At(0x00487850));
-        // Slide Panels and Full screen start as DEV-OPTIONS-002 and DEV-OPTIONS-003 set them.
+        // Slide Panels and Full screen start as DEV-OPTIONS-002 and DEV-OPTIONS-003 set them. The
+        // rebuild has no Thousands of Colors option (DEV-UI-016) and keeps no communication type,
+        // and no serial number (DEV-RNG-001).
     }
 
     [Fact]
