@@ -329,6 +329,13 @@ internal static class OriginalAddresses
     public const uint QuitRequested = 0x00487828;
     public const uint DialogOpen = 0x00465CEC;
 
+    // RULE-UI-015, FND-UI-058: the save fn_00463CC5, which takes no arguments, and File, Exit's three
+    // stores of 1 to quit_requested, each a 7-byte mov: after a written save, for the third answer,
+    // and when the match is saved.
+    public const uint SaveGame = 0x00463CC5;
+    public static readonly uint[] ExitQuitStores = [0x00470586, 0x004705A8, 0x004705FB];
+    public const uint ExitQuitStoreLength = 7;
+
     // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler
     // fn_0045EAB1; FND-COMLINK-004: the helper fn_0045E04D(player, count) that marks and draws one
     // message; FND-COMLINK-006: fn_00460391(player), which drops the leading read messages when the

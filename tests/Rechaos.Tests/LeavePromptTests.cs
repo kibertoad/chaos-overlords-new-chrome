@@ -53,14 +53,9 @@ public sealed class LeavePromptTests
         var directory = Directory.CreateTempSubdirectory("rechaos-leave-prompt-");
         try
         {
-            var game = GameWith(saved: false);
+            var match = NativeSaveSerializerTests.CreateMatch();
+            var game = GameFor(match, new MatchActions(new MatchReplayRecorder(match)), directory.FullName);
             DeviationBehaviourTests.Call(game, "RequestLeave", LeaveKind.End);
-            var autoSavePath = Path.Combine(directory.FullName, "autosave.json");
-            DeviationBehaviourTests.Field("_definitions").SetValue(game, ((MatchState)DeviationBehaviourTests.Field("_state").GetValue(game)!).Definitions);
-            DeviationBehaviourTests.Field("_saveDirectory").SetValue(game, directory.FullName);
-            DeviationBehaviourTests.Field("_autoSavePath").SetValue(game, autoSavePath);
-            DeviationBehaviourTests.Field("_autoSave").SetValue(game, new RollingAutoSave(autoSavePath, (_, _) => { }));
-            DeviationBehaviourTests.Field("_saveSlots").SetValue(game, new SaveSlotSummary?[SaveSlotCatalog.BrowserRowCount]);
             DeviationBehaviourTests.Call(game, "AnswerLeavePrompt", LeaveAnswer.SaveFirst);
             Assert.Equal(SaveBrowserMode.Save, (SaveBrowserMode)DeviationBehaviourTests.Field("_saveBrowserMode").GetValue(game)!);
             Assert.Equal(LeaveKind.End, (LeaveKind)DeviationBehaviourTests.Field("_leaveAfterSave").GetValue(game)!);
@@ -86,14 +81,50 @@ public sealed class LeavePromptTests
 
     private static ChaosGame GameWith(bool saved)
     {
-        var game = DeviationBehaviourTests.HeadlessGame();
         var match = NativeSaveSerializerTests.CreateMatch();
         var actions = new MatchActions(new MatchReplayRecorder(match));
         if (saved) actions.MarkSaved();
+        return GameFor(match, actions, null);
+    }
+
+    /// <summary>A headless game on <paramref name="match"/>, with a save directory when one is given.</summary>
+    internal static ChaosGame GameFor(MatchState match, MatchActions actions, string? saveDirectory)
+    {
+        var game = DeviationBehaviourTests.HeadlessGame();
         DeviationBehaviourTests.Field("_state").SetValue(game, match);
         DeviationBehaviourTests.Field("_actions").SetValue(game, actions);
         DeviationBehaviourTests.Field("_saveName").SetValue(game, new TextField("SAVE NAME", 48));
+        if (saveDirectory is null) return game;
+        var autoSavePath = Path.Combine(saveDirectory, "autosave.json");
+        DeviationBehaviourTests.Field("_definitions").SetValue(game, match.Definitions);
+        DeviationBehaviourTests.Field("_saveDirectory").SetValue(game, saveDirectory);
+        DeviationBehaviourTests.Field("_autoSavePath").SetValue(game, autoSavePath);
+        DeviationBehaviourTests.Field("_autoSave").SetValue(game, new RollingAutoSave(autoSavePath, (_, _) => { }));
+        DeviationBehaviourTests.Field("_saveSlots").SetValue(game, new SaveSlotSummary?[SaveSlotCatalog.BrowserRowCount]);
         return game;
+    }
+
+    /// <summary>Gives the prompt's answer; a leave the game takes reaches Exit, which a headless game cannot run.</summary>
+    internal static void Answer(ChaosGame game, LeaveAnswer answer) =>
+        IgnoringExit(() => DeviationBehaviourTests.Call(game, "AnswerLeavePrompt", answer));
+
+    /// <summary>Reports the save Save First opened as written.</summary>
+    internal static void SaveWritten(ChaosGame game) =>
+        IgnoringExit(() => DeviationBehaviourTests.Call(game, "LeaveAfterSave"));
+
+    /// <summary>Whether the game decided to close, which it marks before it calls Exit.</summary>
+    internal static bool Left(ChaosGame game) =>
+        (bool)DeviationBehaviourTests.Field("_exitConfirmed").GetValue(game)!;
+
+    private static void IgnoringExit(Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (TargetInvocationException exception) when (exception.InnerException is NullReferenceException)
+        {
+        }
     }
 
     private static LeaveKind Prompt(ChaosGame game) =>

@@ -257,16 +257,26 @@ static IReadOnlyList<ProbeSavedWrite> ParseSavedWrites(string value) =>
     }).ToArray();
 
 // --closes saved:answer,... closes the window after the dump and answers the dialog the close
-// opens: saved is -, 0 or 1 (written to match_saved first), answer 2 cancels and 3 goes on without
-// saving (ProbeClose).
+// opens: saved is -, 0 or 1 (written to match_saved first); answer 1w saves first and the save is
+// written, 1c saves first and the save is cancelled, 2 cancels and 3 goes on without saving
+// (ProbeClose).
 static IReadOnlyList<ProbeClose> ParseCloses(string value) =>
     value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
     {
         var parts = entry.Split(':');
         int? saved = parts.Length == 2 && parts[0] is "0" or "1" ? int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture) : null;
-        return parts.Length == 2 && (saved is not null || parts[0] == "-") && parts[1] is "2" or "3"
-            ? new ProbeClose(saved, int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture))
-            : throw new FormatException($"A close is saved:answer, saved -, 0 or 1 and answer 2 or 3: {entry}");
+        ProbeClose? close = parts.Length == 2 && (saved is not null || parts[0] == "-")
+            ? parts[1] switch
+            {
+                "1w" => new ProbeClose(saved, 1, 1),
+                "1c" => new ProbeClose(saved, 1, 0),
+                "2" => new ProbeClose(saved, 2),
+                "3" => new ProbeClose(saved, 3),
+                _ => null
+            }
+            : null;
+        return close ?? throw new FormatException(
+            $"A close is saved:answer, saved -, 0 or 1 and answer 1w, 1c, 2 or 3: {entry}");
     }).ToArray();
 
 // --hire-steps drag:slot:sector,reject:slot,exit,... drags offers onto map sectors, presses their

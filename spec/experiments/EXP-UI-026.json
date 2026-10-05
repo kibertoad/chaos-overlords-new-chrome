@@ -17,6 +17,9 @@
     {"tick":null,"name":"left_click","value":"exit after the dump"},
     {"tick":null,"name":"drag","value":"drag 0 to sector 12 after the dump"},
     {"tick":null,"name":"close","value":"close -:2 after the dump"},
+    {"tick":null,"name":"close","value":"close -:1c after the dump"},
+    {"tick":null,"name":"close","value":"close -:1w after the dump"},
+    {"tick":null,"name":"close","value":"close -:3 after the dump"},
     {"tick":null,"name":"close","value":"close 1:3 after the dump"}
   ],
   "seeds": [16],
@@ -4277,17 +4280,46 @@
           "saved": 0,
           "no_match": 0,
           "answer": 2,
+          "save_result": -1,
           "dialogs": [129],
-          "quit_requested": false,
-          "exited": false
+          "saves": 0,
+          "left_at": "0x00000000"
+        },
+        {
+          "saved": 0,
+          "no_match": 0,
+          "answer": 1,
+          "save_result": 0,
+          "dialogs": [129],
+          "saves": 1,
+          "left_at": "0x00000000"
+        },
+        {
+          "saved": 0,
+          "no_match": 0,
+          "answer": 1,
+          "save_result": 1,
+          "dialogs": [129],
+          "saves": 1,
+          "left_at": "0x00470586"
+        },
+        {
+          "saved": 0,
+          "no_match": 0,
+          "answer": 3,
+          "save_result": -1,
+          "dialogs": [129],
+          "saves": 0,
+          "left_at": "0x004705A8"
         },
         {
           "saved": 1,
           "no_match": 0,
           "answer": 3,
+          "save_result": -1,
           "dialogs": [],
-          "quit_requested": true,
-          "exited": true
+          "saves": 0,
+          "left_at": "0x004705FB"
         }
       ],
       "hire_steps": [

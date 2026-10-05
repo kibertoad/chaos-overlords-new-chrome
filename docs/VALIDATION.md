@@ -541,7 +541,10 @@ is one past the last, and records the value it replaced. `--closes
 saved:answer,...` posts `WM_CLOSE` to the window after the dump and the other
 steps, once per entry: `saved` (`-`, 0 or 1) is written to the byte first, and
 each dialog the close opens through `fn_00465CEC` (FND-UI-022) is answered with
-`answer`, 2 cancel or 3 go on without saving, without being shown. The fixture
+`answer`, without being shown: `1w` saves first and the save, which the probe
+returns from without running, reports it written, `1c` reports it cancelled, 2
+cancels and 3 goes on without saving. The stores of the quit byte `0x00487828`
+in File, Exit are skipped and recorded, so every close of a run is played. The fixture
 holds them as `saved_writes` and `closes` (RULE-UI-015, EXP-UI-026).
 `--draw-values` writes 32-bit values into memory each time the planning-entry
 function `fn_0046FD80` starts to draw the console (FND-UI-040): the nth value

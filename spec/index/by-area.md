@@ -974,7 +974,7 @@
 | [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map | established |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
-| [RULE-UI-015](../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | supported |
+| [RULE-UI-015](../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | established |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | Title screen | supported |
 | [SCR-UI-002](../screens/SCR-UI-002.md) | Credits screen | supported |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | City screen and main console | supported |

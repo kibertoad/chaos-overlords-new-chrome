@@ -1,7 +1,7 @@
 ---
 id: RULE-UI-015
 title: File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-UI-058, FND-UI-022, FND-NET-004, EXP-UI-026]
@@ -46,8 +46,9 @@ if match_saved == 0 and no_match_in_play == 0:
     #    the match
     # 2: leave = 0
 if leave == 1:
-    # the network disconnect runs (FND-NET-004); when it allows it, the match
-    # ends, and for File, Exit quit_requested = 1
+    # the network disconnect runs (FND-NET-004), which in a local game always
+    # allows it; then File, End ends the match, and File, Exit sets
+    # quit_requested = 1
 ```
 
 ## Outputs
@@ -71,5 +72,6 @@ None known.
 
 ## Open questions
 
-- The save-first answer was read statically but not run, since it opens the
-  save dialog.
+- Whether a network disconnect that is refused keeps the player in planning
+  was not run: in a network game `match_saved` stays 1, and the disconnect's
+  confirmations belong to the network play the rebuild replaces.

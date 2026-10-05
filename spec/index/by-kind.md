@@ -218,7 +218,7 @@
 | [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map | established |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
-| [RULE-UI-015](../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | supported |
+| [RULE-UI-015](../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | established |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player | established |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | The intro plays the logos movie and then the intro movie, each ended by the left button | supported |
 
