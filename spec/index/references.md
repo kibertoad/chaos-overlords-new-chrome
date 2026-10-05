@@ -2118,6 +2118,7 @@ None.
 | [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | body |
 | [FND-UI-048](../findings/FND-UI-048.md) | body |
+| [RULE-UI-011](../rules/RULE-UI-011.md) | evidence |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -2161,6 +2162,7 @@ None.
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | body |
 | [EXP-UI-013](../experiments/EXP-UI-013.md) | body |
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | body |
+| [RULE-UI-011](../rules/RULE-UI-011.md) | evidence |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | evidence |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | evidence |
 | [SCR-MOVE-001](../screens/SCR-MOVE-001.md) | evidence |
@@ -2182,12 +2184,14 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-UI-005](../rules/RULE-UI-005.md) | evidence |
+| [RULE-UI-011](../rules/RULE-UI-011.md) | evidence |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 
 ## EXP-UI-012
 
 | Cited by | In |
 |---|---|
+| [RULE-UI-011](../rules/RULE-UI-011.md) | evidence |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | evidence |
 
 ## EXP-UI-013
@@ -2195,12 +2199,14 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
 
 ## EXP-UI-014
 
 | Cited by | In |
 |---|---|
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
 
 ## FMT-AUDIO-001
 

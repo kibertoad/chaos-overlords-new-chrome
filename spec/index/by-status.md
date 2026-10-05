@@ -16,7 +16,7 @@
 
 ## supported
 
-149 entries.
+148 entries.
 
 | ID | Title |
 |---|---|
@@ -120,7 +120,6 @@
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | Drawing numbers in fixed glyph cells |
-| [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker |
 | [RULE-UI-007](../rules/RULE-UI-007.md) | The pointer shape |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | The presentation timer |
@@ -172,7 +171,7 @@
 
 ## established
 
-92 entries.
+93 entries.
 
 | ID | Title |
 |---|---|
@@ -266,6 +265,7 @@
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective |
+| [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player |
 
@@ -891,6 +891,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective |
+| [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player |
 
@@ -1052,7 +1053,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | Drawing numbers in fixed glyph cells | supported |
-| [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | supported |
+| [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | established |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker | supported |
 | [RULE-UI-007](../rules/RULE-UI-007.md) | The pointer shape | supported |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | The presentation timer | supported |

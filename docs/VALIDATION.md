@@ -737,7 +737,7 @@ double-clicks sector `s` on the city map, `dbl:x:y` double-clicks the window
 point `(x, y)` as `open` does (FND-UI-020), `strip:x:y:0` presses a point,
 `card` a sector card's point, `back` the detailed sector screen's back
 control and `exit` the Exit of the panel the planning entry left open.
-EXP-UI-006 to EXP-UI-012 are taken this way.
+EXP-UI-006 to EXP-UI-014 are taken this way.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
