@@ -13,12 +13,12 @@ internal sealed partial class NewGameSession
     // RULE-EQUIP-004: once the dump is taken, the probe calls the original's list builder itself
     // for every category of every living gang of the first human, as the Equip panel calls it, and
     // reads the entries it fills. It starts from the next message pump call, so a result panel
-    // still open at the endpoint does not stop it, and puts every register back afterwards. The
-    // calls draw the list's rows and change nothing the fixture holds, which is why they come
-    // after the dump.
+    // still open at the endpoint does not stop it, and puts every register and active_player back
+    // afterwards. The calls overwrite the list entries and text rows the dump holds, which is why
+    // they come after it.
     private bool RecordEquipLists()
     {
-        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var human = FirstHuman;
         var calls = new Queue<(int Slot, int Category, int TechLevel)>();
         for (var slot = 0; slot < OriginalAddresses.PlayerGangStride / OriginalAddresses.GangRecordSize; slot++)
         {
@@ -30,16 +30,22 @@ internal sealed partial class NewGameSession
                 + (uint)(record[1] * OriginalAddresses.GangDefinitionSize), 2));
             for (var category = 0; category < 4; category++) calls.Enqueue((slot, category, tech));
         }
-        if (calls.Count == 0) return true;
+        if (calls.Count == 0)
+        {
+            _notes.Add($"Equip lists: player {human} has no living gang, so no list was built.");
+            return true;
+        }
 
         byte[]? saved = null;
+        uint stack = 0;
+        var active = 0;
         var finished = false;
         (int Slot, int Category, int TechLevel) current = default;
 
         void Call(BreakContext context)
         {
             current = calls.Dequeue();
-            var esp = BitConverter.ToUInt32(saved!, 0xC4) - 0x40;
+            var esp = stack - 0x40;
             _process.Write(esp, [
                 .. BitConverter.GetBytes(OriginalAddresses.EquipListReturn),
                 .. BitConverter.GetBytes(current.Category),
@@ -56,12 +62,17 @@ internal sealed partial class NewGameSession
             var entries = _process.Read(OriginalAddresses.EquipListEntries, 4 * OriginalAddresses.EquipListLength);
             var items = Enumerable.Range(0, OriginalAddresses.EquipListLength)
                 .Select(index => BitConverter.ToInt32(entries, 4 * index)).Where(item => item != -1).ToList();
+            // FND-EQUIP-008: the builder's count has no upper bound, so a full list may have run past
+            // the sixteen entries read here.
+            if (items.Count == OriginalAddresses.EquipListLength)
+                _notes.Add($"Equip list of slot {current.Slot} category {current.Category} fills all {items.Count} entries and may be longer.");
             _equipLists.Add(new EquipListRecord(current.Slot, current.Category, current.TechLevel, items));
             if (calls.Count > 0)
             {
                 Call(context);
                 return;
             }
+            _process.Write(OriginalAddresses.ActivePlayer, BitConverter.GetBytes(active));
             context.Restore(saved!);
             finished = true;
         }
@@ -71,6 +82,11 @@ internal sealed partial class NewGameSession
             {
                 if (saved is not null) return;
                 saved = context.Save();
+                stack = context.Esp;
+                // FND-EQUIP-008: the research test reads active_player, not the player argument, and
+                // the panel opens only for the active player's gangs.
+                active = _process.ReadInt32(OriginalAddresses.ActivePlayer);
+                _process.Write(OriginalAddresses.ActivePlayer, BitConverter.GetBytes(human));
                 Call(context);
             }, oneShot: true, quiet: true);
         return _process.RunUntil(() => finished, TimeSpan.FromSeconds(30));

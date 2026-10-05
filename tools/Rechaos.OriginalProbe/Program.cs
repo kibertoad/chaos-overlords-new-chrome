@@ -85,6 +85,12 @@ static int NewGame(string[] args)
         args.Contains("--white-key"),
         Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null,
         args.Contains("--equip-lists"));
+    // RULE-EQUIP-004: the probe builds the lists of the first --humans slot, and the fixture does
+    // not say whose they are, so the replay reads them as the lowest human slot's. A first slot
+    // that is not the lowest would compare one player's lists with another player's gangs.
+    if (settings.EquipLists && settings.Humans is { Count: > 1 } listed
+        && listed[0].Slot != listed.Min(human => human.Slot))
+        throw new ArgumentException("--equip-lists records the first --humans slot; list the lowest slot first.");
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).

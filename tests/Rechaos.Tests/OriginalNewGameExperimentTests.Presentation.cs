@@ -87,17 +87,27 @@ public sealed partial class OriginalNewGameExperimentTests
         var recorded = Run(experiment, run);
         var match = StartMatch(recorded, out _);
         var human = recorded.Humans[0];
-        foreach (var list in recorded.EquipLists)
+        var gangs = match.Players[human.Value].Gangs;
+        // The probe builds lists for every living gang, so the recorded slots are the living ones.
+        Assert.Equal(
+            Enumerable.Range(0, gangs.Count).Where(slot => gangs[slot].IsActive),
+            recorded.EquipLists.Select(list => list.Slot).Distinct());
+        foreach (var lists in recorded.EquipLists.GroupBy(list => list.Slot))
         {
-            var gang = match.Players[human.Value].Gangs[list.Slot];
-            Assert.Equal(list.TechLevel, match.Definitions.Gangs[gang.DefinitionId].TechLevel);
-            var offered = CommandOptionCatalog.LegalCommands(match, human, gang.Id)
-                .Where(command => command.Action == GangAction.Equip
-                    && EquipmentCommandLayout.CategoryForItemType(match.Definitions.Items[command.Target.Id].Type) == list.Category)
-                .Select(command => command.Target.Id)
+            var gang = gangs[lists.Key];
+            var equips = CommandOptionCatalog.LegalCommands(match, human, gang.Id)
+                .Where(command => command.Action == GangAction.Equip)
                 .ToArray();
-            Assert.True(list.Items.SequenceEqual(offered),
-                $"slot {list.Slot} category {list.Category}: the original lists [{string.Join(" ", list.Items)}], the rebuild [{string.Join(" ", offered)}]");
+            foreach (var list in lists)
+            {
+                Assert.Equal(list.TechLevel, match.Definitions.Gangs[gang.DefinitionId].TechLevel);
+                var offered = equips
+                    .Where(command => EquipmentCommandLayout.CategoryForItemType(match.Definitions.Items[command.Target.Id].Type) == list.Category)
+                    .Select(command => command.Target.Id)
+                    .ToArray();
+                Assert.True(list.Items.SequenceEqual(offered),
+                    $"slot {list.Slot} category {list.Category}: the original lists [{string.Join(" ", list.Items)}], the rebuild [{string.Join(" ", offered)}]");
+            }
         }
     }
 
