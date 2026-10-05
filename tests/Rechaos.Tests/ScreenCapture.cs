@@ -142,7 +142,7 @@ public sealed record ScreenCaptureRecord(
                     element.GetProperty("xxh3").GetString()!, element.GetProperty("white").GetInt32()));
             }
         }
-        return new ScreenCaptureRecord(experiment, run, capture.GetProperty("xxh3").GetString()!,
+        var record = new ScreenCaptureRecord(experiment, run, capture.GetProperty("xxh3").GetString()!,
             capture.GetProperty("marker_frame").GetInt32(), screens, elements,
             PumpCounter: capture.TryGetProperty("pump_counter", out var pump) && pump.ValueKind == JsonValueKind.Number
                 ? pump.GetInt32()
@@ -150,12 +150,11 @@ public sealed record ScreenCaptureRecord(
             SelectedSector: capture.TryGetProperty("selected_sector", out var selected)
                             && selected.ValueKind == JsonValueKind.Number
                 ? selected.GetInt32()
-                : null)
-        {
-            FrameCounter = capture.TryGetProperty("frame_counter", out var frame)
-                ? frame.ValueKind == JsonValueKind.Number ? frame.GetInt32() : null
-                : pump.ValueKind == JsonValueKind.Number ? pump.GetInt32() : null,
-        };
+                : null);
+        // Without frame_counter the record keeps the pump's counter as its frame counter.
+        return capture.TryGetProperty("frame_counter", out var frame)
+            ? record with { FrameCounter = frame.ValueKind == JsonValueKind.Number ? frame.GetInt32() : null }
+            : record;
     }
 
     // The captures shot steps of --order-steps took after the dump. The rebuild reaches each one's

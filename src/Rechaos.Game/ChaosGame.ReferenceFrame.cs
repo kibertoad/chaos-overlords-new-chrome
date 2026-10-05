@@ -209,12 +209,30 @@ public sealed partial class ChaosGame
     private TimeSpan PresentationDrawTime => _referenceFrame is null ? _eventPump.Time : TimeSpan.Zero;
 
     /// <summary>
+    /// FND-UI-051: the selection frame a slid-in panel holds, the one shown when it came in, or
+    /// null while no panel is open.
+    /// </summary>
+    private int? _heldSelectionFrame;
+
+    /// <summary>
     /// The selection frame the pump has drawn last (FND-UI-017): the one for the reference frame's
-    /// recorded counter (FND-UI-048), otherwise the one for the clock.
+    /// recorded counter (FND-UI-048), otherwise the one a slid-in panel holds (FND-UI-051), otherwise
+    /// the one for the clock.
     /// </summary>
     private int SelectionFrameShown() => _referenceFrame?.PumpCounter is { } counter
         ? CityMapLayout.SelectionFrameAfterPass(counter)
-        : CityMapLayout.SelectionFrame(PresentationDrawTime);
+        : _heldSelectionFrame ?? CityMapLayout.SelectionFrame(PresentationDrawTime);
+
+    /// <summary>
+    /// FND-UI-051: the frame held after the screen moves from <paramref name="previous"/> to
+    /// <paramref name="current"/>. A panel coming in holds the frame <paramref name="shown"/>; a
+    /// panel replacing another keeps the held one, as no pass of the pump runs between the
+    /// slide-out and the slide-in; any other screen releases it.
+    /// </summary>
+    public static int? HeldSelectionFrame(ClientScreen previous, ClientScreen current, int? held, int shown) =>
+        !PanelSlideTransition.IsPanel(current) ? null
+        : PanelSlideTransition.IsPanel(previous) ? held ?? shown
+        : shown;
 
     /// <summary>
     /// Shows the city of the player whose planning entry the save stands at. The hand-off card,
@@ -232,10 +250,9 @@ public sealed partial class ChaosGame
         {
             PrepareCurrentHireOffers();
             if (_referenceFrame?.SelectedSector is { } selected)
-            {
                 _planningSelections.Store(playerId, selected);
-                _cursor = selected;
-            }
+            // FND-SAVE-003: the planning player's own sector, as PresentHotSeatPlanningEntry picks it.
+            _cursor = _planningSelections.For(playerId, _cursor);
             _deferComlinkAlertUntilPlanningVisible = true;
             _managementReturnScreen = ClientScreen.City;
             if (LastTurnReports(state, playerId).Count > 0)

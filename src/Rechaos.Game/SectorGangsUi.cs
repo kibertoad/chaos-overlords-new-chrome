@@ -75,6 +75,10 @@ public sealed partial class ChaosGame
     /// <summary>The sector the Gangs in Sector panel was opened for.</summary>
     private int _sectorGangSector;
 
+    // EXP-UI-006, EXP-UI-008: the portraits Gangs in Sector, the Hire comparison and Combat Results
+    // draw scaled, each scaled once.
+    private readonly ScaledPictureCache _scaledGangPortraits = new();
+
     private void OpenSectorGangs(ClientScreen returnScreen)
     {
         if (_state is null || PlanningViewer is not { } playerId) return;
@@ -143,7 +147,7 @@ public sealed partial class ChaosGame
             // SCR-UI-005, FND-UI-014: the panel never reads the Base Statistics option.
             var stats = EffectiveStatisticsCalculator.ForGang(state, gang);
             if (_gangPortraits is not null)
-                PictureScaling.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
+                _scaledGangPortraits.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
                     SectorGangsLayout.GangCard(entry.index));
             // SCR-UI-005: Upkeep is drawn negated, so it shows in red.
             int[] values =

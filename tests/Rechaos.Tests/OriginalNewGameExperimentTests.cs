@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
