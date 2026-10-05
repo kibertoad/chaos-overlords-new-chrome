@@ -321,6 +321,21 @@ internal static class OriginalAddresses
     // FND-STATE-004: player_active, one byte per player slot.
     public const uint PlayerActive = 0x004ABBE0;
 
+    // RULE-UI-015, FND-UI-058: match_saved, set by a save or a load and cleared by an order or a
+    // resolved turn; the byte that marks no match in play (FND-STATE-010); quit_requested; and the
+    // modal dialog opener fn_00465CEC(id, style) (FND-UI-022).
+    public const uint MatchSaved = 0x00498350;
+    public const uint NoMatchInPlay = 0x004ABC9C;
+    public const uint QuitRequested = 0x00487828;
+    public const uint DialogOpen = 0x00465CEC;
+
+    // RULE-UI-015, FND-UI-058: the save fn_00463CC5, which takes no arguments, and File, Exit's three
+    // stores of 1 to quit_requested, each a 7-byte mov: after a written save, for the third answer,
+    // and when the match is saved.
+    public const uint SaveGame = 0x00463CC5;
+    public static readonly uint[] ExitQuitStores = [0x00470586, 0x004705A8, 0x004705FB];
+    public const uint ExitQuitStoreLength = 7;
+
     // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler
     // fn_0045EAB1; FND-COMLINK-004: the helper fn_0045E04D(player, count) that marks and draws one
     // message; FND-COMLINK-006: fn_00460391(player), which drops the leading read messages when the

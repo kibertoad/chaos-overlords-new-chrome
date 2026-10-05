@@ -158,6 +158,28 @@ internal sealed class StateExtractor
                 ["travel"] = slide["Travel"]!.GetValue<int>(),
                 ["offsets"] = new JsonArray(slide["Offsets"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
             }).ToArray());
+        // RULE-UI-015: each write of match_saved, with the value the game held before it.
+        if (trace["SavedWrites"] is JsonArray savedWrites)
+            run["saved_writes"] = new JsonArray(savedWrites.Select(write => (JsonNode)new JsonObject
+            {
+                ["turn"] = write!["Turn"]!.GetValue<int>(),
+                ["before"] = write["Before"]!.GetValue<int>(),
+                ["value"] = write["Value"]!.GetValue<int>(),
+            }).ToArray());
+        // RULE-UI-015: each close of the window after the dump, with match_saved and the no-match byte
+        // as it was posted, the answer and save result given, the dialogs opened, the saves called
+        // and the store of quit_requested reached, or 0x00000000.
+        if (trace["Closes"] is JsonArray closes)
+            run["closes"] = new JsonArray(closes.Select(close => (JsonNode)new JsonObject
+            {
+                ["saved"] = close!["Saved"]!.GetValue<int>(),
+                ["no_match"] = close["NoMatch"]!.GetValue<int>(),
+                ["answer"] = close["Answer"]!.GetValue<int>(),
+                ["save_result"] = close["SaveResult"]!.GetValue<int>(),
+                ["dialogs"] = new JsonArray(close["Dialogs"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+                ["saves"] = close["Saves"]!.GetValue<int>(),
+                ["left_at"] = $"0x{close["LeftAt"]!.GetValue<uint>():X8}",
+            }).ToArray());
         // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
         if (trace["HireSteps"] is JsonArray hireSteps)
             run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject

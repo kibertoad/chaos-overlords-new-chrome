@@ -117,6 +117,9 @@ public sealed partial class OriginalNewGameExperimentTests
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
     // (FND-HIRE-001, FND-HIRE-008).
     private sealed record RecordedHireStep(int Slot, int Sector, IReadOnlyList<int> Orders);
+    private sealed record RecordedSavedWrite(int Turn, int Before, int Value);
+    private sealed record RecordedClose(
+        int Saved, int NoMatch, int Answer, int SaveResult, IReadOnlyList<int> Dialogs, int Saves, bool Left);
 
     // A click the probe posted after the dump, whether the Search panel was open after it, the
     // active player and the whole search_filters table (FND-SEARCH-001, FND-SEARCH-002).
@@ -222,6 +225,19 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? hireSteps.EnumerateArray().Select(step => new RecordedHireStep(
                     step.GetProperty("slot").GetInt32(), step.GetProperty("sector").GetInt32(),
                     step.GetProperty("orders").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : [];
+            SavedWrites = run.TryGetProperty("saved_writes", out var savedWrites)
+                ? savedWrites.EnumerateArray().Select(write => new RecordedSavedWrite(
+                    write.GetProperty("turn").GetInt32(), write.GetProperty("before").GetInt32(),
+                    write.GetProperty("value").GetInt32())).ToArray()
+                : [];
+            Closes = run.TryGetProperty("closes", out var closes)
+                ? closes.EnumerateArray().Select(close => new RecordedClose(
+                    close.GetProperty("saved").GetInt32(), close.GetProperty("no_match").GetInt32(),
+                    close.GetProperty("answer").GetInt32(), close.GetProperty("save_result").GetInt32(),
+                    close.GetProperty("dialogs").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+                    close.GetProperty("saves").GetInt32(),
+                    close.GetProperty("left_at").GetString() != "0x00000000")).ToArray()
                 : [];
             GangMarkers = run.TryGetProperty("gang_markers", out var gangMarkers)
                 ? gangMarkers.EnumerateArray()
@@ -370,6 +386,8 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedIntroMovie>? IntroMovies { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedHireStep> HireSteps { get; }
+        public IReadOnlyList<RecordedSavedWrite> SavedWrites { get; }
+        public IReadOnlyList<RecordedClose> Closes { get; }
         public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }
 
         // Each gang-status marker drawing from the last full city redraw before the dump on, as

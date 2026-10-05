@@ -86,16 +86,40 @@ internal sealed class MatchActions
     /// <summary>The journal only a hot-seat match has: this whole session, from its first turn.</summary>
     internal MatchReplayRecorder? HotSeatJournal => _turn is null ? _replay : null;
 
+    /// <summary>The turn the match was last saved or loaded in, or null since an order changed it.</summary>
+    private int? _savedTurn;
+
+    /// <summary>
+    /// RULE-UI-015, FND-UI-058: whether the match is as it was last saved or loaded. A new match
+    /// starts unsaved; a save or a load marks it saved; an accepted order, the clearing of one and
+    /// a hire mark it unsaved, and so does each resolved turn, which moves the turn number on. An
+    /// online match counts as saved, as a network game does in the original.
+    /// </summary>
+    internal bool IsSaved => _turn is not null || _savedTurn == State.Coordinator.Turn;
+
+    /// <summary>RULE-UI-015: records a save or a load of the match as it stands.</summary>
+    internal void MarkSaved() => _savedTurn = State.Coordinator.Turn;
+
     internal CommandSubmissionResult Submit(GameCommand command) =>
-        _turn is null ? _replay.Submit(command) : _turn.Submit(command);
+        Changed(_turn is null ? _replay.Submit(command) : _turn.Submit(command));
 
     internal CommandSubmissionResult Cancel(PlayerId player, GangId gang) =>
-        _turn is null ? _replay.Cancel(player, gang) : _turn.Cancel(gang);
+        Changed(_turn is null ? _replay.Cancel(player, gang) : _turn.Cancel(gang));
 
-    internal HireSubmissionResult QueueHire(PlayerId player, short gangDefinitionId, int sectorId) =>
-        _turn is null
+    internal HireSubmissionResult QueueHire(PlayerId player, short gangDefinitionId, int sectorId)
+    {
+        var result = _turn is null
             ? _replay.QueueHire(player, gangDefinitionId, sectorId)
             : _turn.QueueHire(gangDefinitionId, sectorId);
+        if (result.Accepted) _savedTurn = null;
+        return result;
+    }
+
+    private CommandSubmissionResult Changed(CommandSubmissionResult result)
+    {
+        if (result.Accepted) _savedTurn = null;
+        return result;
+    }
 
     internal HireOfferSnubResult SnubHireOffer(PlayerId player, short gangDefinitionId) =>
         _turn is null

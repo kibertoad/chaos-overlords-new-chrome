@@ -905,6 +905,7 @@
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | Does the victory splash look the same in the rebuild when one player is left? | recorded |
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | How long do the original's presentation waits last against its six-per-second clock? | recorded |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | Which copies does the original make when a panel slides in? | recorded |
+| [EXP-UI-026](../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? | recorded |
 | [FND-UI-001](../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |
@@ -960,6 +961,7 @@
 | [FND-UI-055](../findings/FND-UI-055.md) | The title loop's first load of the title art returns to 0x004615D0, and About's load of the credits to 0x00464DFB | recorded |
 | [FND-UI-056](../findings/FND-UI-056.md) | The panel-open helper keeps its travel at ebp - 4 and the width shown at ebp - 8, and copies at 0x0041965D and 0x004196DC | recorded |
 | [FND-UI-057](../findings/FND-UI-057.md) | The gang order popups play no sound, and only the picker panels they open play the panel-open sound | recorded |
+| [FND-UI-058](../findings/FND-UI-058.md) | A byte marks the match as saved; a save or a load sets it, a resolved turn and each accepted order clear it, and File, End and File, Exit offer dialog 129 while it is clear | recorded |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |
@@ -974,6 +976,7 @@
 | [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map | established |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
+| [RULE-UI-015](../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | established |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | Title screen | supported |
 | [SCR-UI-002](../screens/SCR-UI-002.md) | Credits screen | supported |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | City screen and main console | supported |

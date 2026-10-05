@@ -125,7 +125,8 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
     IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false,
     bool CreditsCapture = false, bool SetupCapture = false, IReadOnlyList<ProbeOrderStep>? SetupSteps = null,
-    bool DetailedCombat = false, bool Pointer = false, bool Sounds = false, bool WatchIntro = false, bool Waits = false, bool Slides = false)
+    bool DetailedCombat = false, bool Pointer = false, bool Sounds = false, bool WatchIntro = false, bool Waits = false, bool Slides = false,
+    IReadOnlyList<ProbeSavedWrite>? SavedWrites = null, IReadOnlyList<ProbeClose>? Closes = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -158,7 +159,8 @@ internal sealed record NewGameSettings(
     /// <summary>
     /// The orders and Done presses after the first planning phase, then the presses after the dump,
     /// one input each: an order is named <c>order</c>, a press <c>left_click</c>, a hire step's
-    /// drag <c>drag</c> and a wait <c>wait</c>.
+    /// drag <c>drag</c>, a wait <c>wait</c>, a write of <c>match_saved</c> <c>saved</c> and a
+    /// close of the window <c>close</c>.
     /// </summary>
     public IEnumerable<(string Name, string Value)> DescribeTurns()
     {
@@ -174,6 +176,8 @@ internal sealed record NewGameSettings(
             foreach (var write in search) yield return ("search", write.ToString());
             foreach (var panel in (Finance ?? []).Where(panel => panel.Turn == turn))
                 yield return ("left_click", panel.ToString());
+            foreach (var write in (SavedWrites ?? []).Where(write => write.Turn == turn))
+                yield return ("saved", write.ToString());
             if (ExpireTurns?.Contains(turn) == true)
             {
                 yield return ("wait", $"no Done press, turn {turn}: the planning time runs out");
@@ -183,12 +187,15 @@ internal sealed record NewGameSettings(
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
+        foreach (var write in (SavedWrites ?? []).Where(write => write.Turn == EndTurns + 1))
+            yield return ("saved", $"{write} at the dump");
         foreach (var click in SearchClicks ?? []) yield return ("left_click", click.ToString());
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
         foreach (var step in OrderSteps ?? [])
             yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", "type" => "key", _ => "left_click" },
                 $"{step} after the dump");
+        foreach (var close in Closes ?? []) yield return ("close", $"{close} after the dump");
     }
 }
 
@@ -234,7 +241,9 @@ internal sealed record ProbeTrace(
     List<IntroMovieRecord>? IntroMovies = null,
     List<WaitRecord>? Waits = null,
     List<long>? Ticks = null,
-    List<SlideRecord>? Slides = null);
+    List<SlideRecord>? Slides = null,
+    List<CloseRecord>? Closes = null,
+    List<SavedWriteRecord>? SavedWrites = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -415,6 +424,8 @@ internal sealed partial class NewGameSession(
                 WritePlanning(write);
             foreach (var write in (settings.Search ?? []).Where(write => write.Turn == turn))
                 WriteSearch(write);
+            foreach (var write in (settings.SavedWrites ?? []).Where(write => write.Turn == turn))
+                WriteSaved(write);
             foreach (var panel in (settings.Finance ?? []).Where(panel => panel.Turn == turn))
                 if (!CaptureFinance(window, panel))
                     return Finish(false, $"The Financial panel of turn {turn} for sector {panel.Sector} was not captured.", rollsBeforeBegin);
@@ -508,12 +519,16 @@ internal sealed partial class NewGameSession(
         if (settings.AttackLists && !RecordAttackLists()) return Finish(false, "The Attack lists were not built.", rollsBeforeBegin);
         if (settings.SearchClicks is { Count: > 0 } && !RecordSearchClicks(window))
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
+        foreach (var write in (settings.SavedWrites ?? []).Where(write => write.Turn == settings.EndTurns + 1))
+            WriteSaved(write);
         if (settings.Waits) ArmWaits();
         if (settings.Slides) ArmSlides();
         if (settings.HireSteps is { Count: > 0 } && RecordHireSteps(window) is { } stopped)
             return Finish(false, stopped, rollsBeforeBegin);
         if (settings.OrderSteps is { Count: > 0 } && RecordOrderSteps(window) is { } orderStepsStopped)
             return Finish(false, orderStepsStopped, rollsBeforeBegin);
+        if (settings.Closes is { Count: > 0 } && RecordCloses(window) is { } closesStopped)
+            return Finish(false, closesStopped, rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -907,7 +922,8 @@ internal sealed partial class NewGameSession(
             settings.DetailedCombat ? _combatClips : null, settings.DetailedCombat ? _combatPresentations : null,
             settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
-            settings.Slides ? _slides : null);
+            settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
+            _savedWrites.Count == 0 ? null : _savedWrites);
     }
 
     private static void Click(IntPtr window, int x, int y)

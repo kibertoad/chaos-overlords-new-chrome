@@ -887,8 +887,11 @@ Whether the original shows the count is not recorded.
 - Justification: The rolling autosave keeps the match as it stood at the start of the turn, and
   orders given since then can be saved from the Escape menu before closing. The rebuild's saves go
   to named slots, so the original's save dialog has no counterpart to offer.
-- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs
-- Dropped: no
+- Dropped: 2026-10-06, the rebuild now asks as the original does (RULE-UI-015): closing the window
+  or quitting to the title while the match changed since it was last saved or loaded offers to save
+  first, cancel, or leave without saving. Asking only when something would be lost costs a player
+  nothing, and the autosave holds only the start of the turn. The autosave is still written on the
+  way out.
 
 ## DEV-UI-018
 

@@ -29,6 +29,7 @@ internal static partial class Native
     public const uint WmKeyDown = 0x0100;
     public const uint WmKeyUp = 0x0101;
     public const uint WmCommand = 0x0111;
+    public const uint WmClose = 0x0010;
     public const uint WmMouseMove = 0x0200;
     public const uint WmLButtonDown = 0x0201;
     public const uint WmLButtonUp = 0x0202;
