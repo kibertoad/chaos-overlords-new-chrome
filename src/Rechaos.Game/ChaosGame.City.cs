@@ -284,11 +284,11 @@ public sealed partial class ChaosGame
             new Vector2(438, 354), Color.Gold, 1);
         if (_state is not null && PlanningViewer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
-            && PresentationClock.BlinkLit(PresentationDrawTime))
+            && LampInLitPhase(_referenceFrame?.Lamps?.Events))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
         if (_state is not null && PlanningViewer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
-            && PresentationClock.BlinkLit(PresentationDrawTime))
+            && LampInLitPhase(_referenceFrame?.Lamps?.Comlink))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
         if (_finalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))

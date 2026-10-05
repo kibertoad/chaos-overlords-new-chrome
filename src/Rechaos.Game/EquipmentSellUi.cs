@@ -133,7 +133,8 @@ public sealed partial class ChaosGame
         _sellGang = gang.Id;
         _sellReturnScreen = returnScreen;
         _sellRepeats = repeat;
-        _equipmentRotationOpenedAt = _inputTime;
+        _equipmentRotationStart = _eventPump.Ticks;
+        _equipmentRotationHeld = null;
         _screens.Show(ClientScreen.Sell);
     }
 
@@ -257,15 +258,22 @@ public sealed partial class ChaosGame
 
     // FND-UI-053: the Sell and Give panels turn every item picture together from frame 0 when
     // they open, and hold the frame while Item Information, drawn over them, runs.
-    private TimeSpan _equipmentRotationOpenedAt;
+    private long _equipmentRotationStart;
+    private long? _equipmentRotationHeld;
 
-    /// <summary>The current 48-by-48 frame of an item's 15-frame strip.</summary>
+    /// <summary>
+    /// The current 48-by-48 frame of an item's 15-frame strip. Sell and Give step it on the ticks
+    /// the event pump takes, so a held face stops it and the release takes one tick (FND-UI-047).
+    /// </summary>
     private void DrawItemRotation(SpriteBatch batch, short itemId, Rectangle destination)
     {
         if (itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
-            batch.Draw(rotation, destination, ItemRotationFrame(_equipmentRotationOpenedAt,
-                _itemDetailsId is not null ? _itemDetailsOpenedAt : null), Color.White);
+            batch.Draw(rotation, destination, _referenceFrame?.ItemFrame is { } frame
+                ? ItemRotationPresentation.Frame(frame)
+                : ItemRotationPresentation.FrameAfter(
+                    _equipmentRotationHeld ?? _eventPump.Ticks - _equipmentRotationStart),
+                Color.White);
     }
 
     private static short?[] EquippedItems(MatchGangState gang) =>

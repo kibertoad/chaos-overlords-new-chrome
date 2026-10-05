@@ -231,6 +231,7 @@ public sealed class CombatAnimationPlayer
 {
     private readonly Queue<CombatAnimationClip> _queue = [];
     private double _elapsedMilliseconds;
+    private bool _held;
 
     public CombatAnimationClip? Active { get; private set; }
     public int TimelineTick { get; private set; }
@@ -260,12 +261,33 @@ public sealed class CombatAnimationPlayer
         }
     }
 
-    public IReadOnlyList<CombatAnimationClip> Advance(TimeSpan elapsed)
+    public IReadOnlyList<CombatAnimationClip> Advance(TimeSpan elapsed) => Advance(elapsed, holding: false);
+
+    /// <summary>
+    /// Advances the clip by the ticks that fell in <paramref name="elapsed"/>.
+    /// <paramref name="holding"/> says the Exit face is held, which keeps the original's clip loop
+    /// inside the held-button helper (FND-UI-046, FND-UI-047): the clip stops, and the first pass
+    /// after the release takes one tick if any fell during the hold and drops the others.
+    /// </summary>
+    public IReadOnlyList<CombatAnimationClip> Advance(TimeSpan elapsed, bool holding)
     {
         if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
         if (Active is null) return [];
-        List<CombatAnimationClip>? started = null;
         _elapsedMilliseconds += elapsed.TotalMilliseconds;
+        if (holding)
+        {
+            _held = true;
+            return [];
+        }
+        if (_held)
+        {
+            _held = false;
+            // Timer slot 0's flag holds one tick, however many fell during the hold.
+            if (_elapsedMilliseconds >= CombatAnimationRouting.FrameMilliseconds)
+                _elapsedMilliseconds = CombatAnimationRouting.FrameMilliseconds
+                    + _elapsedMilliseconds % CombatAnimationRouting.FrameMilliseconds;
+        }
+        List<CombatAnimationClip>? started = null;
         while (Active is not null && _elapsedMilliseconds >= CombatAnimationRouting.FrameMilliseconds)
         {
             _elapsedMilliseconds -= CombatAnimationRouting.FrameMilliseconds;
@@ -286,5 +308,6 @@ public sealed class CombatAnimationPlayer
         Active = null;
         TimelineTick = 0;
         _elapsedMilliseconds = 0;
+        _held = false;
     }
 }

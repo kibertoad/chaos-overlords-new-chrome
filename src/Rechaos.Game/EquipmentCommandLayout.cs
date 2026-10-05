@@ -21,7 +21,7 @@ public static class EquipmentCommandLayout
     }
 
     /// <summary>SCR-RESEARCH-001: the black area the item list is written on.</summary>
-    public static Rectangle ResearchListArea => SharedPanelLayout.At(147, 25, 181, 144);
+    public static Rectangle ResearchListArea => SharedPanelLayout.At(147, 25, 181, VisibleItemCount * 9);
 
     public static string ResearchProgress(int difficulty, int remaining)
     {

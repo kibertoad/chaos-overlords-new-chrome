@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-GANG-004, FND-GANG-006, FND-GANG-008, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-008]
+evidence: [FND-GANG-004, FND-GANG-006, FND-GANG-008, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-008, FND-UI-047]
 conflicting: []
 split_with: []
 related: [RULE-GANG-001, RULE-UI-003, RULE-UI-004, SCR-UI-006]
@@ -58,6 +58,12 @@ None.
 
 The panel slides in and out as the shared panels do, in about a quarter of a
 second (FND-OPTIONS-001), as RULE-UI-003 describes.
+
+The items share one frame counter that steps on each tick of the presentation
+clock the panel takes, and starts again at frame 0 when an Item Information
+panel opened from this one closes. While the close face is held with the
+pointer, the counter stops; the pass that ends with the release takes one tick
+if any fell during the hold and loses the others (FND-UI-047).
 
 ## Differences between builds
 
