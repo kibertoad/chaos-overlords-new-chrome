@@ -122,6 +122,12 @@ internal sealed class StateExtractor
             run["pointer_calls"] = new JsonArray(pointerCalls.Select(call => (JsonNode)new JsonArray(
                 call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Shape"]!.GetValue<int>(),
                 call["Force"]!.GetValue<int>(), (int)call["Call"]!.GetValue<uint>())).ToArray());
+        // RULE-AUDIO-006: each call of the play helper as after_roll, done, slot and the call's
+        // address (FND-AUDIO-006).
+        if (trace["SoundCalls"] is JsonArray soundCalls)
+            run["sound_calls"] = new JsonArray(soundCalls.Select(call => (JsonNode)new JsonArray(
+                call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Slot"]!.GetValue<int>(),
+                (int)call["Call"]!.GetValue<uint>())).ToArray());
         // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
         if (trace["HireSteps"] is JsonArray hireSteps)
             run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject

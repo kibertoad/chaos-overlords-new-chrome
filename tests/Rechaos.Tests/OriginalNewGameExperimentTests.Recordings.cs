@@ -95,6 +95,10 @@ public sealed partial class OriginalNewGameExperimentTests
     // shape and force it was passed, and the address of the call.
     private sealed record RecordedPointerCall(int AfterRoll, int Done, int Shape, int Force, int Call);
 
+    // A call of the play helper (FND-AUDIO-006): the roll count and the Done presses before it, the
+    // effect slot and the address of the call.
+    private sealed record RecordedSoundCall(int AfterRoll, int Done, int Slot, int Call);
+
     // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
     // (FND-HIRE-001, FND-HIRE-008).
@@ -167,6 +171,14 @@ public sealed partial class OriginalNewGameExperimentTests
                 .Where(value => value.StartsWith("planning_limit_choice ", StringComparison.Ordinal))
                 .Select(value => int.Parse(value["planning_limit_choice ".Length..], System.Globalization.CultureInfo.InvariantCulture))
                 .FirstOrDefault();
+            // "no Done press, turn 2: the planning time runs out", as the probe writes a turn it
+            // left to the planning time limit.
+            ExpiredTurns = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "wait")
+                .Select(input => input.GetProperty("value").GetString()!)
+                .Where(value => value.StartsWith("no Done press, turn ", StringComparison.Ordinal))
+                .Select(value => int.Parse(value["no Done press, turn ".Length..value.IndexOf(':')], System.Globalization.CultureInfo.InvariantCulture))
+                .ToHashSet();
             Timers = run.TryGetProperty("timers", out var timers)
                 ? timers.EnumerateArray().Select(timer => new RecordedTimer(
                     timer.GetProperty("turn").GetInt32(), timer.GetProperty("limit_ms").GetInt32(),
@@ -259,6 +271,10 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? pointerCalls.EnumerateArray().Select(call => new RecordedPointerCall(
                     call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32(), call[4].GetInt32())).ToArray()
                 : null;
+            SoundCalls = run.TryGetProperty("sound_calls", out var soundCalls)
+                ? soundCalls.EnumerateArray().Select(call => new RecordedSoundCall(
+                    call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
+                : null;
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.
             SearchFilter = inputs.EnumerateArray()
@@ -285,6 +301,9 @@ public sealed partial class OriginalNewGameExperimentTests
         public int Seed { get; }
         public int DoneCount => DoneAtRoll.Count;
         public IReadOnlyList<int> DoneAtRoll { get; }
+        // The turns whose planning time ran out with no Done press; DoneAtRoll still has an entry
+        // for each.
+        public IReadOnlySet<int> ExpiredTurns { get; }
 
         /// <summary>
         /// The rolls the state dump follows; steps after the dump, such as a Ready press that refills
@@ -306,6 +325,8 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedCombatPresentation>? CombatPresentations { get; }
         // Null when the run did not record the pointer.
         public IReadOnlyList<RecordedPointerCall>? PointerCalls { get; }
+        // Null when the run did not record the play helper.
+        public IReadOnlyList<RecordedSoundCall>? SoundCalls { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedHireStep> HireSteps { get; }
         public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }

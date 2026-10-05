@@ -30,6 +30,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-ATTACK-001](../experiments/EXP-ATTACK-001.md) | builds |
 | [EXP-ATTACK-002](../experiments/EXP-ATTACK-002.md) | builds |
 | [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | builds |
+| [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | builds |
 | [EXP-COMBAT-001](../experiments/EXP-COMBAT-001.md) | builds |
 | [EXP-COMBAT-002](../experiments/EXP-COMBAT-002.md) | builds |
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | builds |
@@ -949,6 +950,12 @@ None.
 | [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | evidence |
 
+## EXP-AUDIO-001
+
+| Cited by | In |
+|---|---|
+| [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | body, evidence |
+
 ## EXP-COMBAT-001
 
 | Cited by | In |
@@ -1161,6 +1168,7 @@ None.
 | [EXP-ATTACK-001](../experiments/EXP-ATTACK-001.md) | body |
 | [EXP-ATTACK-002](../experiments/EXP-ATTACK-002.md) | body |
 | [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | body |
+| [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
 | [EXP-COMBAT-001](../experiments/EXP-COMBAT-001.md) | body |
 | [EXP-COMBAT-002](../experiments/EXP-COMBAT-002.md) | body |
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | body |
@@ -3898,6 +3906,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | evidence |
+| [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
 | [EXP-COMBAT-001](../experiments/EXP-COMBAT-001.md) | body |
 | [EXP-COMBAT-002](../experiments/EXP-COMBAT-002.md) | body |
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | body |
@@ -8286,6 +8295,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | body, related |
+| [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | body |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
 

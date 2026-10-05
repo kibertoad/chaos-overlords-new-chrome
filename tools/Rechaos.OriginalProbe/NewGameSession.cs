@@ -125,7 +125,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
     IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false,
     bool CreditsCapture = false, bool SetupCapture = false, IReadOnlyList<ProbeOrderStep>? SetupSteps = null,
-    bool DetailedCombat = false, bool Pointer = false)
+    bool DetailedCombat = false, bool Pointer = false, bool Sounds = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -229,7 +229,8 @@ internal sealed record ProbeTrace(
     List<GangMarkerDraw>? GangMarkers = null,
     List<CombatClipRecord>? CombatClips = null,
     List<CombatPresentationRecord>? CombatPresentations = null,
-    List<PointerCallRecord>? PointerCalls = null);
+    List<PointerCallRecord>? PointerCalls = null,
+    List<SoundCallRecord>? SoundCalls = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -298,6 +299,7 @@ internal sealed partial class NewGameSession(
         if (settings.Comlink is not null) ArmComlink();
         if (settings.DetailedCombat) ArmDetailedCombat();
         if (settings.Pointer) ArmPointer();
+        if (settings.Sounds) ArmSounds();
         if (settings.DrawValues is { Count: > 0 } drawValues)
         {
             var call = 0;
@@ -893,7 +895,7 @@ internal sealed partial class NewGameSession(
             _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps,
             _orderSteps.Count == 0 ? null : _orderSteps, settings.GangMarkers ? _gangMarkers : null,
             settings.DetailedCombat ? _combatClips : null, settings.DetailedCombat ? _combatPresentations : null,
-            settings.Pointer ? _pointerCalls : null);
+            settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null);
     }
 
     private static void Click(IntPtr window, int x, int y)
