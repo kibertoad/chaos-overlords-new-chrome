@@ -17,7 +17,7 @@ internal sealed class StateExtractor
 
     private StateExtractor(byte[] data) => _data = data;
 
-    public static JsonObject ExtractRun(string runDirectory)
+    public static JsonObject ExtractRun(string runDirectory, IReadOnlyList<CaptureScreen> screens)
     {
         var trace = JsonNode.Parse(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
         var extractor = new StateExtractor(File.ReadAllBytes(Path.Combine(runDirectory, $"data-{DataStart:X8}.bin")));
@@ -100,7 +100,59 @@ internal sealed class StateExtractor
             }
             run["timers"] = timers;
         }
+        // --capture: the drawing area at the dump, with a digest of each screen element's rectangle
+        // (CaptureFixture).
+        if (CaptureFixture.Extract(runDirectory, trace, screens) is { } capture)
+            run["capture"] = capture;
         return run;
+    }
+
+    /// <summary>
+    /// The arguments every extract command takes, <c>--experiment &lt;EXP-ID&gt; --out
+    /// &lt;fixture.json&gt; &lt;run directory&gt;...</c> in that order, or null when they are missing.
+    /// </summary>
+    public static (string Experiment, string Output, string[] Runs)? ExtractArguments(string[] args)
+    {
+        var experiment = Option(args, "--experiment");
+        var output = Option(args, "--out");
+        var runs = args.Skip(5).ToArray();
+        if (experiment is null || output is null || runs.Length == 0 || args[1] != "--experiment" || args[3] != "--out")
+            return null;
+        return (experiment, output, runs);
+    }
+
+    /// <summary>The value after <paramref name="name"/>, or null when it is absent.</summary>
+    public static string? Option(string[] args, string name)
+    {
+        var at = Array.IndexOf(args, name);
+        return at >= 0 && at + 1 < args.Length ? args[at + 1] : null;
+    }
+
+    /// <summary>
+    /// Writes a fixture: the header, the inputs that start a new game with the runs' setup choices,
+    /// the experiment's own <paramref name="scriptInputs"/> after them, the seeds and the runs.
+    /// </summary>
+    public static void WriteFixture(string output, string experiment, string clock, string[] settings,
+        IEnumerable<JsonObject> scriptInputs, JsonArray seeds, JsonArray runs)
+    {
+        var fixture = new JsonObject
+        {
+            ["experiment"] = experiment,
+            ["build"] = "BLD-GOG-EN-1.1",
+            ["starting_state"] = null,
+            ["recording_xxh3"] = null,
+            ["clock"] = clock,
+            ["inputs"] = new JsonArray(
+            [
+                new JsonObject { ["tick"] = 0, ["name"] = "command", ["value"] = "File, New Game (0x8101)" },
+                .. settings.Select(setting => new JsonObject { ["tick"] = 0, ["name"] = "setup", ["value"] = setting }),
+                new JsonObject { ["tick"] = 0, ["name"] = "left_click", ["value"] = "Begin (416, 397)" },
+                .. scriptInputs,
+            ]),
+            ["seeds"] = seeds,
+            ["runs"] = runs,
+        };
+        File.WriteAllText(output, Serialize(fixture) + "\n");
     }
 
     /// <summary>The setup choices a run was recorded with, one line each; none for the defaults.</summary>

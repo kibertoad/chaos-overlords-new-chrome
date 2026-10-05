@@ -59,19 +59,21 @@ public sealed class DeterministicRandom
 
     public int NextInclusive(int maximum)
     {
-        if (maximum < 1) maximum = 1;
+        // RULE-RNG-002: a bound below 1 rolls as 1, but the call still passed its own bound.
+        var bound = maximum < 1 ? 1 : maximum;
         var first = NextRaw();
         var second = NextRaw();
         var selector = NextRaw();
         var selected = selector > SelectionThreshold ? first : second;
-        var result = selected % maximum + 1;
+        var result = selected % bound + 1;
         RollObserver?.Invoke(maximum, result);
         return result;
     }
 
     /// <summary>
-    /// Sees every roll(n) made on this thread, as the bound and the result, so a test can line the
-    /// rebuild's rolls up with an experiment's recorded ones (RULE-RNG-002).
+    /// Sees every roll(n) made on this thread, as the bound the caller passed (0 or below included,
+    /// before it is rolled as 1) and the result, so a test can line the rebuild's rolls up with an
+    /// experiment's recorded ones (RULE-RNG-002).
     /// </summary>
     [ThreadStatic]
     internal static Action<int, int>? RollObserver;

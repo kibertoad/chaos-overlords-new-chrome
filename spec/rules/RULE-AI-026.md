@@ -4,7 +4,7 @@ title: Family-7 computer gangs sit where sites add the most Research, influence 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060, EXP-TURN-020, FND-AI-074, EXP-TURN-050, EXP-TURN-057]
+evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060, EXP-TURN-020, FND-AI-074, EXP-TURN-050, EXP-TURN-057, EXP-TURN-073, EXP-TURN-083]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -186,12 +186,13 @@ None known.
 
 - EXP-TURN-020 directly checks the successful weight-10 attack branch: call
   10549 draws the sole human target and the attack resolves. The fixture
-  compares the complete draw stream and final state, but does not isolate the
-  failed or non-hostile attack fallthrough, weapon and armor upgrade cooldowns,
-  Heal, best-Research-sector routing and ties, Research-site Influence,
-  continuation and type cycling, fallback scans and the fixed item list,
-  research exhaustion and family change, or the late Greed Terminate override.
-  The attack check alone does not establish the research procedure.
+  compares the complete draw stream and final state. EXP-TURN-073 reaches the
+  fallback scans and the fixed item list, and a gang that finds no item to
+  research, takes family 0 and moves through selector mode 5. No recorded run
+  isolates the failed or non-hostile attack fallthrough, weapon and armor
+  upgrade cooldowns, Heal, best-Research-sector routing and ties,
+  Research-site Influence, continuation and type cycling, or the late Greed
+  Terminate override, so the research procedure is not established.
 - The item `type` numbers (0 melee, 1 blade, 2 ranged, 3 armor, 4
   miscellaneous) are assumptions shared with RULE-AI-005.
 - A previous Research of an item of type 4 that is not on the fixed list, or of

@@ -14,14 +14,12 @@ internal static class ComlinkExtractor
 {
     public static int Extract(string[] args)
     {
-        var experiment = Option(args, "--experiment");
-        var output = Option(args, "--out");
-        var runs = args.Skip(5).ToArray();
-        if (experiment is null || output is null || runs.Length == 0 || args[1] != "--experiment" || args[3] != "--out")
+        if (StateExtractor.ExtractArguments(args) is not { } arguments)
         {
             Console.Error.WriteLine("Usage: extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...");
             return 2;
         }
+        var (experiment, output, runs) = arguments;
 
         string[]? settings = null;
         string[]? script = null;
@@ -58,24 +56,9 @@ internal static class ComlinkExtractor
             });
         }
 
-        var fixture = new JsonObject
-        {
-            ["experiment"] = experiment,
-            ["build"] = "BLD-GOG-EN-1.1",
-            ["starting_state"] = null,
-            ["recording_xxh3"] = null,
-            ["clock"] = "step",
-            ["inputs"] = new JsonArray(
-            [
-                new JsonObject { ["tick"] = 0, ["name"] = "command", ["value"] = "File, New Game (0x8101)" },
-                .. settings!.Select(setting => new JsonObject { ["tick"] = 0, ["name"] = "setup", ["value"] = setting }),
-                new JsonObject { ["tick"] = 0, ["name"] = "left_click", ["value"] = "Begin (416, 397)" },
-                .. script!.Select((step, index) => new JsonObject { ["tick"] = index, ["name"] = "comlink", ["value"] = step }),
-            ]),
-            ["seeds"] = seeds,
-            ["runs"] = runArray,
-        };
-        File.WriteAllText(output, StateExtractor.Serialize(fixture) + "\n");
+        StateExtractor.WriteFixture(output, experiment, "step", settings!,
+            script!.Select((step, index) => new JsonObject { ["tick"] = index, ["name"] = "comlink", ["value"] = step }),
+            seeds, runArray);
         Console.WriteLine($"Wrote {runs.Length} runs to {output}.");
         return 0;
     }
@@ -137,11 +120,5 @@ internal static class ComlinkExtractor
             ? null
             : System.Text.Encoding.Latin1.GetString(text).TrimEnd(' ');
         return new JsonArray(record[0], record[1], (int)BitConverter.ToInt16(record, 2), record[4], record[0xA5], textNode);
-    }
-
-    private static string? Option(string[] args, string name)
-    {
-        var at = Array.IndexOf(args, name);
-        return at >= 0 && at + 1 < args.Length ? args[at + 1] : null;
     }
 }

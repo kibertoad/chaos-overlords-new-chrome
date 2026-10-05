@@ -135,12 +135,12 @@ internal sealed partial class NewGameSession
             step.ElapsedTurns = _process.ReadInt32(OriginalAddresses.ElapsedTurns);
             step.SendOpen = _sendOpen;
             step.ViewOpen = _viewOpen;
-            if (_sendOpen || verb is "send" or "press")
+            if (_sendOpen || verb is "send" or "press" or "draft")
             {
                 step.Selected = Convert.ToHexString(_process.Read(OriginalAddresses.ComlinkSelected, 6));
                 step.Draft = Convert.ToHexString(_process.Read(OriginalAddresses.ComlinkDraft, OriginalAddresses.ComlinkRecordSize));
             }
-            if (verb is "dump" or "draft" or "visit" or "done" || verb is "press" or "dismiss" or "view" or "send")
+            if (verb is "dump" or "draft" or "visit" or "done" or "press" or "dismiss" or "view" or "send")
                 step.Dump = Dump(argument);
             _notes.Add($"comlink step '{line}' after roll {_rolls.Count}: player {step.ActivePlayer}, send open {step.SendOpen}, view open {step.ViewOpen}, sounds [{string.Join(",", step.Sounds)}]");
         }

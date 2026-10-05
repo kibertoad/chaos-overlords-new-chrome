@@ -17,6 +17,7 @@ return args.FirstOrDefault() switch
     "new-game" => NewGame(args),
     "extract" => Extract(args),
     "extract-comlink" => ComlinkExtractor.Extract(args),
+    "digest" => Digest(args),
     _ => Usage(),
 };
 
@@ -32,11 +33,12 @@ static int Usage()
               [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...]
               [--search <turn:definition+definition...>,...]
               [--finance <turn:sector>,...]
-              [--time-limit <0-3>] [--expire-turns <turn>,...]
+              [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture]
               [--comlink <script file>]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
-          Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
+          Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
+          Rechaos.OriginalProbe digest --fixture <fixture.json> --run <n> --screens <SCR-ID>,...
         """);
     return 2;
 }
@@ -76,7 +78,8 @@ static int NewGame(string[] args)
         IntOption(args, "--time-limit"),
         Option(args, "--expire-turns")?.Split(',').Select(value =>
             int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray(),
-        Option(args, "--comlink") is { } script ? File.ReadAllLines(script) : null);
+        Option(args, "--comlink") is { } script ? File.ReadAllLines(script) : null,
+        args.Contains("--capture"));
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
@@ -99,11 +102,14 @@ static int NewGame(string[] args)
 
 static int Extract(string[] args)
 {
-    var experiment = Option(args, "--experiment");
-    var output = Option(args, "--out");
-    var runs = args.Skip(1).Where((_, i) => i >= 4).ToArray();
-    if (experiment is null || output is null || runs.Length == 0 || args[1] != "--experiment" || args[3] != "--out")
+    // --screens SCR-ID,... names the screen entries whose elements a capture's digests cover
+    // (CaptureScreen); it may stand anywhere after the run directories' options.
+    var screens = CaptureScreen.Load(Option(args, "--screens"));
+    if (Array.IndexOf(args, "--screens") is var at and >= 0)
+        args = args.Where((_, index) => index != at && index != at + 1).ToArray();
+    if (StateExtractor.ExtractArguments(args) is not { } arguments)
         return Usage();
+    var (experiment, output, runs) = arguments;
 
     var runArray = new JsonArray();
     var seeds = new JsonArray();
@@ -128,32 +134,32 @@ static int Extract(string[] args)
 
         settings = runSettings;
         turns = runTurns;
-        var extracted = StateExtractor.ExtractRun(run);
+        var extracted = StateExtractor.ExtractRun(run, screens);
         seeds.Add(extracted["rng_state"]!.GetValue<int>());
         runArray.Add(extracted);
     }
 
-    var fixture = new JsonObject
-    {
-        ["experiment"] = experiment,
-        ["build"] = "BLD-GOG-EN-1.1",
-        ["starting_state"] = null,
-        ["recording_xxh3"] = null,
-        ["clock"] = "roll",
-        ["inputs"] = new JsonArray(
-        [
-            new JsonObject { ["tick"] = 0, ["name"] = "command", ["value"] = "File, New Game (0x8101)" },
-            .. settings!.Select(setting => new JsonObject { ["tick"] = 0, ["name"] = "setup", ["value"] = setting }),
-            new JsonObject { ["tick"] = 0, ["name"] = "left_click", ["value"] = "Begin (416, 397)" },
-            // An order is written and a Done pressed once the planning phase has settled, at the
-            // roll count its run gives in done_at_roll.
-            .. turns!.Select(turn => new JsonObject { ["tick"] = null, ["name"] = turn.Name, ["value"] = turn.Value }),
-        ]),
-        ["seeds"] = seeds,
-        ["runs"] = runArray,
-    };
-    File.WriteAllText(output, StateExtractor.Serialize(fixture) + "\n");
+    // An order is written and a Done pressed once the planning phase has settled, at the roll count
+    // its run gives in done_at_roll.
+    StateExtractor.WriteFixture(output, experiment, "roll", settings!,
+        turns!.Select(turn => new JsonObject { ["tick"] = null, ["name"] = turn.Name, ["value"] = turn.Value }),
+        seeds, runArray);
     Console.WriteLine($"Wrote {runs.Length} runs to {output}.");
+    return 0;
+}
+
+// digest: adds element digests to a capture a fixture already records, from the bitmap kept under
+// GAME_DIR/captures (CaptureFixture.AddScreens).
+static int Digest(string[] args)
+{
+    var path = Option(args, "--fixture");
+    var run = IntOption(args, "--run");
+    var screens = CaptureScreen.Load(Option(args, "--screens"));
+    if (path is null || run is null || screens.Count == 0) return Usage();
+    var fixture = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+    var count = CaptureFixture.AddScreens(fixture["runs"]![run.Value]!.AsObject(), screens);
+    File.WriteAllText(path, StateExtractor.Serialize(fixture) + "\n");
+    Console.WriteLine($"Wrote the digests of {count} elements to run {run} of {path}.");
     return 0;
 }
 
@@ -232,8 +238,4 @@ static uint? HexOption(string[] args, string name) =>
             System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture)
         : null;
 
-static string? Option(string[] args, string name)
-{
-    var at = Array.IndexOf(args, name);
-    return at >= 0 && at + 1 < args.Length ? args[at + 1] : null;
-}
+static string? Option(string[] args, string name) => StateExtractor.Option(args, name);
