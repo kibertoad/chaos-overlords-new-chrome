@@ -1006,7 +1006,7 @@ Whether the original shows the count is not recorded.
 
 ## DEV-GFX-001
 
-- Departs from: RULE-GFX-002, RULE-UI-014
+- Departs from: RULE-GFX-002, RULE-UI-013, RULE-UI-014
 - Replaces: RULE-GFX-002
 - Reason: The 640-by-460 drawing area is drawn into a resizable window. The window opens at the
   largest whole multiple of the area, up to 2, that fits in nine tenths of the display; a resized
