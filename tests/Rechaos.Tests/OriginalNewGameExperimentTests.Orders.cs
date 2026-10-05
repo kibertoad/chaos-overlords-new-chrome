@@ -67,7 +67,7 @@ public sealed partial class OriginalNewGameExperimentTests
             {
                 _ when portrait is not null => (-1, (IReadOnlyList<MatchGangState>)[]),
                 "card" => CardMenu(cards, human, step),
-                "strip" => StripMenu(cards, human, step),
+                "strip" => StripMenu(match, human, sector ?? -1, cards, step),
                 _ => (-1, (IReadOnlyList<MatchGangState>)[]),
             };
             Assert.True(menu == step.Menu, $"{label}: the original opened menu {step.Menu}, the rebuild {menu}");
@@ -113,15 +113,15 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // SCR-UI-004, FND-UI-015, FND-UI-021: the group order strip, drawn over two or more cards,
-    // opens menu 3 on its left part and menu 5 on its right. It is drawn only over the active
-    // player's own cards (FND-UI-018).
+    // opens menu 3 on its left part and menu 5 on its right, for every gang of the player in the
+    // sector (FND-TURN-009). It is drawn only over the active player's own cards (FND-UI-018).
     private static (int Menu, IReadOnlyList<MatchGangState> Gangs) StripMenu(
-        IReadOnlyList<MatchGangState> cards, PlayerId human, RecordedOrderStep step)
+        MatchState match, PlayerId human, int sector, IReadOnlyList<MatchGangState> cards, RecordedOrderStep step)
     {
         var point = new Point(step.X, step.Y);
-        if (cards.Count < 2 || cards[0].Owner != human || !SectorDetailLayout.GroupOrderStrip.Contains(point))
-            return (-1, []);
-        return (SectorDetailLayout.GroupOrderIsRecurring(point) ? 5 : 3, cards);
+        if (!ChaosGame.ShowsGroupOrderStrip(match, match.Coordinator.ActivePlayer, human, cards)
+            || !SectorDetailLayout.GroupOrderStrip.Contains(point)) return (-1, []);
+        return (SectorDetailLayout.GroupOrderIsRecurring(point) ? 5 : 3, ChaosGame.GroupOrderGangs(match, human, sector));
     }
 
     // FND-UI-021: menus 1, 2, 3 and 5 number their orders from 1 in the order the rebuild's menus
@@ -151,8 +151,8 @@ public sealed partial class OriginalNewGameExperimentTests
         var recurring = menu is 2 or 5;
         if (action == GangAction.None)
         {
-            foreach (var gang in gangs)
-                if (gang.QueuedCommand is not null) Assert.True(match.Cancel(human, gang.Id).Accepted);
+            var (_, refusal) = ChaosGame.CancelOrders(match, gangs.Select(gang => gang.Id), gang => match.Cancel(human, gang));
+            Assert.True(refusal is null, $"the rebuild refused None: {refusal}");
             return;
         }
         if (menu is 1 or 2)
@@ -167,7 +167,7 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // FND-UI-021, DEV-UI-021: the orders the rebuild's panel offers where the original's menu
-    // leaves an item enabled. None is always offered.
+    // leaves an item enabled.
     private static IReadOnlySet<GangAction> Offered(MatchState match, PlayerId human, int menu, IReadOnlyList<MatchGangState> gangs)
     {
         var recurring = menu is 2 or 5;
@@ -175,8 +175,7 @@ public sealed partial class OriginalNewGameExperimentTests
             ? CommandOptionCatalog.LegalCommands(match, human, gangs[0].Id)
                 .Where(command => !recurring || CommandRules.CanRepeat(command.Action)).ToArray()
             : BulkGangCommands.Options(match, human, gangs.Select(gang => gang.Id).ToArray(), recurring, group: true);
-        var offered = options.Select(command => command.Action).ToHashSet();
-        offered.Add(GangAction.None);
-        return offered;
+        return MenuActions(menu).Select(entry => entry.Action)
+            .Where(action => ChaosGame.OffersAction(action, options)).ToHashSet();
     }
 }
