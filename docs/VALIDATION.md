@@ -376,7 +376,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--draw-values <hex address>=<int32>[/<int32>...],...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -458,6 +458,11 @@ of the gang's definition, as the panel does, then restores the context. The
 fixture holds the items of each list, in entry order, as `equip_lists`; the
 replay compares them with the rebuild's legal Equip orders of the gang in that
 category (RULE-EQUIP-004).
+`--attack-lists` does the same with the Attack picker's roster builder
+`fn_0043D132` (FND-ATTACK-006), for each other player and each living gang of
+the first human, with the gang's sector. The fixture holds the roster slots of
+each list as `attack_lists`; the replay compares them with the gangs the
+rebuild's Attack picker shows for that opponent (RULE-ATTACK-002).
 `--draw-values` writes 32-bit values into memory each time the planning-entry
 function `fn_0046FD80` starts to draw the console (FND-UI-040): the nth value
 at its nth call and the last at every later one. It makes the console draw a

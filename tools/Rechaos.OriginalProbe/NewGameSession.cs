@@ -107,7 +107,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
-    IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false)
+    IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -186,7 +186,8 @@ internal sealed record ProbeTrace(
     CityMarkers? Markers = null,
     List<TimerRecord>? Timers = null,
     List<ComlinkStep>? Comlink = null,
-    List<EquipListRecord>? EquipLists = null);
+    List<EquipListRecord>? EquipLists = null,
+    List<AttackListRecord>? AttackLists = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -392,6 +393,7 @@ internal sealed partial class NewGameSession(
         DumpWritableSections();
         if (settings.Capture) CaptureDrawingArea(window);
         if (settings.EquipLists && !RecordEquipLists()) return Finish(false, "The Equip lists were not built.", rollsBeforeBegin);
+        if (settings.AttackLists && !RecordAttackLists()) return Finish(false, "The Attack lists were not built.", rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -865,7 +867,7 @@ internal sealed partial class NewGameSession(
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
             _endgame, _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels, _lastRedraw,
             _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
-            _equipLists.Count == 0 ? null : _equipLists);
+            _equipLists.Count == 0 ? null : _equipLists, _attackLists.Count == 0 ? null : _attackLists);
     }
 
     private static void Click(IntPtr window, int x, int y)
