@@ -45,7 +45,8 @@ public sealed partial class ChaosGame
         DrawPanelArtwork(batch, pixel, background, EndgameNoticeLayout.Panel, 255);
         if (victory)
             foreach (var band in EndgameNoticeLayout.VictoryColourBands)
-                batch.Draw(pixel, band, PlayerColors[player.Value]);
+                // FND-AWARDS-004: the same slot colour as the table's colour fill.
+                batch.Draw(pixel, band, SetupPlayerCardArtLayout.Colours[player.Value]);
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, EndgameNoticeLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(portraitId), Color.White);
@@ -54,10 +55,15 @@ public sealed partial class ChaosGame
         DrawEndgameNoticeName(batch, font, player, name);
     }
 
+    // FND-AWARDS-004: resource 201 with its white keyed out, for the award icons.
+    private Texture2D? _endgameKeyedSprites;
+
     private void DrawEndgame(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        // SCR-AWARDS-001, EXP-UI-017: the screen around the frame is black, as captured after the
+        // last turn's resolution. It is drawn black after an elimination card as well, a case no
+        // capture shows (the entry's open question).
+        batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
         DrawEndgameBackground(batch, pixel);
         // RULE-AWARDS-002: with one player left, human or computer, the Awards tab shows that
         // player's victory splash in place of the table.
@@ -65,7 +71,7 @@ public sealed partial class ChaosGame
         {
             DrawEndgameNoticeCard(batch, pixel, font, _victoryBackground, survivor.Player,
                 survivor.PortraitId, state.FindPlayer(survivor.Player)!.Setup.Name, victory: true);
-            DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.EndgameTab(EndgameLayout.Awards));
+            DrawEndgameTabMark(batch, stats: false);
             return;
         }
 
@@ -75,31 +81,47 @@ public sealed partial class ChaosGame
         {
             var row = rows[index];
             var player = state.FindPlayer(row.Player)!;
+            // SCR-AWARDS-001, FND-AWARDS-004: the colour fill, the place marker of a ranked row, the
+            // portrait, the name in the plain font, and the score caption and five-digit score of a
+            // ranked row.
+            batch.Draw(pixel, EndgameLayout.ColourFill(index), SetupPlayerCardArtLayout.Colours[row.Player.Value]);
             if (_endgameSprites is not null && row.Place > 0)
                 batch.Draw(_endgameSprites, EndgameLayout.PlayerMarker(index),
                     EndgameLayout.PlayerMarkerSource(player.Id, row.Place), Color.White);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, EndgameLayout.Portrait(index),
                     OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
-            font.Draw(batch, row.Label, EndgameLayout.Name(index),
-                PlayerColors[row.Player.Value], 1);
+            font.Copy(batch, row.Label, EndgameLayout.Name(index).ToPoint(), OriginalFontLayout.PlainStrip);
+            if (row.Place > 0)
+            {
+                font.Copy(batch, ExecutableStrings.ScoreCaption, EndgameLayout.ScoreCaption(index),
+                    OriginalFontLayout.PlainStrip);
+                font.Copy(batch, player.ScenarioScore.ToString().PadLeft(5), EndgameLayout.Score(index),
+                    OriginalFontLayout.PlainStrip);
+            }
             if (_showEndgameStats)
                 DrawEndgameStatistics(batch, font, player, index);
             else
                 DrawEndgameAwards(batch, font, outcome, row.Player, index);
         }
-        DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.EndgameTab(
-            _showEndgameStats ? EndgameLayout.Stats : EndgameLayout.Awards));
+        DrawEndgameTabMark(batch, _showEndgameStats);
+    }
+
+    // FND-AWARDS-004: the 8-by-16 mark of the selected tab, copied from the interface sheet.
+    private void DrawEndgameTabMark(SpriteBatch batch, bool stats)
+    {
+        if (_uiSprites is not null)
+            batch.Draw(_uiSprites, EndgameLayout.TabMark(stats), OriginalSelectionLightLayout.CityLightSource,
+                Color.White);
     }
 
     /// <summary>
-    /// The original results overlay is first laid over the preserved city screen, then any private
-    /// victory or elimination card is laid over that. Its legacy destination was supplied as
-    /// top, left, bottom, right = (25, 106, 435, 534), rather than as image coordinates.
+    /// The results frame, loaded opaque into <c>(106, 25, 428, 410)</c> (FND-AWARDS-004), under any
+    /// private victory or elimination card.
     /// </summary>
     private void DrawEndgameBackground(SpriteBatch batch, Texture2D pixel)
     {
-        DrawPanelArtwork(batch, pixel, _endgameBackground, EndgameLayout.Panel, 230);
+        DrawPanelArtwork(batch, pixel, _endgameBackground, EndgameLayout.Panel, 255);
     }
 
     private static void DrawEndgameNoticeName(
@@ -116,12 +138,16 @@ public sealed partial class ChaosGame
         PlayerId player,
         int row)
     {
+        // FND-AWARDS-004: the awards strip of resource 201 behind the row's icons.
+        if (_endgameSprites is not null)
+            batch.Draw(_endgameSprites, EndgameLayout.StripDestination(row), EndgameLayout.AwardsSource,
+                Color.White);
         var awards = EndgamePresentation.AwardsForPlayer(outcome, player);
         for (var index = 0; index < awards.Count; index++)
         {
             var destination = EndgameLayout.Award(row, index);
-            if (_endgameSprites is not null)
-                batch.Draw(_endgameSprites, destination,
+            if (_endgameKeyedSprites is not null)
+                batch.Draw(_endgameKeyedSprites, destination,
                     EndgameLayout.AwardSource(awards[index].Award), Color.White);
             else
                 font.Draw(batch, EndgamePresentation.AwardAbbreviation(awards[index].Award),
@@ -136,7 +162,7 @@ public sealed partial class ChaosGame
         int row)
     {
         if (_endgameSprites is not null)
-            batch.Draw(_endgameSprites, EndgameLayout.StatisticsDestination(row),
+            batch.Draw(_endgameSprites, EndgameLayout.StripDestination(row),
                 EndgameLayout.StatisticsSource, Color.White);
 
         long[] statistics =
@@ -282,6 +308,30 @@ public static class EndgameLayout
         return new Rectangle(132, 30 + row * 66, 64, 64);
     }
 
+    /// <summary>FND-AWARDS-004: the fill in the row player's colour.</summary>
+    public static Rectangle ColourFill(int row)
+    {
+        ValidateRow(row);
+        return new Rectangle(111, 31 + row * 66, 20, 62);
+    }
+
+    /// <summary>FND-AWARDS-004: the score caption of a ranked row.</summary>
+    public static Point ScoreCaption(int row)
+    {
+        ValidateRow(row);
+        return new Point(227, 62 + row * 66);
+    }
+
+    /// <summary>FND-AWARDS-004: the five-digit score of a ranked row.</summary>
+    public static Point Score(int row)
+    {
+        ValidateRow(row);
+        return new Point(227, 70 + row * 66);
+    }
+
+    /// <summary>FND-AWARDS-004: the mark of the selected tab, Awards or Stats.</summary>
+    public static Rectangle TabMark(bool stats) => new(stats ? 520 : 468, 33, 8, 16);
+
     public static Rectangle PlayerMarker(int row)
     {
         ValidateRow(row);
@@ -311,19 +361,23 @@ public static class EndgameLayout
         return new Rectangle(268 + index * 50, 38 + row * 66, 48, 48);
     }
 
+    /// <summary>FND-AWARDS-004: the 48-by-48 icon at <c>(48 * code, 0)</c> of resource 201.</summary>
     public static Rectangle AwardSource(EndgameAward award) => award switch
     {
-        EndgameAward.Fist => new Rectangle(0, 0, 50, 48),
-        EndgameAward.Skull => new Rectangle(50, 0, 50, 48),
-        EndgameAward.BigFatChicken => new Rectangle(100, 0, 50, 48),
-        EndgameAward.DollarSign => new Rectangle(150, 0, 50, 48),
-        EndgameAward.Safe => new Rectangle(200, 0, 50, 48),
+        EndgameAward.Fist => new Rectangle(0, 0, 48, 48),
+        EndgameAward.Skull => new Rectangle(48, 0, 48, 48),
+        EndgameAward.BigFatChicken => new Rectangle(96, 0, 48, 48),
+        EndgameAward.DollarSign => new Rectangle(144, 0, 48, 48),
+        EndgameAward.Safe => new Rectangle(192, 0, 48, 48),
         _ => throw new ArgumentOutOfRangeException(nameof(award))
     };
 
+    public static Rectangle AwardsSource => new(96, 48, 160, 64);
+
     public static Rectangle StatisticsSource => new(96, 112, 160, 64);
 
-    public static Rectangle StatisticsDestination(int row)
+    /// <summary>FND-AWARDS-004: where a row's awards or statistics strip is copied.</summary>
+    public static Rectangle StripDestination(int row)
     {
         ValidateRow(row);
         return new Rectangle(262, 30 + row * 66, 160, 64);

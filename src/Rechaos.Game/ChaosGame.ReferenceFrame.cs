@@ -365,7 +365,8 @@ public sealed partial class ChaosGame
         : shown;
 
     /// <summary>
-    /// Shows the city of the player whose planning entry the save stands at. With several local
+    /// Shows the city of the player whose planning entry the save stands at, or the endgame
+    /// (SCR-AWARDS-001) when the save's match is decided. With several local
     /// humans the planning entry opens the hand-off card first, as the original's does
     /// (SCR-SETUP-002), and its Ready goes on as in play. Otherwise Combat Results and Last Turn
     /// Events that the planning entry would open first are not drawn, because the comparison only
@@ -376,6 +377,12 @@ public sealed partial class ChaosGame
     /// </summary>
     private void PresentReferenceFramePlanningEntry()
     {
+        // SCR-AWARDS-001: a save of a decided match stands where the original shows the endgame.
+        if (_state?.Outcome is not null)
+        {
+            ShowMatchEnd(justEnded: false);
+            return;
+        }
         if (PlanningViewer is { } playerId && _state is { } state
             && state.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human)
         {

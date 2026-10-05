@@ -29,6 +29,18 @@ public sealed class ExecutableStringTableTests
     }
 
     [Fact]
+    public void TheScoreCaptionIsTheStringFndAwards004Reads()
+    {
+        // needs: GAME_DIR
+        var file = ExecutableResources.RequireExecutable();
+        var bytes = Enumerable.Range(0, ExecutableStrings.ScoreCaption.Length + 1)
+            .Select(offset => (byte)ExecutableResources.ImageInt32(file, 0x00487704u + (uint)offset))
+            .ToArray();
+
+        Assert.Equal(ExecutableStrings.ScoreCaption + "\0", Encoding.ASCII.GetString(bytes));
+    }
+
+    [Fact]
     public void DrawnStringsCoverEveryNumberTheEntriesName()
     {
         // RULE-UI-009 reads 1 to 10 and 0x2E to 0x3C, SCR-EVENT-001 reads 33 to 44, FND-UI-040
