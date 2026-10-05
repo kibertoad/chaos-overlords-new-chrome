@@ -954,7 +954,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | evidence |
+| [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | body, evidence |
 
 ## EXP-COMBAT-001
 
