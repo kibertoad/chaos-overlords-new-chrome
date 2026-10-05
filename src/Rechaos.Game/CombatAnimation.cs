@@ -38,7 +38,6 @@ public static class CombatAnimationRouting
     public const int FrameMilliseconds = PresentationClock.PeriodMilliseconds;
     public const int FirstAnimationTick = 3;
     public const int LastAnimationTick = 10;
-    public const int PreDamageTick = 12;
 
     /// <summary>
     /// FND-COMBAT-014: on tick 12 the clip player draws black through bitmap 143 over the last
@@ -239,7 +238,9 @@ public sealed class CombatAnimationPlayer
         TimelineTick - CombatAnimationRouting.FirstAnimationTick,
         0,
         CombatAnimationRouting.FrameCount - 1);
-    public bool ShowsPreDamageForce => TimelineTick <= CombatAnimationRouting.PreDamageTick;
+    // FND-COMBAT-016: the tracks are painted again only on tick 16; tick 14 copies back the
+    // ones painted before the clip's ticks.
+    public bool ShowsPreDamageForce => TimelineTick < CombatAnimationRouting.FinalResultTick;
     public bool ShowsDimmedFrames => TimelineTick >= CombatAnimationRouting.DimmedFramesTick;
     public bool ShowsDamageFlash => TimelineTick is
         CombatAnimationRouting.FirstDamageFlashTick or
@@ -300,6 +301,18 @@ public sealed class CombatAnimationPlayer
             if (Active is null) _elapsedMilliseconds = 0;
         }
         return started ?? [];
+    }
+
+    /// <summary>
+    /// Puts the playing clip at <paramref name="tick"/> without advancing through the ticks before
+    /// it, for a frame drawn at a captured tick of the original's clip (FND-COMBAT-016). A clip whose
+    /// hold flag is cleared ends on tick 16, so it shows only ticks 0 to 15.
+    /// </summary>
+    public void ShowTick(int tick)
+    {
+        if (Active is not { } clip) return;
+        if (tick < 0 || tick >= clip.CompletionTick) throw new ArgumentOutOfRangeException(nameof(tick));
+        TimelineTick = tick;
     }
 
     public void Clear()

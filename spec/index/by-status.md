@@ -294,7 +294,7 @@
 
 ## recorded
 
-509 entries.
+513 entries.
 
 | ID | Title |
 |---|---|
@@ -436,6 +436,8 @@
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | Do the hand-off card and the Comlink Send panel look the same in the rebuild? |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | Does the endgame look the same in the rebuild? |
 | [EXP-UI-018](../experiments/EXP-UI-018.md) | Does the elimination card look the same in the rebuild? |
+| [EXP-UI-019](../experiments/EXP-UI-019.md) | Does the Detailed Combat panel look the same in the rebuild through a clip of the viewer's gang attacking another gang? |
+| [EXP-UI-020](../experiments/EXP-UI-020.md) | Does the Detailed Combat panel look the same in the rebuild through a police clip? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |
@@ -552,6 +554,8 @@
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | Surfaces 3 and 5 hold PX03000 and PX02000 with PX04999 whenever a combat panel is open, the outline colours are red, green and blue in that order, and the Detailed Combat fight list has room for 36 elements |
 | [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | Detailed Combat draws each gang's header as a colour strip, an Overlord portrait and a name, takes the police header, portrait and items from resource 300, and darkens the last strip frames from tick 12 |
 | [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | Detailed Combat draws each gang portrait and its two Force tracks into the same surface, 68 and 75 rows below the portrait's top |
+| [FND-COMBAT-016](../findings/FND-COMBAT-016.md) | The Detailed Combat clip player keeps its tick in a stack local, and paints the Force tracks again only on tick 16 |
+| [FND-COMBAT-017](../findings/FND-COMBAT-017.md) | Detailed Combat copies each clip's sector tile from the unowned city map art and frames it in black |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | Each player keeps at most 16 Comlink messages, and a 17th drops the oldest |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send |

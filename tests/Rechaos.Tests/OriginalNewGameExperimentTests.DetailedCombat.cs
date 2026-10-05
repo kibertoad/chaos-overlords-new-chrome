@@ -111,7 +111,8 @@ public sealed partial class OriginalNewGameExperimentTests
             recorded.DoneAtRoll.Count(done => done < clip.AfterRoll), clip.Focal, clip.Other, clip.Hold,
             clip.FocalBar, clip.OtherBar, clip.Sounds)).ToArray();
         Assert.Equal(clips.Take(played.Length).Select(clip => Describe(turn, bySequence[clip.EventSequence], human, clip)), played);
-        if (played.Length < clips.Count)
+        // A run that ended during the presentation (EXP-UI-019, EXP-UI-020) shows only its first clips.
+        if (presentation.Returned && played.Length < clips.Count)
         {
             var exit = steps[1];
             var face = new DetailedCombatExit();

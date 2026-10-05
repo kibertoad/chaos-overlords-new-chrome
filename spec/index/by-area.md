@@ -600,6 +600,8 @@
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | Surfaces 3 and 5 hold PX03000 and PX02000 with PX04999 whenever a combat panel is open, the outline colours are red, green and blue in that order, and the Detailed Combat fight list has room for 36 elements | recorded |
 | [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | Detailed Combat draws each gang's header as a colour strip, an Overlord portrait and a name, takes the police header, portrait and items from resource 300, and darkens the last strip frames from tick 12 | recorded |
 | [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | Detailed Combat draws each gang portrait and its two Force tracks into the same surface, 68 and 75 rows below the portrait's top | recorded |
+| [FND-COMBAT-016](../findings/FND-COMBAT-016.md) | The Detailed Combat clip player keeps its tick in a stack local, and paints the Force tracks again only on tick 16 | recorded |
+| [FND-COMBAT-017](../findings/FND-COMBAT-017.md) | Detailed Combat copies each clip's sector tile from the unowned city map art and frames it in black | recorded |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | established |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | established |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation | established |
@@ -894,6 +896,8 @@
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | Do the hand-off card and the Comlink Send panel look the same in the rebuild? | recorded |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | Does the endgame look the same in the rebuild? | recorded |
 | [EXP-UI-018](../experiments/EXP-UI-018.md) | Does the elimination card look the same in the rebuild? | recorded |
+| [EXP-UI-019](../experiments/EXP-UI-019.md) | Does the Detailed Combat panel look the same in the rebuild through a clip of the viewer's gang attacking another gang? | recorded |
+| [EXP-UI-020](../experiments/EXP-UI-020.md) | Does the Detailed Combat panel look the same in the rebuild through a police clip? | recorded |
 | [FND-UI-001](../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |

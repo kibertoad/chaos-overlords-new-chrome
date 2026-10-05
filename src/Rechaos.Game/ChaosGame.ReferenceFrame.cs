@@ -30,6 +30,10 @@ namespace Rechaos.Game;
 /// (FND-UI-052, FND-UI-053), or the idle gang warning's ticks since its open modulo 8, which
 /// pick whether its line blinks on (FND-UI-054), in place of the one the clock gives.
 /// </param>
+/// <param name="ClipTick">
+/// The tick of the Detailed Combat clip the capture showed (FND-COMBAT-016), which the clip the
+/// clicks started is drawn at, in place of its first.
+/// </param>
 /// <param name="SelectedSector">
 /// The sector the capture had selected (FND-SAVE-003), in place of the one the planning entry
 /// restores, since the save does not keep it (DEV-SAVE-001).
@@ -40,7 +44,8 @@ namespace Rechaos.Game;
 /// </param>
 public sealed record ReferenceFrameRequest(
     string SavePath, string OutputPath, int? MarkerFrame = null, IReadOnlyList<ReferenceClick>? Clicks = null,
-    int? PumpCounter = null, int? SelectedSector = null, ReferenceLamps? Lamps = null, int? ItemFrame = null)
+    int? PumpCounter = null, int? SelectedSector = null, ReferenceLamps? Lamps = null, int? ItemFrame = null,
+    int? ClipTick = null)
 {
     /// <summary>
     /// The operands that ask for a screen shown before a match in place of a save: the title
@@ -51,7 +56,7 @@ public sealed record ReferenceFrameRequest(
 
     private const string Usage =
         "Usage: --reference-frame <save|title|credits|setup> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
-        + " [--selected-sector <0-63>] [--lamps <0|1>,<0|1>] [--item-frame <0-14>]"
+        + " [--selected-sector <0-63>] [--lamps <0|1>,<0|1>] [--item-frame <0-14>] [--clip-tick <0-21>]"
         + " [--reference-clicks <x:y[:2]|x:y>x:y>,...]";
 
     // Keep captures independent of the player's preferences, recovery files and saves. The
@@ -73,8 +78,10 @@ public sealed record ReferenceFrameRequest(
         var selected = Array.IndexOf(args, "--selected-sector");
         var lamps = Array.IndexOf(args, "--lamps");
         var item = Array.IndexOf(args, "--item-frame");
+        var tick = Array.IndexOf(args, "--clip-tick");
         if (reference < 0)
         {
+            if (tick >= 0) throw new ArgumentException("--clip-tick requires --reference-frame.");
             if (item >= 0) throw new ArgumentException("--item-frame requires --reference-frame.");
             if (selected >= 0) throw new ArgumentException("--selected-sector requires --reference-frame.");
             if (marker >= 0) throw new ArgumentException("--marker-frame requires --reference-frame.");
@@ -89,7 +96,8 @@ public sealed record ReferenceFrameRequest(
             || (pump >= 0 && Array.LastIndexOf(args, "--pump-counter") != pump)
             || (selected >= 0 && Array.LastIndexOf(args, "--selected-sector") != selected)
             || (lamps >= 0 && Array.LastIndexOf(args, "--lamps") != lamps)
-            || (item >= 0 && Array.LastIndexOf(args, "--item-frame") != item))
+            || (item >= 0 && Array.LastIndexOf(args, "--item-frame") != item)
+            || (tick >= 0 && Array.LastIndexOf(args, "--clip-tick") != tick))
             throw new ArgumentException("Capture options may only be supplied once.");
         static string Operand(string[] values, int index)
         {
@@ -101,11 +109,11 @@ public sealed record ReferenceFrameRequest(
         var source = Operand(args, reference + 1);
         var beforeMatch = ScreenOperands.Contains(source);
         var save = beforeMatch ? source : Path.GetFullPath(source);
-        // The marker, pump, selected sector, lamps and item frame belong to a match's screens,
-        // which a screen shown before a match does not draw.
-        if (beforeMatch && (marker >= 0 || pump >= 0 || selected >= 0 || lamps >= 0 || item >= 0))
+        // The marker, pump, selected sector, lamps, item frame and clip tick belong to a match's
+        // screens, which a screen shown before a match does not draw.
+        if (beforeMatch && (marker >= 0 || pump >= 0 || selected >= 0 || lamps >= 0 || item >= 0 || tick >= 0))
             throw new ArgumentException(
-                "--marker-frame, --pump-counter, --selected-sector, --lamps and --item-frame require a save.");
+                "--marker-frame, --pump-counter, --selected-sector, --lamps, --item-frame and --clip-tick require a save.");
         var output = Path.GetFullPath(Operand(args, reference + 2));
         int? frame = null;
         if (marker >= 0)
@@ -153,9 +161,20 @@ public sealed record ReferenceFrameRequest(
                 throw new ArgumentException("--item-frame must be between 0 and 14.");
             itemFrame = value;
         }
+        int? clipTick = null;
+        if (tick >= 0)
+        {
+            // FND-COMBAT-016: a clip ends on tick 22, so the screen shows ticks 0 to 21.
+            if (!int.TryParse(Operand(args, tick + 1),
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value)
+                || value >= CombatAnimationRouting.CompletionTick)
+                throw new ArgumentException("--clip-tick must be between 0 and 21.");
+            clipTick = value;
+        }
         return new ReferenceFrameRequest(save, output, frame,
             clicks >= 0 ? ReferenceClick.ParseList(Operand(args, clicks + 1)) : null, counter, sector,
-            lamps >= 0 ? ReferenceLamps.Parse(Operand(args, lamps + 1)) : null, itemFrame);
+            lamps >= 0 ? ReferenceLamps.Parse(Operand(args, lamps + 1)) : null, itemFrame, clipTick);
     }
 }
 
@@ -277,6 +296,14 @@ public sealed partial class ChaosGame
             return true;
         }
         if (_referenceFrameDraws >= 0 && !ReferenceClicksSettled) StepReferenceClicks();
+        // The reference frame's clock never advances a clip, so one its clicks started stands at
+        // the capture's tick. Clicks that start no clip would draw the screen without the panel.
+        if (_referenceFrame.ClipTick is { } tick)
+        {
+            if (_combatAnimationPlayer.IsPlaying) _combatAnimationPlayer.ShowTick(tick);
+            else if (ReferenceClicksSettled)
+                throw new InvalidOperationException("--clip-tick was given, but the reference clicks started no Detailed Combat clip.");
+        }
         return true;
     }
 

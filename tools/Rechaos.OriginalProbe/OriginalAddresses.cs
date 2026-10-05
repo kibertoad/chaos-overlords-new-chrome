@@ -96,6 +96,10 @@ internal static class OriginalAddresses
     public const uint DetailedCombatEnd = 0x0042EE45;
     public const uint CombatClip = 0x00430C23;
     public const uint CombatClipEnd = 0x00431C53;
+    // FND-COMBAT-016: the clip player's tick, the local at ebp - CombatClipTick, which the clip sets
+    // to 0 at CombatClipTickSet; the screen shows the passes up to tick local - 1.
+    public const uint CombatClipTickSet = 0x00430C2F;
+    public const uint CombatClipTick = 0x20;
     public const uint CombatFocal = 0x004945A0;
     public const uint CombatOther = 0x00494584;
     public const uint CombatFocalBarRight = 0x0049476E;

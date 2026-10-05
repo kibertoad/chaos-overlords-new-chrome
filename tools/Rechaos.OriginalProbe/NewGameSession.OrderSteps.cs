@@ -6,7 +6,8 @@ namespace Rechaos.OriginalProbe;
 /// answering the popup menu it opens with command <c>Choice</c> (0 closes it with no choice), a
 /// double-click at <c>(X, Y)</c> of the window (dbl), a
 /// press of the sector view's back control (back), or of a result panel's Exit (exit), or a capture
-/// of the drawing area compared at the elements of the screen entries <c>Screens</c> (shot).
+/// of the drawing area compared at the elements of the screen entries <c>Screens</c> (shot), or a
+/// wait of <c>Choice</c> milliseconds with no input (wait).
 /// </summary>
 internal sealed record ProbeOrderStep(string Kind, int Target, int X, int Y, int Choice, string? Screens = null)
 {
@@ -17,6 +18,7 @@ internal sealed record ProbeOrderStep(string Kind, int Target, int X, int Y, int
         "card" => $"card {Target} at ({X}, {Y}), command {Choice}",
         "strip" => $"({X}, {Y}), command {Choice}",
         "dbl" => $"double-click ({X}, {Y})",
+        "wait" => $"wait {Choice} ms",
         _ => Kind,
     };
 }
@@ -34,11 +36,12 @@ internal sealed record OrderStepRecord(
 
 /// <summary>
 /// A capture taken after the dump: the bitmap <c>File</c> in the run directory with its repeat
-/// beside it, the Overlord bar's marker frame it shows (FND-UI-038) and the pump's counter.
+/// beside it, the Overlord bar's marker frame it shows (FND-UI-038) and the pump's counter, and
+/// the tick of the Detailed Combat clip it shows while one plays (FND-COMBAT-016).
 /// </summary>
 internal sealed record CaptureShot(
     string File, int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector, int? FrameCounter,
-    int? ItemFrame = null);
+    int? ItemFrame = null, int? ClipTick = null);
 
 internal sealed partial class NewGameSession
 {
@@ -108,29 +111,55 @@ internal sealed partial class NewGameSession
             }
             return null;
         }
+        // FND-COMBAT-016: the frame of the clip that plays, while it runs. The clips of a
+        // presentation follow one another, so each start replaces the frame of the one before.
+        uint? clipEbp = null;
+        _process.SetBreakpoint(OriginalAddresses.CombatClipTickSet, context => clipEbp = context.Ebp, quiet: true);
+        _process.SetBreakpoint(OriginalAddresses.CombatClipEnd, _ => clipEbp = null, quiet: true);
+        int? ClipTick() => clipEbp is { } ebp
+            ? Math.Max(_process.ReadInt32(ebp - OriginalAddresses.CombatClipTick) - 1, 0)
+            : null;
         foreach (var step in settings.OrderSteps!)
         {
+            if (step.Kind == "wait")
+            {
+                // A wait presses nothing, so it is not a post-dump step of the marker log.
+                _process.Pump(TimeSpan.FromMilliseconds(step.Choice));
+                if (_process.Exited) return "The original exited during the order steps.";
+                if (_rolls.Count != rollsAtDump)
+                    return $"The original called roll {_rolls.Count - rollsAtDump} time(s) during the order step {step}.";
+                _orderSteps.Add(new OrderStepRecord(step, -1, null,
+                    _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),
+                    _process.ReadInt32(OriginalAddresses.SectorViewPlayer)));
+                continue;
+            }
             if (step.Kind == "shot")
             {
                 // A capture moves nothing, so it is not a post-dump step of the marker log.
                 var file = $"capture-step-{_orderSteps.Count}";
                 // The item, the warning line or the Send caret steps every few ticks, so a capture it
                 // moved under is taken again.
-                int? itemBefore, itemFrame;
+                // So is one a clip's tick moved under.
+                int? itemBefore, itemFrame, clipBefore, clipTick;
                 (int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector)? area;
                 var itemAttempts = 0;
                 do
                 {
                     itemBefore = ItemFrame() ?? CaretFrame(step);
+                    clipBefore = ClipTick();
                     area = CaptureDrawingArea(window, file);
                     itemFrame = (ItemFrame() ?? CaretFrame(step)) == itemBefore ? itemBefore : null;
-                } while (itemBefore is not null && itemFrame is null && ++itemAttempts < 5);
+                    clipTick = ClipTick() == clipBefore ? clipBefore : null;
+                } while (((itemBefore is not null && itemFrame is null) || (clipBefore is not null && clipTick is null))
+                         && ++itemAttempts < 5);
                 if (itemBefore is not null && itemFrame is null)
                     _notes.Add($"{file}: the item pictures' frame, the warning line's phase or the caret's phase moved during each capture.");
+                if (clipBefore is not null && clipTick is null)
+                    _notes.Add($"{file}: the Detailed Combat clip's tick moved during each capture.");
                 var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
                         _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,
-                        itemFrame)
+                        itemFrame, clipTick)
                     : null;
                 _orderSteps.Add(new OrderStepRecord(step, -1, null,
                     _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),

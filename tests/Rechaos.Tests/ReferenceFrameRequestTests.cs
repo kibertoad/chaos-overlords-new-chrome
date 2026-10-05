@@ -61,6 +61,9 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--reference-frame", "save", "frame", "--selected-sector", "-1" },
         new[] { "--item-frame", "1" },
         new[] { "--reference-frame", "save", "frame", "--item-frame", "15" },
+        new[] { "--clip-tick", "1" },
+        new[] { "--reference-frame", "save", "frame", "--clip-tick", "22" },
+        new[] { "--reference-frame", "title", "frame", "--clip-tick", "1" },
         new[] { "--reference-frame", "save", "frame", "--item-frame", "1", "--item-frame", "2" },
         new[] { "--reference-frame", "title", "frame", "--marker-frame", "0" },
         new[] { "--reference-frame", "setup", "frame", "--selected-sector", "1" },
@@ -155,6 +158,16 @@ public sealed class ReferenceFrameRequestTests
             ["--reference-frame", "planning.rchsave", "frame.bmp", "--item-frame", "14"])!;
         Assert.Equal(14, request.ItemFrame);
         Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.ItemFrame);
+    }
+
+    // FND-COMBAT-016: the screen shows a clip's ticks 0 to 21.
+    [Fact]
+    public void TheClipTickIsReadAsGiven()
+    {
+        var request = ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--clip-tick", "21"])!;
+        Assert.Equal(21, request.ClipTick);
+        Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.ClipTick);
     }
 
     [Theory]

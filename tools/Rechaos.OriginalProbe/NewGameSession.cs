@@ -152,8 +152,8 @@ internal sealed record NewGameSettings(
 
     /// <summary>
     /// The orders and Done presses after the first planning phase, then the presses after the dump,
-    /// one input each: an order is named <c>order</c>, a press <c>left_click</c> and a hire step's
-    /// drag <c>drag</c>.
+    /// one input each: an order is named <c>order</c>, a press <c>left_click</c>, a hire step's
+    /// drag <c>drag</c> and a wait <c>wait</c>.
     /// </summary>
     public IEnumerable<(string Name, string Value)> DescribeTurns()
     {
@@ -182,7 +182,8 @@ internal sealed record NewGameSettings(
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
         foreach (var step in OrderSteps ?? [])
-            yield return (step.Kind == "open" ? "double_click" : "left_click", $"{step} after the dump");
+            yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", _ => "left_click" },
+                $"{step} after the dump");
     }
 }
 

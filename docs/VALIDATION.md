@@ -786,7 +786,7 @@ save, and starts the game with
 ```text
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
     [--pump-counter <0-7>] [--selected-sector <0-63>] [--lamps <0|1>,<0|1>]
-    [--item-frame <0-14>]
+    [--item-frame <0-14>] [--clip-tick <0-21>]
     [--reference-clicks <x:y[:2]|x:y>x:y>,...]
 ```
 
@@ -802,7 +802,9 @@ the Comlink lamp were drawn lit, which pick the blink phase of those lights in
 place of the clock's (FND-EVENT-006). `--item-frame` passes `item_frame`, the
 frame the rotating items of Item Information, Sell and Give are drawn at
 (FND-UI-052, FND-UI-053), the idle gang warning's ticks since its open
-modulo 8 (FND-UI-054), or the Comlink caret's phase (FND-COMLINK-010). The blinking
+modulo 8 (FND-UI-054), or the Comlink caret's phase (FND-COMLINK-010).
+`--clip-tick` passes `clip_tick`, the tick of the Detailed Combat clip a shot
+shows (FND-COMBAT-016), which the clip the clicks started is drawn at. The blinking
 and cycling parts of the screen stay at time zero however many clicks were
 made: the marker is drawn at `--marker-frame`, or at its first frame without it.
 `--reference-clicks` lists the presses that take the rebuild from the planning

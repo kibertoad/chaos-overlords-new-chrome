@@ -15,11 +15,13 @@ internal sealed record CombatClipRecord(
 /// <summary>
 /// One call of the presentation (FND-COMBAT-010): the roll count it came after, its second argument
 /// (1 when planning opened it, 0 when the console's control did), the index of its first clip in the
-/// clip list, the clips it played and the effect slots it played itself.
+/// clip list, the clips it started, the effect slots it played itself and whether it returned before
+/// the run ended.
 /// </summary>
 internal sealed record CombatPresentationRecord(int AfterRoll, int Automatic, int FirstClip, List<int> Sounds)
 {
     public int Clips { get; set; }
+    public bool Returned { get; set; }
 }
 
 internal sealed partial class NewGameSession
@@ -45,7 +47,7 @@ internal sealed partial class NewGameSession
             _process.SetBreakpoint(context.ReturnAddress, _ =>
             {
                 _detailedCombatOpen = false;
-                presentation.Clips = _combatClips.Count - presentation.FirstClip;
+                presentation.Returned = true;
             }, oneShot: true);
         });
         _process.SetBreakpoint(OriginalAddresses.SoundLoader, context =>
@@ -59,6 +61,7 @@ internal sealed partial class NewGameSession
                 context.Argument(0), _process.ReadInt16(OriginalAddresses.CombatFocalBarRight),
                 _process.ReadInt16(OriginalAddresses.CombatOtherBarRight), [.. _clipSounds]));
             _clipSounds.Clear();
+            if (_detailedCombatOpen) _combatPresentations[^1].Clips++;
         });
         _process.SetBreakpoint(OriginalAddresses.PlaySound, context =>
         {
