@@ -16,6 +16,7 @@ return args.FirstOrDefault() switch
 {
     "new-game" => NewGame(args),
     "extract" => Extract(args),
+    "extract-comlink" => ComlinkExtractor.Extract(args),
     _ => Usage(),
 };
 
@@ -32,8 +33,10 @@ static int Usage()
               [--search <turn:definition+definition...>,...]
               [--finance <turn:sector>,...]
               [--time-limit <0-3>] [--expire-turns <turn>,...]
+              [--comlink <script file>]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
+          Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
         """);
     return 2;
 }
@@ -72,7 +75,8 @@ static int NewGame(string[] args)
         Option(args, "--search") is { } search ? ParseSearch(search) : null,
         IntOption(args, "--time-limit"),
         Option(args, "--expire-turns")?.Split(',').Select(value =>
-            int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
+            int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray(),
+        Option(args, "--comlink") is { } script ? File.ReadAllLines(script) : null);
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).

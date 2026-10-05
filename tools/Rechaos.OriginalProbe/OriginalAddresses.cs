@@ -132,6 +132,60 @@ internal static class OriginalAddresses
     public const uint RaiderMode = 0x00482158;
     public const uint Cash = 0x004A25E8;
 
+    // FND-OPTIONS-001: Slide Panels, read by the panel helpers that slide a panel in and out.
+    public const uint PrefSlidePanels = 0x00487840;
+
+    // FND-SETUP-016: the handoff card's presenter, which takes the next player's slot and returns
+    // once Ready, (270, 241, 100, 48) on the screen, is released inside.
+    public const uint HandoffCard = 0x004396C0;
+    public const int ReadyX = 270 + 50;
+    public const int ReadyY = 241 + 24;
+
+    // FND-COMLINK-001, FND-COMLINK-004: 16 message records of 0xA6 bytes per player in
+    // comlink_messages, with comlink_count and comlink_cursor, one INT32 per player each.
+    // FND-COMLINK-006: comlink_pending and active_player. FND-COMLINK-007, FND-COMLINK-008: the
+    // Send panel's draft buffer and its six selection bytes.
+    public const uint ComlinkMessages = 0x0049CA90;
+    public const int ComlinkPlayerStride = 0xA60;
+    public const int ComlinkRecordSize = 0xA6;
+    public const int ComlinkRecords = 16;
+    public const uint ComlinkCount = 0x004981E0;
+    public const uint ComlinkCursor = 0x004981C8;
+    public const uint ComlinkPending = 0x0048781C;
+    public const uint ComlinkDraft = 0x00498120;
+    public const uint ComlinkSelected = 0x00498114;
+    public const uint ActivePlayer = 0x004ABC84;
+
+    // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler
+    // fn_0045EAB1; FND-COMLINK-004: the helper fn_0045E04D(player, count) that marks and draws one
+    // message; FND-COMLINK-006: fn_00460391(player), which drops the leading read messages when the
+    // player's planning ends. FND-COMLINK-007 gives the ranges of all four.
+    public const uint ComlinkView = 0x0045D61A;
+    public const uint ComlinkSend = 0x0045EAB1;
+    public const uint ComlinkShow = 0x0045E04D;
+    public const uint ComlinkShowEnd = 0x0045E7CD;
+    public const uint ComlinkDropRead = 0x00460391;
+
+    // FND-UI-032: the console's Comlink control, (552, 126, 48, 48), gives its top 33 rows to View and
+    // its bottom 15 rows to Send.
+    public const int ComlinkViewX = 552 + 24;
+    public const int ComlinkViewY = 126 + 16;
+    public const int ComlinkSendX = 552 + 24;
+    public const int ComlinkSendY = 159 + 7;
+
+    // FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-007: the panels' controls on the screen, the
+    // panel at (104, 124). View: Previous (135, 157, 26, 23), Next (163, 157, 26, 23) and Dismiss
+    // (137, 293, 49, 22). Send: the card of slot p at (202 + 121 * (p / 3), 144 + 34 * (p % 3)),
+    // 100 by 32, Cancel (137, 261, 49, 22) and Send (137, 293, 49, 22).
+    public const int ViewPreviousX = 135 + 13;
+    public const int ViewNextX = 163 + 13;
+    public const int ViewArrowY = 157 + 11;
+    public const int PanelButtonX = 137 + 24;
+    public const int SendButtonY = 293 + 11;
+    public const int CancelButtonY = 261 + 11;
+    public static int CardX(int slot) => 202 + 121 * (slot / 3) + 50;
+    public static int CardY(int slot) => 144 + 34 * (slot % 3) + 16;
+
     // FND-SETUP-002: the full local setup handler.
     public const uint LocalSetup = 0x0040E0A0;
 
