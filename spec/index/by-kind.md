@@ -593,7 +593,7 @@
 
 ## experiments
 
-76 entries.
+77 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -673,6 +673,7 @@
 | [EXP-TURN-070](../experiments/EXP-TURN-070.md) | Does the turn start drop a recurring Control in a sector under police presence, as the spec gives? | recorded |
 | [EXP-TURN-071](../experiments/EXP-TURN-071.md) | Does the turn start drop a recurring Control under police presence in a Criminal game, as the spec gives? | recorded |
 | [EXP-TURN-072](../experiments/EXP-TURN-072.md) | Is an item bought beside another player's completed Factory sold at full Cost, as the spec gives? | recorded |
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? | recorded |
 
 ## bugs
 

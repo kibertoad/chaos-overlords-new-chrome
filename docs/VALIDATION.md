@@ -591,7 +591,14 @@ cannot be named yet. Each rectangle comes from the entry's Position column.
 The bitmap holds the game's art, so it never goes into the repository. When
 `GAME_DIR` is set, `extract` copies it to `GAME_DIR/captures/<xxh3>`, the
 directory `OriginalGameFiles` reads captures from; otherwise it prints where to
-copy it. A capture recorded before the element digests existed, such as those
+copy it. Every file there is named by its xxh3 alone, with no extension, as the
+documentation standard names them, and `OriginalGameFiles` refuses a copy kept
+under another name such as `<xxh3>.png` instead of skipping the test.
+
+Captures are taken without a DirectDraw wrapper (docs/DECISIONS.md,
+2026-10-05). DDrawCompat beside the staged copy left the rolls and the state of
+a recorded run unchanged but did not remove the white areas: windowed, the
+original draws with GDI and never uses DirectDraw (FND-GFX-004). A capture recorded before the element digests existed, such as those
 of EXP-TURN-041 and EXP-TURN-042, gets them from that copy without another run
 of the original:
 

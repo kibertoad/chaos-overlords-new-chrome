@@ -10,8 +10,8 @@ namespace Rechaos.Tests;
 /// its build ID, laid out as the build entry's paths give them, with a file from a disc under a
 /// directory named after the disc (<c>CD:</c>, <c>CD2:</c>). Captures, dumps and recordings that
 /// cannot be committed, and the saves experiments start from, sit in <c>GAME_DIR/captures/</c>,
-/// named by their xxh3 (<see cref="SpecHash"/>). A test whose file is absent is skipped, and a
-/// file whose hash differs from the spec fails the test.
+/// named by their xxh3 (<see cref="SpecHash"/>) with no extension. A test whose file is absent is
+/// skipped, and a file whose hash differs from the spec fails the test.
 /// </summary>
 public static partial class OriginalGameFiles
 {
@@ -50,8 +50,19 @@ public static partial class OriginalGameFiles
         return Verified(root, Path.Combine(build, Portable(relative)), xxh3);
     }
 
-    internal static string? ResolveCapture(string? root, string xxh3) =>
-        Verified(root, Path.Combine("captures", xxh3), xxh3);
+    // A capture is named by its xxh3 alone, with no extension. A copy kept under another name,
+    // such as <xxh3>.png, is refused so it is renamed instead of the test being skipped.
+    internal static string? ResolveCapture(string? root, string xxh3)
+    {
+        var found = Verified(root, Path.Combine("captures", xxh3), xxh3);
+        if (found is null && !string.IsNullOrWhiteSpace(root) && Directory.Exists(Path.Combine(root, "captures")))
+        {
+            var misnamed = Directory.EnumerateFiles(Path.Combine(root, "captures"), xxh3 + ".*").FirstOrDefault();
+            if (misnamed is not null)
+                throw new InvalidDataException($"{misnamed} has to be named {xxh3}, with no extension.");
+        }
+        return found;
+    }
 
     private static string? Verified(string? root, string relative, string xxh3)
     {
