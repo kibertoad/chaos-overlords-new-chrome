@@ -223,7 +223,7 @@
 
 ## findings
 
-378 entries.
+379 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -311,6 +311,7 @@
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | A double-click in the Attack picker opens Item Information for an equipment icon and the gang information panel for a portrait, of the acting gang or of a listed target | recorded |
 | [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | The Attack picker builds each target card from a 66-by-87 PX00129 frame with the gang's portrait, a Force track and its item icons | recorded |
 | [FND-ATTACK-006](../findings/FND-ATTACK-006.md) | The Attack picker's roster builder lists an opponent's gangs in a sector that the active player sees, with no bound on the count | recorded |
+| [FND-ATTACK-007](../findings/FND-ATTACK-007.md) | The Attack picker copies a target's second and third item icons into 19-pixel-wide boxes, so they are stretched | recorded |
 | [FND-AUDIO-001](../findings/FND-AUDIO-001.md) | Music plays one of three CD track programs, restarts each when it ends, and pauses while the window is inactive | recorded |
 | [FND-AUDIO-002](../findings/FND-AUDIO-002.md) | Nine general sound effects load into slots 0 to 9 with slot 5 left empty, and a wrapper plays them only while effects are enabled | recorded |
 | [FND-AUDIO-003](../findings/FND-AUDIO-003.md) | The turn-start sound plays at every turn start after the first, and every effect interrupts the one playing | recorded |
@@ -608,7 +609,7 @@
 
 ## experiments
 
-121 entries.
+122 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -733,6 +734,7 @@
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | Do the console's Events, Combat Results, Rankings, Search and Hire panels and the Gang Information panel of a hire offer look the same in the rebuild? | recorded |
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | Do the Move, Equip and Research panels, and the Item Information and compact Gang Information panels Equip opens, look the same in the rebuild? | recorded |
 | [EXP-UI-010](../experiments/EXP-UI-010.md) | Do the Give, Sell and Influence panels look the same in the rebuild? | recorded |
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | Does the Attack picker look the same in the rebuild for a sector holding several opponents' gangs? | recorded |
 
 ## bugs
 

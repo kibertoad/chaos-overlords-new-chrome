@@ -148,6 +148,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | builds |
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | builds |
 | [EXP-UI-010](../experiments/EXP-UI-010.md) | builds |
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -256,6 +257,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | builds, locations |
 | [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | builds, locations |
 | [FND-ATTACK-006](../findings/FND-ATTACK-006.md) | builds, locations |
+| [FND-ATTACK-007](../findings/FND-ATTACK-007.md) | builds, locations |
 | [FND-AUDIO-001](../findings/FND-AUDIO-001.md) | builds, locations |
 | [FND-AUDIO-002](../findings/FND-AUDIO-002.md) | builds, locations |
 | [FND-AUDIO-003](../findings/FND-AUDIO-003.md) | builds, locations |
@@ -918,6 +920,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | evidence |
 
 ## EXP-COMLINK-001
@@ -1167,6 +1170,7 @@ None.
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | body |
 | [EXP-UI-010](../experiments/EXP-UI-010.md) | body |
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 
 ## EXP-TURN-002
 
@@ -1485,6 +1489,7 @@ None.
 | [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | body |
 | [EXP-TURN-096](../experiments/EXP-TURN-096.md) | body |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
 
 ## EXP-TURN-027
@@ -2108,6 +2113,7 @@ None.
 |---|---|
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | body |
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [FND-UI-048](../findings/FND-UI-048.md) | body |
 | [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -2146,6 +2152,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-010](../experiments/EXP-UI-010.md) | body |
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | evidence |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | evidence |
 | [SCR-MOVE-001](../screens/SCR-MOVE-001.md) | evidence |
@@ -2159,6 +2166,12 @@ None.
 | [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | evidence |
 | [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | evidence |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | evidence |
+
+## EXP-UI-011
+
+| Cited by | In |
+|---|---|
+| [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
@@ -3509,6 +3522,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
@@ -3517,6 +3531,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | evidence |
 
@@ -3524,6 +3539,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-ATTACK-007](../findings/FND-ATTACK-007.md) | body |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 
 ## FND-ATTACK-006
@@ -3532,6 +3548,13 @@ None.
 |---|---|
 | [EXP-ATTACK-001](../experiments/EXP-ATTACK-001.md) | body |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | body, evidence |
+
+## FND-ATTACK-007
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
+| [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | body, evidence |
 
 ## FND-AUDIO-001
 
@@ -5076,6 +5099,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
+| [FND-ATTACK-007](../findings/FND-ATTACK-007.md) | body |
 | [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | body |
@@ -6983,6 +7007,7 @@ None.
 |---|---|
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | body |
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | body |
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body, evidence |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
 | [FND-HEAL-002](../findings/FND-HEAL-002.md) | body |
@@ -9175,6 +9200,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | body, related |
 | [SCR-GANG-001](../screens/SCR-GANG-001.md) | related |
 
@@ -9438,6 +9464,7 @@ None.
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | body |
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | body |
 | [EXP-UI-010](../experiments/EXP-UI-010.md) | body |
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, related |
 | [SCR-UI-005](../screens/SCR-UI-005.md) | body |

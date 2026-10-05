@@ -31,7 +31,7 @@ public sealed partial class ScreenCaptureTests
     // both variants of SCR-FINANCE-001 (EXP-UI-006, EXP-UI-007), and SCR-EVENT-001, SCR-COMBAT-001,
     // SCR-OBJECTIVE-001, SCR-SEARCH-001, SCR-HIRE-001 and SCR-GANG-002 (EXP-UI-008), and SCR-MOVE-001,
     // SCR-EQUIP-001, SCR-RESEARCH-001, SCR-UI-006 and SCR-GANG-001 (EXP-UI-009), and SCR-GIVE-001,
-    // SCR-SELL-001 and SCR-INFLUENCE-001 (EXP-UI-010).
+    // SCR-SELL-001 and SCR-INFLUENCE-001 (EXP-UI-010), and SCR-ATTACK-001 (EXP-UI-011).
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)

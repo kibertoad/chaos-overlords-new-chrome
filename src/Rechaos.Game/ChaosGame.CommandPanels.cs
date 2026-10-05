@@ -14,6 +14,13 @@ public sealed partial class ChaosGame
     private CommandPanelButton? _pressedCommandPanelButton;
     private readonly IndexedDoubleClickTracker _commandPanelClicks = new();
 
+    // The order the open picker gives and the gang it is for, kept apart from its targets so the
+    // Research panel can open with none (FND-UI-021, EXP-UI-011). The gang the order panel was
+    // opened for is null for a bulk or group order.
+    private GangAction _commandTargetAction;
+    private GangId _commandTargetGang;
+    private GangId? _commandGang;
+
     /// <summary>
     /// Whether one of the panels with the shared faces is the one taking input: the Equip,
     /// Research, Influence, Move, Give and Sell panels, whose keys all press the faces through
@@ -178,7 +185,7 @@ public sealed partial class ChaosGame
         _equipmentCategory = 0;
         _commandTargetCursor = -1;
         _commandPanelFace = CommandPanelFaceState.NotDrawn;
-        if (_state?.FindGang(_commandTargetOptions[0].Gang)?.QueuedCommand?.Command is not
+        if (_state?.FindGang(_commandTargetGang)?.QueuedCommand?.Command is not
                 { Target.Kind: CommandTargetKind.Item } queued
             || queued.Action != action) return;
         _equipmentCategory = EquipmentCommandLayout.CategoryForItemType(_state.Definitions.Items[queued.Target.Id].Type);
@@ -243,7 +250,7 @@ public sealed partial class ChaosGame
             SelectEquipmentCategory(category);
             return;
         }
-        if (_state is null || _state.FindGang(_commandTargetOptions[0].Gang) is not { } actor) return;
+        if (_state is null || _state.FindGang(_commandTargetGang) is not { } actor) return;
         if (EquipmentCommandLayout.Portrait.Contains(point))
         {
             // One target only, so every portrait click registers the same index.
@@ -251,7 +258,7 @@ public sealed partial class ChaosGame
                 OpenGangDetails(actor, ClientScreen.Commands);
             return;
         }
-        var purchase = _commandTargetOptions[0].Action == GangAction.Equip;
+        var purchase = _commandTargetAction == GangAction.Equip;
         if (purchase)
         {
             var carried = EquippedItems(actor);

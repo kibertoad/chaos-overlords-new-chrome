@@ -17,6 +17,7 @@ public sealed partial class ChaosGame
             RejectInput("NO ACTIVE GANG");
             return;
         }
+        _commandGang = gang.Id;
         _commandOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id)
             .Where(command => !repeat || CommandRules.CanRepeat(command.Action))
             .ToArray();
@@ -30,6 +31,7 @@ public sealed partial class ChaosGame
     private void OpenBulkCommands(bool repeat)
     {
         if (!CanOpenCommands(out var playerId)) return;
+        _commandGang = null;
         _bulkCommandGangs = _gangSelection.Gangs.ToArray();
         _commandOptions = BulkGangCommands.Options(
             _state!, playerId, _bulkCommandGangs, repeat);
@@ -43,6 +45,7 @@ public sealed partial class ChaosGame
     private void OpenGroupCommands(MatchState state, PlayerId playerId, bool repeat)
     {
         if (!CanOpenCommands(out _)) return;
+        _commandGang = null;
         _bulkCommandGangs = GroupOrderGangs(state, playerId, _cursor).Select(gang => gang.Id).ToArray();
         _commandOptions = BulkGangCommands.Options(
             state, playerId, _bulkCommandGangs, repeat, group: true);
@@ -73,6 +76,7 @@ public sealed partial class ChaosGame
     {
         _commandCursor = 0;
         _commandTargetOptions = [];
+        _commandTargetAction = GangAction.None;
         _commandTargetCursor = 0;
         _choosingCommandTarget = false;
         _commandRepeats = repeat;
@@ -161,9 +165,7 @@ public sealed partial class ChaosGame
                 for (var slot = 0; slot < MatchLimits.SitesPerSector; slot++)
                 {
                     if (!InfluenceCommandLayout.SiteHit(slot).Contains(point)) continue;
-                    var actor = _state is null || _commandTargetOptions.Count == 0
-                        ? null
-                        : _state.FindGang(_commandTargetOptions[0].Gang);
+                    var actor = _state?.FindGang(_commandTargetGang);
                     if (actor is null) return;
                     var targetId = actor.SectorId * MatchLimits.SitesPerSector + slot;
                     var openDetails = _influenceSiteClicks.Register(targetId, _inputTime);
@@ -240,7 +242,9 @@ public sealed partial class ChaosGame
             return;
         }
         var options = _commandOptions.Where(command => command.Action == action).ToArray();
-        if (options.Length == 0)
+        // FND-UI-021, EXP-UI-011: the original's menu never greys Equip, Move or Research, so a
+        // gang with nothing to choose still opens their panels, with an empty list.
+        if (!CommandOverlayLayout.Offers(action, options, singleGang: _commandGang is not null))
         {
             RejectInput($"{action.ToString().ToUpperInvariant()} IS NOT AVAILABLE");
             return;
@@ -257,6 +261,8 @@ public sealed partial class ChaosGame
                 OpenSellEquipment(_commandReturnScreen, _commandRepeats);
                 return;
             }
+            _commandTargetAction = action;
+            _commandTargetGang = _commandGang ?? options[0].Gang;
             _commandTargetOptions = action == GangAction.Attack && _state is not null
                 ? AttackTargetRoster.Order(_state, options)
                 : options;
@@ -337,17 +343,13 @@ public sealed partial class ChaosGame
         return (cancelled, cancelled == 0 ? refusal : null);
     }
 
-    /// <summary>RULE-TURN-005, EXP-TURN-095: whether the command panel offers an order, given the
-    /// commands the gangs may take. The original's menus never grey None.</summary>
-    internal static bool OffersAction(GangAction action, IEnumerable<GameCommand> options) =>
-        action == GangAction.None || options.Any(command => command.Action == action);
-
     private void BackFromCommands()
     {
         if (_choosingCommandTarget)
         {
             _choosingCommandTarget = false;
             _commandTargetOptions = [];
+            _commandTargetAction = GangAction.None;
             return;
         }
         _screens.Show(_commandReturnScreen);
@@ -377,7 +379,8 @@ public sealed partial class ChaosGame
         {
             var action = actions[index];
             var row = CommandOverlayLayout.ActionRow(index);
-            var available = OffersAction(action, _commandOptions);
+            // RULE-TURN-005, EXP-TURN-095: the original's menus never grey None.
+            var available = CommandOverlayLayout.Offers(action, _commandOptions, singleGang: _commandGang is not null);
             if (index == _commandCursor)
                 batch.Draw(pixel, row, new Color(65, 35, 25));
             if (action is GangAction.None or GangAction.Terminate)
@@ -442,18 +445,14 @@ public sealed partial class ChaosGame
         }
     }
 
-    private bool IsEquipmentCommandPicker() => _commandTargetOptions.Count > 0
-        && _commandTargetOptions[0].Action is GangAction.Equip or GangAction.Research;
+    private bool IsEquipmentCommandPicker() => _commandTargetAction is GangAction.Equip or GangAction.Research;
 
-    private bool IsInfluenceCommandPicker() => _commandTargetOptions.Count > 0
-        && _commandTargetOptions[0].Action == GangAction.Influence;
+    private bool IsInfluenceCommandPicker() => _commandTargetAction == GangAction.Influence;
 
-    private bool IsAttackCommandPicker() => _commandTargetOptions.Count > 0
-        && _commandTargetOptions[0].Action == GangAction.Attack;
+    private bool IsAttackCommandPicker() => _commandTargetAction == GangAction.Attack;
 
     private bool IsMovementCommandPicker() => _choosingCommandTarget
-        && _commandTargetOptions.Count > 0
-        && _commandTargetOptions[0].Action == GangAction.Move;
+        && _commandTargetAction == GangAction.Move;
 
     private void DrawInfluenceCommandTargets(
         SpriteBatch batch,
@@ -462,7 +461,7 @@ public sealed partial class ChaosGame
     {
         DrawPanelArtwork(batch, pixel, _influenceBackground, InfluenceCommandLayout.Panel, 248);
 
-        var actor = state.FindGang(_commandTargetOptions[0].Gang)!;
+        var actor = state.FindGang(_commandTargetGang)!;
         var actorDefinition = state.Definitions.Gang(actor.DefinitionId);
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, InfluenceCommandLayout.Portrait,
@@ -494,7 +493,7 @@ public sealed partial class ChaosGame
         _commandTargetCursor = -1;
         _commandPanelFace = CommandPanelFaceState.NotDrawn;
         _influenceSiteClicks.Cancel();
-        if (_state?.FindGang(_commandTargetOptions[0].Gang)?.QueuedCommand?.Command is not
+        if (_state?.FindGang(_commandTargetGang)?.QueuedCommand?.Command is not
             { Action: GangAction.Influence } queued) return;
         _commandPanelFace = CommandPanelFaces.OnOpening(true);
         _commandTargetCursor = Enumerable.Range(0, _commandTargetOptions.Count)
@@ -507,7 +506,7 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        var action = _commandTargetOptions[0].Action;
+        var action = _commandTargetAction;
         var background = action == GangAction.Equip
             ? _equipmentPurchaseBackground
             : _equipmentResearchBackground;
@@ -517,7 +516,7 @@ public sealed partial class ChaosGame
             batch.Draw(pixel, EquipmentCommandLayout.Panel, new Color(0, 0, 0, 248));
         // SCR-RESEARCH-001, EXP-UI-009: the item list is written on a black area.
         if (action == GangAction.Research) batch.Draw(pixel, EquipmentCommandLayout.ResearchListArea, Color.Black);
-        var actor = state.FindGang(_commandTargetOptions[0].Gang)!;
+        var actor = state.FindGang(_commandTargetGang)!;
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, EquipmentCommandLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actor.DefinitionId), Color.White);

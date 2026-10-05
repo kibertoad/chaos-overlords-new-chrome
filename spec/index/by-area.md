@@ -565,6 +565,7 @@
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | A double-click in the Attack picker opens Item Information for an equipment icon and the gang information panel for a portrait, of the acting gang or of a listed target | recorded |
 | [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | The Attack picker builds each target card from a 66-by-87 PX00129 frame with the gang's portrait, a Force track and its item icons | recorded |
 | [FND-ATTACK-006](../findings/FND-ATTACK-006.md) | The Attack picker's roster builder lists an opponent's gangs in a sector that the active player sees, with no bound on the count | recorded |
+| [FND-ATTACK-007](../findings/FND-ATTACK-007.md) | The Attack picker copies a target's second and third item icons into 19-pixel-wide boxes, so they are stretched | recorded |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | established |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | established |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | Attack picker (Target Acquisition) | supported |
@@ -875,6 +876,7 @@
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | Do the console's Events, Combat Results, Rankings, Search and Hire panels and the Gang Information panel of a hire offer look the same in the rebuild? | recorded |
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | Do the Move, Equip and Research panels, and the Item Information and compact Gang Information panels Equip opens, look the same in the rebuild? | recorded |
 | [EXP-UI-010](../experiments/EXP-UI-010.md) | Do the Give, Sell and Influence panels look the same in the rebuild? | recorded |
+| [EXP-UI-011](../experiments/EXP-UI-011.md) | Does the Attack picker look the same in the rebuild for a sector holding several opponents' gangs? | recorded |
 | [FND-UI-001](../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |

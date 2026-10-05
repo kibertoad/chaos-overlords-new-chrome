@@ -55,7 +55,7 @@ public sealed partial class UiNavigationTests
         Assert.Equal(new Rectangle(202, 140, 32, 32), AttackCommandLayout.Opponent(0));
         Assert.Equal(new Rectangle(202, 284, 32, 32), AttackCommandLayout.Opponent(4));
         Assert.Equal(new Rectangle(130, 206, 20, 20), AttackCommandLayout.ActorItem(0));
-        Assert.Equal(new Rectangle(284, 206, 20, 20), AttackCommandLayout.TargetItem(0, 2));
+        Assert.Equal(new Rectangle(284, 206, 19, 20), AttackCommandLayout.TargetItemBox(0, 2));
         Assert.Equal(new Rectangle(0, 240, 20, 20), OriginalSpriteLayout.ItemPortrait(12));
     }
 

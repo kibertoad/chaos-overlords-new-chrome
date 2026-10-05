@@ -584,6 +584,24 @@ public static class CommandOverlayLayout
         GangAction.Attack or GangAction.Equip or GangAction.Give or GangAction.Influence
         or GangAction.Move or GangAction.Research or GangAction.Sell;
 
+    /// <summary>
+    /// FND-UI-021: menu 1 greys only Attack, Control, Influence, Heal, Sell and Give, so it never
+    /// greys Equip, Move or Research, and their panels open with an empty list when the gang has
+    /// nothing to choose (EXP-UI-011 shows it for Research).
+    /// </summary>
+    public static bool OpensWithoutTargets(GangAction action) =>
+        action is GangAction.Equip or GangAction.Move or GangAction.Research;
+
+    /// <summary>
+    /// Whether the order panel offers <paramref name="action"/>, given the orders the rules allow:
+    /// None always (RULE-TURN-005, EXP-TURN-095), any order with a legal command, and for one gang
+    /// an order whose panel opens without targets.
+    /// </summary>
+    public static bool Offers(GangAction action, IEnumerable<GameCommand> options, bool singleGang) =>
+        action == GangAction.None
+        || options.Any(command => command.Action == action)
+        || (singleGang && OpensWithoutTargets(action));
+
     public static IReadOnlyList<GangAction> ActionsFor(bool recurring) => recurring
         ? Actions.Where(action => action == GangAction.None || CommandRules.CanRepeat(action)).ToArray()
         : Actions;

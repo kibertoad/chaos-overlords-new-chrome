@@ -180,6 +180,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 .Where(command => !recurring || CommandRules.CanRepeat(command.Action)).ToArray()
             : BulkGangCommands.Options(match, human, gangs.Select(gang => gang.Id).ToArray(), recurring, group: true);
         return MenuActions(menu).Select(entry => entry.Action)
-            .Where(action => ChaosGame.OffersAction(action, options)).ToHashSet();
+            .Where(action => CommandOverlayLayout.Offers(action, options, singleGang: menu is 1 or 2))
+            .ToHashSet();
     }
 }
