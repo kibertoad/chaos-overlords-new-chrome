@@ -278,6 +278,11 @@ internal sealed class BreakContext
 
     public uint ReturnAddress => (uint)Process.ReadInt32(Esp);
 
+    /// <summary>A copy of every register, which <see cref="Restore"/> puts back.</summary>
+    public byte[] Save() => (byte[])_context.Clone();
+
+    public void Restore(byte[] saved) => saved.CopyTo(_context, 0);
+
     public void Commit()
     {
         if (!Native.Wow64SetThreadContext(_thread, _context))

@@ -64,6 +64,26 @@ internal sealed class StateExtractor
                 });
             run["finance"] = panels;
         }
+        // RULE-EQUIP-004, FND-EQUIP-008: the list the Equip panel's builder filled for each category
+        // of each of the first human's living gangs, with the Tech Level it was passed.
+        if (trace["EquipLists"] is JsonArray equipLists)
+            run["equip_lists"] = new JsonArray(equipLists.Select(list => (JsonNode)new JsonObject
+            {
+                ["slot"] = list!["Slot"]!.GetValue<int>(),
+                ["category"] = list["Category"]!.GetValue<int>(),
+                ["tech_level"] = list["TechLevel"]!.GetValue<int>(),
+                ["items"] = new JsonArray(list["Items"]!.AsArray().Select(item => (JsonNode)item!.GetValue<int>()).ToArray()),
+            }).ToArray());
+        // RULE-ATTACK-002, FND-ATTACK-006: the targets the Attack picker's roster builder filled for
+        // each opponent and each of the first human's living gangs, with the sector it was passed.
+        if (trace["AttackLists"] is JsonArray attackLists)
+            run["attack_lists"] = new JsonArray(attackLists.Select(list => (JsonNode)new JsonObject
+            {
+                ["slot"] = list!["Slot"]!.GetValue<int>(),
+                ["sector"] = list["Sector"]!.GetValue<int>(),
+                ["opponent"] = list["Opponent"]!.GetValue<int>(),
+                ["targets"] = new JsonArray(list["Targets"]!.AsArray().Select(target => (JsonNode)target!.GetValue<int>()).ToArray()),
+            }).ToArray());
         // RULE-SEARCH-001, FND-SEARCH-002: each click posted after the dump, whether the Search panel
         // was open after it, the active player and the whole filter table.
         if (trace["SearchClicks"] is JsonArray searchClicks)

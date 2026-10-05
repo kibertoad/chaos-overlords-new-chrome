@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 74 |
-| `validated` | 143 |
+| `implemented` | 72 |
+| `validated` | 145 |
 
 | Code | Rows |
 |---|---|
@@ -237,7 +237,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-EQUIP-001` | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002`, `DEV-EQUIP-001` | validated | Cash is tested at the Equip's place in the order the player gave Equip and Sell, where the original tests it at the gang's place in the roster scan (DEV-EQUIP-001). A computer player's planned Equip it can no longer pay for gives no command (DEV-AI-002). The failed-Equip report is compared under RULE-EVENT-014. |
 | `RULE-EQUIP-002` | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-EQUIP-001` | validated | Players resolve by slot. Equip and Sell resolve in the order the player gave them, where the original scans roster slots (DEV-EQUIP-001). Give keeps the roster order: the rebuild empties every giver's slots before the pass and delivers after all players' scans, and no Equip or Sell reads a giver's or recipient's slot in between, so the result is the same as delivering after each player's scan. EXP-TURN-031 gives an Equip at the exact price, Equips one short, and a Sell by an earlier and by a later roster slot, each turn's orders in roster order; EXP-TURN-016, EXP-TURN-027 and EXP-TURN-030 hold Sells and Gives. |
 | `RULE-EQUIP-003` | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-062 reaches the Factory discount, EXP-TURN-072 an item of Cost 4 priced at full Cost beside another player's Factory, and EXP-TURN-053 an item of Cost 6 priced at full Cost beside a Factory completed in the same turn. |
-| `RULE-EQUIP-004` | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported | complete | None | None | implemented | None |
+| `RULE-EQUIP-004` | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.Presentation.cs | None | validated | The rebuild offers the list as the gang's legal Equip orders in the category. EXP-EQUIP-001 to EXP-EQUIP-003 call the original's builder for every category of every gang of the human: the lists leave items out by research, by Tech Level and because the gang carries them, keep items at the gang's own Tech Level and items above the player's cash. No shipped category has more than sixteen items, so a longer list is not reached. |
 | `SCR-EQUIP-001` | Equip panel | supported | complete | None | `None` | implemented | Category cells, held item icons, list columns, row mark, frame, faces and keys follow the original, and the portrait double-click opens the compact gang panel. The rebuild's extra keys are DEV-UI-010. |
 
 ## GIVE
@@ -278,7 +278,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-ATTACK-001` | One gang's attack and the retaliation it provokes | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-HELP-002` | validated | EXP-TURN-011 replays a human gang's attack on a computer player's gang that is not hiding, with its retaliation. EXP-TURN-017 replays four attacks by computer players' gangs on the human's hiding gang, three evaded and one that hits. EXP-TURN-029 replays a bare-handed Martial Artist's attack on an armed gang, which does not strike back. |
-| `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported | complete | None | `DEV-ATTACK-002` | implemented | None |
+| `RULE-ATTACK-002` | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.Presentation.cs | `DEV-ATTACK-002` | validated | EXP-ATTACK-001 to EXP-ATTACK-003 call the original's picker roster builder for every opponent of every gang of the human: the lists leave out an enemy gang the player does not see, alone in the sector and beside seen gangs of the same opponent, and list the seen gangs of three opponents in roster order. No run has a hiding gang in the sector or more than six of one opponent's gangs there. |
 | `SCR-ATTACK-001` | Attack picker (Target Acquisition) | supported | complete | None | `DEV-UI-008` | implemented | Layout, marks, faces, keys, initial selection and double-click panels follow FND-ATTACK-003 and FND-ATTACK-004; the target cards (frame, portrait, Force track, items) follow FND-ATTACK-005. When the Confirm face is first drawn is not recorded. |
 
 ## COMBAT
