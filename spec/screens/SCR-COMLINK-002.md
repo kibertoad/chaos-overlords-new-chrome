@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-005, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-005, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004, FND-UI-047]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-002, RULE-COMLINK-003, RULE-COMLINK-006]
@@ -77,6 +77,10 @@ itself when it starts, then counts the timer events it consumes, and every
 third one switches the caret between the plain and the inverse character row.
 Each phase therefore lasts three events, 498 milliseconds, and the caret starts
 plain [FND-COMLINK-005].
+
+While Cancel or Send is held with the pointer, the count stops. The pass that
+ends with the release counts one event if any fell during the hold and loses
+the others [FND-UI-047].
 
 ## Differences between builds
 

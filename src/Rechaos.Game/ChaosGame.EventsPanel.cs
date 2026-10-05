@@ -153,7 +153,7 @@ public sealed partial class ChaosGame
         _eventCursor = 0;
         _eventViewedPages.Clear();
         if (count > 0) _eventViewedPages.Add(0);
-        _eventPageShownAt = _inputTime;
+        _eventPageShownTick = _eventPump.Ticks;
         CancelEventsButton();
     }
 
@@ -252,7 +252,7 @@ public sealed partial class ChaosGame
         if (next == _eventCursor) return;
         _eventCursor = next;
         _eventViewedPages.Add(_eventCursor);
-        _eventPageShownAt = _inputTime;
+        _eventPageShownTick = _eventPump.Ticks;
     }
 
     private void CloseEvents()
@@ -421,13 +421,13 @@ public sealed partial class ChaosGame
             batch.Draw(artwork,
                 LastTurnEventsLayout.ArtworkDestination(artwork.Width, artwork.Height), Color.White);
         // SCR-EVENT-001: the researched item starts at frame 0 when the panel opens and after
-        // each page change.
+        // each page change, and steps on the ticks the event pump takes, so a held face stops it
+        // and a page turned by a held arrow shows frame 1 at once (FND-UI-047).
         if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId
             && itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, LastTurnEventsLayout.ResearchItem,
-                ItemRotationPresentation.Frame(
-                    _inputTime > _eventPageShownAt ? _inputTime - _eventPageShownAt : TimeSpan.Zero),
+                ItemRotationPresentation.FrameAfter(_eventPump.Ticks - _eventPageShownTick),
                 Color.White);
         // SCR-EVENT-001: an elimination report adds the eliminated player's 32-by-32 portrait,
         // stretched to 48 by 48 over its illustration.
@@ -437,7 +437,8 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.OverlordPortrait(eliminated.Setup.PortraitId), Color.White);
     }
 
-    private TimeSpan _eventPageShownAt;
+    /// <summary>The event pump tick the page was drawn on, when its researched item is at frame 0.</summary>
+    private long _eventPageShownTick;
 
     /// <summary>
     /// This player's reports for the completed turn, memoised for the frame.
@@ -886,6 +887,12 @@ public static class ItemRotationPresentation
             % FrameCount;
         return Frame(frame);
     }
+
+    /// <summary>
+    /// The frame a panel's counter reaches after <paramref name="ticks"/> ticks from frame 0; a
+    /// negative count is taken as none.
+    /// </summary>
+    public static Rectangle FrameAfter(long ticks) => Frame((int)(Math.Max(0, ticks) % FrameCount));
 
     public static Rectangle Frame(int frame)
     {

@@ -18,6 +18,12 @@ namespace Rechaos.Game;
 /// it on its first call after the release; the other ticks of the hold are lost, and every step
 /// the pump drives stays that many ticks behind the game clock from then on.
 /// </para>
+/// <para>
+/// A panel that steps on slot 0 in its own loop takes the flag after the event its pass handled,
+/// so a hold of one of its faces stops its step and the release pass takes the kept tick, as the
+/// pump does (FND-UI-047). The item rotations, the researched item of Last Turn Events, the
+/// Comlink Send caret and the idle-gang warning's line read this clock for that reason.
+/// </para>
 /// </remarks>
 public sealed class EventPumpClock
 {

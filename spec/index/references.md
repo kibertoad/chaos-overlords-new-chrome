@@ -488,6 +488,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-044](../findings/FND-UI-044.md) | builds, locations |
 | [FND-UI-045](../findings/FND-UI-045.md) | builds, locations |
 | [FND-UI-046](../findings/FND-UI-046.md) | builds, locations |
+| [FND-UI-047](../findings/FND-UI-047.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -4184,6 +4185,7 @@ None.
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
 | [FND-UI-045](../findings/FND-UI-045.md) | body |
 | [FND-UI-046](../findings/FND-UI-046.md) | body |
+| [FND-UI-047](../findings/FND-UI-047.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -6389,6 +6391,7 @@ None.
 | [FND-UI-026](../findings/FND-UI-026.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
 | [FND-UI-046](../findings/FND-UI-046.md) | body |
+| [FND-UI-047](../findings/FND-UI-047.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | glossary: blit_benchmark_count | glossary |
 | glossary: comlink_alert_repeat | glossary |
@@ -6620,8 +6623,24 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-047](../findings/FND-UI-047.md) | body |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | body, evidence |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
+
+## FND-UI-047
+
+| Cited by | In |
+|---|---|
+| [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | body, evidence |
+| [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
+| [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
+| [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
+| [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | body, evidence |
+| [SCR-GANG-002](../screens/SCR-GANG-002.md) | body, evidence |
+| [SCR-GIVE-001](../screens/SCR-GIVE-001.md) | body, evidence |
+| [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | body, evidence |
+| [SCR-SELL-001](../screens/SCR-SELL-001.md) | body, evidence |
+| [SCR-UI-006](../screens/SCR-UI-006.md) | body, evidence |
 
 ## FND-UPKEEP-001
 
@@ -8330,7 +8349,7 @@ None.
 | [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | related |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | related |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | body, related |
-| [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | related |
+| [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | body, related |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | body, related |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | body, related |
 | [SCR-UI-006](../screens/SCR-UI-006.md) | body |

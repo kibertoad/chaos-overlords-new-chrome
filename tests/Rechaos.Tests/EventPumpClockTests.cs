@@ -155,6 +155,13 @@ public sealed class EventPumpClockTests
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
         GC.SuppressFinalize(game);
+        var combatExit = new DetailedCombatExit();
+        Field("_combatExit").SetValue(game, combatExit);
+        Assert.False(Holds(game));
+        // FND-UI-047: Detailed Combat's Exit face goes through the held-button helper too.
+        combatExit.Update(CombatPanelLayout.Exit.Center, down: true, wasDown: false);
+        Assert.True(Holds(game));
+        combatExit.Reset();
         Assert.False(Holds(game));
         AssertHolds(game, "_draggedHireDefinitionId", (short)1);
         AssertHolds(game, "_pressedHireRejectSlot", 0);

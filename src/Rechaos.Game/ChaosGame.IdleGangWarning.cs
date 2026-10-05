@@ -87,10 +87,24 @@ public sealed partial class ChaosGame
         }
     }
 
+    /// <summary>
+    /// A press on the warning (SCR-OPTIONS-001): Cancel and OK go through the held-button helper
+    /// and act on a release inside themselves (FND-UI-047), and a press outside the panel is
+    /// refused with slot 4.
+    /// </summary>
     private void HandleIdleGangWarningClick(Point point)
     {
-        if (IdleGangWarningLayout.Ok.Contains(point)) ConfirmIdleGangWarning();
-        else if (IdleGangWarningLayout.Cancel.Contains(point)) CancelIdleGangWarning();
+        if (IdleGangWarningLayout.Ok.Contains(point))
+            PressPanelFace(point, IdleGangWarningLayout.Panel, IdleGangWarningLayout.Ok, () =>
+            {
+                // The planning time limit may close the warning while the face is held.
+                if (_idleGangWarningOpen) ConfirmIdleGangWarning();
+            });
+        else
+            PressPanelFace(point, IdleGangWarningLayout.Panel, IdleGangWarningLayout.Cancel, () =>
+            {
+                if (_idleGangWarningOpen) CancelIdleGangWarning();
+            });
     }
 
     /// <summary>
@@ -132,7 +146,7 @@ public sealed partial class ChaosGame
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Cancel, "CANCEL", false);
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Ok, "OK", true);
         }
-        if (!IdleGangWarningLayout.LineShown(_inputTime))
+        if (!IdleGangWarningLayout.LineShown(_eventPump.Time))
             batch.Draw(pixel, IdleGangWarningLayout.BlinkingLine, Color.Black);
     }
 }
