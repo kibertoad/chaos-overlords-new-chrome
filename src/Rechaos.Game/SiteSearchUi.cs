@@ -24,6 +24,63 @@ public static class SiteSearchLayout
     }
 }
 
+/// <summary>The control of the Search panel a press lands on (FND-SEARCH-002).</summary>
+public enum SiteSearchControl
+{
+    Nothing,
+    All,
+    None,
+    Done,
+    Row
+}
+
+/// <summary>A press on the Search panel: the control it hit and, for a row, the row's index.</summary>
+public readonly record struct SiteSearchPress(SiteSearchControl Control, int Row = -1);
+
+public static class SiteSearchPanel
+{
+    /// <summary>
+    /// FND-SEARCH-002: the control under a press, tested as the handler tests its half-open
+    /// rectangles, ALL, NONE and Done first and then the rows the panel lists.
+    /// </summary>
+    public static SiteSearchPress HitTest(Point point, int rowCount)
+    {
+        if (SiteSearchLayout.All.Contains(point)) return new(SiteSearchControl.All);
+        if (SiteSearchLayout.None.Contains(point)) return new(SiteSearchControl.None);
+        if (SiteSearchLayout.Ok.Contains(point)) return new(SiteSearchControl.Done);
+        for (var row = 0; row < Math.Min(rowCount, SiteSearchLayout.MaximumSites); row++)
+            if (SiteSearchLayout.Site(row).Contains(point)) return new(SiteSearchControl.Row, row);
+        return new(SiteSearchControl.Nothing);
+    }
+
+    /// <summary>
+    /// RULE-SEARCH-001: ALL selects every listed site and NONE clears the player's filter; a row
+    /// flips its site. A double-click on a row opens Site Information instead, which the caller
+    /// decides, and Done changes no filter.
+    /// </summary>
+    public static void Apply(
+        SiteSearchSelectionState selections,
+        PlayerId player,
+        SiteSearchPress press,
+        IReadOnlyList<short> rowSites)
+    {
+        ArgumentNullException.ThrowIfNull(selections);
+        ArgumentNullException.ThrowIfNull(rowSites);
+        switch (press.Control)
+        {
+            case SiteSearchControl.All:
+                selections.SelectAll(player, rowSites);
+                break;
+            case SiteSearchControl.None:
+                selections.Clear(player);
+                break;
+            case SiteSearchControl.Row:
+                selections.Toggle(player, rowSites[press.Row]);
+                break;
+        }
+    }
+}
+
 public sealed class SiteSearchSelectionState
 {
     private readonly HashSet<short>[] _selections = Enumerable.Range(0, MatchLimits.PlayerCount)

@@ -36,6 +36,7 @@ static int Usage()
               [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture] [--white-key]
               [--comlink <script file>]
               [--draw-values <hex address>=<int32>[/<int32>...],...]
+              [--search-clicks <x:y>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -82,7 +83,8 @@ static int NewGame(string[] args)
         Option(args, "--comlink") is { } script ? File.ReadAllLines(script) : null,
         args.Contains("--capture"),
         args.Contains("--white-key"),
-        Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null);
+        Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null,
+        Option(args, "--search-clicks") is { } searchClicks ? ParseClicks(searchClicks) : null);
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
@@ -203,6 +205,16 @@ static IReadOnlyList<ProbeSearch> ParseSearch(string value) =>
         if (definitions.Any(definition => definition is < 0 or >= OriginalAddresses.SiteDefinitionCount))
             throw new FormatException($"A site definition is 0 to 21: {entry}");
         return new ProbeSearch(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), definitions);
+    }).ToArray();
+
+// --search-clicks x:y,... posts a click at each client point after the dump (SearchClickRecord).
+static IReadOnlyList<(int X, int Y)> ParseClicks(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        if (parts.Length != 2) throw new FormatException($"A click needs x and y: {entry}");
+        return (int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture),
+            int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture));
     }).ToArray();
 
 // --finance turn:sector,... opens the Financial panel before that turn's Done, the City variant for

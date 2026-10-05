@@ -107,7 +107,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
-    IReadOnlyList<ProbeDrawValue>? DrawValues = null)
+    IReadOnlyList<ProbeDrawValue>? DrawValues = null, IReadOnlyList<(int X, int Y)>? SearchClicks = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -185,7 +185,8 @@ internal sealed record ProbeTrace(
     List<PanelRecord>? Panels = null,
     CityMarkers? Markers = null,
     List<TimerRecord>? Timers = null,
-    List<ComlinkStep>? Comlink = null);
+    List<ComlinkStep>? Comlink = null,
+    List<SearchClickRecord>? SearchClicks = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -390,6 +391,8 @@ internal sealed partial class NewGameSession(
 
         DumpWritableSections();
         if (settings.Capture) CaptureDrawingArea(window);
+        if (settings.SearchClicks is { Count: > 0 } && !RecordSearchClicks(window))
+            return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -862,7 +865,8 @@ internal sealed partial class NewGameSession(
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
             _endgame, _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels, _lastRedraw,
-            _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink);
+            _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
+            _searchClicks.Count == 0 ? null : _searchClicks);
     }
 
     private static void Click(IntPtr window, int x, int y)

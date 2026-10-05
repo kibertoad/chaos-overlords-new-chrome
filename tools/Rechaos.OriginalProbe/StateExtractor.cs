@@ -64,6 +64,17 @@ internal sealed class StateExtractor
                 });
             run["finance"] = panels;
         }
+        // RULE-SEARCH-001, FND-SEARCH-002: each click posted after the dump, whether the Search panel
+        // was open after it, the active player and the whole filter table.
+        if (trace["SearchClicks"] is JsonArray searchClicks)
+            run["search_clicks"] = new JsonArray(searchClicks.Select(click => (JsonNode)new JsonObject
+            {
+                ["x"] = click!["X"]!.GetValue<int>(),
+                ["y"] = click["Y"]!.GetValue<int>(),
+                ["panel_open"] = click["PanelOpen"]!.GetValue<bool>(),
+                ["active_player"] = click["ActivePlayer"]!.GetValue<int>(),
+                ["filters"] = new JsonArray(click["Filters"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+            }).ToArray());
         // RULE-SETUP-008: each call of a planning entry panel, with the roll count and whether it
         // was shown, in the order of the calls.
         if (trace["Panels"] is JsonArray panelCalls)

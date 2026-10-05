@@ -103,6 +103,9 @@ internal static class OriginalAddresses
     public const uint SearchFilters = 0x004A24E8;
     public const int SiteDefinitionCount = 22;
 
+    // FND-SEARCH-002: fn_00448E32, the Search panel's handler, which runs while the panel is open.
+    public const uint SearchPanel = 0x00448E32;
+
     // FND-FINANCE-002: fn_0044D1BB(player, sector) builds and draws the Financial panel, -1 for the
     // City variant; the upper part of the console's Financial control, (552, 178, 48, 33), opens the
     // City variant and the lower part, (552, 211, 48, 15), the Sector variant of the selected sector

@@ -791,6 +791,8 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [EXP-SEARCH-001](../experiments/EXP-SEARCH-001.md) | How do the Search panel's ALL, NONE and rows change the filter table at the first planning entry? | recorded |
+| [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | Does the Search panel change the filter bytes of the active player when the human is in slot 2? | recorded |
 | [FND-SEARCH-001](../findings/FND-SEARCH-001.md) | Each player has 22 Search filter bytes, one per site definition, cleared when a new game starts | recorded |
 | [FND-SEARCH-002](../findings/FND-SEARCH-002.md) | The Search panel's ALL, NONE and Done controls and its 22 row targets | recorded |
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | The city draws a marker for each site the viewer controls and for each other site whose definition the viewer's Search filter selects | recorded |

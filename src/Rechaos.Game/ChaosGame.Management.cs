@@ -97,30 +97,33 @@ public sealed partial class ChaosGame
         _siteSearchCursor = (_siteSearchCursor + delta + count) % count;
     }
 
+    // The site of each row of the Search panel, in row order.
+    private short[] SiteSearchRows() => _definitions is null
+        ? []
+        : _definitions.Sites.OrderBy(site => site.Id)
+            .Take(SiteSearchLayout.MaximumSites).Select(site => site.Id).ToArray();
+
     private void ToggleSiteSearchSelection()
     {
-        if (_definitions is null) return;
-        var sites = _definitions.Sites.OrderBy(site => site.Id)
-            .Take(SiteSearchLayout.MaximumSites).ToArray();
-        if (_siteSearchCursor >= sites.Length) return;
-        var id = sites[_siteSearchCursor].Id;
-        _siteSearchSelections.Toggle(SiteSearchPlayer(), id);
+        var rows = SiteSearchRows();
+        if (_siteSearchCursor >= rows.Length) return;
+        SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
+            new SiteSearchPress(SiteSearchControl.Row, _siteSearchCursor), rows);
     }
 
     private void SelectAllSiteSearch()
     {
         if (_definitions is null) return;
         AcceptInput();
-        _siteSearchSelections.SelectAll(
-            SiteSearchPlayer(),
-            _definitions.Sites.OrderBy(site => site.Id)
-                .Take(SiteSearchLayout.MaximumSites).Select(site => site.Id));
+        SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
+            new SiteSearchPress(SiteSearchControl.All), SiteSearchRows());
     }
 
     private void ClearSiteSearch()
     {
         AcceptInput();
-        _siteSearchSelections.Clear(SiteSearchPlayer());
+        SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
+            new SiteSearchPress(SiteSearchControl.None), SiteSearchRows());
     }
 
     private void ApplySiteSearch()
@@ -134,24 +137,26 @@ public sealed partial class ChaosGame
 
     private void HandleSiteSearchClick(Point point)
     {
-        if (SiteSearchLayout.All.Contains(point)) SelectAllSiteSearch();
-        else if (SiteSearchLayout.None.Contains(point)) ClearSiteSearch();
-        else if (SiteSearchLayout.Ok.Contains(point)) ApplySiteSearch();
-        else if (_definitions is not null)
+        var rows = SiteSearchRows();
+        var press = SiteSearchPanel.HitTest(point, rows.Length);
+        switch (press.Control)
         {
-            var count = Math.Min(_definitions.Sites.Count, SiteSearchLayout.MaximumSites);
-            for (var index = 0; index < count; index++)
-            {
-                if (!SiteSearchLayout.Site(index).Contains(point)) continue;
-                _siteSearchCursor = index;
-                var siteId = _definitions.Sites.OrderBy(site => site.Id)
-                    .Take(SiteSearchLayout.MaximumSites).ElementAt(index).Id;
-                if (_siteSearchClicks.Register(index, _inputTime))
-                    OpenSiteDefinitionDetails(siteId, ClientScreen.Search);
+            case SiteSearchControl.All:
+                SelectAllSiteSearch();
+                break;
+            case SiteSearchControl.None:
+                ClearSiteSearch();
+                break;
+            case SiteSearchControl.Done:
+                ApplySiteSearch();
+                break;
+            case SiteSearchControl.Row:
+                _siteSearchCursor = press.Row;
+                if (_siteSearchClicks.Register(press.Row, _inputTime))
+                    OpenSiteDefinitionDetails(rows[press.Row], ClientScreen.Search);
                 else
                     ToggleSiteSearchSelection();
                 break;
-            }
         }
     }
 
