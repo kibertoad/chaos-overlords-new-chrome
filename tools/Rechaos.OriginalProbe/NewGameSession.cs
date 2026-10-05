@@ -117,7 +117,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
     IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false,
-    IReadOnlyList<ProbeClick>? SearchClicks = null)
+    IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -138,8 +138,9 @@ internal sealed record NewGameSettings(
     }
 
     /// <summary>
-    /// The orders and Done presses after the first planning phase, one input each: an order is
-    /// named <c>order</c> and a Done press <c>left_click</c>.
+    /// The orders and Done presses after the first planning phase, then the presses after the dump,
+    /// one input each: an order is named <c>order</c>, a press <c>left_click</c> and a hire step's
+    /// drag <c>drag</c>.
     /// </summary>
     public IEnumerable<(string Name, string Value)> DescribeTurns()
     {
@@ -165,6 +166,8 @@ internal sealed record NewGameSettings(
                 : $"Done (550, 306), turn {turn}");
         }
         foreach (var click in SearchClicks ?? []) yield return ("left_click", click.ToString());
+        foreach (var step in HireSteps ?? [])
+            yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
     }
 }
 
@@ -199,7 +202,8 @@ internal sealed record ProbeTrace(
     List<ComlinkStep>? Comlink = null,
     List<EquipListRecord>? EquipLists = null,
     List<AttackListRecord>? AttackLists = null,
-    List<SearchClickRecord>? SearchClicks = null);
+    List<SearchClickRecord>? SearchClicks = null,
+    List<HireStepRecord>? HireSteps = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -219,6 +223,9 @@ internal sealed partial class NewGameSession(
     private int _panelsOpen;
     private int _exitPresses;
     private readonly List<PanelRecord> _panels = [];
+    // The panel calls as they stood at the dump: presses made after it, such as a hire step's
+    // Exit, close panels and open others that belong to no planning entry of the run.
+    private List<PanelRecord>? _panelsAtDump;
     private bool _planningLoopReached;
     private bool _awardsReached;
     private EndgameDrawing? _endgame;
@@ -403,11 +410,14 @@ internal sealed partial class NewGameSession(
         }
 
         DumpWritableSections();
+        _panelsAtDump = [.. _panels];
         if (settings.Capture) CaptureDrawingArea(window);
         if (settings.EquipLists && !RecordEquipLists()) return Finish(false, "The Equip lists were not built.", rollsBeforeBegin);
         if (settings.AttackLists && !RecordAttackLists()) return Finish(false, "The Attack lists were not built.", rollsBeforeBegin);
         if (settings.SearchClicks is { Count: > 0 } && !RecordSearchClicks(window))
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
+        if (settings.HireSteps is { Count: > 0 } && RecordHireSteps(window) is { } stopped)
+            return Finish(false, stopped, rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -883,17 +893,21 @@ internal sealed partial class NewGameSession(
         _notes.AddRange(_process.Log);
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
-            _endgame, _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels, _lastRedraw,
+            _endgame, _finance.Count == 0 ? null : _finance, (_panelsAtDump ?? _panels) is { Count: > 0 } panels ? panels : null, _lastRedraw,
             _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
             _equipLists.Count == 0 ? null : _equipLists, _attackLists.Count == 0 ? null : _attackLists,
-            _searchClicks.Count == 0 ? null : _searchClicks);
+            _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps);
     }
 
     private static void Click(IntPtr window, int x, int y)
     {
-        var position = (IntPtr)((y << 16) | (x & 0xFFFF));
+        var position = PointParameter(x, y);
         Native.PostMessageW(window, Native.WmMouseMove, IntPtr.Zero, position);
         Native.PostMessageW(window, Native.WmLButtonDown, 1, position);
         Native.PostMessageW(window, Native.WmLButtonUp, IntPtr.Zero, position);
     }
+
+    // A client point as the mouse messages carry it in lParam, and as the window procedure keeps
+    // it: x in the low 16 bits, y in the high 16 (FND-UI-020).
+    private static IntPtr PointParameter(int x, int y) => (IntPtr)((y << 16) | (x & 0xFFFF));
 }

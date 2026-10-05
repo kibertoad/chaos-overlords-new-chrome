@@ -152,6 +152,11 @@ internal static class OriginalAddresses
     public const int DoneX = 500 + 50;
     public const int DoneY = 282 + 24;
 
+    // FND-UI-020: the two pointer points the window procedure keeps on WM_MOUSEMOVE, the client
+    // point from lParam and the point from GetCursorPos, each with x and y as 16-bit halves.
+    public const uint PointerClientPoint = 0x0049859C;
+    public const uint PointerScreenPoint = 0x004985A0;
+
     // FND-UI-020: left_button_down, the byte the window procedure keeps from the mouse messages.
     public const uint LeftButtonDown = 0x004985A4;
 
@@ -160,6 +165,15 @@ internal static class OriginalAddresses
     public const uint HireOrderCheck = 0x0047592B;
     public const uint HireOffers = 0x004ABBC0;
     public const uint HireOrders = 0x004A27C8;
+
+    // SCR-HIRE-002, FND-HIRE-008: the centres of an offer portrait (440 + 66s, 373, 64, 64) and of its
+    // Reject cross (472 + 66s, 437, 32, 13), and of a city map cell, 54 by 52 from (2, 42), eight to
+    // a row, where a dropped offer names that cell's sector.
+    public static int HireOfferX(int slot) => 472 + 66 * slot;
+    public const int HireOfferY = 405;
+    public static int HireRejectX(int slot) => 488 + 66 * slot;
+    public const int HireRejectY = 443;
+    public static (int X, int Y) MapSectorCentre(int sector) => (2 + 54 * (sector % 8) + 27, 42 + 52 * (sector / 8) + 26);
 
     // FMT-STATE-007: the computer players' planning records, 81 of 16 bytes per player, with the
     // family at offset 0; FND-AI-043: raider_mode, one byte per player.

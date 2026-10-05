@@ -84,6 +84,14 @@ internal sealed class StateExtractor
                 ["opponent"] = list["Opponent"]!.GetValue<int>(),
                 ["targets"] = new JsonArray(list["Targets"]!.AsArray().Select(target => (JsonNode)target!.GetValue<int>()).ToArray()),
             }).ToArray());
+        // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
+        if (trace["HireSteps"] is JsonArray hireSteps)
+            run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject
+            {
+                ["slot"] = step!["Slot"]!.GetValue<int>(),
+                ["sector"] = step["Sector"]!.GetValue<int>(),
+                ["orders"] = new JsonArray(step["Orders"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+            }).ToArray());
         // RULE-SEARCH-001, FND-SEARCH-002: each click posted after the dump, whether the Search panel
         // was open after it, the active player and the whole filter table.
         if (trace["SearchClicks"] is JsonArray searchClicks)

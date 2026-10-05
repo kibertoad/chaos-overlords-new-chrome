@@ -37,6 +37,7 @@ static int Usage()
               [--comlink <script file>]
               [--draw-values <hex address>=<int32>[/<int32>...],...]
               [--equip-lists] [--attack-lists] [--search-clicks <x:y>,...]
+              [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -86,7 +87,8 @@ static int NewGame(string[] args)
         Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null,
         args.Contains("--equip-lists"),
         args.Contains("--attack-lists"),
-        Option(args, "--search-clicks") is { } searchClicks ? ParseClicks(searchClicks) : null);
+        Option(args, "--search-clicks") is { } searchClicks ? ParseClicks(searchClicks) : null,
+        Option(args, "--hire-steps") is { } hireSteps ? ParseHireSteps(hireSteps) : null);
     // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
     // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
     // A first slot that is not the lowest would compare one player's lists with another player's
@@ -224,6 +226,22 @@ static IReadOnlyList<ProbeClick> ParseClicks(string value) =>
         if (parts.Length != 2) throw new FormatException($"A click needs x and y: {entry}");
         return new ProbeClick(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture),
             int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture));
+    }).ToArray();
+
+// --hire-steps drag:slot:sector,reject:slot,exit,... drags offers onto map sectors, presses their
+// Reject crosses and presses a result panel's Exit after the dump (ProbeHireStep).
+static IReadOnlyList<ProbeHireStep> ParseHireSteps(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        var numbers = parts.Skip(1).Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        return parts[0] switch
+        {
+            "drag" when numbers is [>= 0 and < 3, >= 0 and < 64] => new ProbeHireStep(numbers[0], numbers[1]),
+            "reject" when numbers is [>= 0 and < 3] => new ProbeHireStep(numbers[0], -2),
+            "exit" when numbers is [] => new ProbeHireStep(-1, -1),
+            _ => throw new FormatException($"A hire step is drag:slot:sector, reject:slot or exit: {entry}"),
+        };
     }).ToArray();
 
 // --finance turn:sector,... opens the Financial panel before that turn's Done, the City variant for

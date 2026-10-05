@@ -74,6 +74,11 @@ public sealed partial class OriginalNewGameExperimentTests
     // human's gangs at the recording's endpoint, with the sector it was passed (FND-ATTACK-006).
     private sealed record RecordedAttackList(int Slot, int Sector, int Opponent, IReadOnlyList<int> Targets);
 
+    // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
+    // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
+    // (FND-HIRE-001, FND-HIRE-008).
+    private sealed record RecordedHireStep(int Slot, int Sector, IReadOnlyList<int> Orders);
+
     // A click the probe posted after the dump, whether the Search panel was open after it, the
     // active player and the whole search_filters table (FND-SEARCH-001, FND-SEARCH-002).
     private sealed record RecordedSearchClick(int X, int Y, bool PanelOpen, int ActivePlayer, IReadOnlyList<int> Filters);
@@ -154,6 +159,11 @@ public sealed partial class OriginalNewGameExperimentTests
                     markers.GetProperty("markers").EnumerateArray()
                         .Select(marker => marker.EnumerateArray().Select(value => value.GetInt32()).ToArray()).ToArray())
                 : null;
+            HireSteps = run.TryGetProperty("hire_steps", out var hireSteps)
+                ? hireSteps.EnumerateArray().Select(step => new RecordedHireStep(
+                    step.GetProperty("slot").GetInt32(), step.GetProperty("sector").GetInt32(),
+                    step.GetProperty("orders").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : [];
             SearchClicks = run.TryGetProperty("search_clicks", out var searchClicks)
                 ? searchClicks.EnumerateArray().Select(click => new RecordedSearchClick(
                     click.GetProperty("x").GetInt32(), click.GetProperty("y").GetInt32(),
@@ -212,6 +222,7 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedEquipList> EquipLists { get; }
         public IReadOnlyList<RecordedAttackList> AttackLists { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
+        public IReadOnlyList<RecordedHireStep> HireSteps { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
         public IReadOnlyList<RecordedPlanning> Planning { get; }
