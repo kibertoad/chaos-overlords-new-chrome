@@ -113,6 +113,7 @@ internal sealed class StateExtractor
                 ["automatic"] = presentation["Automatic"]!.GetValue<int>(),
                 ["first_clip"] = presentation["FirstClip"]!.GetValue<int>(),
                 ["clips"] = presentation["Clips"]!.GetValue<int>(),
+                ["returned"] = presentation["Returned"]!.GetValue<bool>(),
                 ["sounds"] = new JsonArray(presentation["Sounds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
             }).ToArray());
         // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.

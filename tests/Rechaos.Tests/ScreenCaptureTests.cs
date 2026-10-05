@@ -43,7 +43,10 @@ public sealed partial class ScreenCaptureTests
     // and the Comlink Send panel SCR-COMLINK-002 of a match of two humans. The console presses
     // before these captures route as RULE-UI-002 reads them. EXP-UI-017 compares the endgame
     // SCR-AWARDS-001 on both tabs, and EXP-UI-018 the elimination card SCR-OBJECTIVE-002 the only
-    // local human sees where its planning would have come (RULE-OBJECTIVE-005).
+    // local human sees where its planning would have come (RULE-OBJECTIVE-005). EXP-UI-019 and
+    // EXP-UI-020 compare the Detailed Combat panel SCR-COMBAT-002 at the ticks of a gang's clip and
+    // a police clip the console's control started, the rebuild's clip drawn at the captured tick
+    // (FND-COMBAT-016).
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
@@ -68,7 +71,7 @@ public sealed partial class ScreenCaptureTests
             : RebuildFrame.Render(
                 OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
                 $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
-                capture.ItemFrame);
+                capture.ItemFrame, clipTick: capture.ClipTick);
 
         var results = capture.Elements
             .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();

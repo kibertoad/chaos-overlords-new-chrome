@@ -82,9 +82,10 @@ public sealed partial class OriginalNewGameExperimentTests
 
     // A call of the Detailed Combat presentation (FND-COMBAT-010): the roll count before it, 1 when
     // planning opened it and 0 when the console's control did, its first clip in the clip list, the
-    // clips it played and the effect slots it played itself.
+    // clips it started, the effect slots it played itself and whether it returned before the run
+    // ended; a fixture recorded before the probe kept that has only presentations that returned.
     private sealed record RecordedCombatPresentation(
-        int AfterRoll, bool Automatic, int FirstClip, int Clips, IReadOnlyList<int> Sounds);
+        int AfterRoll, bool Automatic, int FirstClip, int Clips, IReadOnlyList<int> Sounds, bool Returned);
 
     // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
@@ -243,7 +244,8 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? combatPresentations.EnumerateArray().Select(presentation => new RecordedCombatPresentation(
                     presentation.GetProperty("after_roll").GetInt32(), presentation.GetProperty("automatic").GetInt32() != 0,
                     presentation.GetProperty("first_clip").GetInt32(), presentation.GetProperty("clips").GetInt32(),
-                    presentation.GetProperty("sounds").EnumerateArray().Select(sound => sound.GetInt32()).ToArray())).ToArray()
+                    presentation.GetProperty("sounds").EnumerateArray().Select(sound => sound.GetInt32()).ToArray(),
+                    !presentation.TryGetProperty("returned", out var returned) || returned.GetBoolean())).ToArray()
                 : null;
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.

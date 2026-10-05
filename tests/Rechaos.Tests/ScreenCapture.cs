@@ -104,6 +104,9 @@ public sealed record ScreenCaptureRecord(
     /// <summary>FND-UI-052, FND-UI-053: the frame of the rotating item pictures a shot shows.</summary>
     public int? ItemFrame { get; init; }
 
+    /// <summary>FND-COMBAT-016: the tick of the Detailed Combat clip a shot shows.</summary>
+    public int? ClipTick { get; init; }
+
     /// <summary>
     /// The screens a run copies before its match (FND-UI-055): the fixture holds each as
     /// <c>&lt;screen&gt;_capture</c>, and the rebuild draws it with that name in place of a save.
@@ -228,6 +231,9 @@ public sealed record ScreenCaptureRecord(
             ItemFrame = capture.TryGetProperty("item_frame", out var item) && item.ValueKind == JsonValueKind.Number
                 ? item.GetInt32()
                 : null,
+            ClipTick = capture.TryGetProperty("clip_tick", out var tick) && tick.ValueKind == JsonValueKind.Number
+                ? tick.GetInt32()
+                : null,
         };
         // Without frame_counter the record keeps the pump's counter as its frame counter.
         return capture.TryGetProperty("frame_counter", out var frame)
@@ -345,6 +351,7 @@ public static class ScreenCaptureMasks
             ["SCR-UI-008"] = [],
             ["SCR-EVENT-001"] = [],
             ["SCR-COMBAT-001"] = [],
+            ["SCR-COMBAT-002"] = [],
             ["SCR-OBJECTIVE-001"] = [],
             ["SCR-SEARCH-001"] = [],
             ["SCR-HIRE-001"] = [],
@@ -511,7 +518,7 @@ public static class RebuildFrame
     public static ScreenFrame Render(
         MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
         int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null,
-        string? screen = null)
+        string? screen = null, int? clipTick = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -543,6 +550,11 @@ public static class RebuildFrame
             {
                 start.ArgumentList.Add("--item-frame");
                 start.ArgumentList.Add(item.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (clipTick is { } tick)
+            {
+                start.ArgumentList.Add("--clip-tick");
+                start.ArgumentList.Add(tick.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
             if (pumpCounter is { } counter)
             {

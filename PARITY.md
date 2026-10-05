@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 26 |
-| `validated` | 191 |
+| `implemented` | 25 |
+| `validated` | 192 |
 
 | Code | Rows |
 |---|---|
@@ -290,7 +290,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMBAT-003` | Damage Inflicted counts the full damage of every opening attack and no retaliation | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Each player's `damage_inflicted` is compared at the end of the first run of EXP-TURN-001 and of every run from EXP-TURN-010 on except the traced run of EXP-TURN-021; twelve fixtures record combat, and in EXP-TURN-011 a retaliation of four damage leaves the total at 0. Supplemental observations and coverage limits: EXP-TURN-036. |
 | `RULE-COMBAT-004` | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.DetailedCombat.cs | `DEV-COMBAT-002` | validated | DetailedCombatPlaysTheOriginalsClips replays EXP-COMBAT-001 to EXP-COMBAT-009, run with Detailed Combat on, and compares every clip of the automatic presentation, its focal and other gang, hold argument and bar ends, with the original's; the runs reach attacks by and on the viewer's gangs, a mutual attack, evaded attacks both ways, the police and two sectors. TheConsolesDetailedCombatControlPlaysTheLastTurnAgain compares the console's control with nothing to show (EXP-COMBAT-008) and a replay ended by the Exit face (EXP-COMBAT-006). |
 | `SCR-COMBAT-001` | Combat Results panel, paged by sector | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-COMBAT-002` | validated | Paging, keys, the opponent and police strips, grid cells with portraits, force_start and force_final tracks and the focus outlines follow FND-COMBAT-007 and FND-COMBAT-012. The pressed Exit face on Enter is not drawn as the panel closes at once, and the pressed arrows are not recorded. ScreenCaptureTests compares the panel opened from the console in the EXP-UI-008 capture with the original, its 40-by-40 portraits scaled by centre sampling, and no element differs. One page of one state. |
-| `SCR-COMBAT-002` | Detailed Combat panel | supported | complete | None | `DEV-COMBAT-001` | implemented | Layout, strips, 166 ms cadence, the Exit face on release, the refused press outside the panel and Escape follow FND-COMBAT-009 and FND-COMBAT-010; the header strips, police art and the darkening from tick 12 follow FND-COMBAT-014. The tracks are drawn at local y 116 and 123, the rows the code writes, 68 rows below the portrait (FND-COMBAT-015). |
+| `SCR-COMBAT-002` | Detailed Combat panel | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-COMBAT-001` | validated | Layout, strips, 166 ms cadence, the Exit face on release, the refused press outside the panel and Escape follow FND-COMBAT-009 and FND-COMBAT-010; the header strips, police art and the darkening from tick 12 follow FND-COMBAT-014, the unowned sector tile FND-COMBAT-017, and the lower tracks shown before the clip until tick 16 FND-COMBAT-016. ScreenCaptureTests draws the clip the console's control starts at each tick the original's captures recorded and compares the panel with EXP-UI-019 (a gang's attack on another, ticks 4, 8, 11, 13, 15 and 18) and EXP-UI-020 (a police clip, ticks 4, 9, 12, 14 and 20), and no element differs. No capture shows a clip of an attack on the viewer's gang, an evaded attack or the pressed Exit face. |
 
 ## DETECT
 

@@ -145,6 +145,8 @@ internal static class CaptureFixture
         // FND-UI-052, FND-UI-053: the frame of the rotating item pictures of Item Information,
         // Sell or Give, when one is open.
         if (record is not null && shot["ItemFrame"] is JsonNode item) record["item_frame"] = item.GetValue<int>();
+        // FND-COMBAT-016: the tick of the Detailed Combat clip the capture shows.
+        if (record is not null && shot["ClipTick"] is JsonNode tick) record["clip_tick"] = tick.GetValue<int>();
         return record;
     }
 
