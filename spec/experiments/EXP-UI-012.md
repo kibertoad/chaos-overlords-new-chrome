@@ -54,12 +54,13 @@ The capture shows the warning panel over the city, with its red line shown.
 `TheRebuildDrawsWhatTheOriginalDrew` in
 `tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the capture as for
 EXP-UI-009, with the rebuild's Warn if Idle Gangs at its default, on, and the
-recorded item frame as the line's phase. Leaving out the cash row (DEV-UI-006)
-and the city's key line (DEV-UI-023), every element matches. A first run of
-the comparison, which blinked the line on the presentation clock's ticks since
-the program started, drew the line black.
+recorded item frame as the line's phase. The rebuild's Done press on the
+replayed state, where the human's gang has no order, opens the warning.
+Leaving out the cash row (DEV-UI-006) and the city's key line (DEV-UI-023),
+every element matches. A first run of the comparison, which blinked the line on
+the presentation clock's ticks since the program started, drew the line black.
 
 ## Conclusion
 
 The run supports SCR-OPTIONS-001 and RULE-OPTIONS-003 for one state with an
-idle gang, where the rebuild's Done press on the same state opens the warning, and FND-UI-054 for the line shown five ticks after the open.
+idle gang, and FND-UI-054 for the line shown five ticks after the open.

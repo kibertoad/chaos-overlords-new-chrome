@@ -167,7 +167,7 @@
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup | supported |
 | [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | Saving the options to the registry, which always fails | supported |
-| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle | supported |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle | established |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | established |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | established |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent | established |

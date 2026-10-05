@@ -1,7 +1,7 @@
 ---
 id: RULE-OPTIONS-003
 title: Warn if Idle Gangs asks before Done ends a turn with a gang left idle
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-OPTIONS-002, FND-OPTIONS-001, FND-OPTIONS-003, FND-STATE-010, FND-EXE-004, SRC-MANUAL-GOG, EXP-UI-012]
