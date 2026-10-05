@@ -4,7 +4,7 @@ title: roll(n) gives a whole number from 1 to n from three draws
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-RNG-002, FND-RNG-003, FND-RNG-004, FND-RNG-006, SRC-MANUAL-GOG, FND-EXE-004, EXP-SETUP-001]
+evidence: [FND-RNG-002, FND-RNG-003, FND-RNG-004, FND-RNG-006, SRC-MANUAL-GOG, FND-EXE-004, EXP-SETUP-001, EXP-TURN-084]
 conflicting: []
 split_with: []
 related: [RULE-RNG-001]
