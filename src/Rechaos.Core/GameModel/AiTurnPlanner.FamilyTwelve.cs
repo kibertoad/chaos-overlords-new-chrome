@@ -143,7 +143,7 @@ public static partial class AiTurnPlanner
         for (var attempt = 0; attempt < OriginalAiFamilyTwelveRules.AttackAttempts;
              attempt++)
         {
-            var ordinal = state.Random.NextInclusive(Math.Max(1, targetPool.Count));
+            var ordinal = state.Random.NextInclusive(targetPool.Count);
             selected = ordinal <= targetPool.Count ? targetPool[ordinal - 1] : null;
             if (selected is null) break;
             var comparisonTarget = visible[ordinal - 1].Gang;
@@ -155,6 +155,8 @@ public static partial class AiTurnPlanner
                 break;
         }
 
+        // A positive weight means a visible gang, and weight 10 a visible human gang, so the pool
+        // is never empty (RULE-AI-030). The guard keeps an inconsistent loaded state from throwing.
         if (selected is null)
         {
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.None);

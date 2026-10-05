@@ -15,10 +15,9 @@ fixture: EXP-TURN-079.json
 
 ## Question
 
-EXP-TURN-074 reaches the family-4 attack draws after a Move. When the previous
+EXP-TURN-074 reaches the family-4 attack draw after a Move. When the previous
 action was Chaos or Equip and the gang stands where its weight is 10, does it
-draw up to the given number of targets and attack the last one drawn, as
-RULE-AI-023 gives?
+draw a target and attack it, as RULE-AI-023 gives?
 
 ## Setup
 
@@ -52,9 +51,11 @@ eliminated during the run.
 DEV-AI-007 switched off and writes the same families before the same Done
 press. The rebuild makes the same calls with the same bounds and results and
 reaches the same state, the planning records included. The rebuild reaches the
-attack draws that follow a Chaos or an Equip at weight 10 and plans the Attack
-on the last target drawn.
+attack draw that follows a Chaos or an Equip at weight 10, whose first target
+passes the strength test, and plans the Attack on it. Gangs of the same run
+left in family 7 run out of research and take family 0, as in EXP-TURN-073.
 
 ## Conclusion
 
-The run agrees with RULE-AI-023 for the attack draws after Chaos or Equip.
+The run agrees with RULE-AI-023 for an accepted attack draw after Chaos or
+Equip. No draw there is refused, so the further draws are not reached.

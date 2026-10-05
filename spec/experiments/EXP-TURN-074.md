@@ -1,6 +1,6 @@
 ---
 id: EXP-TURN-074
-title: Do family-4 computer gangs draw attacks at weight 10 and take a sector after repeated Moves, as the spec gives?
+title: Do family-4 computer gangs heal, raise Chaos and draw attacks at weight 10, as the spec gives?
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -17,8 +17,10 @@ fixture: EXP-TURN-074.json
 
 EXP-TURN-040 compares family-4 plans with no hostile human gang in sight. When
 a family-4 gang stands where its weight is 10, does it draw an attack target
-and keep or drop the Attack by the strength test, and after repeated Moves
-does it plan Control, as RULE-AI-023 gives?
+and keep the Attack when the strength test passes? Does a gang after None,
+Control or Heal heal or raise Chaos, and does a gang after Attack, Hide or
+Move outside its own sectors test whether its last two actions were Moves and
+it can take the sector alone, as RULE-AI-023 gives?
 
 ## Setup
 
@@ -50,10 +52,15 @@ The run made 2907 calls of `roll` over eleven Done presses. At the end
 DEV-AI-007 switched off and writes the same families before the same Done
 press. The rebuild makes the same calls with the same bounds and results and
 reaches the same state, the planning records included. The rebuild reaches the
-weight-10 attack draw with an accepted and a refused target, and the Control
-planned after repeated Moves.
+Heal and the Chaos after None, Control or Heal, the Chaos in an owned sector
+after Attack, Hide or Move, the weight-10 attack draw with an accepted target,
+and the test for Control outside the gang's own sectors, which fails every
+time it is made here, so the gang moves. No draw is refused and no gang plans
+Control.
 
 ## Conclusion
 
-The run agrees with RULE-AI-023 for the attack draw at weight 10, both
-outcomes of the strength test, and Control after repeated Moves.
+The run agrees with RULE-AI-023 for the Heal, the Chaos, an accepted attack
+draw at weight 10 and a failed test for Control after two Moves. It does not
+reach a refused draw at weight 10 or the Control itself, which EXP-TURN-082
+reaches.
