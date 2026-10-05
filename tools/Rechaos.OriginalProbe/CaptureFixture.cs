@@ -87,6 +87,7 @@ internal static class CaptureFixture
     {
         if (trace["Settings"]?["SetupSteps"] is not JsonArray steps) return null;
         var notes = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>()).ToHashSet();
+        var screen = CaptureScreen.Load("SCR-SETUP-001");
         return new JsonArray(steps.Select((step, index) =>
         {
             var record = new JsonObject
@@ -101,8 +102,8 @@ internal static class CaptureFixture
                 record["to_y"] = step["Choice"]!.GetValue<int>();
             }
             if (notes.Contains(SetupStepNote(index))
-                && Extract(Path.Combine(runDirectory, $"setup-step-{index}.bmp"), 0, null, null, null,
-                    CaptureScreen.Load("SCR-SETUP-001")) is { } capture)
+                && Extract(Path.Combine(runDirectory, $"setup-step-{index}.bmp"), 0, null, null, null, screen)
+                    is { } capture)
                 record["capture"] = capture;
             return (JsonNode)record;
         }).ToArray());
@@ -137,14 +138,13 @@ internal static class CaptureFixture
             shot["SelectedSector"]?.GetValue<int>(), CaptureScreen.Load(screens));
         // FND-UI-048, FND-UI-051: the counter whose selection frame the capture shows: the pump's,
         // or the one at the slide-in of the panel open over the city. A panel the probe did not
-        // see slide in leaves it unknown.
-        if (record is not null)
-        {
-            record["frame_counter"] = shot["FrameCounter"] is JsonNode frame ? frame.GetValue<int>() : null;
-            // FND-UI-052, FND-UI-053: the frame of the rotating item pictures of Item Information,
-            // Sell or Give, when one is open.
-            if (shot["ItemFrame"] is JsonNode item) record["item_frame"] = item.GetValue<int>();
-        }
+        // see slide in leaves it unknown. A shot recorded before the probe read it has no such
+        // field, and its record leaves frame_counter out so the comparison takes the pump's.
+        if (record is not null && shot.AsObject().TryGetPropertyValue("FrameCounter", out var frame))
+            record["frame_counter"] = frame is null ? null : frame.GetValue<int>();
+        // FND-UI-052, FND-UI-053: the frame of the rotating item pictures of Item Information,
+        // Sell or Give, when one is open.
+        if (record is not null && shot["ItemFrame"] is JsonNode item) record["item_frame"] = item.GetValue<int>();
         return record;
     }
 

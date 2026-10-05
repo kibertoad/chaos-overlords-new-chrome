@@ -19,14 +19,17 @@ public sealed class SetupScenarioTextLayoutTests
         Assert.Equal(["ONE LINE"], SetupScenarioTextLayout.DescriptionLines("ONE LINE"));
     }
 
+    // Each break takes one space, so the lines joined by a space give the whole description back
+    // when none of it falls past the fifth line.
     [Fact]
     public void EveryDescriptionFitsTheBox()
     {
         foreach (var scenario in Enum.GetValues<ScenarioId>())
         {
-            var lines = SetupScenarioTextLayout.DescriptionLines(ExecutableStrings.ScenarioDescription(scenario));
-            Assert.InRange(lines.Count, 1, SetupScenarioTextLayout.LineCount);
+            var description = ExecutableStrings.ScenarioDescription(scenario);
+            var lines = SetupScenarioTextLayout.DescriptionLines(description);
             Assert.All(lines, line => Assert.InRange(line.Length, 0, SetupScenarioTextLayout.LineCells));
+            Assert.Equal(description, string.Join(' ', lines));
         }
     }
 

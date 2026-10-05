@@ -64,6 +64,18 @@ public sealed class ProgramShellParityTests
         for (var tick = 0; tick < 16; tick++)
             Assert.Equal(tick % 8 < 6, IdleGangWarningLayout.LineShown(tick));
         Assert.Throws<ArgumentOutOfRangeException>(() => IdleGangWarningLayout.LineShown(-1));
+        // FND-UI-054: the count starts at the open, so a panel opened where the program's own
+        // clock stands at tick 6 still starts with the line shown. FND-TIMER-002: the ticks are
+        // the program's own, so the sixth falls at the clock's tick 12, less than six periods
+        // after the open.
+        var opened = TimeSpan.FromMilliseconds(6 * 166 + 50);
+        Assert.True(IdleGangWarningLayout.LineShown(opened, TimeSpan.FromMilliseconds(12 * 166 - 1)));
+        Assert.False(IdleGangWarningLayout.LineShown(opened, TimeSpan.FromMilliseconds(12 * 166)));
+        Assert.True(IdleGangWarningLayout.LineShown(opened, opened));
+        Assert.True(IdleGangWarningLayout.LineShown(opened, opened + TimeSpan.FromMilliseconds(5 * 166 + 80)));
+        Assert.False(IdleGangWarningLayout.LineShown(opened, opened + TimeSpan.FromMilliseconds(6 * 166 + 80)));
+        Assert.True(IdleGangWarningLayout.LineShown(opened, opened + TimeSpan.FromMilliseconds(8 * 166 + 80)));
+        Assert.True(IdleGangWarningLayout.LineShown(opened, opened - TimeSpan.FromSeconds(1)));
     }
 
     [Fact]

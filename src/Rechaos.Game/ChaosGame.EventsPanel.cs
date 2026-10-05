@@ -6,15 +6,31 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    /// <summary>Whether Ready on the hand-off card is held down (SCR-SETUP-002).</summary>
+    private bool _handoffReadyHeld;
+
+    /// <summary>
+    /// FND-SETUP-016: Ready is a held button. The press plays the push cue and draws the pressed
+    /// image while the pointer stays inside, and only a release inside ends the card.
+    /// </summary>
     private void HandleHandoffClick(Point point)
     {
         if (!HandoffReady.Contains(point)) return;
         PlayGeneralSound(AudioRouting.PointerPushSound());
-        FinishHandoff();
+        _handoffReadyHeld = true;
+    }
+
+    private void CompleteHandoffReady(Point point)
+    {
+        _handoffReadyHeld = false;
+        if (_screens.Current == ClientScreen.Handoff && HandoffReady.Contains(point)) FinishHandoff();
     }
 
     private void FinishHandoff()
     {
+        // The card can also end from the keyboard (DEV-SETUP-002) or the menu while Ready is held.
+        // The hold ends with it, so its release cannot close the next player's card.
+        _handoffReadyHeld = false;
         // An eliminated local player first receives the same private next-player card. Its Ready
         // control then leads to the original terminal notice instead of opening the succeeding
         // player's planning turn beneath the departed player's name.
@@ -153,7 +169,7 @@ public sealed partial class ChaosGame
         _eventCursor = 0;
         _eventViewedPages.Clear();
         if (count > 0) _eventViewedPages.Add(0);
-        _eventPageShownAt = _inputTime;
+        _eventPageShownTick = _eventPump.Ticks;
         CancelEventsButton();
     }
 
@@ -252,7 +268,7 @@ public sealed partial class ChaosGame
         if (next == _eventCursor) return;
         _eventCursor = next;
         _eventViewedPages.Add(_eventCursor);
-        _eventPageShownAt = _inputTime;
+        _eventPageShownTick = _eventPump.Ticks;
     }
 
     private void CloseEvents()
@@ -421,13 +437,13 @@ public sealed partial class ChaosGame
             batch.Draw(artwork,
                 LastTurnEventsLayout.ArtworkDestination(artwork.Width, artwork.Height), Color.White);
         // SCR-EVENT-001: the researched item starts at frame 0 when the panel opens and after
-        // each page change.
+        // each page change, and steps on the ticks the event pump takes, so a held face stops it
+        // and a page turned by a held arrow shows frame 1 at once (FND-UI-047).
         if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId
             && itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, LastTurnEventsLayout.ResearchItem,
-                ItemRotationPresentation.Frame(
-                    _inputTime > _eventPageShownAt ? _inputTime - _eventPageShownAt : TimeSpan.Zero),
+                ItemRotationPresentation.FrameAfter(_eventPump.Ticks - _eventPageShownTick),
                 Color.White);
         // SCR-EVENT-001: an elimination report adds the eliminated player's 32-by-32 portrait,
         // stretched to 48 by 48 over its illustration.
@@ -437,7 +453,8 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.OverlordPortrait(eliminated.Setup.PortraitId), Color.White);
     }
 
-    private TimeSpan _eventPageShownAt;
+    /// <summary>The event pump tick the page was drawn on, when its researched item is at frame 0.</summary>
+    private long _eventPageShownTick;
 
     /// <summary>
     /// This player's reports for the completed turn, memoised for the frame.
@@ -877,15 +894,17 @@ public static class ItemRotationPresentation
 
     // One frame per tick of the presentation clock (RULE-UI-008, SCR-UI-006, SCR-EVENT-001), so a
     // full turn of fifteen frames takes 2.5 seconds.
-    private static readonly TimeSpan FrameDuration = PresentationClock.Period;
-
     public static Rectangle Frame(TimeSpan elapsed)
     {
         if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
-        var frame = (int)(elapsed.TotalMilliseconds / FrameDuration.TotalMilliseconds)
-            % FrameCount;
-        return Frame(frame);
+        return FrameAfter(PresentationClock.Ticks(elapsed));
     }
+
+    /// <summary>
+    /// The frame a panel's counter reaches after <paramref name="ticks"/> ticks from frame 0; a
+    /// negative count is taken as none.
+    /// </summary>
+    public static Rectangle FrameAfter(long ticks) => Frame((int)(Math.Max(0, ticks) % FrameCount));
 
     public static Rectangle Frame(int frame)
     {

@@ -278,13 +278,21 @@ public sealed partial class ChaosGame
         var playerId = _eliminationHandoffPlayer ?? ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
         // SCR-SETUP-002, FND-SETUP-016: the slot's colour bar, its name over a black backing and
-        // its portrait doubled to 64 by 64.
+        // its portrait doubled to 64 by 64. The name's cells are copied from the plain strip, as
+        // the Send panel's cards copy theirs (FND-UI-019). The backing holds the ten characters a
+        // local name can have; a longer online name is cut there.
         batch.Draw(pixel, HandoffLayout.ColourBar, SetupPlayerCardArtLayout.Colours[playerId.Value]);
         batch.Draw(pixel, HandoffLayout.NameBacking, Color.Black);
-        font.Draw(batch, player.Setup.Name, HandoffLayout.Name.ToVector2(), Color.Lime, 1);
+        var name = player.Setup.Name;
+        font.Copy(batch, name[..Math.Min(name.Length, LocalSetupPolicy.MaximumPlayerNameCharacters)],
+            HandoffLayout.Name, OriginalFontLayout.PlainStrip);
         if (_uiSprites is not null)
+        {
             batch.Draw(_uiSprites, HandoffLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
+            if (_handoffReadyHeld && _hoverPoint is { } hover && HandoffLayout.Ready.Contains(hover))
+                batch.Draw(_uiSprites, HandoffLayout.Ready, HandoffLayout.ReadyPressedSource, Color.White);
+        }
         if (_session is null) return;
         // Online the card is the break between turns rather than a privacy gate, and the server's
         // clock keeps running behind it. It says how the last turn sealed in full, which the city's

@@ -1,6 +1,6 @@
 {
   "screen": "SCR-AWARDS-001",
-  "state": "The endgame a match that ended draws over the city, on the Awards or the Stats tab",
+  "state": "The endgame of a match that ended, on the Awards or the Stats tab",
   "elements": [
     {"element": "Endgame screen listing the players by place with their awards or their statistics", "rect": [0, 0, 640, 460]},
     {"element": "Endgame frame with the Awards, Stats and Done controls", "rect": [106, 25, 428, 410]},

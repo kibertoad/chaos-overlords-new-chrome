@@ -85,7 +85,11 @@ run then made 325 calls of `roll`.
 An earlier run also dragged card faces from card 0 to cards 1 and 4. One such
 drag, in another run with fewer steps, swapped the two cards as FND-SETUP-005
 reads, but in two longer runs drags from card 0 only selected it or changed
-nothing. A drag posted this way is not reliable, so the run leaves them out. Its data dump holds the six colour records
+nothing. A drag posted this way is not reliable, so the run leaves them out. The probe
+posted the moves as `WM_MOUSEMOVE` and did not write the two pointer points of
+FND-UI-020, one of which the window procedure takes from the desktop cursor, so
+the unreliable drags may come from the probe rather than the game, and this run
+does not settle card-face drags. Its data dump holds the six colour records
 at `0x004ABC18` as (255,0,0), (0,255,0), (0,0,255), (255,255,0), (255,0,255)
 and (0,255,255). Earlier runs that took only the title copy, and the title and
 the credits, gave the same captures of them. One that did not write the options

@@ -199,6 +199,7 @@ public sealed partial class ChaosGame
                 // a new turn either way — and only one of them cost them the orders they were
                 // still giving.
                 var cutOff = _online.Stage == MultiplayerStage.Playing;
+                KeepOnlinePlanningSelection();
                 if (AdoptOnlineState(resolved.State, restored: resolved.Planning))
                 {
                     RewindOnlineCombatPresentation(presentCompletedTurn: true);
@@ -232,6 +233,7 @@ public sealed partial class ChaosGame
                 // Read before the adopt, which moves it: a repair that lands on a later turn than
                 // the one on screen carries a sealed turn whose combat this player has not seen.
                 var turnBeforeRepair = _online.PlanningTurn;
+                KeepOnlinePlanningSelection();
                 if (AdoptOnlineState(resynced.State, restored: resynced.Planning))
                 {
                     RewindOnlineCombatPresentation(

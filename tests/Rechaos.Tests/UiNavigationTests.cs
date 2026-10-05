@@ -55,7 +55,7 @@ public sealed partial class UiNavigationTests
         Assert.Equal(new Rectangle(202, 140, 32, 32), AttackCommandLayout.Opponent(0));
         Assert.Equal(new Rectangle(202, 284, 32, 32), AttackCommandLayout.Opponent(4));
         Assert.Equal(new Rectangle(130, 206, 20, 20), AttackCommandLayout.ActorItem(0));
-        Assert.Equal(new Rectangle(284, 206, 19, 20), AttackCommandLayout.TargetItem(0, 2));
+        Assert.Equal(new Rectangle(284, 206, 19, 20), AttackCommandLayout.TargetItemBox(0, 2));
         Assert.Equal(new Rectangle(0, 240, 20, 20), OriginalSpriteLayout.ItemPortrait(12));
     }
 
@@ -242,8 +242,6 @@ public sealed partial class UiNavigationTests
             OriginalSelectionLightLayout.AiMentality(3));
         Assert.Equal(new Rectangle(297, 340, 3, 11),
             OriginalSelectionLightLayout.PlanningTime(0));
-        Assert.Equal(new Rectangle(523, 38, 3, 11),
-            OriginalSelectionLightLayout.EndgameTab(EndgameLayout.Stats));
         Assert.Equal(new Rectangle(540, 126, 8, 16), OriginalSelectionLightLayout.CityEvents);
         Assert.Equal(new Rectangle(592, 126, 8, 16), OriginalSelectionLightLayout.CityComlinkView);
         Assert.Throws<ArgumentOutOfRangeException>(() => SetupSelectionLayout.Scenario(10));
@@ -379,6 +377,7 @@ public sealed partial class UiNavigationTests
         Assert.Equal(new Point(293, 155), HandoffLayout.Name);
         Assert.Equal(new Rectangle(293, 163, 64, 64), HandoffLayout.Portrait);
         Assert.Equal(new Rectangle(270, 241, 100, 48), HandoffLayout.Ready);
+        Assert.Equal(new Rectangle(388, 512, 100, 48), HandoffLayout.ReadyPressedSource);
         Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Portrait));
         Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Ready));
     }
@@ -698,7 +697,6 @@ public sealed partial class UiNavigationTests
             SetupPlayerCardArtLayout.PortraitDestination(3));
         Assert.Equal(new Rectangle(399, 257, 12, 18), PlayerPortraitLayout.Previous(4));
         Assert.Equal(new Rectangle(530, 257, 12, 18), PlayerPortraitLayout.Next(5));
-        Assert.Equal(new Rectangle(480, 301, 64, 8), PlayerPortraitLayout.Name(5));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.SetupTop(6));
     }
 

@@ -86,9 +86,26 @@ public static class SectorOpponentGangs
         PlayerId owner,
         int sectorId)
     {
-        if (owner == viewer)
-            return InSector(state, viewer, viewer, sectorId).Count > 0 ? null : current;
-        return Detectable(state, viewer, owner, sectorId) ? owner : current;
+        if (!Detected(state, viewer, owner, sectorId).Any()) return current;
+        return owner == viewer ? null : owner;
+    }
+
+    /// <summary>
+    /// RULE-UI-010 <c>sector_card_slots</c>: the gangs the cards list while
+    /// <paramref name="borrowed"/> is the viewed overlord, null for the viewer's own. A borrowed
+    /// roster falls back to the viewer's own gangs once that overlord no longer keeps a gang the
+    /// viewer can see in the sector.
+    /// </summary>
+    public static IReadOnlyList<MatchGangState> Cards(
+        MatchState state,
+        PlayerId viewer,
+        PlayerId? borrowed,
+        int sectorId)
+    {
+        if (borrowed is { } owner && owner != viewer
+            && InSector(state, viewer, owner, sectorId) is { Count: > 0 } listed)
+            return listed;
+        return InSector(state, viewer, viewer, sectorId);
     }
 
     private static IEnumerable<MatchGangState> Detected(

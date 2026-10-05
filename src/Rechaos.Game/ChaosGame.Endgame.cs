@@ -45,13 +45,15 @@ public sealed partial class ChaosGame
         DrawPanelArtwork(batch, pixel, background, EndgameNoticeLayout.Panel, 255);
         if (victory)
             foreach (var band in EndgameNoticeLayout.VictoryColourBands)
-                batch.Draw(pixel, band, PlayerColors[player.Value]);
+                // FND-AWARDS-004: the same slot colour as the table's colour fill.
+                batch.Draw(pixel, band, SetupPlayerCardArtLayout.Colours[player.Value]);
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, EndgameNoticeLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(portraitId), Color.White);
         // SCR-OBJECTIVE-002, EXP-UI-018: the elimination card's name is in the plain font, and the
-        // frame around the portrait is the splash's own.
-        DrawEndgameNoticeName(batch, font, victory ? PlayerColors[player.Value] : Color.Lime, name);
+        // frame around the portrait is the splash's own. SCR-AWARDS-002: the victory splash draws
+        // its name with the same plain font helper (FND-AWARDS-005, FND-RESEARCH-003).
+        DrawEndgameNoticeName(batch, font, name);
     }
 
     // FND-AWARDS-004: resource 201 with its white keyed out, for the award icons.
@@ -59,8 +61,6 @@ public sealed partial class ChaosGame
 
     private void DrawEndgame(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        // EXP-UI-017: the screen around the frame is black when the endgame follows the last turn.
-        batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
         DrawEndgameBackground(batch, pixel);
         // RULE-AWARDS-002: with one player left, human or computer, the Awards tab shows that
         // player's victory splash in place of the table.
@@ -88,13 +88,13 @@ public sealed partial class ChaosGame
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, EndgameLayout.Portrait(index),
                     OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
-            font.Draw(batch, row.Label, EndgameLayout.Name(index), Color.Lime, 1);
+            font.Copy(batch, row.Label, EndgameLayout.Name(index).ToPoint(), OriginalFontLayout.PlainStrip);
             if (row.Place > 0)
             {
-                font.Draw(batch, ExecutableStrings.ScoreCaption, EndgameLayout.ScoreCaption(index).ToVector2(),
-                    Color.Lime, 1);
-                var score = EndgameLayout.Score(index);
-                DrawPanelValue(font, batch, player.ScenarioScore, score.X + 5 * OriginalFontLayout.CellWidth, score.Y);
+                font.Copy(batch, ExecutableStrings.ScoreCaption, EndgameLayout.ScoreCaption(index),
+                    OriginalFontLayout.PlainStrip);
+                font.Copy(batch, player.ScenarioScore.ToString().PadLeft(5), EndgameLayout.Score(index),
+                    OriginalFontLayout.PlainStrip);
             }
             if (_showEndgameStats)
                 DrawEndgameStatistics(batch, font, player, index);
@@ -114,17 +114,22 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// The results frame, loaded opaque into <c>(106, 25, 428, 410)</c> (FND-AWARDS-004), under any
-    /// private victory or elimination card.
+    /// private victory or elimination card. The screen around it is black, as captured when the
+    /// endgame follows the last turn's resolution (SCR-AWARDS-001, EXP-UI-017) and when the
+    /// elimination card does (SCR-OBJECTIVE-002, EXP-UI-018). It is drawn black as well when the
+    /// endgame follows an elimination card and when the card follows an earlier human's planning,
+    /// cases no capture shows (the entries' open questions).
     /// </summary>
     private void DrawEndgameBackground(SpriteBatch batch, Texture2D pixel)
     {
+        batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
         DrawPanelArtwork(batch, pixel, _endgameBackground, EndgameLayout.Panel, 255);
     }
 
-    private static void DrawEndgameNoticeName(SpriteBatch batch, PixelFont font, Color color, string name)
+    private static void DrawEndgameNoticeName(SpriteBatch batch, PixelFont font, string name)
     {
         var x = EndgameNoticeLayout.NameCenterX - name.Length * OriginalFontLayout.CellWidth / 2;
-        font.Draw(batch, name, new Vector2(x, EndgameNoticeLayout.NameY), color, 1);
+        font.Copy(batch, name, new Point(x, EndgameNoticeLayout.NameY), OriginalFontLayout.PlainStrip);
     }
 
     private void DrawEndgameAwards(
@@ -136,7 +141,7 @@ public sealed partial class ChaosGame
     {
         // FND-AWARDS-004: the awards strip of resource 201 behind the row's icons.
         if (_endgameSprites is not null)
-            batch.Draw(_endgameSprites, EndgameLayout.StatisticsDestination(row), EndgameLayout.AwardsSource,
+            batch.Draw(_endgameSprites, EndgameLayout.StripDestination(row), EndgameLayout.AwardsSource,
                 Color.White);
         var awards = EndgamePresentation.AwardsForPlayer(outcome, player);
         for (var index = 0; index < awards.Count; index++)
@@ -158,7 +163,7 @@ public sealed partial class ChaosGame
         int row)
     {
         if (_endgameSprites is not null)
-            batch.Draw(_endgameSprites, EndgameLayout.StatisticsDestination(row),
+            batch.Draw(_endgameSprites, EndgameLayout.StripDestination(row),
                 EndgameLayout.StatisticsSource, Color.White);
 
         long[] statistics =
@@ -372,7 +377,8 @@ public static class EndgameLayout
 
     public static Rectangle StatisticsSource => new(96, 112, 160, 64);
 
-    public static Rectangle StatisticsDestination(int row)
+    /// <summary>FND-AWARDS-004: where a row's awards or statistics strip is copied.</summary>
+    public static Rectangle StripDestination(int row)
     {
         ValidateRow(row);
         return new Rectangle(262, 30 + row * 66, 160, 64);

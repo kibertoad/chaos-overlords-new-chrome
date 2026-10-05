@@ -62,6 +62,8 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--item-frame", "1" },
         new[] { "--reference-frame", "save", "frame", "--item-frame", "15" },
         new[] { "--reference-frame", "save", "frame", "--item-frame", "1", "--item-frame", "2" },
+        new[] { "--reference-frame", "title", "frame", "--marker-frame", "0" },
+        new[] { "--reference-frame", "setup", "frame", "--selected-sector", "1" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter", "8" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter", "-1" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter" },
@@ -75,7 +77,28 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--reference-frame", "save", "frame", "--reference-clicks", "1:2>640:0" },
         new[] { "--reference-frame", "save", "frame", "--reference-clicks", "1:2:2>3:4" },
         new[] { "--reference-frame", "save", "frame", "--reference-clicks", "1:2>3:4>5:6" },
+        new[] { "--lamps", "0,1" },
+        new[] { "--reference-frame", "save", "frame", "--lamps" },
+        new[] { "--reference-frame", "save", "frame", "--lamps", "1" },
+        new[] { "--reference-frame", "save", "frame", "--lamps", "2,0" },
+        new[] { "--reference-frame", "save", "frame", "--lamps", "0,1,0" },
+        new[] { "--reference-frame", "save", "frame", "--lamps", "0,1", "--lamps", "0,1" },
     };
+
+    [Theory]
+    [InlineData("0,0", false, false)]
+    [InlineData("1,0", true, false)]
+    [InlineData("0,1", false, true)]
+    [InlineData("1,1", true, true)]
+    public void TheLampsGiveTheEventsAndComlinkPhases(string value, bool events, bool comlink)
+    {
+        // FND-EVENT-006: the bytes the pump sets while it has a lamp drawn lit.
+        var request = ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--lamps", value])!;
+        Assert.Equal(new ReferenceLamps(events, comlink), request.Lamps);
+        Assert.Equal(value, request.Lamps!.ToString());
+        Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.Lamps);
+    }
 
     [Fact]
     public void ClicksAreReadInOrderWithTheirDoubleClicks()

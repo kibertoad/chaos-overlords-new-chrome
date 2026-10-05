@@ -274,7 +274,7 @@ public sealed partial class ChaosGame
                 batch.Draw(_uiKeyedSprites, outline, CombatResultsLayout.MutualFocusSource, Color.White);
             // EXP-UI-008: scaled to 40 by 40 from the source pixel under each pixel's centre.
             if (_gangPortraits is not null)
-                PictureScaling.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(gang.DefinitionId), cell);
+                _scaledGangPortraits.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(gang.DefinitionId), cell);
             DrawForceTrack(batch, pixel, CombatResultsLayout.ForceTrack(cell, 0),
                 CombatResultsLayout.ForceTrackFill(timeline.PhaseStartForce(force.Gang)));
             DrawForceTrack(batch, pixel, CombatResultsLayout.ForceTrack(cell, 1),
