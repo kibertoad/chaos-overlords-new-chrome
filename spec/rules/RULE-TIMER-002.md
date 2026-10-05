@@ -1,10 +1,10 @@
 ---
 id: RULE-TIMER-002
 title: A human planning turn ends when its time limit passes
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-STATE-010, FND-EXE-004, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052]
+evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-STATE-010, FND-EXE-004, FND-UI-044, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052]
 conflicting: []
 split_with: []
 related: [RULE-OPTIONS-003]
@@ -46,7 +46,10 @@ define planning_time_expired() -> INT32:
 
 # at the start of a human player's planning
 planning_timer_start()
-# on each pass of the human planning loop, after Done and RULE-OPTIONS-003
+# on each pass of the human planning loop, after Done and RULE-OPTIONS-003;
+# a pass starts only once the handler of the previous event has returned, so
+# not while a panel is open or an offer, a control or a gang card's portrait
+# is held under the left button (FND-UI-044)
 if planning_time_expired():
     # the loop ends and the turn goes on as if Done had been accepted
     return
@@ -70,6 +73,13 @@ player's planning ends; RULE-OPTIONS-003 does not run for that ending.
 - The test runs only in the planning loop itself. A panel open when the time
   passes keeps running, with the bar and warning sounds of RULE-TIMER-003
   going on, and the turn ends on the loop's next pass after the panel closes.
+- A left press on the portrait of one of the player's gang cards in the
+  detailed sector view holds the game in the command handler's own loops until
+  the left button comes up, whether or not the gang is dragged (FND-UI-044).
+  A turn whose time passes during the hold ends on the loop's next pass after
+  the release, after the order of the drop has been given. Those loops do not
+  call the event pump, so the bar is not redrawn and the warnings of
+  RULE-TIMER-003 do not sound while the gang is held.
 - When planning ends the flag is cleared and the bar is left as last drawn.
 
 ## What the sources say
@@ -83,4 +93,5 @@ None known.
 
 ## Open questions
 
-None.
+- No recorded run lets the time pass while a gang card's portrait is held. The
+  expiry after the release rests on the static reading of FND-UI-044 alone.

@@ -1,0 +1,16 @@
+{
+  "screen": "SCR-FINANCE-001",
+  "state": "A planning entry of player 0 with the Financial panel open as City",
+  "elements": [
+    {"element": "Panel, City", "rect": [128, 124, 320, 209]},
+    {"element": "Overlord portrait", "rect": [154, 141, 64, 64]},
+    {"element": "Value fields, Gang Upkeep", "rect": [394, 151, 24, 7]},
+    {"element": "Value fields, New Recruits", "rect": [394, 160, 24, 7]},
+    {"element": "Value fields, Equipment", "rect": [394, 178, 24, 7]},
+    {"element": "Value fields, City Officials", "rect": [394, 196, 24, 7]},
+    {"element": "Value fields, Sector Tax", "rect": [394, 214, 24, 7]},
+    {"element": "Value fields, Site Protection", "rect": [394, 223, 24, 7]},
+    {"element": "Value fields, Chaos (Estimate)", "rect": [394, 241, 24, 7]},
+    {"element": "Value fields, Cash Adjustment", "rect": [394, 268, 24, 7]}
+  ]
+}
