@@ -53,13 +53,19 @@ internal static class OriginalAddresses
     // FND-EQUIP-008: the Equip panel's list builder, called as (category, tech_level, player,
     // roster slot), the sixteen INT32 entries it fills, the 16-bit Tech Level of the gang
     // definition records, 156 bytes apart, and the panel's own instruction that loads the Tech
-    // Level for the call, which the probe uses as the return address of its own calls.
+    // Level for the call, which the probe uses as the return address of every call it makes.
     public const uint EquipListBuilder = 0x0043F136;
     public const uint EquipListEntries = 0x004948A8;
     public const int EquipListLength = 16;
     public const uint GangDefinitionTechLevel = 0x004A2882;
     public const int GangDefinitionSize = 156;
-    public const uint EquipListReturn = 0x0043DE80;
+    public const uint InjectedCallReturn = 0x0043DE80;
+
+    // FND-ATTACK-006: the Attack picker's roster builder, called as (opponent, sector), and the six
+    // INT32 entries it fills.
+    public const uint AttackTargetBuilder = 0x0043D132;
+    public const uint AttackTargetEntries = 0x00494850;
+    public const int AttackTargetLength = 6;
 
     // FND-UI-020: the PeekMessageA calls of the two message pumps, which every screen and panel
     // loop of the main thread goes through.

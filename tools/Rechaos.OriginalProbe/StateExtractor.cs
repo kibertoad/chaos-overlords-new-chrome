@@ -74,6 +74,16 @@ internal sealed class StateExtractor
                 ["tech_level"] = list["TechLevel"]!.GetValue<int>(),
                 ["items"] = new JsonArray(list["Items"]!.AsArray().Select(item => (JsonNode)item!.GetValue<int>()).ToArray()),
             }).ToArray());
+        // RULE-ATTACK-002, FND-ATTACK-006: the targets the Attack picker's roster builder filled for
+        // each opponent and each of the first human's living gangs, with the sector it was passed.
+        if (trace["AttackLists"] is JsonArray attackLists)
+            run["attack_lists"] = new JsonArray(attackLists.Select(list => (JsonNode)new JsonObject
+            {
+                ["slot"] = list!["Slot"]!.GetValue<int>(),
+                ["sector"] = list["Sector"]!.GetValue<int>(),
+                ["opponent"] = list["Opponent"]!.GetValue<int>(),
+                ["targets"] = new JsonArray(list["Targets"]!.AsArray().Select(target => (JsonNode)target!.GetValue<int>()).ToArray()),
+            }).ToArray());
         // RULE-SETUP-008: each call of a planning entry panel, with the roll count and whether it
         // was shown, in the order of the calls.
         if (trace["Panels"] is JsonArray panelCalls)
