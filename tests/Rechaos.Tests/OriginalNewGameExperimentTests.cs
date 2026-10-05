@@ -802,7 +802,8 @@ public sealed partial class OriginalNewGameExperimentTests
 
     private static MatchState StartMatch(
         RecordedRun recorded, out int donePresses, Action<MatchState, PlayerId, int>? beforeDone = null,
-        bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false)
+        bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false,
+        Action<MatchState, PlayerId, int>? atPlanningEntry = null)
     {
         var scenario = OriginalScenario(recorded.Term("scenario", 0));
         var setup = new MatchSetup(
@@ -836,6 +837,7 @@ public sealed partial class OriginalNewGameExperimentTests
         donePresses = 0;
         for (var turn = 0; turn < recorded.DoneCount; turn++)
         {
+            atPlanningEntry?.Invoke(match, human, turn + 1);
             // DEV-EQUIP-001: the rebuild resolves Equip and Sell in the order they are submitted.
             // Every recording lists a turn's orders in roster order, the original's scan order.
             foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))

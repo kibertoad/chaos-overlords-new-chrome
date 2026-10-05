@@ -34,15 +34,15 @@ public sealed partial class OriginalNewGameExperimentTests
         void Present(MatchState state, PlayerId human)
         {
             var turn = state.Coordinator.Turn - 1;
-            var events = state.Events
-                .Where(gameEvent => CombatResultProjection.IsFromLastCompletedTurn(gameEvent.Turn, state.Coordinator.Turn)
-                    && CombatResultProjection.IsVisibleCombatEvent(state, human, gameEvent))
-                .ToArray();
+            var events = CombatResultProjection.AutomaticPresentationEvents(state, human, state.Events);
+            var bySequence = events.ToDictionary(gameEvent => gameEvent.Sequence);
             foreach (var clip in CombatAnimationRouting.ForPresentation(state, events, human))
-                rebuilt.Add(Describe(turn, state, human, clip));
+                rebuilt.Add(Describe(turn, bySequence[clip.EventSequence], human, clip));
         }
         var human = recorded.Humans[0];
-        var match = StartMatch(recorded, out _, (state, player, turn) =>
+        // The game presents at the planning entry, before the turn's orders, hires and planning
+        // writes change the state the clips are routed from.
+        var match = StartMatch(recorded, out _, atPlanningEntry: (state, player, turn) =>
         {
             if (turn > 1) Present(state, player);
         });
@@ -50,15 +50,20 @@ public sealed partial class OriginalNewGameExperimentTests
         // the planning entry that would have opened the presentation.
         if (IsActive(match, human) && match.Outcome is null) Present(match, human);
 
+        // RULE-AUDIO-009: the original plays slot 5 once for every clip, an evaded attack's included,
+        // whose slot stays empty so the play is silent. The rebuild's clip carries no sound for an
+        // evaded attack and one for every other clip, so only the original's side is checked here.
+        Assert.All(recorded.CombatClips!, clip => Assert.True(clip.Played, $"the clip after roll {clip.AfterRoll} did not play slot 5"));
         // The clips of presentations the console opened are compared by
-        // TheConsolesDetailedCombatControlPlaysTheLastTurnAgain.
+        // TheConsolesDetailedCombatControlPlaysTheLastTurnAgain, and a presentation planning opened
+        // plays no effect of its own.
         var console = (recorded.CombatPresentations ?? []).Where(presentation => !presentation.Automatic)
             .SelectMany(presentation => Enumerable.Range(presentation.FirstClip, presentation.Clips)).ToHashSet();
         Assert.All((recorded.CombatPresentations ?? []).Where(presentation => presentation.Automatic),
             presentation => Assert.Empty(presentation.Sounds));
         var original = recorded.CombatClips!.Where((_, index) => !console.Contains(index)).Select(clip => Describe(
             recorded.DoneAtRoll.Count(done => done < clip.AfterRoll), clip.Focal, clip.Other, clip.Hold,
-            clip.FocalBar, clip.OtherBar, clip.Sounds, clip.Played)).ToArray();
+            clip.FocalBar, clip.OtherBar, clip.Sounds)).ToArray();
         Assert.Equal(original, rebuilt);
     }
 
@@ -87,10 +92,8 @@ public sealed partial class OriginalNewGameExperimentTests
         var recorded = Run(experiment, run);
         var match = StartMatch(recorded, out _);
         var human = recorded.Humans[0];
-        var events = match.Events
-            .Where(gameEvent => CombatResultProjection.IsFromLastCompletedTurn(gameEvent.Turn, match.Coordinator.Turn)
-                && CombatResultProjection.IsVisibleCombatEvent(match, human, gameEvent))
-            .ToArray();
+        var events = CombatResultProjection.AutomaticPresentationEvents(match, human, match.Events);
+        var bySequence = events.ToDictionary(gameEvent => gameEvent.Sequence);
         var clips = CombatAnimationRouting.ForPresentation(match, events, human);
         var turn = match.Coordinator.Turn - 1;
         var steps = recorded.OrderSteps.Where(step => step.Kind == "strip").ToArray();
@@ -106,8 +109,8 @@ public sealed partial class OriginalNewGameExperimentTests
         Assert.Empty(presentation.Sounds);
         var played = recorded.CombatClips!.Skip(presentation.FirstClip).Take(presentation.Clips).Select(clip => Describe(
             recorded.DoneAtRoll.Count(done => done < clip.AfterRoll), clip.Focal, clip.Other, clip.Hold,
-            clip.FocalBar, clip.OtherBar, clip.Sounds, clip.Played)).ToArray();
-        Assert.Equal(clips.Take(played.Length).Select(clip => Describe(turn, match, human, clip)), played);
+            clip.FocalBar, clip.OtherBar, clip.Sounds)).ToArray();
+        Assert.Equal(clips.Take(played.Length).Select(clip => Describe(turn, bySequence[clip.EventSequence], human, clip)), played);
         if (played.Length < clips.Count)
         {
             var exit = steps[1];
@@ -120,10 +123,9 @@ public sealed partial class OriginalNewGameExperimentTests
 
     // The original sets the focal bar's right end to 256 + 6 * force_shown and the other's to
     // 329 + 6 * force_shown, and loads slot 5 with sound 500 + the clip's sound number
-    // (FND-COMBAT-011, FND-AUDIO-013).
-    private static string Describe(int turn, MatchState state, PlayerId viewer, CombatAnimationClip clip)
+    // (FND-COMBAT-011, FND-AUDIO-013). An evaded attack loads sound number -1, file 499.
+    private static string Describe(int turn, GameEvent gameEvent, PlayerId viewer, CombatAnimationClip clip)
     {
-        var gameEvent = state.Events.Single(candidate => candidate.Sequence == clip.EventSequence);
         int Element(CombatantDetails gang) => gang.Owner.Value * AiPlanningState.GangSlotsPerPlayer + gang.RosterSlot!.Value;
         int focal, other, focalForce, otherForce;
         if (clip.Police)
@@ -144,10 +146,10 @@ public sealed partial class OriginalNewGameExperimentTests
             otherForce = outgoing ? clip.Forces.DefenderBefore : clip.Forces.AttackerBefore!.Value;
         }
         return Describe(turn, focal, other, clip.HandsOff ? 0 : 1, 256 + 6 * focalForce, 329 + 6 * otherForce,
-            [500 + (clip.Sound ?? -1)], true);
+            [500 + (clip.Sound ?? -1)]);
     }
 
     private static string Describe(
-        int turn, int focal, int other, int hold, int focalBar, int otherBar, IReadOnlyList<int> sounds, bool played) =>
-        $"turn {turn}: focal {focal} other {other} hold {hold} bars {focalBar},{otherBar} sounds [{string.Join(",", sounds)}] played {played}";
+        int turn, int focal, int other, int hold, int focalBar, int otherBar, IReadOnlyList<int> sounds) =>
+        $"turn {turn}: focal {focal} other {other} hold {hold} bars {focalBar},{otherBar} sounds [{string.Join(",", sounds)}]";
 }

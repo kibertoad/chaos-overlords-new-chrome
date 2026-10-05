@@ -187,14 +187,7 @@ public sealed partial class ChaosGame
         if (first == events.Count) return;
         if (_detailedCombat && _combatAnimationTextures.Count > 0)
         {
-            var presented = new List<GameEvent>();
-            for (var index = first; index < events.Count; index++)
-            {
-                var gameEvent = events[index];
-                if (CombatResultProjection.IsFromLastCompletedTurn(gameEvent.Turn, _state.Coordinator.Turn)
-                    && CombatResultProjection.IsVisibleCombatEvent(_state, viewer, gameEvent))
-                    presented.Add(gameEvent);
-            }
+            var presented = CombatResultProjection.AutomaticPresentationEvents(_state, viewer, events.Skip(first));
             foreach (var clip in CombatAnimationRouting.ForPresentation(_state, presented, viewer))
                 _combatAnimationPlayer.Enqueue(clip);
         }

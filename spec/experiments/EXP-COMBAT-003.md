@@ -41,8 +41,8 @@ press and four after the twenty-ninth. Every clip had the human's gang,
 element 0, as focal gang and hold argument 1. In the last turn it was
 attacked by elements 334, 339 and 350 of player 4 and 431 of player 5, in
 that order; the armed attacker 334 loaded sound 505 and the others 500. The
-focal bar showed Force 2 before the second clip and 0 before the third and
-fourth.
+focal bar showed Force 2 before the second clip and 0 before the third,
+fourth and fifth.
 
 At the clip player's entry the bars' right ends give the Force shown before
 that clip's damage, `256 + 6 * force_shown` for the focal gang and
