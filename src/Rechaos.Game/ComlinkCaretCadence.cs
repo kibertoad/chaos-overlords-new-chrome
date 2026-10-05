@@ -7,7 +7,10 @@ namespace Rechaos.Game;
 /// Native initialization registers timer zero through <c>timeSetEvent</c> at
 /// <c>1000 / 6</c> milliseconds. Send keeps its normal glyph row for three
 /// consumed timer events, then alternates to the inverse row for the next
-/// three. This class deliberately has no connection to match state.
+/// three (SCR-COMLINK-002, FND-COMLINK-010). The timer is not restarted when the
+/// panel opens, so the events fall on the shared ticks of <see cref="PresentationClock"/>
+/// (RULE-UI-008) and the first phase ends on the third tick after the opening.
+/// This class deliberately has no connection to match state.
 /// </remarks>
 public sealed class ComlinkCaretCadence
 {
@@ -21,7 +24,7 @@ public sealed class ComlinkCaretCadence
 
     public void Reset(TimeSpan now)
     {
-        _nextTimerEvent = now + TimerEventInterval;
+        _nextTimerEvent = TimerEventInterval * (PresentationClock.Ticks(now) + 1);
         _eventsInGlyphRow = 0;
         UsesInverseGlyph = false;
     }
