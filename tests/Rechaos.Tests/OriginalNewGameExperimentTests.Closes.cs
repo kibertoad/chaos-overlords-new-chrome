@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Game;
@@ -63,7 +62,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 Assert.Equal(close.Saved == 1, actions!.IsSaved);
                 Assert.Equal(0, close.NoMatch);
                 var asked = close.Dialogs.Contains(129);
-                var held = ClosingIsCancelled(game);
+                var held = LeavePromptTests.ClosingIsCancelled(game);
                 Assert.Equal(asked, held);
                 Assert.Equal(asked ? LeaveKind.Exit : LeaveKind.None,
                     (LeaveKind)DeviationBehaviourTests.Field("_leavePrompt").GetValue(game)!);
@@ -86,16 +85,5 @@ public sealed partial class OriginalNewGameExperimentTests
         {
             directory.Delete(recursive: true);
         }
-    }
-
-    /// <summary>Closes the window of a headless game and says whether the close was held back.</summary>
-    internal static bool ClosingIsCancelled(ChaosGame game)
-    {
-        var args = new ExitingEventArgs();
-        typeof(ChaosGame).GetMethod("OnExiting",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-                [typeof(object), typeof(ExitingEventArgs)])!
-            .Invoke(game, [game, args]);
-        return args.Cancel;
     }
 }

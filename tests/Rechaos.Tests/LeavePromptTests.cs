@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.Xna.Framework;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Game;
@@ -22,7 +23,7 @@ public sealed class LeavePromptTests
     public void ClosingAnUnsavedMatchOpensThePromptAndCancelReturnsToTheMatch()
     {
         var game = GameWith(saved: false);
-        Assert.True(OriginalNewGameExperimentTests.ClosingIsCancelled(game));
+        Assert.True(ClosingIsCancelled(game));
         Assert.Equal(LeaveKind.Exit, Prompt(game));
         Assert.True((bool)DeviationBehaviourTests.Field("_gameMenuOpen").GetValue(game)!);
 
@@ -35,7 +36,7 @@ public sealed class LeavePromptTests
     public void ClosingASavedMatchIsNotHeldBack()
     {
         var game = GameWith(saved: true);
-        Assert.False(OriginalNewGameExperimentTests.ClosingIsCancelled(game));
+        Assert.False(ClosingIsCancelled(game));
         Assert.Equal(LeaveKind.None, Prompt(game));
     }
 
@@ -102,6 +103,16 @@ public sealed class LeavePromptTests
         DeviationBehaviourTests.Field("_autoSave").SetValue(game, new RollingAutoSave(autoSavePath, (_, _) => { }));
         DeviationBehaviourTests.Field("_saveSlots").SetValue(game, new SaveSlotSummary?[SaveSlotCatalog.BrowserRowCount]);
         return game;
+    }
+
+    /// <summary>Closes the window of a headless game and says whether the close was held back.</summary>
+    internal static bool ClosingIsCancelled(ChaosGame game)
+    {
+        var args = new ExitingEventArgs();
+        typeof(ChaosGame).GetMethod("OnExiting", BindingFlags.Instance | BindingFlags.NonPublic,
+                [typeof(object), typeof(ExitingEventArgs)])!
+            .Invoke(game, [game, args]);
+        return args.Cancel;
     }
 
     /// <summary>Gives the prompt's answer; a leave the game takes reaches Exit, which a headless game cannot run.</summary>
