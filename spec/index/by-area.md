@@ -487,6 +487,9 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | Which items does the Equip list offer gangs carrying items, with little research done? | recorded |
+| [EXP-EQUIP-002](../experiments/EXP-EQUIP-002.md) | Which items does the Equip list offer a Tech Level 0 gang, and items the player cannot afford? | recorded |
+| [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | Which items does the Equip list offer late in a match, with most research done? | recorded |
 | [FND-EQUIP-001](../findings/FND-EQUIP-001.md) | A Factory lowers an item's price by its cost divided by three, truncated | recorded |
 | [FND-EQUIP-002](../findings/FND-EQUIP-002.md) | The transaction pass visits gangs by player and roster slot, holds gifts until the player's scan ends, and pays a multi-item Sell once | recorded |
 | [FND-EQUIP-003](../findings/FND-EQUIP-003.md) | The Give panel's item targets are 52-by-52 cells on a 64-pixel pitch, with up to five recipients in the same panel | recorded |
@@ -500,7 +503,7 @@
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | established |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | established |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | established |
-| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported |
+| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | established |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | Equip panel | supported |
 
 ## GIVE
@@ -551,13 +554,17 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [EXP-ATTACK-001](../experiments/EXP-ATTACK-001.md) | Does the Attack picker leave out an enemy gang in the sector that the player does not see? | recorded |
+| [EXP-ATTACK-002](../experiments/EXP-ATTACK-002.md) | Which of an opponent's gangs in the sector does the Attack picker list when the player sees only some of them? | recorded |
+| [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | Which gangs does the Attack picker list when several opponents share the acting gang's sector? | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
 | [FND-ATTACK-003](../findings/FND-ATTACK-003.md) | The Attack picker sits at (104,124), lists the other five players in slot order, enables an opponent by the sector's gangs_seen byte, and confirms with Enter, Execute or its lower face and cancels with Escape or its upper face | recorded |
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | A double-click in the Attack picker opens Item Information for an equipment icon and the gang information panel for a portrait, of the acting gang or of a listed target | recorded |
 | [FND-ATTACK-005](../findings/FND-ATTACK-005.md) | The Attack picker builds each target card from a 66-by-87 PX00129 frame with the gang's portrait, a Force track and its item icons | recorded |
+| [FND-ATTACK-006](../findings/FND-ATTACK-006.md) | The Attack picker's roster builder lists an opponent's gangs in a sector that the active player sees, with no bound on the count | recorded |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | established |
-| [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported |
+| [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | established |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | Attack picker (Target Acquisition) | supported |
 
 ## COMBAT

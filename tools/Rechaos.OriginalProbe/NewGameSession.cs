@@ -116,8 +116,9 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
-    IReadOnlyList<ProbeDrawValue>? DrawValues = null, IReadOnlyList<ProbeClick>? SearchClicks = null,
-    IReadOnlyList<ProbeHireStep>? HireSteps = null, IReadOnlyList<ProbeOrderStep>? OrderSteps = null)
+    IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false,
+    IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
+    IReadOnlyList<ProbeOrderStep>? OrderSteps = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -138,8 +139,9 @@ internal sealed record NewGameSettings(
     }
 
     /// <summary>
-    /// The orders and Done presses after the first planning phase, one input each: an order is
-    /// named <c>order</c> and a Done press <c>left_click</c>.
+    /// The orders and Done presses after the first planning phase, then the presses after the dump,
+    /// one input each: an order is named <c>order</c>, a press <c>left_click</c> and a hire step's
+    /// drag <c>drag</c>.
     /// </summary>
     public IEnumerable<(string Name, string Value)> DescribeTurns()
     {
@@ -201,6 +203,8 @@ internal sealed record ProbeTrace(
     CityMarkers? Markers = null,
     List<TimerRecord>? Timers = null,
     List<ComlinkStep>? Comlink = null,
+    List<EquipListRecord>? EquipLists = null,
+    List<AttackListRecord>? AttackLists = null,
     List<SearchClickRecord>? SearchClicks = null,
     List<HireStepRecord>? HireSteps = null,
     List<OrderStepRecord>? OrderSteps = null);
@@ -412,10 +416,12 @@ internal sealed partial class NewGameSession(
         DumpWritableSections();
         _panelsAtDump = [.. _panels];
         if (settings.Capture) CaptureDrawingArea(window);
+        if (settings.EquipLists && !RecordEquipLists()) return Finish(false, "The Equip lists were not built.", rollsBeforeBegin);
+        if (settings.AttackLists && !RecordAttackLists()) return Finish(false, "The Attack lists were not built.", rollsBeforeBegin);
         if (settings.SearchClicks is { Count: > 0 } && !RecordSearchClicks(window))
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
-        if (settings.HireSteps is { Count: > 0 } && !RecordHireSteps(window))
-            return Finish(false, "The original exited during the hire steps.", rollsBeforeBegin);
+        if (settings.HireSteps is { Count: > 0 } && RecordHireSteps(window) is { } stopped)
+            return Finish(false, stopped, rollsBeforeBegin);
         if (settings.OrderSteps is { Count: > 0 } && !RecordOrderSteps(window))
             return Finish(false, "The original exited during the order steps.", rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
@@ -534,9 +540,13 @@ internal sealed partial class NewGameSession(
         endgame.Kinds.Add(kind);
     }
 
+    // The player whose orders, hires, Search filter, Equip lists and Attack lists the probe writes and reads:
+    // the first --humans entry, or slot 0 when the option is left out.
+    private int FirstHuman => settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+
     private void WriteSearch(ProbeSearch write)
     {
-        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var human = FirstHuman;
         foreach (var definition in write.Definitions)
             _process.Write(OriginalAddresses.SearchFilters
                 + (uint)(human * OriginalAddresses.SiteDefinitionCount + definition), [1]);
@@ -606,7 +616,7 @@ internal sealed partial class NewGameSession(
 
     private void WriteOrder(ProbeOrder order)
     {
-        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var human = FirstHuman;
         var record = OriginalAddresses.GangRecords
             + (uint)(human * OriginalAddresses.PlayerGangStride + order.Slot * OriginalAddresses.GangRecordSize);
         _process.Write(record + 7, [
@@ -617,7 +627,7 @@ internal sealed partial class NewGameSession(
 
     private void WriteHire(ProbeHire hire)
     {
-        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var human = FirstHuman;
         _process.Write(OriginalAddresses.HireOrders + (uint)(human * 3 + hire.OfferSlot), [(byte)hire.Sector]);
         _notes.Add($"hire after roll {_rolls.Count}: {hire}");
     }
@@ -891,15 +901,20 @@ internal sealed partial class NewGameSession(
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
             _endgame, _finance.Count == 0 ? null : _finance, (_panelsAtDump ?? _panels) is { Count: > 0 } panels ? panels : null, _lastRedraw,
             _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
+            _equipLists.Count == 0 ? null : _equipLists, _attackLists.Count == 0 ? null : _attackLists,
             _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps,
             _orderSteps.Count == 0 ? null : _orderSteps);
     }
 
     private static void Click(IntPtr window, int x, int y)
     {
-        var position = (IntPtr)((y << 16) | (x & 0xFFFF));
+        var position = PointParameter(x, y);
         Native.PostMessageW(window, Native.WmMouseMove, IntPtr.Zero, position);
         Native.PostMessageW(window, Native.WmLButtonDown, 1, position);
         Native.PostMessageW(window, Native.WmLButtonUp, IntPtr.Zero, position);
     }
+
+    // A client point as the mouse messages carry it in lParam, and as the window procedure keeps
+    // it: x in the low 16 bits, y in the high 16 (FND-UI-020).
+    private static IntPtr PointParameter(int x, int y) => (IntPtr)((y << 16) | (x & 0xFFFF));
 }

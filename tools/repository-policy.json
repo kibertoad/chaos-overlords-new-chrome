@@ -60,6 +60,9 @@
   ],
   "maximumTrackedFileBytes": 1048576,
   "approvedLargeFiles": [
+    "spec/experiments/EXP-ATTACK-002.json",
+    "spec/experiments/EXP-ATTACK-003.json",
+    "spec/experiments/EXP-EQUIP-003.json",
     "spec/experiments/EXP-TURN-010.json",
     "spec/experiments/EXP-TURN-017.json",
     "spec/experiments/EXP-TURN-021.json",
