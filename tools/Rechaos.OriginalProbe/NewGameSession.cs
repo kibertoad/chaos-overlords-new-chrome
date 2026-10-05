@@ -125,7 +125,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
     IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false,
     bool CreditsCapture = false, bool SetupCapture = false, IReadOnlyList<ProbeOrderStep>? SetupSteps = null,
-    bool DetailedCombat = false, bool Pointer = false, bool Sounds = false, bool WatchIntro = false)
+    bool DetailedCombat = false, bool Pointer = false, bool Sounds = false, bool WatchIntro = false, bool Waits = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -231,7 +231,9 @@ internal sealed record ProbeTrace(
     List<CombatPresentationRecord>? CombatPresentations = null,
     List<PointerCallRecord>? PointerCalls = null,
     List<SoundCallRecord>? SoundCalls = null,
-    List<IntroMovieRecord>? IntroMovies = null);
+    List<IntroMovieRecord>? IntroMovies = null,
+    List<WaitRecord>? Waits = null,
+    List<long>? Ticks = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -505,6 +507,7 @@ internal sealed partial class NewGameSession(
         if (settings.AttackLists && !RecordAttackLists()) return Finish(false, "The Attack lists were not built.", rollsBeforeBegin);
         if (settings.SearchClicks is { Count: > 0 } && !RecordSearchClicks(window))
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
+        if (settings.Waits) ArmWaits();
         if (settings.HireSteps is { Count: > 0 } && RecordHireSteps(window) is { } stopped)
             return Finish(false, stopped, rollsBeforeBegin);
         if (settings.OrderSteps is { Count: > 0 } && RecordOrderSteps(window) is { } orderStepsStopped)
@@ -901,7 +904,7 @@ internal sealed partial class NewGameSession(
             _orderSteps.Count == 0 ? null : _orderSteps, settings.GangMarkers ? _gangMarkers : null,
             settings.DetailedCombat ? _combatClips : null, settings.DetailedCombat ? _combatPresentations : null,
             settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
-            settings.WatchIntro ? _introMovies : null);
+            settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null);
     }
 
     private static void Click(IntPtr window, int x, int y)

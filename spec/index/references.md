@@ -171,6 +171,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | builds |
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | builds |
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | builds |
+| [EXP-UI-024](../experiments/EXP-UI-024.md) | builds |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
@@ -1291,6 +1292,7 @@ None.
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | body |
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | body |
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
+| [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | body |
 
 ## EXP-TURN-002
@@ -2413,6 +2415,12 @@ None.
 |---|---|
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
+
+## EXP-UI-024
+
+| Cited by | In |
+|---|---|
+| [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | evidence |
 
 ## EXP-VIDEO-001
 
@@ -6876,6 +6884,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-009](../findings/FND-STATE-009.md) | body |
@@ -7249,6 +7258,7 @@ None.
 |---|---|
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
+| [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-015](../findings/FND-UI-015.md) | body |
@@ -9327,6 +9337,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
 | [FND-RESEARCH-005](../findings/FND-RESEARCH-005.md) | body |
 | [FND-UI-037](../findings/FND-UI-037.md) | body |
 

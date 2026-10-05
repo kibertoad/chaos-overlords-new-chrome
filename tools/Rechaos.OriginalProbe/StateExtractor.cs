@@ -140,6 +140,15 @@ internal sealed class StateExtractor
                 ["milliseconds"] = new JsonArray(movie["Milliseconds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<long>()).ToArray()),
                 ["closed_at"] = movie["ClosedAt"]!.GetValue<int>(),
             }).ToArray());
+        // RULE-TIMER-004: from the dump on, each tick of the presentation clock and each call of the
+        // wait as ticks, the call's address and the milliseconds of its start and return, both
+        // counted from the same clock as the ticks (FND-TIMER-002).
+        if (trace["Ticks"] is JsonArray ticks)
+            run["ticks"] = new JsonArray(ticks.Select(tick => (JsonNode)tick!.GetValue<long>()).ToArray());
+        if (trace["Waits"] is JsonArray waits)
+            run["waits"] = new JsonArray(waits.Select(wait => (JsonNode)new JsonArray(
+                wait!["Ticks"]!.GetValue<int>(), (int)wait["Call"]!.GetValue<uint>(),
+                wait["Started"]!.GetValue<long>(), wait["Returned"]!.GetValue<long>())).ToArray());
         // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
         if (trace["HireSteps"] is JsonArray hireSteps)
             run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject

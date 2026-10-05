@@ -90,6 +90,9 @@ internal static class OriginalAddresses
     public const uint CursorHelper = 0x00465BC8;
     // RULE-AUDIO-006, FND-AUDIO-006: the play helper fn_0045851A(slot, priority).
     public const uint PlayHelper = 0x0045851A;
+    // RULE-TIMER-004, FND-TIMER-002: the timer callback and the presentation wait.
+    public const uint TimerCallback = 0x004327C0;
+    public const uint PresentationWait = 0x00464CD9;
     // RULE-VIDEO-001, FND-VIDEO-002, EXP-VIDEO-001: the frame helper's call of SmackDoFrame, the
     // close helper fn_0040DD7B, movie slot 0's frame counter and Smack handle, and the movie name
     // the intro copies.
