@@ -60,6 +60,10 @@ public sealed partial class ScreenCaptureTests
             Assert.Skip($"{capture} cannot be reached in the rebuild: {reason}.");
         if (capture.Elements.Count == 0)
             Assert.Skip($"{capture} records no screen elements; the probe's digest command adds them.");
+        // FND-COMBAT-016: the probe keeps a shot whose clip tick moved during every attempt without
+        // the tick, and drawing the clip at its first tick would compare a different picture.
+        if (capture.ClipTick is null && capture.Screens.Contains("SCR-COMBAT-002"))
+            Assert.Skip($"{capture} shows a Detailed Combat clip, but the probe could not settle its tick.");
         var masks = ScreenCaptureMasks.For(capture.Screens);
         // The capture itself is only needed for elements with white or masked pixels; the
         // others are compared by digest.

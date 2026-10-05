@@ -163,11 +163,16 @@ public sealed partial class ChaosGame
         {
             if (_previousKeyboard.IsKeyDown(key)) continue;
             if (OriginalTextInput.TryCharacter(key, shift, out var character))
-            {
-                _comlinkEditor.TryAppend(character);
-                _comlinkStatus = string.Empty;
-            }
+                TypeComlinkCharacter(character);
         }
+    }
+
+    // RULE-COMLINK-006: a character typed in the Send panel, from the keyboard or a reference
+    // frame's typed text.
+    private void TypeComlinkCharacter(char character)
+    {
+        _comlinkEditor.TryAppend(character);
+        _comlinkStatus = string.Empty;
     }
 
     private void HandleComlinkViewClick(Point point)
@@ -291,7 +296,7 @@ public sealed partial class ChaosGame
         var messages = state.ComlinkFor(playerId).Messages;
         if (messages.Count == 0)
         {
-            font.Draw(batch, "NO INCOMING MESSAGES", ComlinkViewLayout.Message.Location.ToVector2(), Color.Lime, 1);
+            font.Draw(batch, "NO INCOMING MESSAGES", ComlinkViewLayout.MessageOrigin.ToVector2(), Color.Lime, 1);
             return;
         }
 

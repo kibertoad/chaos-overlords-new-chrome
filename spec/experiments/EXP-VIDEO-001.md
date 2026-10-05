@@ -42,22 +42,24 @@ The logos movie played first and the intro movie second. The headers gave 200
 and 1150 frames, as FND-VIDEO-001 reads them from the files. The helper showed
 the logos movie 201 times and the intro movie 1151 times. The slot's counter
 ran from 0 to the frame count, and the slot was closed with the counter at the
-frame count. The last step of each came 19906 ms and 114909 ms after its first,
-99.5 and 99.9 ms a step, and the intro movie's first step came 43 ms after the
-logos movie's last.
+frame count. The steps up to counter n - 1 came 100 ms apart, from 98 to 101 ms
+for the logos movie and from 88 to 112 ms for the intro movie. The step at
+counter n came 6 ms and 9 ms after the step before it. The intro movie's first
+step came 43 ms after the logos movie's last.
 
 ## Results
 
 `TheIntroPlaysEachMovieToTheStepAfterItsLastFrame` in
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.Intro.cs` checks these
 observations and steps the rebuild's movie timeline for the same frame counts
-at 100 ms: it decodes each frame once and ends the movie one step after the
-last, n + 1 steps in all, so the last frame stays up for 100 ms as in the
-original.
+at 100 ms, at the original's steps: it decodes one frame at each of the first n
+steps and ends the movie at the last, 6 and 9 ms after the step before it, n + 1
+steps in all.
 
 ## Conclusion
 
 The run supports RULE-VIDEO-001 for movies played out: each movie of n frames
-is stepped n + 1 times, 100 ms apart, the last step wrapping to the first frame
-as the files have no ring frame (FND-VIDEO-001), and the movie is closed at that
-step, so its last frame stays up for 100 ms. The run does not press the button.
+is stepped n + 1 times, the first n steps 100 ms apart. The last step wraps to
+the first frame, as the files have no ring frame (FND-VIDEO-001), comes within
+10 ms of the step before it, and the movie is closed at that step, less than
+10 ms after its last frame was shown. The run does not press the button.
