@@ -36,7 +36,7 @@ static int Usage()
               [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture] [--white-key]
               [--comlink <script file>]
               [--draw-values <hex address>=<int32>[/<int32>...],...]
-              [--equip-lists] [--attack-lists]
+              [--equip-lists] [--attack-lists] [--search-clicks <x:y>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -85,7 +85,8 @@ static int NewGame(string[] args)
         args.Contains("--white-key"),
         Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null,
         args.Contains("--equip-lists"),
-        args.Contains("--attack-lists"));
+        args.Contains("--attack-lists"),
+        Option(args, "--search-clicks") is { } searchClicks ? ParseClicks(searchClicks) : null);
     // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
     // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
     // A first slot that is not the lowest would compare one player's lists with another player's
@@ -213,6 +214,16 @@ static IReadOnlyList<ProbeSearch> ParseSearch(string value) =>
         if (definitions.Any(definition => definition is < 0 or >= OriginalAddresses.SiteDefinitionCount))
             throw new FormatException($"A site definition is 0 to 21: {entry}");
         return new ProbeSearch(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), definitions);
+    }).ToArray();
+
+// --search-clicks x:y,... posts a click at each client point after the dump (SearchClickRecord).
+static IReadOnlyList<ProbeClick> ParseClicks(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        if (parts.Length != 2) throw new FormatException($"A click needs x and y: {entry}");
+        return new ProbeClick(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture),
+            int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture));
     }).ToArray();
 
 // --finance turn:sector,... opens the Financial panel before that turn's Done, the City variant for

@@ -74,6 +74,10 @@ public sealed partial class OriginalNewGameExperimentTests
     // human's gangs at the recording's endpoint, with the sector it was passed (FND-ATTACK-006).
     private sealed record RecordedAttackList(int Slot, int Sector, int Opponent, IReadOnlyList<int> Targets);
 
+    // A click the probe posted after the dump, whether the Search panel was open after it, the
+    // active player and the whole search_filters table (FND-SEARCH-001, FND-SEARCH-002).
+    private sealed record RecordedSearchClick(int X, int Y, bool PanelOpen, int ActivePlayer, IReadOnlyList<int> Filters);
+
     // A call of a planning entry panel: its name, the roll count when it was called and whether it
     // stayed open until Exit was pressed (RULE-SETUP-008).
     private sealed record RecordedPanel(string Panel, int AfterRoll, bool Shown);
@@ -150,6 +154,12 @@ public sealed partial class OriginalNewGameExperimentTests
                     markers.GetProperty("markers").EnumerateArray()
                         .Select(marker => marker.EnumerateArray().Select(value => value.GetInt32()).ToArray()).ToArray())
                 : null;
+            SearchClicks = run.TryGetProperty("search_clicks", out var searchClicks)
+                ? searchClicks.EnumerateArray().Select(click => new RecordedSearchClick(
+                    click.GetProperty("x").GetInt32(), click.GetProperty("y").GetInt32(),
+                    click.GetProperty("panel_open").GetBoolean(), click.GetProperty("active_player").GetInt32(),
+                    click.GetProperty("filters").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : [];
             Finance = run.TryGetProperty("finance", out var finance)
                 ? finance.EnumerateArray().Select(panel => new RecordedFinance(
                     panel.GetProperty("turn").GetInt32(), panel.GetProperty("sector").GetInt32(),
@@ -201,6 +211,7 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedFinance> Finance { get; }
         public IReadOnlyList<RecordedEquipList> EquipLists { get; }
         public IReadOnlyList<RecordedAttackList> AttackLists { get; }
+        public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
         public IReadOnlyList<RecordedPlanning> Planning { get; }

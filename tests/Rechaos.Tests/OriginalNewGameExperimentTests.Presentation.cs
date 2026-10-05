@@ -66,6 +66,59 @@ public sealed partial class OriginalNewGameExperimentTests
             && e.Gang == sentBack.Gang && e.Target == CommandTarget.Sector(62));
     }
 
+    public static TheoryData<string, int> SearchClickRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                if (runs[run].SearchClicks.Count > 0 && !KnownDivergences.ContainsKey((experiment, run)))
+                    data.Add(experiment, run);
+        return data;
+    }
+
+    // RULE-SEARCH-001, FND-SEARCH-002: after the dump the probe pressed the console's Search control
+    // and the panel's controls, and kept the whole filter table after each press. The rebuild's
+    // console opens the panel at the same point, its panel hits the same control for each press, and
+    // its selection, empty when the match starts, holds the same bytes after each: row n is site
+    // definition n, and only the active player's entries change.
+    [Theory]
+    [MemberData(nameof(SearchClickRuns))]
+    public void TheSearchPanelChangesTheOriginalsFilters(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var match = StartMatch(recorded, out _);
+        var human = recorded.Humans[0];
+        var rows = SiteSearchPanel.Rows(match.Definitions);
+        Assert.Equal(Enumerable.Range(0, SiteSearchLayout.MaximumSites).Select(row => (short)row), rows);
+        var selections = new SiteSearchSelectionState();
+        var doubleClicks = new IndexedDoubleClickTracker();
+        var open = false;
+        var time = TimeSpan.Zero;
+        foreach (var click in recorded.SearchClicks)
+        {
+            var point = new Microsoft.Xna.Framework.Point(click.X, click.Y);
+            // No recorded press is a double-click (RULE-SEARCH-001), so the presses are a second
+            // apart, outside the double-click window.
+            time += TimeSpan.FromSeconds(1);
+            if (!open)
+            {
+                Assert.Equal(CityConsoleAction.Search, CityConsoleLayout.ActionAt(point));
+                open = true;
+            }
+            else
+            {
+                var handled = SiteSearchPanel.Press(selections, human, point, rows, doubleClicks, time);
+                Assert.False(handled.OpensDetails);
+                if (handled.Press.Control == SiteSearchControl.Done) open = false;
+            }
+            Assert.Equal(human.Value, click.ActivePlayer);
+            Assert.Equal(click.PanelOpen, open);
+            var table = Enumerable.Range(0, MatchLimits.PlayerCount).SelectMany(player => rows.Select(site =>
+                selections.IsSelected(new PlayerId(player), site) ? 1 : 0));
+            Assert.True(click.Filters.SequenceEqual(table), $"after the click at ({click.X}, {click.Y})");
+        }
+    }
+
     public static TheoryData<string, int> EquipListRuns()
     {
         var data = new TheoryData<string, int>();

@@ -35,6 +35,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | builds |
 | [EXP-EQUIP-002](../experiments/EXP-EQUIP-002.md) | builds |
 | [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | builds |
+| [EXP-SEARCH-001](../experiments/EXP-SEARCH-001.md) | builds |
+| [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | builds |
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | builds |
 | [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | builds |
 | [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | builds |
@@ -942,6 +944,19 @@ None.
 |---|---|
 | [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | body |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | body, evidence |
+
+## EXP-SEARCH-001
+
+| Cited by | In |
+|---|---|
+| [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | body |
+| [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | body, evidence |
+
+## EXP-SEARCH-002
+
+| Cited by | In |
+|---|---|
+| [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | body, evidence |
 
 ## EXP-SETUP-001
 
@@ -1993,6 +2008,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SEARCH-001](../experiments/EXP-SEARCH-001.md) | body |
+| [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | body |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 
@@ -5890,11 +5907,12 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SEARCH-001](../experiments/EXP-SEARCH-001.md) | body |
 | [FND-SEARCH-003](../findings/FND-SEARCH-003.md) | body |
 | [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: search_filters | glossary |
-| [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | evidence |
+| [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | body, evidence |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | evidence |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -5903,7 +5921,8 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | evidence |
+| [EXP-SEARCH-001](../experiments/EXP-SEARCH-001.md) | body |
+| [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | body, evidence |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | body, evidence |
 
 ## FND-SEARCH-003
@@ -8438,6 +8457,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SEARCH-001](../experiments/EXP-SEARCH-001.md) | body |
+| [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | body |
 | glossary: search_set_all | glossary |
 | glossary: search_toggle | glossary |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | body, related |

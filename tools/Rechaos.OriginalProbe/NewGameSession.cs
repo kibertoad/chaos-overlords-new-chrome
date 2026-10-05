@@ -84,6 +84,15 @@ internal sealed record ProbeDrawValue(uint Address, IReadOnlyList<int> Values)
 }
 
 /// <summary>
+/// A left-button press and release the probe posts at a client point once the dump is taken
+/// (<c>--search-clicks</c>, SearchClickRecord).
+/// </summary>
+internal sealed record ProbeClick(int X, int Y)
+{
+    public override string ToString() => $"({X}, {Y}) after the dump";
+}
+
+/// <summary>
 /// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
 /// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
 /// Combat Results function returns at once when no fight qualifies.
@@ -107,7 +116,8 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
-    IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false)
+    IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false,
+    IReadOnlyList<ProbeClick>? SearchClicks = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -154,6 +164,7 @@ internal sealed record NewGameSettings(
                 ? $"Done (550, 306) with no orders, turn {turn}"
                 : $"Done (550, 306), turn {turn}");
         }
+        foreach (var click in SearchClicks ?? []) yield return ("left_click", click.ToString());
     }
 }
 
@@ -187,7 +198,8 @@ internal sealed record ProbeTrace(
     List<TimerRecord>? Timers = null,
     List<ComlinkStep>? Comlink = null,
     List<EquipListRecord>? EquipLists = null,
-    List<AttackListRecord>? AttackLists = null);
+    List<AttackListRecord>? AttackLists = null,
+    List<SearchClickRecord>? SearchClicks = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -394,6 +406,8 @@ internal sealed partial class NewGameSession(
         if (settings.Capture) CaptureDrawingArea(window);
         if (settings.EquipLists && !RecordEquipLists()) return Finish(false, "The Equip lists were not built.", rollsBeforeBegin);
         if (settings.AttackLists && !RecordAttackLists()) return Finish(false, "The Attack lists were not built.", rollsBeforeBegin);
+        if (settings.SearchClicks is { Count: > 0 } && !RecordSearchClicks(window))
+            return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -871,7 +885,8 @@ internal sealed partial class NewGameSession(
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
             _endgame, _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels, _lastRedraw,
             _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
-            _equipLists.Count == 0 ? null : _equipLists, _attackLists.Count == 0 ? null : _attackLists);
+            _equipLists.Count == 0 ? null : _equipLists, _attackLists.Count == 0 ? null : _attackLists,
+            _searchClicks.Count == 0 ? null : _searchClicks);
     }
 
     private static void Click(IntPtr window, int x, int y)
