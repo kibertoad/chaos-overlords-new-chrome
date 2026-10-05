@@ -39,6 +39,7 @@ static int Usage()
               [--equip-lists] [--attack-lists] [--search-clicks <x:y>,...]
               [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
               [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|shot:SCR-ID+...>,...] [--gang-markers]
+              [--title-capture] [--credits-capture] [--setup-capture]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -91,7 +92,10 @@ static int NewGame(string[] args)
         Option(args, "--search-clicks") is { } searchClicks ? ParseClicks(searchClicks) : null,
         Option(args, "--hire-steps") is { } hireSteps ? ParseHireSteps(hireSteps) : null,
         Option(args, "--order-steps") is { } orderSteps ? ParseOrderSteps(orderSteps) : null,
-        args.Contains("--gang-markers"));
+        args.Contains("--gang-markers"),
+        args.Contains("--title-capture"),
+        args.Contains("--credits-capture"),
+        args.Contains("--setup-capture"));
     // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
     // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
     // A first slot that is not the lowest would compare one player's lists with another player's

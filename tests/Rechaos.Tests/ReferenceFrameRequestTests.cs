@@ -26,6 +26,21 @@ public sealed class ReferenceFrameRequestTests
         Assert.Null(next.MarkerFrame);
     }
 
+    // SCR-UI-001, SCR-UI-002, SCR-SETUP-001: a screen's name in place of the save asks for that
+    // screen.
+    [Theory]
+    [InlineData("title")]
+    [InlineData("credits")]
+    [InlineData("setup")]
+    public void AScreenOperandNamesNoSave(string screen)
+    {
+        var request = Assert.IsType<ReferenceFrameRequest>(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", screen, "frame.bmp"]));
+        Assert.Equal(screen, request.Screen);
+        Assert.Equal(screen, request.SavePath);
+        Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.Screen);
+    }
+
     public static TheoryData<string[]> InvalidRequests => new()
     {
         new[] { "--reference-frame" },
@@ -47,6 +62,8 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--item-frame", "1" },
         new[] { "--reference-frame", "save", "frame", "--item-frame", "15" },
         new[] { "--reference-frame", "save", "frame", "--item-frame", "1", "--item-frame", "2" },
+        new[] { "--reference-frame", "title", "frame", "--marker-frame", "0" },
+        new[] { "--reference-frame", "setup", "frame", "--selected-sector", "1" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter", "8" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter", "-1" },
         new[] { "--reference-frame", "save", "frame", "--pump-counter" },

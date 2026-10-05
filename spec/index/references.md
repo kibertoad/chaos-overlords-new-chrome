@@ -152,6 +152,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | builds |
 | [EXP-UI-013](../experiments/EXP-UI-013.md) | builds |
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | builds |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -474,6 +475,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-SETUP-016](../findings/FND-SETUP-016.md) | builds, locations |
 | [FND-SETUP-017](../findings/FND-SETUP-017.md) | builds, locations |
 | [FND-SETUP-018](../findings/FND-SETUP-018.md) | builds, locations |
+| [FND-SETUP-019](../findings/FND-SETUP-019.md) | builds, locations |
 | [FND-SNITCH-001](../findings/FND-SNITCH-001.md) | builds, locations |
 | [FND-STATE-001](../findings/FND-STATE-001.md) | builds, locations |
 | [FND-STATE-002](../findings/FND-STATE-002.md) | builds, locations |
@@ -551,6 +553,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-052](../findings/FND-UI-052.md) | builds, locations |
 | [FND-UI-053](../findings/FND-UI-053.md) | builds, locations |
 | [FND-UI-054](../findings/FND-UI-054.md) | builds, locations |
+| [FND-UI-055](../findings/FND-UI-055.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -1178,6 +1181,7 @@ None.
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | body |
 | [EXP-UI-013](../experiments/EXP-UI-013.md) | body |
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | body |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 
 ## EXP-TURN-002
 
@@ -2214,6 +2218,15 @@ None.
 |---|---|
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
+
+## EXP-UI-015
+
+| Cited by | In |
+|---|---|
+| [FND-UI-055](../findings/FND-UI-055.md) | body |
+| [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, evidence |
+| [SCR-UI-001](../screens/SCR-UI-001.md) | body, evidence |
+| [SCR-UI-002](../screens/SCR-UI-002.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
@@ -5653,6 +5666,7 @@ None.
 | [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | body |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-FINANCE-001](../findings/FND-FINANCE-001.md) | body |
 | [FND-GANG-002](../findings/FND-GANG-002.md) | body |
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | body |
@@ -6368,6 +6382,7 @@ None.
 | [EXP-TURN-008](../experiments/EXP-TURN-008.md) | body |
 | [FND-OBJECTIVE-003](../findings/FND-OBJECTIVE-003.md) | body |
 | [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
+| [FND-SETUP-019](../findings/FND-SETUP-019.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | glossary: portrait | glossary |
 | glossary: preferred_scenario | glossary |
@@ -6382,6 +6397,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | body |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, evidence |
 
@@ -6440,6 +6456,13 @@ None.
 | [RULE-AI-010](../rules/RULE-AI-010.md) | body, evidence |
 | [RULE-AI-011](../rules/RULE-AI-011.md) | evidence |
 | [RULE-AI-031](../rules/RULE-AI-031.md) | body, evidence |
+
+## FND-SETUP-019
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
+| [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, evidence |
 
 ## FND-SNITCH-001
 
@@ -6849,8 +6872,10 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | body |
 | [FND-HIRE-007](../findings/FND-HIRE-007.md) | body |
+| [FND-UI-055](../findings/FND-UI-055.md) | body |
 | [SCR-UI-002](../screens/SCR-UI-002.md) | body, evidence |
 | [SCR-UI-009](../screens/SCR-UI-009.md) | body, evidence |
 
@@ -6858,6 +6883,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-COMBAT-010](../findings/FND-COMBAT-010.md) | body |
 | [FND-UI-007](../findings/FND-UI-007.md) | body |
 | [FND-UI-021](../findings/FND-UI-021.md) | body |
@@ -6869,7 +6895,9 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
+| [FND-UI-055](../findings/FND-UI-055.md) | body |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | body, evidence |
 
 ## FND-UI-010
@@ -7410,6 +7438,15 @@ None.
 |---|---|
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | body |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | body, evidence |
+
+## FND-UI-055
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
+| [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | evidence |
+| [SCR-UI-001](../screens/SCR-UI-001.md) | evidence |
+| [SCR-UI-002](../screens/SCR-UI-002.md) | evidence |
 
 ## FND-UPKEEP-001
 
@@ -9466,6 +9503,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-SETUP-013](../findings/FND-SETUP-013.md) | body |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | body, related |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | body |
@@ -9485,12 +9523,14 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | body, related |
 
 ## SCR-UI-002
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | body, related |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | body, related |
 | [SCR-UI-009](../screens/SCR-UI-009.md) | body, related |

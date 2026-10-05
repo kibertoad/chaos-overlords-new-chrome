@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
+using Rechaos.Core;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Game;
@@ -103,7 +104,20 @@ public sealed record ScreenCaptureRecord(
     /// <summary>FND-UI-052, FND-UI-053: the frame of the rotating item pictures a shot shows.</summary>
     public int? ItemFrame { get; init; }
 
-    public override string ToString() => Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
+    /// <summary>
+    /// The screens a run copies before its match (FND-UI-055): the fixture holds each as
+    /// <c>&lt;screen&gt;_capture</c>, and the rebuild draws it with that name in place of a save.
+    /// Each has a <see cref="Step"/> of its own below -1.
+    /// </summary>
+    public static readonly IReadOnlyList<(string Screen, int Step)> BeforeMatchScreens =
+        [("title", -2), ("credits", -3), ("setup", -4)];
+
+    /// <summary>The screen shown before a match the capture shows, or null.</summary>
+    public string? BeforeMatch { get; init; }
+
+    public override string ToString() => BeforeMatch is { } screen
+        ? $"{Experiment} run {Run} {screen}"
+        : Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
 
     // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
     private static readonly Lazy<IReadOnlyList<ScreenCaptureRecord>> All = new(Load);
@@ -125,6 +139,11 @@ public sealed record ScreenCaptureRecord(
             {
                 if (recorded.TryGetProperty("capture", out var capture))
                     records.Add(Parse(experiment, run, capture, whiteKeyed));
+                // --white-key sets its breakpoint before the title, so the screens copied before
+                // the match are keyed as the match's are.
+                foreach (var (screen, step) in BeforeMatchScreens)
+                    if (recorded.TryGetProperty(screen + "_capture", out var before))
+                        records.Add(Parse(experiment, run, before, whiteKeyed) with { Step = step, BeforeMatch = screen });
                 if (recorded.TryGetProperty("order_steps", out var steps))
                     records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray(), whiteKeyed));
                 run++;
@@ -309,6 +328,25 @@ public static class ScreenCaptureMasks
             ["SCR-OPTIONS-001"] = [],
             ["SCR-INFLUENCE-001"] = [],
             ["SCR-GANG-002"] = [],
+            ["SCR-UI-001"] =
+            [
+                // DEV-UI-019: the rebuild's line under the logo, its buttons, which stand in for the
+                // menu bar, and its credit line. The notice box is drawn only with a message.
+                new("DEV-UI-019", new Rectangle(290, 282, 60, 9)),
+                new("DEV-UI-019", new Rectangle(220, 292, 200, 76)),
+                new("DEV-UI-019", new Rectangle(154, 376, 164, 34)),
+                new("DEV-UI-019", new Rectangle(406, 376, 80, 34)),
+                new("DEV-UI-019", new Rectangle(257, 430, 126, 9)),
+                // DEV-VIDEO-003: the Intro button.
+                new("DEV-VIDEO-003", new Rectangle(322, 376, 80, 34)),
+                // DEV-UI-012: the version, right-aligned 6 pixels from the edge, as wide as the
+                // build's version string.
+                new("DEV-UI-012", new Rectangle(
+                    VirtualInput.Width - 6 - GameVersion.Display.Length * OriginalFontLayout.CellWidth, 430,
+                    GameVersion.Display.Length * OriginalFontLayout.CellWidth, 9)),
+            ],
+            ["SCR-UI-002"] = [],
+            ["SCR-SETUP-001"] = [],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
@@ -426,9 +464,17 @@ public static class RebuildFrame
     /// </summary>
     public const string KeepFramesVariable = "RECHAOS_KEEP_FRAMES";
 
+    /// <summary>
+    /// Draws a screen the rebuild shows before a match, one of
+    /// <see cref="ReferenceFrameRequest.ScreenOperands"/>.
+    /// </summary>
+    public static ScreenFrame RenderBeforeMatch(string screen, string? name = null) =>
+        Render(null, null, name: name, screen: screen);
+
     public static ScreenFrame Render(
-        MatchState state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
-        int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null)
+        MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
+        int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null,
+        string? screen = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -441,7 +487,8 @@ public static class RebuildFrame
         {
             var save = Path.Combine(directory, "state.rchsave");
             var frame = Path.Combine(directory, "frame.bmp");
-            NativeSaveStore.SaveAtomic(save, state);
+            if (state is null) save = screen ?? throw new ArgumentNullException(nameof(state));
+            else NativeSaveStore.SaveAtomic(save, state);
             var start = GameStartInfo();
             foreach (var argument in new[] { "--assets", assets, "--reference-frame", save, frame })
                 start.ArgumentList.Add(argument);

@@ -180,6 +180,9 @@ internal sealed class StateExtractor
         // (CaptureFixture).
         if (CaptureFixture.Extract(runDirectory, trace, screens) is { } capture)
             run["capture"] = capture;
+        // --title-capture, --credits-capture, --setup-capture: the screens before the match.
+        foreach (var (key, before) in CaptureFixture.ExtractBeforeMatch(runDirectory, trace))
+            run[key] = before;
         return run;
     }
 

@@ -8,7 +8,10 @@ namespace Rechaos.Game;
 /// A request to show a saved match at the planning entry it stands at and write the drawing
 /// area to a file, for tests that compare the rebuild's screens with captures of the original.
 /// </summary>
-/// <param name="SavePath">A native save of a match standing at a planning entry, as a replayed experiment run ends.</param>
+/// <param name="SavePath">
+/// A native save of a match standing at a planning entry, as a replayed experiment run ends, or
+/// one of <see cref="ScreenOperands"/> for a screen shown before a match.
+/// </param>
 /// <param name="OutputPath">The 640-by-460, 32-bit, top-down bitmap to write.</param>
 /// <param name="MarkerFrame">
 /// The frame of the Overlord bar's marker the capture showed (FND-UI-038), in place of the one
@@ -39,8 +42,15 @@ public sealed record ReferenceFrameRequest(
     string SavePath, string OutputPath, int? MarkerFrame = null, IReadOnlyList<ReferenceClick>? Clicks = null,
     int? PumpCounter = null, int? SelectedSector = null, ReferenceLamps? Lamps = null, int? ItemFrame = null)
 {
+    /// <summary>
+    /// The operands that ask for a screen shown before a match in place of a save: the title
+    /// screen (SCR-UI-001), the credits over it (SCR-UI-002) and the local setup New Game opens
+    /// first (SCR-SETUP-001).
+    /// </summary>
+    public static readonly IReadOnlyList<string> ScreenOperands = ["title", "credits", "setup"];
+
     private const string Usage =
-        "Usage: --reference-frame <save> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
+        "Usage: --reference-frame <save|title|credits|setup> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
         + " [--selected-sector <0-63>] [--lamps <0|1>,<0|1>] [--item-frame <0-14>]"
         + " [--reference-clicks <x:y[:2]>,...]";
 
@@ -50,6 +60,9 @@ public sealed record ReferenceFrameRequest(
     public string UserDataDirectory { get; } = Path.Combine(
         Path.GetDirectoryName(Path.GetFullPath(OutputPath))!,
         "rechaos-reference-frame-" + Guid.NewGuid().ToString("N"));
+
+    /// <summary>The screen shown before a match the frame draws, or null for a saved match.</summary>
+    public string? Screen => ScreenOperands.Contains(SavePath) ? SavePath : null;
 
     public static ReferenceFrameRequest? ParseArguments(string[] args)
     {
@@ -85,7 +98,14 @@ public sealed record ReferenceFrameRequest(
                 throw new ArgumentException(Usage);
             return values[index];
         }
-        var save = Path.GetFullPath(Operand(args, reference + 1));
+        var source = Operand(args, reference + 1);
+        var beforeMatch = ScreenOperands.Contains(source);
+        var save = beforeMatch ? source : Path.GetFullPath(source);
+        // The marker, pump, selected sector, lamps and item frame belong to a match's screens,
+        // which a screen shown before a match does not draw.
+        if (beforeMatch && (marker >= 0 || pump >= 0 || selected >= 0 || lamps >= 0 || item >= 0))
+            throw new ArgumentException(
+                "--marker-frame, --pump-counter, --selected-sector, --lamps and --item-frame require a save.");
         var output = Path.GetFullPath(Operand(args, reference + 2));
         int? frame = null;
         if (marker >= 0)
@@ -196,8 +216,9 @@ public sealed partial class ChaosGame
     private TimeSpan _referenceClock;
 
     /// <summary>
-    /// Enters the saved match once and then takes the update loop over, so no input but the
-    /// scripted clicks and no clock but theirs moves the screen while the frame is drawn.
+    /// Enters the saved match, or shows the screen named in its place, once and then takes the
+    /// update loop over, so no input but the scripted clicks and no clock but theirs moves the
+    /// screen while the frame is drawn.
     /// </summary>
     private bool UpdateReferenceFrame()
     {
@@ -207,7 +228,22 @@ public sealed partial class ChaosGame
             // Panels are drawn in place, as the original's captures show them once slid in.
             _slidePanels = false;
             _panelSlideTransition.Clear();
-            EnterNewMatch(NativeSaveStore.Load(_referenceFrame.SavePath, _definitions), advanceToPlanning: false);
+            switch (_referenceFrame.Screen)
+            {
+                case "title":
+                    _screens.Show(ClientScreen.Title);
+                    break;
+                case "credits":
+                    _screens.Show(ClientScreen.Title);
+                    OpenCredits();
+                    break;
+                case "setup":
+                    OpenNewGameSetup();
+                    break;
+                default:
+                    EnterNewMatch(NativeSaveStore.Load(_referenceFrame.SavePath, _definitions), advanceToPlanning: false);
+                    break;
+            }
             _referenceEdges = (_referenceFrame.Clicks ?? [])
                 .SelectMany(click => Enumerable.Repeat(click.Point, click.Double ? 2 : 1))
                 .SelectMany(point => new[] { (point, true), (point, false) })

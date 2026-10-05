@@ -32,15 +32,16 @@ public sealed partial class ScreenCaptureTests
     // SCR-OBJECTIVE-001, SCR-SEARCH-001, SCR-HIRE-001 and SCR-GANG-002 (EXP-UI-008), and SCR-MOVE-001,
     // SCR-EQUIP-001, SCR-RESEARCH-001, SCR-UI-006 and SCR-GANG-001 (EXP-UI-009), and SCR-GIVE-001,
     // SCR-SELL-001 and SCR-INFLUENCE-001 (EXP-UI-010), SCR-ATTACK-001 (EXP-UI-011), and
-    // SCR-OPTIONS-001 (EXP-UI-012). The site and Force meters of RULE-UI-005 and the sector values of
-    // RULE-UI-011 are compared as elements of those screens, and the pylons of RULE-UI-012 on the
-    // city map of Siege (EXP-UI-013) and Big Man (EXP-UI-014).
+    // SCR-OPTIONS-001 (EXP-UI-012), and the title screen SCR-UI-001, the credits SCR-UI-002 and the
+    // setup screen SCR-SETUP-001 (EXP-UI-015). The site and Force meters of RULE-UI-005 and the
+    // sector values of RULE-UI-011 are compared as elements of those screens, and the pylons of
+    // RULE-UI-012 on the city map of Siege (EXP-UI-013) and Big Man (EXP-UI-014).
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
     {
         var capture = Capture(experiment, run, step);
-        if (!OriginalNewGameExperimentTests.IsReplayed(experiment))
+        if (capture.BeforeMatch is null && !OriginalNewGameExperimentTests.IsReplayed(experiment))
             Assert.Skip($"{capture} comes from a run that is not replayed, so the rebuild has no endpoint to draw.");
         if (capture.Unreplayable is { } reason)
             Assert.Skip($"{capture} cannot be reached in the rebuild: {reason}.");
@@ -52,10 +53,12 @@ public sealed partial class ScreenCaptureTests
         var path = OriginalGameFiles.ResolveCapture(
             Environment.GetEnvironmentVariable(OriginalGameFiles.EnvironmentVariable), capture.Xxh3);
         var original = path is null ? null : ScreenFrame.ReadBitmap(File.ReadAllBytes(path));
-        var rebuild = RebuildFrame.Render(
-            OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
-            $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
-            capture.ItemFrame);
+        var rebuild = capture.BeforeMatch is { } screen
+            ? RebuildFrame.RenderBeforeMatch(screen, $"{experiment}-{run}-{screen}")
+            : RebuildFrame.Render(
+                OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
+                $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
+                capture.ItemFrame);
 
         var results = capture.Elements
             .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
