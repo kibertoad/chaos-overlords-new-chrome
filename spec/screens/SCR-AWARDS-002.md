@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AWARDS-004, FND-AWARDS-003, FND-OBJECTIVE-002, FND-AUDIO-002, FND-AUDIO-010, FND-EXE-004]
+evidence: [FND-AWARDS-004, FND-AWARDS-003, FND-OBJECTIVE-002, FND-AUDIO-002, FND-AUDIO-010, FND-EXE-004, FND-AWARDS-005, FND-RESEARCH-003]
 conflicting: []
 split_with: []
 related: [RULE-AWARDS-002, SCR-AWARDS-001]
@@ -21,7 +21,7 @@ related: [RULE-AWARDS-002, SCR-AWARDS-001]
 | Tab mark | Interface sheet, source `(488, 512, 8, 16)` | Awards tab | `(468, 33, 8, 16)` | Always | FND-AWARDS-004 |
 | Victory splash | `DATA/PX16/PX00202` | None | `(110, 30, 311, 393)` | Always | FND-AWARDS-004 |
 | Colour fills | None | The survivor's colour | `(110, 30, 40, 12)`, `(110, 42, 13, 79)`, `(110, 121, 40, 302)` | Always | FND-AWARDS-004 |
-| Name | None | `player_names[survivor]` | `(158 - 3 * length, 46)` | Always | FND-AWARDS-004 |
+| Name | The plain font of `DATA/PX16/PX00129` | `player_names[survivor]` | `(158 - 3 * length, 46)` | Always | FND-AWARDS-004, FND-AWARDS-005, FND-RESEARCH-003 |
 | Portrait | Interface sheet, source `(32 * portrait, 480, 32, 32)` | `portrait[survivor]` | `(126, 54, 64, 64)`, scaled | Always | FND-AWARDS-004 |
 
 ## Mouse input

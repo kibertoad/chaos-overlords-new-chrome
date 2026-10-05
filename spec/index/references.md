@@ -3937,6 +3937,7 @@ None.
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
+| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 
 ## FND-BRIBE-001
 
@@ -6026,6 +6027,7 @@ None.
 | [FND-RESEARCH-004](../findings/FND-RESEARCH-004.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | body, evidence |
+| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | body, evidence |
 
 ## FND-RESEARCH-004

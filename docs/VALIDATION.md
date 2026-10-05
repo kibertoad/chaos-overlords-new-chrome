@@ -856,7 +856,7 @@ SCR-HIRE-002) of the player whose planning entry the run ends at, with no
 pointer, and then makes the scripted presses. With several local humans it
 starts at the hand-off card (SCR-SETUP-002) and a press of its Ready goes on as
 in play; for a run whose match ended it starts at the endgame (SCR-AWARDS-001),
-and for one whose local human was eliminated at that player's elimination card
+and for one whose last resolution eliminated a local human at that player's elimination card
 (SCR-OBJECTIVE-002). A run stops at the elimination card as it stops at the
 endgame.
 It does not draw Combat Results or Last Turn Events that the planning entry
