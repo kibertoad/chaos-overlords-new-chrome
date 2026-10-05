@@ -868,6 +868,13 @@ EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-011 are recorded,
 up to twenty-five turns, and every run replays exactly. The probe runs the
 original silent unless `--sound` is given.
 
+- `--comlink` drives a match with several humans through a script of Comlink
+  steps: it presses Ready on each handoff card, opens View and Send, presses
+  their controls, types with posted `WM_KEYDOWN` messages and presses Done.
+  EXP-COMLINK-001 and EXP-COMLINK-002 use it, and
+  `OriginalComlinkExperimentTests` plays the same steps in the rebuild. The
+  same handoff and panel handling can drive other panels of several humans.
+
 - EXP-TURN-010's first run diverged at call 11610 until FND-AI-069: the sector
   selector's common block multiplies table element `x * 9 + y` instead of the
   visited sector, every mode reads the owner query, and mode 6 ends after its

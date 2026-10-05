@@ -1,10 +1,10 @@
 ---
 id: RULE-COMLINK-006
 title: Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-005, FND-COMLINK-007, SRC-MANUAL-GOG]
+evidence: [FND-COMLINK-005, FND-COMLINK-007, FND-UI-020, SRC-MANUAL-GOG, EXP-COMLINK-001]
 conflicting: []
 split_with: []
 related: [FMT-STATE-005]
@@ -102,6 +102,9 @@ None known.
 
 ## Open questions
 
-- Whether one key event can carry both a virtual key from the list and a
-  printable character, which would apply both steps, depends on the event
-  pump and was not traced (FND-COMLINK-007).
+None known. A key event carries the virtual key and the character
+`MapVirtualKeyA` gives it (FND-UI-020): Backspace and Enter give characters
+below the space and the arrows none, so no key of the list also stores a
+character, and in EXP-COMLINK-001 each of them moved the cursor once and wrote
+nothing else. Letters arrive as capitals, so the step that turns `a` to `z`
+into capitals is not reached from the keyboard.

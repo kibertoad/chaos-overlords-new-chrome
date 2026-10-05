@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 5 |
 | `established` | 1 |
 | `disputed` | 0 |
-| `implemented` | 85 |
-| `validated` | 132 |
+| `implemented` | 77 |
+| `validated` | 140 |
 
 | Code | Rows |
 |---|---|
@@ -94,7 +94,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-STATE-002` | Sector record, one per city sector | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-002-sector-record); `crackdown_turns` is held as a signed byte and wraps past 127 as in the original. |
 | `FMT-STATE-003` | Per-gang combat record of the last resolution | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-003-per-gang-combat-record); every field a rule reads is held with the same value. EXP-TURN-051 compares the records of an attacker, its target and a gang the police killed with the ones the rebuild's events give; `force_shown` and the undefined bytes of a gang that did not attack are not compared. |
 | `FMT-STATE-004` | Site slot in a sector record | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-004-site-slot): `progress` is held as the Resistance still needed, a representation no rule result can tell apart. |
-| `FMT-STATE-005` | Comlink message record | supported | complete | None | None | implemented | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-005-comlink-message-record); the text is stored without its trailing spaces, and a message of spaces only is dropped as RULE-COMLINK-003 records. |
+| `FMT-STATE-005` | Comlink message record | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-005-comlink-message-record); the text is stored without its trailing spaces, and a message of spaces only is dropped as RULE-COMLINK-003 records. |
 | `FMT-STATE-006` | Last Turn report record | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/LastTurnReportRecordTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record); every report carries the type and arguments SCR-EVENT-001 reads. The replays compare every player's records of the last resolution with the original's. The format stays supported because type 8 has no run and save block 24 has not been decoded against the same memory state; EXP-TURN-035 supplies type 6 with arg1 4. |
 | `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-007-computer-player-planning-record); every field is held with the same value or a representation no rule can tell apart. EXP-TURN-048 to EXP-TURN-051 compare every record byte for byte with the original's after 10 to 24 turns, with `sector_weight`, the three per-player values and the focus and coverage sector of each assigned computer gang. |
 | `FMT-STATE-008` | Combat result row of one sector | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-008-combat-result-row-of-one-sector); the gang entries follow RULE-COMBAT-004. EXP-TURN-049 and EXP-TURN-051 compare every row with the rows the rebuild's attack and police events give: the gangs that fought by player and roster slot, each attacker's target and `police_hit`. |
@@ -374,13 +374,13 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `RULE-COMLINK-001` | Storing a Comlink message keeps each player's newest 16 messages | supported | complete | None | `DEV-NET-001` | implemented | Delivery to a recipient on another computer (packet type 10) is replaced by the coordination server (DEV-NET-001), and Comlink cannot be opened online. The move of the recipient's View cursor when a message is dropped has no counterpart: the recipient is never the active player, whose inbox alone can have a cursor above 0, since RULE-COMLINK-007 sets it to 0 when a player's planning ends. |
-| `RULE-COMLINK-002` | Comlink Send opens only when another human player can receive a message | supported | complete | None | None | implemented | None |
-| `RULE-COMLINK-003` | Sending a Comlink message stores a copy for each selected recipient | supported | complete | None | None | implemented | None |
-| `RULE-COMLINK-004` | Comlink View opens at the oldest unread message and refuses an empty inbox | supported | complete | None | None | implemented | None |
-| `RULE-COMLINK-005` | Showing a Comlink message marks it read and dates it from its turn | supported | complete | None | None | implemented | None |
-| `RULE-COMLINK-006` | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | supported | complete | None | None | implemented | None |
-| `RULE-COMLINK-007` | When a player finishes planning, the read messages at the front of the inbox are dropped | supported | complete | None | None | implemented | None |
+| `RULE-COMLINK-001` | Storing a Comlink message keeps each player's newest 16 messages | supported | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | `DEV-NET-001` | validated | Delivery to a recipient on another computer (packet type 10) is replaced by the coordination server (DEV-NET-001), and Comlink cannot be opened online. The move of the recipient's View cursor when a message is dropped has no counterpart: the recipient is never the active player, whose inbox alone can have a cursor above 0, since RULE-COMLINK-007 sets it to 0 when a player's planning ends. The rule stays supported because EXP-COMLINK-001 is a local game: no run reaches delivery to another computer or the cursor move on a drop. |
+| `RULE-COMLINK-002` | Comlink Send opens only when another human player can receive a message | supported | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | The rule stays supported because no run reaches an eliminated human, an empty slot or a network player handed to the computer; EXP-COMLINK-001 refuses a computer player's card and the sender's own, and EXP-COMLINK-002 refuses Send with one human. |
+| `RULE-COMLINK-003` | Sending a Comlink message stores a copy for each selected recipient | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | None |
+| `RULE-COMLINK-004` | Comlink View opens at the oldest unread message and refuses an empty inbox | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | None |
+| `RULE-COMLINK-005` | Showing a Comlink message marks it read and dates it from its turn | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | None |
+| `RULE-COMLINK-006` | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | None |
+| `RULE-COMLINK-007` | When a player finishes planning, the read messages at the front of the inbox are dropped | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | None |
 | `SCR-COMLINK-001` | Comlink View panel | supported | complete | None | `DEV-COMLINK-001` | implemented | None |
 | `SCR-COMLINK-002` | Comlink Send panel | supported | complete | None | None | implemented | None |
 
