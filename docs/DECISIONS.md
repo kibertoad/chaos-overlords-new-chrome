@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
 | 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
 | 2026-10-05 | [Switch DEV-AI-008 off from the command line only](#2026-10-05--switch-dev-ai-008-off-from-the-command-line-only) |
@@ -43,6 +44,28 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-06 — Count a row its mandatory deviations replace as deviated
+
+- A `mandatory` deviation may name, in a Replaces item, the entries of its
+  Departs from that it replaces entirely. A complete parity row such an item
+  names has no tests of its own, and it is `deviated` once every `mandatory`
+  deviation it lists has a Tests item. Until then it stays `implemented`. A row
+  a deviation changes only in part keeps the rest to compare with the
+  original, so it needs parity tests as before.
+- A deviation's Tests item lists the test files that check the rebuild does
+  what the deviation's Reason says. Each file cites the deviation's ID. These
+  tests compare the rebuild with the deviation, so they are not parity tests
+  and do not go in a row's Tests column.
+- Reason: a row such as SCR-NET-001, whose entry the rebuild replaces with no
+  setting to bring the original back, has nothing of the original left to
+  compare with, so under version 1 of the documentation standard it stays
+  `implemented` however finished it is. `deviated` marks it as done, and the
+  Tests item makes sure the replacement does what the deviation log claims.
+- The rule is the documentation standard's, a minor version of version 1
+  (kibertoad/refurbished-dinosaurs#58, with the checker in
+  kibertoad/refurbished-dinosaurs-toolkit#291). `tools/check-spec.mjs` applies
+  it the same way, and `docs/upstream/` holds the standard's text.
 
 ## 2026-10-05 — Capture the original with the 32-bit white key
 

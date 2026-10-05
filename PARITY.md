@@ -7,7 +7,10 @@ Spec ID, Title and Spec status are copied from the entry. Code says how much of 
 rebuild does. Tests lists only test files that compare the rebuild with evidence from the original;
 manual play and tests that compare the rebuild with itself or with the spec do not count.
 Deviations lists the entries of [DEVIATIONS.md](DEVIATIONS.md) that depart from the row. Status is
-worked out from the other columns, and `node tools/check-spec.mjs` checks all of it.
+worked out from the other columns, and `node tools/check-spec.mjs` checks all of it. A complete row
+that a `mandatory` deviation's Replaces item names has no tests of its own, and it is `deviated`
+once every `mandatory` deviation it lists has a Tests item naming the tests that check the rebuild
+does what the deviation says; until then it is `implemented`.
 
 | Status | Rows |
 |---|---|
@@ -16,7 +19,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 18 |
+| `implemented` | 4 |
+| `deviated` | 14 |
 | `validated` | 199 |
 
 | Code | Rows |
@@ -32,7 +36,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-DATA-001` | Site definition records in DATA/SITES | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
 | `FMT-DATA-002` | Gang definition records in DATA/Gangs | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
 | `FMT-DATA-003` | Item definition records in DATA/ITEMS | supported | complete | tests/Rechaos.Tests/OriginalDataTableFileTests.cs | None | validated | None |
-| `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | complete | None | `DEV-UI-016` | implemented | The rebuild draws only the 16-bit image set, for which the original never loads this palette either (DEV-UI-016); the extractor copies the file unread. |
+| `FMT-DATA-004` | Colour list in DATA/CLT00002 | supported | complete | None | `DEV-UI-016` | deviated | The rebuild draws only the 16-bit image set, for which the original never loads this palette either (DEV-UI-016); the extractor copies the file unread. |
 | `FMT-DATA-005` | Compressed archive DATA/DATA.Z | supported | complete | tests/Rechaos.Tests/InstallShieldArchiveTests.cs | None | validated | The game never reads the file (FND-DATA-008), and the rebuild copies it unread into its asset pack. InstallShieldArchive reads the header and both entry tables and expands every block; the test expands the shipped archive and finds the 449 equal files, the nine that differ and README.DOC as FND-DATA-010 does. |
 
 ## GFX
@@ -43,7 +47,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-GFX-002` | 8-bit image files in DATA/PX08 | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
 | `FMT-GFX-003` | Palette entry in a PX08 image file | supported | complete | tests/Rechaos.Tests/OriginalImageFileTests.cs | None | validated | None |
 | `RULE-GFX-001` | Decoding the RLE8 pixel data of a PX08 image | supported | complete | tests/Rechaos.Tests/OriginalImageNativeDecoderTests.cs | None | validated | On Windows, every original PX08 file is decoded with SetDIBits, the API used by the original (FND-PLATFORM-002), and every file-defined pixel is compared with the extractor output. This covers all 207 RLE8 files and the seven plain-row files; it does not compare screen compositing or the oversized PX06008 destination rectangle of FND-GFX-005. The reference requires Windows and original fixtures. |
-| `RULE-GFX-002` | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported | complete | None | `DEV-GFX-001` | implemented | The drawing area is the original's 640 by 460, scaled into a window or a borderless full screen (DEV-GFX-001). |
+| `RULE-GFX-002` | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported | complete | None | `DEV-GFX-001` | deviated | The drawing area is the original's 640 by 460, scaled into a window or a borderless full screen (DEV-GFX-001). |
 | `RULE-GFX-003` | A keyed image copy leaves out the pixels of maximum white | supported | complete | tests/Rechaos.Tests/OriginalImageNativeDecoderTests.cs | None | validated | The rebuild keys the decoded texture once at load. On Windows the production key is compared with every pixel of all 215 original PX16 images: exactly the pixels stored as 0x7FFF become transparent and every other pixel keeps its decoded colour. The rebuild keys PX00150 and PX06004, the two mode-1 images, and also PX00129 and PX00140, which FND-PLATFORM-008 does not show as keyed copies. GPU upload and compositing are outside the comparison. |
 
 ## AUDIO
@@ -61,7 +65,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-AUDIO-007` | The Comlink alert plays slot 6 through the effects gate | supported | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | OriginalComlinkExperimentTests checks every step of EXP-COMLINK-001 and EXP-COMLINK-002: the original sounded slot 6 only where the rebuild's planning player had an unread message, and at each planning entry exactly when it had one; no run reaches a message arriving for the planning player, the city entry with comlink_pending set, or the effects switched off. |
 | `RULE-AUDIO-008` | The Comlink alert repeats every 24 presentation ticks | supported | complete | tests/Rechaos.Tests/ComlinkAlertCadenceTests.cs | None | validated | Tests compare all eight arrival phases and the arrival/planning-entry repeat-counter resets with FND-AUDIO-012: the first repeat takes 17 to 24 shared presentation ticks, then repeats every 24 ticks. |
 | `RULE-AUDIO-009` | The sound of an attack in Detailed Combat | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.DetailedCombat.cs | None | validated | DetailedCombatPlaysTheOriginalsClips compares the sound loaded for every clip of EXP-COMBAT-001 to EXP-COMBAT-005, which reach the armed, bare-handed, Martial Arts, evaded and police cases. |
-| `RULE-AUDIO-010` | The startup drive check always passes and the game never looks for its disc | supported | complete | None | `DEV-AUDIO-001` | implemented | The rebuild plays the music files and never checks a drive or looks for the disc (DEV-AUDIO-001); nothing else in the rule reaches a game result. |
+| `RULE-AUDIO-010` | The startup drive check always passes and the game never looks for its disc | supported | complete | None | `DEV-AUDIO-001` | deviated | The rebuild plays the music files and never checks a drive or looks for the disc (DEV-AUDIO-001); nothing else in the rule reaches a game result. |
 
 
 ## VIDEO
@@ -77,14 +81,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `FMT-HELP-001` | WinHelp container HELP/Chaos.hlp | supported | complete | tests/Rechaos.Tests/OriginalHelpFileTests.cs | `DEV-HELP-001`, `DEV-HELP-002` | validated | None |
 | `FMT-HELP-002` | Help contents file HELP/CHAOS.CNT | supported | complete | tests/Rechaos.Tests/OriginalHelpFileTests.cs | None | validated | None |
-| `RULE-HELP-001` | Help Topics does nothing, and no key opens the help file | supported | complete | None | `DEV-HELP-001` | implemented | F1 and the Escape menu open the rebuild's own help viewer on the player's help file, where the original's Help Topics does nothing (DEV-HELP-001). |
+| `RULE-HELP-001` | Help Topics does nothing, and no key opens the help file | supported | complete | None | `DEV-HELP-001` | deviated | F1 and the Escape menu open the rebuild's own help viewer on the player's help file, where the original's Help Topics does nothing (DEV-HELP-001). |
 
 ## SAVE
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `FMT-SAVE-001` | Full save file | supported | complete | None | `DEV-NET-001`, `DEV-SAVE-001` | implemented | The rebuild neither reads nor writes this file; its own save format holds the same match (DEV-SAVE-001), and the network form has no counterpart (DEV-NET-001). |
-| `FMT-SAVE-002` | Short M10W save file | supported | complete | None | `DEV-SAVE-001` | implemented | The rebuild neither reads nor writes this file; its own save format holds the same match (DEV-SAVE-001). |
+| `FMT-SAVE-001` | Full save file | supported | complete | None | `DEV-NET-001`, `DEV-SAVE-001` | deviated | The rebuild neither reads nor writes this file; its own save format holds the same match (DEV-SAVE-001), and the network form has no counterpart (DEV-NET-001). |
+| `FMT-SAVE-002` | Short M10W save file | supported | complete | None | `DEV-SAVE-001` | deviated | The rebuild neither reads nor writes this file; its own save format holds the same match (DEV-SAVE-001). |
 
 ## STATE
 
@@ -98,7 +102,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `FMT-STATE-006` | Last Turn report record | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/LastTurnReportRecordTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-006-last-turn-report-record); every report carries the type and arguments SCR-EVENT-001 reads. The replays compare every player's records of the last resolution with the original's. The format stays supported because type 8 has no run and save block 24 has not been decoded against the same memory state; EXP-TURN-035 supplies type 6 with arg1 4. |
 | `FMT-STATE-007` | Computer player planning record, one per player and roster slot | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-007-computer-player-planning-record); every field is held with the same value or a representation no rule can tell apart. EXP-TURN-048 to EXP-TURN-051 compare every record byte for byte with the original's after 10 to 24 turns, with `sector_weight`, the three per-player values and the focus and coverage sector of each assigned computer gang. |
 | `FMT-STATE-008` | Combat result row of one sector | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | Mapped in [docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-008-combat-result-row-of-one-sector); the gang entries follow RULE-COMBAT-004. EXP-TURN-049 and EXP-TURN-051 compare every row with the rows the rebuild's attack and police events give: the gangs that fought by player and roster slot, each attacker's target and `police_hit`. |
-| `FMT-STATE-009` | Input event record | supported | complete | None | `DEV-UI-018` | implemented | The rebuild polls input once per frame and keeps no event record (DEV-UI-018); only RULE-UI-014 reads the record ([docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-009-input-event-record)). |
+| `FMT-STATE-009` | Input event record | supported | complete | None | `DEV-UI-018` | deviated | The rebuild polls input once per frame and keeps no event record (DEV-UI-018); only RULE-UI-014 reads the record ([docs/STATE-MAPPING.md](docs/STATE-MAPPING.md#fmt-state-009-input-event-record)). |
 
 ## RNG
 
@@ -448,14 +452,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `SCR-UI-006` | Item Information panel | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-009`, `DEV-UI-010` | validated | Item Information uses PX05001 with the 15-frame rotation, which starts from frame 0 when the panel opens (FND-UI-052), and the type is string 25 plus the item's type (FND-UI-013); it can also be opened from Gang Information. ScreenCaptureTests compares the panel opened from an Equip row in the EXP-UI-009 capture with the original at the recorded frame, and no element differs. The rebuild advances the frame once per tick of the presentation clock; how often the original's timer flag is taken has not been measured. |
 | `SCR-UI-007` | Site Information panel | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | validated | ScreenCaptureTests compares the panel of a site with a special effect in the EXP-UI-007 capture with the original, the keyed portrait frame and the special line included (FND-UI-049), and no element differs. One site and the Influence and Search openings have not been captured. |
 | `SCR-UI-008` | Game Information panel | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-AI-003`, `DEV-UI-001`, `DEV-UI-005`, `DEV-UI-010` | validated | Fields, positions, the OK face, Enter or Execute, and the refused press outside the panel follow the entry. ScreenCaptureTests compares the panel in the EXP-UI-006 capture with the original, and no element differs. With Advanced AI on, the Mentality field adds the AI policy (DEV-AI-003); the comparison runs with it off. |
-| `SCR-UI-009` | Application menu bar | supported | complete | None | `DEV-HELP-001`, `DEV-OPTIONS-003`, `DEV-UI-011`, `DEV-UI-016`, `DEV-UI-019` | implemented | The rebuild has no menu bar, and every command on it is reached another way (DEV-UI-019). |
+| `SCR-UI-009` | Application menu bar | supported | complete | None | `DEV-HELP-001`, `DEV-OPTIONS-003`, `DEV-UI-011`, `DEV-UI-016`, `DEV-UI-019` | deviated | The rebuild has no menu bar, and every command on it is reached another way (DEV-UI-019). |
 
 ## OPTIONS
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-OPTIONS-001` | Reading the options from the registry at startup | supported | complete | tests/Rechaos.Tests/OriginalOptionsDefaultsTests.cs | `DEV-OPTIONS-001`, `DEV-OPTIONS-002`, `DEV-OPTIONS-003`, `DEV-RNG-001` | validated | A fresh start has the initialized values of the entry's table, apart from Slide Panels and Full screen, which DEV-OPTIONS-002 and DEV-OPTIONS-003 start off. The rebuild reads its own preferences file instead of the registry (DEV-OPTIONS-001), so BUG-OPTIONS-002's carried-over value cannot arise, and it makes no serial-number draws (DEV-RNG-001). Mentality is never stored, so it starts at Criminal at every start, as the original's does. OriginalOptionsDefaultsTests compares the fresh options with the values the executable initializes the globals of FND-OPTIONS-001 to. It leaves out Thousands of Colors, an option the rebuild does not have (DEV-UI-016), and the communication type and serial number, which the rebuild does not keep. |
-| `RULE-OPTIONS-002` | Saving the options to the registry, which always fails | supported | complete | None | `DEV-OPTIONS-001` | implemented | The rebuild writes its preferences file and the write succeeds (DEV-OPTIONS-001), where the original's write always fails. |
+| `RULE-OPTIONS-002` | Saving the options to the registry, which always fails | supported | complete | None | `DEV-OPTIONS-001` | deviated | The rebuild writes its preferences file and the write succeeds (DEV-OPTIONS-001), where the original's write always fails. |
 | `RULE-OPTIONS-003` | Warn if Idle Gangs asks before Done ends a turn with a gang left idle | established | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | The warning is skipped when the planning time runs out. ScreenCaptureTests replays the Done press of EXP-UI-012 on the original's state, where the human's gang has no order, and the rebuild opens the warning the original drew; no capture shows Done with every gang ordered, the option off, OK, Cancel, or the skip after a match has ended (FND-STATE-010). |
 | `SCR-OPTIONS-001` | Idle gang warning panel | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-UI-001`, `DEV-UI-010` | validated | Adds Escape and right-click cancel beyond the original keys. The line blinks six ticks shown and two black from the open (FND-UI-054). ScreenCaptureTests compares the warning a Done press opens over the city in the EXP-UI-012 capture with the original, with the line's recorded phase, and no element differs; no capture shows the line black. |
 
@@ -463,8 +467,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| `SCR-NET-001` | Legacy network host lobby that edits up to four seats and waits for the participants | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
-| `SCR-NET-002` | Legacy network client session editor with four seats | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
-| `SCR-NET-003` | Legacy network screen that waits for every participant to be ready | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
-| `SCR-NET-004` | Legacy network transfer progress frame with a status line and a spinner | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
-| `SCR-NET-005` | Legacy network turn synchronization frame with one progress row per seat and a spinner | supported | complete | None | `DEV-NET-001` | implemented | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-001` | Legacy network host lobby that edits up to four seats and waits for the participants | supported | complete | None | `DEV-NET-001` | deviated | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-002` | Legacy network client session editor with four seats | supported | complete | None | `DEV-NET-001` | deviated | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-003` | Legacy network screen that waits for every participant to be ready | supported | complete | None | `DEV-NET-001` | deviated | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-004` | Legacy network transfer progress frame with a status line and a spinner | supported | complete | None | `DEV-NET-001` | deviated | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |
+| `SCR-NET-005` | Legacy network turn synchronization frame with one progress row per seat and a spinner | supported | complete | None | `DEV-NET-001` | deviated | The legacy network screens are not drawn, and online play goes through the coordination server (DEV-NET-001). |

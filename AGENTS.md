@@ -57,7 +57,9 @@ The project follows the [methodology](https://dinorefurb.com/methodology/) and
 version 1 of the
 [documentation standard](https://dinorefurb.com/documentation-standard/)
 published at dinorefurb.com. This section summarizes them; where they differ,
-the published pages win.
+the published pages win. `docs/upstream/` holds a copy of the standard, the
+methodology and the work protocol as published at refurbished-dinosaurs
+`11dbbc5`, the revision this repository follows.
 
 ### The spec
 
@@ -119,6 +121,10 @@ the repository. Tool procedure is in `docs/GHIDRA.md`.
   superseded, with how much of it the rebuild does and which tests compare the
   rebuild with evidence from the original. Behaviour without a spec entry gets
   an `unknown` entry before any code. Manual play never counts as a test.
+  A complete row that a `mandatory` deviation's Replaces item names, because
+  nothing of it is left to compare with the original, is `deviated` once each
+  `mandatory` deviation it lists has a Tests item naming the tests that check
+  the rebuild does what the deviation's Reason says.
 - `docs/DECISIONS.md` keeps dated product and scope decisions that are not
   departures from the original (network play, saves, bug reports).
 

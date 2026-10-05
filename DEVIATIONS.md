@@ -16,12 +16,21 @@ the deviation, never the option it is carried by: when the deviation is to start
 that the original starts on, the Setting item says the setting is inverted and which value is the
 original's.
 
+A `mandatory` deviation may have a Replaces item directly after Departs from, naming the entries of
+Departs from it replaces entirely, so that nothing of them is left to compare with the original. A
+deviation may have a Tests item between Justification (or Default) and Dropped. It lists the test
+files that check the rebuild does what the Reason says; each of them cites the deviation's ID and
+runs without the original's files. A complete parity row that a Replaces item names has no tests
+of its own, and it is `deviated` once every `mandatory` deviation it lists has a Tests item
+(docs/DECISIONS.md, 2026-10-06).
+
 Dated product decisions behind many of these entries, with their full reasoning, are in
 [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## DEV-HELP-001
 
 - Departs from: FMT-HELP-001, SCR-UI-009, RULE-HELP-001
+- Replaces: RULE-HELP-001
 - Reason: The rebuild shows the help topics in its own viewer, opened with F1 or from the menu.
   In the original, Help Topics does nothing and no key opens help: the call that would start the
   Windows help program on the help file is never reached (RULE-HELP-001). The viewer reads the
@@ -34,6 +43,8 @@ Dated product decisions behind many of these entries, with their full reasoning,
   original would have started is no longer part of Windows, so a viewer of the rebuild's own is
   the only way to show the file, and a setting that brings back an inert menu item gives the
   player nothing.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs,
+  tests/Rechaos.Tests/ExtractedHelpStoreTests.cs
 - Dropped: no
 
 ## DEV-HELP-002
@@ -100,6 +111,7 @@ Made a setting that starts off on 2026-09-25, and switched to start on on 2026-0
 ## DEV-AUDIO-001
 
 - Departs from: RULE-AUDIO-010
+- Replaces: RULE-AUDIO-010
 - Reason: The rebuild does not run the original's startup drive check or its unused search of the
   CD drives. It plays the music tracks from the files of the GOG release (`MUSIC/TrackNN.ogg`) and
   never looks for a drive or a disc.
@@ -108,11 +120,13 @@ Made a setting that starts off on 2026-09-25, and switched to start on on 2026-0
 - Justification: The check always passes and the search is never called, so neither changes any
   game state. Its only effect in the original, the prefix of the movie paths, is replaced by the
   rebuild's own asset paths. A setting would have nothing to switch.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs
 - Dropped: no
 
 ## DEV-SAVE-001
 
 - Departs from: FMT-SAVE-001, FMT-SAVE-002
+- Replaces: FMT-SAVE-001, FMT-SAVE-002
 - Reason: The rebuild neither reads nor writes the original's save files. It keeps its own save
   format, with a version number and bounded readers. That format leaves out each player's selected
   sector (`cursor_sectors`, FND-SAVE-003), so a loaded match starts every player's planning on the
@@ -123,6 +137,7 @@ Made a setting that starts off on 2026-09-25, and switched to start on on 2026-0
 - Justification: What a player can do in a match is the same whichever format holds it, and the
   rebuild's format adds a version number and bounded readers. A setting would need a reader and
   writer for the original's format, which is a separate scope decision (2026-09-10).
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs
 - Dropped: no
 
 Decided 2026-09-10 ("Save compatibility scope").
@@ -779,6 +794,8 @@ it.
 - Default: mandatory
 - Justification: Saving and loading stay available wherever the original allows them, and slots with
   names replace a file dialog that the original's menu bar opens.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs,
+  tests/Rechaos.Tests/SaveSlotCatalogTests.cs
 - Dropped: no
 
 ## DEV-UI-012
@@ -839,19 +856,25 @@ Whether the original shows the count is not recorded.
 - Justification: A second copy is how one computer holds two seats of an online match. Nothing
   associates saves with the program, and the save browser reaches every save (DEV-UI-011), so the
   command line has nothing to open.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs,
+  tests/Rechaos.Tests/RollingAutoSaveTests.cs
 - Dropped: no
 
 ## DEV-UI-016
 
 - Departs from: RULE-UI-013, RULE-UI-014, SCR-UI-009, FMT-DATA-004
+- Replaces: FMT-DATA-004
 - Reason: Only the 16-bit image set is drawn, and there is no Thousands of Colors option. The
   original draws the same set at any display deeper than 8 bits, and loads the 256-colour palette
-  of `DATA/CLT00002` and the 8-bit set only on an 8-bit display, so the rebuild never reads either.
+  of `DATA/CLT00002` and the 8-bit set only on an 8-bit display, so the game never reads either.
+  The extractor still copies both into the asset pack, and decodes the 8-bit set there, where
+  nothing loads them.
 - Setting: None
 - Default: mandatory
 - Justification: The original defaults to the 16-bit set. The 8-bit set holds the same pictures
   reduced for 256-colour displays, which no current display is, so a setting would switch to a
   poorer copy of the same pictures.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs
 - Dropped: no
 
 ## DEV-UI-017
@@ -864,11 +887,13 @@ Whether the original shows the count is not recorded.
 - Justification: The rolling autosave keeps the match as it stood at the start of the turn, and
   orders given since then can be saved from the Escape menu before closing. The rebuild's saves go
   to named slots, so the original's save dialog has no counterpart to offer.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs
 - Dropped: no
 
 ## DEV-UI-018
 
 - Departs from: RULE-UI-014, FMT-STATE-009
+- Replaces: FMT-STATE-009
 - Reason: Keyboard and mouse state is read once per frame, 60 times a second, and each screen acts
   on what changed since the last frame. There is no event queue, accelerator table or menu command
   event; the options are on the Options screen. A double-click is two presses on the same target
@@ -877,17 +902,19 @@ Whether the original shows the count is not recorded.
 - Default: mandatory
 - Justification: It changes how commands are reached and leaves what they do alone. Every option
   and command the original's event step handles stays reachable.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs
 - Dropped: no
 
 ## DEV-UI-019
 
 - Departs from: SCR-UI-009, SCR-UI-002, SCR-UI-001, RULE-UI-013
+- Replaces: SCR-UI-009
 - Reason: The rebuild has no menu bar. Its commands are reached elsewhere: saving, loading and
   quitting from the Escape menu (DEV-UI-011), the options from the Options screen, Help Topics
   with F1 (DEV-HELP-001), full screen with F11 (DEV-OPTIONS-003), and About, which shows the
   credits screen, with Shift+F1. On the title screen, buttons for New Game, Load, Online,
-  Options, Help and Quit stand in for the menu, drawn over the title art with the rebuild's name,
-  its credit line and a box for notices left by the previous screen. Ctrl+H and Ctrl+J open the
+  Options, Help, Intro and Quit stand in for the menu, drawn over the title art with the rebuild's
+  name, its credit line and a box for notices left by the previous screen. Ctrl+H and Ctrl+J open the
   Online screen, where hosting and joining happen, and Enter and F9 also start a new game and
   open a saved one. A left press on the title outside the buttons does nothing, where the
   original's title loop takes a press anywhere as New Game.
@@ -898,6 +925,8 @@ Whether the original shows the count is not recorded.
   title buttons are the only way to Online and Options before a match, and the clicks that skip
   the intro movies land on the title; if a press anywhere started a new game, those clicks would
   carry a player past the menu into setup. New Game stays one button or one key away.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs,
+  tests/Rechaos.Tests/ProgramShellParityTests.cs
 - Dropped: no
 
 ## DEV-UI-020
@@ -972,17 +1001,22 @@ Whether the original shows the count is not recorded.
 ## DEV-GFX-001
 
 - Departs from: RULE-GFX-002, RULE-UI-014
-- Reason: The 640-by-460 drawing area is drawn into a resizable window, scaled by the largest
-  whole multiple up to 2 that fits, and letterboxed. Full screen is a borderless window at the
-  desktop's mode in 32-bit colour, with no menu bar above the area, and it stays open when it
-  loses focus. The original sizes a window under the Windows menu bar, or switches the display to
-  640 by 480 at 8 or 16 bits and minimizes itself when it loses focus.
+- Replaces: RULE-GFX-002
+- Reason: The 640-by-460 drawing area is drawn into a resizable window. The window opens at the
+  largest whole multiple of the area, up to 2, that fits in nine tenths of the display; a resized
+  window draws the area at the largest scale that fits, whole or not, and letterboxes it. Full
+  screen is a borderless window at the desktop's mode in 32-bit colour, with no menu bar above the
+  area, and it stays open when it loses focus. The original sizes a window under the Windows menu
+  bar, or switches the display to 640 by 480 at 8 or 16 bits and minimizes itself when it loses
+  focus.
 - Setting: None
 - Default: mandatory
-- Justification: Every pixel of the drawing area is the original's, repeated at a whole multiple.
-  At one to one the area is a small patch on a current display, and many current drivers no longer
-  offer 640 by 480 at 8 or 16 bits, so a mode-switch setting would offer a mode the display may
-  refuse. No rule depends on the window.
+- Justification: Every pixel of the drawing area is the original's. The window opens at a whole
+  multiple, which keeps each pixel square, and only a window the player resizes scales by a
+  fraction. At one to one the area is a small patch on a current display, and many current
+  drivers no longer offer 640 by 480 at 8 or 16 bits, so a mode-switch setting would offer a mode
+  the display may refuse. No rule depends on the window.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs
 - Dropped: no
 
 ## DEV-GFX-002
@@ -1019,14 +1053,20 @@ Whether the original shows the count is not recorded.
 ## DEV-OPTIONS-001
 
 - Departs from: RULE-OPTIONS-001, RULE-OPTIONS-002, BUG-OPTIONS-001, BUG-OPTIONS-002
+- Replaces: RULE-OPTIONS-002
 - Reason: The original opens its registry key read-only for loading and for writing, so no option
   is ever saved, and a missing value takes the previous value's data from a shared buffer. The
-  rebuild writes a checked per-user file in one step and falls back to the default for each
-  missing field.
+  rebuild writes a checked per-user file in one step. A file that is missing, unreadable or of an
+  unknown version, or that lacks a field its version requires, is read as the defaults as a whole,
+  so no option takes another's value. A field a later version added takes its own default when an
+  older file is upgraded, and the lobby presentation, Intro only once and the preferred scenario,
+  which a file of the current version may leave out, take their own defaults when it does.
 - Setting: None
 - Default: mandatory
 - Justification: The Options menu was written to keep the player's choices, and the original loses
   them only because of the two bugs. Nobody gains from choosing the options again at every launch.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs,
+  tests/Rechaos.Tests/GamePreferencesStoreTests.cs
 - Dropped: no
 
 ## DEV-OPTIONS-002
@@ -1057,6 +1097,7 @@ Whether the original shows the count is not recorded.
 ## DEV-NET-001
 
 - Departs from: SCR-NET-001, SCR-NET-002, SCR-NET-003, SCR-NET-004, SCR-NET-005, RULE-COMLINK-001, FMT-SAVE-001, SCR-UI-003
+- Replaces: SCR-NET-001, SCR-NET-002, SCR-NET-003, SCR-NET-004, SCR-NET-005
 - Reason: The original's network play, its lobbies, its protocols and its WinSock, TAPI and serial
   paths are not reproduced. Online play uses a new coordination server, so no Comlink message is
   sent to or received from another computer in the original's form, and the network form of the
@@ -1067,6 +1108,7 @@ Whether the original shows the count is not recorded.
 - Justification: The original's WinSock, TAPI and serial paths cannot reach anything a current
   player can connect to, so there is nothing to keep, and the coordination server is what makes
   online play possible at all.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs
 - Dropped: no
 
 Decided 2026-09-10 ("Networking scope").

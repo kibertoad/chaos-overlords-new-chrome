@@ -14,3 +14,6 @@
 # Git runs hooks with sh, which rejects the carriage returns a CRLF checkout
 # would add on Windows.
 .githooks/** text eol=lf
+
+# The published standard, methodology and work protocol, copied byte for byte.
+/docs/upstream/** -text
