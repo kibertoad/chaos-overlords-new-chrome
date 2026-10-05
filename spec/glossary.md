@@ -303,14 +303,14 @@ that the Send panel edits and the recorder copies [FND-COMLINK-001], at
 ## comlink_draft_column
 
 The column, 0 to 39, of the text cursor in `comlink_draft`. Any other value
-the game keeps: an integer [FND-COMLINK-010], a local of the Send handler with
-no fixed address, 0 each time the panel opens [FND-COMLINK-007].
+the game keeps: a 16-bit value [FND-COMLINK-010], a local of the Send handler
+with no fixed address, 0 each time the panel opens [FND-COMLINK-007].
 
 ## comlink_draft_row
 
 The row, 0 to 3, of the text cursor in `comlink_draft`. Any other value the
-game keeps: an integer [FND-COMLINK-010], a local of the Send handler with no
-fixed address, 0 each time the panel opens [FND-COMLINK-007].
+game keeps: a 16-bit value [FND-COMLINK-010], a local of the Send handler with
+no fixed address, 0 each time the panel opens [FND-COMLINK-007].
 
 ## comlink_eligible
 

@@ -75,9 +75,13 @@ The caret uses timer 0, which the game registers with `timeSetEvent` at a
 period of `1000 / 6` = 166 milliseconds. The Send loop counts the timer events
 it consumes from the panel's opening, and every third one switches the caret
 between the plain and the inverse character row. The caret starts plain. Each
-phase after the first lasts three events, 498 milliseconds; the first is
-shorter when the timer flag is already raised as the panel opens, since the
-Send loop does not raise or clear it before its first pass [FND-COMLINK-010].
+phase after the first lasts three events, 498 milliseconds. The timer runs
+from start-up and is not restarted when the panel opens, so the first phase
+ends on the third tick after the opening, more than two periods and at most
+three after it. When the timer flag is already raised as the panel opens, the
+first pass counts it, since the Send loop does not raise or clear the flag
+before that pass, and the first phase lasts more than one period and at most
+two [FND-COMLINK-010].
 
 ## Differences between builds
 

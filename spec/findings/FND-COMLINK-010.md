@@ -47,6 +47,15 @@ locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00462579
+  - build: BLD-GOG-EN-1.1
+    file: Chaos Overlords.exe
+    address: 0x0046A80A
+  - build: BLD-GOG-EN-1.1
+    file: Chaos Overlords.exe
+    address: 0x00498110
+  - build: BLD-GOG-EN-1.1
+    file: Chaos Overlords.exe
+    address: 0x00498125..0x004981C4
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -93,7 +102,8 @@ Timer:
 - `fn_004327DC(n, frequency)` calls `timeSetEvent(1000 / frequency, 20,
   fn_004327C0, n, 1)` for a positive frequency. `fn_00460CCF` calls it with
   timer 0 and frequency 6 (`0x0046118F`), so timer 0 fires every `1000 / 6` =
-  166 milliseconds in integer division.
+  166 milliseconds in integer division. No other call starts timer 0
+  (FND-UI-023), so the Send handler does not restart it.
 - At the end of each pass of its event loop (`0x0045FD4B..0x0045FDB3`) the
   Send handler tests flag 0. When it is raised, it clears it, adds 1 to a
   counter that starts at 0 when the panel opens, and on the count of 3 sets the
@@ -118,23 +128,25 @@ sent the message.
 The message is a fixed four-by-40 grid that the player types over. Characters
 from space to `Z` are kept; `[` (`0x5B`) and everything above it are dropped.
 
-The cursor moves through the grid as through one line of 160 cells whose ends
-do not wrap: Left, Right, Backspace and typing cross between rows, Up and Down stop
-at the first and last rows, and Left or Backspace at the start of row 0 goes
-to the end of row 0, as typing or Right at the end of row 3 goes to the start
-of row 3. Backspace moves back one cell and then blanks the cell it arrives
-at.
+The cursor moves through the grid as through one line of 160 cells: Left,
+Right, Backspace and typing cross between rows, and Up and Down stop at the
+first and last rows. The two ends of that line stay in their own rows: Left or
+Backspace at the start of row 0 goes to the end of row 0, and typing or Right
+at the end of row 3 goes to the start of row 3. Backspace moves back one cell
+and then blanks the cell it arrives at.
 
 The caret starts plain and switches between the plain and the inverse cell on
 every third timer-0 event the Send loop consumes, so each phase after the
-first lasts three periods, 498 milliseconds. The first phase is shorter when
-flag 0 is already raised as the panel opens, which depends on when another
-loop last cleared it.
+first lasts three periods, 498 milliseconds. Timer 0 runs from start-up and is
+not restarted when the panel opens, so the first phase ends on the third tick
+after the opening: more than two periods and at most three after it. When flag
+0 is already raised as the panel opens, which depends on when another loop
+last cleared it, the first pass counts that tick and the first phase lasts
+more than one period and at most two.
 
 ## Alternatives
 
-- The first caret phase may last between two and three periods; how often
-  flag 0 is already raised as Send opens was not measured.
+- How often flag 0 is already raised as Send opens was not measured.
 
 ## How to reproduce
 
