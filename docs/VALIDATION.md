@@ -490,14 +490,18 @@ hit tests, takes each step through the rebuild's dock and compares the orders
 `--order-steps` works the detailed sector screen after the dump: `open:n`
 double-clicks city sector `n`, `card:n:x:y:command` presses card `n` at
 `(x, y)` within the card, `strip:x:y:command` presses the window at `(x, y)`,
-and `back` and `exit` press the back control and a result panel's Exit. A
+and `back` and `exit` press the back control and a result panel's Exit; an
+`exit` with no result panel open is skipped. A
 press that opens an order popup reaches the popup helper's `TrackPopupMenu`
 call (FND-UI-021); the probe keeps the menu and the command and greyed state of
 each item, then skips the call and hands the helper `command`, 0 for no choice,
 so no menu is shown (EXP-TURN-095). The probe keeps the menu, the view, the
-card slots and the active player's order bytes after each step as
+player whose gangs the cards list (EXP-TURN-096), the card slots and the
+active player's order bytes after each step as
 `order_steps`; the replay takes each step through the rebuild's strip hit
-tests, its order panel and its orders and compares them (RULE-TURN-005).
+tests, its order panel and its orders and compares them (RULE-TURN-005), and
+takes each press on an Overlord portrait through the rebuild's portrait
+handling and compares the cards (RULE-UI-010).
 `--gang-markers` logs every gang-status marker the original draws: each full
 city redraw, each frame drawn for a sector holding the player's gang, each copy
 of the saved cell back and each incoming-only mark (FND-UI-024, EXP-UI-004),

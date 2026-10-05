@@ -72,6 +72,25 @@ public static class SectorOpponentGangs
         return null;
     }
 
+    /// <summary>
+    /// RULE-UI-010, FND-UI-015: whose gangs the cards list after a press on <paramref name="owner"/>'s
+    /// portrait, null for the viewer's own. A portrait switches the cards only when the viewer can
+    /// see a gang of that overlord in the sector, and the viewer's own portrait then restores the
+    /// viewer's roster. The portrait of an overlord with no such gang leaves
+    /// <paramref name="current"/> as it is.
+    /// </summary>
+    public static PlayerId? PressPortrait(
+        MatchState state,
+        PlayerId viewer,
+        PlayerId? current,
+        PlayerId owner,
+        int sectorId)
+    {
+        if (owner == viewer)
+            return InSector(state, viewer, viewer, sectorId).Count > 0 ? null : current;
+        return Detectable(state, viewer, owner, sectorId) ? owner : current;
+    }
+
     private static IEnumerable<MatchGangState> Detected(
         MatchState state,
         PlayerId viewer,

@@ -22,7 +22,9 @@ public sealed partial class OriginalNewGameExperimentTests
     // the popup, its items and the active player's orders after each press. The rebuild's hit tests
     // open the same menu for each press, its menus list the same commands and offer the orders the
     // original leaves enabled, and the order the rebuild gives through the chosen action leaves
-    // each gang with the original's action and repeat_action.
+    // each gang with the original's action and repeat_action. RULE-UI-010: a press on an overlord's
+    // portrait lists that overlord's gangs on the cards where the original does, and a card of
+    // another overlord's gang opens no menu.
     [Theory]
     [MemberData(nameof(OrderStepRuns))]
     public void TheOrderMenusGiveTheOriginalsOrders(string experiment, int run)
@@ -32,23 +34,38 @@ public sealed partial class OriginalNewGameExperimentTests
         var human = recorded.Humans[0];
         var player = match.FindPlayer(human)!;
         int? sector = null;
+        PlayerId? owner = null;
         foreach (var step in recorded.OrderSteps)
         {
             var label = $"{step.Kind} {step.Target} ({step.X}, {step.Y}) command {step.Choice}";
-            if (step.Kind == "open") sector = step.Target;
+            if (step.Kind == "open") (sector, owner) = (step.Target, null);
             if (step.Kind == "back") sector = null;
+            var portrait = step.Kind == "strip" && sector is not null
+                ? SectorOpponentGangs.PortraitAt(match, new Point(step.X, step.Y))
+                : null;
+            if (portrait is { } pressed)
+                owner = SectorOpponentGangs.PressPortrait(match, human, owner, pressed, sector!.Value);
             Assert.True(step.CityView == sector is null, $"after {label}");
+            var viewed = owner ?? human;
+            if (sector is not null && step.Viewed >= 0)
+                Assert.True(step.Viewed == viewed.Value,
+                    $"after {label}: the original lists player {step.Viewed}'s gangs, the rebuild player {viewed.Value}'s");
             IReadOnlyList<MatchGangState> cards = sector is { } shown
-                ? SectorOpponentGangs.InSector(match, human, human, shown)
+                ? SectorOpponentGangs.InSector(match, human, viewed, shown)
                 : [];
             if (sector is not null)
+            {
+                var roster = match.FindPlayer(viewed)!.Gangs.ToList();
                 Assert.True(step.Cards.SequenceEqual(Enumerable.Range(0, SectorGangCardLayout.VisibleCards)
-                    .Select(card => card < cards.Count ? player.Gangs.ToList().IndexOf(cards[card]) : -1)), $"after {label}");
+                    .Select(card => card < cards.Count ? roster.IndexOf(cards[card]) : -1)),
+                    $"after {label}: the original's cards hold slots [{string.Join(",", step.Cards)}]");
+            }
 
             var (menu, gangs) = step.Kind switch
             {
-                "card" => CardMenu(cards, step),
-                "strip" => StripMenu(cards, step),
+                _ when portrait is not null => (-1, (IReadOnlyList<MatchGangState>)[]),
+                "card" => viewed == human ? CardMenu(cards, step) : (-1, []),
+                "strip" => viewed == human ? StripMenu(cards, step) : (-1, []),
                 _ => (-1, (IReadOnlyList<MatchGangState>)[]),
             };
             Assert.True(menu == step.Menu, $"{label}: the original opened menu {step.Menu}, the rebuild {menu}");

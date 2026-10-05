@@ -87,22 +87,14 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Points the workspace at an overlord's gangs. RULE-UI-010: a portrait switches the cards
-    /// only when the viewer can see a gang of that overlord in the sector, and the viewer's own
-    /// portrait then restores the viewer's roster. The portrait of an overlord with no such gang
-    /// leaves the cards as they are.
+    /// Points the workspace at an overlord's gangs (RULE-UI-010, <see cref="SectorOpponentGangs.PressPortrait"/>).
     /// </summary>
     private void SelectSectorGangCardOwner(MatchState state, PlayerId viewer, PlayerId owner)
     {
         _message = string.Empty;
-        if (owner == viewer)
-        {
-            if (SectorOpponentGangs.InSector(state, viewer, viewer, _cursor).Count > 0)
-                _sectorGangCardOwner = null;
-            return;
-        }
-        if (!SectorOpponentGangs.Detectable(state, viewer, owner, _cursor)) return;
-        _sectorGangCardOwner = owner;
+        var previous = _sectorGangCardOwner;
+        _sectorGangCardOwner = SectorOpponentGangs.PressPortrait(state, viewer, previous, owner, _cursor);
+        if (_sectorGangCardOwner is null || _sectorGangCardOwner == previous) return;
         // Borrowing an opponent's cards puts the player's own gangs out of sight, and a pick
         // nobody can see is a pick nobody meant to keep.
         _gangSelection.Clear();

@@ -89,10 +89,11 @@ public sealed partial class OriginalNewGameExperimentTests
     // Exit. After it: the popup menu it opened (-1 for none) with each item's command and greyed
     // state, whether the city view is shown, the six card slots, and for every gang of the active
     // player in use, slot 80 with them, its slot, sector, action, target, target_2, repeat_action
-    // and repeat_target (FMT-STATE-001, FND-UI-021).
+    // and repeat_target (FMT-STATE-001, FND-UI-021), and the player whose gangs the cards list
+    // (FND-UI-015), -1 where the run did not keep it.
     private sealed record RecordedOrderStep(
         string Kind, int Target, int X, int Y, int Choice, int Menu, IReadOnlyList<(int Command, int State)>? Items,
-        bool CityView, IReadOnlyList<int> Cards, IReadOnlyList<IReadOnlyList<int>> Gangs);
+        bool CityView, IReadOnlyList<int> Cards, IReadOnlyList<IReadOnlyList<int>> Gangs, int Viewed);
 
     // A call of a planning entry panel: its name, the roll count when it was called and whether it
     // stayed open until Exit was pressed (RULE-SETUP-008).
@@ -192,7 +193,8 @@ public sealed partial class OriginalNewGameExperimentTests
                     step.GetProperty("cards").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
                     step.GetProperty("gangs").EnumerateArray()
                         .Select(gang => (IReadOnlyList<int>)gang.EnumerateArray().Select(value => value.GetInt32()).ToArray())
-                        .ToArray())).ToArray()
+                        .ToArray(),
+                    step.TryGetProperty("viewed", out var viewed) ? viewed.GetInt32() : -1)).ToArray()
                 : [];
             SearchClicks = run.TryGetProperty("search_clicks", out var searchClicks)
                 ? searchClicks.EnumerateArray().Select(click => new RecordedSearchClick(
