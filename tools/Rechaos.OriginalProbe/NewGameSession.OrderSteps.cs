@@ -77,9 +77,7 @@ internal sealed partial class NewGameSession
                     Click(window, 4 + 16, 394 + 31);
                     break;
                 case "exit":
-                    // As for the hire steps: with no panel open the Exit point lies on the city map.
-                    if (_panelsOpen > 0) Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
-                    else _notes.Add("exit after the dump skipped: no panel was open");
+                    PressExitAfterDump(window);
                     break;
             }
             _process.Pump(TimeSpan.FromSeconds(0.8));

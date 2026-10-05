@@ -74,17 +74,9 @@ public sealed partial class ChaosGame
         && cards.Count >= 2
         && cards[0].Owner == viewer;
 
-    /// <summary>
-    /// The gangs the Sector workspace lists. A borrowed opponent roster falls back to the viewer's
-    /// own gangs once the opponent no longer keeps a detectable gang in the selected sector.
-    /// </summary>
-    private IReadOnlyList<MatchGangState> SectorCardGangs(MatchState state, PlayerId viewer)
-    {
-        if (_sectorGangCardOwner is { } owner && owner != viewer
-            && SectorOpponentGangs.InSector(state, viewer, owner, _cursor) is { Count: > 0 } borrowed)
-            return borrowed;
-        return SectorOpponentGangs.InSector(state, viewer, viewer, _cursor);
-    }
+    /// <summary>The gangs the Sector workspace lists (<see cref="SectorOpponentGangs.Cards"/>).</summary>
+    private IReadOnlyList<MatchGangState> SectorCardGangs(MatchState state, PlayerId viewer) =>
+        SectorOpponentGangs.Cards(state, viewer, _sectorGangCardOwner, _cursor);
 
     /// <summary>
     /// Points the workspace at an overlord's gangs (RULE-UI-010, <see cref="SectorOpponentGangs.PressPortrait"/>).
@@ -92,11 +84,11 @@ public sealed partial class ChaosGame
     private void SelectSectorGangCardOwner(MatchState state, PlayerId viewer, PlayerId owner)
     {
         _message = string.Empty;
-        var previous = _sectorGangCardOwner;
-        _sectorGangCardOwner = SectorOpponentGangs.PressPortrait(state, viewer, previous, owner, _cursor);
-        if (_sectorGangCardOwner is null || _sectorGangCardOwner == previous) return;
+        _sectorGangCardOwner = SectorOpponentGangs.PressPortrait(state, viewer, _sectorGangCardOwner, owner, _cursor);
         // Borrowing an opponent's cards puts the player's own gangs out of sight, and a pick
-        // nobody can see is a pick nobody meant to keep.
+        // nobody can see is a pick nobody meant to keep. That holds for a press on the overlord
+        // already borrowed whose cards had fallen back to the viewer's own.
+        if (!SectorOpponentGangs.Detectable(state, viewer, owner, _cursor)) return;
         _gangSelection.Clear();
     }
 
