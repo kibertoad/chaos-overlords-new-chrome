@@ -175,6 +175,11 @@ public sealed partial class OriginalNewGameExperimentTests
                     step.GetProperty("slot").GetInt32(), step.GetProperty("sector").GetInt32(),
                     step.GetProperty("orders").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
                 : [];
+            GangMarkers = run.TryGetProperty("gang_markers", out var gangMarkers)
+                ? gangMarkers.EnumerateArray()
+                    .Select(draw => (IReadOnlyList<int>)draw.EnumerateArray().Select(value => value.GetInt32()).ToArray())
+                    .ToArray()
+                : [];
             OrderSteps = run.TryGetProperty("order_steps", out var orderSteps)
                 ? orderSteps.EnumerateArray().Select(step => new RecordedOrderStep(
                     step.GetProperty("kind").GetString()!, step.GetProperty("target").GetInt32(),
@@ -249,6 +254,13 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedHireStep> HireSteps { get; }
         public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }
+
+        // Each gang-status marker drawing from the last full city redraw before the dump on, as
+        // the post-dump step it came in (0 before the first), kind, player, sector and frame:
+        // kind 0 a full redraw, 1 a frame drawn for a sector holding the player's gang, 2 the
+        // cell under the incoming-only mark copied back over the sector, 3 that mark drawn
+        // (FND-UI-024).
+        public IReadOnlyList<IReadOnlyList<int>> GangMarkers { get; }
         public IReadOnlyList<RecordedOrder> Orders { get; }
         public IReadOnlyList<RecordedHire> Hires { get; }
         public IReadOnlyList<RecordedPlanning> Planning { get; }

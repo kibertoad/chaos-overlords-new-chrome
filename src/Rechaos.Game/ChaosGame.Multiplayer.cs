@@ -449,6 +449,7 @@ public sealed partial class ChaosGame
         ForgetGangDrag();
         _tickedPresentation.Clear();
         _gangSight.Clear();
+        _gangMarkers.Clear();
         ForgetHireDrag();
         _combatAnimationPlayer.Clear();
         _automaticDetailedCombatPresentation = false;

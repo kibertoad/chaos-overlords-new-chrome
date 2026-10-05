@@ -126,10 +126,20 @@ public sealed partial class ChaosGame
     {
         AcceptInput();
         _message = string.Empty;
-        _screens.Show(_managementReturnScreen);
+        CloseSiteSearch();
     }
 
-    private void CancelSiteSearch() => _screens.Show(_managementReturnScreen);
+    // FND-SEARCH-004: closing the panel draws the whole city again, gang-status markers included
+    // (RULE-UI-006).
+    private void CloseSiteSearch()
+    {
+        if (_state is { Coordinator.Phase: TurnPhase.Command } state)
+        {
+            var viewer = ViewingPlayer(state);
+            _gangMarkers.RedrawAll(state, viewer, _gangSight.For(state, viewer));
+        }
+        _screens.Show(_managementReturnScreen);
+    }
 
     private void HandleSiteSearchClick(Point point)
     {

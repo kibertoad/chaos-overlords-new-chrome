@@ -26,6 +26,7 @@ internal sealed partial class NewGameSession
         var rollsAtDump = _rolls.Count;
         foreach (var step in settings.HireSteps!)
         {
+            _postDumpStep++;
             if (step.Slot == -1)
             {
                 // With no panel open the Exit point lies on the city map, where a press would select

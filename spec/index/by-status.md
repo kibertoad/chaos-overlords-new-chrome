@@ -294,7 +294,7 @@
 
 ## recorded
 
-472 entries.
+474 entries.
 
 | ID | Title |
 |---|---|
@@ -411,6 +411,8 @@
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? |
+| [EXP-UI-004](../experiments/EXP-UI-004.md) | Which gang-status markers does the map show while the Hire dock changes at the first planning entry? |
+| [EXP-UI-005](../experiments/EXP-UI-005.md) | Does the incoming-only mark stay on the map until a redraw removes it? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
 | [FND-AI-003](../findings/FND-AI-003.md) | The outer AI planning pass rolls action history, runs the dispatcher per gang, then picks a hire role |

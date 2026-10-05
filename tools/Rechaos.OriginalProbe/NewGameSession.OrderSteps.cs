@@ -53,6 +53,7 @@ internal sealed partial class NewGameSession
         });
         foreach (var step in settings.OrderSteps!)
         {
+            _postDumpStep++;
             menu = -1;
             items = null;
             choice = step.Choice;
