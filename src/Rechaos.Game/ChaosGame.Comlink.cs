@@ -81,7 +81,7 @@ public sealed partial class ChaosGame
         Array.Fill(_comlinkRecipients, false);
         _comlinkSendFace = CommandPanelFaceState.NotDrawn;
         _comlinkEditor.Clear();
-        _comlinkCaretCadence.Reset(_inputTime);
+        _comlinkCaretCadence.Reset(_eventPump.Time);
         _comlinkStatus = string.Empty;
         _screens.Show(ClientScreen.ComlinkSend);
     }

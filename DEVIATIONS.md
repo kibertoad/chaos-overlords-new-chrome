@@ -116,7 +116,8 @@ Made a setting that starts off on 2026-09-25, and switched to start on on 2026-0
 - Reason: The rebuild neither reads nor writes the original's save files. It keeps its own save
   format, with a version number and bounded readers. That format leaves out each player's selected
   sector (`cursor_sectors`, FND-SAVE-003), so a loaded match starts every player's planning on the
-  sector of its roster slot 0, as a new match does.
+  sector of its roster slot 0, as a new match does. An online match the client takes up or
+  resumes starts the same way, since the server keeps no selection either.
 - Setting: None
 - Default: mandatory
 - Justification: What a player can do in a match is the same whichever format holds it, and the
@@ -631,7 +632,7 @@ it.
 - Departs from: SCR-SEARCH-001
 - Reason: The keyboard moves between Search rows and toggles them. The original's handler reacts
   only to Enter and Execute. A gold border marks the keyboard's row once an arrow key has moved
-  it; until then the panel draws what the original draws.
+  it or Space has flipped it; until then the panel draws what the original draws.
 - Setting: None
 - Default: mandatory
 - Justification: It adds keys, and Enter and Execute work as before.
@@ -720,7 +721,7 @@ it.
 
 ## DEV-UI-007
 
-- Departs from: SCR-UI-004, RULE-UI-011
+- Departs from: SCR-UI-003, SCR-UI-004, RULE-UI-011
 - Reason: Hovering the Tolerance value shows the range the player's queued Chaos can reach, and
   the value turns orange when that range can set off a Crackdown.
 - Setting: None
@@ -1003,8 +1004,8 @@ Whether the original shows the count is not recorded.
 - Reason: The panel slide takes its step from a fixed benchmark of 84 copies a second where the
   original measures the machine for one second at startup. Presentation ticks are counted from the
   game clock, so a tick that falls during a long frame is counted rather than lost. The ticks a
-  pointer hold or a soundtrack fade keeps from the event pump are dropped as in the original
-  (FND-UI-046, FND-AUDIO-017).
+  pointer hold or a soundtrack fade keeps from the event pump, or a hold keeps from a panel's own
+  loop, are dropped as in the original (FND-UI-046, FND-UI-047, FND-AUDIO-017).
 - Setting: None
 - Default: mandatory
 - Justification: The original's slide speed depends on the machine it runs on, which AGENTS.md

@@ -74,8 +74,8 @@ public sealed class PixelFont
     {
         foreach (var character in text)
         {
-            if (char.ToUpperInvariant(character) is >= OriginalFontLayout.FirstCharacter and <= OriginalFontLayout.LastCharacter
-                && OriginalFontLayout.TryGlyph(character, out var glyph))
+            if (OriginalFontLayout.TryGlyph(character, out var glyph)
+                && glyph.X < OriginalFontLayout.AtlasBounds.Width)
                 batch.Draw(_uiAtlas,
                     new Rectangle(position.X, position.Y, glyph.Width, glyph.Height),
                     new Rectangle(strip.X + glyph.X, strip.Y + glyph.Y, glyph.Width, glyph.Height), Color.White);

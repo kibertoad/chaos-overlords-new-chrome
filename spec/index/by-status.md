@@ -16,7 +16,7 @@
 
 ## supported
 
-149 entries.
+147 entries.
 
 | ID | Title |
 |---|---|
@@ -104,7 +104,6 @@
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup |
 | [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | Saving the options to the registry, which always fails |
-| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events |
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players |
@@ -120,7 +119,6 @@
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | Drawing numbers in fixed glyph cells |
-| [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker |
 | [RULE-UI-007](../rules/RULE-UI-007.md) | The pointer shape |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | The presentation timer |
@@ -172,7 +170,7 @@
 
 ## established
 
-92 entries.
+94 entries.
 
 | ID | Title |
 |---|---|
@@ -241,6 +239,7 @@
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent |
@@ -266,6 +265,7 @@
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective |
+| [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player |
 
@@ -294,7 +294,7 @@
 
 ## recorded
 
-496 entries.
+498 entries.
 
 | ID | Title |
 |---|---|
@@ -411,6 +411,7 @@
 | [EXP-TURN-096](../experiments/EXP-TURN-096.md) | Whose gangs do the sector view's cards list after each Overlord portrait press? |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? |
+| [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? |
 | [EXP-UI-004](../experiments/EXP-UI-004.md) | Which gang-status markers does the map show while the Hire dock changes at the first planning entry? |
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | Does the incoming-only mark stay on the map until a redraw removes it? |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | Do the city, its console panels and the detailed sector screen look the same in the rebuild late in a match? |
@@ -781,6 +782,7 @@
 | [FND-UI-044](../findings/FND-UI-044.md) | A left press on a gang card's portrait holds the individual command handler in its own loops until the button is released, so the planning loop does not run while a gang is held |
 | [FND-UI-045](../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits |
 | [FND-UI-046](../findings/FND-UI-046.md) | The pointer hold loops of the console tiles, the held-button helper and the event page arrows never reach the event pump, and no hold loop touches timer slot 0 |
+| [FND-UI-047](../findings/FND-UI-047.md) | The panels that animate on timer slot 0 take the flag after their event switch, so a held face stops the animation and the release pass takes one tick |
 | [FND-UI-048](../findings/FND-UI-048.md) | The pump draws the selection frame from its counter before it advances the counter, so the frame on screen is the one for the counter less one |
 | [FND-UI-049](../findings/FND-UI-049.md) | Site Information keys a frame over the site portrait and, for a site with a special effect, writes string 29 plus the effect under the Cash row |
 | [FND-UI-050](../findings/FND-UI-050.md) | The city compositor keys a police badge over every sector with police presence, after the site markers and before the gang-status marker |
@@ -870,6 +872,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle |
 | [RULE-POLICE-001](../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police |
 | [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent |
@@ -895,6 +898,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective |
+| [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | Objective sectors marked on the city map |
 | [RULE-UPKEEP-001](../rules/RULE-UPKEEP-001.md) | Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player |
 
@@ -1056,7 +1060,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | Drawing numbers in fixed glyph cells | supported |
-| [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | supported |
+| [RULE-UI-005](../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | established |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker | supported |
 | [RULE-UI-007](../rules/RULE-UI-007.md) | The pointer shape | supported |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | The presentation timer | supported |

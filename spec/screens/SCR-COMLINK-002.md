@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-010, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004, FND-UI-019, EXP-UI-016]
+evidence: [FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-010, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004, FND-UI-019, FND-UI-047, EXP-UI-016]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-002, RULE-COMLINK-003, RULE-COMLINK-006]
@@ -83,6 +83,10 @@ three after it. When the timer flag is already raised as the panel opens, the
 first pass counts it, since the Send loop does not raise or clear the flag
 before that pass, and the first phase lasts more than one period and at most
 two [FND-COMLINK-010].
+
+While Cancel or Send is held with the pointer, the count stops. The pass that
+ends with the release counts one event if any fell during the hold and loses
+the others [FND-UI-047].
 
 ## Differences between builds
 

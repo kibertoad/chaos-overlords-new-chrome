@@ -12,8 +12,8 @@ public sealed partial class ChaosGame
     /// </summary>
     private bool _gangDetailsCompact;
 
-    /// <summary>When the carried items' rotation last started at frame 0 (SCR-GANG-002).</summary>
-    private TimeSpan _gangDetailsAnimationStart;
+    /// <summary>The event pump tick the carried items' rotation last started at frame 0 on (SCR-GANG-002).</summary>
+    private long _gangDetailsAnimationStart;
 
     private Texture2D? _gangBaseValueDimPattern;
 
@@ -35,7 +35,7 @@ public sealed partial class ChaosGame
         _gangDetailsReturnScreen = returnScreen;
         _gangDetailsSectorFilter = sectorFilter;
         _gangDetailsCompact = IsOrderPanel(returnScreen);
-        _gangDetailsAnimationStart = _inputTime;
+        _gangDetailsAnimationStart = _eventPump.Ticks;
         _gangEquipmentItemClicks.Cancel();
         _screens.Show(ClientScreen.Gang);
     }
@@ -51,7 +51,7 @@ public sealed partial class ChaosGame
         _gangDetailsReturnScreen = returnScreen;
         _gangDetailsSectorFilter = null;
         _gangDetailsCompact = false;
-        _gangDetailsAnimationStart = _inputTime;
+        _gangDetailsAnimationStart = _eventPump.Ticks;
         _gangEquipmentItemClicks.Cancel();
         _screens.Show(ClientScreen.Gang);
     }
@@ -98,7 +98,7 @@ public sealed partial class ChaosGame
         var gang = gangs[Mod(current + delta, gangs.Count)];
         _gangDetailsInstanceId = gang.Id;
         _gangDetailsDefinitionId = gang.DefinitionId;
-        _gangDetailsAnimationStart = _inputTime;
+        _gangDetailsAnimationStart = _eventPump.Ticks;
         _gangEquipmentItemClicks.Cancel();
         _message = string.Empty;
         // The selection indexes the viewer's own gangs only.
@@ -136,11 +136,7 @@ public sealed partial class ChaosGame
         var itemId = EquippedItem(gang, slot);
         if (itemId is { } resolved
             && _gangEquipmentItemClicks.Register(slot, _inputTime))
-        {
-            // FND-GANG-006: the rotation restarts at frame 0 after the item's panel.
-            _gangDetailsAnimationStart = _inputTime;
             OpenItemDetails(resolved, ClientScreen.Gang);
-        }
         return true;
     }
 
@@ -308,9 +304,9 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawGangDetailsEquipment(SpriteBatch batch, MatchGangState gang)
     {
-        var elapsed = _inputTime - _gangDetailsAnimationStart;
-        if (elapsed < TimeSpan.Zero) elapsed = TimeSpan.Zero;
-        var frame = ItemRotationPresentation.Frame(elapsed);
+        // FND-UI-047: the panel's counter steps on the ticks the event pump takes, so a held face
+        // stops it and the release takes one tick.
+        var frame = ItemRotationPresentation.FrameAfter(_eventPump.Ticks - _gangDetailsAnimationStart);
         for (var slot = 0; slot < 3; slot++)
         {
             if (EquippedItem(gang, slot) is not { } itemId) continue;
@@ -388,7 +384,7 @@ public sealed partial class ChaosGame
         var display = NativeTwoCellNumberPresentation.Format(value, kind, width);
         font.DrawNumber(batch, display,
             new Vector2(left + (width - display.Digits.Length) * OriginalFontLayout.CellWidth, y),
-            display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime);
+            display.IsNegative ? Color.Red : Color.Lime);
     }
 
     /// <summary>FND-UI-004: numeric cells are opaque, including their blank pixels.</summary>
@@ -398,6 +394,15 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, new Rectangle(left, y, width * OriginalFontLayout.CellWidth,
             OriginalFontLayout.GlyphHeight), Color.Black);
         DrawNativeFixedWidthValue(font, batch, value, left, y, width);
+    }
+
+    /// <summary>FND-UI-019: string cells are copied opaquely, like the numeric cells.</summary>
+    private static void DrawOpaqueText(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, string text, int left, int y)
+    {
+        batch.Draw(pixel, new Rectangle(left, y, text.Length * OriginalFontLayout.CellWidth,
+            OriginalFontLayout.GlyphHeight), Color.Black);
+        font.Draw(batch, text, new Vector2(left, y), Color.Lime, 1);
     }
 
     private static void DrawGangPanelValue(

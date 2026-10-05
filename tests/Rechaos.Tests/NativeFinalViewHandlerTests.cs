@@ -181,7 +181,7 @@ public sealed class NativeFinalViewHandlerTests
         GC.SuppressFinalize(game);
         foreach (var name in new[] { "_pendingFinalViews", "_presentedHotSeatEliminations",
                      "_gangSelection", "_screens", "_lastTurnReportCache", "_combatResultCache",
-                     "_eventViewedPages", "_lastTurnEventArchive", "_planningTimer" })
+                     "_eventViewedPages", "_lastTurnEventArchive", "_planningTimer", "_eventPump" })
         {
             var field = Field(name);
             field.SetValue(game, Activator.CreateInstance(field.FieldType));
