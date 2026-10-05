@@ -20,9 +20,9 @@ GameCulture.Apply();
 string? assetRoot = null;
 var platformSmokeTest = args.Contains("--platform-smoke-test", StringComparer.OrdinalIgnoreCase);
 // --reference-frame <save|title|credits|setup> <bitmap> [--marker-frame <n>] [--pump-counter <n>]
-// [--selected-sector <n>] [--lamps <e>,<c>] [--reference-clicks <x:y[:2]>,...]: show the save at
-// the planning entry it stands at, or the screen named in its place, make the
-// clicks, write the drawing area and exit (ReferenceFrameRequest).
+// [--selected-sector <n>] [--lamps <e>,<c>] [--reference-clicks <x:y[:2]|x:y>x:y>,...]: show the
+// save at the planning entry it stands at, or the screen named in its place, make the clicks,
+// write the drawing area and exit (ReferenceFrameRequest).
 ReferenceFrameRequest? referenceFrame;
 try
 {

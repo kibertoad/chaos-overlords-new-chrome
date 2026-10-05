@@ -74,6 +74,9 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--reference-frame", "save", "frame", "--reference-clicks", "1:2:3" },
         new[] { "--reference-frame", "save", "frame", "--reference-clicks", "-1:2" },
         new[] { "--reference-frame", "save", "frame", "--reference-clicks", "1:2", "--reference-clicks", "1:2" },
+        new[] { "--reference-frame", "save", "frame", "--reference-clicks", "1:2>640:0" },
+        new[] { "--reference-frame", "save", "frame", "--reference-clicks", "1:2:2>3:4" },
+        new[] { "--reference-frame", "save", "frame", "--reference-clicks", "1:2>3:4>5:6" },
         new[] { "--lamps", "0,1" },
         new[] { "--reference-frame", "save", "frame", "--lamps" },
         new[] { "--reference-frame", "save", "frame", "--lamps", "1" },
@@ -107,6 +110,17 @@ public sealed class ReferenceFrameRequestTests
             request.Clicks!);
         Assert.Equal("600:58,137:301:2,639:459", string.Join(",", request.Clicks!));
         Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.Clicks);
+    }
+
+    [Fact]
+    public void ADragIsReadWithItsReleasePoint()
+    {
+        var request = ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "setup", "frame.bmp", "--reference-clicks", "416:340>300:200,10:20"])!;
+        Assert.Equal(
+            [new ReferenceClick(new(416, 340), Release: new(300, 200)), new ReferenceClick(new(10, 20))],
+            request.Clicks!);
+        Assert.Equal("416:340>300:200,10:20", string.Join(",", request.Clicks!));
     }
 
     [Theory]

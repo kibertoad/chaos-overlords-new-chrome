@@ -797,25 +797,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         {
             _dragPoint = virtualPoint;
             if (_previousMouse.LeftButton == ButtonState.Released) HandleClick(virtualPoint);
-            else if (_draggedSetupPlayerSlot is not null && !_setupPlayerDragStarted
-                     && PlayerPortraitLayout.SetupDragMoved(
-                         _setupPlayerPressPoint, virtualPoint))
-            {
-                _setupPlayerDragStarted = true;
-                _message = string.Empty;
-            }
-            else if (_draggedHireDefinitionId is not null && !_hireDragStarted
-                     && DragMoved(_hirePressPoint, virtualPoint))
-            {
-                _hireDragStarted = true;
-                _message = string.Empty;
-            }
-            else if (_draggedGangId is not null && !_gangDragStarted
-                     && GangDragMoved(_gangPressPoint, virtualPoint))
-            {
-                StartGangDrag();
-                _message = string.Empty;
-            }
+            else HoldPointerAt(virtualPoint);
         }
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released)
         {

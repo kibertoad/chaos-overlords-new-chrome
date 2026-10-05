@@ -35,7 +35,10 @@ public sealed partial class ScreenCaptureTests
     // SCR-OPTIONS-001 (EXP-UI-012), and the title screen SCR-UI-001, the credits SCR-UI-002 and the
     // setup screen SCR-SETUP-001 (EXP-UI-015). The site and Force meters of RULE-UI-005 and the
     // sector values of RULE-UI-011 are compared as elements of those screens, and the pylons of
-    // RULE-UI-012 on the city map of Siege (EXP-UI-013) and Big Man (EXP-UI-014).
+    // RULE-UI-012 on the city map of Siege (EXP-UI-013) and Big Man (EXP-UI-014). The setup steps
+    // of EXP-UI-015 compare the first setup of RULE-SETUP-002 and RULE-SETUP-010, the card presses
+    // of RULE-SETUP-009, Add and Remove of RULE-SETUP-010, and setup buttons released inside and
+    // outside (RULE-UI-001).
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
@@ -54,7 +57,9 @@ public sealed partial class ScreenCaptureTests
             Environment.GetEnvironmentVariable(OriginalGameFiles.EnvironmentVariable), capture.Xxh3);
         var original = path is null ? null : ScreenFrame.ReadBitmap(File.ReadAllBytes(path));
         var rebuild = capture.BeforeMatch is { } screen
-            ? RebuildFrame.RenderBeforeMatch(screen, $"{experiment}-{run}-{screen}")
+            ? RebuildFrame.RenderBeforeMatch(screen,
+                $"{experiment}-{run}-{screen}" + (capture.SetupStep is { } setupStep ? $"-{setupStep}" : ""),
+                capture.Clicks)
             : RebuildFrame.Render(
                 OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
                 $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,

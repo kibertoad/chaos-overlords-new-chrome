@@ -2224,6 +2224,10 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-055](../findings/FND-UI-055.md) | body |
+| [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | evidence |
+| [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | evidence |
+| [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | evidence |
+| [RULE-UI-001](../rules/RULE-UI-001.md) | evidence |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, evidence |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | body, evidence |
 | [SCR-UI-002](../screens/SCR-UI-002.md) | body, evidence |
@@ -6281,6 +6285,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-SETUP-006](../findings/FND-SETUP-006.md) | body |
 | [FND-SETUP-014](../findings/FND-SETUP-014.md) | body |
 | [FND-SETUP-017](../findings/FND-SETUP-017.md) | body |
@@ -6380,6 +6385,7 @@ None.
 | [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
 | [EXP-TURN-005](../experiments/EXP-TURN-005.md) | body |
 | [EXP-TURN-008](../experiments/EXP-TURN-008.md) | body |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-OBJECTIVE-003](../findings/FND-OBJECTIVE-003.md) | body |
 | [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
 | [FND-SETUP-019](../findings/FND-SETUP-019.md) | body |
@@ -7048,6 +7054,7 @@ None.
 | [EXP-HIRE-001](../experiments/EXP-HIRE-001.md) | body |
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | body |
 | [EXP-TURN-096](../experiments/EXP-TURN-096.md) | body |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body, evidence |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
@@ -8882,6 +8889,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, related |
 
 ## RULE-SETUP-003
@@ -8951,6 +8959,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | glossary: step_portrait | glossary |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, related |
 
@@ -8958,6 +8967,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | body |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, related |
 
@@ -9120,6 +9130,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | glossary: pointer_in_rect | glossary |
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | body |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | body, related |

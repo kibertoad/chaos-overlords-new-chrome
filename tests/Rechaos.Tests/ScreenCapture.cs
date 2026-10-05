@@ -115,8 +115,11 @@ public sealed record ScreenCaptureRecord(
     /// <summary>The screen shown before a match the capture shows, or null.</summary>
     public string? BeforeMatch { get; init; }
 
+    /// <summary>The setup step after which <c>--setup-steps</c> took the copy, or null.</summary>
+    public int? SetupStep => BeforeMatch is not null && Step <= SetupStepBase ? SetupStepBase - Step : null;
+
     public override string ToString() => BeforeMatch is { } screen
-        ? $"{Experiment} run {Run} {screen}"
+        ? $"{Experiment} run {Run} {screen}" + (SetupStep is { } setupStep ? $" step {setupStep}" : "")
         : Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
 
     // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
@@ -144,12 +147,41 @@ public sealed record ScreenCaptureRecord(
                 foreach (var (screen, step) in BeforeMatchScreens)
                     if (recorded.TryGetProperty(screen + "_capture", out var before))
                         records.Add(Parse(experiment, run, before, whiteKeyed) with { Step = step, BeforeMatch = screen });
+                if (recorded.TryGetProperty("setup_steps", out var setupSteps))
+                    records.AddRange(SetupStepCaptures(experiment, run, setupSteps.EnumerateArray().ToArray(), whiteKeyed));
                 if (recorded.TryGetProperty("order_steps", out var steps))
                     records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray(), whiteKeyed));
                 run++;
             }
         }
         return records;
+    }
+
+    /// <summary>
+    /// The first step number of the copies <c>--setup-steps</c> took on the setup screen; the copy
+    /// after setup step <c>n</c> is step <c>SetupStepBase - n</c>.
+    /// </summary>
+    public const int SetupStepBase = -100;
+
+    // Each setup step's copy is drawn by the rebuild's setup screen after the presses before it.
+    private static IEnumerable<ScreenCaptureRecord> SetupStepCaptures(string experiment, int run, JsonElement[] steps, bool whiteKeyed)
+    {
+        var clicks = new List<ReferenceClick>();
+        for (var index = 0; index < steps.Length; index++)
+        {
+            var step = steps[index];
+            var point = new Point(step.GetProperty("x").GetInt32(), step.GetProperty("y").GetInt32());
+            if (step.GetProperty("kind").GetString() == "strip")
+                clicks.Add(new ReferenceClick(point));
+            else if (step.GetProperty("kind").GetString() == "drag")
+                clicks.Add(new ReferenceClick(point,
+                    Release: new Point(step.GetProperty("to_x").GetInt32(), step.GetProperty("to_y").GetInt32())));
+            else if (step.TryGetProperty("capture", out var capture))
+                yield return Parse(experiment, run, capture, whiteKeyed) with
+                {
+                    Step = SetupStepBase - index, BeforeMatch = "setup", Clicks = clicks.ToArray(),
+                };
+        }
     }
 
     /// <summary>Whether a fixture's inputs hold the <c>key_colour</c> setup input of <c>--white-key</c>.</summary>
@@ -468,8 +500,9 @@ public static class RebuildFrame
     /// Draws a screen the rebuild shows before a match, one of
     /// <see cref="ReferenceFrameRequest.ScreenOperands"/>.
     /// </summary>
-    public static ScreenFrame RenderBeforeMatch(string screen, string? name = null) =>
-        Render(null, null, name: name, screen: screen);
+    public static ScreenFrame RenderBeforeMatch(
+        string screen, string? name = null, IReadOnlyList<ReferenceClick>? clicks = null) =>
+        Render(null, null, clicks, name, screen: screen);
 
     public static ScreenFrame Render(
         MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,

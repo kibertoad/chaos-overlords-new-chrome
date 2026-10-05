@@ -76,6 +76,39 @@ internal static class CaptureFixture
     public static readonly IReadOnlyList<(string Name, string Screen)> BeforeMatch =
         [("title", "SCR-UI-001"), ("credits", "SCR-UI-002"), ("setup", "SCR-SETUP-001")];
 
+    /// <summary>The note a run records when it has copied the setup screen at setup step <paramref name="index"/>.</summary>
+    public static string SetupStepNote(int index) => $"setup_step_capture {index}";
+
+    /// <summary>
+    /// The setup steps of <c>--setup-steps</c>, each with the copy a <c>shot</c> took, compared at
+    /// SCR-SETUP-001.
+    /// </summary>
+    public static JsonArray? ExtractSetupSteps(string runDirectory, JsonNode trace)
+    {
+        if (trace["Settings"]?["SetupSteps"] is not JsonArray steps) return null;
+        var notes = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>()).ToHashSet();
+        var screen = CaptureScreen.Load("SCR-SETUP-001");
+        return new JsonArray(steps.Select((step, index) =>
+        {
+            var record = new JsonObject
+            {
+                ["kind"] = step!["Kind"]!.GetValue<string>(),
+                ["x"] = step["X"]!.GetValue<int>(),
+                ["y"] = step["Y"]!.GetValue<int>(),
+            };
+            if (record["kind"]!.GetValue<string>() == "drag")
+            {
+                record["to_x"] = step["Target"]!.GetValue<int>();
+                record["to_y"] = step["Choice"]!.GetValue<int>();
+            }
+            if (notes.Contains(SetupStepNote(index))
+                && Extract(Path.Combine(runDirectory, $"setup-step-{index}.bmp"), 0, null, null, null, screen)
+                    is { } capture)
+                record["capture"] = capture;
+            return (JsonNode)record;
+        }).ToArray());
+    }
+
     /// <summary>The note a run records when it has copied the screen <paramref name="name"/>.</summary>
     public static string BeforeMatchNote(string name) => $"{name}_capture {name}-capture";
 
